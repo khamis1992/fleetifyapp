@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DynamicSidebar } from '@/modules/core/components';
@@ -14,9 +16,71 @@ import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDial
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 
 export const ResponsiveDashboardLayout: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, validateSession } = useAuth();
   const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [loadingTimeoutExceeded, setLoadingTimeoutExceeded] = useState(false);
+  const navigate = useNavigate();
+
+  // Smart loading timeout
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ [DASHBOARD_LAYOUT] Loading timeout exceeded');
+        setLoadingTimeoutExceeded(true);
+      }, 5000);
+
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeoutExceeded(false);
+    }
+  }, [loading]);
+
+  // Show diagnostic screen if loading takes too long
+  if (loading && loadingTimeoutExceeded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>مشكلة في التحميل</CardTitle>
+            <CardDescription>
+              استغرق تحميل التطبيق وقتاً أطول من المعتاد
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              يمكنك المحاولة مرة أخرى أو الانتقال إلى صفحة تسجيل الدخول
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => {
+                  setLoadingTimeoutExceeded(false);
+                  validateSession();
+                }}
+                className="w-full"
+              >
+                إعادة المحاولة
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/auth')}
+                className="w-full"
+              >
+                صفحة تسجيل الدخول
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => window.location.reload()}
+                className="w-full"
+              >
+                تحديث الصفحة
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

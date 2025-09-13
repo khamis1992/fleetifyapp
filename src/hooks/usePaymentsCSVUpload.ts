@@ -4,6 +4,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { normalizeCsvHeaders } from "@/utils/csvHeaderMapping";
 import { parseNumber } from "@/utils/numberFormatter";
 import { extractContractFromPaymentData } from "@/utils/contractNumberExtraction";
+import { useBulkPaymentOperations } from "./useBulkPaymentOperations";
 import { toast } from "sonner";
 import { detectDateColumns, isDateColumn, suggestBestFormat, fixDatesInData } from "@/utils/dateDetection";
 
@@ -45,6 +46,9 @@ export function usePaymentsCSVUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<CSVUploadResults | null>(null);
+  
+  // استخدام العمليات المجمعة المحسنة
+  const { bulkUploadPayments } = useBulkPaymentOperations();
 
   // Field types and required fields for SmartCSVUpload
   const paymentFieldTypes = {
@@ -502,7 +506,20 @@ export function usePaymentsCSVUpload() {
     const companyIdToUse = targetCompanyId || companyId;
     const items: PaymentPreviewItem[] = [];
     
+    // إضافة timeout للعملية الكاملة (20 ثانية للتحليل)
+    const analysisTimeoutMs = 20000;
+    const startTime = Date.now();
+    
+    console.log(`📊 بدء تحليل ${rows.length} صف - مهلة زمنية: ${analysisTimeoutMs / 1000} ثانية`);
+    
     for (let index = 0; index < rows.length; index++) {
+      // فحص الوقت المنقضي
+      if (Date.now() - startTime > analysisTimeoutMs) {
+        console.warn(`⏰ انتهت مهلة التحليل عند الصف ${index + 1} من ${rows.length}`);
+        toast.warning(`تم التوقف عند الصف ${index + 1} بسبب انتهاء المهلة الزمنية`);
+        break;
+      }
+      
       const row = rows[index];
       const normalizedRow = normalizeCsvHeaders(row);
       
@@ -535,7 +552,7 @@ export function usePaymentsCSVUpload() {
       
       const warnings: string[] = [];
       
-      // Look up contract info using enhanced search
+      // Look up contract info using enhanced search with timeout
       let contractInfo: any = undefined;
       
       // محاولة استخراج رقم العقد من البيانات
@@ -545,11 +562,21 @@ export function usePaymentsCSVUpload() {
       
       if ((agreementNumber || contractNumber) && companyIdToUse) {
         try {
-          const { contract_info, confidence } = await findContractByMultipleIdentifiers(
+          // تطبيق timeout على البحث عن العقد (2 ثانية لكل بحث)
+          const contractSearchPromise = findContractByMultipleIdentifiers(
             agreementNumber, 
             contractNumber, 
             companyIdToUse
           );
+          
+          const timeoutPromise = new Promise<{ contract_info?: any; confidence?: number }>((_, reject) => {
+            setTimeout(() => reject(new Error('Contract search timeout')), 2000);
+          });
+          
+          const { contract_info, confidence } = await Promise.race([
+            contractSearchPromise,
+            timeoutPromise
+          ]);
           
           if (contract_info) {
             contractInfo = { ...contract_info, confidence };
@@ -583,7 +610,13 @@ export function usePaymentsCSVUpload() {
           }
         } catch (error) {
           const searchTerm = agreementNumber || contractNumber;
-          warnings.push(`خطأ في البحث عن العقد: ${searchTerm}`);
+          if (error instanceof Error && error.message.includes('timeout')) {
+            warnings.push(`انتهت مهلة البحث عن العقد: ${searchTerm}`);
+            console.warn(`⏰ انتهت مهلة البحث عن العقد للصف ${index + 1}:`, searchTerm);
+          } else {
+            warnings.push(`خطأ في البحث عن العقد: ${searchTerm}`);
+            console.error(`❌ خطأ في البحث عن العقد للصف ${index + 1}:`, error);
+          }
         }
       }
       
@@ -684,36 +717,51 @@ export function usePaymentsCSVUpload() {
     const dataAnalysis = analyzeDataStructure(enhancedRows);
     console.log('🔍 تحليل هيكل البيانات:', dataAnalysis);
     
-    // If in preview mode, just return analyzed data
+    // If in preview mode, just return analyzed data with enhanced error handling
     if (options?.previewMode) {
-      const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
-      
-      // إضافة تشخيص مفصل للبيانات المرفوضة
-      const rejectedRows = enhancedRows.filter((row, index) => {
-        const normalizedRow = normalizeCsvHeaders(row);
-        return !hasRequiredPaymentFields(normalizedRow);
-      });
-      
-      console.log('❌ الصفوف المرفوضة:', rejectedRows.length, 'من أصل', enhancedRows.length);
-      
-      if (rejectedRows.length > 0) {
-        console.log('🔍 أسباب رفض الصفوف:', rejectedRows.map(row => ({
-          rowNumber: row.rowNumber || 'غير محدد',
-          missingFields: findMissingRequiredFields(normalizeCsvHeaders(row))
-        })));
+      try {
+        console.log('🔍 بدء وضع المعاينة والتحليل الذكي...');
+        const previewData = await analyzePaymentData(enhancedRows, targetCompanyId);
+        console.log(`✅ تم تحليل ${previewData.length} عنصر بنجاح`);
+        
+        return {
+          total: enhancedRows.length,
+          successful: previewData.length,
+          failed: 0,
+          skipped: enhancedRows.length - previewData.length,
+          errors: [],
+          previewData
+        };
+      } catch (error) {
+        console.error('❌ خطأ في وضع المعاينة:', error);
+        toast.error('فشل في تحليل البيانات - سيتم المتابعة بدون تحليل ذكي');
+        
+        // إرجاع بيانات أساسية بدون تحليل ذكي
+        const basicPreviewData = enhancedRows.map((row, index) => {
+          const normalizedRow = normalizeCsvHeaders(row);
+          const amount = parseNumber(normalizedRow.amount || normalizedRow.amount_paid || 0);
+          
+          return {
+            rowNumber: row.rowNumber || index + 2,
+            data: normalizedRow,
+            paidAmount: amount,
+            hasBalance: false,
+            isZeroPayment: amount <= 0,
+            warnings: ['تم تخطي التحليل الذكي بسبب خطأ تقني'],
+            lateFineStatus: 'none' as const,
+            lateFineType: 'none' as const
+          };
+        });
+        
+        return {
+          total: enhancedRows.length,
+          successful: basicPreviewData.length,
+          failed: 0,
+          skipped: 0,
+          errors: [{ row: 0, message: `خطأ في التحليل: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}` }],
+          previewData: basicPreviewData
+        };
       }
-      
-      return {
-        total: enhancedRows.length,
-        successful: 0,
-        failed: rejectedRows.length,
-        skipped: 0,
-        errors: rejectedRows.map((row, index) => ({
-          row: row.rowNumber || index + 2,
-          message: `صف مرفوض: ${findMissingRequiredFields(normalizeCsvHeaders(row)).join(', ')}`
-        })),
-        previewData
-      };
     }
     if (!user?.id || !targetCompanyId) {
       toast.error('لا يمكن الرفع بدون مستخدم وشركة');
@@ -727,14 +775,18 @@ export function usePaymentsCSVUpload() {
     let successful = 0;
     let failed = 0;
     let skipped = 0;
+    
+    try {
+      console.log('🚀 [UPLOAD] Starting payment upload process...');
 
     // Prepare payment number sequencing
     let lastNumber = await getLastPaymentNumber(targetCompanyId);
 
     // Pre-resolve any invoice/customer/vendor ids when provided
     for (let i = 0; i < enhancedRows.length; i++) {
-      const raw = enhancedRows[i] || {};
-      const rowNumber = raw.rowNumber || i + 2;
+      try {
+        const raw = enhancedRows[i] || {};
+        const rowNumber = raw.rowNumber || i + 2;
 
       // Normalize fields
       const tx = normalizeTxType(raw.transaction_type) || (options?.autoCompleteType ? 'receipt' : undefined);
@@ -880,7 +932,7 @@ export function usePaymentsCSVUpload() {
           original_due_date: raw.original_due_date || null,
           late_fine_days_overdue: parseNumber(raw.late_fine_days_overdue || 0) || null,
           reconciliation_status: raw.reconciliation_status || 'pending',
-          description_type: raw.description_type || raw.type || null,
+          description_type: raw.description_type || raw.transaction_type || null,
         });
         if (error) {
           failed++;
@@ -984,14 +1036,89 @@ export function usePaymentsCSVUpload() {
       }
 
       successful++;
-      setProgress(Math.round(((i + 1) / enhancedRows.length) * 100));
+      
+      // Final progress update
+      const finalProgress = Math.round(((i + 1) / enhancedRows.length) * 100);
+      setProgress(finalProgress);
+      
+      if (finalProgress === 100 || i === enhancedRows.length - 1) {
+        console.log(`✅ [UPLOAD] Completed processing all rows. Final progress: ${finalProgress}%`);
+      }
+      
+    } catch (rowError) {
+      console.error(`❌ [UPLOAD] Error processing row ${i + 1}:`, rowError);
+      failed++;
+      errors.push({ 
+        row: enhancedRows[i]?.rowNumber || i + 2, 
+        message: `خطأ في معالجة الصف: ${rowError.message || 'خطأ غير محدد'}` 
+      });
+    }
     }
 
+    console.log(`📊 [UPLOAD] Final summary: ${successful} successful, ${failed} failed, ${skipped} skipped, ${errors.length} errors`);
+    
     const summary = { total: enhancedRows.length, successful, failed, skipped, errors };
     setResults(summary);
+    
+    // Ensure we complete the upload process
+    setProgress(100);
+    setIsUploading(false);
+    
+    // Reset progress after a short delay
+    setTimeout(() => {
+      setProgress(0);
+    }, 1000);
+    
+    return summary;
+    
+  } catch (error) {
+    console.error('❌ [UPLOAD] Critical error during upload process:', error);
+    
+    // إضافة معلومات تشخيصية أكثر تفصيلاً
+    let errorMessage = 'خطأ غير محدد في رفع البيانات';
+    
+    if (error.message) {
+      errorMessage = `خطأ في رفع البيانات: ${error.message}`;
+    }
+    
+    if (error.code) {
+      errorMessage += ` (كود الخطأ: ${error.code})`;
+    }
+    
+    // إضافة اقتراحات للحلول
+    if (error.message?.includes('permission') || error.message?.includes('RLS')) {
+      errorMessage += '\n💡 تلميح: تحقق من صلاحيات الوصول للشركة المحددة';
+    } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
+      errorMessage += '\n💡 تلميح: تحقق من الاتصال بالإنترنت وأعد المحاولة';
+    } else if (error.message?.includes('validation')) {
+      errorMessage += '\n💡 تلميح: تحقق من صحة البيانات المدخلة';
+    }
+    
+    toast.error(errorMessage);
+    
+    // إضافة خيار إعادة المحاولة
+    toast.message('هل تريد إعادة المحاولة؟', {
+      description: 'انقر على زر الرفع مرة أخرى لإعادة المحاولة',
+      duration: 5000
+    });
+    
+    // Return error summary
+    const errorSummary = {
+      total: enhancedRows.length,
+      successful,
+      failed: enhancedRows.length - successful,
+      skipped: 0,
+      errors: [{ row: 0, message: `خطأ عام: ${error.message || 'خطأ غير محدد'}` }]
+    };
+    
+    setResults(errorSummary);
+    return errorSummary;
+    
+  } finally {
+    console.log('🏁 [UPLOAD] Upload process finished, cleaning up...');
     setIsUploading(false);
     setProgress(0);
-    return summary;
+  }
   };
 
   return {

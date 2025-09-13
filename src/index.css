@@ -203,7 +203,7 @@ All colors MUST be HSL.
     letter-spacing: 0.02em;
     word-break: keep-all;
     overflow-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: normal;
     text-rendering: optimizeLegibility;
   }
 

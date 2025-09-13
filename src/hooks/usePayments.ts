@@ -58,10 +58,27 @@ export const usePayments = (filters?: {
   const { user } = useAuth();
   const { companyId: effectiveCompanyId } = useUnifiedCompanyAccess();
   
+  console.log("🔍 [usePayments] تشخيص المصادقة:", {
+    user: user ? {
+      id: user.id,
+      email: user.email,
+      companyId: user.profile?.company_id
+    } : null,
+    effectiveCompanyId,
+    filters
+  });
+  
   return useQuery({
     queryKey: ["payments", effectiveCompanyId, filters],
     queryFn: async () => {
-      if (!effectiveCompanyId) throw new Error("Company ID is required");
+      console.log("🔍 [usePayments] بدء تحميل المدفوعات");
+      
+      if (!effectiveCompanyId) {
+        console.error("❌ [usePayments] Company ID غير متاح");
+        throw new Error("معرف الشركة مطلوب للوصول للمدفوعات");
+      }
+      
+      console.log("🔍 [usePayments] استخدام Company ID:", effectiveCompanyId);
       
       let query = supabase
         .from("payments")
@@ -112,12 +129,27 @@ export const usePayments = (filters?: {
         query = query.lte("payment_date", filters.payment_date_lte);
       }
       
+      console.log("🔍 [usePayments] تنفيذ الاستعلام...");
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ [usePayments] خطأ في الاستعلام:", error);
+        throw new Error(`فشل في تحميل المدفوعات: ${error.message}`);
+      }
+      
+      console.log("✅ [usePayments] تم تحميل المدفوعات بنجاح:", {
+        count: data?.length || 0,
+        companyId: effectiveCompanyId
+      });
+      
       return data as Payment[];
     },
-    enabled: !!effectiveCompanyId
+    enabled: !!effectiveCompanyId,
+    retry: (failureCount, error) => {
+      console.log("🔄 [usePayments] محاولة إعادة التحميل:", { failureCount, error: error.message });
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 };
 

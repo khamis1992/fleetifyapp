@@ -41,9 +41,15 @@ const Payments = () => {
     end: ""
   });
 
-  const { data: payments, isLoading, error } = usePayments();
+  const { data: payments, isLoading, error, refetch } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
   const { isMobile } = useSimpleBreakpoint();
+
+  console.log("🔍 [Payments Page] حالة التحميل:", {
+    isLoading,
+    error: error?.message,
+    paymentsCount: payments?.length || 0
+  });
 
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,7 +113,10 @@ const Payments = () => {
     <FinanceErrorBoundary
       error={error ? new Error(error.message || 'خطأ في تحميل المدفوعات') : null}
       isLoading={isLoading}
-      onRetry={() => window.location.reload()}
+      onRetry={() => {
+        console.log("🔄 [Payments Page] إعادة تحميل المدفوعات");
+        refetch();
+      }}
       title="خطأ في المدفوعات"
       context="صفحة المدفوعات"
     >
@@ -327,12 +336,34 @@ const Payments = () => {
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="flex justify-center py-8">
+                  <div className="flex flex-col justify-center items-center py-12 space-y-4">
                     <LoadingSpinner size="lg" />
+                    <div className="text-center">
+                      <p className="text-muted-foreground mb-2">جارى تحميل المدفوعات...</p>
+                      <p className="text-sm text-muted-foreground">يتم البحث في قاعدة البيانات</p>
+                    </div>
                   </div>
                 ) : error ? (
-                  <div className="text-center py-8">
-                    <p className="text-destructive">حدث خطأ في تحميل البيانات</p>
+                  <div className="text-center py-12 space-y-4">
+                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-destructive font-medium mb-2">حدث خطأ في تحميل المدفوعات</p>
+                      <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+                      <div className="space-x-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => refetch()}
+                          className="mr-2"
+                        >
+                          إعادة المحاولة
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => window.location.reload()}
+                        >
+                          إعادة تحميل الصفحة
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ) : filteredPayments.length === 0 ? (
                   <div className="text-center py-8">
@@ -380,9 +411,9 @@ const Payments = () => {
                                  {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                                </TableCell>
                               <TableCell>
-                                <Badge variant="outline">
-                                  {getMethodLabel(payment.payment_method)}
-                                </Badge>
+                                 <Badge variant="outline">
+                                   {getMethodLabel(payment.payment_type || payment.payment_method)}
+                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.payment_status)}`}>
@@ -475,7 +506,7 @@ const Payments = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">طريقة الدفع</label>
-                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_method)}</p>
+                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_type || selectedPayment.payment_method)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">الحالة</label>

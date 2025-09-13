@@ -27,48 +27,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const initializeAuth = async () => {
     try {
-      // Set up auth state listener
-      authListenerRef.current = supabase.auth.onAuthStateChange(
-        async (event, session) => {
+      console.log('🔄 [AUTH_CONTEXT] Initializing authentication...');
+      
+      // Set up auth state listener FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
           console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
           
-          if (event !== 'SIGNED_OUT' || !isSigningOut) {
+          // Clear session error for successful events
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             setSessionError(null);
           }
           
           if (event === 'SIGNED_OUT') {
-            if (isSigningOut) {
-              setUser(null);
-              setSession(null);
-              setIsSigningOut(false);
-            }
+            console.log('📝 [AUTH_CONTEXT] User signed out');
+            setUser(null);
+            setSession(null);
+            setIsSigningOut(false);
+            setLoading(false);
+            return;
           }
           
-          if (session?.user && event !== 'SIGNED_OUT') {
+          if (session?.user) {
             console.log('📝 [AUTH_CONTEXT] Valid session found, fetching profile...');
             setSession(session);
             
-            try {
-              const authUser = await authService.getCurrentUser();
-              console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
-              setUser(authUser);
-              setSessionError(null);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
-            }
-          } else if (event !== 'TOKEN_REFRESHED' && !isSigningOut) {
+            // Defer profile loading to avoid callback deadlock
+            setTimeout(async () => {
+              try {
+                const authUser = await authService.getCurrentUser();
+                console.log('📝 [AUTH_CONTEXT] Profile loaded:', authUser?.profile?.company_id);
+                setUser(authUser);
+                setSessionError(null);
+              } catch (error) {
+                console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+                setUser(session.user as AuthUser);
+                setSessionError('خطأ في تحميل بيانات المستخدم');
+              } finally {
+                setLoading(false);
+              }
+            }, 0);
+          } else if (event !== 'TOKEN_REFRESHED') {
             console.log('📝 [AUTH_CONTEXT] No user session');
             setUser(null);
             setSession(null);
+            setLoading(false);
           }
-          
-          setLoading(false);
         }
       );
 
-      // Check for existing session
+      authListenerRef.current = { subscription };
+
+      // THEN check for existing session
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -79,16 +89,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (session?.user) {
+        console.log('📝 [AUTH_CONTEXT] Existing session found');
         setSession(session);
         try {
           const authUser = await authService.getCurrentUser();
+          console.log('📝 [AUTH_CONTEXT] Existing user profile loaded');
           setUser(authUser);
+          setSessionError(null);
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile on init:', error);
           setUser(session.user as AuthUser);
           setSessionError('خطأ في تحميل بيانات المستخدم');
         }
+      } else {
+        console.log('📝 [AUTH_CONTEXT] No existing session');
       }
+      
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
       setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
@@ -97,15 +113,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+<<<<<<< HEAD
   useEffect(() => {
+=======
+  // Safety timeout to prevent infinite loading
+  const initTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  React.useEffect(() => {
+>>>>>>> 56fabc55e22343cfda411b1dba2c92629ff6dfd1
     initializeAuth();
+    
+    // Safety timeout - if still loading after 6 seconds, force loading to false
+    initTimeoutRef.current = setTimeout(() => {
+      console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
+      setLoading(false);
+    }, 6000);
 
     return () => {
-      if (authListenerRef.current) {
+      if (authListenerRef.current?.subscription) {
         authListenerRef.current.subscription.unsubscribe();
+      }
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
       }
     };
   }, []);
+
 
   const signUp = async (email: string, password: string, userData?: any) => {
     return authService.signUp(email, password, userData);

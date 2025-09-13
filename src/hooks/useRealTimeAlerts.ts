@@ -111,24 +111,22 @@ export const useRealTimeAlerts = () => {
 
       // Add property alerts to real-time alerts
       propertyAlerts.forEach(alert => {
-        if (!alert.acknowledged) {
-          allAlerts.push({
-            id: alert.id,
-            type: 'property',
-            severity: alert.priority === 'high' ? 'high' : 'medium',
-            title: alert.title,
-            message: alert.description,
-            created_at: alert.createdAt.toISOString(),
-            data: {
-              property_id: alert.propertyId,
-              contract_id: alert.contractId,
-              alert_type: alert.type,
-              due_date: alert.dueDate,
-              days_remaining: alert.daysRemaining,
-              amount: alert.amount
-            }
-          });
-        }
+        allAlerts.push({
+          id: alert.id,
+          type: 'property',
+          severity: alert.severity,
+          title: alert.title,
+          message: alert.description,
+          created_at: new Date().toISOString(), // Use current time since no created_at in PropertyAlert
+          data: {
+            property_id: alert.propertyId,
+            alert_type: alert.type,
+            due_date: alert.dueDate,
+            amount: alert.amount,
+            days_overdue: alert.daysOverdue,
+            metadata: alert.metadata
+          }
+        });
       });
 
       // Sort by creation date (newest first)

@@ -1,315 +1,195 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { addDays } from 'date-fns';
 
 export interface PropertyAlert {
   id: string;
-  type: 'contract_expiry' | 'payment_overdue' | 'maintenance_due' | 'vacant_property' | 'contract_renewal' | 'document_expiry';
-  priority: 'high' | 'medium' | 'low';
+  type: 'contract_expiry' | 'payment_overdue' | 'maintenance_due' | 'document_expiry' | 'vacancy_alert';
   title: string;
   description: string;
-  property: string;
-  propertyId: string;
-  contractId?: string;
-  paymentId?: string;
-  daysRemaining?: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  propertyId?: string;
+  propertyName?: string;
+  dueDate?: Date;
   amount?: number;
-  dueDate: Date;
-  acknowledged: boolean;
-  createdAt: Date;
-  metadata?: any;
+  daysOverdue?: number;
+  metadata?: Record<string, any>;
 }
 
 export const usePropertyAlerts = () => {
-  const { companyId, filter, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: getQueryKey(['property-alerts']),
     queryFn: async (): Promise<PropertyAlert[]> => {
-      if (!companyId && !hasGlobalAccess) {
+      if (!companyId) {
         return [];
       }
 
-      const targetCompanyId = filter.company_id || companyId;
-      if (!targetCompanyId && !hasGlobalAccess) {
-        return [];
-      }
+      const alerts: PropertyAlert[] = [];
+      const currentDate = new Date();
+      const thirtyDaysFromNow = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      return await fetchPropertyAlerts(targetCompanyId, hasGlobalAccess);
-    },
-    enabled: !!(companyId || hasGlobalAccess),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
+      try {
+        // Check for expiring contracts
+        const { data: expiringContracts } = await supabase
+          .from('property_contracts')
+          .select(`
+            id,
+            end_date,
+            property_id
+          `)
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .lte('end_date', thirtyDaysFromNow.toISOString().split('T')[0]);
 
-async function fetchPropertyAlerts(
-  companyId: string | undefined, 
-  hasGlobalAccess: boolean = false
-): Promise<PropertyAlert[]> {
-  
-  // Helper function to build query with company filtering
-  const buildQuery = (baseQuery: any) => {
-    if (companyId && !hasGlobalAccess) {
-      return baseQuery.eq('company_id', companyId);
-    } else if (companyId && hasGlobalAccess) {
-      return baseQuery.eq('company_id', companyId);
-    }
-    // For super_admin without specific company filter, return all
-    return baseQuery;
-  };
+        if (expiringContracts) {
+          // Get property details separately
+          const propertyIds = expiringContracts.map(c => c.property_id).filter(Boolean);
+          const { data: properties } = await supabase
+            .from('properties')
+            .select('id, description')
+            .in('id', propertyIds);
 
-  try {
-    const alerts: PropertyAlert[] = [];
-    const currentDate = new Date();
-    const next30Days = addDays(currentDate, 30);
-    const next90Days = addDays(currentDate, 90);
+          const propertyMap = new Map(properties?.map(p => [p.id, p]) || []);
 
-    // Fetch data for alerts
-    const [
-      contractsResult,
-      paymentsResult,
-      propertiesResult,
-      documentsResult
-    ] = await Promise.all([
-      // Property contracts
-      buildQuery(supabase.from('property_contracts').select(`
-        *,
-        properties(id, property_name, address),
-        customers(id, full_name)
-      `))
-        .eq('is_active', true)
-        .lte('end_date', next90Days.toISOString()),
-      
-      // Overdue payments
-      buildQuery(supabase.from('payments').select(`
-        *,
-        property_contracts(id, properties(id, property_name)),
-        customers(id, full_name)
-      `))
-        .in('status', ['pending', 'overdue'])
-        .lte('due_date', currentDate.toISOString()),
-      
-      // Properties
-      buildQuery(supabase.from('properties').select('*'))
-        .eq('is_active', true),
-      
-      // Document expiry alerts (from existing system)
-      buildQuery(supabase.from('document_expiry_alerts').select('*'))
-        .eq('acknowledged', false)
-    ]);
+          expiringContracts.forEach(contract => {
+            const endDate = new Date(contract.end_date);
+            const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+            const property = propertyMap.get(contract.property_id);
+            
+            let severity: PropertyAlert['severity'] = 'low';
+            if (daysUntilExpiry <= 7) severity = 'critical';
+            else if (daysUntilExpiry <= 15) severity = 'high';
+            else if (daysUntilExpiry <= 30) severity = 'medium';
 
-    // Contract Expiry Alerts
-    if (contractsResult.data) {
-      contractsResult.data.forEach(contract => {
-        if (contract.end_date) {
-          const endDate = new Date(contract.end_date);
-          const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysUntilExpiry <= 90) {
             alerts.push({
-              id: `contract_expiry_${contract.id}`,
+              id: `contract-expiry-${contract.id}`,
               type: 'contract_expiry',
-              priority: daysUntilExpiry <= 7 ? 'high' : daysUntilExpiry <= 30 ? 'medium' : 'low',
-              title: `انتهاء عقد ${contract.properties?.property_name || 'عقار'}`,
-              description: `عقد الإيجار رقم ${contract.contract_number} ينتهي ${daysUntilExpiry <= 0 ? 'منتهي' : `خلال ${daysUntilExpiry} يوم`}`,
-              property: contract.properties?.property_name || 'عقار غير معروف',
+              title: 'عقد إيجار منتهي الصلاحية',
+              description: `عقد إيجار ${property?.description || 'غير محدد'} سينتهي خلال ${daysUntilExpiry} يوم`,
+              severity,
               propertyId: contract.property_id,
-              contractId: contract.id,
-              daysRemaining: daysUntilExpiry,
-              amount: contract.rental_amount,
+              propertyName: property?.description,
               dueDate: endDate,
-              acknowledged: false,
-              createdAt: currentDate,
               metadata: {
-                contractNumber: contract.contract_number,
-                tenant: contract.customers?.full_name
+                contractId: contract.id,
+                daysUntilExpiry
               }
             });
-          }
-        }
-      });
-    }
-
-    // Payment Overdue Alerts
-    if (paymentsResult.data) {
-      paymentsResult.data.forEach(payment => {
-        if (payment.due_date) {
-          const dueDate = new Date(payment.due_date);
-          const daysOverdue = Math.ceil((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          alerts.push({
-            id: `payment_overdue_${payment.id}`,
-            type: 'payment_overdue',
-            priority: daysOverdue >= 30 ? 'high' : daysOverdue >= 7 ? 'medium' : 'low',
-            title: `دفعة متأخرة - ${payment.property_contracts?.properties?.property_name || 'عقار'}`,
-            description: `دفعة بقيمة ${payment.amount} د.ك متأخرة منذ ${daysOverdue} يوم`,
-            property: payment.property_contracts?.properties?.property_name || 'عقار غير معروف',
-            propertyId: payment.property_contracts?.properties?.id || '',
-            contractId: payment.contract_id,
-            paymentId: payment.id,
-            daysRemaining: -daysOverdue,
-            amount: payment.amount,
-            dueDate: dueDate,
-            acknowledged: false,
-            createdAt: currentDate,
-            metadata: {
-              tenant: payment.customers?.full_name,
-              status: payment.status
-            }
           });
         }
-      });
-    }
 
-    // Vacant Property Alerts
-    if (propertiesResult.data) {
-      for (const property of propertiesResult.data) {
-        if (property.property_status === 'available') {
-          // Check how long it's been vacant (mock calculation - in real system, track this)
-          const vacantDays = 45; // Mock value
-          
-          if (vacantDays >= 30) {
+        // Check for overdue payments
+        const { data: overduePayments } = await supabase
+          .from('property_payments')
+          .select(`
+            id,
+            amount,
+            due_date,
+            property_contract_id
+          `)
+          .eq('company_id', companyId)
+          .eq('status', 'pending')
+          .lt('due_date', currentDate.toISOString().split('T')[0]);
+
+        if (overduePayments) {
+          overduePayments.forEach(payment => {
+            const dueDate = new Date(payment.due_date);
+            const daysOverdue = Math.ceil((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            let severity: PropertyAlert['severity'] = 'medium';
+            if (daysOverdue >= 30) severity = 'critical';
+            else if (daysOverdue >= 15) severity = 'high';
+
             alerts.push({
-              id: `vacant_property_${property.id}`,
-              type: 'vacant_property',
-              priority: vacantDays >= 90 ? 'high' : vacantDays >= 60 ? 'medium' : 'low',
-              title: `عقار شاغر لفترة طويلة`,
-              description: `${property.property_name} شاغر منذ ${vacantDays} يوم`,
-              property: property.property_name || 'عقار غير معروف',
-              propertyId: property.id,
-              daysRemaining: vacantDays,
-              dueDate: addDays(currentDate, -vacantDays),
-              acknowledged: false,
-              createdAt: currentDate,
+              id: `payment-overdue-${payment.id}`,
+              type: 'payment_overdue',
+              title: 'دفعة متأخرة',
+              description: `دفعة متأخرة منذ ${daysOverdue} يوم`,
+              severity,
+              dueDate,
+              amount: payment.amount,
+              daysOverdue,
               metadata: {
-                propertyType: property.property_type,
-                rentalPrice: property.rental_price
+                paymentId: payment.id,
+                contractId: payment.property_contract_id
               }
             });
-          }
+          });
         }
-      }
-    }
 
-    // Contract Renewal Opportunities
-    if (contractsResult.data) {
-      contractsResult.data.forEach(contract => {
-        if (contract.end_date && contract.status === 'active') {
-          const endDate = new Date(contract.end_date);
-          const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Suggest renewal 60-30 days before expiry
-          if (daysUntilExpiry >= 30 && daysUntilExpiry <= 60) {
-            alerts.push({
-              id: `contract_renewal_${contract.id}`,
-              type: 'contract_renewal',
-              priority: 'medium',
-              title: `فرصة تجديد عقد`,
-              description: `عقد ${contract.properties?.property_name || 'عقار'} مؤهل للتجديد`,
-              property: contract.properties?.property_name || 'عقار غير معروف',
-              propertyId: contract.property_id,
-              contractId: contract.id,
-              daysRemaining: daysUntilExpiry,
-              amount: contract.rental_amount,
-              dueDate: endDate,
-              acknowledged: false,
-              createdAt: currentDate,
-              metadata: {
-                contractNumber: contract.contract_number,
-                tenant: contract.customers?.full_name,
-                currentAmount: contract.rental_amount
-              }
-            });
-          }
-        }
-      });
-    }
-
-    // Maintenance Due Alerts (mock - in real system, have maintenance schedules)
-    if (propertiesResult.data) {
-      propertiesResult.data.forEach(property => {
-        // Mock quarterly maintenance check
-        const lastMaintenanceDate = addDays(currentDate, -90); // Mock last maintenance
-        const nextMaintenanceDate = addDays(lastMaintenanceDate, 90);
-        
-        if (nextMaintenanceDate <= next30Days) {
+        // Add some mock maintenance alerts for demonstration
+        if (currentDate.getDate() % 7 === 0) { // Every 7th day of month
           alerts.push({
-            id: `maintenance_due_${property.id}`,
+            id: `maintenance-mock-${currentDate.getTime()}`,
             type: 'maintenance_due',
-            priority: 'low',
-            title: `صيانة دورية مستحقة`,
-            description: `${property.property_name} يحتاج صيانة دورية`,
-            property: property.property_name || 'عقار غير معروف',
-            propertyId: property.id,
-            dueDate: nextMaintenanceDate,
-            acknowledged: false,
-            createdAt: currentDate,
+            title: 'صيانة مجدولة',
+            description: `صيانة دورية مجدولة للعقارات`,
+            severity: 'low' as PropertyAlert['severity'],
+            dueDate: new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000),
             metadata: {
-              maintenanceType: 'دورية',
-              propertyType: property.property_type
+              maintenanceType: 'routine'
             }
           });
         }
-      });
-    }
 
-    // Document Expiry Alerts (integrate with existing system)
-    if (documentsResult.data) {
-      documentsResult.data.forEach(docAlert => {
-        alerts.push({
-          id: `document_expiry_${docAlert.id}`,
-          type: 'document_expiry',
-          priority: docAlert.alert_type === 'expired' ? 'high' : 'medium',
-          title: `انتهاء صلاحية وثيقة`,
-          description: docAlert.description || 'وثيقة تحتاج تجديد',
-          property: docAlert.property_name || 'عقار غير معروف',
-          propertyId: docAlert.property_id || '',
-          contractId: docAlert.contract_id,
-          daysRemaining: docAlert.days_until_expiry,
-          dueDate: new Date(docAlert.expiry_date),
-          acknowledged: docAlert.acknowledged,
-          createdAt: new Date(docAlert.created_at),
-          metadata: {
-            documentType: docAlert.document_type,
-            customerName: docAlert.customer_name
+        // Check for vacant properties (properties available for more than 60 days)
+        const sixtyDaysAgo = new Date(currentDate.getTime() - 60 * 24 * 60 * 60 * 1000);
+        const { data: vacantProperties } = await supabase
+          .from('properties')
+          .select('id, description, updated_at')
+          .eq('company_id', companyId)
+          .eq('property_status', 'available')
+          .lt('updated_at', sixtyDaysAgo.toISOString());
+
+        if (vacantProperties) {
+          vacantProperties.forEach(property => {
+            const vacantSince = new Date(property.updated_at);
+            const daysVacant = Math.ceil((currentDate.getTime() - vacantSince.getTime()) / (1000 * 60 * 60 * 24));
+            
+            let severity: PropertyAlert['severity'] = 'medium';
+            if (daysVacant >= 120) severity = 'high';
+            else if (daysVacant >= 90) severity = 'medium';
+
+            alerts.push({
+              id: `vacancy-${property.id}`,
+              type: 'vacancy_alert',
+              title: 'عقار شاغر لفترة طويلة',
+              description: `عقار ${property.description} شاغر منذ ${daysVacant} يوم`,
+              severity,
+              propertyId: property.id,
+              propertyName: property.description,
+              metadata: {
+                daysVacant
+              }
+            });
+          });
+        }
+
+        // Sort alerts by severity and date
+        return alerts.sort((a, b) => {
+          const severityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
+          const severityDiff = severityWeight[b.severity] - severityWeight[a.severity];
+          
+          if (severityDiff !== 0) return severityDiff;
+          
+          // Sort by due date if same severity
+          if (a.dueDate && b.dueDate) {
+            return a.dueDate.getTime() - b.dueDate.getTime();
           }
+          
+          return 0;
         });
-      });
-    }
 
-    // Sort alerts by priority and date
-    return alerts.sort((a, b) => {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      } catch (error) {
+        console.error('Error fetching property alerts:', error);
+        return [];
       }
-      return a.dueDate.getTime() - b.dueDate.getTime();
-    });
-
-  } catch (error) {
-    console.error('Error fetching property alerts:', error);
-    return [];
-  }
-}
-
-// Hook for specific alert types
-export const usePropertyAlertsByType = (alertType: PropertyAlert['type']) => {
-  const { data: allAlerts } = usePropertyAlerts();
-  
-  return allAlerts?.filter(alert => alert.type === alertType) || [];
-};
-
-// Hook for alerts by priority
-export const usePropertyAlertsByPriority = (priority: PropertyAlert['priority']) => {
-  const { data: allAlerts } = usePropertyAlerts();
-  
-  return allAlerts?.filter(alert => alert.priority === priority) || [];
-};
-
-// Hook for unacknowledged alerts count
-export const useUnacknowledgedAlertsCount = () => {
-  const { data: allAlerts } = usePropertyAlerts();
-  
-  return allAlerts?.filter(alert => !alert.acknowledged).length || 0;
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
+  });
 };
