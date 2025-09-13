@@ -1,11 +1,11 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  cacheDir: 'node_modules/.vite-lovable',
+  cacheDir: 'node_modules/.vite-dashboard-fix',
   server: {
     host: "::",
     port: 8080,
@@ -18,8 +18,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    dedupe: ['react', 'react-dom'],
-    conditions: ['browser', 'development', 'module']
+    dedupe: ['react', 'react-dom']
   },
   optimizeDeps: {
     include: [
