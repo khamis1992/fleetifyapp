@@ -266,6 +266,9 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>جاري التحميل...</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center h-32">
             <LoadingSpinner />
           </div>
