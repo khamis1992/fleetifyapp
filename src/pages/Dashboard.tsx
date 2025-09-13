@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
-import NewRealEstateDashboard from './dashboards/NewRealEstateDashboard';
+import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 
 const Dashboard: React.FC = () => {
@@ -88,7 +88,7 @@ const Dashboard: React.FC = () => {
       return <CarRentalDashboard key={`car-rental-${companyId}`} />;
     case 'real_estate':
       console.log('🏢 [DASHBOARD] Rendering Real Estate Dashboard');
-      return <NewRealEstateDashboard key={`real-estate-${companyId}`} />;
+      return <RealEstateDashboard key={`real-estate-${companyId}`} />;
     case 'retail':
       console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
       return <RetailDashboard key={`retail-${companyId}`} />;

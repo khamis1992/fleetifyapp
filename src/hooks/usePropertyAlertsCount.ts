@@ -3,17 +3,16 @@ import { usePropertyAlerts } from './usePropertyAlerts';
 export const usePropertyAlertsCount = () => {
   const { data: propertyAlerts = [] } = usePropertyAlerts();
   
-  const criticalAlerts = propertyAlerts.filter(alert => alert.severity === 'critical');
-  const highPriorityAlerts = propertyAlerts.filter(alert => alert.severity === 'high' || alert.severity === 'critical');
-  const urgentAlerts = propertyAlerts.filter(alert => 
+  const unacknowledgedAlerts = propertyAlerts.filter(alert => !alert.acknowledged);
+  const highPriorityAlerts = unacknowledgedAlerts.filter(alert => alert.priority === 'high');
+  const criticalAlerts = unacknowledgedAlerts.filter(alert => 
     alert.type === 'contract_expiry' || alert.type === 'payment_overdue'
   );
 
   return {
-    total: propertyAlerts.length,
+    total: unacknowledgedAlerts.length,
     highPriority: highPriorityAlerts.length,
     critical: criticalAlerts.length,
-    urgent: urgentAlerts.length,
-    alerts: propertyAlerts
+    alerts: unacknowledgedAlerts
   };
 };
