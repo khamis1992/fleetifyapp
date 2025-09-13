@@ -652,12 +652,7 @@ export function SmartCSVUpload({
                   <CardDescription>فهم خيارات معالجة الغرامات في ملف المدفوعات</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                    <p className="text-sm text-blue-700">
-                      <strong>نصيحة:</strong> تأكد من ملء عمود "late_fine_handling" بإحدى القيم المذكورة أعلاه لتجنب التحذيرات أثناء الرفع.
-                    </p>
-                  </div>
+                
                 </CardContent>
               </Card>
             )}
