@@ -30,10 +30,8 @@ import {
   ChevronRight,
   Star,
   DollarSign,
-  Wrench,
 } from 'lucide-react';
 import { PropertyStatusBadge } from './PropertyStatusBadge';
-import { PropertyMaintenanceForm } from './PropertyMaintenanceForm';
 import { PropertyAccountingIntegration } from '@/components/property/PropertyAccountingIntegration';
 import { useCurrencyFormatter } from '@/modules/core/hooks/useCurrencyFormatter';
 import { formatDateInGregorian } from '@/modules/core/utils/dateUtils';
@@ -51,7 +49,6 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
   onDelete,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const { formatCurrency } = useCurrencyFormatter();
   
   // Get property contracts and payments
@@ -97,15 +94,7 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
             {property.address}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setShowMaintenanceForm(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Wrench className="h-4 w-4" />
-            طلب صيانة
-          </Button>
+        <div className="flex space-x-2 space-x-reverse">
           {onEdit && (
             <Button onClick={onEdit}>
               تعديل العقار
@@ -499,14 +488,6 @@ export const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
           </Card>
         )}
       </div>
-
-      {/* نموذج طلب الصيانة */}
-      <PropertyMaintenanceForm
-        open={showMaintenanceForm}
-        onOpenChange={setShowMaintenanceForm}
-        propertyId={property.id}
-        onSuccess={() => setShowMaintenanceForm(false)}
-      />
     </div>
   );
 };
