@@ -79,8 +79,8 @@ export class CompatibilityManager {
       name: 'react-hook-form',
       version,
       compatible: majorVersion >= 7,
-      issues: majorVersion < 7 ? ['مشاكل أداء معروفة'] : ['مشاكل re-rendering محتملة'],
-      recommendations: ['استخدم useCompatibleForm بدلاً من useForm']
+      issues: majorVersion < 7 ? ['مشاكل أداء معروفة'] : [],
+      recommendations: majorVersion >= 7 ? ['يمكن استخدام useCompatibleForm للتحسين الإضافي'] : ['ترقية إلى الإصدار 7+']
     };
   }
 
