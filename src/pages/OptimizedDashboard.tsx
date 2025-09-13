@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
-import RealEstateDashboard from './dashboards/RealEstateDashboard';
+import NewRealEstateDashboard from './dashboards/NewRealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 import DashboardDiagnostics from '@/components/dashboard/DashboardDiagnostics';
 
@@ -152,7 +152,7 @@ const OptimizedDashboard: React.FC = () => {
       return (
         <>
           {diagnostics}
-          <RealEstateDashboard key={`real-estate-${user.company.id}`} />
+          <NewRealEstateDashboard key={`real-estate-${user.company.id}`} />
         </>
       );
       
@@ -166,7 +166,7 @@ const OptimizedDashboard: React.FC = () => {
       return (
         <>
           {diagnostics}
-          <RealEstateDashboard key={`construction-${user.company.id}`} />
+          <NewRealEstateDashboard key={`construction-${user.company.id}`} />
         </>
       );
       
