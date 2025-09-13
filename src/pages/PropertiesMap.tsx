@@ -303,20 +303,20 @@ const PropertyMapView: React.FC = () => {
       </Card>
 
       {/* Map Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Map View */}
-        <div className="lg:col-span-2">
-          <Card className="h-[600px]">
-            <CardContent className="p-0 h-full">
+        <div className="lg:col-span-3">
+          <Card className="relative">
+            <CardContent className="p-0 h-[600px]">
               <div 
                 ref={mapContainerRef}
                 className="w-full h-full rounded-lg"
                 style={{ minHeight: '600px' }}
               />
               
-              {/* Legend */}
-              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 space-y-2 z-[1000]">
-                <h4 className="font-medium text-sm">وسائل الإيضاح</h4>
+              {/* Legend - positioned better to avoid overlap */}
+              <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 space-y-2 z-[1000] shadow-lg border">
+                <h4 className="font-medium text-sm text-center">وسائل الإيضاح</h4>
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-green-500" />
@@ -340,41 +340,120 @@ const PropertyMapView: React.FC = () => {
           </Card>
         </div>
 
-        {/* Properties List */}
+        {/* Properties Sidebar */}
         <div className="space-y-4">
+          {/* Selected Property Details - Show at top when selected */}
+          {selectedProperty && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="order-first"
+            >
+              <Card className="border-primary/20 shadow-md">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-primary">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span className="text-sm">العقار المحدد</span>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setSelectedProperty(null)}
+                      className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <h4 className="font-medium text-base">{selectedProperty.name}</h4>
+                    <p className="text-xs text-muted-foreground">{selectedProperty.address}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">النوع:</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {getTypeLabel(selectedProperty.type)}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">الحالة:</span>
+                      <Badge 
+                        variant={selectedProperty.status === 'rented' ? 'default' : 'secondary'}
+                        className={cn("text-xs", getStatusColor(selectedProperty.status), "text-white")}
+                      >
+                        {getStatusLabel(selectedProperty.status)}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">الإيجار:</span>
+                      <span className="font-medium text-primary">{formatCurrency(selectedProperty.price)}</span>
+                    </div>
+                    {selectedProperty.tenantName && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">المستأجر:</span>
+                        <span className="font-medium text-xs">{selectedProperty.tenantName}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <Button size="sm" className="w-full text-xs">
+                      عرض التفاصيل الكاملة
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Properties List */}
           <Card>
-            <CardHeader>
-              <CardTitle>قائمة العقارات ({filteredProperties.length})</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">
+                قائمة العقارات ({filteredProperties.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-y-auto">
-                {filteredProperties.map((property) => (
-                  <motion.div
-                    key={property.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={cn(
-                      "p-4 border-b cursor-pointer transition-all duration-200 hover:bg-accent/50 hover:shadow-sm",
-                      selectedProperty?.id === property.id && "bg-accent border-primary/20 shadow-sm"
-                    )}
-                    onClick={() => {
-                      setSelectedProperty(property);
-                      focusOnProperty(property);
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+              <div className={cn("overflow-y-auto", selectedProperty ? "max-h-[300px]" : "max-h-[500px]")}>
+                {filteredProperties.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground">
+                    <Building className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">لا توجد عقارات متاحة</p>
+                    <p className="text-xs">تأكد من تسجيل الدخول وإضافة عقارات</p>
+                  </div>
+                ) : (
+                  filteredProperties.map((property) => (
+                    <motion.div
+                      key={property.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={cn(
+                        "p-3 border-b cursor-pointer transition-all duration-200 hover:bg-accent/50",
+                        selectedProperty?.id === property.id && "bg-accent border-primary/20"
+                      )}
+                      onClick={() => {
+                        setSelectedProperty(property);
+                        focusOnProperty(property);
+                      }}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
                           {getTypeIcon(property.type)}
-                          <h4 className="font-medium">{property.name}</h4>
+                          <h4 className="font-medium text-sm truncate">{property.name}</h4>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <p className="text-xs text-muted-foreground truncate">
                           {property.address}
                         </p>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {getTypeLabel(property.type)}
-                          </Badge>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {getTypeLabel(property.type)}
+                            </Badge>
+                          </div>
                           <Badge 
                             variant={property.status === 'rented' ? 'default' : 'secondary'}
                             className="text-xs"
@@ -382,76 +461,17 @@ const PropertyMapView: React.FC = () => {
                             {getStatusLabel(property.status)}
                           </Badge>
                         </div>
-                        <p className="text-sm font-medium text-primary">
+                        <p className="text-xs font-medium text-primary">
                           {formatCurrency(property.price)} / شهرياً
                         </p>
-                        {property.tenantName && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            المستأجر: {property.tenantName}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Selected Property Details */}
-          {selectedProperty && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    تفاصيل العقار
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-medium">{selectedProperty.name}</h4>
-                      <p className="text-sm text-muted-foreground">{selectedProperty.address}</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">النوع:</span>
-                        <p className="font-medium">{getTypeLabel(selectedProperty.type)}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الحالة:</span>
-                        <p className="font-medium">{getStatusLabel(selectedProperty.status)}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الإيجار:</span>
-                        <p className="font-medium">{selectedProperty.price} د.ك</p>
-                      </div>
-                      {selectedProperty.tenantName && (
-                        <div>
-                          <span className="text-muted-foreground">المستأجر:</span>
-                          <p className="font-medium">{selectedProperty.tenantName}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1">
-                        عرض التفاصيل
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        تحرير
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
         </div>
       </div>
     </div>
