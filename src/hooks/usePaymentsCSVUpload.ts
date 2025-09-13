@@ -530,24 +530,45 @@ export function usePaymentsCSVUpload() {
       const balance = parseNumber(normalizedRow.balance || 0);
       const lateFineAmount = parseNumber(normalizedRow.late_fine_amount || 0);
       
-      // Calculate actual paid amount and balance
+      // Enhanced type detection from the image data
+      const paymentType = normalizedRow.type || normalizedRow.payment_type || 'rent';
+      const isLatePayment = paymentType === 'LATE_PAYMENT_FEE' || 
+                           (normalizedRow.description && normalizedRow.description.includes('Auto-generated late payment'));
+      const isRentPayment = paymentType === 'rent' || paymentType === 'RENT';
+      
+      // Enhanced balance calculation based on image data patterns
       let finalPaidAmount = amountPaid;
       let finalBalance = 0;
       
-      // If we have both total_amount and amount_paid, use amount_paid as the paid amount
-      if (normalizedRow.total_amount && normalizedRow.amount_paid !== undefined) {
-        finalPaidAmount = amountPaid;
-        finalBalance = totalAmount - amountPaid;
-      }
-      // If we have amount and balance, calculate paid amount
-      else if (normalizedRow.amount && normalizedRow.balance !== undefined) {
-        finalPaidAmount = amount - balance;
-        finalBalance = balance;
-      }
-      // If only amount is provided, assume it's fully paid
-      else {
-        finalPaidAmount = amount;
-        finalBalance = 0;
+      // Special handling for different payment types from the image
+      if (isLatePayment) {
+        // For late payment fees, the amount is usually the fine amount
+        finalPaidAmount = lateFineAmount || amount;
+        finalBalance = 0; // Late fees are typically paid in full
+      } else if (isRentPayment) {
+        // For rent payments, use the standard logic
+        if (normalizedRow.total_amount && normalizedRow.amount_paid !== undefined) {
+          finalPaidAmount = amountPaid;
+          finalBalance = totalAmount - amountPaid;
+        } else if (normalizedRow.amount && normalizedRow.balance !== undefined) {
+          finalPaidAmount = amount - balance;
+          finalBalance = balance;
+        } else {
+          finalPaidAmount = amount;
+          finalBalance = 0;
+        }
+      } else {
+        // Default logic for other payment types
+        if (normalizedRow.total_amount && normalizedRow.amount_paid !== undefined) {
+          finalPaidAmount = amountPaid;
+          finalBalance = totalAmount - amountPaid;
+        } else if (normalizedRow.amount && normalizedRow.balance !== undefined) {
+          finalPaidAmount = amount - balance;
+          finalBalance = balance;
+        } else {
+          finalPaidAmount = amount;
+          finalBalance = 0;
+        }
       }
       
       const warnings: string[] = [];
@@ -555,10 +576,19 @@ export function usePaymentsCSVUpload() {
       // Look up contract info using enhanced search with timeout
       let contractInfo: any = undefined;
       
-      // محاولة استخراج رقم العقد من البيانات
+      // Enhanced contract extraction with better agreement number support
       const extractedContract = extractContractFromPaymentData(normalizedRow);
       const agreementNumber = normalizedRow.agreement_number || (extractedContract?.source === 'extracted' ? extractedContract.contractNumber : null);
       const contractNumber = normalizedRow.contract_number || (extractedContract?.source === 'direct' ? extractedContract.contractNumber : null);
+      
+      // Add warnings for payment type detection
+      if (isLatePayment) {
+        warnings.push(`تم التعرف على رسوم التأخير - المبلغ: ${lateFineAmount || amount}`);
+      }
+      
+      if (isRentPayment) {
+        warnings.push(`دفعة إيجار - المبلغ: ${amount}`);
+      }
       
       if ((agreementNumber || contractNumber) && companyIdToUse) {
         try {
@@ -788,18 +818,33 @@ export function usePaymentsCSVUpload() {
         const raw = enhancedRows[i] || {};
         const rowNumber = raw.rowNumber || i + 2;
 
-      // Normalize fields
-      const tx = normalizeTxType(raw.transaction_type) || (options?.autoCompleteType ? 'receipt' : undefined);
-      const method = normalizePayMethod(raw.payment_type);
-      const date = raw.payment_date || (options?.autoCompleteDates ? new Date().toISOString().split('T')[0] : undefined);
-      const amount = parseFloat(String(raw.amount ?? raw.payment_amount ?? '').replace(/[,\s]/g, ''));
+      // Enhanced field normalization with support for new fields
+      const normalizedRaw = normalizeCsvHeaders(raw);
+      const tx = normalizeTxType(normalizedRaw.transaction_type) || (options?.autoCompleteType ? 'receipt' : undefined);
+      const method = normalizePayMethod(normalizedRaw.payment_type || normalizedRaw.payment_method);
+      const date = normalizedRaw.payment_date || (options?.autoCompleteDates ? new Date().toISOString().split('T')[0] : undefined);
+      const amount = parseFloat(String(normalizedRaw.amount ?? normalizedRaw.payment_amount ?? '').replace(/[,\s]/g, ''));
+      
+      // Enhanced payment type detection from image data
+      const paymentType = normalizedRaw.type || normalizedRaw.payment_type || 'rent';
+      const isLatePayment = paymentType === 'LATE_PAYMENT_FEE' || 
+                           (normalizedRaw.description && normalizedRaw.description.includes('Auto-generated late payment'));
+      const isRentPayment = paymentType === 'rent' || paymentType === 'RENT';
+      
+      // Enhanced amount calculation based on payment type
+      let finalAmount = amount;
+      let lateFineAmount = parseFloat(String(normalizedRaw.late_fine_amount || 0).replace(/[,\s]/g, ''));
+      
+      if (isLatePayment && lateFineAmount > 0) {
+        finalAmount = lateFineAmount;
+      }
 
       if (!date) {
         failed++;
         errors.push({ row: rowNumber, message: 'تاريخ الدفع مفقود' });
         continue;
       }
-      if (!amount || isNaN(amount) || amount <= 0) {
+      if (!finalAmount || isNaN(finalAmount) || finalAmount <= 0) {
         failed++;
         errors.push({ row: rowNumber, message: 'المبلغ غير صالح' });
         continue;
@@ -810,11 +855,11 @@ export function usePaymentsCSVUpload() {
       const payment_method = transaction_type === 'receipt' ? 'received' : 'made';
       const payment_type: PayMethod = method || 'cash';
 
-      // Resolve relations using enhanced search
-      const invoice_id = await findInvoiceId(raw.invoice_id || raw.invoice_number, targetCompanyId);
+      // Enhanced contract resolution with better agreement number support
+      const invoice_id = await findInvoiceId(normalizedRaw.invoice_id || normalizedRaw.invoice_number, targetCompanyId);
       const { contract_id } = await findContractByMultipleIdentifiers(
-        raw.agreement_number, 
-        raw.contract_number, 
+        normalizedRaw.agreement_number, 
+        normalizedRaw.contract_number, 
         targetCompanyId
       );
       const customer_id = transaction_type === 'receipt'
@@ -870,13 +915,17 @@ export function usePaymentsCSVUpload() {
         }
       }
 
-      // Process late fine data
-      const lateFineAmount = parseFloat(String(raw.late_fine_amount || '0').replace(/[,\s]/g, '')) || 0;
-      const lateFineHandling = raw.late_fine_handling?.toLowerCase() || 'none';
+      // Enhanced late fine processing with support for image data patterns
+      const lateFineAmountFromData = parseFloat(String(normalizedRaw.late_fine_amount || '0').replace(/[,\s]/g, '')) || 0;
+      const lateFineHandling = normalizedRaw.late_fine_handling?.toLowerCase() || 'none';
       let lateFineStatus: 'none' | 'paid' | 'waived' | 'pending' = 'none';
       let lateFineType: 'none' | 'separate_payment' | 'included_with_payment' | 'waived' = 'none';
       
-      if (lateFineAmount > 0) {
+      // Enhanced detection for late payment fees from image data
+      if (isLatePayment) {
+        lateFineStatus = 'paid';
+        lateFineType = 'separate_payment';
+      } else if (lateFineAmountFromData > 0) {
         switch (lateFineHandling) {
           case 'included':
           case 'include':
@@ -906,33 +955,33 @@ export function usePaymentsCSVUpload() {
           company_id: targetCompanyId,
           payment_number,
           payment_date: date,
-          amount,
+          amount: finalAmount, // Use the enhanced amount calculation
           payment_method,
           payment_type,
           transaction_type,
-          reference_number: raw.reference_number || null,
-          notes: raw.notes || raw.description || null,
+          reference_number: normalizedRaw.reference_number || null,
+          notes: normalizedRaw.notes || normalizedRaw.description || null,
           customer_id: customer_id || null,
           vendor_id: vendor_id || null,
           invoice_id: invoice_id || null,
           contract_id: contract_id || null,
-          currency: raw.currency || null,
-          check_number: raw.check_number || null,
-          bank_account: raw.bank_account || null,
-          payment_status: raw.payment_status || 'completed',
+          currency: normalizedRaw.currency || null,
+          check_number: normalizedRaw.check_number || null,
+          bank_account: normalizedRaw.bank_account || null,
+          payment_status: normalizedRaw.payment_status || 'completed',
           created_by: user.id,
-          late_fine_amount: lateFineAmount,
+          late_fine_amount: lateFineAmountFromData,
           late_fine_status: lateFineStatus,
           late_fine_type: lateFineType,
-          late_fine_waiver_reason: raw.late_fine_waiver_reason || null,
+          late_fine_waiver_reason: normalizedRaw.late_fine_waiver_reason || null,
           
-          // الحقول الجديدة المضافة
-          agreement_number: raw.agreement_number || null,
-          due_date: raw.due_date || null,
-          original_due_date: raw.original_due_date || null,
-          late_fine_days_overdue: parseNumber(raw.late_fine_days_overdue || 0) || null,
-          reconciliation_status: raw.reconciliation_status || 'pending',
-          description_type: raw.description_type || raw.transaction_type || null,
+          // Enhanced fields from image data
+          agreement_number: normalizedRaw.agreement_number || null,
+          due_date: normalizedRaw.due_date || null,
+          original_due_date: normalizedRaw.original_due_date || null,
+          late_fine_days_overdue: parseNumber(normalizedRaw.late_fine_days_overdue || 0) || null,
+          reconciliation_status: normalizedRaw.reconciliation_status || 'pending',
+          description_type: normalizedRaw.description_type || normalizedRaw.transaction_type || paymentType,
         });
         if (error) {
           failed++;

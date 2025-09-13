@@ -56,6 +56,10 @@ export const csvHeaderMappings: Record<string, string> = {
   'طريقة الدفع': 'payment_type',
   'payment_method': 'payment_method',
   
+  // Payment date variations - دعم الحقول المختصرة في الصورة
+  'payment_da': 'payment_date',
+  'payment_': 'payment_method',
+  
   'transaction_type': 'transaction_type',
   'نوع المعاملة': 'transaction_type',
   'نوع العملية': 'transaction_type',
@@ -86,6 +90,12 @@ export const csvHeaderMappings: Record<string, string> = {
   
   'late_fine_waiver_reason': 'late_fine_waiver_reason',
   'سبب إعفاء الغرامة': 'late_fine_waiver_reason',
+  
+  // Enhanced support for payment types and descriptions
+  'LATE_PAYMENT_FEE': 'type',
+  'rent': 'type',
+  'RENT': 'type',
+  'LATE_PAYMENT': 'type',
   
   // Dates
   'due_date': 'due_date',

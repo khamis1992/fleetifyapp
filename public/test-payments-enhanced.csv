@@ -1,0 +1,16 @@
+amount,amount_paid,balance,payment_da,payment_,description,type,late_fine_amount,agreement_number
+200,0,200,4/1/2025,cash,Monthly rent payment for April 2025,rent,0,319
+75600,75600,0,7/1/2024,cash,JULT RENT 0000119,rent,0,LTO202416
+2100,0,2100,12/1/2024,cash,Advance rent Fee December,rent,0,LTO2024115
+3600,3600,0,,cash,"Auto-generated late payment record for December 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,3600,LTO2024115
+480,480,0,9/5/2024,cash,september rent fee,rent,0,LTO2024177
+3480,3480,0,,cash,"Auto-generated late payment record for September 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,3480,LTO2024177
+3000,0,3000,5/1/2024,cash,May Rent Fees,rent,0,Ret-2018187
+480,480,0,,cash,"Auto-generated late payment record for May 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,480,Ret-2018187
+3360,3360,0,7/29/2024,cash,Advance Rent fee October,rent,0,LTO2024177
+840,840,0,,cash,"Auto-generated late payment record for October 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,840,LTO2024177
+1600,1600,0,6/1/2024,cash,1600 qar as per snoonu agreement,rent,0,LTO202416
+3360,3360,0,9/8/2024,cash,rent fee october (Istimara),rent,0,LTO2024177
+480,480,0,,cash,"Auto-generated late payment record for October 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,480,LTO2024177
+75600,75600,0,7/1/2024,cash,Monthly Rent - July 2024,rent,0,LTO202416
+3600,3600,0,,cash,"Auto-generated late payment record for July 2024 محسوب من وصف الدفعة: متأخرة 30 يوم ص 11:37:55",LATE_PAYMENT_FEE,3600,LTO202416
