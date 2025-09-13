@@ -43,6 +43,9 @@ export const useRealEstateDashboardStats = () => {
     },
     enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 };
 
@@ -50,6 +53,9 @@ async function fetchRealEstateStats(
   companyId: string | undefined, 
   hasGlobalAccess: boolean = false
 ): Promise<RealEstateDashboardStats> {
+  
+  // إضافة timeout للاستعلامات لتجنب التحميل اللانهائي
+  const QUERY_TIMEOUT = 10000; // 10 ثوان
   
   // Helper function to build query with company filtering
   const buildQuery = (baseQuery: any) => {
@@ -63,15 +69,8 @@ async function fetchRealEstateStats(
   };
 
   try {
-    // Execute optimized parallel queries
-    const [
-      propertiesResult,
-      ownersResult,
-      tenantsResult,
-      contractsResult,
-      paymentsResult,
-      revenueResult
-    ] = await Promise.all([
+    // تنفيذ الاستعلامات مع timeout
+    const queryPromise = Promise.all([
       // Properties data with status breakdown
       buildQuery(supabase.from('properties').select('*'))
         .eq('is_active', true),
@@ -96,6 +95,19 @@ async function fetchRealEstateStats(
         .eq('status', 'active')
         .eq('is_active', true)
     ]);
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), QUERY_TIMEOUT);
+    });
+
+    const [
+      propertiesResult,
+      ownersResult,
+      tenantsResult,
+      contractsResult,
+      paymentsResult,
+      revenueResult
+    ] = await Promise.race([queryPromise, timeoutPromise]) as any[];
 
     // Process properties data
     const properties = propertiesResult.data || [];

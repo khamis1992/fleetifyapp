@@ -80,11 +80,38 @@ const OptimizedDashboard: React.FC = () => {
   let businessType = user.company.business_type;
   const companyName = user.company.name;
 
-  // معالجة خاصة للشركات التي تحتوي على "مقاولات" في الاسم
-  // إذا لم يكن لديها business_type محدد أو كان car_rental، نغيره إلى real_estate
-  if (companyName && companyName.includes('مقاولات') && (!businessType || businessType === 'car_rental')) {
-    console.log('🏗️ [OPTIMIZED_DASHBOARD] Company name contains "مقاولات", forcing real_estate type');
-    businessType = 'real_estate';
+  // معالجة ذكية لتحديد نوع النشاط المناسب
+  if (companyName) {
+    // شركات المقاولات والإنشاءات
+    if (companyName.includes('مقاولات') || companyName.includes('إنشاءات') || companyName.includes('عقار')) {
+      if (!businessType || businessType === 'car_rental') {
+        console.log('🏗️ [OPTIMIZED_DASHBOARD] Construction/Real Estate company detected, setting to real_estate');
+        businessType = 'real_estate';
+      }
+    }
+    // شركات السيارات
+    else if (companyName.includes('سيارات') || companyName.includes('تأجير') || companyName.includes('مركبات')) {
+      if (!businessType || businessType === 'real_estate') {
+        console.log('🚗 [OPTIMIZED_DASHBOARD] Car rental company detected, setting to car_rental');
+        businessType = 'car_rental';
+      }
+    }
+    // شركات التجارة
+    else if (companyName.includes('تجارة') || companyName.includes('متجر') || companyName.includes('مبيعات')) {
+      if (!businessType) {
+        console.log('🛍️ [OPTIMIZED_DASHBOARD] Retail company detected, setting to retail');
+        businessType = 'retail';
+      }
+    }
+  }
+
+  // إذا كانت الشركة تحتوي على "إدارة النظام" أو "System Management"، استخدم نوع افتراضي
+  if (companyName && (companyName.includes('إدارة النظام') || companyName.includes('System Management'))) {
+    console.log('⚙️ [OPTIMIZED_DASHBOARD] System management company detected, using default dashboard');
+    // يمكن استخدام أي نوع كافتراضي، أو إنشاء dashboard خاص للإدارة
+    if (!businessType) {
+      businessType = 'retail'; // استخدام retail كافتراضي للشركات الإدارية
+    }
   }
 
   // التأكد من وجود نوع النشاط

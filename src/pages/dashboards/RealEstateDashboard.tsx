@@ -12,8 +12,7 @@ import { PropertyStatsCards } from '@/modules/properties/components/PropertyStat
 import RealEstateQuickActions from '@/components/dashboard/RealEstateQuickActions';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-
-
+import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
 import { PropertyContractsCalendar } from '@/components/property/PropertyContractsCalendar';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { useNavigate } from 'react-router-dom';
@@ -23,11 +22,15 @@ const RealEstateDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
-  const { data: realEstateStats, isLoading: statsLoading } = useRealEstateDashboardStats();
+  const { data: realEstateStats, isLoading: statsLoading, error: statsError } = useRealEstateDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
+
+  // Check if we have no data (empty state)
+  const hasNoData = realEstateStats && realEstateStats.total_properties === 0 && !statsLoading;
+  const companyName = browsedCompany?.name || user?.company?.name || "شركتك";
 
   // Convert real estate data for SmartMetricsPanel
   const smartMetricsData = realEstateStats ? {
@@ -57,6 +60,23 @@ const RealEstateDashboard: React.FC = () => {
   })) || [];
 
 
+
+  // Show empty state if no data
+  if (hasNoData) {
+    return (
+      <>
+        <ProfessionalBackground />
+        <div className="relative z-10 space-y-8">
+          <EnhancedDashboardHeader
+            isBrowsingMode={isBrowsingMode}
+            browsedCompany={browsedCompany}
+            onExitBrowseMode={exitBrowseMode}
+          />
+          <RealEstateEmptyState companyName={companyName} />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -10,11 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react({
-      // إعدادات محددة لـ Lovable.dev
-      fastRefresh: true,
-      jsxRuntime: 'automatic'
-    }),
+    react(),
     mode === 'development' && componentTagger()
   ].filter(Boolean),
   resolve: {
@@ -32,8 +28,7 @@ export default defineConfig(({ mode }) => ({
       'react-dom',
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
-      'lucide-react',
-      'lovable-tagger'
+      'lucide-react'
     ],
     exclude: ['@vite/client', '@vite/env'],
     force: true,
