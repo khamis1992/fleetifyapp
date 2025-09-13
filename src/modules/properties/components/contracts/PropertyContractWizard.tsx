@@ -5,11 +5,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useProperties } from "@/modules/properties/hooks";
 import { useTenants } from "@/modules/tenants/hooks";
+import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 import { PropertyContract } from "@/modules/properties/types";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+
+// Form validation schema
+const contractSchema = z.object({
+  property_id: z.string().min(1, "يجب اختيار العقار"),
+  tenant_id: z.string().min(1, "يجب اختيار المستأجر"),
+  contract_number: z.string().optional(),
+  contract_type: z.string().min(1, "يجب اختيار نوع العقد"),
+  start_date: z.string().min(1, "تاريخ البداية مطلوب"),
+  end_date: z.string().min(1, "تاريخ النهاية مطلوب"),
+  rental_amount: z.number().min(0.01, "مبلغ الإيجار يجب أن يكون أكبر من صفر"),
+  deposit_amount: z.number().min(0, "مبلغ الضمان لا يمكن أن يكون سالب").optional(),
+  commission_amount: z.number().min(0, "العمولة لا يمكن أن تكون سالبة").optional(),
+  payment_frequency: z.string().min(1, "يجب اختيار تكرار الدفع"),
+  grace_period_days: z.number().min(0, "فترة السماح لا يمكن أن تكون سالبة").optional(),
+  terms_and_conditions: z.string().optional(),
+  status: z.string().min(1, "يجب اختيار الحالة"),
+}).refine((data) => {
+  const startDate = new Date(data.start_date);
+  const endDate = new Date(data.end_date);
+  return endDate > startDate;
+}, {
+  message: "تاريخ النهاية يجب أن يكون بعد تاريخ البداية",
+  path: ["end_date"]
+});
+
+type ContractFormData = z.infer<typeof contractSchema>;
 
 interface PropertyContractWizardProps {
   open: boolean;
@@ -27,9 +57,15 @@ export function PropertyContractWizard({
   isEditing = false
 }: PropertyContractWizardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const companyId = useCurrentCompanyId();
   
   const { data: properties, isLoading: propertiesLoading } = useProperties();
   const { data: tenants, isLoading: tenantsLoading } = useTenants();
+  
+  // Calculate default dates
+  const today = new Date();
+  const oneYearLater = new Date(today);
+  oneYearLater.setFullYear(today.getFullYear() + 1);
   
   const {
     register,
@@ -37,52 +73,84 @@ export function PropertyContractWizard({
     formState: { errors },
     reset,
     setValue,
-    watch
-  } = useForm();
+    watch,
+    control
+  } = useForm<ContractFormData>({
+    resolver: zodResolver(contractSchema),
+    defaultValues: {
+      contract_type: 'rental',
+      payment_frequency: 'monthly',
+      status: 'active',
+      start_date: today.toISOString().split('T')[0],
+      end_date: oneYearLater.toISOString().split('T')[0],
+      rental_amount: 0,
+      deposit_amount: 0,
+      commission_amount: 0,
+      grace_period_days: 30
+    }
+  });
 
   // Reset form when dialog opens/closes or initial data changes
   useEffect(() => {
     if (open) {
       if (isEditing && initialData) {
-        // Populate form with existing data
+        // Populate form with existing data with proper types
         setValue("property_id", initialData.property_id);
         setValue("tenant_id", initialData.tenant_id);
-        setValue("contract_number", initialData.contract_number);
+        setValue("contract_number", initialData.contract_number || '');
         setValue("contract_type", initialData.contract_type);
         setValue("start_date", initialData.start_date);
         setValue("end_date", initialData.end_date);
-        setValue("rental_amount", initialData.rental_amount);
-        setValue("deposit_amount", initialData.deposit_amount || '');
-        setValue("commission_amount", initialData.commission_amount || '');
+        setValue("rental_amount", Number(initialData.rental_amount) || 0);
+        setValue("deposit_amount", Number(initialData.deposit_amount) || 0);
+        setValue("commission_amount", Number(initialData.commission_amount) || 0);
         setValue("payment_frequency", initialData.payment_frequency);
-        setValue("grace_period_days", initialData.grace_period_days || '');
+        setValue("grace_period_days", Number(initialData.grace_period_days) || 30);
         setValue("terms_and_conditions", initialData.terms || '');
         setValue("status", initialData.status);
       } else {
-        // Reset form for new contract
+        // Reset form for new contract with proper defaults
         reset({
           contract_type: 'rental',
           payment_frequency: 'monthly',
-          status: 'pending',
-          start_date: new Date().toISOString().split('T')[0],
+          status: 'active',
+          start_date: today.toISOString().split('T')[0],
+          end_date: oneYearLater.toISOString().split('T')[0],
+          rental_amount: 0,
+          deposit_amount: 0,
+          commission_amount: 0,
+          grace_period_days: 30
         });
       }
     }
-  }, [open, isEditing, initialData, setValue, reset]);
+  }, [open, isEditing, initialData, setValue, reset, today, oneYearLater]);
 
-  const onFormSubmit = async (data: any) => {
+  const onFormSubmit = async (data: ContractFormData) => {
+    if (!companyId) {
+      toast.error("خطأ: لم يتم تحديد الشركة");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onSubmit({
+      // Prepare data with company_id and proper types
+      const contractData = {
         ...data,
-        rental_amount: parseFloat(data.rental_amount),
-        deposit_amount: data.deposit_amount ? parseFloat(data.deposit_amount) : null,
-        commission_amount: data.commission_amount ? parseFloat(data.commission_amount) : null,
-        grace_period_days: data.grace_period_days ? parseInt(data.grace_period_days) : null,
-      });
+        company_id: companyId,
+        rental_amount: Number(data.rental_amount),
+        deposit_amount: data.deposit_amount ? Number(data.deposit_amount) : null,
+        commission_amount: data.commission_amount ? Number(data.commission_amount) : null,
+        grace_period_days: data.grace_period_days ? Number(data.grace_period_days) : null,
+        terms: data.terms_and_conditions || null
+      };
+
+      await onSubmit(contractData);
       reset();
+      onOpenChange(false);
+      toast.success(isEditing ? "تم تحديث العقد بنجاح" : "تم إنشاء العقد بنجاح");
     } catch (error) {
       console.error("Error submitting contract:", error);
+      toast.error(isEditing ? "فشل في تحديث العقد" : "فشل في إنشاء العقد");
     } finally {
       setIsSubmitting(false);
     }
@@ -109,40 +177,52 @@ export function PropertyContractWizard({
               {/* Property Selection */}
               <div className="space-y-2">
                 <Label htmlFor="property_id">العقار *</Label>
-                <Select onValueChange={(value) => setValue("property_id", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر العقار" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {properties?.map((property) => (
-                      <SelectItem key={property.id} value={property.id}>
-                        {property.property_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="property_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر العقار" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {properties?.filter(p => p.property_status === 'available' || (isEditing && p.id === field.value))?.map((property) => (
+                          <SelectItem key={property.id} value={property.id}>
+                            {property.property_name || property.property_name_ar || 'عقار غير محدد'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.property_id && (
-                  <p className="text-sm text-destructive">العقار مطلوب</p>
+                  <p className="text-sm text-destructive">{errors.property_id.message}</p>
                 )}
               </div>
 
               {/* Tenant Selection */}
               <div className="space-y-2">
                 <Label htmlFor="tenant_id">المستأجر *</Label>
-                <Select onValueChange={(value) => setValue("tenant_id", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المستأجر" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tenants?.map((tenant) => (
-                      <SelectItem key={tenant.id} value={tenant.id}>
-                        {tenant.full_name || tenant.full_name_ar || ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="tenant_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر المستأجر" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tenants?.filter(t => t.status === 'active' && t.is_active)?.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.full_name || tenant.full_name_ar || 'مستأجر غير محدد'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.tenant_id && (
-                  <p className="text-sm text-destructive">المستأجر مطلوب</p>
+                  <p className="text-sm text-destructive">{errors.tenant_id.message}</p>
                 )}
               </div>
 
@@ -159,16 +239,25 @@ export function PropertyContractWizard({
               {/* Contract Type */}
               <div className="space-y-2">
                 <Label htmlFor="contract_type">نوع العقد *</Label>
-                <Select onValueChange={(value) => setValue("contract_type", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر نوع العقد" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rental">إيجار</SelectItem>
-                    <SelectItem value="sale">بيع</SelectItem>
-                    <SelectItem value="lease">تأجير طويل المدى</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="contract_type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر نوع العقد" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rental">إيجار</SelectItem>
+                        <SelectItem value="sale">بيع</SelectItem>
+                        <SelectItem value="lease">تأجير طويل المدى</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.contract_type && (
+                  <p className="text-sm text-destructive">{errors.contract_type.message}</p>
+                )}
               </div>
 
               {/* Start Date */}
@@ -200,83 +289,133 @@ export function PropertyContractWizard({
               {/* Rental Amount */}
               <div className="space-y-2">
                 <Label htmlFor="rental_amount">مبلغ الإيجار (د.ك) *</Label>
-                <Input
-                  id="rental_amount"
-                  type="number"
-                  step="0.001"
-                  {...register("rental_amount", { required: "مبلغ الإيجار مطلوب" })}
-                  placeholder="0.000"
+                <Controller
+                  name="rental_amount"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="rental_amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                      placeholder="0.00"
+                    />
+                  )}
                 />
                 {errors.rental_amount && (
-                  <p className="text-sm text-destructive">{errors.rental_amount.message as string}</p>
+                  <p className="text-sm text-destructive">{errors.rental_amount.message}</p>
                 )}
               </div>
 
               {/* Deposit Amount */}
               <div className="space-y-2">
                 <Label htmlFor="deposit_amount">مبلغ الضمان (د.ك)</Label>
-                <Input
-                  id="deposit_amount"
-                  type="number"
-                  step="0.001"
-                  {...register("deposit_amount")}
-                  placeholder="0.000"
+                <Controller
+                  name="deposit_amount"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="deposit_amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                      placeholder="0.00"
+                    />
+                  )}
                 />
               </div>
 
               {/* Commission Amount */}
               <div className="space-y-2">
                 <Label htmlFor="commission_amount">العمولة (د.ك)</Label>
-                <Input
-                  id="commission_amount"
-                  type="number"
-                  step="0.001"
-                  {...register("commission_amount")}
-                  placeholder="0.000"
+                <Controller
+                  name="commission_amount"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="commission_amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                      placeholder="0.00"
+                    />
+                  )}
                 />
               </div>
 
               {/* Payment Frequency */}
               <div className="space-y-2">
                 <Label htmlFor="payment_frequency">تكرار الدفع *</Label>
-                <Select onValueChange={(value) => setValue("payment_frequency", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر تكرار الدفع" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">شهري</SelectItem>
-                    <SelectItem value="quarterly">ربع سنوي</SelectItem>
-                    <SelectItem value="semi_annual">نصف سنوي</SelectItem>
-                    <SelectItem value="annual">سنوي</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="payment_frequency"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر تكرار الدفع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">شهري</SelectItem>
+                        <SelectItem value="quarterly">ربع سنوي</SelectItem>
+                        <SelectItem value="semi_annual">نصف سنوي</SelectItem>
+                        <SelectItem value="annual">سنوي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.payment_frequency && (
+                  <p className="text-sm text-destructive">{errors.payment_frequency.message}</p>
+                )}
               </div>
 
               {/* Grace Period */}
               <div className="space-y-2">
                 <Label htmlFor="grace_period_days">فترة السماح (أيام)</Label>
-                <Input
-                  id="grace_period_days"
-                  type="number"
-                  {...register("grace_period_days")}
-                  placeholder="30"
+                <Controller
+                  name="grace_period_days"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="grace_period_days"
+                      type="number"
+                      min="0"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                      placeholder="30"
+                    />
+                  )}
                 />
               </div>
 
               {/* Status */}
               <div className="space-y-2">
                 <Label htmlFor="status">الحالة *</Label>
-                <Select onValueChange={(value) => setValue("status", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الحالة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">في الانتظار</SelectItem>
-                    <SelectItem value="active">نشط</SelectItem>
-                    <SelectItem value="expired">منتهي</SelectItem>
-                    <SelectItem value="cancelled">ملغي</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر الحالة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">في الانتظار</SelectItem>
+                        <SelectItem value="active">نشط</SelectItem>
+                        <SelectItem value="expired">منتهي</SelectItem>
+                        <SelectItem value="cancelled">ملغي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.status && (
+                  <p className="text-sm text-destructive">{errors.status.message}</p>
+                )}
               </div>
             </div>
 

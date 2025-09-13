@@ -1,15 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { PropertyContract } from '../types';
 import { toast } from 'sonner';
 
 export function usePropertyContracts(propertyId?: string) {
+  const companyId = useCurrentCompanyId();
+  
   return useQuery({
-    queryKey: ['property-contracts', propertyId],
+    queryKey: ['property-contracts', companyId, propertyId],
     queryFn: async () => {
+      if (!companyId) return [];
+      
       let query = supabase
         .from('property_contracts')
-        .select('*')
+        .select(`
+          *,
+          properties!fk_property_contracts_property (
+            id,
+            property_name,
+            property_name_ar
+          ),
+          tenants!fk_property_contracts_tenant (
+            id,
+            full_name,
+            full_name_ar
+          )
+        `)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (propertyId) {
@@ -25,7 +43,7 @@ export function usePropertyContracts(propertyId?: string) {
 
       return data as any[];
     },
-    enabled: true,
+    enabled: !!companyId,
   });
 }
 
@@ -54,19 +72,39 @@ export function usePropertyContract(id?: string) {
 
 export function useCreatePropertyContract() {
   const queryClient = useQueryClient();
+  const companyId = useCurrentCompanyId();
 
   return useMutation({
     mutationFn: async (contractData: any) => {
-      // Set status to active to trigger accounting integration
-      const contractWithStatus = {
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
+      // Ensure company_id is included and status defaults to active
+      const contractWithDefaults = {
         ...contractData,
-        status: contractData.status || 'active'
+        company_id: companyId,
+        status: contractData.status || 'active',
+        // Generate contract number if not provided
+        contract_number: contractData.contract_number || `PROP-${Date.now()}`
       };
 
       const { data, error } = await supabase
         .from('property_contracts')
-        .insert(contractWithStatus)
-        .select()
+        .insert(contractWithDefaults)
+        .select(`
+          *,
+          properties!fk_property_contracts_property (
+            id,
+            property_name,
+            property_name_ar
+          ),
+          tenants!fk_property_contracts_tenant (
+            id,
+            full_name,
+            full_name_ar
+          )
+        `)
         .single();
 
       if (error) {
@@ -91,7 +129,8 @@ export function useCreatePropertyContract() {
     },
     onError: (error: any) => {
       console.error('Error creating property contract:', error);
-      toast.error('فشل في إنشاء عقد الإيجار');
+      const errorMessage = error.message || 'فشل في إنشاء عقد الإيجار';
+      toast.error(errorMessage);
     },
   });
 }
