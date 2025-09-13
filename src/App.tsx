@@ -1,6 +1,5 @@
 
-import * as React from "react";
-import { MiniApp } from "@/components/MiniApp";
+import React from "react";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
@@ -80,8 +79,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <MiniApp>
-      <BrowserRouter>
+    <BrowserRouter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
             <TooltipProvider>
@@ -390,14 +388,13 @@ const App = () => {
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-              </CompanyContextProvider>
-            </AuthProvider>
+                </Routes>
+                </CompanyContextProvider>
+              </AuthProvider>
             </TooltipProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </BrowserRouter>
-    </MiniApp>
   );
 };
 
