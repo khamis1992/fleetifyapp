@@ -27,14 +27,12 @@ export default defineConfig(({ mode }) => ({
       'react-dom',
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
-      'lucide-react'
+      'lucide-react',
+      '@supabase/supabase-js'
     ],
-    needsInterop: ['react', 'react-dom'],
     force: true,
     esbuildOptions: {
-      target: 'es2020',
-      mainFields: ['module', 'browser', 'main'],
-      conditions: ['browser', 'development', 'module']
+      target: 'es2020'
     }
   },
   esbuild: {
