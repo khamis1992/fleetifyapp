@@ -205,31 +205,32 @@ export function useBulkPaymentOperations() {
           }
 
           // إعداد بيانات المدفوعة
+          const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
           const methodInput = normalized.payment_method ?? normalized.payment_type ?? normalized.method ?? normalized.mode;
-          let method = normalizePaymentMethod(methodInput);
+          let paymentType = normalizePaymentMethod(methodInput);
+          let paymentMethod = txType === 'receipt' ? 'received' : 'made';
           
           // تسجيل مفصل للتشخيص
           console.log(`🔍 [ROW ${i + 1}] Payment method processing:`, {
             input: methodInput,
-            normalized: method,
+            normalized: paymentType,
+            paymentMethod: paymentMethod,
             validMethods: Constants.public.Enums.payment_method,
-            isValid: (Constants.public.Enums.payment_method as readonly string[]).includes(method as any)
+            isValid: (Constants.public.Enums.payment_method as readonly string[]).includes(paymentType as any)
           });
           
-          if (!(Constants.public.Enums.payment_method as readonly string[]).includes(method as any)) {
+          if (!(Constants.public.Enums.payment_method as readonly string[]).includes(paymentType as any)) {
             console.warn(`⚠️ طريقة دفع غير معروفة في السطر ${i + 1}:`, methodInput, '— سيتم استخدام cash');
-            method = 'cash';
+            paymentType = 'cash';
           }
-          
-          const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
 
           const paymentData = {
             company_id: companyId,
             payment_number: normalized.payment_number || formatPaymentNumber(++lastPaymentNumber),
             payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
             amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
-            payment_method: method,
-            payment_type: method,
+          payment_method: paymentMethod,
+          payment_type: paymentType,
             reference_number: normalized.reference_number,
             notes: normalized.notes || normalized.description,
             customer_id: customerId,
