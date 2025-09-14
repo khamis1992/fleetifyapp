@@ -5,12 +5,14 @@
 
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
 import { 
   Zap, 
   Download, 
@@ -58,8 +60,16 @@ export function FastProcessingMode({
   
   const [uploadErrors, setUploadErrors] = useState<Array<{ row: number; message: string }>>([]);
   const [uploadedData, setUploadedData] = useState<any[]>([]);
+  const [lastUploadResult, setLastUploadResult] = useState<any>(null);
+  const [showAutoFixSettings, setShowAutoFixSettings] = useState(false);
 
-  const { bulkUploadPayments, isProcessing: isBulkProcessing, progress } = useBulkPaymentOperations();
+  const { 
+    bulkUploadPayments, 
+    isProcessing: isBulkProcessing, 
+    progress,
+    autoFixConfig,
+    setAutoFixConfig
+  } = useBulkPaymentOperations();
 
   // معالجة الملف مع النمط السريع
   const handleFastUpload = useCallback(async (data: any[]) => {
@@ -99,12 +109,15 @@ export function FastProcessingMode({
       // حفظ البيانات للتشخيص
       setUploadedData(data);
       
-      // استخدام العمليات المجمعة المحسنة
+      // استخدام العمليات المجمعة المحسنة مع الإصلاح التلقائي
       const result = await bulkUploadPayments(data, {
         batchSize: processingSettings.batchSize,
         autoCreateCustomers: processingSettings.autoCreateCustomers,
-        skipValidation: processingSettings.skipValidation
+        skipValidation: processingSettings.skipValidation,
+        useAutoFix: true
       });
+      
+      setLastUploadResult(result);
       
       // حفظ الأخطاء للتشخيص
       setUploadErrors(result.errors || []);
@@ -166,6 +179,20 @@ export function FastProcessingMode({
     }));
   };
 
+  const downloadCleanedCSV = () => {
+    if (!lastUploadResult?.cleanedCSV) return;
+    
+    const blob = new Blob([lastUploadResult.cleanedCSV], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cleaned-payments-${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* معلومات النمط */}
@@ -180,10 +207,83 @@ export function FastProcessingMode({
           <Alert>
             <Timer className="h-4 w-4" />
             <AlertDescription>
-              هذا النمط مصمم للملفات الكبيرة (أكثر من 1000 سجل) مع التركيز على السرعة. 
-              يستخدم معالجة مجمعة وتحسينات خاصة لتحقيق أقصى سرعة ممكنة.
+              المعالجة السريعة مع الإصلاح التلقائي بالذكاء الاصطناعي. يتم تنظيف البيانات وإصلاح الأخطاء تلقائياً.
             </AlertDescription>
           </Alert>
+
+          {/* Auto-Fix Settings */}
+          <Collapsible open={showAutoFixSettings} onOpenChange={setShowAutoFixSettings}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  إعدادات الإصلاح التلقائي
+                </div>
+                <Badge variant="secondary">
+                  {Object.values(autoFixConfig).filter(Boolean).length} مفعلة
+                </Badge>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">خيارات الإصلاح التلقائي</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="autoFillDates">تعبئة التواريخ المفقودة</Label>
+                    <Switch
+                      id="autoFillDates"
+                      checked={autoFixConfig.autoFillEmptyDates}
+                      onCheckedChange={(checked) => 
+                        setAutoFixConfig(prev => ({ ...prev, autoFillEmptyDates: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="autoFillPaymentMethods">إصلاح طرق الدفع</Label>
+                    <Switch
+                      id="autoFillPaymentMethods"
+                      checked={autoFixConfig.autoFillEmptyPaymentMethods}
+                      onCheckedChange={(checked) => 
+                        setAutoFixConfig(prev => ({ ...prev, autoFillEmptyPaymentMethods: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="normalizePaymentMethods">توحيد طرق الدفع</Label>
+                    <Switch
+                      id="normalizePaymentMethods"
+                      checked={autoFixConfig.normalizePaymentMethods}
+                      onCheckedChange={(checked) => 
+                        setAutoFixConfig(prev => ({ ...prev, normalizePaymentMethods: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="cleanNumeric">تنظيف الأرقام</Label>
+                    <Switch
+                      id="cleanNumeric"
+                      checked={autoFixConfig.cleanNumericFields}
+                      onCheckedChange={(checked) => 
+                        setAutoFixConfig(prev => ({ ...prev, cleanNumericFields: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="autoCreateCustomers">إنشاء العملاء تلقائياً</Label>
+                    <Switch
+                      id="autoCreateCustomers"
+                      checked={autoFixConfig.autoCreateCustomers}
+                      onCheckedChange={(checked) => 
+                        setAutoFixConfig(prev => ({ ...prev, autoCreateCustomers: checked }))
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -313,6 +413,46 @@ export function FastProcessingMode({
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-Fix Results */}
+      {lastUploadResult?.fixes && lastUploadResult.fixes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              نتائج الإصلاح التلقائي
+            </CardTitle>
+            <CardDescription>
+              تم إصلاح {lastUploadResult.fixes.length} خطأ تلقائياً
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {lastUploadResult.fixes.slice(0, 5).map((fix: any, index: number) => (
+                <div key={index} className="text-sm text-muted-foreground">
+                  السطر {fix.row}: {fix.reason} - {fix.field}
+                </div>
+              ))}
+              {lastUploadResult.fixes.length > 5 && (
+                <div className="text-sm text-muted-foreground">
+                  و {lastUploadResult.fixes.length - 5} إصلاحات أخرى...
+                </div>
+              )}
+            </div>
+            {lastUploadResult.cleanedCSV && (
+              <Button 
+                onClick={downloadCleanedCSV}
+                variant="outline" 
+                size="sm" 
+                className="mt-3"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                تحميل البيانات المصححة
+              </Button>
             )}
           </CardContent>
         </Card>

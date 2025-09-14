@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { normalizeCsvHeaders } from '@/utils/csvHeaderMapping';
 import { parseNumber } from '@/utils/numberFormatter';
 import { Constants } from '@/integrations/supabase/types';
+import { CSVAutoFix, type AutoFixConfig } from '@/utils/csvAutoFix';
 
 interface BulkOperationResult {
   total: number;
@@ -23,6 +24,16 @@ export function useBulkPaymentOperations() {
   const { companyId } = useUnifiedCompanyAccess();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [autoFixConfig, setAutoFixConfig] = useState<AutoFixConfig>({
+    autoFillEmptyDates: true,
+    autoFillEmptyPaymentMethods: true,
+    autoFillEmptyTypes: true,
+    autoCreateCustomers: true,
+    normalizePaymentMethods: true,
+    cleanNumericFields: true,
+    defaultPaymentMethod: 'cash',
+    defaultType: 'receipt'
+  });
 
   // عملية رفع مجمعة محسنة
   const bulkUploadPayments = async (
@@ -31,10 +42,15 @@ export function useBulkPaymentOperations() {
       batchSize?: number;
       autoCreateCustomers?: boolean;
       skipValidation?: boolean;
+      useAutoFix?: boolean;
     } = {}
-  ): Promise<BulkOperationResult> => {
+  ): Promise<BulkOperationResult & { 
+    fixedData?: any[];
+    fixes?: Array<{ row: number; field: string; original: any; fixed: any; reason: string }>;
+    cleanedCSV?: string;
+  }> => {
     const startTime = Date.now();
-    const { batchSize = 100, autoCreateCustomers = false, skipValidation = false } = options;
+    const { batchSize = 100, autoCreateCustomers = false, skipValidation = false, useAutoFix = false } = options;
     
     console.log(`🚀 بدء العملية المجمعة للمدفوعات (${data.length} سجل)`);
     setIsProcessing(true);
@@ -43,8 +59,27 @@ export function useBulkPaymentOperations() {
     try {
       if (!companyId) throw new Error('معرف الشركة غير متوفر');
 
+      let processedData = data;
+      let autoFixes: Array<{ row: number; field: string; original: any; fixed: any; reason: string }> = [];
+      let cleanedCSV = '';
+
+      // Apply auto-fix if enabled
+      if (useAutoFix) {
+        const autoFixer = new CSVAutoFix(autoFixConfig);
+        const { fixedData, fixes } = autoFixer.autoFixData(data);
+        processedData = fixedData;
+        autoFixes = fixes;
+        cleanedCSV = autoFixer.generateCleanedCSV(fixedData);
+        
+        console.log(`🔧 تم تطبيق الإصلاح التلقائي: ${fixes.length} إصلاح`);
+
+        if (fixes.length > 0) {
+          toast.success(`تم إصلاح ${fixes.length} خطأ تلقائياً في البيانات`);
+        }
+      }
+
       // تحضير البيانات للمعالجة المجمعة
-      const { payments, errors: preparationErrors } = await prepareBulkPayments(data, companyId, { autoCreateCustomers, skipValidation });
+      const { payments, errors: preparationErrors } = await prepareBulkPayments(processedData, companyId, { autoCreateCustomers, skipValidation });
       
       // تقسيم البيانات إلى مجموعات
       const batches = [];
@@ -108,7 +143,10 @@ export function useBulkPaymentOperations() {
         successful,
         failed,
         errors,
-        processingTime
+        processingTime,
+        fixedData: useAutoFix ? processedData : undefined,
+        fixes: useAutoFix ? autoFixes : undefined,
+        cleanedCSV: useAutoFix ? cleanedCSV : undefined
       };
 
     } catch (error: any) {
@@ -359,6 +397,8 @@ export function useBulkPaymentOperations() {
   return {
     bulkUploadPayments,
     isProcessing,
-    progress
+    progress,
+    autoFixConfig,
+    setAutoFixConfig
   };
 }

@@ -1,593 +1,303 @@
-import { format, parse, isValid } from 'date-fns';
-import { normalizeArabicDigits, parseNumber, cleanNumericString } from './numberFormatter';
-import { detectDateFormat, normalizeDateValue } from './dateDetection';
+import { parseNumber, cleanNumericString } from './numberFormatter';
+import { format } from 'date-fns';
 
-export interface FixResult {
-  success: boolean;
-  originalValue: any;
-  fixedValue: any;
-  confidence: 'high' | 'medium' | 'low';
-  reason: string;
+export interface AutoFixConfig {
+  autoFillEmptyDates: boolean;
+  autoFillEmptyPaymentMethods: boolean;
+  autoFillEmptyTypes: boolean;
+  autoCreateCustomers: boolean;
+  normalizePaymentMethods: boolean;
+  cleanNumericFields: boolean;
+  defaultPaymentMethod: string;
+  defaultType: string;
 }
 
-export interface CSVRowFix {
-  rowNumber: number;
-  originalData: Record<string, any>;
-  fixedData: Record<string, any>;
-  fixes: Array<{
-    field: string;
-    fix: FixResult;
-  }>;
-  hasErrors: boolean;
-  validationErrors: string[];
-}
+export const DEFAULT_AUTO_FIX_CONFIG: AutoFixConfig = {
+  autoFillEmptyDates: true,
+  autoFillEmptyPaymentMethods: true,
+  autoFillEmptyTypes: true,
+  autoCreateCustomers: true,
+  normalizePaymentMethods: true,
+  cleanNumericFields: true,
+  defaultPaymentMethod: 'cash',
+  defaultType: 'receipt'
+};
 
-// تنسيقات التاريخ الشائعة
-const DATE_FORMATS = [
-  'dd/MM/yyyy',
-  'MM/dd/yyyy',
-  'yyyy-MM-dd',
-  'dd-MM-yyyy',
-  'MM-dd-yyyy',
-  'dd.MM.yyyy',
-  'MM.dd.yyyy',
-  'yyyy/MM/dd',
-];
+// Enhanced payment method mappings
+const PAYMENT_METHOD_MAPPINGS: Record<string, string> = {
+  // Arabic
+  'نقد': 'cash',
+  'نقدي': 'cash',
+  'كاش': 'cash',
+  'شيك': 'check',
+  'شيكات': 'check',
+  'تحويل': 'bank_transfer',
+  'تحويل بنكي': 'bank_transfer',
+  'بنك': 'bank_transfer',
+  'بطاقة': 'credit_card',
+  'بطاقة ائتمان': 'credit_card',
+  'فيزا': 'credit_card',
+  'ماستر': 'credit_card',
+  
+  // English variations
+  'cash': 'cash',
+  'money': 'cash',
+  'received': 'cash',
+  'paid': 'cash',
+  'check': 'check',
+  'cheque': 'check',
+  'transfer': 'bank_transfer',
+  'bank': 'bank_transfer',
+  'wire': 'bank_transfer',
+  'card': 'credit_card',
+  'credit': 'credit_card',
+  'debit': 'debit_card',
+  'visa': 'credit_card',
+  'mastercard': 'credit_card',
+  'master': 'credit_card',
+  
+  // Common misspellings
+  'cassh': 'cash',
+  'chash': 'cash',
+  'cach': 'cash',
+  'transfert': 'bank_transfer',
+  'banktransfer': 'bank_transfer',
+  'creditcard': 'credit_card',
+  'debitcard': 'debit_card'
+};
 
-// أرقام الهواتف الكويتية
-const KUWAIT_PHONE_PATTERNS = [
-  /^(\+965\s?)?([2569]\d{7})$/,
-  /^(\+965\s?)?([2569]\d{3}\s?\d{4})$/,
-  /^(\+965\s?)?([2569]\d{3}-\d{4})$/,
-];
-
-// أرقام الهواتف القطرية
-const QATAR_PHONE_PATTERNS = [
-  /^(\+974\s?)?([3567]\d{7})$/,
-  /^(\+974\s?)?([3567]\d{3}\s?\d{4})$/,
-  /^(\+974\s?)?([3567]\d{3}-\d{4})$/,
-];
+const TYPE_MAPPINGS: Record<string, string> = {
+  // Arabic
+  'ايصال': 'receipt',
+  'استلام': 'receipt',
+  'دفع': 'payment',
+  'دفعة': 'receipt',
+  'سداد': 'receipt',
+  'ايجار': 'receipt',
+  'رسوم': 'receipt',
+  'غرامة': 'receipt',
+  
+  // English
+  'receipt': 'receipt',
+  'received': 'receipt',
+  'payment': 'receipt',
+  'rent': 'receipt',
+  'fee': 'receipt',
+  'fine': 'receipt',
+  'late_payment_fee': 'receipt',
+  'late_fee': 'receipt'
+};
 
 export class CSVAutoFix {
-  /**
-   * التعرّف على القيم الشكلية غير الصالحة لأرقام الهاتف (مثل 0 و N/A و - )
-   */
-  static isInvalidPhonePlaceholder(value: any): boolean {
-    if (value === null || value === undefined) return true;
-    let s = String(value).trim().toLowerCase();
-    // بدائل شائعة للقيم غير الصالحة
-    const invalidTokens = new Set(['', '0', '00', '00000000', '-', '—', 'n/a', 'na', 'لايوجد', 'لا يوجد']);
-    if (invalidTokens.has(s)) return true;
-    // إزالة كل ما هو غير أرقام والتحقق إن كانت كلها أصفار
-    const digits = s.replace(/[^0-9]/g, '');
-    if (digits.length === 0) return true;
-    if (/^0+$/.test(digits)) return true;
-    return false;
+  private config: AutoFixConfig;
+  private fixes: Array<{ row: number; field: string; original: any; fixed: any; reason: string }> = [];
+
+  constructor(config: Partial<AutoFixConfig> = {}) {
+    this.config = { ...DEFAULT_AUTO_FIX_CONFIG, ...config };
   }
 
-  /**
-   * التعرّف على القيم الشكلية غير الصالحة للأرقام (مثل 0، 0.0، -، N/A)
-   */
-  static isInvalidNumberPlaceholder(value: any): boolean {
-    if (value === null || value === undefined) return true;
-    const s = String(value).trim().toLowerCase();
-    const invalidTokens = new Set(['', '0', '00', '0.0', '0,0', '-', '—', 'n/a', 'na', 'لايوجد', 'لا يوجد']);
-    if (invalidTokens.has(s)) return true;
-    // إذا كانت كل الأرقام أصفار (مع أو بدون فاصلة عشرية)
-    const digits = s.replace(/[^0-9.]/g, '');
-    if (digits === '' || /^0*\.?0*$/.test(digits)) return true;
-    return false;
+  public autoFixData(data: any[]): { fixedData: any[]; fixes: typeof this.fixes } {
+    this.fixes = [];
+    const fixedData = data.map((row, index) => this.autoFixRow(row, index));
+    return { fixedData, fixes: this.fixes };
   }
 
-  /**
-   * إصلاح التواريخ باستخدام النظام الذكي الجديد
-   */
-  static fixDate(value: any): FixResult {
-    if (!value || value === '') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'القيمة فارغة'
-      };
-    }
+  private autoFixRow(row: any, rowIndex: number): any {
+    const fixed = { ...row };
 
-    const normalized = normalizeDateValue(value);
-    if (!normalized) {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'قيمة تاريخ غير صحيحة'
-      };
-    }
-
-    const detection = detectDateFormat(value);
-    
-    if (detection.isDate && detection.parsedDate) {
-      const isoDate = detection.parsedDate.toISOString().split('T')[0];
-      const wasFixed = String(value).trim() !== isoDate;
-      
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: isoDate,
-        confidence: detection.confidence >= 80 ? 'high' : detection.confidence >= 60 ? 'medium' : 'low',
-        reason: wasFixed 
-          ? `تحويل من ${detection.detectedFormat} (ثقة: ${detection.confidence}%)`
-          : 'تم تنسيق التاريخ'
-      };
-    }
-
-    // محاولة تحليل تقليدي كخيار احتياطي
-    const stringValue = String(value).trim();
-    
-    // إذا كان التاريخ صحيحاً بالفعل
-    if (isValid(new Date(stringValue))) {
-      const parsedDate = new Date(stringValue);
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: format(parsedDate, 'yyyy-MM-dd'),
-        confidence: 'high',
-        reason: 'تم تنسيق التاريخ'
-      };
-    }
-
-    // محاولة تحليل التاريخ بصيغ تقليدية
-    for (const dateFormat of DATE_FORMATS) {
-      try {
-        const parsedDate = parse(stringValue, dateFormat, new Date());
-        if (isValid(parsedDate)) {
-          return {
-            success: true,
-            originalValue: value,
-            fixedValue: format(parsedDate, 'yyyy-MM-dd'),
-            confidence: 'medium',
-            reason: `تم تحويل من ${dateFormat} إلى yyyy-MM-dd`
-          };
+    // Clean and normalize all string fields
+    Object.keys(fixed).forEach(key => {
+      if (typeof fixed[key] === 'string') {
+        const original = fixed[key];
+        fixed[key] = this.cleanString(fixed[key]);
+        if (original !== fixed[key] && original.trim() !== '') {
+          this.addFix(rowIndex, key, original, fixed[key], 'تنظيف النص وإزالة المسافات الزائدة');
         }
-      } catch (error) {
-        // تجاهل أخطاء التحليل
+      }
+    });
+
+    // Auto-fix payment date
+    if (this.config.autoFillEmptyDates && this.isEmptyField(fixed.payment_date)) {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      this.addFix(rowIndex, 'payment_date', fixed.payment_date, today, 'تعبئة تاريخ اليوم تلقائياً');
+      fixed.payment_date = today;
+    }
+
+    // Normalize and fix payment method
+    if (this.config.normalizePaymentMethods && fixed.payment_method) {
+      const normalized = this.normalizePaymentMethod(fixed.payment_method);
+      if (normalized !== fixed.payment_method) {
+        this.addFix(rowIndex, 'payment_method', fixed.payment_method, normalized, 'توحيد طريقة الدفع');
+        fixed.payment_method = normalized;
       }
     }
 
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: `تنسيق تاريخ غير مدعوم (ثقة: ${detection.confidence}%)`
-    };
-  }
-
-  /**
-   * إصلاح الأرقام التلقائي مع دعم النظام الموحد
-   */
-  static fixNumber(value: any): FixResult {
-    if (value === null || value === undefined || value === '') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'القيمة فارغة'
-      };
+    // Auto-fill empty payment method
+    if (this.config.autoFillEmptyPaymentMethods && this.isEmptyField(fixed.payment_method)) {
+      this.addFix(rowIndex, 'payment_method', fixed.payment_method, this.config.defaultPaymentMethod, 'تعبئة طريقة الدفع الافتراضية');
+      fixed.payment_method = this.config.defaultPaymentMethod;
     }
 
-    const stringValue = String(value).trim();
-    
-    // استخدام النظام الموحد لتنظيف الأرقام
-    const cleanedValue = cleanNumericString(stringValue);
-    
-    if (cleanedValue === '') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'لا توجد أرقام في القيمة'
-      };
-    }
-
-    // استخدام parseNumber من النظام الموحد
-    const numericValue = parseNumber(cleanedValue);
-    
-    if (!isNaN(numericValue) && numericValue !== 0) {
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: numericValue,
-        confidence: stringValue === cleanedValue ? 'high' : 'medium',
-        reason: stringValue === cleanedValue ? 'رقم صحيح' : 'تم تحويل الأرقام العربية وإزالة الرموز غير الرقمية'
-      };
-    }
-
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: 'لا يمكن تحويل إلى رقم صحيح'
-    };
-  }
-
-  /**
-   * إصلاح رقم الهاتف القطري مع دعم النظام الموحد
-   */
-  static fixQatarPhone(value: any): FixResult {
-    if (!value || value === '' || value === '0') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: value === '0' ? 'قيمة غير صحيحة (0)' : 'القيمة فارغة'
-      };
-    }
-
-    let phoneValue = String(value).trim();
-    
-    // استخدام النظام الموحد لتحويل الأرقام العربية
-    phoneValue = normalizeArabicDigits(phoneValue);
-    
-    // إزالة المسافات والشرطات الإضافية
-    phoneValue = phoneValue.replace(/\s+/g, '').replace(/-+/g, '');
-    
-    // إضافة رمز قطر إذا لم يكن موجوداً
-    if (!phoneValue.startsWith('+974') && !phoneValue.startsWith('974')) {
-      if (phoneValue.length === 8 && /^[3567]/.test(phoneValue)) {
-        phoneValue = '+974' + phoneValue;
-      }
-    } else if (phoneValue.startsWith('974')) {
-      phoneValue = '+' + phoneValue;
-    }
-
-    // التحقق من صحة الرقم
-    for (const pattern of QATAR_PHONE_PATTERNS) {
-      if (pattern.test(phoneValue)) {
-        return {
-          success: true,
-          originalValue: value,
-          fixedValue: phoneValue,
-          confidence: 'high',
-          reason: 'تم تنسيق رقم الهاتف القطري وتحويل الأرقام العربية'
-        };
+    // Normalize and fix type
+    if (fixed.type) {
+      const normalizedType = this.normalizeType(fixed.type);
+      if (normalizedType !== fixed.type) {
+        this.addFix(rowIndex, 'type', fixed.type, normalizedType, 'توحيد نوع العملية');
+        fixed.type = normalizedType;
       }
     }
 
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: 'رقم هاتف قطري غير صحيح'
-    };
-  }
-
-  /**
-   * إصلاح رقم الهاتف الكويتي مع دعم النظام الموحد
-   */
-  static fixKuwaitPhone(value: any): FixResult {
-    if (!value || value === '' || value === '0') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: value === '0' ? 'قيمة غير صحيحة (0)' : 'القيمة فارغة'
-      };
+    // Auto-fill empty type
+    if (this.config.autoFillEmptyTypes && this.isEmptyField(fixed.type)) {
+      this.addFix(rowIndex, 'type', fixed.type, this.config.defaultType, 'تعبئة نوع العملية الافتراضي');
+      fixed.type = this.config.defaultType;
     }
 
-    let phoneValue = String(value).trim();
-    
-    // استخدام النظام الموحد لتحويل الأرقام العربية
-    phoneValue = normalizeArabicDigits(phoneValue);
-    
-    // إزالة المسافات والشرطات الإضافية
-    phoneValue = phoneValue.replace(/\s+/g, '').replace(/-+/g, '');
-    
-    // إضافة رمز الكويت إذا لم يكن موجوداً
-    if (!phoneValue.startsWith('+965') && !phoneValue.startsWith('965')) {
-      if (phoneValue.length === 8 && /^[2569]/.test(phoneValue)) {
-        phoneValue = '+965' + phoneValue;
-      }
-    } else if (phoneValue.startsWith('965')) {
-      phoneValue = '+' + phoneValue;
-    }
-
-    // التحقق من صحة الرقم
-    for (const pattern of KUWAIT_PHONE_PATTERNS) {
-      if (pattern.test(phoneValue)) {
-        return {
-          success: true,
-          originalValue: value,
-          fixedValue: phoneValue,
-          confidence: 'high',
-          reason: 'تم تنسيق رقم الهاتف الكويتي وتحويل الأرقام العربية'
-        };
-      }
-    }
-
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: 'رقم هاتف كويتي غير صحيح'
-    };
-  }
-
-  /**
-   * إصلاح رقم الهاتف (يحدد البلد تلقائياً)
-   */
-  static fixPhone(value: any, country: 'kuwait' | 'qatar' = 'qatar'): FixResult {
-    if (country === 'kuwait') {
-      return this.fixKuwaitPhone(value);
-    } else {
-      return this.fixQatarPhone(value);
-    }
-  }
-
-  /**
-   * إصلاح البريد الإلكتروني
-   */
-  static fixEmail(value: any): FixResult {
-    if (!value || value === '') {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'القيمة فارغة'
-      };
-    }
-
-    let emailValue = String(value).trim().toLowerCase();
-    
-    // إزالة المسافات
-    emailValue = emailValue.replace(/\s+/g, '');
-    
-    // أخطاء شائعة في البريد الإلكتروني
-    const commonFixes = [
-      { from: '@gmai.com', to: '@gmail.com' },
-      { from: '@gmail.co', to: '@gmail.com' },
-      { from: '@yahooo.com', to: '@yahoo.com' },
-      { from: '@yahoo.co', to: '@yahoo.com' },
-      { from: '@hotmai.com', to: '@hotmail.com' },
-      { from: '@outlook.co', to: '@outlook.com' },
-    ];
-
-    for (const fix of commonFixes) {
-      if (emailValue.includes(fix.from)) {
-        emailValue = emailValue.replace(fix.from, fix.to);
-      }
-    }
-
-    // التحقق من صحة البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    if (emailRegex.test(emailValue)) {
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: emailValue,
-        confidence: emailValue === String(value).trim().toLowerCase() ? 'high' : 'medium',
-        reason: 'تم تنسيق البريد الإلكتروني'
-      };
-    }
-
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: 'بريد إلكتروني غير صحيح'
-    };
-  }
-
-  /**
-   * إصلاح القيم المنطقية
-   */
-  static fixBoolean(value: any): FixResult {
-    if (value === null || value === undefined) {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'القيمة فارغة'
-      };
-    }
-
-    const stringValue = String(value).trim().toLowerCase();
-    
-    const trueValues = ['true', 'yes', 'y', '1', 'نعم', 'صحيح', 'موافق'];
-    const falseValues = ['false', 'no', 'n', '0', 'لا', 'خطأ', 'غير موافق'];
-    
-    if (trueValues.includes(stringValue)) {
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: true,
-        confidence: 'high',
-        reason: 'تم تحويل إلى true'
-      };
-    }
-    
-    if (falseValues.includes(stringValue)) {
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: false,
-        confidence: 'high',
-        reason: 'تم تحويل إلى false'
-      };
-    }
-
-    return {
-      success: false,
-      originalValue: value,
-      fixedValue: value,
-      confidence: 'low',
-      reason: 'لا يمكن تحويل إلى قيمة منطقية'
-    };
-  }
-
-  /**
-   * إصلاح النصوص (تنظيف) مع استخدام النظام الموحد
-   */
-  static fixText(value: any): FixResult {
-    if (value === null || value === undefined) {
-      return {
-        success: false,
-        originalValue: value,
-        fixedValue: value,
-        confidence: 'low',
-        reason: 'القيمة فارغة'
-      };
-    }
-
-    let textValue = String(value);
-    const originalText = textValue;
-    
-    // إزالة المسافات الإضافية
-    textValue = textValue.trim().replace(/\s+/g, ' ');
-    
-    // استخدام النظام الموحد لتحويل الأرقام العربية
-    textValue = normalizeArabicDigits(textValue);
-
-    if (textValue !== originalText) {
-      return {
-        success: true,
-        originalValue: value,
-        fixedValue: textValue,
-        confidence: 'medium',
-        reason: 'تم تنظيف النص وتحويل الأرقام العربية باستخدام النظام الموحد'
-      };
-    }
-
-    return {
-      success: true,
-      originalValue: value,
-      fixedValue: textValue,
-      confidence: 'high',
-      reason: 'النص سليم'
-    };
-  }
-
-  /**
-   * إصلاح صف كامل من البيانات
-   */
-  static fixRow(
-    data: Record<string, any>,
-    rowNumber: number,
-    fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>,
-    requiredFields: string[] = [],
-    country: 'kuwait' | 'qatar' = 'qatar'
-  ): CSVRowFix {
-    const fixedData = { ...data };
-    const fixes: Array<{ field: string; fix: FixResult }> = [];
-    const validationErrors: string[] = [];
-
-    // التحقق من الحقول المطلوبة
-    for (const field of requiredFields) {
-      const value = data[field];
-      const typeOfField = fieldTypes[field];
-      const isMissing =
-        value === undefined ||
-        value === null ||
-        String(value).trim() === '' ||
-        (typeOfField === 'phone' && this.isInvalidPhonePlaceholder(value)) ||
-        (typeOfField === 'number' && this.isInvalidNumberPlaceholder(value));
-      if (isMissing) {
-        validationErrors.push(`الحقل ${field} مطلوب`);
-      }
-    }
-
-    // إصلاح كل حقل حسب نوعه
-    for (const [field, type] of Object.entries(fieldTypes)) {
-      if (data[field] !== undefined && data[field] !== null) {
-        let fixResult: FixResult;
-
-        switch (type) {
-          case 'date':
-            fixResult = this.fixDate(data[field]);
-            break;
-          case 'number':
-            fixResult = this.fixNumber(data[field]);
-            break;
-          case 'email':
-            fixResult = this.fixEmail(data[field]);
-            break;
-          case 'phone':
-            fixResult = this.fixPhone(data[field], country);
-            break;
-          case 'boolean':
-            fixResult = this.fixBoolean(data[field]);
-            break;
-          case 'text':
-          default:
-            fixResult = this.fixText(data[field]);
-            break;
-        }
-
-        if (type === 'phone' && !fixResult.success && !requiredFields.includes(field) && this.isInvalidPhonePlaceholder(data[field])) {
-          // تجاهل القيم الشكلية مثل "0" أو "-" في الحقول غير المطلوبة (هاتف)
-          const placeholderFix: FixResult = {
-            success: true,
-            originalValue: data[field],
-            fixedValue: undefined,
-            confidence: 'high',
-            reason: 'تم إهمال قيمة هاتف غير صالحة'
-          };
-          fixedData[field] = undefined;
-          fixes.push({ field, fix: placeholderFix });
-        } else if (type === 'number' && !fixResult.success && !requiredFields.includes(field) && this.isInvalidNumberPlaceholder(data[field])) {
-          // تجاهل القيم الشكلية للأرقام في الحقول غير المطلوبة
-          const numPlaceholderFix: FixResult = {
-            success: true,
-            originalValue: data[field],
-            fixedValue: undefined,
-            confidence: 'high',
-            reason: 'تم إهمال قيمة رقمية غير صالحة'
-          };
-          fixedData[field] = undefined;
-          fixes.push({ field, fix: numPlaceholderFix });
-        } else if (fixResult.success) {
-          fixedData[field] = fixResult.fixedValue;
-          if (fixResult.originalValue !== fixResult.fixedValue) {
-            fixes.push({ field, fix: fixResult });
+    // Clean and fix numeric fields
+    if (this.config.cleanNumericFields) {
+      ['amount', 'amount_paid', 'balance', 'late_fine_amount'].forEach(field => {
+        if (fixed[field] !== undefined && fixed[field] !== null) {
+          const original = fixed[field];
+          const cleaned = this.cleanAndParseNumber(fixed[field]);
+          if (original !== cleaned && !isNaN(cleaned)) {
+            this.addFix(rowIndex, field, original, cleaned, 'تنظيف وتحويل الرقم');
+            fixed[field] = cleaned;
           }
-        } else if (requiredFields.includes(field)) {
-          validationErrors.push(`${field}: ${fixResult.reason}`);
         }
-      }
+      });
     }
 
+    // Generate payment number if missing
+    if (this.isEmptyField(fixed.payment_number)) {
+      const paymentNumber = `PAY-${Date.now()}-${rowIndex + 1}`;
+      this.addFix(rowIndex, 'payment_number', fixed.payment_number, paymentNumber, 'توليد رقم الدفعة تلقائياً');
+      fixed.payment_number = paymentNumber;
+    }
+
+    // Set default currency
+    if (this.isEmptyField(fixed.currency)) {
+      this.addFix(rowIndex, 'currency', fixed.currency, 'KWD', 'تعبئة العملة الافتراضية');
+      fixed.currency = 'KWD';
+    }
+
+    return fixed;
+  }
+
+  private cleanString(value: string): string {
+    if (typeof value !== 'string') return value;
+    return value.trim().replace(/\s+/g, ' ').replace(/[^\S ]/g, '');
+  }
+
+  private normalizePaymentMethod(method: string): string {
+    if (!method) return method;
+    
+    const cleaned = this.cleanString(method).toLowerCase();
+    const mapped = PAYMENT_METHOD_MAPPINGS[cleaned];
+    
+    if (mapped) return mapped;
+    
+    // Try partial matching
+    for (const [key, value] of Object.entries(PAYMENT_METHOD_MAPPINGS)) {
+      if (cleaned.includes(key) || key.includes(cleaned)) {
+        return value;
+      }
+    }
+    
+    // Default to cash for unknown methods
+    return this.config.defaultPaymentMethod;
+  }
+
+  private normalizeType(type: string): string {
+    if (!type) return type;
+    
+    const cleaned = this.cleanString(type).toLowerCase();
+    const mapped = TYPE_MAPPINGS[cleaned];
+    
+    if (mapped) return mapped;
+    
+    // Try partial matching
+    for (const [key, value] of Object.entries(TYPE_MAPPINGS)) {
+      if (cleaned.includes(key) || key.includes(cleaned)) {
+        return value;
+      }
+    }
+    
+    return type;
+  }
+
+  private cleanAndParseNumber(value: any): number {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    
+    const stringValue = String(value);
+    const cleaned = cleanNumericString(stringValue);
+    const parsed = parseNumber(cleaned);
+    
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  private isEmptyField(value: any): boolean {
+    return value === undefined || value === null || 
+           (typeof value === 'string' && value.trim() === '') ||
+           value === '';
+  }
+
+  private addFix(row: number, field: string, original: any, fixed: any, reason: string) {
+    this.fixes.push({ row: row + 1, field, original, fixed, reason });
+  }
+
+  public generateCleanedCSV(data: any[]): string {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvRows = [headers.join(',')];
+    
+    data.forEach(row => {
+      const values = headers.map(header => {
+        const value = row[header];
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        // Escape quotes and wrap in quotes if contains comma or quote
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      });
+      csvRows.push(values.join(','));
+    });
+    
+    return csvRows.join('\n');
+  }
+
+  public getFixesSummary(): { total: number; byType: Record<string, number> } {
+    const byType: Record<string, number> = {};
+    
+    this.fixes.forEach(fix => {
+      byType[fix.reason] = (byType[fix.reason] || 0) + 1;
+    });
+    
     return {
-      rowNumber,
-      originalData: data,
-      fixedData,
-      fixes,
-      hasErrors: validationErrors.length > 0,
-      validationErrors
+      total: this.fixes.length,
+      byType
     };
   }
 
-  /**
-   * إصلاح ملف CSV كامل
-   */
-  static fixCSVData(
-    csvData: Record<string, any>[],
-    fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>,
-    requiredFields: string[] = [],
-    country: 'kuwait' | 'qatar' = 'qatar'
-  ): CSVRowFix[] {
-    return csvData.map((row, index) => 
-      this.fixRow(row, index + 1, fieldTypes, requiredFields, country)
-    );
+  // Legacy methods for compatibility
+  public static fixCSVData(data: any[], config?: Partial<AutoFixConfig>) {
+    const fixer = new CSVAutoFix(config);
+    return fixer.autoFixData(data);
+  }
+
+  public fixRow(row: any, index: number) {
+    return this.autoFixRow(row, index);
   }
 }
+
+// Export types for compatibility
+export type CSVRowFix = {
+  row: number;
+  field: string; 
+  original: any;
+  fixed: any;
+  reason: string;
+};
