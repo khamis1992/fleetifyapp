@@ -44,7 +44,7 @@ export function useBulkPaymentOperations() {
       if (!companyId) throw new Error('معرف الشركة غير متوفر');
 
       // تحضير البيانات للمعالجة المجمعة
-      const payments = await prepareBulkPayments(data, companyId, { autoCreateCustomers, skipValidation });
+      const { payments, errors: preparationErrors } = await prepareBulkPayments(data, companyId, { autoCreateCustomers, skipValidation });
       
       // تقسيم البيانات إلى مجموعات
       const batches = [];
@@ -54,7 +54,7 @@ export function useBulkPaymentOperations() {
 
       let successful = 0;
       let failed = 0;
-      const errors: Array<{ row: number; message: string }> = [];
+      const errors: Array<{ row: number; message: string }> = [...preparationErrors];
 
       // معالجة كل مجموعة
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
@@ -75,12 +75,13 @@ export function useBulkPaymentOperations() {
             batch.forEach((_, index) => {
               errors.push({
                 row: batchIndex * batchSize + index + 1,
-                message: error.message
+                message: `خطأ في المجموعة ${batchIndex + 1}: ${error.message}`
               });
             });
           } else {
-            successful += insertedData?.length || batch.length;
-            console.log(`✅ تم إدراج ${insertedData?.length || batch.length} مدفوعة من المجموعة ${batchIndex + 1}`);
+            const insertedCount = insertedData?.length || batch.length;
+            successful += insertedCount;
+            console.log(`✅ تم إدراج ${insertedCount} مدفوعة من المجموعة ${batchIndex + 1}`);
           }
         } catch (batchError: any) {
           console.error(`❌ خطأ في معالجة المجموعة ${batchIndex + 1}:`, batchError);
@@ -88,7 +89,7 @@ export function useBulkPaymentOperations() {
           batch.forEach((_, index) => {
             errors.push({
               row: batchIndex * batchSize + index + 1,
-              message: batchError.message || 'خطأ غير معروف'
+              message: `خطأ في معالجة المجموعة ${batchIndex + 1}: ${batchError.message || 'خطأ غير معروف'}`
             });
           });
         }
@@ -100,6 +101,7 @@ export function useBulkPaymentOperations() {
 
       const processingTime = Date.now() - startTime;
       console.log(`🎯 انتهت العملية المجمعة في ${processingTime}ms`);
+      console.log(`📊 النتائج النهائية: ${successful} نجح، ${failed} فشل، ${errors.length} خطأ`);
 
       return {
         total: data.length,
@@ -132,79 +134,89 @@ export function useBulkPaymentOperations() {
     
     console.log('🔧 تحضير البيانات للعملية المجمعة...');
     
-    // تحميل البيانات المرجعية مرة واحدة
-    const [customersMap, contractsMap] = await Promise.all([
-      loadCustomersMap(companyId),
-      loadContractsMap(companyId)
-    ]);
+    try {
+      // تحميل البيانات المرجعية مرة واحدة
+      const [customersMap, contractsMap] = await Promise.all([
+        loadCustomersMap(companyId),
+        loadContractsMap(companyId)
+      ]);
 
-    // الحصول على آخر رقم مدفوعة
-    let lastPaymentNumber = await getLastPaymentNumber(companyId);
-    
-    const payments = [];
-    
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      const normalized = normalizeCsvHeaders(row);
+      // الحصول على آخر رقم مدفوعة
+      let lastPaymentNumber = await getLastPaymentNumber(companyId);
       
-      try {
-        // تحديد معرف العميل
-        let customerId: string | undefined;
-        if (normalized.customer_name) {
-          customerId = customersMap.get(normalized.customer_name.toLowerCase().trim());
-        }
-
-        // تحديد معرف العقد
-        let contractId: string | undefined;
-        if (normalized.contract_number) {
-          const contract = contractsMap.get(normalized.contract_number);
-          contractId = contract?.id;
-        }
-
-        // إعداد بيانات المدفوعة
-        // توحيد مدخل طريقة الدفع مع معالجة القيم البديلة
-        const methodInput = normalized.payment_method ?? normalized.payment_type ?? normalized.method ?? normalized.mode;
-        let method = normalizePaymentMethod(methodInput);
-        if (!(Constants.public.Enums.payment_method as readonly string[]).includes(method as any)) {
-          console.warn(`⚠️ طريقة دفع غير معروفة في السطر ${i + 1}:`, methodInput, '— سيتم استخدام cash');
-          method = 'cash';
-        }
-        const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
-
-        const paymentData = {
-          company_id: companyId,
-          payment_number: normalized.payment_number || formatPaymentNumber(++lastPaymentNumber),
-          payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
-          amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
-          payment_method: method,
-          payment_type: method, // الحفاظ على الاتساق مع CSV template
-          reference_number: normalized.reference_number,
-          notes: normalized.notes || normalized.description,
-          customer_id: customerId,
-          contract_id: contractId,
-          transaction_type: txType,
-          currency: normalized.currency || 'KWD',
-          payment_status: 'completed',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // التحقق من صحة البيانات إذا لم يتم تخطي التحقق
-        if (!skipValidation) {
-          if (!paymentData.payment_date || paymentData.amount <= 0) {
-            console.warn(`⚠️ تخطي السطر ${i + 1}: بيانات غير صحيحة`);
-            continue;
+      const payments = [];
+      const errors: Array<{ row: number; message: string }> = [];
+      
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        
+        try {
+          const normalized = normalizeCsvHeaders(row);
+          
+          // تحديد معرف العميل
+          let customerId: string | undefined;
+          if (normalized.customer_name) {
+            customerId = customersMap.get(normalized.customer_name.toLowerCase().trim());
           }
+
+          // تحديد معرف العقد
+          let contractId: string | undefined;
+          if (normalized.contract_number) {
+            const contract = contractsMap.get(normalized.contract_number);
+            contractId = contract?.id;
+          }
+
+          // إعداد بيانات المدفوعة
+          const methodInput = normalized.payment_method ?? normalized.payment_type ?? normalized.method ?? normalized.mode;
+          let method = normalizePaymentMethod(methodInput);
+          if (!(Constants.public.Enums.payment_method as readonly string[]).includes(method as any)) {
+            console.warn(`⚠️ طريقة دفع غير معروفة في السطر ${i + 1}:`, methodInput, '— سيتم استخدام cash');
+            method = 'cash';
+          }
+          const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
+
+          const paymentData = {
+            company_id: companyId,
+            payment_number: normalized.payment_number || formatPaymentNumber(++lastPaymentNumber),
+            payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
+            amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
+            payment_method: method,
+            payment_type: method,
+            reference_number: normalized.reference_number,
+            notes: normalized.notes || normalized.description,
+            customer_id: customerId,
+            contract_id: contractId,
+            transaction_type: txType,
+            currency: normalized.currency || 'KWD',
+            payment_status: 'completed',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          // التحقق من صحة البيانات إذا لم يتم تخطي التحقق
+          if (!skipValidation) {
+            if (!paymentData.payment_date || paymentData.amount <= 0) {
+              console.warn(`⚠️ تخطي السطر ${i + 1}: بيانات غير صحيحة`);
+              errors.push({ row: i + 1, message: 'بيانات غير صحيحة - تاريخ أو مبلغ مفقود' });
+              continue;
+            }
+          }
+
+          payments.push(paymentData);
+        } catch (error: any) {
+          console.warn(`⚠️ خطأ في تحضير السطر ${i + 1}:`, error);
+          errors.push({ row: i + 1, message: error.message || 'خطأ في معالجة البيانات' });
         }
-
-        payments.push(paymentData);
-      } catch (error) {
-        console.warn(`⚠️ خطأ في تحضير السطر ${i + 1}:`, error);
       }
-    }
 
-    console.log(`✅ تم تحضير ${payments.length} مدفوعة من أصل ${data.length} سطر`);
-    return payments;
+      console.log(`✅ تم تحضير ${payments.length} مدفوعة من أصل ${data.length} سطر`);
+      console.log(`⚠️ ${errors.length} أخطاء في التحضير`);
+      
+      return { payments, errors };
+    } catch (error: any) {
+      console.error('❌ خطأ في تحضير البيانات:', error);
+      throw new Error(`خطأ في تحضير البيانات: ${error.message}`);
+    }
   };
 
   // تحميل خريطة العملاء
