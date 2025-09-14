@@ -1,25 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
 import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 
 const Dashboard: React.FC = () => {
+  // Get all needed data from a single hook to avoid hook ordering issues
   const { moduleContext, isLoading: moduleLoading, company, refreshData } = useModuleConfig();
-  const { isBrowsingMode, browsedCompany, companyId } = useUnifiedCompanyAccess();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Extract values from hook result to avoid calling useUnifiedCompanyAccess again
+  const companyId = company?.id;
+  const isBrowsingMode = false; // This will be handled by useModuleConfig internally
+  const browsedCompany = company;
 
   // Refresh data when switching companies in browse mode
   useEffect(() => {
-    if (isBrowsingMode && companyId) {
-      console.log('🏢 [DASHBOARD] Browse mode detected, force refreshing data for company:', companyId);
+    if (companyId) {
+      console.log('🏢 [DASHBOARD] Company changed, force refreshing data for company:', companyId);
       setIsRefreshing(true);
       refreshData();
-      // Give extra time for data to load in browse mode
+      // Give extra time for data to load
       setTimeout(() => setIsRefreshing(false), 1000);
     }
-  }, [isBrowsingMode, companyId]);
+  }, [companyId, refreshData]);
 
   console.log('🏢 [DASHBOARD] ===== DETAILED DEBUG =====');
   console.log('🏢 [DASHBOARD] Module Loading:', moduleLoading);

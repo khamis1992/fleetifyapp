@@ -12,7 +12,9 @@ export const useModuleConfig = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
   
-  const isBrowsingMode = companyId !== user?.company?.id;
+  // Calculate browse mode using stable values
+  const userCompanyId = user?.company?.id;
+  const isBrowsingMode = companyId !== userCompanyId;
   
   // Force invalidate queries when switching companies in browse mode
   useEffect(() => {
