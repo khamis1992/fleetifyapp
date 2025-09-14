@@ -26,6 +26,7 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
+import { useContracts } from "@/hooks/useContracts";
 
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +43,7 @@ const Payments = () => {
   });
 
   const { data: payments, isLoading, error, refetch } = usePayments();
+  const { data: contracts = [] } = useContracts();
   const { formatCurrency } = useCurrencyFormatter();
   const { isMobile } = useSimpleBreakpoint();
 
@@ -381,18 +383,19 @@ const Payments = () => {
                 ) : (
                   <div className="rounded-md border">
                     <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>رقم الدفع</TableHead>
-                            <TableHead>النوع</TableHead>
-                            <TableHead>التاريخ</TableHead>
-                            <TableHead>المبلغ</TableHead>
-                            <TableHead>طريقة الدفع</TableHead>
-                            <TableHead>الحالة</TableHead>
-                            <TableHead>رقم المرجع</TableHead>
-                            <TableHead>الإجراءات</TableHead>
-                          </TableRow>
-                        </TableHeader>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>رقم الدفع</TableHead>
+                              <TableHead>النوع</TableHead>
+                              <TableHead>التاريخ</TableHead>
+                              <TableHead>المبلغ</TableHead>
+                              <TableHead>طريقة الدفع</TableHead>
+                              <TableHead>الحالة</TableHead>
+                              <TableHead>رقم المرجع</TableHead>
+                              <TableHead>رقم العقد</TableHead>
+                              <TableHead>الإجراءات</TableHead>
+                            </TableRow>
+                          </TableHeader>
                       <TableBody>
                         {filteredPayments.map((payment) => (
                             <TableRow key={payment.id}>
@@ -422,6 +425,13 @@ const Payments = () => {
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {payment.reference_number || '-'}
+                              </TableCell>
+                              <TableCell className="font-mono">
+                                {(() => {
+                                  const contractId = (payment as any).contract_id as string | undefined;
+                                  const contract = contracts?.find((c: any) => c.id === contractId);
+                                  return contract?.contract_number || '-';
+                                })()}
                               </TableCell>
                               <TableCell>
                                 <Button 
