@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TestTube, AlertTriangle, Info, FileText, Eye, EyeOff, Calendar, DollarSign } from "lucide-react";
+import { TestTube, AlertTriangle, Info, FileText, Eye, EyeOff, Calendar, DollarSign, Brain, Zap } from "lucide-react";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useBanks } from "@/hooks/useTreasury";
 import { useCostCenters } from "@/hooks/useCostCenters";
@@ -573,7 +573,22 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                         name="contract_id"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>العقد المرتبط (اختياري)</FormLabel>
+                            <FormLabel className="flex items-center justify-between">
+                              العقد المرتبط (اختياري)
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="ml-2 h-7 text-xs"
+                                onClick={() => {
+                                  // سيتم إضافة وظيفة الربط الذكي هنا
+                                  toast.info('ميزة الربط الذكي قيد التطوير');
+                                }}
+                              >
+                                <Brain className="h-3 w-3 mr-1" />
+                                ربط ذكي
+                              </Button>
+                            </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Sparkles, Trash2, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
+import ProfessionalPaymentSystem from "@/components/finance/ProfessionalPaymentSystem";
 
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 const Payments = () => {
@@ -36,6 +37,7 @@ const Payments = () => {
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isUnifiedUploadOpen, setIsUnifiedUploadOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isProfessionalSystemOpen, setIsProfessionalSystemOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
@@ -154,6 +156,14 @@ const Payments = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
+                onClick={() => setIsProfessionalSystemOpen(true)}
+                className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0"
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                النظام الاحترافي
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => setIsUnifiedUploadOpen(true)}
                 className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0"
               >
@@ -210,16 +220,24 @@ const Payments = () => {
 
           
           <Tabs defaultValue="list" className="w-full">
-           <TabsList className="grid w-full grid-cols-2">
+           <TabsList className="grid w-full grid-cols-3">
              <TabsTrigger value="list" className="flex items-center gap-2">
                <CreditCard className="h-4 w-4" />
                قائمة المدفوعات
+             </TabsTrigger>
+             <TabsTrigger value="professional" className="flex items-center gap-2">
+               <Brain className="h-4 w-4" />
+               النظام الاحترافي
              </TabsTrigger>
              <TabsTrigger value="analytics" className="flex items-center gap-2">
                <BarChart3 className="h-4 w-4" />
                التحليلات والتقارير
              </TabsTrigger>
            </TabsList>
+
+          <TabsContent value="professional" className="mt-6">
+            <ProfessionalPaymentSystem />
+          </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">
@@ -569,6 +587,19 @@ const Payments = () => {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* نافذة النظام الاحترافي */}
+        <Dialog open={isProfessionalSystemOpen} onOpenChange={setIsProfessionalSystemOpen}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-500" />
+                النظام الاحترافي للمدفوعات
+              </DialogTitle>
+            </DialogHeader>
+            <ProfessionalPaymentSystem />
           </DialogContent>
         </Dialog>
           </div>
