@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { CSVDragDropUpload } from '@/components/finance/csv-import/CSVDragDropUpload';
 import { useBulkPaymentOperations } from '@/hooks/useBulkPaymentOperations';
+import { PaymentUploadDiagnostics } from './PaymentUploadDiagnostics';
 import { toast } from 'sonner';
 
 interface FastProcessingModeProps {
@@ -54,6 +55,9 @@ export function FastProcessingMode({
     failed: number;
     speed: number; // records per second
   } | null>(null);
+  
+  const [uploadErrors, setUploadErrors] = useState<Array<{ row: number; message: string }>>([]);
+  const [uploadedData, setUploadedData] = useState<any[]>([]);
 
   const { bulkUploadPayments, isProcessing: isBulkProcessing, progress } = useBulkPaymentOperations();
 
@@ -65,6 +69,24 @@ export function FastProcessingMode({
     try {
       console.log(`🚀 بدء المعالجة السريعة لـ ${data.length} سجل`);
       
+      // تحليل البيانات المرفوعة قبل المعالجة
+      console.log('📊 تحليل عينة من البيانات المرفوعة:');
+      if (data.length > 0) {
+        console.log('🔍 السطر الأول:', data[0]);
+        console.log('🗂️ أعمدة البيانات:', Object.keys(data[0]));
+        
+        // فحص الحقول المطلوبة
+        const hasDate = data[0].hasOwnProperty('payment_date') || data[0].hasOwnProperty('payment_da') || data[0].hasOwnProperty('date');
+        const hasAmount = data[0].hasOwnProperty('amount') || data[0].hasOwnProperty('amount_paid') || data[0].hasOwnProperty('المبلغ');
+        const hasMethod = data[0].hasOwnProperty('payment_method') || data[0].hasOwnProperty('payment_') || data[0].hasOwnProperty('طريقة الدفع');
+        
+        console.log('✅ فحص الحقول الأساسية:', { hasDate, hasAmount, hasMethod });
+        
+        if (!hasDate || !hasAmount) {
+          throw new Error('⚠️ ملف البيانات المرفوع لا يحتوي على الحقول المطلوبة (تاريخ الدفع ومبلغ الدفع)');
+        }
+      }
+      
       // تقدير السرعة
       setProcessingStats({
         total: data.length,
@@ -74,12 +96,18 @@ export function FastProcessingMode({
         speed: 0
       });
       
+      // حفظ البيانات للتشخيص
+      setUploadedData(data);
+      
       // استخدام العمليات المجمعة المحسنة
       const result = await bulkUploadPayments(data, {
         batchSize: processingSettings.batchSize,
         autoCreateCustomers: processingSettings.autoCreateCustomers,
         skipValidation: processingSettings.skipValidation
       });
+      
+      // حفظ الأخطاء للتشخيص
+      setUploadErrors(result.errors || []);
       
       const endTime = Date.now();
       const processingTime = (endTime - startTime) / 1000; // بالثواني
@@ -93,14 +121,27 @@ export function FastProcessingMode({
         speed: Math.round(speed)
       });
       
-      // عرض النتائج
+      // عرض النتائج المفصلة
       if (result.successful > 0) {
         toast.success(`⚡ تم معالجة ${result.successful} مدفوعة في ${processingTime.toFixed(1)} ثانية (${Math.round(speed)} سجل/ثانية)`);
       }
       
       if (result.failed > 0) {
         toast.error(`❌ فشل في معالجة ${result.failed} سجل`);
-        console.log('الأخطاء:', result.errors);
+        console.log('📋 تفاصيل الأخطاء:', result.errors);
+        
+        // عرض أول 3 أخطاء للمستخدم
+        const firstErrors = result.errors.slice(0, 3);
+        firstErrors.forEach((error, index) => {
+          toast.error(`خطأ في السطر ${error.row}: ${error.message}`, {
+            duration: 5000,
+            position: 'bottom-right'
+          });
+        });
+        
+        if (result.errors.length > 3) {
+          toast.warning(`وهناك ${result.errors.length - 3} أخطاء إضافية. راجع وحدة التحكم للتفاصيل.`);
+        }
       }
       
       // إشعار المكون الرئيسي
@@ -108,7 +149,10 @@ export function FastProcessingMode({
       
     } catch (error: any) {
       console.error('❌ خطأ في المعالجة السريعة:', error);
-      toast.error(`خطأ في المعالجة: ${error.message}`);
+      toast.error(`خطأ في المعالجة: ${error.message}`, {
+        duration: 10000,
+        description: 'تأكد من أن الملف يحتوي على الحقول المطلوبة: تاريخ الدفع، مبلغ الدفع، وطريقة الدفع'
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -272,6 +316,19 @@ export function FastProcessingMode({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* مكون التشخيص */}
+      {(uploadErrors.length > 0 || uploadedData.length > 0) && (
+        <PaymentUploadDiagnostics 
+          data={uploadedData}
+          errors={uploadErrors}
+          onRetry={() => {
+            setUploadErrors([]);
+            setUploadedData([]);
+            setProcessingStats(null);
+          }}
+        />
       )}
 
       {/* تحميل القالب */}

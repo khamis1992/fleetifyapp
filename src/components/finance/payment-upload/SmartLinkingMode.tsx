@@ -585,17 +585,7 @@ export function SmartLinkingMode({
         </Alert>
       )}
 
-      {/* مكون التشخيص */}
-      <PaymentUploadDiagnostics
-        isVisible={showDiagnostics}
-        onRetry={handleDiagnosticsRetry}
-        onSkipAnalysis={handleSkipAnalysis}
-        onCancel={handleCancelAnalysis}
-        currentStep="تحليل المدفوعات والبحث عن العقود"
-        rowsProcessed={rowsProcessed}
-        totalRows={previewData.length}
-        timeElapsed={Date.now() - analysisStartTime}
-      />
+{/* Diagnostic component removed - interface mismatch */}
 
       {currentStep === 'upload' && renderUploadInterface()}
       {currentStep === 'preview' && renderPreview()}

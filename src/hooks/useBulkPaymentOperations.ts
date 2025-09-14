@@ -174,6 +174,7 @@ export function useBulkPaymentOperations() {
           console.log(`🔍 [ROW ${i + 1}] Payment method processing:`, {
             input: methodInput,
             normalized: method,
+            validMethods: Constants.public.Enums.payment_method,
             isValid: (Constants.public.Enums.payment_method as readonly string[]).includes(method as any)
           });
           
@@ -213,9 +214,26 @@ export function useBulkPaymentOperations() {
 
           // التحقق من صحة البيانات إذا لم يتم تخطي التحقق
           if (!skipValidation) {
-            if (!paymentData.payment_date || paymentData.amount <= 0) {
-              console.warn(`⚠️ تخطي السطر ${i + 1}: بيانات غير صحيحة`);
-              errors.push({ row: i + 1, message: 'بيانات غير صحيحة - تاريخ أو مبلغ مفقود' });
+            const validationErrors = [];
+            
+            if (!paymentData.payment_date) {
+              validationErrors.push('تاريخ الدفع مفقود');
+            }
+            
+            if (paymentData.amount <= 0) {
+              validationErrors.push('مبلغ الدفع يجب أن يكون أكبر من صفر');
+            }
+            
+            if (!paymentData.payment_method) {
+              validationErrors.push('طريقة الدفع مفقودة');
+            }
+            
+            if (validationErrors.length > 0) {
+              console.warn(`⚠️ تخطي السطر ${i + 1}: ${validationErrors.join(', ')}`);
+              errors.push({ 
+                row: i + 1, 
+                message: `بيانات غير صحيحة: ${validationErrors.join(', ')}` 
+              });
               continue;
             }
           }
@@ -293,7 +311,14 @@ export function useBulkPaymentOperations() {
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
  
   const normalizePaymentMethod = (method?: string): (typeof Constants.public.Enums.payment_method)[number] => {
-    const s = (method ?? '').toString().toLowerCase().trim();
+    if (!method || method === '') {
+      console.warn('⚠️ طريقة دفع فارغة، سيتم استخدام cash');
+      return 'cash';
+    }
+    
+    const s = method.toString().toLowerCase().trim();
+    console.log(`🔄 تطبيع طريقة الدفع: "${method}" -> "${s}"`);
+    
     const simplified = s
       .replace(/[أإآ]/g, 'ا')
       .replace(/ى/g, 'ي')
@@ -305,6 +330,7 @@ export function useBulkPaymentOperations() {
     const map: Record<string, (typeof Constants.public.Enums.payment_method)[number]> = {
       // نقد
       'cash': 'cash', 'كاش': 'cash', 'نقد': 'cash', 'نقدي': 'cash', 'نقداً': 'cash', 'نقدى': 'cash',
+      'received': 'cash', // حالة خاصة من البيانات الموجودة
       // شيك
       'check': 'check', 'cheque': 'check', 'شيك': 'check',
       // تحويل بنكي
@@ -317,7 +343,10 @@ export function useBulkPaymentOperations() {
     };
 
     const candidate = map[simplified] || (Constants.public.Enums.payment_method as readonly string[]).find((m) => m === simplified);
-    return (candidate as any) || 'cash';
+    const result = (candidate as any) || 'cash';
+    
+    console.log(`✅ نتيجة تطبيع طريقة الدفع: "${method}" -> "${result}"`);
+    return result;
   };
  
   const normalizeTxType = (type?: string): 'receipt' | 'payment' => {
