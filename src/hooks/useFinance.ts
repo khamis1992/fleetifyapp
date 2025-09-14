@@ -82,6 +82,7 @@ export interface Payment {
   customer_id?: string
   vendor_id?: string
   invoice_id?: string
+  contract_id?: string
   amount: number
   currency: string
   reference_number?: string
@@ -93,6 +94,9 @@ export interface Payment {
   created_by?: string
   created_at: string
   updated_at: string
+  contracts?: {
+    contract_number: string
+  }
 }
 
 export interface Vendor {
@@ -852,7 +856,10 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
 
       let query = supabase
         .from("payments")
-        .select("*")
+        .select(`
+          *,
+          contracts(contract_number)
+        `)
         .eq("company_id", companyId)
         .order("payment_date", { ascending: false })
       
