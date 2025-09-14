@@ -11,7 +11,7 @@ export const basePaymentSchema = z.object({
   reference_number: z.string().optional(),
   check_number: z.string().optional(),
   bank_account: z.string().optional(),
-  currency: z.string().default('KWD'),
+  currency: z.string().default('QAR'),
   notes: z.string().optional(),
 });
 

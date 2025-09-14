@@ -55,7 +55,7 @@ export const documentSchema = z.object({
 
 // Currency schema
 export const currencySchema = z.object({
-  code: z.enum(['KWD', 'USD', 'EUR', 'SAR', 'AED']).default('KWD'),
+  code: z.enum(['QAR', 'KWD', 'USD', 'EUR', 'SAR', 'AED']).default('QAR'),
   symbol: z.string().optional(),
   exchange_rate: z.number().min(0).default(1),
 });
@@ -128,7 +128,7 @@ export const dateRangeSchema = z.object({
 // Money amount schema with currency support
 export const moneyAmountSchema = z.object({
   amount: z.number().min(0, 'المبلغ يجب أن يكون موجباً'),
-  currency: z.string().default('KWD'),
+  currency: z.string().default('QAR'),
   exchange_rate: z.number().min(0).default(1),
   base_amount: z.number().min(0).optional(), // Amount in base currency
 });

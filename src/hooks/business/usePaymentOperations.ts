@@ -68,7 +68,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         payment_method: validatedData.payment_method,
         reference_number: validatedData.reference_number,
         check_number: validatedData.check_number,
-        currency: validatedData.currency || 'KWD',
+        currency: validatedData.currency || 'QAR',
         notes: validatedData.notes,
         payment_type: validatedData.type,
         payment_status: requireApproval ? 'pending' : 'completed',

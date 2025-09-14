@@ -235,7 +235,7 @@ export function useBulkPaymentOperations() {
             customer_id: customerId,
             contract_id: contractId,
             transaction_type: txType,
-            currency: normalized.currency || 'KWD',
+            currency: normalized.currency || 'QAR',
             payment_status: 'completed',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()

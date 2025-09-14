@@ -11,7 +11,7 @@ export const baseContractSchema = z.object({
   }),
   status: z.enum(['draft', 'under_review', 'active', 'expired', 'cancelled', 'suspended']).default('draft'),
   total_amount: z.number().min(0, 'المبلغ الإجمالي يجب أن يكون موجباً'),
-  currency: z.string().default('KWD'),
+  currency: z.string().default('QAR'),
   payment_terms: z.enum(['monthly', 'quarterly', 'annually', 'one_time']).default('monthly'),
   notes: z.string().optional(),
   terms_and_conditions: z.string().optional(),

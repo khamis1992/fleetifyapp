@@ -24,22 +24,22 @@ export const useCompanyCurrency = (): CompanyCurrency => {
   const { data } = useQuery({
     queryKey: ["company-currency", companyId],
     queryFn: async () => {
-      if (!companyId) return { currency: "KWD" } as { currency: string };
+      if (!companyId) return { currency: "QAR" } as { currency: string };
       const { data, error } = await supabase
         .from("companies")
         .select("currency")
         .eq("id", companyId)
         .single();
       if (error) {
-        console.warn("[useCompanyCurrency] Falling back to KWD due to error:", error.message);
-        return { currency: "KWD" } as { currency: string };
+        console.warn("[useCompanyCurrency] Falling back to QAR due to error:", error.message);
+        return { currency: "QAR" } as { currency: string };
       }
-      return { currency: data?.currency || "KWD" } as { currency: string };
+      return { currency: data?.currency || "QAR" } as { currency: string };
     },
     staleTime: 60 * 1000,
   });
 
-  const currency = (data?.currency || "KWD").toUpperCase();
+  const currency = (data?.currency || "QAR").toUpperCase();
   // If currency is not set for the current company, default per country if available
   const currencyLocaleMap: Record<string, string> = {
     KWD: "ar-KW",

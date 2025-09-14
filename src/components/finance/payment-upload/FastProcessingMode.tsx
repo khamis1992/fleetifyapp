@@ -157,8 +157,10 @@ export function FastProcessingMode({
         }
       }
       
-      // إشعار المكون الرئيسي
-      onUploadComplete(data);
+      // إشعار المكون الرئيسي بنجاح العملية
+      if (result.successful > 0) {
+        onUploadComplete(result.fixedData || data);
+      }
       
     } catch (error: any) {
       console.error('❌ خطأ في المعالجة السريعة:', error);

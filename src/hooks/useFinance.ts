@@ -739,7 +739,7 @@ export const useCreateInvoice = () => {
           total_amount: invoiceData.total_amount || 0,
           paid_amount: 0,
           balance_due: invoiceData.total_amount || 0,
-          currency: invoiceData.currency || 'KWD',
+          currency: invoiceData.currency || 'QAR',
           status: invoiceData.status || 'draft',
           payment_status: invoiceData.payment_status || 'unpaid',
           notes: invoiceData.notes,

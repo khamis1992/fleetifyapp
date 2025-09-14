@@ -174,10 +174,10 @@ export class CSVAutoFix {
       fixed.payment_number = paymentNumber;
     }
 
-    // Set default currency
+    // Set default currency to QAR (Qatar Riyal)
     if (this.isEmptyField(fixed.currency)) {
-      this.addFix(rowIndex, 'currency', fixed.currency, 'KWD', 'تعبئة العملة الافتراضية');
-      fixed.currency = 'KWD';
+      this.addFix(rowIndex, 'currency', fixed.currency, 'QAR', 'تعبئة العملة الافتراضية (ريال قطري)');
+      fixed.currency = 'QAR';
     }
 
     return fixed;

@@ -49,7 +49,7 @@ export const CURRENCY_CONFIGS: Record<string, CurrencyConfig> = {
 };
 
 export const getCurrencyConfig = (currency: string): CurrencyConfig => {
-  return CURRENCY_CONFIGS[currency.toUpperCase()] || CURRENCY_CONFIGS.KWD;
+  return CURRENCY_CONFIGS[currency.toUpperCase()] || CURRENCY_CONFIGS.QAR;
 };
 
 export const getCurrencyFractionDigits = (currency: string): number => {
