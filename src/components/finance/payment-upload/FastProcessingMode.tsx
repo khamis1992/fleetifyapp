@@ -137,6 +137,8 @@ export function FastProcessingMode({
       // عرض النتائج المفصلة
       if (result.successful > 0) {
         toast.success(`⚡ تم معالجة ${result.successful} مدفوعة في ${processingTime.toFixed(1)} ثانية (${Math.round(speed)} سجل/ثانية)`);
+        // إشعار المكون الرئيسي بنجاح العملية فقط
+        await onUploadComplete(result.fixedData || data);
       }
       
       if (result.failed > 0) {
@@ -155,11 +157,6 @@ export function FastProcessingMode({
         if (result.errors.length > 3) {
           toast.warning(`وهناك ${result.errors.length - 3} أخطاء إضافية. راجع وحدة التحكم للتفاصيل.`);
         }
-      }
-      
-      // إشعار المكون الرئيسي بنجاح العملية
-      if (result.successful > 0) {
-        onUploadComplete(result.fixedData || data);
       }
       
     } catch (error: any) {
