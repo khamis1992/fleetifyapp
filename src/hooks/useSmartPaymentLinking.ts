@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { normalizeContractNumber } from '@/utils/contractNumberExtraction';
 
 export interface SmartLinkingSuggestion {
   paymentId: string;
@@ -86,17 +87,17 @@ export const useSmartPaymentLinking = () => {
     queryFn: async (): Promise<SmartLinkingSuggestion[]> => {
       if (!companyId) throw new Error('لم يتم العثور على الشركة');
 
-      // Get unlinked payments
+      // Get unlinked payments (those without contract_id)
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
         .eq('company_id', companyId)
-        .is('customer_id', null)
+        .is('contract_id', null)
         .order('payment_date', { ascending: false });
 
       if (paymentsError) throw paymentsError;
 
-      // Get all contracts and customers for matching
+      // Get all contracts and customers for matching (include all statuses for better matching)
       const { data: contracts, error: contractsError } = await supabase
         .from('contracts')
         .select(`
@@ -107,6 +108,7 @@ export const useSmartPaymentLinking = () => {
           contract_amount,
           start_date,
           end_date,
+          status,
           customers (
             id,
             first_name,
@@ -117,7 +119,7 @@ export const useSmartPaymentLinking = () => {
           )
         `)
         .eq('company_id', companyId)
-        .eq('status', 'active');
+        .in('status', ['active', 'draft', 'completed']);
 
       if (contractsError) throw contractsError;
 
@@ -128,16 +130,48 @@ export const useSmartPaymentLinking = () => {
         const payment = payments[i];
         setAnalysisProgress({ current: i + 1, total: payments.length });
 
+        // Check for direct agreement_number match first (highest priority)
+        let foundDirectMatch = false;
+        if (payment.agreement_number) {
+          const normalizedAgreement = normalizeContractNumber(payment.agreement_number);
+          const contract = contracts?.find((c: any) => {
+            const normalizedContract = normalizeContractNumber(c.contract_number || '');
+            return normalizedContract === normalizedAgreement || 
+                   c.contract_number === payment.agreement_number;
+          });
+          
+          if (contract) {
+            suggestions.push({
+              paymentId: payment.id,
+              contractId: contract.id,
+              customerId: contract.customer_id,
+              contractNumber: contract.contract_number,
+              customerName: contract.customers?.company_name || 
+                          `${contract.customers?.first_name || ''} ${contract.customers?.last_name || ''}`.trim(),
+              confidence: 0.98,
+              reasons: [`تطابق مباشر مع رقم العقد المحفوظ: ${payment.agreement_number}`],
+              matchType: 'contract_number',
+              suggestedAction: 'auto_link'
+            });
+            foundDirectMatch = true;
+          }
+        }
+
+        if (foundDirectMatch) continue;
+
+        // Method 2: Extract contract numbers from notes and descriptions
         const contractNumbers = extractContractNumbers(payment.notes || '');
         const paymentType = analyzePaymentType(payment.notes || '');
         
-        // Method 1: Direct contract number match
         if (contractNumbers.length > 0) {
           for (const contractNumber of contractNumbers) {
-            const contract = contracts?.find((c: any) => 
-              c.contract_number?.toUpperCase().includes(contractNumber) ||
-              contractNumber.includes(c.contract_number?.toUpperCase() || '')
-            );
+            const normalizedExtracted = normalizeContractNumber(contractNumber);
+            const contract = contracts?.find((c: any) => {
+              const normalizedContract = normalizeContractNumber(c.contract_number || '');
+              return normalizedContract === normalizedExtracted ||
+                     c.contract_number?.toUpperCase().includes(contractNumber) ||
+                     contractNumber.includes(c.contract_number?.toUpperCase() || '');
+            });
             
             if (contract) {
               suggestions.push({
@@ -147,17 +181,20 @@ export const useSmartPaymentLinking = () => {
                 contractNumber: contract.contract_number,
                 customerName: contract.customers?.company_name || 
                             `${contract.customers?.first_name || ''} ${contract.customers?.last_name || ''}`.trim(),
-                confidence: 0.95,
-                reasons: [`تطابق رقم العقد: ${contractNumber}`, `نوع الدفعة: ${paymentType.type}`],
+                confidence: 0.90,
+                reasons: [`استخراج رقم العقد من الملاحظات: ${contractNumber}`, `نوع الدفعة: ${paymentType.type}`],
                 matchType: 'contract_number',
                 suggestedAction: 'auto_link'
               });
-              continue;
+              foundDirectMatch = true;
+              break;
             }
           }
         }
 
-        // Method 2: Amount and date pattern matching
+        if (foundDirectMatch) continue;
+
+        // Method 3: Amount and date pattern matching
         if (suggestions.find(s => s.paymentId === payment.id)) continue;
 
         const paymentDate = new Date(payment.payment_date);
@@ -258,6 +295,11 @@ export const useAutoLinkPayments = () => {
             updated_at: new Date().toISOString(),
           };
 
+          // If we have contract number but no agreement_number, save it
+          if (suggestion.contractNumber && !updateData.agreement_number) {
+            updateData.agreement_number = suggestion.contractNumber;
+          }
+
           const { error } = await supabase
             .from('payments')
             .update(updateData)
@@ -325,20 +367,20 @@ export const useSmartLinkingStats = () => {
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId);
 
-      // Get linked payments
+      // Get linked payments (those with contract_id)
       const { count: linkedPayments } = await supabase
         .from('payments')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .not('customer_id', 'is', null);
+        .not('contract_id', 'is', null);
 
-      // Get auto-linked payments (assume payments with contract_id were auto-linked)
+      // Get auto-linked payments (those with both contract_id and customer_id)
       const { count: autoLinkedPayments } = await supabase
         .from('payments')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .not('customer_id', 'is', null)
-        .not('contract_id', 'is', null);
+        .not('contract_id', 'is', null)
+        .not('customer_id', 'is', null);
 
       return {
         totalPayments: totalPayments || 0,

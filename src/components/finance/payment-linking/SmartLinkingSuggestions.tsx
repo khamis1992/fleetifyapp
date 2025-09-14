@@ -22,6 +22,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useSmartPaymentLinking, useAutoLinkPayments, SmartLinkingSuggestion } from '@/hooks/useSmartPaymentLinking';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 // Helper function to format currency
 const formatCurrency = (amount: number) => {
@@ -114,6 +116,18 @@ export const SmartLinkingSuggestions: React.FC = () => {
     );
   }
 
+  // Get unlinked payments count for better messaging
+  const { data: unlinkedCount } = useQuery({
+    queryKey: ['unlinked-payments-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .is('contract_id', null);
+      return count || 0;
+    }
+  });
+
   if (!suggestions || suggestions.length === 0) {
     return (
       <Card>
@@ -123,14 +137,17 @@ export const SmartLinkingSuggestions: React.FC = () => {
             الاقتراحات الذكية للربط
           </CardTitle>
           <CardDescription>
-            لا توجد اقتراحات ذكية متاحة حالياً
+            {unlinkedCount ? `يوجد ${unlinkedCount} دفعة غير مربوطة، لكن لا توجد اقتراحات ذكية` : 'لا توجد اقتراحات ذكية متاحة حالياً'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              جميع المدفوعات مربوطة أو لا توجد أنماط واضحة للربط
+              {unlinkedCount > 0 ? 
+                'المدفوعات غير المربوطة لا تحتوي على أنماط واضحة للربط التلقائي' :
+                'جميع المدفوعات مربوطة بنجاح'
+              }
             </p>
             <Button 
               variant="outline" 
