@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
+import { AutoContractLinker } from "@/components/finance/AutoContractLinker";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -242,12 +243,6 @@ const Payments = () => {
                 <Sparkles className="h-4 w-4 mr-2" />
                 رفع المدفوعات الذكي
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/finance/payment-linking">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  ربط المدفوعات
-                </Link>
-              </Button>
               <Button variant="outline" onClick={runAutoLinking} disabled={isLinking}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 {isLinking ? 'جارِ الربط...' : 'ربط العقود تلقائياً'}
@@ -311,17 +306,20 @@ const Payments = () => {
           )}
         </div>
 
-         <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              قائمة المدفوعات
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              التحليلات والتقارير
-            </TabsTrigger>
-          </TabsList>
+          {/* Auto Contract Linker */}
+          <AutoContractLinker />
+          
+          <Tabs defaultValue="list" className="w-full">
+           <TabsList className="grid w-full grid-cols-2">
+             <TabsTrigger value="list" className="flex items-center gap-2">
+               <CreditCard className="h-4 w-4" />
+               قائمة المدفوعات
+             </TabsTrigger>
+             <TabsTrigger value="analytics" className="flex items-center gap-2">
+               <BarChart3 className="h-4 w-4" />
+               التحليلات والتقارير
+             </TabsTrigger>
+           </TabsList>
 
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">

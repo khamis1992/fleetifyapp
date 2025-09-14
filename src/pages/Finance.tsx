@@ -30,7 +30,7 @@ import Treasury from "./finance/Treasury"
 import CostCenters from "./finance/CostCenters"
 import Invoices from "./finance/Invoices"
 import Payments from "./finance/Payments"
-import PaymentLinking from "./PaymentLinking"
+
 import Reports from "./finance/Reports"
 import FixedAssets from "./finance/FixedAssets"
 import Budgets from "./finance/Budgets"
@@ -362,14 +362,6 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">
             <Ledger />
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="payment-linking" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <PaymentLinking />
           </ProtectedFinanceRoute>
         } 
       />
