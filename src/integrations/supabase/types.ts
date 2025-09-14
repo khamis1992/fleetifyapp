@@ -278,6 +278,56 @@ export type Database = {
         }
         Relationships: []
       }
+      accounting_templates: {
+        Row: {
+          company_id: string
+          conditions: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          entries: Json
+          id: string
+          name: string
+          priority: number
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          entries?: Json
+          id?: string
+          name: string
+          priority?: number
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          entries?: Json
+          id?: string
+          name?: string
+          priority?: number
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advanced_late_fee_calculations: {
         Row: {
           ai_recommendations: string[] | null
@@ -6291,6 +6341,103 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocation_rules: {
+        Row: {
+          actions: Json
+          company_id: string
+          conditions: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          company_id: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          company_id?: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocation_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_allocations: {
+        Row: {
+          allocated_date: string
+          allocation_method: string
+          allocation_type: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          payment_id: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          allocated_date?: string
+          allocation_method?: string
+          allocation_type: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_id: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          allocated_date?: string
+          allocation_method?: string
+          allocation_type?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_id?: string
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_contract_linking_attempts: {
         Row: {
           attempted_contract_identifiers: Json | null
@@ -6410,6 +6557,7 @@ export type Database = {
         Row: {
           account_id: string | null
           agreement_number: string | null
+          allocation_status: string | null
           amount: number
           bank_account: string | null
           bank_id: string | null
@@ -6431,6 +6579,7 @@ export type Database = {
           late_fine_status: string | null
           late_fine_type: string | null
           late_fine_waiver_reason: string | null
+          linking_confidence: number | null
           notes: string | null
           original_due_date: string | null
           payment_date: string
@@ -6438,6 +6587,8 @@ export type Database = {
           payment_number: string
           payment_status: string
           payment_type: string
+          processing_notes: string | null
+          processing_status: string | null
           reconciliation_status: string | null
           reference_number: string | null
           transaction_type: Database["public"]["Enums"]["transaction_type"]
@@ -6447,6 +6598,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           agreement_number?: string | null
+          allocation_status?: string | null
           amount: number
           bank_account?: string | null
           bank_id?: string | null
@@ -6468,6 +6620,7 @@ export type Database = {
           late_fine_status?: string | null
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
+          linking_confidence?: number | null
           notes?: string | null
           original_due_date?: string | null
           payment_date: string
@@ -6475,6 +6628,8 @@ export type Database = {
           payment_number: string
           payment_status?: string
           payment_type: string
+          processing_notes?: string | null
+          processing_status?: string | null
           reconciliation_status?: string | null
           reference_number?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
@@ -6484,6 +6639,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           agreement_number?: string | null
+          allocation_status?: string | null
           amount?: number
           bank_account?: string | null
           bank_id?: string | null
@@ -6505,6 +6661,7 @@ export type Database = {
           late_fine_status?: string | null
           late_fine_type?: string | null
           late_fine_waiver_reason?: string | null
+          linking_confidence?: number | null
           notes?: string | null
           original_due_date?: string | null
           payment_date?: string
@@ -6512,6 +6669,8 @@ export type Database = {
           payment_number?: string
           payment_status?: string
           payment_type?: string
+          processing_notes?: string | null
+          processing_status?: string | null
           reconciliation_status?: string | null
           reference_number?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
