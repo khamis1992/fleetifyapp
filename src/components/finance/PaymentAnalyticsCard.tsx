@@ -11,6 +11,7 @@ interface PaymentAnalyticsCardProps {
 
 export const PaymentAnalyticsCard = ({ startDate, endDate }: PaymentAnalyticsCardProps) => {
   const { data: analytics, isLoading } = usePaymentAnalytics(startDate, endDate);
+  const { formatCurrency } = useCurrencyFormatter();
 
   if (isLoading) {
     return (
@@ -33,7 +34,6 @@ export const PaymentAnalyticsCard = ({ startDate, endDate }: PaymentAnalyticsCar
 
   if (!analytics) return null;
 
-  const { formatCurrency } = useCurrencyFormatter();
 
   return (
     <div className="space-y-6">
