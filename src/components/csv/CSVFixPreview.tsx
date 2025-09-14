@@ -73,7 +73,17 @@ export function CSVFixPreview({ fixes, onApprove, onCancel, isProcessing = false
     onApprove(approvedFixes);
   };
 
-  const getConfidenceBadge = (confidence: string) => {
+  const getConfidenceBadge = (confidence: string | number) => {
+    // Convert number to string if needed
+    let confidenceStr: string;
+    if (typeof confidence === 'number') {
+      if (confidence >= 0.8) confidenceStr = 'high';
+      else if (confidence >= 0.5) confidenceStr = 'medium';
+      else confidenceStr = 'low';
+    } else {
+      confidenceStr = confidence;
+    }
+    
     const variants = {
       high: "default",
       medium: "secondary",
@@ -87,8 +97,8 @@ export function CSVFixPreview({ fixes, onApprove, onCancel, isProcessing = false
     };
 
     return (
-      <Badge variant={variants[confidence as keyof typeof variants]}>
-        {labels[confidence as keyof typeof labels]}
+      <Badge variant={variants[confidenceStr as keyof typeof variants] || "secondary"}>
+        {labels[confidenceStr as keyof typeof labels] || "غير محدد"}
       </Badge>
     );
   };
