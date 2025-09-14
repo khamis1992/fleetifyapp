@@ -26,8 +26,6 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
-import { useContracts } from "@/hooks/useContracts";
-
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -43,7 +41,6 @@ const Payments = () => {
   });
 
   const { data: payments, isLoading, error, refetch } = usePayments();
-  const { data: contracts = [] } = useContracts();
   const { formatCurrency } = useCurrencyFormatter();
   const { isMobile } = useSimpleBreakpoint();
 
@@ -427,11 +424,7 @@ const Payments = () => {
                                 {payment.reference_number || '-'}
                               </TableCell>
                               <TableCell className="font-mono">
-                                {(() => {
-                                  const contractId = (payment as any).contract_id as string | undefined;
-                                  const contract = contracts?.find((c: any) => c.id === contractId);
-                                  return contract?.contract_number || '-';
-                                })()}
+                                {(payment as any).contracts?.contract_number || '-'}
                               </TableCell>
                               <TableCell>
                                 <Button 
