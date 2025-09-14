@@ -11,6 +11,7 @@ import { normalizeCsvHeaders } from '@/utils/csvHeaderMapping';
 import { parseNumber } from '@/utils/numberFormatter';
 import { Constants } from '@/integrations/supabase/types';
 import { CSVAutoFix, type AutoFixConfig } from '@/utils/csvAutoFix';
+import { extractContractFromPaymentData, normalizeContractNumber } from '@/utils/contractNumberExtraction';
 
 interface BulkOperationResult {
   total: number;
@@ -197,10 +198,12 @@ export function useBulkPaymentOperations() {
             customerId = customersMap.get(normalized.customer_name.toLowerCase().trim());
           }
 
-          // تحديد معرف العقد
+          // تحديد معرف العقد باستخدام agreement_number أو استخراج ذكي من النصوص
           let contractId: string | undefined;
-          if (normalized.contract_number) {
-            const contract = contractsMap.get(normalized.contract_number);
+          const extracted = extractContractFromPaymentData(normalized);
+          const agreementCandidate = (normalized.agreement_number || normalized.contract_number || extracted?.contractNumber || '').toString().trim();
+          if (agreementCandidate) {
+            const contract = contractsMap.get(agreementCandidate) || contractsMap.get(normalizeContractNumber(agreementCandidate));
             contractId = contract?.id;
           }
 
@@ -229,15 +232,22 @@ export function useBulkPaymentOperations() {
             payment_number: normalized.payment_number || formatPaymentNumber(++lastPaymentNumber),
             payment_date: normalized.payment_date || new Date().toISOString().split('T')[0],
             amount: parseNumber(normalized.amount || normalized.amount_paid || 0),
-          payment_method: paymentMethod,
-          payment_type: paymentType,
-            reference_number: normalized.reference_number,
-            notes: normalized.notes || normalized.description,
+            payment_method: paymentMethod,
+            payment_type: paymentType,
+            reference_number: normalized.reference_number || null,
+            notes: (normalized.notes || normalized.description) || null,
             customer_id: customerId,
             contract_id: contractId,
             transaction_type: txType,
             currency: normalized.currency || 'QAR',
             payment_status: 'completed',
+            agreement_number: agreementCandidate || null,
+            due_date: normalized.due_date || null,
+            original_due_date: normalized.original_due_date || null,
+            late_fine_amount: parseNumber(normalized.late_fine_amount || 0) || null,
+            late_fine_days_overdue: parseNumber(normalized.late_fine_days_overdue || 0) || null,
+            reconciliation_status: normalized.reconciliation_status || null,
+            description_type: normalized.description_type || normalized.transaction_type || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -324,7 +334,14 @@ export function useBulkPaymentOperations() {
     
     const map = new Map<string, any>();
     data?.forEach(contract => {
-      map.set(contract.contract_number, contract);
+      if (!contract?.contract_number) return;
+      const original = contract.contract_number;
+      const normalized = normalizeContractNumber(original);
+      map.set(original, contract);
+      // أضف شكلًا موحدًا بدون فواصل لزيادة فرص التطابق
+      if (normalized && normalized !== original) {
+        map.set(normalized, contract);
+      }
     });
     
     return map;
