@@ -424,7 +424,7 @@ const Payments = () => {
                                 {payment.reference_number || '-'}
                               </TableCell>
                               <TableCell className="font-mono">
-                                {(payment as any).contracts?.contract_number || '-'}
+                                {(payment as any).contracts?.contract_number || (payment as any).agreement_number || '-'}
                               </TableCell>
                               <TableCell>
                                 <Button 

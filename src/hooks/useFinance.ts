@@ -83,6 +83,7 @@ export interface Payment {
   vendor_id?: string
   invoice_id?: string
   contract_id?: string
+  agreement_number?: string
   amount: number
   currency: string
   reference_number?: string
@@ -858,7 +859,7 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
         .from("payments")
         .select(`
           *,
-          contracts(contract_number)
+          contracts:contracts!fk_payments_contract_id(contract_number)
         `)
         .eq("company_id", companyId)
         .order("payment_date", { ascending: false })
