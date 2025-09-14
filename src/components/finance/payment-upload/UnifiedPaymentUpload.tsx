@@ -407,12 +407,7 @@ export function UnifiedPaymentUpload({
           </DialogTitle>
         </DialogHeader>
         
-        <FastProcessingMode 
-          onUploadComplete={handleFileUpload}
-          downloadTemplate={downloadTemplate}
-          fieldTypes={paymentFieldTypes}
-          requiredFields={paymentRequiredFields}
-        />
+        {currentStep === 'mode_selection' ? renderModeSelection() : renderUploadInterface()}
       </DialogContent>
     </Dialog>
   );
