@@ -3,7 +3,7 @@ export { UnifiedFinancialDashboard } from './UnifiedFinancialDashboard';
 export { UnifiedPaymentForm } from './UnifiedPaymentForm';
 export { FinancialAlertsSystem } from './FinancialAlertsSystem';
 export { AdvancedFinancialReports } from './AdvancedFinancialReports';
-export { PaymentAnalyticsCard } from './PaymentAnalyticsCard';
+
 export { PayrollIntegrationCard } from './PayrollIntegrationCard';
 export { PendingJournalEntriesManager } from './PendingJournalEntriesManager';
 

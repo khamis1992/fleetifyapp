@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { FinancialAlertsSystem } from "./FinancialAlertsSystem";
 import { AdvancedFinancialReports } from "./AdvancedFinancialReports";
-import { PaymentAnalyticsCard } from "./PaymentAnalyticsCard";
+
 import { PayrollIntegrationCard } from "./PayrollIntegrationCard";
 import { PendingJournalEntriesManager } from "./PendingJournalEntriesManager";
 import { UnifiedPaymentForm } from "./UnifiedPaymentForm";
@@ -294,7 +294,6 @@ export const UnifiedFinancialDashboard = () => {
 
         <TabsContent value="analytics">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <PaymentAnalyticsCard />
             <PayrollIntegrationCard />
             <PendingJournalEntriesManager />
           </div>

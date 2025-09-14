@@ -2,7 +2,7 @@ import { useState } from "react";
 import { usePayments } from "@/hooks/useFinance";
 import { PaymentForm } from "@/components/finance/PaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
-import { PaymentAnalyticsCard } from "@/components/finance/PaymentAnalyticsCard";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -249,10 +249,6 @@ const Payments = () => {
                 </CardContent>
               </Card>
               
-              <PaymentAnalyticsCard 
-                startDate={dateRange.start || undefined} 
-                endDate={dateRange.end || undefined} 
-              />
             </div>
           </TabsContent>
 
