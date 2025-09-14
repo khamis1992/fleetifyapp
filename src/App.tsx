@@ -1,5 +1,5 @@
 
-import * as React from "react";
+import React from "react";
 import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";

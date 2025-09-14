@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
     include: [
@@ -25,6 +26,7 @@ export default defineConfig(({ mode }) => ({
       'lucide-react',
       '@supabase/supabase-js'
     ],
+    force: true,
   },
   build: {
     target: 'es2020',
