@@ -299,6 +299,16 @@ export function CarRentalSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Customers */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className="h-10">
+                  <NavLink to="/customers" className={getNavClassName}>
+                    <Users className="h-4 w-4" />
+                    {(!collapsed || isMobile) && <span className="font-medium">العملاء</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Contracts */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild className="h-10">
