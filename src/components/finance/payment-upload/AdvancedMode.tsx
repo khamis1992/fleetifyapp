@@ -22,7 +22,7 @@ import {
   Shield,
   TrendingUp
 } from 'lucide-react';
-import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
+import { CSVDragDropUpload } from '@/components/finance/csv-import/CSVDragDropUpload';
 import { toast } from 'sonner';
 
 interface AdvancedModeProps {
@@ -419,15 +419,11 @@ export function AdvancedMode({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <SmartCSVUpload
-            open={true}
-            onOpenChange={() => {}}
-            onUploadComplete={() => {}}
-            entityType="payment"
-            uploadFunction={handleAdvancedUpload}
-            downloadTemplate={downloadTemplate}
-            fieldTypes={fieldTypes}
-            requiredFields={requiredFields}
+          <CSVDragDropUpload
+            onFileProcessed={handleAdvancedUpload}
+            onError={(error) => toast.error(`خطأ في معالجة الملف: ${error}`)}
+            acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+            maxFileSize={50 * 1024 * 1024} // 50MB
           />
         </CardContent>
       </Card>

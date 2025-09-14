@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Zap, Download, Upload, CheckCircle } from 'lucide-react';
-import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
+import { CSVDragDropUpload } from '@/components/finance/csv-import/CSVDragDropUpload';
 
 interface QuickUploadModeProps {
   onUploadComplete: (data: any[]) => Promise<any>;
@@ -102,15 +102,11 @@ export function QuickUploadMode({
             </div>
           )}
 
-          <SmartCSVUpload
-            open={true}
-            onOpenChange={() => {}}
-            onUploadComplete={() => {}}
-            entityType="payment"
-            uploadFunction={onUploadComplete}
-            downloadTemplate={downloadTemplate}
-            fieldTypes={fieldTypes}
-            requiredFields={requiredFields}
+          <CSVDragDropUpload
+            onFileProcessed={onUploadComplete}
+            onError={(error) => console.error('خطأ في معالجة الملف:', error)}
+            acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+            maxFileSize={50 * 1024 * 1024} // 50MB
           />
         </CardContent>
       </Card>

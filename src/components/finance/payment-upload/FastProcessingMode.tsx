@@ -21,7 +21,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
-import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
+import { CSVDragDropUpload } from '@/components/finance/csv-import/CSVDragDropUpload';
 import { useBulkPaymentOperations } from '@/hooks/useBulkPaymentOperations';
 import { toast } from 'sonner';
 
@@ -309,15 +309,11 @@ export function FastProcessingMode({
             </div>
           )}
 
-          <SmartCSVUpload
-            open={true}
-            onOpenChange={() => {}}
-            onUploadComplete={() => {}}
-            entityType="payment"
-            uploadFunction={handleFastUpload}
-            downloadTemplate={downloadTemplate}
-            fieldTypes={fieldTypes}
-            requiredFields={requiredFields}
+          <CSVDragDropUpload
+            onFileProcessed={handleFastUpload}
+            onError={(error) => toast.error(`خطأ في معالجة الملف: ${error}`)}
+            acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+            maxFileSize={50 * 1024 * 1024} // 50MB
           />
         </CardContent>
       </Card>

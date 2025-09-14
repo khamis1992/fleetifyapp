@@ -22,7 +22,7 @@ import {
   AlertTriangle,
   XCircle
 } from 'lucide-react';
-import { SmartCSVUpload } from '@/components/csv/SmartCSVUpload';
+import { CSVDragDropUpload } from '@/components/finance/csv-import/CSVDragDropUpload';
 import { PaymentUploadDiagnostics } from './PaymentUploadDiagnostics';
 import { toast } from 'sonner';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
@@ -412,15 +412,11 @@ export function SmartLinkingMode({
             </div>
           )}
 
-          <SmartCSVUpload
-            open={true}
-            onOpenChange={() => {}}
-            onUploadComplete={() => {}}
-            entityType="payment"
-            uploadFunction={handleFileUpload}
-            downloadTemplate={downloadTemplate}
-            fieldTypes={fieldTypes}
-            requiredFields={requiredFields}
+          <CSVDragDropUpload
+            onFileProcessed={handleFileUpload}
+            onError={(error) => toast.error(`خطأ في معالجة الملف: ${error}`)}
+            acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+            maxFileSize={50 * 1024 * 1024} // 50MB
           />
         </CardContent>
       </Card>
