@@ -72,7 +72,8 @@ export default function Contracts() {
   })
 
   // Performance optimization hooks
-  const { measureRenderTime, getOptimizedImageSrc } = usePerformanceOptimization()
+  const performanceOptimization = usePerformanceOptimization()
+  const { measureRenderTime, getOptimizedImageSrc } = performanceOptimization
 
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false)

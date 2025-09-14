@@ -38,12 +38,10 @@ export function usePerformanceOptimization() {
     return items.slice(startIndex, endIndex)
   }, [])
 
-  const memoizedValue = useMemo(() => ({
+  return {
     measureRenderTime,
     getOptimizedImageSrc,
     virtualizeList,
     metrics: renderMetrics.current
-  }), [measureRenderTime, getOptimizedImageSrc, virtualizeList])
-
-  return memoizedValue
+  }
 }
