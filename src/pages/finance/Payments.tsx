@@ -26,6 +26,10 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { extractContractFromPaymentData, normalizeContractNumber } from "@/utils/contractNumberExtraction";
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -39,6 +43,10 @@ const Payments = () => {
     start: "",
     end: ""
   });
+
+  const [linkFilter, setLinkFilter] = useState<string>('all');
+  const [isLinking, setIsLinking] = useState(false);
+  const { companyId } = useUnifiedCompanyAccess();
 
   const { data: payments, isLoading, error, refetch } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
@@ -56,7 +64,8 @@ const Payments = () => {
                          payment.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !filterStatus || filterStatus === "all" || payment.payment_status === filterStatus;
     const matchesMethod = !filterMethod || filterMethod === "all" || payment.payment_method === filterMethod;
-    return matchesSearch && matchesStatus && matchesMethod;
+    const matchesLink = linkFilter === 'all' || (linkFilter === 'linked' ? !!payment.contract_id : !payment.contract_id);
+    return matchesSearch && matchesStatus && matchesMethod && matchesLink;
   }) || [];
 
   const getStatusColor = (status: string) => {
@@ -108,6 +117,84 @@ const Payments = () => {
     }
   };
 
+  // إحصائيات الربط
+  const totalPaymentsCount = payments?.length || 0;
+  const linkedCount = payments?.filter(p => !!(p as any).contract_id)?.length || 0;
+  const unlinkedCount = totalPaymentsCount - linkedCount;
+  const withAgreementOnlyCount = payments?.filter(p => !!(p as any).agreement_number && !(p as any).contract_id)?.length || 0;
+
+  const runAutoLinking = async () => {
+    if (!companyId) {
+      toast.error('معرف الشركة غير متوفر');
+      return;
+    }
+    if (!payments || payments.length === 0) {
+      toast.info('لا توجد مدفوعات للمعالجة');
+      return;
+    }
+    setIsLinking(true);
+    const toastId = toast.loading('جارِ ربط المدفوعات بالعقود...');
+    try {
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id, contract_number')
+        .eq('company_id', companyId);
+      if (contractsError) throw contractsError;
+
+      const contractMap = new Map<string, string>();
+      for (const c of contracts || []) {
+        if (c.contract_number) {
+          contractMap.set(normalizeContractNumber(c.contract_number), c.id);
+        }
+      }
+
+      let scanned = 0; let updated = 0; let linked = 0; let agreementFilled = 0;
+      const updates: { id: string, update: any }[] = [];
+
+      for (const p of payments) {
+        scanned++;
+        const currentAgreement = (p as any).agreement_number as string | undefined;
+        let candidate = currentAgreement;
+        if (!candidate) {
+          const match = extractContractFromPaymentData(p as any);
+          if (match?.contractNumber) candidate = match.contractNumber;
+        }
+        if (!candidate) continue;
+        const normalized = normalizeContractNumber(candidate);
+        const targetId = contractMap.get(normalized);
+        const update: any = {};
+        let needsUpdate = false;
+        if (!currentAgreement) {
+          update.agreement_number = candidate;
+          needsUpdate = true;
+          agreementFilled++;
+        }
+        if (!(p as any).contract_id && targetId) {
+          update.contract_id = targetId;
+          needsUpdate = true;
+          linked++;
+        }
+        if (needsUpdate) {
+          updates.push({ id: (p as any).id, update });
+        }
+      }
+
+      const batchSize = 50;
+      for (let i = 0; i < updates.length; i += batchSize) {
+        const slice = updates.slice(i, i + batchSize);
+        await Promise.all(slice.map(u => supabase.from('payments').update(u.update).eq('id', u.id)));
+        updated += slice.length;
+      }
+
+      toast.success(`تم فحص ${scanned}، تحديث ${updated}، ربط ${linked}، تعبئة ${agreementFilled}`, { id: toastId });
+      refetch();
+    } catch (e: any) {
+      toast.error(`حدث خطأ أثناء الربط: ${e?.message || e}`, { id: toastId });
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
   return (
     <FinanceErrorBoundary
       error={error ? new Error(error.message || 'خطأ في تحميل المدفوعات') : null}
@@ -150,7 +237,7 @@ const Payments = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setIsUnifiedUploadOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+                className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 رفع المدفوعات الذكي
@@ -160,6 +247,10 @@ const Payments = () => {
                   <CreditCard className="h-4 w-4 mr-2" />
                   ربط المدفوعات
                 </Link>
+              </Button>
+              <Button variant="outline" onClick={runAutoLinking} disabled={isLinking}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {isLinking ? 'جارِ الربط...' : 'ربط العقود تلقائياً'}
               </Button>
               <Button 
                 variant="destructive" 
