@@ -46,6 +46,7 @@ import AuditPage from "./pages/AuditPage";
 import Fleet from "./pages/Fleet";
 import NotFound from "./pages/NotFound";
 import Contracts from "./pages/Contracts";
+import Customers from "./pages/Customers";
 import Quotations from "./pages/Quotations";
 import QuotationApproval from "./pages/QuotationApproval";
 import Maintenance from "./pages/fleet/Maintenance";
@@ -186,6 +187,7 @@ const App = () => {
                     </AdminRoute>
                   } />
                   <Route path="contracts" element={<Contracts />} />
+                  <Route path="customers" element={<Customers />} />
                   <Route path="tenants" element={<Tenants />} />
                   <Route path="properties" element={<Properties />} />
                   <Route path="properties/add" element={<AddProperty />} />
@@ -330,6 +332,7 @@ const App = () => {
                     </AdminRoute>
                   } />
                   <Route path="contracts" element={<Contracts />} />
+                  <Route path="customers" element={<Customers />} />
                   <Route path="tenants" element={<Tenants />} />
                   <Route path="properties" element={<Properties />} />
                   <Route path="properties/add" element={<AddProperty />} />
