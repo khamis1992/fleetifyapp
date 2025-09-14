@@ -169,10 +169,19 @@ export function useBulkPaymentOperations() {
           // إعداد بيانات المدفوعة
           const methodInput = normalized.payment_method ?? normalized.payment_type ?? normalized.method ?? normalized.mode;
           let method = normalizePaymentMethod(methodInput);
+          
+          // تسجيل مفصل للتشخيص
+          console.log(`🔍 [ROW ${i + 1}] Payment method processing:`, {
+            input: methodInput,
+            normalized: method,
+            isValid: (Constants.public.Enums.payment_method as readonly string[]).includes(method as any)
+          });
+          
           if (!(Constants.public.Enums.payment_method as readonly string[]).includes(method as any)) {
             console.warn(`⚠️ طريقة دفع غير معروفة في السطر ${i + 1}:`, methodInput, '— سيتم استخدام cash');
             method = 'cash';
           }
+          
           const txType = normalizeTxType(normalized.transaction_type ?? normalized.type ?? normalized.description_type) || 'receipt';
 
           const paymentData = {
@@ -192,6 +201,15 @@ export function useBulkPaymentOperations() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
+
+          // تسجيل مفصل للبيانات قبل الإدراج
+          console.log(`🔍 [ROW ${i + 1}] Final payment data:`, {
+            payment_method: paymentData.payment_method,
+            transaction_type: paymentData.transaction_type,
+            amount: paymentData.amount,
+            customer_id: paymentData.customer_id,
+            contract_id: paymentData.contract_id
+          });
 
           // التحقق من صحة البيانات إذا لم يتم تخطي التحقق
           if (!skipValidation) {
