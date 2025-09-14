@@ -18,15 +18,20 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, './src'),
     },
     dedupe: ['react', 'react-dom'],
+    conditions: ['module', 'import', 'browser', 'default'],
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
-      'lucide-react',
       '@supabase/supabase-js'
     ],
+    exclude: ['lucide-react'],
     force: true,
+    esbuildOptions: {
+      target: 'es2020',
+      mainFields: ['module', 'browser', 'main'],
+    },
   },
   build: {
     target: 'es2020',
