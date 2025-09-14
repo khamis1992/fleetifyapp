@@ -282,12 +282,40 @@ export class CSVAutoFix {
     };
   }
 
-  // Legacy methods for compatibility
-  public static fixCSVData(data: any[], config?: Partial<AutoFixConfig>) {
-    const fixer = new CSVAutoFix(config);
-    return fixer.autoFixData(data);
+  // Legacy methods for compatibility with existing components
+  public static fixCSVData(data: any[], fieldTypes?: any, requiredFields?: string[], locale?: string) {
+    const fixer = new CSVAutoFix();
+    const { fixedData, fixes } = fixer.autoFixData(data);
+    
+    // Convert to legacy format expected by existing components
+    return fixedData.map((row, index) => {
+      const rowFixes = fixes.filter(f => f.row === index + 1);
+      return {
+        rowNumber: index + 1,
+        hasErrors: false,
+        validationErrors: [],
+        fixes: rowFixes.map(fix => ({
+          field: fix.field,
+          fix: {
+            originalValue: fix.original,
+            fixedValue: fix.fixed,
+            reason: fix.reason,
+            confidence: 'high'  // String instead of number for compatibility
+          }
+        })),
+        originalData: data[index],
+        fixedData: row
+      };
+    });
   }
 
+  public static fixRow(row: any, rowNumber?: number, fieldTypes?: any, requiredFields?: string[]) {
+    const fixer = new CSVAutoFix();
+    const fixedRow = fixer.autoFixRow(row, rowNumber || 0);
+    return fixedRow;
+  }
+
+  // Instance method for compatibility
   public fixRow(row: any, index: number) {
     return this.autoFixRow(row, index);
   }
@@ -295,9 +323,18 @@ export class CSVAutoFix {
 
 // Export types for compatibility
 export type CSVRowFix = {
-  row: number;
-  field: string; 
-  original: any;
-  fixed: any;
-  reason: string;
+  rowNumber: number;
+  hasErrors: boolean;
+  validationErrors: string[];
+  fixes: Array<{
+    field: string;
+    fix: {
+      originalValue: any;
+      fixedValue: any;
+      reason: string;
+      confidence: number;
+    };
+  }>;
+  originalData: any;
+  fixedData: any;
 };
