@@ -51,8 +51,9 @@ export const PaymentLinkingTroubleshooter: React.FC = () => {
     queryFn: async (): Promise<DiagnosticResult[]> => {
       if (!companyId) return [];
 
-      const { data: stats, error } = await supabase
+      const { data, error } = await (supabase as any)
         .rpc('get_pending_payments_stats', { target_company_id: companyId });
+      const stats: any = data || {};
 
       if (error) throw error;
 
@@ -116,11 +117,11 @@ export const PaymentLinkingTroubleshooter: React.FC = () => {
     mutationFn: async (): Promise<FixResult[]> => {
       if (!companyId) throw new Error('معرف الشركة مطلوب');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .rpc('fix_pending_payments', { target_company_id: companyId });
 
       if (error) throw error;
-      return data || [];
+      return (data as unknown as FixResult[]) || [];
     },
     onSuccess: (results) => {
       toast({

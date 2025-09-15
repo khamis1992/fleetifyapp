@@ -85,7 +85,7 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
           allocation_status,
           linking_confidence,
           processing_notes,
-          customers(id, name),
+          customers(id, customer_type, first_name, last_name, company_name),
           contracts(id, contract_number, monthly_amount)
         `)
         .eq('company_id', companyId)
@@ -112,8 +112,8 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
           customer_id,
           monthly_amount,
           balance_due,
-          customer:customers(name)
-        `)
+          customer:customers(customer_type, first_name, last_name, company_name)
+        `
         .eq('company_id', companyId)
         .eq('status', 'active')
         .gt('balance_due', 0);
@@ -151,12 +151,14 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
       if (error) throw error;
 
       // تسجيل محاولة الربط
-      await supabase.from('payment_contract_linking_attempts').insert({
+      await (supabase as any).from('payment_contract_linking_attempts').insert({
         payment_id: paymentId,
         selected_contract_id: contractId,
         linking_confidence: confidence,
         linking_method: 'manual',
-        matching_contracts: [contract],
+        matching_contracts: [
+          { id: contract.id, contract_number: contract.contract_number, monthly_amount: contract.monthly_amount }
+        ] as any,
         attempted_contract_identifiers: {
           contract_number: contract.contract_number,
           customer_id: contract.customer_id
@@ -287,11 +289,18 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
     return reasons.join(' + ') || 'مطابقة عامة';
   };
 
-  const filteredPayments = pendingPayments?.filter(payment =>
-    payment.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.customers?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPayments = pendingPayments?.filter(payment => {
+    const pn = (payment.payment_number || '').toLowerCase();
+    const rn = (payment.reference_number || '').toLowerCase();
+    const cn = payment.customers
+      ? ((payment.customers.customer_type === 'corporate'
+          ? payment.customers.company_name
+          : `${payment.customers.first_name || ''} ${payment.customers.last_name || ''}`) || '')
+          .toLowerCase()
+      : '';
+    const q = searchTerm.toLowerCase();
+    return pn.includes(q) || cn.includes(q) || rn.includes(q);
+  });
 
   if (isLoading) {
     return (
