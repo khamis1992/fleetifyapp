@@ -1,0 +1,353 @@
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { professionalPaymentLinking, type SmartLinkingResult, type LinkingCriteria } from '@/utils/professionalPaymentLinking';
+import { paymentAllocationEngine, type AllocationResult } from '@/utils/paymentAllocationEngine';
+import { accountingIntegration, type JournalEntryData } from '@/utils/accountingIntegration';
+import { auditTrailSystem } from '@/utils/auditTrailSystem';
+import { logger } from '@/lib/logger';
+
+export interface ProfessionalPaymentStats {
+  totalProcessed: number;
+  averageProcessingTime: number;
+  successRate: number;
+  autoLinkedPercentage: number;
+  pendingReview: number;
+  monthlyTrend: Array<{
+    month: string;
+    count: number;
+    amount: number;
+  }>;
+}
+
+export interface PendingPayment {
+  id: string;
+  paymentNumber: string;
+  amount: number;
+  customerName: string;
+  paymentDate: string;
+  status: string;
+  confidence: number;
+  suggestedActions: string[];
+}
+
+export const useProfessionalPaymentSystem = (companyId: string) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Get professional payment statistics
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['professional-payment-stats', companyId],
+    queryFn: async (): Promise<ProfessionalPaymentStats> => {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date, payment_status, created_at')
+        .eq('company_id', companyId)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (error) throw error;
+
+      const payments = data || [];
+      const totalProcessed = payments.length;
+      const successRate = payments.filter(p => p.payment_status === 'completed').length / totalProcessed * 100;
+      
+      // Calculate monthly trend
+      const monthlyTrend = payments.reduce((acc, payment) => {
+        const month = new Date(payment.payment_date).toLocaleDateString('ar', { year: 'numeric', month: 'long' });
+        const existing = acc.find(item => item.month === month);
+        
+        if (existing) {
+          existing.count += 1;
+          existing.amount += payment.amount;
+        } else {
+          acc.push({ month, count: 1, amount: payment.amount });
+        }
+        
+        return acc;
+      }, [] as Array<{ month: string; count: number; amount: number }>);
+
+      return {
+        totalProcessed,
+        averageProcessingTime: 2.5, // Mock data - would calculate from actual processing times
+        successRate: successRate || 0,
+        autoLinkedPercentage: 75, // Mock data - would calculate from linking data
+        pendingReview: 5, // Mock data - would get from pending review table
+        monthlyTrend
+      };
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Get pending payments for review
+  const { data: pendingPayments, isLoading: pendingLoading } = useQuery({
+    queryKey: ['pending-payments', companyId],
+    queryFn: async (): Promise<PendingPayment[]> => {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          id,
+          payment_number,
+          amount,
+          payment_date,
+          payment_status,
+          customers (id, customer_name)
+        `)
+        .eq('company_id', companyId)
+        .eq('payment_status', 'pending')
+        .order('payment_date', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      return (data || []).map(payment => ({
+        id: payment.id,
+        paymentNumber: payment.payment_number,
+        amount: payment.amount,
+        customerName: (payment.customers as any)?.customer_name || 'غير محدد',
+        paymentDate: payment.payment_date,
+        status: payment.payment_status,
+        confidence: Math.random() * 0.4 + 0.6, // Mock confidence score
+        suggestedActions: ['ربط بعقد', 'إنشاء فاتورة', 'مراجعة يدوية']
+      }));
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  // Smart linking mutation
+  const smartLinkingMutation = useMutation({
+    mutationFn: async ({ paymentId, criteria }: { paymentId: string; criteria: LinkingCriteria }) => {
+      logger.debug('Starting smart linking process', { paymentId });
+      return await professionalPaymentLinking.performSmartLinking(paymentId, criteria);
+    },
+    onSuccess: (result: SmartLinkingResult, { paymentId }) => {
+      if (result.success) {
+        toast({
+          title: 'تم الربط بنجاح',
+          description: `تم ربط ${result.linkedContracts.length} عقد بالدفعة`,
+        });
+        
+        // Log audit trail
+        auditTrailSystem.logPaymentAction(
+          'linked',
+          paymentId,
+          'current-user-id', // Would get from auth context
+          companyId,
+          undefined,
+          { linkedContracts: result.linkedContracts.length }
+        );
+      } else {
+        toast({
+          title: 'فشل في الربط',
+          description: 'لم يتم العثور على عقود مناسبة للربط',
+          variant: 'destructive'
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+    },
+    onError: (error) => {
+      logger.error('Smart linking failed', error);
+      toast({
+        title: 'خطأ في الربط الذكي',
+        description: 'حدث خطأ أثناء محاولة ربط المدفوعة',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Payment allocation mutation
+  const allocationMutation = useMutation({
+    mutationFn: async (paymentData: {
+      id: string;
+      amount: number;
+      customerId?: string;
+      contractId?: string;
+      paymentMethod: string;
+      companyId: string;
+    }) => {
+      logger.debug('Starting payment allocation', { paymentId: paymentData.id });
+      return await paymentAllocationEngine.allocatePayment(paymentData);
+    },
+    onSuccess: (result: AllocationResult, paymentData) => {
+      if (result.success) {
+        toast({
+          title: 'تم توزيع المدفوعة',
+          description: `تم توزيع المبلغ على ${result.allocations.length} حساب`,
+        });
+        
+        auditTrailSystem.logPaymentAction(
+          'allocated',
+          paymentData.id,
+          'current-user-id',
+          companyId,
+          undefined,
+          { allocations: result.allocations.length }
+        );
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+    },
+    onError: (error) => {
+      logger.error('Payment allocation failed', error);
+      toast({
+        title: 'خطأ في التوزيع',
+        description: 'حدث خطأ أثناء توزيع المدفوعة',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Journal entry creation mutation
+  const journalEntryMutation = useMutation({
+    mutationFn: async (entryData: JournalEntryData) => {
+      logger.debug('Creating journal entry', { entryNumber: entryData.entryNumber });
+      return await accountingIntegration.createJournalEntry(entryData, companyId);
+    },
+    onSuccess: (result, entryData) => {
+      if (result.success) {
+        toast({
+          title: 'تم إنشاء القيد المحاسبي',
+          description: `القيد رقم: ${result.journalEntryNumber}`,
+        });
+        
+        if (result.journalEntryId) {
+          auditTrailSystem.logJournalEntryAction(
+            'created',
+            result.journalEntryId,
+            'current-user-id',
+            companyId,
+            undefined,
+            { entryNumber: entryData.entryNumber, totalAmount: entryData.totalAmount }
+          );
+        }
+      } else {
+        toast({
+          title: 'فشل في إنشاء القيد',
+          description: result.validationErrors?.join(', ') || 'خطأ غير معروف',
+          variant: 'destructive'
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['journal-entries', companyId] });
+    },
+    onError: (error) => {
+      logger.error('Journal entry creation failed', error);
+      toast({
+        title: 'خطأ في القيد المحاسبي',
+        description: 'حدث خطأ أثناء إنشاء القيد المحاسبي',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Process payment with full professional features
+  const processPayment = useCallback(async (paymentId: string, options: {
+    enableSmartLinking?: boolean;
+    enableAllocation?: boolean;
+    enableJournalEntry?: boolean;
+    customCriteria?: LinkingCriteria;
+  } = {}) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Get payment data
+      const { data: payment, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          customers (customer_name),
+          contracts (contract_number)
+        `)
+        .eq('id', paymentId)
+        .single();
+
+      if (error || !payment) {
+        throw new Error('لم يتم العثور على المدفوعة');
+      }
+
+      const results = {
+        linking: null as SmartLinkingResult | null,
+        allocation: null as AllocationResult | null,
+        journalEntry: null as any
+      };
+
+      // Step 1: Smart linking
+      if (options.enableSmartLinking) {
+        const linkingCriteria: LinkingCriteria = {
+          customerId: payment.customer_id,
+          amount: payment.amount,
+          referenceNumber: payment.reference_number,
+          paymentDate: payment.payment_date,
+          ...options.customCriteria
+        };
+
+        results.linking = await smartLinkingMutation.mutateAsync({
+          paymentId,
+          criteria: linkingCriteria
+        });
+      }
+
+      // Step 2: Payment allocation
+      if (options.enableAllocation) {
+        results.allocation = await allocationMutation.mutateAsync({
+          id: payment.id,
+          amount: payment.amount,
+          customerId: payment.customer_id,
+          contractId: payment.contract_id,
+          paymentMethod: payment.payment_method,
+          companyId: payment.company_id
+        });
+      }
+
+      // Step 3: Journal entry
+      if (options.enableJournalEntry && results.allocation?.journalEntryPreview) {
+        results.journalEntry = await journalEntryMutation.mutateAsync(
+          results.allocation.journalEntryPreview as JournalEntryData
+        );
+      }
+
+      toast({
+        title: 'تم معالجة المدفوعة بنجاح',
+        description: 'تم تطبيق جميع العمليات المحددة على المدفوعة',
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('Payment processing failed', { error, paymentId });
+      toast({
+        title: 'خطأ في معالجة المدفوعة',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        variant: 'destructive'
+      });
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, smartLinkingMutation, allocationMutation, journalEntryMutation, toast]);
+
+  return {
+    // Data
+    stats,
+    pendingPayments,
+    
+    // Loading states
+    statsLoading,
+    pendingLoading,
+    isProcessing,
+    
+    // Actions
+    processPayment,
+    performSmartLinking: smartLinkingMutation.mutate,
+    allocatePayment: allocationMutation.mutate,
+    createJournalEntry: journalEntryMutation.mutate,
+    
+    // Mutation states
+    isLinking: smartLinkingMutation.isPending,
+    isAllocating: allocationMutation.isPending,
+    isCreatingJournal: journalEntryMutation.isPending,
+  };
+};
