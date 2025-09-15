@@ -41,6 +41,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['professional-payment-stats', companyId],
     queryFn: async (): Promise<ProfessionalPaymentStats> => {
+      logger.debug('Fetching professional payment stats', { companyId });
       const { data, error } = await supabase
         .from('payments')
         .select('id, amount, payment_date, payment_status, created_at')
@@ -76,6 +77,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         .eq('payment_status', 'completed')
         .is('contract_id', null);
 
+      logger.debug('Stats computed', { totalProcessed, pendingReview: pendingReviewCount || 0, months: monthlyTrend.length });
       return {
         totalProcessed,
         averageProcessingTime: 2.5, // Mock data - would calculate from actual processing times
@@ -85,13 +87,15 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         monthlyTrend
       };
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes,
+    enabled: !!companyId,
   });
 
   // Get pending payments for review - completed payments without contract links
   const { data: pendingPayments, isLoading: pendingLoading } = useQuery({
     queryKey: ['pending-payments', companyId],
     queryFn: async (): Promise<PendingPayment[]> => {
+      logger.debug('Fetching pending payments', { companyId });
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -113,7 +117,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
 
       if (error) throw error;
 
-      return (data || []).map(payment => {
+      const mapped = (data || []).map(payment => {
         // Calculate confidence based on available data
         let confidence = 0.3; // Base confidence
         
@@ -146,8 +150,11 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           suggestedActions
         };
       });
+      logger.debug('Pending payments fetched', { count: mapped.length });
+      return mapped;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes,
+    enabled: !!companyId,
   });
 
   // Smart linking mutation

@@ -17,11 +17,12 @@ import {
   Link
 } from 'lucide-react';
 import { useProfessionalPaymentSystem } from '@/hooks/useProfessionalPaymentSystem';
-import { useCompany } from '@/hooks/useCompany';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 
 export const ProfessionalPaymentSystem: React.FC = () => {
-  const { data: company } = useCompany();
-  const companyId = company?.id || '';
+  const queryClient = useQueryClient();
+  const companyId = useCurrentCompanyId() || '';
   
   const {
     stats,
@@ -151,6 +152,10 @@ export const ProfessionalPaymentSystem: React.FC = () => {
                   variant="outline" 
                   size="sm"
                   disabled={pendingLoading}
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+                    queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+                  }}
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${pendingLoading ? 'animate-spin' : ''}`} />
