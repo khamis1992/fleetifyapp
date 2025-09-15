@@ -44,18 +44,8 @@ export const DuplicateContractsDiagnostic = () => {
           results.contractsSample = totalContracts?.slice(0, 5);
         }
 
-        // 3. Direct duplicate query
-        const { data: duplicateQuery, error: duplicateError } = await supabase
-          .from('contracts')
-          .select('contract_number, count(*)')
-          .eq('company_id', companyId);
-
-        if (duplicateError) {
-          console.error('🚨 [Diagnostic] Error in duplicate query:', duplicateError);
-          results.duplicateQueryError = duplicateError;
-        } else {
-          results.duplicateQueryResults = duplicateQuery;
-        }
+        // 3. Manual analysis approach (reliable)
+        console.log('🔍 [Diagnostic] Using manual analysis approach...');
 
         // 4. Manual count approach
         try {
@@ -215,20 +205,35 @@ export const DuplicateContractsDiagnostic = () => {
                 </div>
               )}
 
+              {/* Contract Number Analysis */}
+              {diagnosticData.contractNumberCounts && (
+                <div className="bg-muted p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">تحليل أرقام العقود</h3>
+                  <p>أرقام عقود فريدة: {diagnosticData.contractNumberCounts.totalUniqueNumbers}</p>
+                  <p>أرقام مكررة: {diagnosticData.contractNumberCounts.duplicateNumbers}</p>
+                  
+                  {diagnosticData.contractNumberCounts.counts?.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-sm">الأرقام المكررة</summary>
+                      <div className="mt-2 space-y-1">
+                        {diagnosticData.contractNumberCounts.counts.map(([number, count]: [string, number]) => (
+                          <div key={number} className="text-sm bg-background p-2 rounded">
+                            رقم العقد: <span className="font-mono">{number}</span> - التكرارات: {count}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
+
               {/* Errors */}
-              {(diagnosticData.duplicateQueryError || diagnosticData.fatalError) && (
+              {diagnosticData.fatalError && (
                 <div className="bg-destructive/10 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-destructive">الأخطاء</h3>
-                  {diagnosticData.duplicateQueryError && (
-                    <pre className="text-xs text-destructive">
-                      Duplicate Query Error: {JSON.stringify(diagnosticData.duplicateQueryError, null, 2)}
-                    </pre>
-                  )}
-                  {diagnosticData.fatalError && (
-                    <pre className="text-xs text-destructive">
-                      Fatal Error: {JSON.stringify(diagnosticData.fatalError, null, 2)}
-                    </pre>
-                  )}
+                  <h3 className="font-semibold mb-2 text-destructive">خطأ فادح</h3>
+                  <pre className="text-xs text-destructive">
+                    {JSON.stringify(diagnosticData.fatalError, null, 2)}
+                  </pre>
                 </div>
               )}
             </>
