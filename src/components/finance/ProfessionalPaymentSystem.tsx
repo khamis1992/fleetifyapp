@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
+import { PendingPaymentsReviewSystem } from './PendingPaymentsReviewSystem';
 
 export const ProfessionalPaymentSystem: React.FC = () => {
   const queryClient = useQueryClient();
@@ -171,102 +172,7 @@ export const ProfessionalPaymentSystem: React.FC = () => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>المدفوعات المعلقة للمراجعة</span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  disabled={pendingLoading}
-                  onClick={() => {
-                    queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
-                    queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${pendingLoading ? 'animate-spin' : ''}`} />
-                  تحديث
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pendingLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-16 bg-muted rounded animate-pulse" />
-                  ))}
-                </div>
-              ) : pendingPayments?.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">لا توجد مدفوعات معلقة للمراجعة</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {pendingPayments?.map((payment) => (
-                    <div 
-                      key={payment.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{payment.paymentNumber}</h4>
-                          <Badge 
-                            variant={payment.confidence > 0.8 ? "default" : payment.confidence > 0.6 ? "secondary" : "destructive"}
-                          >
-                            ثقة: {Math.round(payment.confidence * 100)}%
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {payment.customerName} • {payment.amount.toLocaleString()} ر.ق • {new Date(payment.paymentDate).toLocaleDateString('ar')}
-                        </p>
-                        <div className="flex gap-1">
-                          {payment.suggestedActions.map((action, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {action}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSmartLink(payment.id)}
-                          disabled={isLinking}
-                          className="flex items-center gap-1"
-                        >
-                          <Link className="h-4 w-4" />
-                          ربط ذكي
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (!companyId) {
-                              toast({
-                                variant: "destructive",
-                                title: "خطأ",
-                                description: "معرف الشركة مفقود - لا يمكن معالجة الدفعة"
-                              });
-                              return;
-                            }
-                            handleProcessPayment(payment.id);
-                          }}
-                          disabled={isProcessing || !companyId}
-                          className="flex items-center gap-1"
-                        >
-                          <Zap className="h-4 w-4" />
-                          معالجة شاملة
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PendingPaymentsReviewSystem />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">

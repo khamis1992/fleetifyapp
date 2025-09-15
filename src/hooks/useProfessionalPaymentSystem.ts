@@ -8,6 +8,31 @@ import { accountingIntegration, type JournalEntryData } from '@/utils/accounting
 import { auditTrailSystem } from '@/utils/auditTrailSystem';
 import { logger } from '@/lib/logger';
 
+// دالة حساب مستوى الثقة في الربط
+const calculateLinkingConfidence = (payment: any, contract: any): number => {
+  let confidence = 0.3; // أساس
+
+  // تطابق المبلغ
+  if (payment.amount === contract.monthly_amount) {
+    confidence += 0.4;
+  } else if (Math.abs(payment.amount - contract.monthly_amount) / contract.monthly_amount <= 0.1) {
+    confidence += 0.2;
+  }
+
+  // تطابق رقم الاتفاقية
+  if (payment.agreement_number && contract.contract_number && 
+      contract.contract_number.includes(payment.agreement_number)) {
+    confidence += 0.3;
+  }
+
+  // وجود رقم مرجعي
+  if (payment.reference_number) {
+    confidence += 0.1;
+  }
+
+  return Math.min(confidence, 1.0);
+};
+
 export interface ProfessionalPaymentStats {
   totalProcessed: number;
   averageProcessingTime: number;
@@ -376,6 +401,15 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
 
       let successCount = 0;
       let totalOperations = 0;
+
+      // تحديث حالة المعالجة إلى 'processing'
+      await supabase
+        .from('payments')
+        .update({ 
+          processing_status: 'processing',
+          processing_notes: 'بدء المعالجة الاحترافية'
+        })
+        .eq('id', paymentId);
 
       // Step 2: Smart linking (independent operation)
       if (options.enableSmartLinking) {
