@@ -96,7 +96,9 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     queryKey: ['pending-payments', companyId],
     queryFn: async (): Promise<PendingPayment[]> => {
       logger.debug('Fetching pending payments', { companyId });
-      const { data, error } = await supabase
+      
+      // Step 1: Fetch payments without customer data to avoid RLS issues
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select(`
           id,
@@ -107,23 +109,64 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           contract_id,
           reference_number,
           payment_method,
-          customers (id, customer_name)
+          customer_id
         `)
         .eq('company_id', companyId)
         .eq('payment_status', 'completed')
         .is('contract_id', null)
         .order('payment_date', { ascending: false })
-        .limit(20);
+        .limit(100);
 
-      if (error) throw error;
+      if (paymentsError) {
+        logger.error('Failed to fetch payments', paymentsError);
+        throw paymentsError;
+      }
 
-      const mapped = (data || []).map(payment => {
+      const payments = paymentsData || [];
+      logger.debug('Payments fetched successfully', { count: payments.length });
+
+      // Step 2: Get unique customer IDs and fetch customer names separately
+      const customerIds = [...new Set(payments.map(p => p.customer_id).filter(Boolean))];
+      let customersMap = new Map<string, string>();
+
+      if (customerIds.length > 0) {
+        try {
+          const { data: customersData, error: customersError } = await supabase
+            .from('customers')
+            .select('id, customer_type, first_name, last_name, company_name')
+            .eq('company_id', companyId)
+            .in('id', customerIds);
+
+          if (customersError) {
+            logger.warn('Failed to fetch customers, proceeding without customer names', customersError);
+            toast({
+              title: 'تحذير',
+              description: 'لا يمكن عرض أسماء العملاء بسبب صلاحيات الوصول',
+              variant: 'destructive'
+            });
+          } else {
+            customersData?.forEach(customer => {
+              // Construct customer name based on type
+              const customerName = customer.customer_type === 'corporate' 
+                ? customer.company_name || 'شركة غير محددة'
+                : `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'فرد غير محدد';
+              customersMap.set(customer.id, customerName);
+            });
+            logger.debug('Customers fetched successfully', { count: customersData?.length || 0 });
+          }
+        } catch (error) {
+          logger.warn('Exception while fetching customers', error);
+        }
+      }
+
+      // Step 3: Map payments with customer names
+      const mapped = payments.map(payment => {
         // Calculate confidence based on available data
         let confidence = 0.3; // Base confidence
         
         if (payment.reference_number) confidence += 0.2;
         if (payment.amount > 0) confidence += 0.1;
-        if ((payment.customers as any)?.customer_name) confidence += 0.2;
+        if (payment.customer_id && customersMap.has(payment.customer_id)) confidence += 0.2;
         if (payment.payment_method !== 'cash') confidence += 0.1;
         
         // Determine suggested actions based on payment characteristics
@@ -143,14 +186,15 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           id: payment.id,
           paymentNumber: payment.payment_number,
           amount: payment.amount,
-          customerName: (payment.customers as any)?.customer_name || 'غير محدد',
+          customerName: payment.customer_id ? (customersMap.get(payment.customer_id) || 'غير محدد') : 'غير محدد',
           paymentDate: payment.payment_date,
           status: 'needs_review', // Custom status for pending review
           confidence: Math.min(confidence, 0.95),
           suggestedActions
         };
       });
-      logger.debug('Pending payments fetched', { count: mapped.length });
+      
+      logger.debug('Pending payments mapped successfully', { count: mapped.length });
       return mapped;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes,
