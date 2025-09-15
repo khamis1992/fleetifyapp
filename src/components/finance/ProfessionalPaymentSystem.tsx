@@ -19,11 +19,12 @@ import {
 import { useProfessionalPaymentSystem } from '@/hooks/useProfessionalPaymentSystem';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { useToast } from '@/hooks/use-toast';
 
 export const ProfessionalPaymentSystem: React.FC = () => {
   const queryClient = useQueryClient();
   const companyId = useCurrentCompanyId() || '';
-  
+  const { toast } = useToast();
   const {
     stats,
     pendingPayments,
@@ -38,14 +39,20 @@ export const ProfessionalPaymentSystem: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
 
   const handleProcessPayment = async (paymentId: string) => {
+    setSelectedPayment(paymentId);
+    toast({ title: 'جاري المعالجة', description: 'سيتم تنفيذ الربط والتوزيع وإنشاء القيد' });
     try {
       await processPayment(paymentId, {
         enableSmartLinking: true,
         enableAllocation: true,
         enableJournalEntry: true
       });
+      toast({ title: 'تمت المعالجة', description: 'اكتملت العمليات المطلوبة لهذه الدفعة' });
     } catch (error) {
+      toast({ title: 'فشل في المعالجة', description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع', variant: 'destructive' });
       console.error('Failed to process payment:', error);
+    } finally {
+      setSelectedPayment(null);
     }
   };
 
