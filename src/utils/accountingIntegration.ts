@@ -107,8 +107,8 @@ class AccountingIntegration {
       .from('journal_entries')
       .select('id')
       .eq('company_id', companyId)
-      .eq('journal_entry_number', entryData.entryNumber)
-      .single();
+      .eq('entry_number', entryData.entryNumber)
+      .maybeSingle();
 
     if (existingEntry) {
       errors.push('رقم القيد المحاسبي موجود مسبقاً');
@@ -128,7 +128,7 @@ class AccountingIntegration {
       .from('chart_of_accounts')
       .select('id, account_name, is_active')
       .eq('company_id', companyId)
-      .in('id', accountIds);
+      .in('id', accountIds) as any;
 
     const foundAccountIds = new Set(accounts?.map(acc => acc.id) || []);
     const missingAccounts = accountIds.filter(id => !foundAccountIds.has(id));
