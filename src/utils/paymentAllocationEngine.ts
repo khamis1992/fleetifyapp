@@ -73,17 +73,46 @@ class PaymentAllocationEngine {
     try {
       logger.debug('Starting payment allocation', { paymentId: paymentData.id });
 
+      // Validate input data
+      if (!paymentData.id || !paymentData.amount || paymentData.amount <= 0) {
+        throw new Error('بيانات المدفوعة غير صحيحة');
+      }
+
+      if (!paymentData.companyId) {
+        throw new Error('معرف الشركة مطلوب للتوزيع');
+      }
+
       // Get applicable allocation rules
       const rules = await this.getApplicableRules(paymentData);
+      
+      if (!rules || rules.length === 0) {
+        logger.warn('No allocation rules found, using default rule');
+      }
       
       // Apply the highest priority rule
       const selectedRule = rules[0] || this.defaultRules[0];
       
+      if (!selectedRule) {
+        throw new Error('لا توجد قواعد توزيع متاحة');
+      }
+
+      logger.debug('Selected allocation rule', { ruleName: selectedRule.name });
+      
       // Calculate allocations
       const allocations = await this.calculateAllocations(paymentData, selectedRule);
       
+      if (!allocations || allocations.length === 0) {
+        throw new Error('فشل في حساب التوزيعات');
+      }
+      
       // Generate journal entry preview
       const journalEntryPreview = await this.generateJournalPreview(paymentData, allocations);
+
+      logger.debug('Payment allocation completed successfully', { 
+        paymentId: paymentData.id,
+        allocationsCount: allocations.length,
+        hasJournalPreview: !!journalEntryPreview
+      });
 
       return {
         success: true,

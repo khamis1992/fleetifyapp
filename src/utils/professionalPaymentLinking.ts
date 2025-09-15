@@ -67,27 +67,36 @@ class ProfessionalPaymentLinking {
   private async getActiveContracts(customerId?: string) {
     if (!customerId) return [];
 
-    const { data: contracts, error } = await supabase
-      .from('contracts')
-      .select(`
-        id,
-        contract_number,
-        contract_amount,
-        monthly_amount,
-        start_date,
-        end_date,
-        status,
-        customer_id
-      `)
-      .eq('customer_id', customerId)
-      .eq('status', 'active');
+    try {
+      // Get company_id first from payment context if available
+      const { data: contracts, error } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          contract_amount,
+          monthly_amount,
+          start_date,
+          end_date,
+          status,
+          customer_id,
+          company_id
+        `)
+        .eq('customer_id', customerId)
+        .eq('status', 'active')
+        .limit(20); // Reasonable limit to avoid large queries
 
-    if (error) {
-      logger.error('Failed to fetch contracts', error);
+      if (error) {
+        logger.error('Failed to fetch contracts', error);
+        return [];
+      }
+
+      logger.debug('Contracts fetched for linking', { customerId, count: contracts?.length || 0 });
+      return contracts || [];
+    } catch (error) {
+      logger.error('Exception while fetching contracts', { error, customerId });
       return [];
     }
-
-    return contracts || [];
   }
 
   private async matchContracts(contracts: any[], criteria: LinkingCriteria) {

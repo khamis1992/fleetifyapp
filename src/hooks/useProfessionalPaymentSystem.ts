@@ -340,80 +340,239 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     setIsProcessing(true);
     
     try {
-      // Get payment data
-      const { data: payment, error } = await supabase
+      logger.debug('Starting comprehensive payment processing', { paymentId, options });
+      
+      // Step 1: Get payment data safely (avoid RLS issues)
+      const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .select(`
-          *,
-          customers (customer_name),
-          contracts (contract_number)
+          id,
+          payment_number,
+          amount,
+          customer_id,
+          contract_id,
+          payment_method,
+          payment_date,
+          reference_number,
+          company_id,
+          payment_status
         `)
         .eq('id', paymentId)
+        .eq('company_id', companyId)
         .single();
 
-      if (error || !payment) {
-        throw new Error('لم يتم العثور على المدفوعة');
+      if (paymentError || !payment) {
+        logger.error('Payment not found', { paymentError, paymentId });
+        throw new Error('لم يتم العثور على المدفوعة أو ليس لديك صلاحية للوصول إليها');
       }
+
+      logger.debug('Payment data retrieved successfully', { payment });
 
       const results = {
-        linking: null as SmartLinkingResult | null,
-        allocation: null as AllocationResult | null,
-        journalEntry: null as any
+        linking: { success: false, error: null as string | null },
+        allocation: { success: false, error: null as string | null },
+        journalEntry: { success: false, error: null as string | null },
+        partialSuccess: false
       };
 
-      // Step 1: Smart linking
+      let successCount = 0;
+      let totalOperations = 0;
+
+      // Step 2: Smart linking (independent operation)
       if (options.enableSmartLinking) {
-        const linkingCriteria: LinkingCriteria = {
-          customerId: payment.customer_id,
-          amount: payment.amount,
-          referenceNumber: payment.reference_number,
-          paymentDate: payment.payment_date,
-          ...options.customCriteria
-        };
+        totalOperations++;
+        try {
+          logger.debug('Starting smart linking process');
+          
+          const linkingCriteria: LinkingCriteria = {
+            customerId: payment.customer_id,
+            amount: payment.amount,
+            referenceNumber: payment.reference_number,
+            paymentDate: payment.payment_date,
+            ...options.customCriteria
+          };
 
-        results.linking = await smartLinkingMutation.mutateAsync({
-          paymentId,
-          criteria: linkingCriteria
-        });
+          const linkingResult = await professionalPaymentLinking.performSmartLinking(paymentId, linkingCriteria);
+          
+          if (linkingResult.success) {
+            results.linking = { success: true, error: null };
+            successCount++;
+            logger.debug('Smart linking completed successfully', { linkedContracts: linkingResult.linkedContracts.length });
+          } else {
+            results.linking = { success: false, error: 'لم يتم العثور على عقود مناسبة للربط' };
+            logger.warn('Smart linking failed - no suitable contracts found');
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'خطأ في الربط الذكي';
+          results.linking = { success: false, error: errorMsg };
+          logger.error('Smart linking exception', { error, paymentId });
+        }
       }
 
-      // Step 2: Payment allocation
+      // Step 3: Payment allocation (independent operation)
       if (options.enableAllocation) {
-        results.allocation = await allocationMutation.mutateAsync({
-          id: payment.id,
-          amount: payment.amount,
-          customerId: payment.customer_id,
-          contractId: payment.contract_id,
-          paymentMethod: payment.payment_method,
-          companyId: payment.company_id
+        totalOperations++;
+        try {
+          logger.debug('Starting payment allocation');
+          
+          const allocationResult = await paymentAllocationEngine.allocatePayment({
+            id: payment.id,
+            amount: payment.amount,
+            customerId: payment.customer_id,
+            contractId: payment.contract_id,
+            paymentMethod: payment.payment_method,
+            companyId: payment.company_id
+          });
+
+          if (allocationResult.success && allocationResult.allocations.length > 0) {
+            results.allocation = { success: true, error: null };
+            successCount++;
+            logger.debug('Payment allocation completed successfully', { allocations: allocationResult.allocations.length });
+            
+            // Step 4: Journal entry (depends on allocation)
+            if (options.enableJournalEntry && allocationResult.journalEntryPreview) {
+              totalOperations++;
+              try {
+                logger.debug('Creating journal entry from allocation preview');
+                
+                const journalResult = await accountingIntegration.createJournalEntry(
+                  allocationResult.journalEntryPreview as JournalEntryData,
+                  companyId
+                );
+
+                if (journalResult.success) {
+                  results.journalEntry = { success: true, error: null };
+                  successCount++;
+                  logger.debug('Journal entry created successfully', { journalEntryId: journalResult.journalEntryId });
+                } else {
+                  const errorMsg = journalResult.validationErrors?.join(', ') || 'فشل في إنشاء القيد المحاسبي';
+                  results.journalEntry = { success: false, error: errorMsg };
+                  logger.warn('Journal entry creation failed', { errors: journalResult.validationErrors });
+                }
+              } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : 'خطأ في إنشاء القيد المحاسبي';
+                results.journalEntry = { success: false, error: errorMsg };
+                logger.error('Journal entry creation exception', { error, paymentId });
+              }
+            }
+          } else {
+            const errorMsg = allocationResult.errors?.join(', ') || 'فشل في توزيع المدفوعة';
+            results.allocation = { success: false, error: errorMsg };
+            logger.warn('Payment allocation failed', { errors: allocationResult.errors });
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'خطأ في توزيع المدفوعة';
+          results.allocation = { success: false, error: errorMsg };
+          logger.error('Payment allocation exception', { error, paymentId });
+        }
+      } else if (options.enableJournalEntry) {
+        // Handle journal entry without allocation (direct journal creation)
+        totalOperations++;
+        try {
+          logger.debug('Creating direct journal entry (without allocation)');
+          
+          // Create a simple journal entry for the payment
+          const directJournalData: JournalEntryData = {
+            entryNumber: `PAY-${payment.payment_number}-${Date.now()}`,
+            entryDate: payment.payment_date,
+            description: `دفعة رقم ${payment.payment_number}`,
+            totalAmount: payment.amount,
+            sourceType: 'payment',
+            sourceId: payment.id,
+            lines: [
+              {
+                accountId: 'default-cash-account', // This should be replaced with actual account lookup
+                description: `استلام دفعة - ${payment.payment_number}`,
+                debitAmount: payment.amount,
+                creditAmount: 0
+              },
+              {
+                accountId: 'default-revenue-account', // This should be replaced with actual account lookup
+                description: `إيراد دفعة - ${payment.payment_number}`,
+                debitAmount: 0,
+                creditAmount: payment.amount
+              }
+            ]
+          };
+
+          const journalResult = await accountingIntegration.createJournalEntry(directJournalData, companyId);
+
+          if (journalResult.success) {
+            results.journalEntry = { success: true, error: null };
+            successCount++;
+            logger.debug('Direct journal entry created successfully', { journalEntryId: journalResult.journalEntryId });
+          } else {
+            const errorMsg = journalResult.validationErrors?.join(', ') || 'فشل في إنشاء القيد المحاسبي المباشر';
+            results.journalEntry = { success: false, error: errorMsg };
+            logger.warn('Direct journal entry creation failed', { errors: journalResult.validationErrors });
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'خطأ في إنشاء القيد المحاسبي المباشر';
+          results.journalEntry = { success: false, error: errorMsg };
+          logger.error('Direct journal entry creation exception', { error, paymentId });
+        }
+      }
+
+      // Determine overall success
+      results.partialSuccess = successCount > 0;
+      const isFullSuccess = successCount === totalOperations && totalOperations > 0;
+
+      // Show appropriate message
+      if (isFullSuccess) {
+        toast({
+          title: 'تم معالجة المدفوعة بنجاح',
+          description: `تم تطبيق جميع العمليات المحددة (${successCount}/${totalOperations}) على المدفوعة`,
         });
-      }
-
-      // Step 3: Journal entry
-      if (options.enableJournalEntry && results.allocation?.journalEntryPreview) {
-        results.journalEntry = await journalEntryMutation.mutateAsync(
-          results.allocation.journalEntryPreview as JournalEntryData
+        
+        // Log successful processing
+        auditTrailSystem.logPaymentAction(
+          'linked',
+          paymentId,
+          'current-user-id',
+          companyId,
+          undefined,
+          { operations: totalOperations, successCount }
         );
+      } else if (results.partialSuccess) {
+        const errorDetails = [];
+        if (results.linking.error) errorDetails.push(`الربط: ${results.linking.error}`);
+        if (results.allocation.error) errorDetails.push(`التوزيع: ${results.allocation.error}`);
+        if (results.journalEntry.error) errorDetails.push(`القيد: ${results.journalEntry.error}`);
+        
+        toast({
+          title: 'معالجة جزئية للمدفوعة',
+          description: `نجحت ${successCount} من ${totalOperations} عمليات. ${errorDetails.length > 0 ? 'أخطاء: ' + errorDetails.join(', ') : ''}`,
+          variant: 'default'
+        });
+        
+        logger.warn('Partial payment processing success', { successCount, totalOperations, results });
+      } else {
+        toast({
+          title: 'فشل في معالجة المدفوعة',
+          description: `فشلت جميع العمليات. يرجى التحقق من البيانات والمحاولة مرة أخرى.`,
+          variant: 'destructive'
+        });
+        
+        logger.error('Complete payment processing failure', { results, paymentId });
       }
 
-      toast({
-        title: 'تم معالجة المدفوعة بنجاح',
-        description: 'تم تطبيق جميع العمليات المحددة على المدفوعة',
-      });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
 
       return results;
     } catch (error) {
-      logger.error('Payment processing failed', { error, paymentId });
+      logger.error('Payment processing critical failure', { error, paymentId });
       toast({
-        title: 'خطأ في معالجة المدفوعة',
-        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        title: 'خطأ حرج في معالجة المدفوعة',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء معالجة المدفوعة',
         variant: 'destructive'
       });
       throw error;
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, smartLinkingMutation, allocationMutation, journalEntryMutation, toast]);
+  }, [isProcessing, companyId, toast, queryClient]);
 
   return {
     // Data
