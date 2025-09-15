@@ -24,6 +24,7 @@ export interface LinkingCriteria {
   referenceNumber?: string;
   paymentDate?: string;
   tolerancePercentage?: number;
+  companyId?: string;
 }
 
 class ProfessionalPaymentLinking {
@@ -37,7 +38,7 @@ class ProfessionalPaymentLinking {
       logger.debug('Starting smart payment linking', { paymentId, criteria });
 
       // Get active contracts for customer
-      const contracts = await this.getActiveContracts(criteria.customerId);
+      const contracts = await this.getActiveContracts(criteria.customerId, criteria.companyId);
       
       // Find matching contracts based on amount and other criteria
       const linkedContracts = await this.matchContracts(contracts, criteria);
@@ -64,12 +65,14 @@ class ProfessionalPaymentLinking {
     }
   }
 
-  private async getActiveContracts(customerId?: string) {
-    if (!customerId) return [];
+  private async getActiveContracts(customerId?: string, companyId?: string) {
+    if (!companyId) {
+      logger.warn('No company ID provided for contract search');
+      return [];
+    }
 
     try {
-      // Get company_id first from payment context if available
-      const { data: contracts, error } = await supabase
+      let contractsQuery = supabase
         .from('contracts')
         .select(`
           id,
@@ -82,19 +85,26 @@ class ProfessionalPaymentLinking {
           customer_id,
           company_id
         `)
-        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
         .eq('status', 'active')
-        .limit(20); // Reasonable limit to avoid large queries
+        .limit(20);
+
+      // If customer ID exists, filter by it
+      if (customerId) {
+        contractsQuery = contractsQuery.eq('customer_id', customerId);
+      }
+
+      const { data: contracts, error } = await contractsQuery;
 
       if (error) {
         logger.error('Failed to fetch contracts', error);
         return [];
       }
 
-      logger.debug('Contracts fetched for linking', { customerId, count: contracts?.length || 0 });
+      logger.debug('Contracts fetched for linking', { customerId, companyId, count: contracts?.length || 0 });
       return contracts || [];
     } catch (error) {
-      logger.error('Exception while fetching contracts', { error, customerId });
+      logger.error('Exception while fetching contracts', { error, customerId, companyId });
       return [];
     }
   }
@@ -103,10 +113,19 @@ class ProfessionalPaymentLinking {
     const matches = [];
     const tolerance = criteria.tolerancePercentage || this.DEFAULT_TOLERANCE;
 
+    // If no customer ID and we have amount, try fallback matching by amount
+    if (!criteria.customerId && criteria.amount && criteria.companyId) {
+      const fallbackContracts = await this.getFallbackContractsByAmount(criteria.amount, criteria.companyId);
+      contracts = [...contracts, ...fallbackContracts];
+    }
+
     for (const contract of contracts) {
       const confidence = this.calculateMatchingConfidence(contract, criteria);
       
-      if (confidence > 0.7) { // High confidence threshold
+      // Lower threshold if no customer ID to allow fallback matches
+      const threshold = criteria.customerId ? 0.7 : 0.5;
+      
+      if (confidence > threshold) {
         matches.push({
           contractId: contract.id,
           contractNumber: contract.contract_number,
@@ -158,14 +177,21 @@ class ProfessionalPaymentLinking {
     const suggestions = [];
 
     // If no high-confidence matches, suggest similar amounts
-    if (linkedContracts.length === 0 && criteria.customerId && criteria.amount) {
-      const { data: similarContracts } = await supabase
+    if (linkedContracts.length === 0 && criteria.companyId && criteria.amount) {
+      let contractsQuery = supabase
         .from('contracts')
-        .select('id, contract_number, monthly_amount')
-        .eq('customer_id', criteria.customerId)
+        .select('id, contract_number, monthly_amount, customer_id')
+        .eq('company_id', criteria.companyId)
         .gte('monthly_amount', criteria.amount * 0.8)
         .lte('monthly_amount', criteria.amount * 1.2)
         .limit(3);
+
+      // If customer ID exists, prioritize same customer contracts
+      if (criteria.customerId) {
+        contractsQuery = contractsQuery.eq('customer_id', criteria.customerId);
+      }
+
+      const { data: similarContracts } = await contractsQuery;
 
       similarContracts?.forEach(contract => {
         suggestions.push({
@@ -178,6 +204,40 @@ class ProfessionalPaymentLinking {
     }
 
     return suggestions;
+  }
+
+  private async getFallbackContractsByAmount(amount: number, companyId: string) {
+    try {
+      const { data: contracts, error } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          contract_amount,
+          monthly_amount,
+          start_date,
+          end_date,
+          status,
+          customer_id,
+          company_id
+        `)
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .gte('monthly_amount', amount * 0.8)
+        .lte('monthly_amount', amount * 1.2)
+        .limit(10);
+
+      if (error) {
+        logger.error('Failed to fetch fallback contracts', error);
+        return [];
+      }
+
+      logger.debug('Fallback contracts fetched by amount', { amount, companyId, count: contracts?.length || 0 });
+      return contracts || [];
+    } catch (error) {
+      logger.error('Exception while fetching fallback contracts', { error, amount, companyId });
+      return [];
+    }
   }
 
   private async shouldGenerateAutoInvoice(linkedContracts: any[]): Promise<boolean> {

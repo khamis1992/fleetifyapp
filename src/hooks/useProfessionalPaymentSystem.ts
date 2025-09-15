@@ -358,8 +358,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           payment_status
         `)
         .eq('id', paymentId)
-        .eq('company_id', companyId)
-        .single();
+        .maybeSingle();
 
       if (paymentError || !payment) {
         logger.error('Payment not found', { paymentError, paymentId });
@@ -389,6 +388,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
             amount: payment.amount,
             referenceNumber: payment.reference_number,
             paymentDate: payment.payment_date,
+            companyId: payment.company_id,
             ...options.customCriteria
           };
 

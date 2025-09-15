@@ -39,6 +39,15 @@ export const ProfessionalPaymentSystem: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
 
   const handleProcessPayment = async (paymentId: string) => {
+    if (!companyId) {
+      toast({ 
+        title: 'خطأ في الشركة', 
+        description: 'يجب تحديد الشركة أولاً لمعالجة المدفوعات',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSelectedPayment(paymentId);
     toast({ title: 'جاري المعالجة', description: 'سيتم تنفيذ الربط والتوزيع وإنشاء القيد' });
     try {
@@ -49,7 +58,17 @@ export const ProfessionalPaymentSystem: React.FC = () => {
       });
       toast({ title: 'تمت المعالجة', description: 'اكتملت العمليات المطلوبة لهذه الدفعة' });
     } catch (error) {
-      toast({ title: 'فشل في المعالجة', description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع', variant: 'destructive' });
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+      
+      if (errorMessage.includes('customer_id')) {
+        toast({ 
+          title: 'فشل في المعالجة', 
+          description: 'هذه المدفوعة غير مربوطة بعميل. يرجى ربطها بعميل أولاً أو البحث بالمبلغ والمرجع.',
+          variant: 'destructive' 
+        });
+      } else {
+        toast({ title: 'فشل في المعالجة', description: errorMessage, variant: 'destructive' });
+      }
       console.error('Failed to process payment:', error);
     } finally {
       setSelectedPayment(null);
