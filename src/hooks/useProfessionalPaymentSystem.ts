@@ -68,19 +68,27 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         return acc;
       }, [] as Array<{ month: string; count: number; amount: number }>);
 
+      // Get count of payments needing review (completed but not linked to contracts)
+      const { count: pendingReviewCount } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('payment_status', 'completed')
+        .is('contract_id', null);
+
       return {
         totalProcessed,
         averageProcessingTime: 2.5, // Mock data - would calculate from actual processing times
         successRate: successRate || 0,
         autoLinkedPercentage: 75, // Mock data - would calculate from linking data
-        pendingReview: 5, // Mock data - would get from pending review table
+        pendingReview: pendingReviewCount || 0,
         monthlyTrend
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Get pending payments for review
+  // Get pending payments for review - completed payments without contract links
   const { data: pendingPayments, isLoading: pendingLoading } = useQuery({
     queryKey: ['pending-payments', companyId],
     queryFn: async (): Promise<PendingPayment[]> => {
@@ -92,25 +100,52 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           amount,
           payment_date,
           payment_status,
+          contract_id,
+          reference_number,
+          payment_method,
           customers (id, customer_name)
         `)
         .eq('company_id', companyId)
-        .eq('payment_status', 'pending')
+        .eq('payment_status', 'completed')
+        .is('contract_id', null)
         .order('payment_date', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
-      return (data || []).map(payment => ({
-        id: payment.id,
-        paymentNumber: payment.payment_number,
-        amount: payment.amount,
-        customerName: (payment.customers as any)?.customer_name || 'غير محدد',
-        paymentDate: payment.payment_date,
-        status: payment.payment_status,
-        confidence: Math.random() * 0.4 + 0.6, // Mock confidence score
-        suggestedActions: ['ربط بعقد', 'إنشاء فاتورة', 'مراجعة يدوية']
-      }));
+      return (data || []).map(payment => {
+        // Calculate confidence based on available data
+        let confidence = 0.3; // Base confidence
+        
+        if (payment.reference_number) confidence += 0.2;
+        if (payment.amount > 0) confidence += 0.1;
+        if ((payment.customers as any)?.customer_name) confidence += 0.2;
+        if (payment.payment_method !== 'cash') confidence += 0.1;
+        
+        // Determine suggested actions based on payment characteristics
+        const suggestedActions = ['ربط ذكي بعقد'];
+        
+        if (payment.amount > 1000) {
+          suggestedActions.push('إنشاء فاتورة');
+        }
+        
+        if (!payment.reference_number) {
+          suggestedActions.push('إضافة رقم مرجعي');
+        }
+        
+        suggestedActions.push('مراجعة يدوية');
+
+        return {
+          id: payment.id,
+          paymentNumber: payment.payment_number,
+          amount: payment.amount,
+          customerName: (payment.customers as any)?.customer_name || 'غير محدد',
+          paymentDate: payment.payment_date,
+          status: 'needs_review', // Custom status for pending review
+          confidence: Math.min(confidence, 0.95),
+          suggestedActions
+        };
+      });
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
