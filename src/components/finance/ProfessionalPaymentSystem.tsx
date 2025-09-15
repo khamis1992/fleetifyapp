@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useProfessionalPaymentSystem } from '@/hooks/useProfessionalPaymentSystem';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
 
@@ -242,8 +243,18 @@ export const ProfessionalPaymentSystem: React.FC = () => {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleProcessPayment(payment.id)}
-                          disabled={isProcessing}
+                          onClick={() => {
+                            if (!companyId) {
+                              toast({
+                                variant: "destructive",
+                                title: "خطأ",
+                                description: "معرف الشركة مفقود - لا يمكن معالجة الدفعة"
+                              });
+                              return;
+                            }
+                            handleProcessPayment(payment.id);
+                          }}
+                          disabled={isProcessing || !companyId}
                           className="flex items-center gap-1"
                         >
                           <Zap className="h-4 w-4" />

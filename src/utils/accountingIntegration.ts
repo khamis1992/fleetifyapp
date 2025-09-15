@@ -91,9 +91,23 @@ class AccountingIntegration {
       };
     } catch (error) {
       logger.error('Failed to create journal entry', { error, entryNumber: entryData.entryNumber });
+      // Check if error is due to missing accounts
+      const errorMessage = error instanceof Error ? error.message : 'خطأ في إنشاء القيد المحاسبي';
+      
+      if (errorMessage.includes('account') || errorMessage.includes('حساب')) {
+        return {
+          success: false,
+          validationErrors: [
+            'فشل في إنشاء القيد المحاسبي: حسابات مفقودة',
+            'يرجى التأكد من إعداد ربط الحسابات الأساسية أولاً',
+            errorMessage
+          ]
+        };
+      }
+      
       return {
         success: false,
-        validationErrors: [error instanceof Error ? error.message : 'خطأ في إنشاء القيد المحاسبي']
+        validationErrors: [errorMessage]
       };
     }
   }
@@ -269,24 +283,36 @@ class AccountingIntegration {
 
     const entryNumber = `JE-PAY-${new Date().toISOString().slice(0, 10)}-${payment.payment_number}`;
     
-    // Get cash account
-    const { data: cashAccount } = await supabase
-      .from('chart_of_accounts')
-      .select('id, account_name, account_code')
-      .eq('company_id', payment.company_id)
-      .eq('account_type', 'current_assets')
-      .ilike('account_name', '%cash%')
-      .limit(1)
-      .single();
+    // Get cash account using account mappings first
+    let cashAccount = await this.getMappedAccount(payment.company_id, 'cash');
+    if (!cashAccount) {
+      // Fallback to search in chart of accounts
+      const { data } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_name, account_code')
+        .eq('company_id', payment.company_id)
+        .in('account_type', ['assets', 'current_assets'])
+        .or('account_name.ilike.%cash%,account_name.ilike.%نقد%,account_name.ilike.%بنك%,account_name.ilike.%bank%,account_code.like.111%')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      cashAccount = data;
+    }
 
-    // Get revenue account
-    const { data: revenueAccount } = await supabase
-      .from('chart_of_accounts')
-      .select('id, account_name, account_code')
-      .eq('company_id', payment.company_id)
-      .eq('account_type', 'revenue')
-      .limit(1)
-      .single();
+    // Get revenue account using account mappings first
+    let revenueAccount = await this.getMappedAccount(payment.company_id, 'revenue');
+    if (!revenueAccount) {
+      // Fallback to search in chart of accounts
+      const { data } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_name, account_code')
+        .eq('company_id', payment.company_id)
+        .eq('account_type', 'revenue')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      revenueAccount = data;
+    }
 
     const lines: JournalEntryLine[] = [];
 
@@ -331,6 +357,76 @@ class AccountingIntegration {
   private async generateContractJournalPreview(contractId: string): Promise<JournalEntryData | null> {
     // Implementation for contract journal preview
     return null;
+  }
+
+  // Helper method to get mapped account by type
+  private async getMappedAccount(companyId: string, accountType: string): Promise<any> {
+    try {
+      const { data } = await supabase
+        .from('account_mappings')
+        .select(`
+          chart_of_accounts!inner(
+            id,
+            account_name,
+            account_code
+          ),
+          default_account_type!inner(
+            type_code
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .eq('default_account_type.type_code', accountType)
+        .limit(1)
+        .single();
+
+      return data?.chart_of_accounts;
+    } catch (error) {
+      logger.debug('No mapped account found for type:', accountType);
+      return null;
+    }
+  }
+
+  // Helper method to create missing accounts automatically
+  private async createMissingAccounts(companyId: string, lines: JournalEntryLine[]): Promise<void> {
+    const missingAccounts = lines.filter(line => !line.accountId);
+    
+    for (const line of missingAccounts) {
+      // Create a basic account based on the line description
+      const accountCode = await this.generateAccountCode(companyId);
+      const { data, error } = await supabase
+        .from('chart_of_accounts')
+        .insert({
+          company_id: companyId,
+          account_code: accountCode,
+          account_name: line.accountName || 'حساب تلقائي',
+          account_type: line.debitAmount > 0 ? 'assets' : 'revenue',
+          balance_type: line.debitAmount > 0 ? 'debit' : 'credit',
+          is_active: true,
+          is_system: false
+        })
+        .select('id')
+        .single();
+
+      if (!error && data) {
+        line.accountId = data.id;
+      }
+    }
+  }
+
+  // Helper method to generate account code
+  private async generateAccountCode(companyId: string): Promise<string> {
+    const { data } = await supabase
+      .from('chart_of_accounts')
+      .select('account_code')
+      .eq('company_id', companyId)
+      .order('account_code', { ascending: false })
+      .limit(1)
+      .single();
+
+    const lastCode = data?.account_code || '1000000';
+    const nextCode = parseInt(lastCode) + 1;
+    return nextCode.toString().padStart(7, '0');
   }
 }
 
