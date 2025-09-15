@@ -88,9 +88,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   }, [getPerformanceReport]);
 
   const getDeviceIcon = () => {
-    if (isMobile) return <Smartphone className=\"h-4 w-4\" />;
-    if (isTablet) return <Tablet className=\"h-4 w-4\" />;
-    return <Monitor className=\"h-4 w-4\" />;
+    if (isMobile) return <Smartphone className="h-4 w-4" />;
+    if (isTablet) return <Tablet className="h-4 w-4" />;
+    return <Monitor className="h-4 w-4" />;
   };
 
   const getDeviceType = () => {
@@ -171,34 +171,34 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   if (!showDetailed) {
     // Compact view for mobile/embedded usage
     return (
-      <Card className=\"w-full\">
-        <CardHeader className=\"pb-3\">
-          <div className=\"flex items-center justify-between\">
-            <CardTitle className=\"text-sm flex items-center gap-2\">
-              <Activity className=\"h-4 w-4\" />
-              الأداء
+      <Card className="w-full">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Performance
             </CardTitle>
-            <div className=\"flex items-center gap-2\">
+            <div className="flex items-center gap-2">
               {getDeviceIcon()}
-              <Badge variant=\"secondary\" className=\"text-xs\">
+              <Badge variant="secondary" className="text-xs">
                 {getDeviceType()}
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className=\"space-y-3\">
-          <div className=\"flex items-center justify-between\">
-            <span className=\"text-sm text-muted-foreground\">الذاكرة</span>
-            <div className=\"flex items-center gap-2\">
-              <Progress value={memoryUsage} className=\"w-20 h-2\" />
-              <span className=\"text-xs font-medium\">{memoryUsage.toFixed(1)}%</span>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Memory</span>
+            <div className="flex items-center gap-2">
+              <Progress value={memoryUsage} className="w-20 h-2" />
+              <span className="text-xs font-medium">{memoryUsage.toFixed(1)}%</span>
             </div>
           </div>
           
-          <div className=\"flex items-center justify-between\">
-            <span className=\"text-sm text-muted-foreground\">الاتصال</span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Connection</span>
             <Badge 
-              variant=\"secondary\" 
+              variant="secondary" 
               className={`text-xs ${connectionStatus.color} text-white`}
             >
               {connectionStatus.text}
@@ -207,14 +207,14 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
           
           {memoryUsage > 70 && (
             <Button 
-              size=\"sm\" 
-              variant=\"outline\" 
+              size="sm" 
+              variant="outline" 
               onClick={optimizePerformance}
               disabled={isOptimizing}
-              className=\"w-full\"
+              className="w-full"
             >
-              <Zap className=\"h-3 w-3 mr-2\" />
-              {isOptimizing ? 'جاري التحسين...' : 'تحسين الأداء'}
+              <Zap className="h-3 w-3 mr-2" />
+              {isOptimizing ? 'Optimizing...' : 'Optimize Performance'}
             </Button>
           )}
         </CardContent>
@@ -224,27 +224,27 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
   // Detailed view
   return (
-    <div className=\"space-y-6\">
-      <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4\">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Memory Usage */}
         <Card>
-          <CardHeader className=\"pb-3\">
-            <CardTitle className=\"text-sm flex items-center gap-2\">
-              <MemoryStick className=\"h-4 w-4\" />
-              استخدام الذاكرة
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MemoryStick className="h-4 w-4" />
+              Memory Usage
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className=\"space-y-2\">
-              <div className=\"flex items-center justify-between\">
-                <span className=\"text-2xl font-bold\">{memoryUsage.toFixed(1)}%</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold">{memoryUsage.toFixed(1)}%</span>
                 <memoryStatus.icon className={`h-5 w-5 text-white p-1 rounded ${memoryStatus.color}`} />
               </div>
-              <Progress value={memoryUsage} className=\"h-2\" />
-              <p className=\"text-xs text-muted-foreground\">
-                {memoryStatus.status === 'good' && 'ذاكرة صحية'}
-                {memoryStatus.status === 'warning' && 'استخدام متوسط'}
-                {memoryStatus.status === 'critical' && 'استخدام عالي'}
+              <Progress value={memoryUsage} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {memoryStatus.status === 'good' && 'Healthy Memory'}
+                {memoryStatus.status === 'warning' && 'Moderate Usage'}
+                {memoryStatus.status === 'critical' && 'High Usage'}
               </p>
             </div>
           </CardContent>
@@ -252,16 +252,16 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
         {/* Device Type */}
         <Card>
-          <CardHeader className=\"pb-3\">
-            <CardTitle className=\"text-sm flex items-center gap-2\">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
               {getDeviceIcon()}
-              نوع الجهاز
+              Device Type
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className=\"space-y-2\">
-              <div className=\"text-lg font-semibold\">{getDeviceType()}</div>
-              <div className=\"text-xs text-muted-foreground space-y-1\">
+            <div className="space-y-2">
+              <div className="text-lg font-semibold">{getDeviceType()}</div>
+              <div className="text-xs text-muted-foreground space-y-1">
                 <div>{deviceInfo?.viewport?.width}×{deviceInfo?.viewport?.height}</div>
                 <div>{deviceInfo?.cores} cores</div>
                 {deviceInfo?.memory !== 'Unknown' && (
@@ -274,32 +274,32 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
         {/* Connection Status */}
         <Card>
-          <CardHeader className=\"pb-3\">
-            <CardTitle className=\"text-sm flex items-center gap-2\">
-              <Wifi className=\"h-4 w-4\" />
-              حالة الاتصال
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Wifi className="h-4 w-4" />
+              Connection Status
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className=\"space-y-2\">
+            <div className="space-y-2">
               <Badge 
-                variant=\"secondary\" 
+                variant="secondary" 
                 className={`${connectionStatus.color} text-white`}
               >
                 {connectionStatus.text}
               </Badge>
               {connectionInfo && (
-                <div className=\"text-xs text-muted-foreground space-y-1\">
-                  <div className=\"flex justify-between\">
-                    <span>السرعة:</span>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div className="flex justify-between">
+                    <span>Speed:</span>
                     <span>{connectionInfo.downlink} Mbps</span>
                   </div>
-                  <div className=\"flex justify-between\">
-                    <span>التأخير:</span>
+                  <div className="flex justify-between">
+                    <span>Latency:</span>
                     <span>{connectionInfo.rtt}ms</span>
                   </div>
                   {connectionInfo.saveData && (
-                    <div className=\"text-orange-600\">وضع توفير البيانات نشط</div>
+                    <div className="text-orange-600">Data Saver Active</div>
                   )}
                 </div>
               )}
@@ -309,28 +309,28 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
         {/* Performance Score */}
         <Card>
-          <CardHeader className=\"pb-3\">
-            <CardTitle className=\"text-sm flex items-center gap-2\">
-              <TrendingUp className=\"h-4 w-4\" />
-              نقاط الأداء
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Performance Score
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className=\"space-y-2\">
-              <div className=\"text-2xl font-bold\">
+            <div className="space-y-2">
+              <div className="text-2xl font-bold">
                 {performanceData ? Math.round(100 - memoryUsage / 2) : '--'}
               </div>
-              <div className=\"text-xs text-muted-foreground\">
-                من 100 نقطة
+              <div className="text-xs text-muted-foreground">
+                out of 100 points
               </div>
               <Button 
-                size=\"sm\" 
+                size="sm" 
                 onClick={optimizePerformance}
                 disabled={isOptimizing}
-                className=\"w-full\"
+                className="w-full"
               >
-                <Zap className=\"h-3 w-3 mr-2\" />
-                {isOptimizing ? 'جاري التحسين...' : 'تحسين'}
+                <Zap className="h-3 w-3 mr-2" />
+                {isOptimizing ? 'Optimizing...' : 'Optimize'}
               </Button>
             </div>
           </CardContent>
@@ -340,36 +340,36 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       {/* Performance Details */}
       <Card>
         <CardHeader>
-          <CardTitle className=\"flex items-center gap-2\">
-            <Settings className=\"h-5 w-5\" />
-            تفاصيل الأداء
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Performance Details
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue=\"metrics\" className=\"w-full\">
-            <TabsList className=\"grid w-full grid-cols-3\">
-              <TabsTrigger value=\"metrics\">المقاييس</TabsTrigger>
-              <TabsTrigger value=\"config\">الإعدادات</TabsTrigger>
-              <TabsTrigger value=\"network\">الشبكة</TabsTrigger>
+          <Tabs defaultValue="metrics" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="metrics">Metrics</TabsTrigger>
+              <TabsTrigger value="config">Settings</TabsTrigger>
+              <TabsTrigger value="network">Network</TabsTrigger>
             </TabsList>
             
-            <TabsContent value=\"metrics\" className=\"space-y-4\">
+            <TabsContent value="metrics" className="space-y-4">
               {performanceData && (
-                <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {performanceData.navigationTiming && (
-                    <div className=\"space-y-2\">
-                      <h4 className=\"font-medium\">أوقات التحميل</h4>
-                      <div className=\"space-y-1 text-sm\">
-                        <div className=\"flex justify-between\">
-                          <span>تحميل المحتوى:</span>
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Load Times</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>DOM Content Loaded:</span>
                           <span>{performanceData.navigationTiming.domContentLoaded}ms</span>
                         </div>
-                        <div className=\"flex justify-between\">
-                          <span>التحميل الكامل:</span>
+                        <div className="flex justify-between">
+                          <span>Load Complete:</span>
                           <span>{performanceData.navigationTiming.loadComplete}ms</span>
                         </div>
-                        <div className=\"flex justify-between\">
-                          <span>أول استجابة:</span>
+                        <div className="flex justify-between">
+                          <span>First Byte:</span>
                           <span>{performanceData.navigationTiming.firstByte}ms</span>
                         </div>
                       </div>
@@ -377,11 +377,11 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
                   )}
                   
                   {performanceData.paintMetrics && (
-                    <div className=\"space-y-2\">
-                      <h4 className=\"font-medium\">مقاييس الرسم</h4>
-                      <div className=\"space-y-1 text-sm\">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Paint Metrics</h4>
+                      <div className="space-y-1 text-sm">
                         {Object.entries(performanceData.paintMetrics).map(([key, value]) => (
-                          <div key={key} className=\"flex justify-between\">
+                          <div key={key} className="flex justify-between">
                             <span>{key}:</span>
                             <span>{(value as number).toFixed(1)}ms</span>
                           </div>
@@ -393,31 +393,31 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               )}
             </TabsContent>
             
-            <TabsContent value=\"config\" className=\"space-y-4\">
-              <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
-                <div className=\"space-y-2\">
-                  <h4 className=\"font-medium\">إعدادات التحسين</h4>
-                  <div className=\"space-y-1 text-sm\">
-                    <div className=\"flex justify-between\">
-                      <span>التحميل الكسول:</span>
-                      <Badge variant={config.enableLazyLoading ? \"default\" : \"secondary\"}>
-                        {config.enableLazyLoading ? \"مفعل\" : \"معطل\"}
+            <TabsContent value="config" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Optimization Settings</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Lazy Loading:</span>
+                      <Badge variant={config.enableLazyLoading ? "default" : "secondary"}>
+                        {config.enableLazyLoading ? "Enabled" : "Disabled"}
                       </Badge>
                     </div>
-                    <div className=\"flex justify-between\">
-                      <span>تحسين الصور:</span>
-                      <Badge variant={config.imageOptimization ? \"default\" : \"secondary\"}>
-                        {config.imageOptimization ? \"مفعل\" : \"معطل\"}
+                    <div className="flex justify-between">
+                      <span>Image Optimization:</span>
+                      <Badge variant={config.imageOptimization ? "default" : "secondary"}>
+                        {config.imageOptimization ? "Enabled" : "Disabled"}
                       </Badge>
                     </div>
-                    <div className=\"flex justify-between\">
-                      <span>القوائم الافتراضية:</span>
-                      <Badge variant={config.enableVirtualization ? \"default\" : \"secondary\"}>
-                        {config.enableVirtualization ? \"مفعل\" : \"معطل\"}
+                    <div className="flex justify-between">
+                      <span>Virtualization:</span>
+                      <Badge variant={config.enableVirtualization ? "default" : "secondary"}>
+                        {config.enableVirtualization ? "Enabled" : "Disabled"}
                       </Badge>
                     </div>
-                    <div className=\"flex justify-between\">
-                      <span>حد الصور المتزامنة:</span>
+                    <div className="flex justify-between">
+                      <span>Max Concurrent Images:</span>
                       <span>{config.maxConcurrentImages}</span>
                     </div>
                   </div>
@@ -425,39 +425,37 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               </div>
             </TabsContent>
             
-            <TabsContent value=\"network\" className=\"space-y-4\">
+            <TabsContent value="network" className="space-y-4">
               {connectionInfo ? (
-                <div className=\"space-y-2\">
-                  <h4 className=\"font-medium\">معلومات الشبكة</h4>
-                  <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4 text-sm\">
-                    <div className=\"space-y-1\">
-                      <div className=\"flex justify-between\">
-                        <span>نوع الاتصال:</span>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Network Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span>Connection Type:</span>
                         <span>{connectionInfo.effectiveType?.toUpperCase()}</span>
                       </div>
-                      <div className=\"flex justify-between\">
-                        <span>سرعة التحميل:</span>
+                      <div className="flex justify-between">
+                        <span>Download Speed:</span>
                         <span>{connectionInfo.downlink} Mbps</span>
                       </div>
-                      <div className=\"flex justify-between\">
-                        <span>زمن الاستجابة:</span>
+                      <div className="flex justify-between">
+                        <span>Response Time:</span>
                         <span>{connectionInfo.rtt}ms</span>
                       </div>
                     </div>
-                    <div className=\"space-y-1\">
-                      <div className=\"flex justify-between\">
-                        <span>توفير البيانات:</span>
-                        <Badge variant={connectionInfo.saveData ? \"destructive\" : \"default\"}>
-                          {connectionInfo.saveData ? \"مفعل\" : \"معطل\"}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span>Data Saver:</span>
+                        <Badge variant={connectionInfo.saveData ? "destructive" : "default"}>
+                          {connectionInfo.saveData ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className=\"text-center text-muted-foreground\">
-                  معلومات الشبكة غير متاحة
-                </div>
+                <p className="text-muted-foreground">Network information not available</p>
               )}
             </TabsContent>
           </Tabs>
