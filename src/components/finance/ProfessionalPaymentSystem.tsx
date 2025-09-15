@@ -21,7 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/hooks/use-toast';
-
+import { PendingPaymentsReviewSystem } from './PendingPaymentsReviewSystem';
 
 export const ProfessionalPaymentSystem: React.FC = () => {
   const queryClient = useQueryClient();
@@ -172,19 +172,7 @@ export const ProfessionalPaymentSystem: React.FC = () => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>المدفوعات المعلقة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  مراجعة المدفوعات المعلقة قيد التطوير
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <PendingPaymentsReviewSystem />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">

@@ -286,7 +286,7 @@ class AccountingIntegration {
     // Get cash account using account mappings first
     let cashAccount = await this.getMappedAccount(payment.company_id, 'cash');
     if (!cashAccount) {
-      // Fallback to search in chart of accounts with better criteria
+      // Fallback to search in chart of accounts
       const { data } = await supabase
         .from('chart_of_accounts')
         .select('id, account_name, account_code')
@@ -295,7 +295,7 @@ class AccountingIntegration {
         .or('account_name.ilike.%cash%,account_name.ilike.%نقد%,account_name.ilike.%بنك%,account_name.ilike.%bank%,account_code.like.111%')
         .eq('is_active', true)
         .limit(1)
-        .maybeSingle();
+        .single();
       cashAccount = data;
     }
 
@@ -308,33 +308,13 @@ class AccountingIntegration {
         .select('id, account_name, account_code')
         .eq('company_id', payment.company_id)
         .eq('account_type', 'revenue')
-        .or('account_name.ilike.%revenue%,account_name.ilike.%إيراد%,account_name.ilike.%ايراد%,account_code.like.4%')
         .eq('is_active', true)
         .limit(1)
-        .maybeSingle();
+        .single();
       revenueAccount = data;
     }
 
-    // Auto-create missing accounts if not found
-    if (!cashAccount || !revenueAccount) {
-      const missingAccounts = await this.autoCreateMissingAccounts(payment.company_id, !cashAccount, !revenueAccount);
-      if (!cashAccount && missingAccounts.cashAccount) {
-        cashAccount = missingAccounts.cashAccount;
-      }
-      if (!revenueAccount && missingAccounts.revenueAccount) {
-        revenueAccount = missingAccounts.revenueAccount;
-      }
-    }
-
     const lines: JournalEntryLine[] = [];
-
-    if (!cashAccount || !revenueAccount) {
-      const missingAccounts = [];
-      if (!cashAccount) missingAccounts.push('حساب النقد');
-      if (!revenueAccount) missingAccounts.push('حساب الإيرادات');
-      
-      throw new Error(`Journal entry creation failed: accounts not found - ${missingAccounts.join(', ')}. يرجى إعداد الحسابات في صفحة ربط الحسابات.`);
-    }
 
     if (cashAccount) {
       lines.push({
@@ -403,92 +383,6 @@ class AccountingIntegration {
       return data?.chart_of_accounts;
     } catch (error) {
       logger.debug('No mapped account found for type:', accountType);
-      return null;
-    }
-  }
-
-  // Helper method to auto-create missing accounts
-  private async autoCreateMissingAccounts(companyId: string, needsCash: boolean, needsRevenue: boolean): Promise<{
-    cashAccount?: any;
-    revenueAccount?: any;
-  }> {
-    const result: any = {};
-
-    try {
-      // Create cash account if needed
-      if (needsCash) {
-        const { data: cashAccount, error: cashError } = await supabase
-          .from('chart_of_accounts')
-          .insert({
-            company_id: companyId,
-            account_code: '1111',
-            account_name: 'حساب النقد',
-            account_type: 'assets',
-            balance_type: 'debit',
-            is_active: true,
-            is_system: false,
-            account_level: 2
-          })
-          .select('id, account_name, account_code')
-          .single();
-
-        if (!cashError && cashAccount) {
-          result.cashAccount = cashAccount;
-          
-          // Create account mapping
-          await supabase.from('account_mappings').insert({
-            company_id: companyId,
-            default_account_type_id: await this.getDefaultAccountTypeId('CASH'),
-            chart_of_accounts_id: cashAccount.id
-          });
-        }
-      }
-
-      // Create revenue account if needed
-      if (needsRevenue) {
-        const { data: revenueAccount, error: revenueError } = await supabase
-          .from('chart_of_accounts')
-          .insert({
-            company_id: companyId,
-            account_code: '4101',
-            account_name: 'إيرادات الخدمات',
-            account_type: 'revenue',
-            balance_type: 'credit',
-            is_active: true,
-            is_system: false,
-            account_level: 2
-          })
-          .select('id, account_name, account_code')
-          .single();
-
-        if (!revenueError && revenueAccount) {
-          result.revenueAccount = revenueAccount;
-          
-          // Create account mapping
-          await supabase.from('account_mappings').insert({
-            company_id: companyId,
-            default_account_type_id: await this.getDefaultAccountTypeId('REVENUE'),
-            chart_of_accounts_id: revenueAccount.id
-          });
-        }
-      }
-
-      return result;
-    } catch (error) {
-      logger.error('Failed to auto-create missing accounts', { error, companyId });
-      return result;
-    }
-  }
-
-  private async getDefaultAccountTypeId(type: string): Promise<string | null> {
-    try {
-      const { data } = await supabase
-        .from('default_account_types')
-        .select('id')
-        .eq('type_name', type)
-        .single();
-      return data?.id || null;
-    } catch {
       return null;
     }
   }
