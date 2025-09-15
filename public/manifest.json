@@ -1,16 +1,49 @@
 {
-  "name": "Fleetify - إدارة الأساطيل",
+  "name": "FleetifyApp - نظام إدارة الأساطيل",
   "short_name": "Fleetify",
-  "description": "نظام إدارة الأساطيل والموارد البشرية",
+  "description": "نظام شامل لإدارة الأساطيل والعقود والعملاء والمحاسبة",
+  "version": "1.0.0",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "theme_color": "#3b82f6",
-  "orientation": "portrait",
-  "scope": "/",
-  "dir": "rtl",
-  "lang": "ar",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "finance", "utilities"],
   "icons": [
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
       "sizes": "192x192",
@@ -19,17 +52,22 @@
     },
     {
       "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity", "utilities"],
   "shortcuts": [
     {
       "name": "لوحة التحكم",
       "short_name": "Dashboard",
-      "description": "انتقل إلى لوحة التحكم الرئيسية",
+      "description": "الانتقال إلى لوحة التحكم الرئيسية",
       "url": "/dashboard",
       "icons": [
         {
@@ -37,6 +75,79 @@
           "sizes": "96x96"
         }
       ]
+    },
+    {
+      "name": "المركبات",
+      "short_name": "Fleet",
+      "description": "إدارة أسطول المركبات",
+      "url": "/fleet",
+      "icons": [
+        {
+          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "العقود",
+      "short_name": "Contracts",
+      "description": "إدارة العقود والاتفاقيات",
+      "url": "/contracts",
+      "icons": [
+        {
+          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "العملاء",
+      "short_name": "Customers",
+      "description": "إدارة قاعدة بيانات العملاء",
+      "url": "/customers",
+      "icons": [
+        {
+          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "المحاسبة",
+      "short_name": "Finance",
+      "description": "النظام المالي والمحاسبي",
+      "url": "/finance",
+      "icons": [
+        {
+          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "sizes": "96x96"
+        }
+      ]
     }
-  ]
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".xls", ".xlsx"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+fleetify",
+      "url": "/?action=%s"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "handle_links": "preferred",
+  "capture_links": "new-client"
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';

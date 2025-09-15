@@ -40,6 +40,7 @@ import PropertyOwners from "./pages/PropertyOwners";
 import PropertiesMap from "./pages/PropertiesMap";
 import PropertyMaintenance from "./pages/properties/PropertyMaintenance";
 import PropertyContracts from "./pages/properties/PropertyContracts";
+import { PerformanceMonitor } from "@/components/performance";
 
 import BackupPage from "./pages/BackupPage";
 import AuditPage from "./pages/AuditPage";
@@ -79,6 +80,7 @@ import ReportView from "./pages/ReportView";
 import ElectronicSignatureSettings from "./pages/settings/ElectronicSignatureSettings";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { Tenants } from "./modules/tenants";
+import { MobileOptimizationProvider } from "@/components/performance";
 
 const queryClient = new QueryClient();
 
@@ -102,8 +104,9 @@ const App = () => {
               <TooltipProvider>
                 <AuthProvider>
                   <CompanyContextProvider>
-                    <PWAInstallPrompt />
-                    <SimpleToaster />
+                    <MobileOptimizationProvider>
+                      <PWAInstallPrompt />
+                      <SimpleToaster />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
@@ -273,6 +276,11 @@ const App = () => {
                   } />
                   <Route path="support" element={<Support />} />
                   <Route path="support/ticket/:ticketId" element={<SupportTicketDetail />} />
+                  <Route path="performance" element={
+                    <AdminRoute>
+                      <PerformanceMonitor />
+                    </AdminRoute>
+                  } />
                   
                   {/* البحث المتقدم */}
                   <Route path="search" element={
@@ -418,6 +426,7 @@ const App = () => {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
                 </Routes>
+                    </MobileOptimizationProvider>
                 </CompanyContextProvider>
               </AuthProvider>
             </TooltipProvider>
