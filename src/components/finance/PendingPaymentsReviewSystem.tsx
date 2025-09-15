@@ -35,7 +35,10 @@ interface PendingPayment {
   processing_notes?: string;
   customers?: {
     id: string;
-    name: string;
+    customer_type?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
   };
   contracts?: {
     id: string;
@@ -51,7 +54,10 @@ interface Contract {
   monthly_amount: number;
   balance_due: number;
   customer: {
-    name: string;
+    customer_type?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
   };
 }
 
@@ -93,7 +99,7 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
         .order('payment_date', { ascending: false });
 
       if (error) throw error;
-      return data as PendingPayment[];
+      return data as any[];
     },
     enabled: !!companyId
   });
@@ -113,13 +119,13 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
           monthly_amount,
           balance_due,
           customer:customers(customer_type, first_name, last_name, company_name)
-        `
+        `)
         .eq('company_id', companyId)
         .eq('status', 'active')
         .gt('balance_due', 0);
 
       if (error) throw error;
-      return data as Contract[];
+      return data as any[];
     },
     enabled: !!companyId && !!selectedPayment
   });
@@ -294,7 +300,7 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
     const rn = (payment.reference_number || '').toLowerCase();
     const cn = payment.customers
       ? ((payment.customers.customer_type === 'corporate'
-          ? payment.customers.company_name
+          ? payment.customers.company_name || ''
           : `${payment.customers.first_name || ''} ${payment.customers.last_name || ''}`) || '')
           .toLowerCase()
       : '';
