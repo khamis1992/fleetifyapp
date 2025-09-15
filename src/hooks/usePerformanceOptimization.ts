@@ -68,7 +68,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     
     const interval = setInterval(checkMemoryUsage, 5000) // Check every 5 seconds
     return () => clearInterval(interval)
-  }, [finalConfig.memoryThreshold, setPerformanceConfig])
+  }, [finalConfig.memoryThreshold])
 
   const measureRenderTime = useCallback((componentName?: string) => {
     renderStartTime.current = performance.now()

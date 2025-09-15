@@ -59,7 +59,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
     };
 
     updateConfig(optimizedConfig);
-  }, [isMobile, isLowPowerMode, memoryUsage, updateConfig]);
+  }, [isMobile, isLowPowerMode, memoryUsage]);
 
   // Reduce animations on low-end devices
   useEffect(() => {
@@ -129,7 +129,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         imageOptimization: true
       });
     }
-  }, [memoryUsage, config, updateConfig]);
+  }, [memoryUsage, config]);
 
   useEffect(() => {
     if (memoryUsage > 80) {
