@@ -34,10 +34,19 @@ export const useDuplicateContracts = () => {
   return useQuery({
     queryKey: ['duplicate-contracts', companyId],
     queryFn: async () => {
-      if (!companyId) return [];
+      console.log('🔍 [useDuplicateContracts] Starting analysis:', {
+        companyId,
+        timestamp: new Date().toISOString()
+      });
 
-      // Get all contracts with their related data counts
-      const { data: contractsData, error } = await supabase
+      if (!companyId) {
+        console.warn('🔍 [useDuplicateContracts] No company ID found');
+        return [];
+      }
+
+      try {
+        // Get all contracts with their related data counts
+        const { data: contractsData, error } = await supabase
         .from('contracts')
         .select(`
           id,
@@ -52,10 +61,16 @@ export const useDuplicateContracts = () => {
         .order('contract_number', { ascending: true })
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching contracts:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('🚨 [useDuplicateContracts] Error fetching contracts:', error);
+          throw error;
+        }
+
+        console.log('📊 [useDuplicateContracts] Contracts retrieved:', {
+          count: contractsData?.length || 0,
+          companyId,
+          sampleData: contractsData?.slice(0, 3)
+        });
 
       // Get counts for related data
       const contractIds = contractsData?.map(c => c.id) || [];
@@ -158,7 +173,21 @@ export const useDuplicateContracts = () => {
         })
         .sort((a, b) => b.total_contracts - a.total_contracts);
 
-      return duplicateGroups;
+        console.log('🔍 [useDuplicateContracts] Analysis complete:', {
+          totalContracts: contractsWithCounts?.length || 0,
+          duplicateGroups: duplicateGroups.length,
+          groupDetails: duplicateGroups.map(g => ({
+            contractNumber: g.contract_number,
+            totalContracts: g.total_contracts,
+            recommendedAction: g.recommended_action
+          }))
+        });
+
+        return duplicateGroups;
+      } catch (error) {
+        console.error('🚨 [useDuplicateContracts] Fatal error:', error);
+        throw error;
+      }
     },
     enabled: !!companyId,
   });

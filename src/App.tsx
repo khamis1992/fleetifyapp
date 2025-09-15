@@ -60,6 +60,7 @@ import VehicleInstallments from "./pages/VehicleInstallments";
 import Employees from "./pages/hr/Employees";
 import UserManagement from "./pages/hr/UserManagement";
 import DuplicateContractsManager from "./components/contracts/DuplicateContractsManager";
+import DuplicateContractsDiagnostic from "./components/contracts/DuplicateContractsDiagnostic";
 import Attendance from "./pages/hr/Attendance";
 import LeaveManagement from "./pages/hr/LeaveManagement";
 import LocationSettings from "./pages/hr/LocationSettings";
@@ -191,6 +192,11 @@ const App = () => {
                   <Route path="contracts/duplicates" element={
                     <AdminRoute>
                       <DuplicateContractsManager />
+                    </AdminRoute>
+                  } />
+                  <Route path="contracts/duplicates/diagnostic" element={
+                    <AdminRoute>
+                      <DuplicateContractsDiagnostic />
                     </AdminRoute>
                   } />
                   <Route path="customers" element={<Customers />} />
