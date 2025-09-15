@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
-import ProfessionalPaymentSystem from "@/components/finance/ProfessionalPaymentSystem";
+import { ProfessionalPaymentSystem } from "@/components/finance/ProfessionalPaymentSystem";
 
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 const Payments = () => {
