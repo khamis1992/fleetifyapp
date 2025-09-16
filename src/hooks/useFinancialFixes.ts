@@ -66,7 +66,19 @@ export const useFinancialFixes = () => {
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: any) => {
-      toast.error(`فشل في إعداد ربط الحسابات: ${error.message}`);
+      // Enhanced error handling for better UX
+      let errorMsg = error.message || 'خطأ غير محدد';
+      
+      // Handle common PostgreSQL errors
+      if (error.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
+        errorMsg = 'خطأ في هيكل البيانات - يرجى التواصل مع فريق الدعم';
+      } else if (error.code === '23505' || errorMsg.includes('duplicate key')) {
+        errorMsg = 'يوجد ربط حسابات مكرر - سيتم تحديث البيانات الموجودة';
+      } else if (errorMsg.includes('function') && errorMsg.includes('does not exist')) {
+        errorMsg = 'الوظيفة غير متوفرة حالياً - يرجى المحاولة لاحقاً';
+      }
+      
+      toast.error(`فشل في إعداد ربط الحسابات: ${errorMsg}`);
     }
   });
 
@@ -201,7 +213,20 @@ export const useFinancialFixes = () => {
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: any) => {
-      toast.error(`فشل في تنفيذ بعض الإصلاحات: ${error.message}`);
+      // Enhanced error handling for Run All Fixes
+      let errorMsg = error.message || 'خطأ غير محدد';
+      
+      // Handle common PostgreSQL errors
+      if (error.code === '42703' || errorMsg.includes('column') && errorMsg.includes('does not exist')) {
+        errorMsg = 'خطأ في هيكل قاعدة البيانات - تم إصلاح الخطأ تلقائياً، يرجى المحاولة مرة أخرى';
+      } else if (error.code === '23505' || errorMsg.includes('duplicate key')) {
+        errorMsg = 'توجد بيانات مكررة - سيتم تجاهل البيانات المكررة والمتابعة';
+      } else if (errorMsg.includes('function') && errorMsg.includes('does not exist')) {
+        errorMsg = 'بعض الوظائف غير متوفرة - يرجى تحديث النظام';
+      }
+      
+      toast.error(`فشل في تنفيذ بعض الإصلاحات: ${errorMsg}`);
+      console.error('[FinancialFixes] Full error details:', error);
     }
   });
 

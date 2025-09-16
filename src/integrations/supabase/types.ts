@@ -12151,6 +12151,16 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: Json
       }
+      fix_pending_payments: {
+        Args: { target_company_id?: string }
+        Returns: {
+          action_taken: string
+          new_status: string
+          old_status: string
+          payment_id: string
+          payment_number: string
+        }[]
+      }
       force_delete_all_accounts: {
         Args: {
           cleanup_first?: boolean
@@ -12633,6 +12643,16 @@ export type Database = {
           linking_percentage: number
           total_payments: number
           unlinked_payments: number
+        }[]
+      }
+      get_pending_payments_stats: {
+        Args: { target_company_id: string }
+        Returns: {
+          low_confidence: number
+          needs_manual_review: number
+          total_pending: number
+          unlinked_with_customer: number
+          unlinked_without_customer: number
         }[]
       }
       get_reporting_accounts: {
