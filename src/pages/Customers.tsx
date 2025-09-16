@@ -39,15 +39,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EnhancedCustomerDialog, CustomerDetailsDialog } from '@/components/customers';
+import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog } from '@/components/customers';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
 import { toast } from 'sonner';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 const Customers = () => {
   const { user } = useAuth();
   const { isMobile } = useSimpleBreakpoint();
+  const { hasFullCompanyControl } = useUnifiedCompanyAccess();
   
   // State management
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +59,7 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   // Build filters for the query
   const filters: CustomerFilters = {
@@ -71,6 +74,10 @@ const Customers = () => {
   // Event handlers
   const handleCreateCustomer = () => {
     setShowCreateDialog(true);
+  };
+
+  const handleBulkDelete = () => {
+    setShowBulkDeleteDialog(true);
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -106,10 +113,22 @@ const Customers = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">العملاء</h1>
-          <Button onClick={handleCreateCustomer}>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة عميل
-          </Button>
+          <div className="flex gap-2">
+            {hasFullCompanyControl && totalCustomers > 0 && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="h-4 w-4 ml-2" />
+                حذف الكل
+              </Button>
+            )}
+            <Button onClick={handleCreateCustomer}>
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة عميل
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -222,6 +241,12 @@ const Customers = () => {
             />
           </>
         )}
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeleteCustomersDialog
+          open={showBulkDeleteDialog}
+          onOpenChange={setShowBulkDeleteDialog}
+        />
       </div>
     );
   }
@@ -235,10 +260,22 @@ const Customers = () => {
           <h1 className="text-3xl font-bold">إدارة العملاء</h1>
           <p className="text-muted-foreground">عرض وإدارة بيانات العملاء</p>
         </div>
-        <Button onClick={handleCreateCustomer} size="lg">
-          <Plus className="h-4 w-4 ml-2" />
-          إضافة عميل جديد
-        </Button>
+        <div className="flex gap-3">
+          {hasFullCompanyControl && totalCustomers > 0 && (
+            <Button 
+              variant="destructive" 
+              size="lg"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="h-4 w-4 ml-2" />
+              حذف جميع العملاء
+            </Button>
+          )}
+          <Button onClick={handleCreateCustomer} size="lg">
+            <Plus className="h-4 w-4 ml-2" />
+            إضافة عميل جديد
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -505,6 +542,18 @@ const Customers = () => {
           />
         </>
       )}
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteCustomersDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={(open) => {
+          setShowBulkDeleteDialog(open);
+          if (!open) {
+            // Refresh data after bulk delete
+            refetch();
+          }
+        }}
+      />
     </div>
   );
 };
