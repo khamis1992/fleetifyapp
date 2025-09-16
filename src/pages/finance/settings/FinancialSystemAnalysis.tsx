@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useFinancialSystemAnalysis } from "@/hooks/useFinancialSystemAnalysis";
 import { useFinancialAIAnalysis } from "@/hooks/useFinancialAIAnalysis";
+import { useFinancialFixes } from "@/hooks/useFinancialFixes";
 
 export default function FinancialSystemAnalysis() {
   const { data: analysis, isLoading, error, refetch } = useFinancialSystemAnalysis();
@@ -312,16 +313,31 @@ export default function FinancialSystemAnalysis() {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">85%</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {analysis.metrics.linkedCustomers}/{analysis.metrics.linkedCustomers + analysis.metrics.unlinkedEntities.customers}
+                      </div>
                       <div className="text-sm text-green-700">العملاء مربوطون</div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((analysis.metrics.linkedCustomers / (analysis.metrics.linkedCustomers + analysis.metrics.unlinkedEntities.customers)) * 100)}%
+                      </div>
                     </div>
                     <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600">60%</div>
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {analysis.metrics.linkedVehicles}/{analysis.metrics.linkedVehicles + analysis.metrics.unlinkedEntities.vehicles}
+                      </div>
                       <div className="text-sm text-yellow-700">المركبات مربوطة</div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((analysis.metrics.linkedVehicles / (analysis.metrics.linkedVehicles + analysis.metrics.unlinkedEntities.vehicles)) * 100)}%
+                      </div>
                     </div>
                     <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">40%</div>
+                      <div className="text-2xl font-bold text-red-600">
+                        {analysis.metrics.linkedContracts}/{analysis.metrics.linkedContracts + analysis.metrics.unlinkedEntities.contracts}
+                      </div>
                       <div className="text-sm text-red-700">العقود مربوطة</div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((analysis.metrics.linkedContracts / (analysis.metrics.linkedContracts + analysis.metrics.unlinkedEntities.contracts)) * 100)}%
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -398,6 +414,9 @@ export default function FinancialSystemAnalysis() {
         </TabsContent>
 
         <TabsContent value="ai-insights" className="space-y-6">
+          {/* Smart Actions Card */}
+          {analysis && <SmartActionsCard analysis={analysis} />}
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -585,5 +604,124 @@ export default function FinancialSystemAnalysis() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Smart Actions Component
+function SmartActionsCard({ analysis }: { analysis: any }) {
+  const {
+    copyDefaultCostCenters,
+    createDefaultCustomerAccounts,
+    ensureEssentialAccountMappings,
+    linkUnlinkedContracts,
+    runAllFixes,
+    isLoading
+  } = useFinancialFixes();
+
+  const hasIssues = analysis.metrics.unlinkedEntities.customers > 0 || 
+                   analysis.metrics.unlinkedEntities.vehicles > 0 || 
+                   analysis.metrics.unlinkedEntities.contracts > 0 ||
+                   analysis.costCentersScore < 80;
+
+  if (!hasIssues) {
+    return (
+      <Card className="border-green-200 bg-green-50">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+            <div>
+              <h3 className="font-semibold text-green-800">النظام المالي مُعد بشكل جيد!</h3>
+              <p className="text-sm text-green-700">جميع الربطات والإعدادات تعمل بصورة صحيحة</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-blue-200 bg-blue-50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-blue-800">
+          <Lightbulb className="h-5 w-5" />
+          إجراءات سريعة للإصلاح
+        </CardTitle>
+        <CardDescription className="text-blue-700">
+          نفذ هذه الإجراءات لحل المشاكل المكتشفة تلقائياً
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Button
+            onClick={() => ensureEssentialAccountMappings.mutate()}
+            disabled={isLoading}
+            variant="outline"
+            className="h-auto p-4 flex-col gap-2 items-start text-right"
+          >
+            <div className="font-medium">إعداد ربط الحسابات الأساسية</div>
+            <div className="text-xs text-muted-foreground">
+              ربط الحسابات الأساسية تلقائياً
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => copyDefaultCostCenters.mutate()}
+            disabled={isLoading}
+            variant="outline"
+            className="h-auto p-4 flex-col gap-2 items-start text-right"
+          >
+            <div className="font-medium">نسخ مراكز التكلفة الافتراضية</div>
+            <div className="text-xs text-muted-foreground">
+              إضافة مراكز التكلفة المفقودة
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => createDefaultCustomerAccounts.mutate()}
+            disabled={isLoading}
+            variant="outline"
+            className="h-auto p-4 flex-col gap-2 items-start text-right"
+          >
+            <div className="font-medium">إنشاء حسابات العملاء</div>
+            <div className="text-xs text-muted-foreground">
+              ربط العملاء بحسابات مالية
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => linkUnlinkedContracts.mutate()}
+            disabled={isLoading}
+            variant="outline"
+            className="h-auto p-4 flex-col gap-2 items-start text-right"
+          >
+            <div className="font-medium">ربط العقود غير المربوطة</div>
+            <div className="text-xs text-muted-foreground">
+              ربط {analysis.metrics.unlinkedEntities.contracts} عقد
+            </div>
+          </Button>
+        </div>
+
+        <div className="pt-4 border-t">
+          <Button
+            onClick={() => runAllFixes.mutate()}
+            disabled={isLoading}
+            className="w-full gap-2"
+            size="lg"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                جاري التنفيذ...
+              </>
+            ) : (
+              <>
+                <TrendingUp className="h-4 w-4" />
+                تشغيل جميع الإصلاحات
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

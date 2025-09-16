@@ -57,23 +57,30 @@ export const useFinancialSystemAnalysis = () => {
 
       console.log('[useFinancialSystemAnalysis] Starting comprehensive analysis...');
       
-      // Get basic metrics first
+      // Get real data from multiple tables
       const [
         accountsResponse,
         customersResponse,
         vehiclesResponse,
         contractsResponse,
         costCentersResponse,
-        journalEntriesResponse
+        journalEntriesResponse,
+        customerAccountsResponse
       ] = await Promise.all([
-        supabase.from('chart_of_accounts').select('*').eq('is_active', true),
-        supabase.from('customers').select('id').eq('is_active', true),
-        supabase.from('vehicles').select('id').eq('is_active', true),
-        supabase.from('contracts').select('id').eq('status', 'active'),
-        supabase.from('cost_centers').select('*').eq('is_active', true),
+        supabase.from('chart_of_accounts').select('*').eq('is_active', true).eq('company_id', user.company.id),
+        supabase.from('customers').select('id').eq('is_active', true).eq('company_id', user.company.id),
+        supabase.from('vehicles').select('id, cost_center_id').eq('is_active', true).eq('company_id', user.company.id),
+        supabase.from('contracts').select('id, account_id').eq('status', 'active').eq('company_id', user.company.id),
+        supabase.from('cost_centers').select('*').eq('is_active', true).eq('company_id', user.company.id),
         supabase.from('journal_entries')
           .select('*')
-          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .eq('company_id', user.company.id)
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        // Get linked customers via customer_accounts table
+        supabase.from('customer_accounts')
+          .select('customer_id')
+          .eq('is_active', true)
+          .eq('company_id', user.company.id)
       ]);
 
       const accounts = accountsResponse.data || [];
@@ -82,19 +89,24 @@ export const useFinancialSystemAnalysis = () => {
       const contracts = contractsResponse.data || [];
       const costCenters = costCentersResponse.data || [];
       const journalEntries = journalEntriesResponse.data || [];
+      const customerAccounts = customerAccountsResponse.data || [];
 
-      // Calculate metrics (simplified for now - will need proper linking analysis later)
+      // Calculate real metrics from actual data
+      const linkedCustomersCount = new Set(customerAccounts.map(ca => ca.customer_id)).size;
+      const linkedVehiclesCount = vehicles.filter(v => v.cost_center_id).length;
+      const linkedContractsCount = contracts.filter(c => c.account_id).length;
+
       const metrics: FinancialMetrics = {
         totalAccounts: accounts.length,
-        linkedCustomers: Math.floor(customers.length * 0.85), // Mock data for demo
-        linkedVehicles: Math.floor(vehicles.length * 0.60), // Mock data for demo
-        linkedContracts: Math.floor(contracts.length * 0.70), // Mock data for demo
+        linkedCustomers: linkedCustomersCount,
+        linkedVehicles: linkedVehiclesCount,
+        linkedContracts: linkedContractsCount,
         activeCostCenters: costCenters.length,
         recentJournalEntries: journalEntries.length,
         unlinkedEntities: {
-          customers: Math.floor(customers.length * 0.15), // Mock data for demo
-          vehicles: Math.floor(vehicles.length * 0.40), // Mock data for demo
-          contracts: Math.floor(contracts.length * 0.30), // Mock data for demo
+          customers: customers.length - linkedCustomersCount,
+          vehicles: vehicles.length - linkedVehiclesCount,
+          contracts: contracts.length - linkedContractsCount,
         }
       };
 
@@ -244,8 +256,8 @@ function generateIssues(metrics: FinancialMetrics, accounts: any[], costCenters:
     });
   }
 
-  // Cost center issues - specifically addressing CC007
-  const cc007 = costCenters.find(cc => cc.cost_center_code === 'CC007');
+  // Cost center issues - specifically addressing CC007 (using correct field name)
+  const cc007 = costCenters.find(cc => cc.center_code === 'CC007');
   if (cc007) {
     issues.push({
       id: 'cc007-not-linked',
