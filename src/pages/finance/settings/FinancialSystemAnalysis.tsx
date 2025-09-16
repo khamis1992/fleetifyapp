@@ -265,30 +265,17 @@ export default function FinancialSystemAnalysis() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>الحسابات الرئيسية</span>
-                        <span className="text-green-600">85% مكتملة</span>
-                      </div>
-                      <Progress value={85} />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>الحسابات الفرعية</span>
-                        <span className="text-yellow-600">70% مكتملة</span>
-                      </div>
-                      <Progress value={70} />
-                    </div>
-                  </div>
-                  
                   <div className="space-y-2">
-                    <h4 className="font-medium">الحسابات المفقودة:</h4>
-                    <ul className="text-sm space-y-1 text-muted-foreground">
-                      <li>• حساب صيانة المركبات</li>
-                      <li>• حساب مصاريف التشغيل</li>
-                      <li>• حساب إهلاك المركبات</li>
-                    </ul>
+                    <div className="flex justify-between">
+                      <span>درجة إعداد شجرة الحسابات</span>
+                      <span className={`${(analysis?.chartOfAccountsScore ?? 0) >= 80 ? 'text-green-600' : (analysis?.chartOfAccountsScore ?? 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {analysis?.chartOfAccountsScore ?? 0}%
+                      </span>
+                    </div>
+                    <Progress value={analysis?.chartOfAccountsScore ?? 0} />
+                    <div className="text-xs text-muted-foreground">
+                      إجمالي الحسابات: {analysis?.metrics?.totalAccounts ?? 0}
+                    </div>
                   </div>
                 </div>
               )}
@@ -318,25 +305,25 @@ export default function FinancialSystemAnalysis() {
                       </div>
                       <div className="text-sm text-green-700">العملاء مربوطون</div>
                       <div className="text-xs text-muted-foreground">
-                        {Math.round((analysis.metrics.linkedCustomers / (analysis.metrics.linkedCustomers + analysis.metrics.unlinkedEntities.customers)) * 100)}%
+                        {analysis?.metrics ? Math.round((analysis.metrics.linkedCustomers / (analysis.metrics.linkedCustomers + analysis.metrics.unlinkedEntities.customers)) * 100) : 0}%
                       </div>
                     </div>
                     <div className="text-center p-4 bg-yellow-50 rounded-lg">
                       <div className="text-2xl font-bold text-yellow-600">
-                        {analysis.metrics.linkedVehicles}/{analysis.metrics.linkedVehicles + analysis.metrics.unlinkedEntities.vehicles}
+                        {analysis?.metrics?.linkedVehicles ?? 0}/{(analysis?.metrics?.linkedVehicles ?? 0) + (analysis?.metrics?.unlinkedEntities?.vehicles ?? 0)}
                       </div>
                       <div className="text-sm text-yellow-700">المركبات مربوطة</div>
                       <div className="text-xs text-muted-foreground">
-                        {Math.round((analysis.metrics.linkedVehicles / (analysis.metrics.linkedVehicles + analysis.metrics.unlinkedEntities.vehicles)) * 100)}%
+                        {analysis?.metrics ? Math.round((analysis.metrics.linkedVehicles / (analysis.metrics.linkedVehicles + analysis.metrics.unlinkedEntities.vehicles)) * 100) : 0}%
                       </div>
                     </div>
                     <div className="text-center p-4 bg-red-50 rounded-lg">
                       <div className="text-2xl font-bold text-red-600">
-                        {analysis.metrics.linkedContracts}/{analysis.metrics.linkedContracts + analysis.metrics.unlinkedEntities.contracts}
+                        {analysis?.metrics?.linkedContracts ?? 0}/{(analysis?.metrics?.linkedContracts ?? 0) + (analysis?.metrics?.unlinkedEntities?.contracts ?? 0)}
                       </div>
                       <div className="text-sm text-red-700">العقود مربوطة</div>
                       <div className="text-xs text-muted-foreground">
-                        {Math.round((analysis.metrics.linkedContracts / (analysis.metrics.linkedContracts + analysis.metrics.unlinkedEntities.contracts)) * 100)}%
+                        {analysis?.metrics ? Math.round((analysis.metrics.linkedContracts / (analysis.metrics.linkedContracts + analysis.metrics.unlinkedEntities.contracts)) * 100) : 0}%
                       </div>
                     </div>
                   </div>
@@ -364,17 +351,17 @@ export default function FinancialSystemAnalysis() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>درجة إعداد مراكز التكلفة</span>
-                      <span className={`${analysis.costCentersScore >= 80 ? 'text-green-600' : analysis.costCentersScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {analysis.costCentersScore}%
+                      <span className={`${(analysis?.costCentersScore || 0) >= 80 ? 'text-green-600' : (analysis?.costCentersScore || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {analysis?.costCentersScore || 0}%
                       </span>
                     </div>
-                    <Progress value={analysis.costCentersScore} />
+                    <Progress value={analysis?.costCentersScore || 0} />
                     <div className="text-xs text-muted-foreground">
-                      مراكز التكلفة النشطة: {analysis.metrics.activeCostCenters}
+                      مراكز التكلفة النشطة: {analysis?.metrics?.activeCostCenters || 0}
                     </div>
                   </div>
 
-                  {analysis.issues.some(i => i.id === 'cc007-not-linked') && (
+                  {analysis?.issues?.some(i => i.id === 'cc007-not-linked') && (
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription>
@@ -406,13 +393,13 @@ export default function FinancialSystemAnalysis() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>درجة صحة العمليات المالية</span>
-                      <span className={`${analysis.operationsScore >= 80 ? 'text-green-600' : analysis.operationsScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {analysis.operationsScore}%
+                      <span className={`${(analysis?.operationsScore || 0) >= 80 ? 'text-green-600' : (analysis?.operationsScore || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {analysis?.operationsScore || 0}%
                       </span>
                     </div>
-                    <Progress value={analysis.operationsScore} />
+                    <Progress value={analysis?.operationsScore || 0} />
                     <div className="text-xs text-muted-foreground">
-                      قيود آخر 30 يوم: {analysis.metrics.recentJournalEntries}
+                      قيود آخر 30 يوم: {analysis?.metrics?.recentJournalEntries || 0}
                     </div>
                   </div>
                 </div>
