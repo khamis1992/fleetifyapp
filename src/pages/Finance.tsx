@@ -43,6 +43,7 @@ import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
 import AccountsSettings from "./finance/settings/AccountsSettings"
 import CostCentersSettings from "./finance/settings/CostCentersSettings"
 import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
+import FinancialSystemAnalysis from "./finance/settings/FinancialSystemAnalysis"
 import AccountingWizard from "./finance/AccountingWizard"
 import FinancialCalculator from "./finance/Calculator"
 import Deposits from "./finance/Deposits"
@@ -481,6 +482,14 @@ const Finance = () => {
           <SuperAdminRoute>
             <AutomaticAccountsSettings />
           </SuperAdminRoute>
+        } 
+      />
+      <Route 
+        path="settings/financial-system-analysis" 
+        element={
+          <ProtectedFinanceRoute permission="finance.accounts.view">
+            <FinancialSystemAnalysis />
+          </ProtectedFinanceRoute>
         } 
       />
     </Routes>

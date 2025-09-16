@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, Copy, FileText } from "lucide-react";
+import { Plus, Settings, Copy, FileText, BarChart3 } from "lucide-react";
 import { useCopyDefaultAccounts } from "@/hooks/useChartOfAccounts";
 import { toast } from "sonner";
 
@@ -97,6 +97,19 @@ export default function AccountsSettings() {
             </CardTitle>
             <CardDescription>
               إعدادات إنشاء وربط الحسابات المحاسبية للعملاء والمستأجرين
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" 
+              onClick={() => navigate("/finance/settings/financial-system-analysis")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              تحليل النظام المالي الذكي
+            </CardTitle>
+            <CardDescription>
+              تحليل شامل لاكتمال وصحة النظام المحاسبي مع الذكاء الاصطناعي
             </CardDescription>
           </CardHeader>
         </Card>
