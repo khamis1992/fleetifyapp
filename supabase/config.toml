@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.intelligent-contract-processor]
 verify_jwt = true
+
+[functions.financial-analysis-ai]
+verify_jwt = true

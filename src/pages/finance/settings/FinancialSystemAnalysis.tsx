@@ -16,30 +16,42 @@ import {
   Target,
   Activity,
   RefreshCw,
-  Lightbulb
+  Lightbulb,
+  Sparkles,
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
+import { useFinancialSystemAnalysis } from "@/hooks/useFinancialSystemAnalysis";
+import { useFinancialAIAnalysis } from "@/hooks/useFinancialAIAnalysis";
 
 export default function FinancialSystemAnalysis() {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
-
-  // Mock data for demonstration - will be replaced with real hooks
-  const mockAnalysis = {
-    overallScore: 75,
-    chartOfAccountsScore: 85,
-    linkageScore: 70,
-    costCentersScore: 60,
-    operationsScore: 80,
-    aiScore: 65
-  };
-
-  const runAnalysis = async () => {
-    setIsAnalyzing(true);
-    // Simulate analysis time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsAnalyzing(false);
-    setAnalysisComplete(true);
-  };
+  const { data: analysis, isLoading, error, refetch } = useFinancialSystemAnalysis();
+  
+  // AI Analysis Hook - only run when we have basic analysis data
+  const { 
+    data: aiAnalysis, 
+    isLoading: aiLoading, 
+    error: aiError 
+  } = useFinancialAIAnalysis(analysis ? {
+    totalAccounts: analysis.metrics.totalAccounts,
+    chartOfAccountsScore: analysis.chartOfAccountsScore,
+    linkageScore: analysis.linkageScore,
+    costCentersScore: analysis.costCentersScore,
+    operationsScore: analysis.operationsScore,
+    overallScore: analysis.overallScore,
+    linkedCustomers: analysis.metrics.linkedCustomers,
+    unlinkedCustomers: analysis.metrics.unlinkedEntities.customers,
+    linkedVehicles: analysis.metrics.linkedVehicles,
+    unlinkedVehicles: analysis.metrics.unlinkedEntities.vehicles,
+    linkedContracts: analysis.metrics.linkedContracts,
+    unlinkedContracts: analysis.metrics.unlinkedEntities.contracts,
+    activeCostCenters: analysis.metrics.activeCostCenters,
+    recentJournalEntries: analysis.metrics.recentJournalEntries,
+    issues: analysis.issues.map(issue => ({
+      title: issue.title,
+      description: issue.description
+    }))
+  } : undefined);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -63,11 +75,11 @@ export default function FinancialSystemAnalysis() {
           </p>
         </div>
         <Button 
-          onClick={runAnalysis} 
-          disabled={isAnalyzing}
+          onClick={() => refetch()} 
+          disabled={isLoading}
           className="gap-2"
         >
-          {isAnalyzing ? (
+          {isLoading ? (
             <>
               <RefreshCw className="h-4 w-4 animate-spin" />
               جاري التحليل...
@@ -75,7 +87,7 @@ export default function FinancialSystemAnalysis() {
           ) : (
             <>
               <BarChart3 className="h-4 w-4" />
-              بدء التحليل الشامل
+              تحديث التحليل
             </>
           )}
         </Button>
@@ -93,25 +105,44 @@ export default function FinancialSystemAnalysis() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-4xl font-bold text-primary">
-              {analysisComplete ? mockAnalysis.overallScore : '--'}%
+          {isLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">جاري تحليل النظام المالي...</p>
             </div>
-            {analysisComplete && (
-              <Badge variant={getScoreVariant(mockAnalysis.overallScore)}>
-                {mockAnalysis.overallScore >= 80 ? 'ممتاز' : 
-                 mockAnalysis.overallScore >= 60 ? 'جيد' : 'يحتاج تحسين'}
-              </Badge>
-            )}
-          </div>
-          <Progress 
-            value={analysisComplete ? mockAnalysis.overallScore : 0} 
-            className="h-3"
-          />
-          {analysisComplete && (
-            <p className="text-sm text-muted-foreground mt-2">
-              النظام المالي في حالة جيدة مع بعض التحسينات المطلوبة
-            </p>
+          ) : error ? (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                حدث خطأ في تحليل النظام المالي. يرجى المحاولة مرة أخرى.
+              </AlertDescription>
+            </Alert>
+          ) : analysis ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl font-bold text-primary">
+                  {analysis.overallScore}%
+                </div>
+                <Badge variant={getScoreVariant(analysis.overallScore)}>
+                  {analysis.overallScore >= 80 ? 'ممتاز' : 
+                   analysis.overallScore >= 60 ? 'جيد' : 'يحتاج تحسين'}
+                </Badge>
+              </div>
+              <Progress 
+                value={analysis.overallScore} 
+                className="h-3"
+              />
+              <p className="text-sm text-muted-foreground mt-2">
+                {analysis.overallScore >= 80 ? 'النظام المالي في حالة ممتازة' :
+                 analysis.overallScore >= 60 ? 'النظام المالي في حالة جيدة مع بعض التحسينات المطلوبة' :
+                 'النظام المالي يحتاج إلى تحسينات مهمة'}
+              </p>
+            </>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <div className="text-4xl font-bold">--</div>
+              <p className="text-sm mt-2">لا توجد بيانات للتحليل</p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -139,14 +170,14 @@ export default function FinancialSystemAnalysis() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div className={`text-2xl font-bold ${getScoreColor(mockAnalysis.chartOfAccountsScore)}`}>
-                    {analysisComplete ? mockAnalysis.chartOfAccountsScore : '--'}%
+                  <div className={`text-2xl font-bold ${analysis ? getScoreColor(analysis.chartOfAccountsScore) : 'text-muted-foreground'}`}>
+                    {analysis ? analysis.chartOfAccountsScore : '--'}%
                   </div>
-                  {analysisComplete && (
+                  {analysis && analysis.chartOfAccountsScore >= 80 && (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   )}
                 </div>
-                <Progress value={analysisComplete ? mockAnalysis.chartOfAccountsScore : 0} className="mt-2" />
+                <Progress value={analysis ? analysis.chartOfAccountsScore : 0} className="mt-2" />
                 <p className="text-xs text-muted-foreground mt-1">
                   الهيكل الأساسي مكتمل
                 </p>
@@ -163,14 +194,14 @@ export default function FinancialSystemAnalysis() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div className={`text-2xl font-bold ${getScoreColor(mockAnalysis.linkageScore)}`}>
-                    {analysisComplete ? mockAnalysis.linkageScore : '--'}%
+                  <div className={`text-2xl font-bold ${analysis ? getScoreColor(analysis.linkageScore) : 'text-muted-foreground'}`}>
+                    {analysis ? analysis.linkageScore : '--'}%
                   </div>
-                  {analysisComplete && (
+                  {analysis && analysis.linkageScore < 80 && (
                     <AlertTriangle className="h-5 w-5 text-yellow-500" />
                   )}
                 </div>
-                <Progress value={analysisComplete ? mockAnalysis.linkageScore : 0} className="mt-2" />
+                <Progress value={analysis ? analysis.linkageScore : 0} className="mt-2" />
                 <p className="text-xs text-muted-foreground mt-1">
                   بعض الربطات مفقودة
                 </p>
@@ -187,14 +218,14 @@ export default function FinancialSystemAnalysis() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div className={`text-2xl font-bold ${getScoreColor(mockAnalysis.costCentersScore)}`}>
-                    {analysisComplete ? mockAnalysis.costCentersScore : '--'}%
+                  <div className={`text-2xl font-bold ${analysis ? getScoreColor(analysis.costCentersScore) : 'text-muted-foreground'}`}>
+                    {analysis ? analysis.costCentersScore : '--'}%
                   </div>
-                  {analysisComplete && (
+                  {analysis && analysis.costCentersScore < 60 && (
                     <XCircle className="h-5 w-5 text-red-500" />
                   )}
                 </div>
-                <Progress value={analysisComplete ? mockAnalysis.costCentersScore : 0} className="mt-2" />
+                <Progress value={analysis ? analysis.costCentersScore : 0} className="mt-2" />
                 <p className="text-xs text-muted-foreground mt-1">
                   تحتاج إعداد شامل
                 </p>
@@ -203,21 +234,17 @@ export default function FinancialSystemAnalysis() {
           </div>
 
           {/* Quick Issues */}
-          {analysisComplete && (
+          {analysis && analysis.issues.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">المشاكل العاجلة</h3>
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  تم العثور على 3 حسابات رئيسية مفقودة في دليل الحسابات
-                </AlertDescription>
-              </Alert>
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  15% من العقود غير مربوطة بحسابات محاسبية
-                </AlertDescription>
-              </Alert>
+              {analysis.issues.slice(0, 3).map((issue, index) => (
+                <Alert key={index}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>{issue.title}:</strong> {issue.description}
+                  </AlertDescription>
+                </Alert>
+              ))}
             </div>
           )}
         </TabsContent>
@@ -231,9 +258,9 @@ export default function FinancialSystemAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!analysisComplete ? (
+              {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  قم بتشغيل التحليل الشامل لعرض النتائج
+                  قم بتشغيل التحليل لعرض النتائج
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -277,9 +304,9 @@ export default function FinancialSystemAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!analysisComplete ? (
+              {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  قم بتشغيل التحليل الشامل لعرض النتائج
+                  قم بتشغيل التحليل لعرض النتائج
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -312,9 +339,9 @@ export default function FinancialSystemAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!analysisComplete ? (
+              {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  قم بتشغيل التحليل الشامل لعرض النتائج
+                  قم بتشغيل التحليل لعرض النتائج
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -342,9 +369,9 @@ export default function FinancialSystemAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!analysisComplete ? (
+              {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  قم بتشغيل التحليل الشامل لعرض النتائج
+                  قم بتشغيل التحليل لعرض النتائج
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -374,38 +401,143 @@ export default function FinancialSystemAnalysis() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" />
-                رؤى الذكاء الاصطناعي
+                <Sparkles className="h-5 w-5 text-primary" />
+                رؤى ذكية مدعومة بالذكاء الاصطناعي
               </CardTitle>
               <CardDescription>
-                تحليل ذكي واقتراحات مخصصة لتحسين النظام المالي
+                تحليل متقدم وتوصيات مخصصة لتحسين نظامك المالي
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!analysisComplete ? (
+              {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  قم بتشغيل التحليل الشامل لعرض الرؤى الذكية
+                  يرجى تشغيل التحليل الأساسي أولاً
+                </div>
+              ) : aiLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                  <p className="text-muted-foreground">جاري تحليل النظام المالي بالذكاء الاصطناعي...</p>
+                </div>
+              ) : aiError ? (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    لا يمكن الوصول للتحليل الذكي حالياً. يرجى المحاولة لاحقاً.
+                  </AlertDescription>
+                </Alert>
+              ) : aiAnalysis ? (
+                <div className="space-y-6">
+                  {/* AI Analysis Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-primary/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">مستوى الثقة</span>
+                        </div>
+                        <div className="text-2xl font-bold text-primary">{aiAnalysis.confidence}%</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className={`border-${
+                      aiAnalysis.riskLevel === 'critical' ? 'destructive' :
+                      aiAnalysis.riskLevel === 'high' ? 'orange-500' :
+                      aiAnalysis.riskLevel === 'medium' ? 'yellow-500' : 'green-500'
+                    }/20`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm font-medium">مستوى المخاطر</span>
+                        </div>
+                        <Badge variant={
+                          aiAnalysis.riskLevel === 'critical' ? 'destructive' :
+                          aiAnalysis.riskLevel === 'high' ? 'destructive' :
+                          aiAnalysis.riskLevel === 'medium' ? 'secondary' : 'default'
+                        }>
+                          {aiAnalysis.riskLevel === 'critical' ? 'حرج' :
+                           aiAnalysis.riskLevel === 'high' ? 'عالي' :
+                           aiAnalysis.riskLevel === 'medium' ? 'متوسط' : 'منخفض'}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-blue-500/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm font-medium">التوصيات</span>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-500">
+                          {aiAnalysis.recommendations.length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* AI Analysis Text */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">التحليل التفصيلي</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose prose-sm max-w-none">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {aiAnalysis.analysis}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Smart Recommendations */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        توصيات ذكية
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {aiAnalysis.recommendations.map((recommendation, index) => (
+                          <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{recommendation}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Urgent Actions */}
+                  {aiAnalysis.urgentActions.length > 0 && (
+                    <Card className="border-orange-500/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2 text-orange-600">
+                          <AlertTriangle className="h-5 w-5" />
+                          إجراءات عاجلة مطلوبة
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {aiAnalysis.urgentActions.map((action, index) => (
+                            <div key={index} className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                              <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-orange-800">{action}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div className="text-xs text-muted-foreground text-center pt-4">
+                    آخر تحليل: {new Date(aiAnalysis.timestamp).toLocaleString('ar-SA')}
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <Alert>
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>اقتراح ذكي:</strong> مركز التكلفة CC007 (عقود التمليك) يجب ربطه بحساب "التزامات الإيجار التمويلي" (222) تحت الخصوم طويلة الأجل
-                    </AlertDescription>
-                  </Alert>
-                  <Alert>
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>تحسين مقترح:</strong> إنشاء حسابات فرعية منفصلة لكل نوع من المركبات لتتبع أفضل للتكاليف
-                    </AlertDescription>
-                  </Alert>
-                  <Alert>
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>تنبيه أمان:</strong> 25% من المعاملات المالية لا تحتوي على مراجع مراكز التكلفة مما قد يؤثر على دقة التقارير
-                    </AlertDescription>
-                  </Alert>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>لا توجد بيانات كافية للتحليل الذكي</p>
                 </div>
               )}
             </CardContent>
