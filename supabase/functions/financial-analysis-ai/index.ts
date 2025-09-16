@@ -13,11 +13,24 @@ serve(async (req) => {
   }
 
   try {
-    const { analysisData, companyType, language = 'ar' } = await req.json();
+    const { analysisData, companyType, language = 'ar', userId } = await req.json();
+    
+    console.log('Request body received:', { 
+      hasAnalysisData: !!analysisData, 
+      companyType, 
+      language,
+      userId,
+      overallScore: analysisData?.overallScore 
+    });
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured');
+      throw new Error('OpenAI API key not configured - please add the API key in Supabase settings');
+    }
+
+    if (!analysisData) {
+      throw new Error('Analysis data is required');
     }
 
     const supabase = createClient(
@@ -73,6 +86,8 @@ ${analysisData.issues?.map((issue: any) => `- ${issue.title}: ${issue.descriptio
 Please provide a detailed analysis and actionable recommendations.
 `;
 
+    console.log('Calling OpenAI with prompt length:', userPrompt.length);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -90,11 +105,21 @@ Please provide a detailed analysis and actionable recommendations.
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const aiResult = await response.json();
+    console.log('OpenAI result received, choices length:', aiResult.choices?.length);
+    
+    if (!aiResult.choices || aiResult.choices.length === 0) {
+      throw new Error('No AI response received');
+    }
+    
     const analysis = aiResult.choices[0].message.content;
 
     console.log('AI analysis completed successfully');

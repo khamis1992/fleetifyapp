@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 
 export interface AIAnalysisResult {
   analysis: string;
@@ -35,25 +34,36 @@ export interface FinancialAnalysisData {
 
 export const useFinancialAIAnalysis = (analysisData?: FinancialAnalysisData) => {
   const { user } = useAuth();
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: getQueryKey(['financial-ai-analysis', analysisData?.overallScore?.toString()]),
+    queryKey: ['financial-ai-analysis', user?.id, analysisData?.overallScore?.toString()],
     queryFn: async (): Promise<AIAnalysisResult> => {
-      if (!user || !analysisData) {
-        throw new Error('User not authenticated or analysis data missing');
+      if (!user) {
+        throw new Error('User not authenticated');
       }
 
-      console.log('[useFinancialAIAnalysis] Starting AI analysis...');
+      if (!analysisData) {
+        throw new Error('Analysis data missing - please run basic analysis first');
+      }
+
+      console.log('[useFinancialAIAnalysis] Starting AI analysis with data:', {
+        overallScore: analysisData.overallScore,
+        totalAccounts: analysisData.totalAccounts,
+        linkedCustomers: analysisData.linkedCustomers,
+        unlinkedCustomers: analysisData.unlinkedCustomers
+      });
 
       try {
         const { data, error } = await supabase.functions.invoke('financial-analysis-ai', {
           body: {
             analysisData,
             companyType: 'Vehicle Rental/Leasing',
-            language: 'ar'
+            language: 'ar',
+            userId: user.id
           }
         });
+
+        console.log('[useFinancialAIAnalysis] Edge function response:', { data, error });
 
         if (error) {
           console.error('[useFinancialAIAnalysis] Edge function error:', error);
@@ -129,7 +139,7 @@ ${analysisData.operationsScore < 80 ? '• العمليات المالية تح�
         };
       }
     },
-    enabled: !!user && !!analysisData && !!companyId,
+    enabled: !!user && !!analysisData,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
   });

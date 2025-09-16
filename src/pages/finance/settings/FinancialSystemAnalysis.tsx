@@ -411,18 +411,58 @@ export default function FinancialSystemAnalysis() {
             <CardContent>
               {!analysis ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  يرجى تشغيل التحليل الأساسي أولاً
+                  <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">التحليل الذكي غير متوفر</p>
+                  <p className="text-sm">يرجى تشغيل التحليل الأساسي أولاً</p>
                 </div>
               ) : aiLoading ? (
                 <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-                  <p className="text-muted-foreground">جاري تحليل النظام المالي بالذكاء الاصطناعي...</p>
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                    <Sparkles className="h-4 w-4 absolute top-0 right-1/2 translate-x-1/2 text-primary animate-pulse" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">جاري التحليل بالذكاء الاصطناعي...</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    يتم تحليل بياناتك المالية للحصول على رؤى مخصصة
+                  </p>
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    قد يستغرق هذا دقيقة واحدة
+                  </div>
                 </div>
               ) : aiError ? (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    لا يمكن الوصول للتحليل الذكي حالياً. يرجى المحاولة لاحقاً.
+                <Alert className="border-destructive/50 bg-destructive/10">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <AlertDescription className="space-y-3">
+                    <div className="space-y-1">
+                      <div className="font-medium text-destructive">فشل في التحليل الذكي</div>
+                      <div className="text-sm text-muted-foreground">
+                        {aiError?.message?.includes('API key') ? 
+                          'مفتاح OpenAI API غير مُعدّ بشكل صحيح' :
+                          aiError?.message || 'حدث خطأ في الاتصال بخدمة التحليل الذكي'
+                        }
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => window.location.reload()}
+                        className="text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        إعادة المحاولة
+                      </Button>
+                      {aiError?.message?.includes('API key') && (
+                        <Button 
+                          variant="link" 
+                          size="sm"
+                          onClick={() => window.open('https://supabase.com/dashboard/project/qwhunliohlkkahbspfiu/settings/functions', '_blank')}
+                          className="text-xs text-primary"
+                        >
+                          إعداد API Key
+                        </Button>
+                      )}
+                    </div>
                   </AlertDescription>
                 </Alert>
               ) : aiAnalysis ? (
