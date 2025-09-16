@@ -156,6 +156,11 @@ const financeSettingsItems = [
     name: 'معالج النظام المحاسبي',
     href: '/finance/accounting-wizard',
     icon: Zap
+  },
+  {
+    name: 'تحليل النظام المالي الذكي',
+    href: '/finance/smart-analysis',
+    icon: Activity
   }
 ];
 
