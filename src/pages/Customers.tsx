@@ -16,7 +16,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  MoreHorizontal
+  MoreHorizontal,
+  Upload
 } from 'lucide-react';
 import {
   Table,
@@ -39,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog } from '@/components/customers';
+import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload } from '@/components/customers';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
@@ -60,6 +61,7 @@ const Customers = () => {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
 
   // Build filters for the query
   const filters: CustomerFilters = {
@@ -78,6 +80,10 @@ const Customers = () => {
 
   const handleBulkDelete = () => {
     setShowBulkDeleteDialog(true);
+  };
+
+  const handleCSVUpload = () => {
+    setShowCSVUpload(true);
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -114,6 +120,14 @@ const Customers = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">العملاء</h1>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleCSVUpload}
+            >
+              <Upload className="h-4 w-4 ml-2" />
+              استيراد CSV
+            </Button>
             {hasFullCompanyControl && totalCustomers > 0 && (
               <Button 
                 variant="destructive" 
@@ -247,6 +261,16 @@ const Customers = () => {
           open={showBulkDeleteDialog}
           onOpenChange={setShowBulkDeleteDialog}
         />
+
+        {/* CSV Upload Dialog */}
+        <CustomerCSVUpload
+          open={showCSVUpload}
+          onOpenChange={setShowCSVUpload}
+          onUploadComplete={() => {
+            refetch();
+            setShowCSVUpload(false);
+          }}
+        />
       </div>
     );
   }
@@ -261,6 +285,14 @@ const Customers = () => {
           <p className="text-muted-foreground">عرض وإدارة بيانات العملاء</p>
         </div>
         <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={handleCSVUpload}
+          >
+            <Upload className="h-4 w-4 ml-2" />
+            استيراد CSV
+          </Button>
           {hasFullCompanyControl && totalCustomers > 0 && (
             <Button 
               variant="destructive" 
@@ -552,6 +584,16 @@ const Customers = () => {
             // Refresh data after bulk delete
             refetch();
           }
+        }}
+      />
+
+      {/* CSV Upload Dialog */}
+      <CustomerCSVUpload
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          refetch();
+          setShowCSVUpload(false);
         }}
       />
     </div>
