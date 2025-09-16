@@ -11709,7 +11709,7 @@ export type Database = {
       }
       copy_default_cost_centers_to_company: {
         Args: { target_company_id: string }
-        Returns: undefined
+        Returns: Json
       }
       copy_selected_accounts_to_company: {
         Args: { selected_account_codes: string[]; target_company_id: string }

@@ -12,19 +12,28 @@ export const useFinancialFixes = () => {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID required');
       
-      const { error } = await supabase.rpc('copy_default_cost_centers_to_company', {
+      const { data, error } = await supabase.rpc('copy_default_cost_centers_to_company', {
         target_company_id: companyId
       });
       
       if (error) throw error;
-      return { success: true };
+      return data;
     },
-    onSuccess: () => {
-      toast.success('تم نسخ مراكز التكلفة الافتراضية بنجاح');
+    onSuccess: (data: any) => {
+      if (data?.success && data?.message) {
+        toast.success(data.message);
+      } else {
+        toast.success('تم نسخ مراكز التكلفة الافتراضية بنجاح');
+      }
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
     onError: (error: any) => {
-      toast.error(`فشل في نسخ مراكز التكلفة: ${error.message}`);
+      // Handle duplicate key errors gracefully
+      if (error.code === '23505') {
+        toast.info('مراكز التكلفة موجودة مسبقاً - تم تخطي المكررات');
+      } else {
+        toast.error(`فشل في نسخ مراكز التكلفة: ${error.message}`);
+      }
     }
   });
 
@@ -153,11 +162,18 @@ export const useFinancialFixes = () => {
 
         // 2) Copy default cost centers
         console.log('[FinancialFixes] Step 2: copy_default_cost_centers_to_company');
-        const { error: ccError } = await supabase.rpc('copy_default_cost_centers_to_company', {
+        const { data: ccData, error: ccError } = await supabase.rpc('copy_default_cost_centers_to_company', {
           target_company_id: companyId
         });
-        if (ccError) throw ccError;
-        results.push('تم نسخ مراكز التكلفة الافتراضية');
+        if (ccError && ccError.code !== '23505') {
+          throw ccError;
+        }
+        
+        if (ccData && typeof ccData === 'object' && 'success' in ccData && 'message' in ccData) {
+          results.push((ccData as any).message);
+        } else {
+          results.push('تم نسخ مراكز التكلفة الافتراضية');
+        }
 
         // 3) Create default customer accounts
         console.log('[FinancialFixes] Step 3: create_default_customer_accounts_fixed');
