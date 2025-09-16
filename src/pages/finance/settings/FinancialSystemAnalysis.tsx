@@ -361,15 +361,27 @@ export default function FinancialSystemAnalysis() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      مركز التكلفة CC007 غير مربوط بأي حساب في شجرة الحسابات
-                    </AlertDescription>
-                  </Alert>
-                  <div className="text-sm text-muted-foreground">
-                    هذا هو نفس السؤال الذي طرحته سابقاً - سيتم معالجة هذا في التحليل الذكي
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>درجة إعداد مراكز التكلفة</span>
+                      <span className={`${analysis.costCentersScore >= 80 ? 'text-green-600' : analysis.costCentersScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {analysis.costCentersScore}%
+                      </span>
+                    </div>
+                    <Progress value={analysis.costCentersScore} />
+                    <div className="text-xs text-muted-foreground">
+                      مراكز التكلفة النشطة: {analysis.metrics.activeCostCenters}
+                    </div>
                   </div>
+
+                  {analysis.issues.some(i => i.id === 'cc007-not-linked') && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        مركز التكلفة CC007 غير مربوط بأي حساب في شجرة الحسابات
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -391,20 +403,16 @@ export default function FinancialSystemAnalysis() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>القيود المحاسبية</span>
-                        <span className="text-green-600">90% صحيحة</span>
-                      </div>
-                      <Progress value={90} />
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>درجة صحة العمليات المالية</span>
+                      <span className={`${analysis.operationsScore >= 80 ? 'text-green-600' : analysis.operationsScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {analysis.operationsScore}%
+                      </span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>ربط المدفوعات</span>
-                        <span className="text-yellow-600">75% مربوطة</span>
-                      </div>
-                      <Progress value={75} />
+                    <Progress value={analysis.operationsScore} />
+                    <div className="text-xs text-muted-foreground">
+                      قيود آخر 30 يوم: {analysis.metrics.recentJournalEntries}
                     </div>
                   </div>
                 </div>
