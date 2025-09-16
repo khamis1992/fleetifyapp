@@ -159,7 +159,7 @@ const financeSettingsItems = [
   },
   {
     name: 'تحليل النظام المالي الذكي',
-    href: '/finance/smart-analysis',
+    href: '/finance/settings/financial-system-analysis',
     icon: Activity
   }
 ];
