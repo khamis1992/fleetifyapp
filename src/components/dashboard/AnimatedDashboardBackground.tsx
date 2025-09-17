@@ -6,12 +6,16 @@ export function AnimatedDashboardBackground() {
     <div className="fixed inset-0 -z-10 overflow-hidden">
       {/* Animated gradient background */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-background via-background/80 to-muted/20"
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(45deg, hsl(var(--background)), hsl(var(--background) / 0.8), hsl(var(--muted) / 0.2))',
+          willChange: 'background',
+        }}
         animate={{
-          background: [
-            'linear-gradient(45deg, hsl(var(--background)), hsl(var(--background))/80%, hsl(var(--muted))/20%)',
-            'linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary))/5%, hsl(var(--accent))/10%)',
-            'linear-gradient(225deg, hsl(var(--background)), hsl(var(--background))/80%, hsl(var(--muted))/20%)',
+          backgroundImage: [
+            'linear-gradient(45deg, hsl(var(--background)), hsl(var(--background) / 0.8), hsl(var(--muted) / 0.2))',
+            'linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary) / 0.05), hsl(var(--accent) / 0.1))',
+            'linear-gradient(225deg, hsl(var(--background)), hsl(var(--background) / 0.8), hsl(var(--muted) / 0.2))',
           ],
         }}
         transition={{
@@ -51,7 +55,8 @@ export function AnimatedDashboardBackground() {
 
       {/* Gradient overlays */}
       <motion.div
-        className="absolute top-0 left-0 w-96 h-96 bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl"
+        className="absolute top-0 left-0 w-96 h-96 bg-gradient-radial from-primary/20 to-primary/0 rounded-full blur-3xl"
+        style={{ willChange: 'transform' }}
         animate={{
           x: [0, 100, 0],
           y: [0, 50, 0],
@@ -65,7 +70,8 @@ export function AnimatedDashboardBackground() {
       />
       
       <motion.div
-        className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-accent/20 to-transparent rounded-full blur-3xl"
+        className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-accent/20 to-accent/0 rounded-full blur-3xl"
+        style={{ willChange: 'transform' }}
         animate={{
           x: [0, -100, 0],
           y: [0, -50, 0],
