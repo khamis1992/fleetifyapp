@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
 import RealEstateDashboard from './dashboards/RealEstateDashboard';
@@ -6,24 +6,49 @@ import RetailDashboard from './dashboards/RetailDashboard';
 
 const Dashboard: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
-  const { moduleContext, isLoading: moduleLoading, company, refreshData } = useModuleConfig();
+  const { moduleContext, isLoading: moduleLoading, company, refreshData, isBrowsingMode, currentCompanyId } = useModuleConfig();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [timeoutReached, setTimeoutReached] = useState(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastCompanyIdRef = useRef<string>();
 
-  // Extract values from hook result to avoid calling useUnifiedCompanyAccess again
-  const companyId = company?.id;
-  const isBrowsingMode = false; // This will be handled by useModuleConfig internally
+  // Extract values from hook result
+  const companyId = currentCompanyId || company?.id;
   const browsedCompany = company;
 
-  // Refresh data when switching companies in browse mode
+  // Watchdog timer to prevent infinite loading
   useEffect(() => {
-    if (companyId) {
-      console.log('🏢 [DASHBOARD] Company changed, force refreshing data for company:', companyId);
+    if (moduleLoading) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('🏢 [DASHBOARD] Loading timeout reached after 8 seconds');
+        setTimeoutReached(true);
+      }, 8000);
+    } else {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      setTimeoutReached(false);
+    }
+    
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [moduleLoading]);
+
+  // Only refresh when company actually changes
+  useEffect(() => {
+    if (companyId && companyId !== lastCompanyIdRef.current && isBrowsingMode) {
+      console.log('🏢 [DASHBOARD] Company changed in browse mode:', lastCompanyIdRef.current, '->', companyId);
+      lastCompanyIdRef.current = companyId;
       setIsRefreshing(true);
       refreshData();
-      // Give extra time for data to load
-      setTimeout(() => setIsRefreshing(false), 1000);
+      setTimeout(() => setIsRefreshing(false), 2000);
+    } else if (companyId) {
+      lastCompanyIdRef.current = companyId;
     }
-  }, [companyId, refreshData]);
+  }, [companyId, isBrowsingMode, refreshData]);
 
   console.log('🏢 [DASHBOARD] ===== DETAILED DEBUG =====');
   console.log('🏢 [DASHBOARD] Module Loading:', moduleLoading);
@@ -36,7 +61,7 @@ const Dashboard: React.FC = () => {
   console.log('🏢 [DASHBOARD] Browsed Company:', browsedCompany);
   console.log('🏢 [DASHBOARD] ===========================');
 
-  if (moduleLoading || isRefreshing) {
+  if ((moduleLoading || isRefreshing) && !timeoutReached) {
     console.log('🏢 [DASHBOARD] Loading modules or refreshing...', { moduleLoading, isRefreshing });
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
@@ -50,6 +75,28 @@ const Dashboard: React.FC = () => {
               {browsedCompany.name}
             </p>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Handle timeout scenario
+  if (timeoutReached && (moduleLoading || !company?.business_type)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="text-center space-y-4">
+          <p className="text-sm text-destructive">
+            انتهت مهلة التحميل - يرجى المحاولة مرة أخرى
+          </p>
+          <button 
+            onClick={() => {
+              setTimeoutReached(false);
+              refreshData();
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            إعادة المحاولة
+          </button>
         </div>
       </div>
     );

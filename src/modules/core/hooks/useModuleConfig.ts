@@ -47,10 +47,11 @@ export const useModuleConfig = () => {
       return data;
     },
     enabled: !!companyId,
-    staleTime: isBrowsingMode ? 0 : 5 * 60 * 1000, // No caching in browse mode
-    refetchOnWindowFocus: isBrowsingMode,
-    refetchOnMount: isBrowsingMode ? 'always' : true, // Always refetch in browse mode
-    gcTime: isBrowsingMode ? 0 : 5 * 60 * 1000 // No garbage collection caching in browse mode
+    staleTime: isBrowsingMode ? 30 * 1000 : 5 * 60 * 1000, // 30s cache in browse mode
+    refetchOnWindowFocus: false, // Disable automatic refetch on focus
+    refetchOnMount: false, // Don't always refetch on mount
+    gcTime: isBrowsingMode ? 2 * 60 * 1000 : 5 * 60 * 1000, // 2min garbage collection in browse mode
+    retry: 2 // Limit retries
   });
 
   // جلب إعدادات الوحدات
@@ -74,10 +75,11 @@ export const useModuleConfig = () => {
       return data as ModuleSettings[];
     },
     enabled: !!companyId,
-    staleTime: isBrowsingMode ? 0 : 5 * 60 * 1000, // No caching in browse mode
-    refetchOnWindowFocus: isBrowsingMode,
-    refetchOnMount: isBrowsingMode ? 'always' : true, // Always refetch in browse mode
-    gcTime: isBrowsingMode ? 0 : 5 * 60 * 1000 // No garbage collection caching in browse mode
+    staleTime: isBrowsingMode ? 30 * 1000 : 5 * 60 * 1000, // 30s cache in browse mode
+    refetchOnWindowFocus: false, // Disable automatic refetch on focus
+    refetchOnMount: false, // Don't always refetch on mount
+    gcTime: isBrowsingMode ? 2 * 60 * 1000 : 5 * 60 * 1000, // 2min garbage collection in browse mode
+    retry: 2 // Limit retries
   });
 
   // تحويل إعدادات الوحدات إلى كائن
@@ -141,15 +143,11 @@ export const useModuleConfig = () => {
     // Refresh functions for Browse Mode
     refreshData: () => {
       console.log('🔧 [MODULE_CONFIG] Force refreshing data...');
-      if (isBrowsingMode) {
-        // Force reset queries in browse mode for immediate data refresh
-        queryClient.resetQueries({ queryKey: ['company', companyId] });
-        queryClient.resetQueries({ queryKey: ['module-settings', companyId] });
-      } else {
-        refetchCompany();
-        refetchModuleSettings();
-      }
-    }
+      // Use refetch instead of resetQueries to avoid infinite loops
+      Promise.all([refetchCompany(), refetchModuleSettings()]);
+    },
+    isBrowsingMode,
+    currentCompanyId: companyId
   };
 };
 
