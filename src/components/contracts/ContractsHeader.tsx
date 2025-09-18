@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Settings, FileText, Upload, Trash2, Users } from 'lucide-react';
+import { Plus, Settings, FileText, Upload, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -40,10 +40,6 @@ export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
         <Button variant="outline" onClick={onShowExport}>
           <FileText className="h-4 w-4 mr-2" />
           تصدير التقرير
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/contracts/duplicates')}>
-          <Users className="h-4 w-4 mr-2" />
-          العقود المكررة
         </Button>
         <Button variant="destructive" onClick={onShowBulkDelete}>
           <Trash2 className="h-4 w-4 mr-2" />
