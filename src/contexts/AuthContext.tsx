@@ -188,11 +188,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const validateSession = async () => {
-    if (!session) return false;
+    if (!session) {
+      console.log('📝 [AUTH_CONTEXT] No session to validate');
+      return false;
+    }
     
     try {
+      console.log('📝 [AUTH_CONTEXT] Validating session...');
       const now = Date.now() / 1000;
       if (session.expires_at && session.expires_at < now) {
+        console.log('📝 [AUTH_CONTEXT] Session expired, attempting refresh...');
         const { data, error } = await supabase.auth.refreshSession();
         
         if (error || !data.session) {
@@ -203,10 +208,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return false;
         }
         
+        console.log('📝 [AUTH_CONTEXT] Session refreshed successfully');
         setSession(data.session);
+        setSessionError(null);
+        
+        // Refresh user data after successful session refresh
+        setTimeout(() => {
+          refreshUser();
+        }, 100);
+        
         return true;
       }
       
+      console.log('📝 [AUTH_CONTEXT] Session is still valid');
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);

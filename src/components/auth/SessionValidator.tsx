@@ -20,10 +20,12 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
       if (!loading && session && sessionError && validateSession) {
         try {
           setIsRefreshing(true);
+          console.log('🔒 [SESSION_VALIDATOR] Attempting session validation...');
           const isValid = await validateSession();
           if (isValid) {
-            // Session was refreshed successfully, clear error
-            window.location.reload();
+            console.log('🔒 [SESSION_VALIDATOR] Session refreshed successfully');
+            // Session was refreshed successfully, just clear the error state
+            // AuthContext will handle the state updates automatically
           } else {
             console.log('🔒 [SESSION_VALIDATOR] Session validation failed');
           }
@@ -35,7 +37,9 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
       }
     };
 
-    checkSession();
+    // Debounce session checks to prevent multiple simultaneous validations
+    const timeoutId = setTimeout(checkSession, 300);
+    return () => clearTimeout(timeoutId);
   }, [session, loading, sessionError, validateSession]);
 
   // Show loading while auth is initializing
@@ -83,10 +87,17 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
                 onClick={async () => {
                   try {
                     setIsRefreshing(true);
-                    await validateSession();
-                    // If we get here, try to reload the page to reset the state
-                    window.location.reload();
+                    console.log('🔒 [SESSION_VALIDATOR] Manual session validation attempt...');
+                    const isValid = await validateSession();
+                    if (isValid) {
+                      console.log('🔒 [SESSION_VALIDATOR] Manual validation successful');
+                      // AuthContext will handle state updates automatically
+                    } else {
+                      console.log('🔒 [SESSION_VALIDATOR] Manual validation failed, redirecting to auth');
+                      navigate('/auth');
+                    }
                   } catch (error) {
+                    console.error('🔒 [SESSION_VALIDATOR] Manual validation error:', error);
                     navigate('/auth');
                   } finally {
                     setIsRefreshing(false);
