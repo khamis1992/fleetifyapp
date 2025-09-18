@@ -4,7 +4,7 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<any>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -242,7 +242,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     session,
     loading,
