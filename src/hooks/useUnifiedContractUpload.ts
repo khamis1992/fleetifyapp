@@ -192,60 +192,6 @@ export function useUnifiedContractUpload() {
     }
   };
 
-  // دالة محسنة للبحث أو إنشاء العملاء
-  const findOrCreateCustomerEnhanced = async (contractData: any): Promise<{
-    customerId: string | null;
-    created: boolean;
-    errors: string[];
-    warnings: string[];
-  }> => {
-    try {
-      // السماح بإنشاء عميل حتى من رقم الهاتف فقط
-      if (!contractData.customer_name && !contractData.customer_identifier && !contractData.customer_phone) {
-        return {
-          customerId: null,
-          created: false,
-          errors: ['اسم العميل أو معرفه أو رقم الهاتف مطلوب'],
-          warnings: []
-        };
-      }
-      
-      // إنشاء اسم من رقم الهاتف إذا لم يكن هناك اسم
-      if (!contractData.customer_name && contractData.customer_phone) {
-        contractData.customer_name = `عميل ${contractData.customer_phone}`;
-      }
-      
-      // إعداد بيانات البحث
-      const searchData: CustomerSearchData = {
-        customer_id: contractData.customer_identifier || contractData.customer_id,
-        customer_name: contractData.customer_name,
-        customer_phone: contractData.customer_phone,
-        customer_email: contractData.customer_email,
-        customer_id_number: contractData.customer_id_number,
-        national_id: contractData.national_id,
-        customer_code: contractData.customer_code
-      };
-      
-      // استخدام البحث المحسن
-      const result = await findOrCreateCustomer(searchData, companyId);
-      
-      return {
-        customerId: result.id || null,
-        created: result.created,
-        errors: result.errors,
-        warnings: result.warnings
-      };
-      
-    } catch (error: any) {
-      console.error('Enhanced customer search/create error:', error);
-      return {
-        customerId: null,
-        created: false,
-        errors: [`خطأ في معالجة العميل: ${error.message}`],
-        warnings: []
-      };
-    }
-  };
 
   // الدالة الرئيسية لرفع العقود الموحد
   const uploadContracts = useCallback(async (file: File): Promise<ContractUploadResult> => {
@@ -370,8 +316,19 @@ export function useUnifiedContractUpload() {
           let customerWarnings: string[] = [];
           
           if (contract.customer_name || contract.customer_identifier || contract.customer_phone) {
-            const customerResult = await findOrCreateCustomerEnhanced(contract);
-            customerId = customerResult.customerId;
+            // إعداد بيانات البحث
+            const searchData = {
+              customer_id: contract.customer_id || contract.customer_identifier,
+              customer_name: contract.customer_name,
+              customer_phone: contract.customer_phone,
+              customer_email: contract.customer_email,
+              customer_id_number: contract.customer_id_number || contract.national_id,
+              national_id: contract.national_id || contract.customer_id_number,
+              customer_code: contract.customer_code
+            };
+            
+            const customerResult = await findOrCreateCustomer(searchData, companyId);
+            customerId = customerResult.id;
             customerErrors = customerResult.errors;
             customerWarnings = customerResult.warnings;
             
@@ -401,8 +358,15 @@ export function useUnifiedContractUpload() {
           }
           
           // التحقق من وجود customer_id
-          if (!customerId && !contract.customer_id) {
-            throw new Error('معرف العميل مطلوب');
+          if (!customerId && !contract.customer_id && !contract.customer_phone && !contract.customer_name) {
+            const errorMessage = generateErrorMessage(
+              new Error('بيانات العميل غير مكتملة'), 
+              `السطر ${i + 1}`, 
+              i + 1
+            );
+            result.errors.push(`${errorMessage.message}. ${errorMessage.suggestion || ''}`);
+            result.failed++;
+            continue;
           }
           
           // التحقق من صحة التواريخ
