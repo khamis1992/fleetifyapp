@@ -1,5 +1,8 @@
 project_id = "qwhunliohlkkahbspfiu"
 
+[functions.intelligent-contract-processor]
+verify_jwt = true
+
 [functions.set-browsed-company]
 verify_jwt = true
 

@@ -42,7 +42,7 @@ const isValidPhone = (str: string): boolean => {
   const gccPatterns = [
     // قطر: +974 أو 974 (8 أرقام)
     /^(\+?974)[0-9]{8}$/,
-    // الكويت: +965 أو 965 (8 أرقام) أو محلي مع 0
+    // الكويت: +965 أو 965 (8 أرقام) أو محلي مع 0  
     /^(\+?965|0)?[2-9]\d{7}$/,
     // السعودية: +966 أو 966 (9 أرقام) أو محلي مع 0
     /^(\+?966|0)?5[0-9]{8}$/,
@@ -52,8 +52,10 @@ const isValidPhone = (str: string): boolean => {
     /^(\+?968)[0-9]{8}$/,
     // البحرين: +973 أو 973 (8 أرقام)
     /^(\+?973)[0-9]{8}$/,
-    // أرقام محلية بدون مقدمة دولية (7-9 أرقام)
-    /^[0-9]{7,9}$/
+    // أرقام محلية بدون مقدمة دولية (7-9 أرقام) - سيتم افتراض قطر
+    /^[0-9]{7,9}$/,
+    // دعم أرقام قطرية بدون +
+    /^974[0-9]{8}$/
   ];
   
   return gccPatterns.some(pattern => pattern.test(cleaned));
@@ -268,7 +270,7 @@ export const createCustomerEnhanced = async (
       if (isValidPhone(cleanPhone)) {
         newCustomerData.phone = cleanPhone;
       } else {
-        errors.push(`رقم الهاتف غير صحيح: ${customerData.customer_phone}`);
+        errors.push(`رقم الهاتف غير صحيح: ${customerData.customer_phone} - يجب أن يكون رقم هاتف خليجي صالح مثل +97433211272`);
         newCustomerData.phone = 'غير محدد';
       }
     } else {

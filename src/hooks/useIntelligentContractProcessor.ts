@@ -136,8 +136,7 @@ export function useIntelligentContractProcessor() {
 
       const { data, error } = await supabase.functions.invoke('intelligent-contract-processor', {
         body: {
-          contractData,
-          companyId,
+          contract_data: contractData,
           options
         }
       });
@@ -148,7 +147,7 @@ export function useIntelligentContractProcessor() {
         return createBasicValidationResult(contractData);
       }
 
-      return data.result;
+      return data || createBasicValidationResult(contractData);
     } catch (error) {
       console.error('Single contract processing error:', error);
       return createBasicValidationResult(contractData);
