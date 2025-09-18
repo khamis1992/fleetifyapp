@@ -463,34 +463,44 @@ export function useContractCSVUpload() {
           out.customer_id = (byPhone[0] as any).id;
         } else if (byPhone && byPhone.length > 1) {
           return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
-        } else {
-          // Not found by phone - try to create or find by name
-          if (rawName) {
-            if (autoCreateCustomers) {
-              // استخدام الدالة الجديدة للبحث أو الإنشاء
-              const result = await findOrCreateCustomer(String(rawName), companyId);
+          } else {
+            // Not found by phone - try to create or find by name
+            if (rawName) {
+              if (autoCreateCustomers) {
+                // استخدام الدالة المحسنة للبحث أو الإنشاء مع تمرير رقم الهاتف
+                const result = await findOrCreateCustomer(String(rawName), companyId, rawPhone);
+                if (result.error) {
+                  return { error: `السطر ${rowNum}: ${result.error}` };
+                }
+                out.customer_id = result.id;
+                // إضافة معلومة عن إنشاء عميل جديد للإحصائيات
+                if (result.created) {
+                  out._customerCreated = true;
+                }
+              } else {
+                const resolved = await resolveCustomerIdByName(String(rawName), companyId);
+                if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
+                out.customer_id = resolved.id;
+              }
+            } else if (autoCreateCustomers && rawPhone) {
+              // إنشاء عميل بناءً على رقم الهاتف فقط
+              const result = await findOrCreateCustomer(`عميل ${rawPhone}`, companyId, rawPhone);
               if (result.error) {
                 return { error: `السطر ${rowNum}: ${result.error}` };
               }
               out.customer_id = result.id;
-              // إضافة معلومة عن إنشاء عميل جديد للإحصائيات
               if (result.created) {
                 out._customerCreated = true;
               }
             } else {
-              const resolved = await resolveCustomerIdByName(String(rawName), companyId);
-              if (resolved.error) return { error: `السطر ${rowNum}: تعذر تحديد العميل من الاسم '${rawName}' - ${resolved.error}` };
-              out.customer_id = resolved.id;
+              // No way to resolve a customer
+              // leave as is; validation will flag missing customer_id
             }
-          } else {
-            // No way to resolve a customer
-            // leave as is; validation will flag missing customer_id
           }
-        }
       } else if (rawName) {
         if (autoCreateCustomers) {
-          // استخدام الدالة الجديدة للبحث أو الإنشاء
-          const result = await findOrCreateCustomer(String(rawName), companyId);
+          // استخدام الدالة المحسنة للبحث أو الإنشاء
+          const result = await findOrCreateCustomer(String(rawName), companyId, rawPhone);
           if (result.error) {
             return { error: `السطر ${rowNum}: ${result.error}` };
           }

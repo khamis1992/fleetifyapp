@@ -2562,6 +2562,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          is_default: boolean | null
           manager_id: string | null
           parent_center_id: string | null
           updated_at: string
@@ -2578,6 +2579,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean | null
           manager_id?: string | null
           parent_center_id?: string | null
           updated_at?: string
@@ -2594,6 +2596,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean | null
           manager_id?: string | null
           parent_center_id?: string | null
           updated_at?: string
