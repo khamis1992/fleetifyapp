@@ -357,21 +357,45 @@ export function useUnifiedContractUpload() {
             }
           }
           
-          // التحقق من وجود customer_id
-          if (!customerId && !contract.customer_id && !contract.customer_phone && !contract.customer_name) {
-            const errorMessage = generateErrorMessage(
-              new Error('بيانات العميل غير مكتملة'), 
-              `السطر ${i + 1}`, 
-              i + 1
-            );
-            result.errors.push(`${errorMessage.message}. ${errorMessage.suggestion || ''}`);
+          // التحقق من بيانات العقد باستخدام نظام التحقق الموحد
+          const tempContract = {
+            ...contract,
+            contract_amount: Number(contract.contract_amount) || 0,
+            monthly_amount: Number(contract.monthly_amount) || 0
+          };
+          const validation = validateContractData(tempContract, i);
+          
+          if (!validation.isValid) {
+            // إضافة الأخطاء مع تفاصيل العقد
+            validation.errors.forEach(error => {
+              const errorMessage = generateErrorMessage(
+                new Error(error), 
+                `السطر ${i + 1}`, 
+                i + 1
+              );
+              result.errors.push(`❌ خطأ في السطر ${i + 1}: ${errorMessage.message}`);
+            });
             result.failed++;
             continue;
           }
           
-          // التحقق من صحة التواريخ
-          if (!contract.start_date || !contract.end_date) {
-            throw new Error('تاريخ البداية والنهاية مطلوبان');
+          // عرض التحذيرات إذا كانت موجودة
+          if (validation.warnings.length > 0) {
+            validation.warnings.forEach(warning => {
+              console.warn(`⚠️ تحذير: ${warning}`);
+            });
+          }
+          
+          // التحقق من وجود customer_id بعد المعالجة
+          if (!customerId && !contract.customer_id) {
+            const errorMessage = generateErrorMessage(
+              new Error('لم يتم العثور على العميل أو إنشاؤه'), 
+              `السطر ${i + 1}`, 
+              i + 1
+            );
+            result.errors.push(`❌ خطأ في السطر ${i + 1}: ${errorMessage.message}`);
+            result.failed++;
+            continue;
           }
           
           // إعداد بيانات العقد

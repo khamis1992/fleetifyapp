@@ -64,11 +64,18 @@ export const validateContractData = (
   }
 
   // التحقق من التواريخ
-  if (contractData.start_date && contractData.end_date) {
+  if (!contractData.start_date || !contractData.end_date) {
+    errors.push(`السطر ${rowIndex + 1}: تاريخ البداية والنهاية مطلوبان`);
+    suggestions.push('تأكد من وجود تواريخ صحيحة في الملف');
+  } else {
     const startDate = new Date(contractData.start_date);
     const endDate = new Date(contractData.end_date);
     
-    if (startDate >= endDate) {
+    // التحقق من صحة التواريخ
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      errors.push(`السطر ${rowIndex + 1}: تنسيق التاريخ غير صحيح`);
+      suggestions.push('استخدم تنسيق التاريخ: YYYY-MM-DD أو DD/MM/YYYY');
+    } else if (startDate >= endDate) {
       errors.push(`السطر ${rowIndex + 1}: تاريخ بداية العقد يجب أن يكون قبل تاريخ النهاية`);
     }
   }
