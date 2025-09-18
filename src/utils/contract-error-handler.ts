@@ -48,6 +48,32 @@ export const generateErrorMessage = (error: any, context: string, rowNumber?: nu
     };
   }
   
+  // أخطاء عدم وجود عمود في المخطط
+  if (error.message?.includes('Could not find') && error.message?.includes('column')) {
+    const columnName = error.message.match(/'(\w+)'/)?.[1] || 'غير محدد';
+    return {
+      type: 'system',
+      severity: 'error',
+      message: `خطأ في النظام: العمود ${columnName} غير موجود في قاعدة البيانات`,
+      suggestion: 'يرجى الاتصال بالدعم الفني لحل هذه المشكلة',
+      field: columnName,
+      rowNumber
+    };
+  }
+  
+  // أخطاء العميل المطلوب
+  if (error.message?.includes('معرف العميل مطلوب') || 
+      (typeof error === 'string' && error.includes('معرف العميل مطلوب'))) {
+    return {
+      type: 'customer',
+      severity: 'error',
+      message: `معرف العميل مطلوب`,
+      suggestion: 'راجع البيانات وأعد المحاولة',
+      field: 'customer_id',
+      rowNumber
+    };
+  }
+  
   // أخطاء التواريخ
   if (error.message?.includes('date') || error.message?.includes('timestamp')) {
     return {

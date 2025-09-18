@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { findOrCreateCustomer, CustomerSearchData } from '@/utils/enhanced-customer-search';
 import { generateErrorMessage, formatErrorForUser, ContractError } from '@/utils/contract-error-handler';
+import { validateContractData, generateUserFriendlyMessage, TempContractData } from '@/utils/contract-upload-validator';
 import { processExcelFile, detectFileFormat, normalizeFileData } from '@/utils/excel-processor';
 import Papa from 'papaparse';
 
@@ -349,13 +350,26 @@ export function useUnifiedContractUpload() {
         const contract = enhancedData[i];
         setProgress(50 + (i / enhancedData.length) * 50); // النصف الثاني للرفع
         
+        // التحقق من صحة البيانات قبل المعالجة
+        const validation = validateContractData(contract as TempContractData, i);
+        if (!validation.isValid) {
+          result.failed++;
+          result.errors.push(generateUserFriendlyMessage(validation));
+          continue;
+        }
+        
+        // إضافة التحذيرات من التحقق
+        if (validation.warnings.length > 0) {
+          result.warnings.push(...validation.warnings);
+        }
+        
         try {
           // البحث أو إنشاء العميل بالنظام المحسن
           let customerId = null;
           let customerErrors: string[] = [];
           let customerWarnings: string[] = [];
           
-          if (contract.customer_name || contract.customer_identifier) {
+          if (contract.customer_name || contract.customer_identifier || contract.customer_phone) {
             const customerResult = await findOrCreateCustomerEnhanced(contract);
             customerId = customerResult.customerId;
             customerErrors = customerResult.errors;
@@ -370,9 +384,19 @@ export function useUnifiedContractUpload() {
               contract.ai_notes = (contract.ai_notes || '') + ' | ' + customerWarnings.join(' | ');
             }
             
-            // إضافة الأخطاء للنتائج
+            // إضافة الأخطاء والتحذيرات للنتائج
             if (customerErrors.length > 0) {
               result.warnings.push(...customerErrors.map(err => `السطر ${i + 1}: ${err}`));
+              
+              // إذا فشل إنشاء العميل، إضافة تفاصيل إضافية
+              if (!customerId) {
+                result.warnings.push(`السطر ${i + 1}: فشل في إنشاء العميل - تحقق من صحة البيانات المدخلة`);
+                console.error('فشل في إنشاء العميل:', {
+                  customerData: contract,
+                  errors: customerErrors,
+                  warnings: customerWarnings
+                });
+              }
             }
           }
           
@@ -432,7 +456,6 @@ export function useUnifiedContractUpload() {
           } else {
             result.errors.push(`${detailedError}\n🔍 تفاصيل الخطأ: ${contractError.message || contractError}`);
           }
-          result.errors.push(detailedError);
           
           // إضافة اقتراحات للمستخدم
           if (errorDetails.suggestion) {

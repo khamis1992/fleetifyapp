@@ -224,8 +224,9 @@ export const findCustomerEnhanced = async (
 export const createCustomerEnhanced = async (
   customerData: CustomerSearchData,
   companyId: string
-): Promise<{ id: string; created: boolean; errors: string[] }> => {
+): Promise<{ id: string; created: boolean; errors: string[]; warnings: string[] }> => {
   const errors: string[] = [];
+  const warnings: string[] = [];
   
   try {
     console.log('🆕 Creating new customer with data:', customerData);
@@ -233,7 +234,7 @@ export const createCustomerEnhanced = async (
     // التحقق من البيانات الأساسية
     if (!customerData.customer_name || customerData.customer_name.trim() === '') {
       errors.push('اسم العميل مطلوب');
-      return { id: '', created: false, errors };
+      return { id: '', created: false, errors, warnings };
     }
     
     const cleanName = customerData.customer_name.trim();
@@ -272,12 +273,13 @@ export const createCustomerEnhanced = async (
         // إنشاء رقم هاتف وهمي إذا لم يكن صحيحاً
         const timestamp = Date.now().toString().slice(-8);
         newCustomerData.phone = `+965${timestamp}`;
-        errors.push(`رقم الهاتف غير صحيح، تم إنشاء رقم وهمي: +965${timestamp}`);
+        warnings.push(`رقم الهاتف غير صحيح، تم إنشاء رقم وهمي: +965${timestamp}`);
       }
     } else {
       // إنشاء رقم هاتف وهمي إذا لم يكن موجوداً
       const timestamp = Date.now().toString().slice(-8);
       newCustomerData.phone = `+965${timestamp}`;
+      warnings.push(`لم يتم توفير رقم هاتف، تم إنشاء رقم وهمي: +965${timestamp}`);
     }
     
     // معالجة الإيميل
@@ -314,20 +316,21 @@ export const createCustomerEnhanced = async (
     if (error) {
       console.error('🆕 Customer creation error:', error);
       errors.push(`فشل في إنشاء العميل: ${error.message}`);
-      return { id: '', created: false, errors };
+      return { id: '', created: false, errors, warnings };
     }
     
     console.log('🆕 Customer created successfully:', newCustomer.id);
     return {
       id: newCustomer.id,
       created: true,
-      errors
+      errors,
+      warnings
     };
     
   } catch (error: any) {
     console.error('🆕 Enhanced Customer Creation Error:', error);
     errors.push(`خطأ في إنشاء العميل: ${error.message}`);
-    return { id: '', created: false, errors };
+    return { id: '', created: false, errors, warnings };
   }
 };
 
@@ -365,7 +368,7 @@ export const findOrCreateCustomer = async (
       id: createResult.id,
       created: createResult.created,
       errors: createResult.errors,
-      warnings
+      warnings: [...warnings, ...createResult.warnings]
     };
     
   } catch (error: any) {
