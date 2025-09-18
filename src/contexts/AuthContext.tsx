@@ -212,10 +212,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(data.session);
         setSessionError(null);
         
-        // Refresh user data after successful session refresh
-        setTimeout(() => {
-          refreshUser();
-        }, 100);
+        // Clear error and refresh user
+        setSessionError(null);
+        refreshUser();
         
         return true;
       }

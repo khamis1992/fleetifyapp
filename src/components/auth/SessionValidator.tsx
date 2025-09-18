@@ -16,31 +16,10 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    const checkSession = async () => {
-      if (!loading && session && sessionError && validateSession) {
-        try {
-          setIsRefreshing(true);
-          console.log('🔒 [SESSION_VALIDATOR] Attempting session validation...');
-          const isValid = await validateSession();
-          if (isValid) {
-            console.log('🔒 [SESSION_VALIDATOR] Session refreshed successfully');
-            // Session was refreshed successfully, just clear the error state
-            // AuthContext will handle the state updates automatically
-          } else {
-            console.log('🔒 [SESSION_VALIDATOR] Session validation failed');
-          }
-        } catch (error) {
-          console.error('🔒 [SESSION_VALIDATOR] Session validation error:', error);
-        } finally {
-          setIsRefreshing(false);
-        }
-      }
-    };
-
-    // Debounce session checks to prevent multiple simultaneous validations
-    const timeoutId = setTimeout(checkSession, 300);
-    return () => clearTimeout(timeoutId);
-  }, [session, loading, sessionError, validateSession]);
+    if (!loading && session && sessionError && validateSession) {
+      validateSession().catch(console.error);
+    }
+  }, [sessionError]); // Simplified dependencies
 
   // Show loading while auth is initializing
   if (loading || isRefreshing) {
