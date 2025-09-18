@@ -7,8 +7,8 @@ export const normalizeDigits = (input: string = ''): string => {
 
 export const cleanPhone = (input: string = ''): string => {
   const normalized = normalizeDigits(input);
-  // Keep + and digits for easier checks, then strip later when needed
-  return normalized.replace(/[^+\\d]/g, '');
+  // Keep + and digits, remove all other characters including spaces, dashes, parentheses
+  return normalized.replace(/[^+\d]/g, '');
 };
 
 // Minimal mapping focusing on GCC; extend if needed
