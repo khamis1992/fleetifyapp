@@ -57,7 +57,7 @@ export function useTouchInteraction(
   const [isPulling, setIsPulling] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   
-  const longPressTimer = useRef<NodeJS.Timeout>()
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchMoveRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
 
   // Haptic feedback helper

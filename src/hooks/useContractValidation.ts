@@ -37,7 +37,7 @@ export const useContractValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [lastValidationTime, setLastValidationTime] = useState<Date | null>(null);
   const [validationHistory, setValidationHistory] = useState<ValidationResult[]>([]);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isValidUUID = (value: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

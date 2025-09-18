@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Safety timeout to prevent infinite loading
-  const initTimeoutRef = useRef<NodeJS.Timeout>();
+  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   React.useEffect(() => {
     initializeAuth();

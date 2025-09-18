@@ -9,7 +9,7 @@ const Dashboard: React.FC = () => {
   const { moduleContext, isLoading: moduleLoading, company, refreshData, isBrowsingMode, currentCompanyId } = useModuleConfig();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [timeoutReached, setTimeoutReached] = useState(false);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCompanyIdRef = useRef<string>();
 
   // Extract values from hook result

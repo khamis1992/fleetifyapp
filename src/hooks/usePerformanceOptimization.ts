@@ -257,7 +257,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
 
   // Debounced scroll handler محسن
   const createDebouncedScrollHandler = useCallback((handler: (scrollTop: number) => void, delay: number = 16) => {
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: ReturnType<typeof setTimeout>
     let lastExecution = 0
     
     // تعديل التأخير بناءً على استخدام الذاكرة
