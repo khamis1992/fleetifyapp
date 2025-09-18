@@ -248,7 +248,6 @@ export const createCustomerEnhanced = async (
       company_id: companyId,
       customer_type: isCompany ? 'corporate' : 'individual',
       is_active: true,
-      created_via: 'smart_upload',
       notes: 'تم إنشاؤه تلقائياً من النظام الموحد للاستيراد الذكي'
     };
     
@@ -270,11 +269,15 @@ export const createCustomerEnhanced = async (
       if (isValidPhone(cleanPhone)) {
         newCustomerData.phone = cleanPhone;
       } else {
-        errors.push(`رقم الهاتف غير صحيح: ${customerData.customer_phone} - يجب أن يكون رقم هاتف خليجي صالح مثل +97433211272`);
-        newCustomerData.phone = 'غير محدد';
+        // إنشاء رقم هاتف وهمي إذا لم يكن صحيحاً
+        const timestamp = Date.now().toString().slice(-8);
+        newCustomerData.phone = `+965${timestamp}`;
+        errors.push(`رقم الهاتف غير صحيح، تم إنشاء رقم وهمي: +965${timestamp}`);
       }
     } else {
-      newCustomerData.phone = 'غير محدد';
+      // إنشاء رقم هاتف وهمي إذا لم يكن موجوداً
+      const timestamp = Date.now().toString().slice(-8);
+      newCustomerData.phone = `+965${timestamp}`;
     }
     
     // معالجة الإيميل

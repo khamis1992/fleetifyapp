@@ -199,13 +199,19 @@ export function useUnifiedContractUpload() {
     warnings: string[];
   }> => {
     try {
-      if (!contractData.customer_name && !contractData.customer_identifier) {
+      // السماح بإنشاء عميل حتى من رقم الهاتف فقط
+      if (!contractData.customer_name && !contractData.customer_identifier && !contractData.customer_phone) {
         return {
           customerId: null,
           created: false,
-          errors: ['اسم العميل أو معرفه مطلوب'],
+          errors: ['اسم العميل أو معرفه أو رقم الهاتف مطلوب'],
           warnings: []
         };
+      }
+      
+      // إنشاء اسم من رقم الهاتف إذا لم يكن هناك اسم
+      if (!contractData.customer_name && contractData.customer_phone) {
+        contractData.customer_name = `عميل ${contractData.customer_phone}`;
       }
       
       // إعداد بيانات البحث
@@ -419,7 +425,14 @@ export function useUnifiedContractUpload() {
           const errorDetails = generateErrorMessage(contractError, 'رفع العقد', i + 1);
           const formattedError = formatErrorForUser(errorDetails);
           
-          result.errors.push(formattedError);
+          // إضافة تفاصيل الخطأ الأصلي للمطورين
+          const detailedError = `❌ خطأ في السطر ${i + 1}: ${formattedError}`;
+          if (contractError.message && contractError.message.includes('Could not find')) {
+            result.errors.push(`${detailedError}\n💡 راجع البيانات وأعد المحاولة`);
+          } else {
+            result.errors.push(`${detailedError}\n🔍 تفاصيل الخطأ: ${contractError.message || contractError}`);
+          }
+          result.errors.push(detailedError);
           
           // إضافة اقتراحات للمستخدم
           if (errorDetails.suggestion) {
