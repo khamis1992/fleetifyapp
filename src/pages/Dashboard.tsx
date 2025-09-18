@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState, useRef } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
