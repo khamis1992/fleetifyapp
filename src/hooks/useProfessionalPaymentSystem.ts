@@ -61,6 +61,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLinkingAll, setIsLinkingAll] = useState(false);
 
   // Get professional payment statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -608,6 +609,134 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     }
   }, [isProcessing, companyId, toast, queryClient]);
 
+  // Link all payments function
+  const linkAllPayments = useCallback(async () => {
+    if (isLinkingAll) return { success: false, error: 'جاري الربط حالياً' };
+    
+    setIsLinkingAll(true);
+    
+    try {
+      logger.debug('Starting bulk linking process for all payments', { companyId });
+      
+      // Get all pending payments (completed but not linked)
+      const { data: unlinkedPayments, error: paymentsError } = await supabase
+        .from('payments')
+        .select(`
+          id,
+          payment_number,
+          amount,
+          customer_id,
+          reference_number,
+          payment_date,
+          payment_method,
+          company_id
+        `)
+        .eq('company_id', companyId)
+        .eq('payment_status', 'completed')
+        .is('contract_id', null)
+        .limit(100);
+
+      if (paymentsError) {
+        throw new Error('فشل في جلب المدفوعات غير المربوطة');
+      }
+
+      if (!unlinkedPayments?.length) {
+        return { success: true, linkedCount: 0, totalProcessed: 0, error: null };
+      }
+
+      let linkedCount = 0;
+      let processedCount = 0;
+      const errors: string[] = [];
+
+      // Process each payment
+      for (const payment of unlinkedPayments) {
+        try {
+          processedCount++;
+          
+          const linkingCriteria: LinkingCriteria = {
+            customerId: payment.customer_id,
+            amount: payment.amount,
+            referenceNumber: payment.reference_number,
+            paymentDate: payment.payment_date,
+            companyId: payment.company_id,
+            tolerancePercentage: 0.1 // 10% tolerance for bulk linking
+          };
+
+          const result = await professionalPaymentLinking.performSmartLinking(payment.id, linkingCriteria);
+          
+          if (result.success && result.linkedContracts.length > 0) {
+            linkedCount++;
+            logger.debug('Payment linked successfully in bulk process', { 
+              paymentId: payment.id, 
+              linkedContracts: result.linkedContracts.length 
+            });
+          } else {
+            logger.debug('Payment could not be linked in bulk process', { 
+              paymentId: payment.id,
+              reason: 'No suitable contracts found'
+            });
+          }
+          
+          // Small delay to prevent overwhelming the system
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+          errors.push(`دفعة ${payment.payment_number}: ${errorMsg}`);
+          logger.warn('Payment linking failed in bulk process', { 
+            paymentId: payment.id, 
+            error: errorMsg 
+          });
+        }
+      }
+
+      // Log audit trail for bulk operation
+      auditTrailSystem.logPaymentAction(
+        'linked',
+        'bulk-operation',
+        'current-user-id',
+        companyId,
+        undefined,
+        { 
+          totalProcessed: processedCount,
+          linkedCount,
+          errorsCount: errors.length,
+          operationType: 'bulk_linking'
+        }
+      );
+
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+
+      logger.debug('Bulk linking process completed', { 
+        processedCount, 
+        linkedCount, 
+        errorsCount: errors.length 
+      });
+
+      return {
+        success: true,
+        linkedCount,
+        totalProcessed: processedCount,
+        errors: errors.length > 0 ? errors : null
+      };
+      
+    } catch (error) {
+      logger.error('Bulk linking process failed', error);
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء الربط الجماعي';
+      
+      return {
+        success: false,
+        linkedCount: 0,
+        totalProcessed: 0,
+        error: errorMessage
+      };
+    } finally {
+      setIsLinkingAll(false);
+    }
+  }, [isLinkingAll, companyId, queryClient, toast]);
+
   return {
     // Data
     stats,
@@ -617,12 +746,14 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     statsLoading,
     pendingLoading,
     isProcessing,
+    isLinkingAll,
     
     // Actions
     processPayment,
     performSmartLinking: smartLinkingMutation.mutate,
     allocatePayment: allocationMutation.mutate,
     createJournalEntry: journalEntryMutation.mutate,
+    linkAllPayments,
     
     // Mutation states
     isLinking: smartLinkingMutation.isPending,

@@ -14,7 +14,8 @@ import {
   FileText,
   Settings,
   RefreshCw,
-  Link
+  Link,
+  LinkIcon
 } from 'lucide-react';
 import { useProfessionalPaymentSystem } from '@/hooks/useProfessionalPaymentSystem';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,7 +36,9 @@ export const ProfessionalPaymentSystem: React.FC = () => {
     isProcessing,
     processPayment,
     performSmartLinking,
-    isLinking
+    isLinking,
+    linkAllPayments,
+    isLinkingAll
   } = useProfessionalPaymentSystem(companyId);
 
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
@@ -84,6 +87,46 @@ export const ProfessionalPaymentSystem: React.FC = () => {
         tolerancePercentage: 0.05
       }
     });
+  };
+
+  const handleLinkAllPayments = async () => {
+    if (!companyId) {
+      toast({ 
+        title: 'خطأ في الشركة', 
+        description: 'يجب تحديد الشركة أولاً لربط المدفوعات',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    toast({ 
+      title: 'جاري الربط الجماعي', 
+      description: 'سيتم ربط جميع المدفوعات المناسبة مع العقود تلقائياً'
+    });
+
+    try {
+      const result = await linkAllPayments();
+      
+      if (result.success) {
+        toast({ 
+          title: 'تم الربط الجماعي بنجاح', 
+          description: `تم ربط ${result.linkedCount} دفعة من أصل ${result.totalProcessed} دفعة`
+        });
+      } else {
+        toast({ 
+          title: 'فشل في الربط الجماعي', 
+          description: result.error || 'حدث خطأ أثناء عملية الربط الجماعي',
+          variant: 'destructive' 
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+      toast({ 
+        title: 'خطأ في الربط الجماعي', 
+        description: errorMessage,
+        variant: 'destructive' 
+      });
+    }
   };
 
   if (!companyId) {
@@ -172,6 +215,22 @@ export const ProfessionalPaymentSystem: React.FC = () => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">المدفوعات المعلقة</h3>
+            <Button 
+              onClick={handleLinkAllPayments}
+              disabled={isLinkingAll || !pendingPayments?.length}
+              className="flex items-center gap-2"
+            >
+              {isLinkingAll ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <LinkIcon className="h-4 w-4" />
+              )}
+              ربط جميع المدفوعات
+              {pendingPayments?.length ? ` (${pendingPayments.length})` : ''}
+            </Button>
+          </div>
           <PendingPaymentsReviewSystem />
         </TabsContent>
 
