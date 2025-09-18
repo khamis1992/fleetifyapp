@@ -68,7 +68,6 @@ const Customers = () => {
     search: searchTerm || undefined,
     customer_type: customerType === 'all' ? undefined : customerType,
     includeInactive,
-    limit: 100,
   };
 
   const { data: customers = [], isLoading, error, refetch } = useCustomers(filters);
