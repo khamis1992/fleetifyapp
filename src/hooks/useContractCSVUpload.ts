@@ -184,7 +184,7 @@ export function useContractCSVUpload() {
   const isUUID = (s?: string) => !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 
   // دالة البحث عن العميل أو إنشاؤه تلقائياً
-  const findOrCreateCustomer = async (customerName: string, targetCompanyId: string): Promise<{ id: string; created: boolean; error?: string }> => {
+  const findOrCreateCustomer = async (customerName: string, targetCompanyId: string, phoneNumber?: string): Promise<{ id: string; created: boolean; error?: string }> => {
     try {
       // تنظيف اسم العميل
       const cleanName = customerName.trim()
@@ -218,8 +218,9 @@ export function useContractCSVUpload() {
         credit_limit: 0,
         city: 'Kuwait City',
         country: 'Kuwait',
-        phone: '+965XXXXXXXX', // رقم وهمي - يجب تحديثه لاحقاً
-        created_by: user?.id
+        phone: phoneNumber ? cleanPhone(phoneNumber) : `+965${Date.now().toString().slice(-8)}`,
+        created_by: user?.id,
+        notes: 'تم إنشاؤه تلقائياً من ملف CSV'
       }
 
       if (isCompany) {
