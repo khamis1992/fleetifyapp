@@ -392,6 +392,31 @@ class ProfessionalPaymentLinking {
       if (error) throw error;
 
       logger.info('Payment linked to contract successfully', { paymentId, contractId });
+
+      // Auto-create invoice for the linked payment
+      try {
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('company_id')
+          .eq('id', paymentId)
+          .single();
+
+        if (payment) {
+          const { createInvoiceForPayment } = await import('@/utils/createInvoiceForPayment');
+          const invoiceResult = await createInvoiceForPayment(paymentId, payment.company_id);
+          
+          if (invoiceResult.success) {
+            logger.info('Invoice auto-created for linked payment', { 
+              paymentId, 
+              contractId,
+              invoiceId: invoiceResult.invoiceId 
+            });
+          }
+        }
+      } catch (invoiceError) {
+        logger.warn('Failed to auto-create invoice for linked payment', { invoiceError, paymentId });
+        // Don't fail the linking operation due to invoice creation failure
+      }
       return true;
     } catch (error) {
       logger.error('Failed to link payment to contract', { error, paymentId, contractId });

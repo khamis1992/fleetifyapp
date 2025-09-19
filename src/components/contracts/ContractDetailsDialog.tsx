@@ -55,6 +55,9 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   // Payment dialog state
   const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
+  
+  // Invoice generation state
+  const [isGeneratingInvoices, setIsGeneratingInvoices] = React.useState(false);
 
   // Fetch related data
   const { data: customer } = useQuery({
@@ -198,6 +201,39 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  };
+
+  const handleGenerateInvoicesFromPayments = async () => {
+    if (!contract?.id) return;
+    
+    setIsGeneratingInvoices(true);
+    
+    try {
+      const { backfillInvoicesForContract } = await import('@/utils/createInvoiceForPayment');
+      const result = await backfillInvoicesForContract(contract.id, contract.company_id);
+      
+      if (result.success) {
+        if (result.created > 0) {
+          toast.success(`تم إنشاء ${result.created} فاتورة بنجاح`);
+        } else {
+          toast.info('لا توجد مدفوعات تحتاج إلى فواتير');
+        }
+        
+        if (result.errors.length > 0) {
+          console.error('Invoice generation errors:', result.errors);
+        }
+        
+        // Refresh invoices data
+        window.location.reload(); // Simple refresh to update invoices
+      } else {
+        toast.error('فشل في إنشاء الفواتير');
+      }
+    } catch (error) {
+      console.error('Error generating invoices:', error);
+      toast.error('حدث خطأ أثناء إنشاء الفواتير');
+    } finally {
+      setIsGeneratingInvoices(false);
+    }
   };
 
   if (!contract) return null;
@@ -547,11 +583,26 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
           <TabsContent value="invoices" className="space-y-4">
             <div className="flex items-center justify-between">
-              <Button onClick={() => onCreateInvoice?.(contract)}>
-                <Plus className="h-4 w-4 mr-2" />
-                إنشاء فاتورة جديدة
-              </Button>
               <h3 className="text-lg font-semibold">فواتير العقد</h3>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleGenerateInvoicesFromPayments}
+                  disabled={isGeneratingInvoices}
+                >
+                  {isGeneratingInvoices ? (
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 mr-2" />
+                  )}
+                  إنشاء فواتير من المدفوعات
+                </Button>
+                <Button onClick={() => onCreateInvoice?.(contract)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  إنشاء فاتورة جديدة
+                </Button>
+              </div>
             </div>
 
             {invoices && invoices.length > 0 ? (
