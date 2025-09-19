@@ -30,6 +30,9 @@ export interface Contract {
   suspension_reason?: string;
   expired_at?: string;
   created_by?: string;
+  total_paid?: number;
+  balance_due?: number;
+  linked_payments_amount?: number;
 }
 
 export const useContracts = (customerId?: string, vehicleId?: string, overrideCompanyId?: string) => {
@@ -52,7 +55,10 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
 
       let query = supabase
         .from("contracts")
-        .select("*")
+        .select(`
+          *,
+          linked_payments_sum:payments!contract_id.amount.sum()
+        `)
         .eq("company_id", targetCompanyId)
         .order("created_at", { ascending: false })
 
@@ -72,7 +78,15 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         throw error
       }
 
-      return data || []
+      // Process contracts to include linked payments amount
+      const processedData = data?.map(contract => ({
+        ...contract,
+        linked_payments_amount: contract.linked_payments_sum || 0,
+        total_paid: (contract.total_paid || 0) + (contract.linked_payments_sum || 0),
+        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (contract.linked_payments_sum || 0))
+      })) || []
+
+      return processedData
     },
     enabled: !!targetCompanyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -100,7 +114,10 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       
       let query = supabase
         .from("contracts")
-        .select("*")
+        .select(`
+          *,
+          linked_payments_sum:payments!contract_id.amount.sum()
+        `)
         .eq("company_id", targetCompanyId)
         .eq("status", "active")
         .order("contract_date", { ascending: false })
@@ -120,7 +137,15 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         throw error
       }
       
-      return data || []
+      // Process contracts to include linked payments amount
+      const processedData = data?.map(contract => ({
+        ...contract,
+        linked_payments_amount: contract.linked_payments_sum || 0,
+        total_paid: (contract.total_paid || 0) + (contract.linked_payments_sum || 0),
+        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (contract.linked_payments_sum || 0))
+      })) || []
+
+      return processedData
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
     staleTime: 3 * 60 * 1000, // 3 minutes

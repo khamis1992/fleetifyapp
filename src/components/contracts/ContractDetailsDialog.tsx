@@ -373,14 +373,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ المدفوع</span>
                         <span className="font-medium text-green-600">
-                          {formatCurrency((invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          {formatCurrency((contract.total_paid || 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                       
                       <div className="flex items-center justify-between" dir="rtl">
                         <span className="text-sm text-muted-foreground">المبلغ المتبقي</span>
                         <span className="font-medium text-orange-600">
-                          {formatCurrency((contract.contract_amount - (invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0)), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          {formatCurrency((contract.balance_due || (contract.contract_amount - (contract.total_paid || 0))), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                     </div>
