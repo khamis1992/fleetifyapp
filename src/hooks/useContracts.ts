@@ -55,10 +55,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
 
       let query = supabase
         .from("contracts")
-        .select(`
-          *,
-          linked_payments_sum:payments!contract_id.amount.sum()
-        `)
+        .select("*")
         .eq("company_id", targetCompanyId)
         .order("created_at", { ascending: false })
 
@@ -78,15 +75,27 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         throw error
       }
 
-      // Process contracts to include linked payments amount
-      const processedData = data?.map(contract => ({
-        ...contract,
-        linked_payments_amount: contract.linked_payments_sum || 0,
-        total_paid: (contract.total_paid || 0) + (contract.linked_payments_sum || 0),
-        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (contract.linked_payments_sum || 0))
-      })) || []
+      // Fetch linked payments amounts for each contract
+      const contractsWithPayments = await Promise.all(
+        (data || []).map(async (contract) => {
+          const { data: paymentsData } = await supabase
+            .from('payments')
+            .select('amount')
+            .eq('contract_id', contract.id)
+            .eq('payment_status', 'completed')
 
-      return processedData
+          const linkedPaymentsAmount = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
+          
+          return {
+            ...contract,
+            linked_payments_amount: linkedPaymentsAmount,
+            total_paid: (contract.total_paid || 0) + linkedPaymentsAmount,
+            balance_due: contract.contract_amount - ((contract.total_paid || 0) + linkedPaymentsAmount)
+          }
+        })
+      )
+
+      return contractsWithPayments
     },
     enabled: !!targetCompanyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -114,10 +123,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       
       let query = supabase
         .from("contracts")
-        .select(`
-          *,
-          linked_payments_sum:payments!contract_id.amount.sum()
-        `)
+        .select("*")
         .eq("company_id", targetCompanyId)
         .eq("status", "active")
         .order("contract_date", { ascending: false })
@@ -137,15 +143,27 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         throw error
       }
       
-      // Process contracts to include linked payments amount
-      const processedData = data?.map(contract => ({
-        ...contract,
-        linked_payments_amount: contract.linked_payments_sum || 0,
-        total_paid: (contract.total_paid || 0) + (contract.linked_payments_sum || 0),
-        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (contract.linked_payments_sum || 0))
-      })) || []
+      // Fetch linked payments amounts for each contract
+      const contractsWithPayments = await Promise.all(
+        (data || []).map(async (contract) => {
+          const { data: paymentsData } = await supabase
+            .from('payments')
+            .select('amount')
+            .eq('contract_id', contract.id)
+            .eq('payment_status', 'completed')
 
-      return processedData
+          const linkedPaymentsAmount = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
+          
+          return {
+            ...contract,
+            linked_payments_amount: linkedPaymentsAmount,
+            total_paid: (contract.total_paid || 0) + linkedPaymentsAmount,
+            balance_due: contract.contract_amount - ((contract.total_paid || 0) + linkedPaymentsAmount)
+          }
+        })
+      )
+
+      return contractsWithPayments
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
     staleTime: 3 * 60 * 1000, // 3 minutes

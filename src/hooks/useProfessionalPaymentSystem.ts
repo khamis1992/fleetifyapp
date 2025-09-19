@@ -260,6 +260,8 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       }
       
       queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
     },
     onError: (error) => {
       logger.error('Smart linking failed', error);
@@ -586,6 +588,8 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
       queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
 
       return results;
     } catch (error) {
@@ -701,6 +705,8 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
       queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
 
       logger.debug('Bulk linking process completed', { 
         processedCount, 
