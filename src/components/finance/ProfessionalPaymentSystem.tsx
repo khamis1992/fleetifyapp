@@ -82,10 +82,7 @@ export const ProfessionalPaymentSystem: React.FC = () => {
 
   const handleSmartLink = (paymentId: string) => {
     performSmartLinking({
-      paymentId,
-      criteria: {
-        tolerancePercentage: 0.05
-      }
+      paymentId
     });
   };
 

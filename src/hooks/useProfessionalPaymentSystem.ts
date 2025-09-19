@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { professionalPaymentLinking, type SmartLinkingResult, type LinkingCriteria } from '@/utils/professionalPaymentLinking';
+import { smartPaymentLinker, type SmartLinkingResult } from '@/utils/smartPaymentLinker';
 import { paymentAllocationEngine, type AllocationResult } from '@/utils/paymentAllocationEngine';
 import { accountingIntegration, type JournalEntryData } from '@/utils/accountingIntegration';
 import { auditTrailSystem } from '@/utils/auditTrailSystem';
@@ -229,15 +229,17 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
 
   // Smart linking mutation
   const smartLinkingMutation = useMutation({
-    mutationFn: async ({ paymentId, criteria }: { paymentId: string; criteria: LinkingCriteria }) => {
+    mutationFn: async ({ paymentId }: { paymentId: string }) => {
       logger.debug('Starting smart linking process', { paymentId });
-      return await professionalPaymentLinking.performSmartLinking(paymentId, criteria);
+      const payment = await supabase.from('payments').select('*').eq('id', paymentId).single();
+      if (payment.error) throw payment.error;
+      return await smartPaymentLinker.findBestContract(payment.data);
     },
     onSuccess: (result: SmartLinkingResult, { paymentId }) => {
       if (result.success) {
         toast({
           title: 'تم الربط بنجاح',
-          description: `تم ربط ${result.linkedContracts.length} عقد بالدفعة`,
+          description: `تم ربط الدفعة بأفضل عقد مطابق`,
         });
         
         // Log audit trail
@@ -247,7 +249,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           'current-user-id', // Would get from auth context
           companyId,
           undefined,
-          { linkedContracts: result.linkedContracts.length }
+          { confidence: result.confidence }
         );
       } else {
         toast({
@@ -359,7 +361,6 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     enableSmartLinking?: boolean;
     enableAllocation?: boolean;
     enableJournalEntry?: boolean;
-    customCriteria?: LinkingCriteria;
   } = {}) => {
     if (isProcessing) return;
     
@@ -418,21 +419,12 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         try {
           logger.debug('Starting smart linking process');
           
-          const linkingCriteria: LinkingCriteria = {
-            customerId: payment.customer_id,
-            amount: payment.amount,
-            referenceNumber: payment.reference_number,
-            paymentDate: payment.payment_date,
-            companyId: payment.company_id,
-            ...options.customCriteria
-          };
-
-          const linkingResult = await professionalPaymentLinking.performSmartLinking(paymentId, linkingCriteria);
+          const linkingResult = await smartPaymentLinker.findBestContract(payment);
           
           if (linkingResult.success) {
             results.linking = { success: true, error: null };
             successCount++;
-            logger.debug('Smart linking completed successfully', { linkedContracts: linkingResult.linkedContracts.length });
+            logger.debug('Smart linking completed successfully', { confidence: linkingResult.confidence });
           } else {
             results.linking = { success: false, error: 'لم يتم العثور على عقود مناسبة للربط' };
             logger.warn('Smart linking failed - no suitable contracts found');
@@ -653,22 +645,23 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         try {
           processedCount++;
           
-          const linkingCriteria: LinkingCriteria = {
-            customerId: payment.customer_id,
-            amount: payment.amount,
-            referenceNumber: payment.reference_number,
-            paymentDate: payment.payment_date,
-            companyId: payment.company_id,
-            tolerancePercentage: 0.1 // 10% tolerance for bulk linking
-          };
-
-          const result = await professionalPaymentLinking.performSmartLinking(payment.id, linkingCriteria);
+          const result = await smartPaymentLinker.findBestContract(payment);
           
-          if (result.success && result.linkedContracts.length > 0) {
+          if (result.success && result.suggested_contract_id) {
+            // Update payment with the suggested contract
+            await supabase
+              .from('payments')
+              .update({
+                contract_id: result.suggested_contract_id,
+                linking_confidence: result.confidence,
+                linking_method: 'bulk_auto'
+              })
+              .eq('id', payment.id);
+              
             linkedCount++;
             logger.debug('Payment linked successfully in bulk process', { 
               paymentId: payment.id, 
-              linkedContracts: result.linkedContracts.length 
+              confidence: result.confidence 
             });
           } else {
             logger.debug('Payment could not be linked in bulk process', { 

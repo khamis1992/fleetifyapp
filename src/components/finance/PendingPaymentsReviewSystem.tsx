@@ -394,10 +394,10 @@ export const PendingPaymentsReviewSystem: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">{payment.payment_number}</h4>
-                      <Badge variant={payment.linking_confidence > 0.8 ? "default" : 
-                                   payment.linking_confidence > 0.5 ? "secondary" : "destructive"}>
-                        ثقة: {Math.round(payment.linking_confidence * 100)}%
-                      </Badge>
+                       <Badge variant={payment.linking_confidence > 0.8 ? "default" : 
+                                    payment.linking_confidence > 0.5 ? "secondary" : "destructive"}>
+                         ثقة: {Math.round((payment.linking_confidence || 0) * 100)}%
+                       </Badge>
                       <Badge variant="secondary">
                         {payment.processing_status === 'pending' ? 'معلق' : 
                          payment.processing_status === 'processing' ? 'جاري المعالجة' :
