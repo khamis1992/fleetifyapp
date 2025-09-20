@@ -415,7 +415,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         })
         .eq('id', paymentId);
 
-      // Step 2: Smart linking (independent operation)
+      // Step 2: Smart linking (independent operation) with automatic invoice creation
       if (options.enableSmartLinking) {
         totalOperations++;
         try {
@@ -423,10 +423,24 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           
           const linkingResult = await smartPaymentLinker.findBestContract(payment);
           
-          if (linkingResult.success) {
-            results.linking = { success: true, error: null };
-            successCount++;
-            logger.debug('Smart linking completed successfully', { confidence: linkingResult.confidence });
+          if (linkingResult.success && linkingResult.suggested_contract_id) {
+            // Use professional payment linking to ensure invoices are created
+            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
+              paymentId, 
+              linkingResult.suggested_contract_id
+            );
+            
+            if (linkSuccess) {
+              results.linking = { success: true, error: null };
+              successCount++;
+              logger.debug('Smart linking completed successfully with auto invoice', { 
+                confidence: linkingResult.confidence,
+                contractId: linkingResult.suggested_contract_id 
+              });
+            } else {
+              results.linking = { success: false, error: 'فشل في ربط المدفوعة بالعقد' };
+            }
           } else {
             results.linking = { success: false, error: 'لم يتم العثور على عقود مناسبة للربط' };
             logger.warn('Smart linking failed - no suitable contracts found');
@@ -652,21 +666,29 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           const result = await smartPaymentLinker.findBestContract(payment);
           
           if (result.success && result.suggested_contract_id) {
-            // Update payment with the suggested contract
-            await supabase
-              .from('payments')
-              .update({
-                contract_id: result.suggested_contract_id,
-                linking_confidence: result.confidence,
-                linking_method: 'bulk_auto'
-              })
-              .eq('id', payment.id);
-              
-            linkedCount++;
-            logger.debug('Payment linked successfully in bulk process', { 
-              paymentId: payment.id, 
-              confidence: result.confidence 
-            });
+            // Use professional payment linking to ensure invoices are created
+            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
+              payment.id, 
+              result.suggested_contract_id
+            );
+            
+            if (linkSuccess) {
+              // Update additional metadata
+              await supabase
+                .from('payments')
+                .update({
+                  linking_confidence: result.confidence,
+                  linking_method: 'bulk_auto'
+                })
+                .eq('id', payment.id);
+                
+              linkedCount++;
+              logger.debug('Payment linked successfully in bulk process with invoice', { 
+                paymentId: payment.id, 
+                confidence: result.confidence 
+              });
+            }
           } else {
             logger.debug('Payment could not be linked in bulk process', { 
               paymentId: payment.id,
@@ -707,6 +729,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
 
       logger.debug('Bulk linking process completed', { 
         processedCount, 
@@ -714,12 +737,13 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
         errorsCount: errors.length 
       });
 
-      return {
-        success: true,
-        linkedCount,
-        totalProcessed: processedCount,
-        errors: errors.length > 0 ? errors : null
-      };
+    return {
+      success: true,
+      linkedCount,
+      totalProcessed: processedCount,
+      invoicesGenerated: linkedCount, // Each linked payment generates an invoice
+      errors: errors.length > 0 ? errors : null
+    };
       
     } catch (error) {
       logger.error('Bulk linking process failed', error);
@@ -735,6 +759,195 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       setIsLinkingAll(false);
     }
   }, [isLinkingAll, companyId, queryClient, toast]);
+
+  // Handle smart link for individual payment with automatic invoice creation
+  const handleSmartLink = useCallback(async (paymentId: string) => {
+    setIsProcessing(true);
+    
+    try {
+      logger.debug('Starting smart link for payment', { paymentId });
+      
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', paymentId)
+        .single();
+
+      if (paymentError || !payment) {
+        throw new Error('لم يتم العثور على المدفوعة');
+      }
+
+      const linkingResult = await smartPaymentLinker.findBestContract(payment);
+      
+      if (linkingResult.success && linkingResult.suggested_contract_id) {
+        // Use professional payment linking to ensure invoices are created
+        const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+        const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
+          paymentId, 
+          linkingResult.suggested_contract_id
+        );
+
+        if (linkSuccess) {
+          // Update additional metadata
+          await supabase
+            .from('payments')
+            .update({ 
+              linking_confidence: linkingResult.confidence,
+              processing_status: 'completed',
+              allocation_status: 'fully_allocated',
+              processing_notes: `ربط ذكي بثقة ${Math.round(linkingResult.confidence * 100)}% مع إنشاء فاتورة تلقائية`
+            })
+            .eq('id', paymentId);
+
+          // Log success
+          auditTrailSystem.logPaymentAction(
+            'linked',
+            paymentId,
+            'current-user-id',
+            companyId,
+            linkingResult.suggested_contract_id,
+            { confidence: linkingResult.confidence, invoiceGenerated: true }
+          );
+
+          toast({
+            title: 'تم الربط بنجاح مع إنشاء فاتورة',
+            description: `تم ربط المدفوعة بالعقد بثقة ${Math.round(linkingResult.confidence * 100)}% وإنشاء فاتورة تلقائياً`,
+          });
+        } else {
+          throw new Error('فشل في ربط المدفوعة بالعقد');
+        }
+
+        // Invalidate queries
+        queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['contracts'] });
+        queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      } else {
+        toast({
+          title: 'لم يتم العثور على عقود مطابقة',
+          description: 'لا توجد عقود مناسبة لربط هذه المدفوعة',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      logger.error('Smart linking failed', { error, paymentId });
+      toast({
+        title: 'خطأ في الربط الذكي',
+        description: error instanceof Error ? error.message : 'حدث خطأ أثناء محاولة ربط المدفوعة',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [companyId, toast, queryClient]);
+
+  // Handle bulk linking of all payments with automatic invoice creation
+  const handleLinkAllPayments = useCallback(async () => {
+    if (isLinkingAll || !pendingPayments?.length) return;
+    
+    setIsLinkingAll(true);
+    let successCount = 0;
+    let failureCount = 0;
+    let invoicesGenerated = 0;
+    
+    try {
+      logger.debug('Starting bulk payment linking with invoice generation', { count: pendingPayments.length });
+      
+      const linkingPromises = pendingPayments.map(async (payment) => {
+        try {
+          const { data: fullPayment, error: paymentError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('id', payment.id)
+            .single();
+
+          if (paymentError || !fullPayment) {
+            throw new Error(`Payment not found: ${payment.id}`);
+          }
+
+          const linkingResult = await smartPaymentLinker.findBestContract(fullPayment);
+          
+          if (linkingResult.success && linkingResult.suggested_contract_id) {
+            // Use professional payment linking to ensure invoices are created
+            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
+              payment.id, 
+              linkingResult.suggested_contract_id
+            );
+
+            if (linkSuccess) {
+              // Update additional metadata
+              await supabase
+                .from('payments')
+                .update({ 
+                  linking_confidence: linkingResult.confidence,
+                  processing_status: 'completed',
+                  allocation_status: 'fully_allocated',
+                  processing_notes: `ربط تلقائي جماعي بثقة ${Math.round(linkingResult.confidence * 100)}% مع إنشاء فاتورة`
+                })
+                .eq('id', payment.id);
+
+              invoicesGenerated++;
+
+              // Log success
+              auditTrailSystem.logPaymentAction(
+                'linked',
+                payment.id,
+                'current-user-id',
+                companyId,
+                linkingResult.suggested_contract_id,
+                { confidence: linkingResult.confidence, invoiceGenerated: true }
+              );
+
+              successCount++;
+              return { success: true, paymentId: payment.id };
+            } else {
+              throw new Error('فشل في ربط المدفوعة بالعقد');
+            }
+          } else {
+            failureCount++;
+            return { success: false, paymentId: payment.id, reason: 'No suitable contract found' };
+          }
+        } catch (error) {
+          failureCount++;
+          logger.error('Failed to link payment in bulk operation', { error, paymentId: payment.id });
+          return { success: false, paymentId: payment.id, reason: error instanceof Error ? error.message : 'Unknown error' };
+        }
+      });
+
+      await Promise.allSettled(linkingPromises);
+
+      if (successCount > 0) {
+        toast({
+          title: 'تم الربط وإنشاء الفواتير بنجاح',
+          description: `تم ربط ${successCount} مدفوعة بالعقود وإنشاء ${invoicesGenerated} فاتورة تلقائياً${failureCount > 0 ? ` (فشل في ربط ${failureCount} مدفوعة)` : ''}`,
+        });
+
+        // Invalidate queries
+        queryClient.invalidateQueries({ queryKey: ['pending-payments', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['professional-payment-stats', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['contracts'] });
+        queryClient.invalidateQueries({ queryKey: ['active-contracts'] });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      } else {
+        toast({
+          title: 'لم يتم ربط أي مدفوعة',
+          description: 'لا توجد عقود مناسبة لربط المدفوعات المختارة',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      logger.error('Bulk linking operation failed', { error });
+      toast({
+        title: 'خطأ في الربط الجماعي',
+        description: 'حدث خطأ أثناء محاولة ربط المدفوعات',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLinkingAll(false);
+    }
+  }, [pendingPayments, companyId, toast, queryClient, isLinkingAll]);
 
   return {
     // Data
@@ -753,6 +966,8 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     allocatePayment: allocationMutation.mutate,
     createJournalEntry: journalEntryMutation.mutate,
     linkAllPayments,
+    handleSmartLink,
+    handleLinkAllPayments,
     
     // Mutation states
     isLinking: smartLinkingMutation.isPending,
