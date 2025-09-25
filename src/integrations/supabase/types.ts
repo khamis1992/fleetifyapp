@@ -11449,6 +11449,10 @@ export type Database = {
         Args: { company_id_param: string; customer_id_param: string }
         Returns: Json
       }
+      backfill_all_contract_invoices: {
+        Args: { target_company_id: string }
+        Returns: Json
+      }
       bulk_delete_company_accounts: {
         Args: {
           deletion_reason?: string
@@ -12647,6 +12651,10 @@ export type Database = {
           total_payments: number
           unlinked_payments: number
         }[]
+      }
+      get_payments_without_invoices_stats: {
+        Args: { target_company_id: string }
+        Returns: Json
       }
       get_pending_payments_stats: {
         Args: { target_company_id: string }

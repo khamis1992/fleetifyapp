@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { RefreshCw, Filter, Search, Plus } from "lucide-react"
 
 // Component imports
+import { BulkInvoiceGenerationDialog } from "@/components/contracts/BulkInvoiceGenerationDialog"
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
 import { MobileContractsHeader } from "@/components/contracts/MobileContractsHeader"
 import { MobileActionButtons, FloatingCreateButton } from "@/components/contracts/MobileActionButtons"
@@ -271,13 +272,22 @@ export default function Contracts() {
               isRefreshing={isRefreshing}
             />
           ) : (
-            <ContractsHeader
-              onCreateContract={handleCreateContract}
-              onShowTemplates={handleShowTemplates}
-              onShowExport={handleShowExport}
-              onShowCSVUpload={handleShowCSVUpload}
-              onShowBulkDelete={handleShowBulkDelete}
-            />
+            <div className="flex flex-col gap-4">
+              <ContractsHeader
+                onCreateContract={handleCreateContract}
+                onShowTemplates={handleShowTemplates}
+                onShowExport={handleShowExport}
+                onShowCSVUpload={handleShowCSVUpload}
+                onShowBulkDelete={handleShowBulkDelete}
+              />
+              <div className="flex justify-end">
+                <BulkInvoiceGenerationDialog>
+                  <Button variant="outline" size="sm">
+                    إنشاء فواتير للمدفوعات المفقودة
+                  </Button>
+                </BulkInvoiceGenerationDialog>
+              </div>
+            </div>
           )}
         </div>
 
