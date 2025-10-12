@@ -15,9 +15,9 @@ export interface MaintenanceVehicle {
 }
 
 // Hook to get vehicles that are currently in maintenance status - Performance Optimized
-export const useMaintenanceVehicles = (options?: { limit?: number }) => {
+export const useMaintenanceVehicles = (options?: { limit?: number; enabled?: boolean }) => {
   const companyId = useCurrentCompanyId();
-  const { limit = 20 } = options || {};
+  const { limit = 20, enabled = true } = options || {};
 
   return useQuery({
     queryKey: ['maintenance-vehicles', companyId, limit],
@@ -49,9 +49,9 @@ export const useMaintenanceVehicles = (options?: { limit?: number }) => {
 
       return data || [];
     },
-    enabled: !!companyId,
-    staleTime: 60 * 1000, // 1 minute - faster updates for critical data
-    gcTime: 2 * 60 * 1000, // 2 minutes cache
+    enabled: enabled && !!companyId,
+    staleTime: 2 * 60 * 1000, // 2 minutes - faster refresh for maintenance status
+    gcTime: 5 * 60 * 1000, // 5 minutes cache
   });
 };
 

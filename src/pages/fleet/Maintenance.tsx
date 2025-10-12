@@ -69,18 +69,25 @@ export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const [activeTab, setActiveTab] = useState("vehicles")
   
-  // Performance-optimized hooks with limits and priorities
+  // Performance-optimized hooks with conditional loading based on active tab
   const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance(undefined, {
-    limit: 100, // Limit initial load
-    priority: activeTab === 'pending' // High priority for pending tab
+    limit: activeTab === 'all' ? 100 : 50, // Reduce limit for filtered views
+    status: activeTab !== 'all' && activeTab !== 'vehicles' ? activeTab.replace('_', '') : undefined,
+    priority: activeTab === 'pending' // High priority refresh for pending tab
   })
+  
+  // Only load maintenance vehicles when viewing the vehicles tab
   const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles({
-    limit: 20 // Limit to 20 vehicles
+    limit: 20,
+    enabled: activeTab === 'vehicles' // Conditional loading
   })
+  
+  // Load critical alerts only - reduced from 10 to 5
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts({
-    priority: true, // Load critical alerts only
-    limit: 5 // Limit to 5 most important alerts
+    priority: true, // Load only critical alerts
+    limit: 5 // Reduced limit
   })
+  
   const { formatCurrency } = useCurrencyFormatter()
   const completeMaintenanceStatus = useCompleteMaintenanceStatus()
   const vehicleStatusUpdate = useVehicleStatusUpdate()
@@ -131,7 +138,7 @@ export default function Maintenance() {
     filteredRecords.filter(m => m.status === 'completed'), [filteredRecords]
   )
 
-  const isLoading = maintenanceLoading || maintenanceVehiclesLoading
+  const isLoading = maintenanceLoading || (activeTab === 'vehicles' && maintenanceVehiclesLoading)
 
   // Handler to complete maintenance and return vehicle to fleet
   const handleCompleteMaintenance = async (maintenanceId: string, vehicleId: string) => {

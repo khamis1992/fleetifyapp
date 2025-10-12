@@ -38,6 +38,7 @@ const ReportView = lazy(() => import("./pages/ReportView"));
 const Quotations = lazy(() => import("./pages/Quotations"));
 const Search = lazy(() => import("./pages/Search"));
 const Import = lazy(() => import("./pages/Import"));
+const InvoiceScannerPage = lazy(() => import("./pages/InvoiceScannerPage"));
 
 // Super Admin pages - lazy loaded
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
@@ -514,6 +515,15 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <Import />
+            </Suspense>
+          </AdminRoute>
+        } />
+        
+        {/* ماسح الفواتير الذكي */}
+        <Route path="invoice-scanner" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <InvoiceScannerPage />
             </Suspense>
           </AdminRoute>
         } />

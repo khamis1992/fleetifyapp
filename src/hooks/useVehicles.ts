@@ -308,7 +308,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         .order("plate_number")
       
       if (status) {
-        query = query.eq("status", status)
+        query = query.eq("status", status as any) // Type cast for dynamic status filtering
       }
       
       if (limit) {
@@ -671,16 +671,19 @@ export const useVehicleMaintenance = (vehicleId?: string, options?: {
           vehicles!inner(plate_number, make, model)
         `)
         .eq("company_id", user.profile.company_id)
-        .order("created_at", { ascending: false })
-        .limit(limit)
 
       if (vehicleId) {
         query = query.eq("vehicle_id", vehicleId)
       }
       
       if (status) {
-        query = query.eq("status", status)
+        // Map status values properly
+        const statusValue = status === 'inProgress' ? 'in_progress' : status;
+        query = query.eq("status", statusValue as any) // Type cast for dynamic status filtering
       }
+      
+      // Add ordering and limit
+      query = query.order("created_at", { ascending: false }).limit(limit)
 
       const { data, error } = await query
 
@@ -688,8 +691,9 @@ export const useVehicleMaintenance = (vehicleId?: string, options?: {
       return data as any[]
     },
     enabled: !!user?.profile?.company_id,
-    staleTime: priority ? 0 : 2 * 60 * 1000, // 2 minutes for non-priority
+    staleTime: priority ? 30 * 1000 : 2 * 60 * 1000, // 30s for priority, 2min otherwise
     gcTime: 5 * 60 * 1000, // 5 minutes cache
+    refetchOnWindowFocus: priority, // Only auto-refocus for priority
   })
 }
 
