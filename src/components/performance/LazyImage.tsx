@@ -12,6 +12,8 @@ interface LazyImageProps {
   enableLazyLoading?: boolean;
   maxConcurrentImages?: number;
   getOptimizedImageSrc?: (src: string, options: any) => string;
+  placeholder?: 'blur' | 'shimmer' | 'none';
+  priority?: boolean; // Disable lazy loading for above-the-fold images
   [key: string]: any;
 }
 
@@ -23,23 +25,25 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   width,
   height,
   className = '',
-  quality,
+  quality = 75,
   onLoad,
   onError,
   enableLazyLoading = true,
   maxConcurrentImages = 5,
   getOptimizedImageSrc = (src) => src,
+  placeholder = 'shimmer',
+  priority = false,
   ...props
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isVisible, setIsVisible] = useState(!enableLazyLoading);
+  const [isVisible, setIsVisible] = useState(!enableLazyLoading || priority);
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Intersection Observer for lazy loading
+  // Intersection Observer for lazy loading with enhanced rootMargin for preloading
   useEffect(() => {
-    if (!enableLazyLoading) {
+    if (!enableLazyLoading || priority) {
       setIsVisible(true);
       return;
     }
@@ -51,7 +55,10 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           observer.disconnect();
         }
       },
-      { rootMargin: '50px' }
+      { 
+        rootMargin: '100px', // Increased for better preloading
+        threshold: 0.01 // Load as soon as 1% is visible
+      }
     );
 
     if (containerRef.current) {
@@ -59,7 +66,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     }
 
     return () => observer.disconnect();
-  }, [enableLazyLoading]);
+  }, [enableLazyLoading, priority]);
 
   // Load image when visible
   useEffect(() => {
@@ -71,6 +78,12 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     imageLoadQueue.add(optimizedSrc);
 
     const img = new Image();
+    
+    // Add loading attribute for native lazy loading support
+    if (!priority) {
+      img.loading = 'lazy';
+    }
+    
     img.onload = () => {
       setIsLoaded(true);
       imageLoadQueue.delete(optimizedSrc);
@@ -86,9 +99,27 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     return () => {
       imageLoadQueue.delete(optimizedSrc);
     };
-  }, [isVisible, src, width, height, quality, onLoad, onError, maxConcurrentImages, getOptimizedImageSrc]);
+  }, [isVisible, src, width, height, quality, onLoad, onError, maxConcurrentImages, getOptimizedImageSrc, priority]);
 
   const optimizedSrc = getOptimizedImageSrc(src, { width, height, quality });
+
+  // Placeholder component
+  const renderPlaceholder = () => {
+    if (placeholder === 'none') return null;
+    
+    if (placeholder === 'blur') {
+      return (
+        <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50 backdrop-blur-sm" />
+      );
+    }
+    
+    // Default shimmer
+    return (
+      <div className="absolute inset-0 bg-muted animate-pulse">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer" />
+      </div>
+    );
+  };
 
   return (
     <div 
@@ -98,11 +129,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     >
       {isVisible && (
         <>
-          {!isLoaded && !error && (
-            <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
+          {!isLoaded && !error && renderPlaceholder()}
           {error ? (
             <div className="absolute inset-0 bg-muted flex items-center justify-center text-muted-foreground">
               <span className="text-sm">فشل في تحميل الصورة</span>
@@ -112,6 +139,8 @@ export const LazyImage: React.FC<LazyImageProps> = ({
               ref={imgRef}
               src={optimizedSrc}
               alt={alt}
+              loading={priority ? 'eager' : 'lazy'}
+              decoding="async"
               className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
               style={{
                 width: '100%',

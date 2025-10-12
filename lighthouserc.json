@@ -1,0 +1,41 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npm run preview",
+      "url": ["http://localhost:4173"],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", {"minScore": 0.85}],
+        "categories:accessibility": ["warn", {"minScore": 0.90}],
+        "categories:best-practices": ["warn", {"minScore": 0.90}],
+        "categories:seo": ["warn", {"minScore": 0.90}],
+        "categories:pwa": ["warn", {"minScore": 0.85}],
+        
+        "first-contentful-paint": ["error", {"maxNumericValue": 2000}],
+        "interactive": ["error", {"maxNumericValue": 3000}],
+        "largest-contentful-paint": ["warn", {"maxNumericValue": 2500}],
+        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}],
+        "total-blocking-time": ["warn", {"maxNumericValue": 300}],
+        
+        "resource-summary:script:size": ["error", {"maxNumericValue": 614400}],
+        "resource-summary:stylesheet:size": ["warn", {"maxNumericValue": 51200}],
+        "resource-summary:image:size": ["warn", {"maxNumericValue": 204800}],
+        "resource-summary:font:size": ["warn", {"maxNumericValue": 102400}],
+        "resource-summary:total:size": ["error", {"maxNumericValue": 1024000}]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

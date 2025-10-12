@@ -1,0 +1,88 @@
+{
+  "budgets": [
+    {
+      "resourceSizes": [
+        {
+          "resourceType": "script",
+          "budget": 600
+        },
+        {
+          "resourceType": "stylesheet",
+          "budget": 50
+        },
+        {
+          "resourceType": "image",
+          "budget": 200
+        },
+        {
+          "resourceType": "font",
+          "budget": 100
+        },
+        {
+          "resourceType": "total",
+          "budget": 1000
+        }
+      ]
+    },
+    {
+      "timings": [
+        {
+          "metric": "first-contentful-paint",
+          "budget": 2000
+        },
+        {
+          "metric": "interactive",
+          "budget": 3000
+        },
+        {
+          "metric": "largest-contentful-paint",
+          "budget": 2500
+        },
+        {
+          "metric": "cumulative-layout-shift",
+          "budget": 0.1
+        },
+        {
+          "metric": "total-blocking-time",
+          "budget": 300
+        }
+      ]
+    }
+  ],
+  "targets": {
+    "performance": {
+      "fcp": 2000,
+      "lcp": 2500,
+      "tti": 3000,
+      "cls": 0.1,
+      "tbt": 300,
+      "si": 3000
+    },
+    "bundle": {
+      "javascript": 600,
+      "css": 50,
+      "images": 200,
+      "fonts": 100,
+      "total": 1000
+    },
+    "scores": {
+      "performance": 85,
+      "accessibility": 90,
+      "best-practices": 90,
+      "seo": 90,
+      "pwa": 85
+    }
+  },
+  "thresholds": {
+    "error": {
+      "fcp": 3000,
+      "tti": 5000,
+      "bundle": 1500
+    },
+    "warning": {
+      "fcp": 2500,
+      "tti": 4000,
+      "bundle": 1200
+    }
+  }
+}

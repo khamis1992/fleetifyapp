@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, lazy, Suspense } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
@@ -19,37 +19,37 @@ import { Link } from "react-router-dom"
 import { useFinancialSummary } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard"
-import { UnifiedFinancialDashboard } from "@/components/finance/UnifiedFinancialDashboard"
-import { usePermissionCheck } from "@/hooks/usePermissionCheck"
-import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
-import { useEffect } from "react"
-import ChartOfAccounts from "./finance/ChartOfAccounts"
-import Ledger from "./finance/Ledger"
-import Treasury from "./finance/Treasury"
-import CostCenters from "./finance/CostCenters"
-import Invoices from "./finance/Invoices"
-import Payments from "./finance/Payments"
-import { InvoiceScannerDashboard } from "@/components/invoices/InvoiceScannerDashboard"
-
-import Reports from "./finance/Reports"
-import FixedAssets from "./finance/FixedAssets"
-import Budgets from "./finance/Budgets"
-import Vendors from "./finance/Vendors"
-import FinancialAnalysis from "./finance/FinancialAnalysis"
-import AccountMappings from "./finance/AccountMappings"
-import JournalEntries from "./finance/JournalEntries"
-import NewEntry from "./finance/NewEntry"
-import JournalEntriesSettings from "./finance/settings/JournalEntriesSettings"
-import AccountsSettings from "./finance/settings/AccountsSettings"
-import CostCentersSettings from "./finance/settings/CostCentersSettings"
-import AutomaticAccountsSettings from "./finance/settings/AutomaticAccountsSettings"
-import FinancialSystemAnalysis from "./finance/settings/FinancialSystemAnalysis"
-import AccountingWizard from "./finance/AccountingWizard"
-import FinancialCalculator from "./finance/Calculator"
-import Deposits from "./finance/Deposits"
+import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper"
 import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
+
+// Lazy load UnifiedFinancialDashboard (heavy component)
+const UnifiedFinancialDashboard = lazy(() => import("@/components/finance/UnifiedFinancialDashboard").then(m => ({ default: m.UnifiedFinancialDashboard })));
+
+// Lazy load all finance sub-modules for better performance
+const ChartOfAccounts = lazy(() => import("./finance/ChartOfAccounts"));
+const Ledger = lazy(() => import("./finance/Ledger"));
+const Treasury = lazy(() => import("./finance/Treasury"));
+const CostCenters = lazy(() => import("./finance/CostCenters"));
+const Invoices = lazy(() => import("./finance/Invoices"));
+const Payments = lazy(() => import("./finance/Payments"));
+const InvoiceScannerDashboard = lazy(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })));
+const Reports = lazy(() => import("./finance/Reports"));
+const FixedAssets = lazy(() => import("./finance/FixedAssets"));
+const Budgets = lazy(() => import("./finance/Budgets"));
+const Vendors = lazy(() => import("./finance/Vendors"));
+const FinancialAnalysis = lazy(() => import("./finance/FinancialAnalysis"));
+const AccountMappings = lazy(() => import("./finance/AccountMappings"));
+const JournalEntries = lazy(() => import("./finance/JournalEntries"));
+const NewEntry = lazy(() => import("./finance/NewEntry"));
+const JournalEntriesSettings = lazy(() => import("./finance/settings/JournalEntriesSettings"));
+const AccountsSettings = lazy(() => import("./finance/settings/AccountsSettings"));
+const CostCentersSettings = lazy(() => import("./finance/settings/CostCentersSettings"));
+const AutomaticAccountsSettings = lazy(() => import("./finance/settings/AutomaticAccountsSettings"));
+const FinancialSystemAnalysis = lazy(() => import("./finance/settings/FinancialSystemAnalysis"));
+const AccountingWizard = lazy(() => import("./finance/AccountingWizard"));
+const FinancialCalculator = lazy(() => import("./finance/Calculator"));
+const Deposits = lazy(() => import("./finance/Deposits"));
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()
@@ -307,7 +307,9 @@ const Finance = () => {
         path="dashboard" 
         element={
           <ProtectedFinanceRoute permission="finance.view">
-            <UnifiedFinancialDashboard />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <UnifiedFinancialDashboard />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -315,7 +317,9 @@ const Finance = () => {
         path="chart-of-accounts" 
         element={
           <ProtectedFinanceRoute permission="finance.accounts.view">
-            <ChartOfAccounts />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ChartOfAccounts />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -323,7 +327,9 @@ const Finance = () => {
         path="ledger" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Ledger />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Ledger />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -331,7 +337,9 @@ const Finance = () => {
         path="treasury" 
         element={
           <ProtectedFinanceRoute permission="finance.treasury.view">
-            <Treasury />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Treasury />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -339,7 +347,9 @@ const Finance = () => {
         path="cost-centers" 
         element={
           <ProtectedFinanceRoute permission="finance.cost_centers.view">
-            <CostCenters />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <CostCenters />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -347,7 +357,9 @@ const Finance = () => {
         path="invoices" 
         element={
           <ProtectedFinanceRoute permission="finance.invoices.view">
-            <Invoices />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Invoices />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -355,7 +367,9 @@ const Finance = () => {
         path="invoices/scan" 
         element={
           <ProtectedFinanceRoute permission="finance.invoices.create">
-            <InvoiceScannerDashboard />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <InvoiceScannerDashboard />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -363,7 +377,9 @@ const Finance = () => {
         path="payments" 
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
-            <Payments />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Payments />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -371,7 +387,9 @@ const Finance = () => {
         path="journal-entries" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Ledger />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Ledger />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -379,7 +397,9 @@ const Finance = () => {
         path="reports" 
         element={
           <ProtectedFinanceRoute permission="finance.reports.view">
-            <Reports />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Reports />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -387,7 +407,9 @@ const Finance = () => {
         path="assets" 
         element={
           <ProtectedFinanceRoute permission="finance.assets.view">
-            <FixedAssets />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FixedAssets />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -395,7 +417,9 @@ const Finance = () => {
         path="budgets" 
         element={
           <ProtectedFinanceRoute permission="finance.budgets.view">
-            <Budgets />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Budgets />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -403,7 +427,9 @@ const Finance = () => {
         path="vendors" 
         element={
           <ProtectedFinanceRoute permission="finance.vendors.view">
-            <Vendors />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Vendors />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -411,7 +437,9 @@ const Finance = () => {
         path="analysis" 
         element={
           <ProtectedFinanceRoute permission="finance.analysis.view">
-            <FinancialAnalysis />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinancialAnalysis />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -419,7 +447,9 @@ const Finance = () => {
         path="account-mappings" 
         element={
           <ProtectedFinanceRoute permission="finance.accounts.view">
-            <AccountMappings />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AccountMappings />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -427,7 +457,9 @@ const Finance = () => {
         path="accounting-wizard" 
         element={
           <ProtectedFinanceRoute permission="finance.accounts.write">
-            <AccountingWizard />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AccountingWizard />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -435,7 +467,9 @@ const Finance = () => {
         path="new-entry" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.write">
-            <NewEntry />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <NewEntry />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -445,7 +479,9 @@ const Finance = () => {
         path="calculator" 
         element={
           <ProtectedFinanceRoute permission="finance.view">
-            <FinancialCalculator />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinancialCalculator />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -455,7 +491,9 @@ const Finance = () => {
         path="deposits" 
         element={
           <ProtectedFinanceRoute permission="finance.deposits.view">
-            <Deposits />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Deposits />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
@@ -465,7 +503,9 @@ const Finance = () => {
         path="settings/journal-entries" 
         element={
           <SuperAdminRoute>
-            <JournalEntriesSettings />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <JournalEntriesSettings />
+            </Suspense>
           </SuperAdminRoute>
         } 
       />
@@ -473,7 +513,9 @@ const Finance = () => {
         path="settings/accounts" 
         element={
           <SuperAdminRoute>
-            <AccountsSettings />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AccountsSettings />
+            </Suspense>
           </SuperAdminRoute>
         } 
       />
@@ -481,7 +523,9 @@ const Finance = () => {
         path="settings/cost-centers" 
         element={
           <SuperAdminRoute>
-            <CostCentersSettings />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <CostCentersSettings />
+            </Suspense>
           </SuperAdminRoute>
         } 
       />
@@ -489,7 +533,9 @@ const Finance = () => {
         path="settings/automatic-accounts" 
         element={
           <SuperAdminRoute>
-            <AutomaticAccountsSettings />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AutomaticAccountsSettings />
+            </Suspense>
           </SuperAdminRoute>
         } 
       />
@@ -497,7 +543,9 @@ const Finance = () => {
         path="settings/financial-system-analysis" 
         element={
           <ProtectedFinanceRoute permission="finance.accounts.view">
-            <FinancialSystemAnalysis />
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinancialSystemAnalysis />
+            </Suspense>
           </ProtectedFinanceRoute>
         } 
       />

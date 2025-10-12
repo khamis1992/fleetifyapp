@@ -79,6 +79,8 @@ export interface CustomerFilters {
   includeInactive?: boolean;
   searchTerm?: string;
   limit?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface CustomerAccountTransaction {

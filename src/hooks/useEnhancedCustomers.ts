@@ -39,7 +39,9 @@ export const useCustomers = (filters?: CustomerFilters) => {
     customer_code,
     limit,
     customer_type,
-    is_blacklisted 
+    is_blacklisted,
+    page = 1,
+    pageSize = 50
   } = filters || {};
   
   // Debug logging for company context
@@ -53,12 +55,12 @@ export const useCustomers = (filters?: CustomerFilters) => {
     defaultFilter: filter,
     activeFilter,
     viewAllCustomers,
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted])
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, page, pageSize])
   });
   
   return useQuery({
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, viewAllCustomers]),
-    queryFn: async (): Promise<EnhancedCustomer[]> => {
+    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, viewAllCustomers, page, pageSize]),
+    queryFn: async (): Promise<{ data: EnhancedCustomer[], total: number }> => {
       // For system level users (super_admin), allow querying all customers
       // For company scoped users, require a company ID
       if (!isSystemLevel && !companyId) {
@@ -73,9 +75,61 @@ export const useCustomers = (filters?: CustomerFilters) => {
         defaultFilterCompanyId: filter.company_id,
         activeFilterCompanyId: activeFilter.company_id,
         viewAllCustomers,
-        usingActiveFilter: !!activeFilter.company_id
+        usingActiveFilter: !!activeFilter.company_id,
+        page,
+        pageSize
       });
       
+      // Build count query first
+      let countQuery = supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
+      
+      // Use the active filter based on view mode
+      if (activeFilter.company_id) {
+        countQuery = countQuery.eq('company_id', activeFilter.company_id);
+        console.log('🔍 [useCustomers] Applied active company filter:', activeFilter.company_id);
+      } else {
+        console.log('🔍 [useCustomers] No company filter - viewing all customers');
+      }
+      
+      if (!includeInactive) {
+        countQuery = countQuery.eq('is_active', true);
+      }
+      
+      if (customer_type) {
+        countQuery = countQuery.eq('customer_type', customer_type);
+      }
+
+      if (is_blacklisted !== undefined) {
+        countQuery = countQuery.eq('is_blacklisted', is_blacklisted);
+      }
+      
+      const searchText = searchTerm || search;
+      if (searchText) {
+        countQuery = countQuery.or(
+          `first_name.ilike.%${searchText}%,` +
+          `last_name.ilike.%${searchText}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
+      }
+
+      if (customer_code?.trim()) {
+        countQuery = countQuery.ilike('customer_code', `%${customer_code}%`);
+      }
+      
+      // Get total count
+      const { count, error: countError } = await countQuery;
+      
+      if (countError) {
+        console.error('❌ [useCustomers] Error counting customers:', countError);
+        throw countError;
+      }
+      
+      // Build data query with pagination
       let query = supabase
         .from('customers')
         .select('*');
@@ -83,9 +137,6 @@ export const useCustomers = (filters?: CustomerFilters) => {
       // Use the active filter based on view mode
       if (activeFilter.company_id) {
         query = query.eq('company_id', activeFilter.company_id);
-        console.log('🔍 [useCustomers] Applied active company filter:', activeFilter.company_id);
-      } else {
-        console.log('🔍 [useCustomers] No company filter - viewing all customers');
       }
       
       if (!includeInactive) {
@@ -100,7 +151,6 @@ export const useCustomers = (filters?: CustomerFilters) => {
         query = query.eq('is_blacklisted', is_blacklisted);
       }
       
-      const searchText = searchTerm || search;
       if (searchText) {
         query = query.or(
           `first_name.ilike.%${searchText}%,` +
@@ -116,10 +166,12 @@ export const useCustomers = (filters?: CustomerFilters) => {
         query = query.ilike('customer_code', `%${customer_code}%`);
       }
       
-      if (limit) {
-        query = query.limit(limit);
-      }
+      // Apply pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
       
+      // Apply ordering
       query = query.order('created_at', { ascending: false });
       
       const { data, error } = await query;
@@ -131,12 +183,18 @@ export const useCustomers = (filters?: CustomerFilters) => {
       
       console.log('✅ [useCustomers] Successfully fetched customers:', {
         count: data?.length || 0,
+        total: count || 0,
+        page,
+        pageSize,
         companyId,
         isSystemLevel,
         customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
       });
       
-      return data || [];
+      return {
+        data: data || [],
+        total: count || 0
+      };
     },
     // Enable query for system level users or users with company ID
     enabled: isSystemLevel || !!companyId,
