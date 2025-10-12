@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, lazy, Suspense } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
+import { lazy, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
