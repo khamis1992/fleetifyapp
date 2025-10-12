@@ -10,7 +10,19 @@
 - [TenantForm.tsx](file://src/modules/tenants/components/TenantForm.tsx)
 - [Tenants.tsx](file://src/modules/tenants/pages/Tenants.tsx)
 - [useTenants.ts](file://src/modules/tenants/hooks/useTenants.ts)
+- [useFinancialSystemAnalysis.ts](file://src/hooks/useFinancialSystemAnalysis.ts) - *Added in recent commit*
+- [useBulkDeleteDuplicateContracts.ts](file://src/hooks/useBulkDeleteDuplicateContracts.ts) - *Added in recent commit*
+- [useDuplicateContracts.ts](file://src/hooks/useDuplicateContracts.ts) - *Added in recent commit*
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added documentation for new financial system analysis module
+- Added documentation for duplicate contract management module
+- Updated module integration examples to include new functionality
+- Enhanced common issues section with new duplicate contract handling
+- Added new diagram for financial system analysis workflow
+- Updated referenced files list to include newly added hooks
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -66,7 +78,7 @@ C --> |Shared by| I
 - [moduleRegistry.ts](file://src/modules/moduleRegistry.ts)
 - [index.ts](file://src/modules/index.ts)
 
-**Section sources**
+**Section sources**   
 - [moduleRegistry.ts](file://src/modules/moduleRegistry.ts)
 - [index.ts](file://src/modules/index.ts)
 

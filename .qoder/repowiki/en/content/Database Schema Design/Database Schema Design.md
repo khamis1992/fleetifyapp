@@ -9,7 +9,24 @@
 - [contract.schema.ts](file://src/schemas/contract.schema.ts)
 - [customer.schema.ts](file://src/schemas/customer.schema.ts)
 - [types.ts](file://src/integrations/supabase/types.ts)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql) - *Added in commit dea00f44ff6792398ad0383ab9bdc8b52cb8c3aa*
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql) - *Added in commit 973ebdb560f0ed689880d88a5add238f358cef71*
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql) - *Added in commit 109f4ac6c7aa455d17b73e8575b48139bd45cc62*
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts) - *Added in commit dea00f44ff6792398ad0383ab9bdc8b52cb8c3aa*
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx) - *Added in commit dea00f44ff6792398ad0383ab9bdc8b52cb8c3aa*
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts) - *Added in commit 973ebdb560f0ed689880d88a5add238f358cef71*
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts) - *Added in commit 973ebdb560f0ed689880d88a5add238f358cef71*
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts) - *Added in commit 973ebdb560f0ed689880d88a5add238f358cef71*
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section on Bulk Invoice Generation System to document the new schema changes and functionality
+- Added new section on Invoice Scanning and OCR System to document the new AI-powered invoice processing features
+- Added new section on Contract Payment Calculation Fix to document the trigger-based solution for maintaining accurate contract balances
+- Updated the Table of Contents to include new sections
+- Enhanced source tracking with new files and migration scripts from recent commits
+- Added Mermaid diagrams for the new systems that visualize actual code structures
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -20,7 +37,10 @@
 6. [Database Schema and Application Code Relationship](#database-schema-and-application-code-relationship)
 7. [Migration Management and Evolution](#migration-management-and-evolution)
 8. [Common Migration Issues and Solutions](#common-migration-issues-and-solutions)
-9. [Conclusion](#conclusion)
+9. [Bulk Invoice Generation System](#bulk-invoice-generation-system)
+10. [Invoice Scanning and OCR System](#invoice-scanning-and-ocr-system)
+11. [Contract Payment Calculation Fix](#contract-payment-calculation-fix)
+12. [Conclusion](#conclusion)
 
 ## Introduction
 
@@ -457,17 +477,159 @@ Finally, the migration system addresses the challenge of evolving complex busine
 - [20250830100000_create_auto_create_customer_accounts_function.sql](file://supabase/migrations/20250830100000_create_auto_create_customer_accounts_function.sql)
 - [20250829220000_fix_contract_journal_creation.sql](file://supabase/migrations/20250829220000_fix_contract_journal_creation.sql)
 
+## Bulk Invoice Generation System
+
+The bulk invoice generation system in FleetifyApp addresses the need to create invoices for payments that were processed without corresponding invoice records. This system was implemented through the 20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql migration and consists of two main components: a statistics function and a bulk processing function.
+
+The get_payments_without_invoices_stats function provides a comprehensive overview of payments that lack invoice records, grouping them by contract and customer for better analysis. This function returns JSONB data containing the total count and amount of such payments, along with detailed breakdowns by contract. The statistics are used by the frontend to display the scope of the issue and help administrators make informed decisions about bulk processing.
+
+The backfill_all_contract_invoices function implements the core bulk processing logic, iterating through all completed payments linked to contracts that don't have associated invoices. For each payment, it calls the createInvoiceForPayment RPC function to generate the appropriate invoice. The function includes robust error handling, transaction tracking, and performance optimizations such as periodic delays to prevent system overload. It returns detailed results including success counts, error messages, and processing time, providing full transparency into the operation.
+
+The frontend implementation in BulkInvoiceGenerationDialog.tsx and useBulkInvoiceGeneration.ts provides a user-friendly interface for initiating and monitoring the bulk invoice generation process. The system includes safety features such as confirmation dialogs and processing indicators to prevent accidental execution. The integration between the database functions and application code ensures type safety through TypeScript interfaces that match the JSONB response structures.
+
+```mermaid
+sequenceDiagram
+participant UI as User Interface
+participant Hook as useBulkInvoiceGeneration
+participant Supabase as Supabase Client
+participant DB as Database Function
+UI->>Hook : Request statistics
+activate Hook
+Hook->>Supabase : Call get_payments_without_invoices_stats
+activate Supabase
+Supabase->>DB : Execute function
+activate DB
+DB-->>Supabase : Return statistics
+deactivate DB
+Supabase-->>Hook : Return data
+deactivate Supabase
+Hook-->>UI : Display statistics
+deactivate Hook
+UI->>Hook : Initiate bulk generation
+activate Hook
+Hook->>Supabase : Call backfill_all_contract_invoices
+activate Supabase
+Supabase->>DB : Execute function
+activate DB
+loop For each payment without invoice
+DB->>DB : Process payment
+DB->>DB : Create invoice via createInvoiceForPayment
+end
+DB-->>Supabase : Return results
+deactivate DB
+Supabase-->>Hook : Return result
+deactivate Supabase
+Hook-->>UI : Display results and toast notification
+deactivate Hook
+```
+
+**Diagram sources**
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts)
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx)
+
+**Section sources**
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts)
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx)
+
+## Invoice Scanning and OCR System
+
+The invoice scanning and OCR system in FleetifyApp leverages AI-powered optical character recognition to automate the processing of paper or scanned invoices. This system was implemented through the 20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql migration and consists of a Supabase edge function, database schema changes, and frontend components.
+
+The scan-invoice edge function, implemented in supabase/functions/scan-invoice/index.ts, uses the Lovable AI gateway to connect with Google's Gemini 2.5 Flash model for advanced OCR processing. The function accepts base64-encoded images and returns structured JSON data containing extracted invoice information such as invoice number, date, customer name, contract number, total amount, and line items. The system calculates a confidence score based on the completeness of extracted data, helping users assess the reliability of the results.
+
+The database schema includes the invoice_ocr_logs table to store processing history, including the original image URL, extracted data, confidence scores, and processing status. This audit trail enables tracking of OCR operations and facilitates manual review when confidence scores are low. The system integrates with existing invoice and customer data to automatically match scanned invoices to appropriate records in the database.
+
+The frontend implementation in InvoiceScannerDashboard.tsx provides a multi-step interface for capturing images, reviewing OCR results, matching to existing customers/contracts, and saving processed invoices. The useInvoiceOCR hook handles the communication with the edge function and provides loading states and error handling. The system includes visual indicators of OCR confidence and supports manual correction of extracted data before finalizing the invoice creation.
+
+```mermaid
+sequenceDiagram
+participant UI as User Interface
+participant Hook as useInvoiceOCR
+participant Supabase as Supabase Functions
+participant AI as Lovable AI Gateway
+participant DB as Database
+UI->>Hook : Capture image
+activate Hook
+Hook->>Supabase : Invoke scan-invoice function
+activate Supabase
+Supabase->>AI : Call Gemini 2.5 Flash API
+activate AI
+AI-->>Supabase : Return OCR results
+deactivate AI
+Supabase-->>Hook : Return structured data
+deactivate Supabase
+Hook-->>UI : Display results with confidence score
+deactivate Hook
+UI->>UI : Review and edit data
+UI->>DB : Save invoice and OCR log
+activate DB
+DB-->>UI : Confirm save
+deactivate DB
+```
+
+**Diagram sources**
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts)
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts)
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts)
+
+**Section sources**
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts)
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts)
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts)
+
+## Contract Payment Calculation Fix
+
+The contract payment calculation fix addresses issues with maintaining accurate total_paid and balance_due values in the contracts table. This was implemented through the 20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql migration, which introduces a database trigger that automatically updates contract financials whenever payments are modified.
+
+The update_contract_total_paid function is a PostgreSQL trigger function that recalculates the total_paid amount for a contract whenever a payment is inserted, updated, or deleted. The function queries the payments table for all completed payments associated with the contract and sums their amounts to determine the new total_paid value. It then updates the contract's total_paid and balance_due fields accordingly, ensuring that these values are always consistent with the actual payment history.
+
+The trigger, named payments_update_contract_totals, is attached to the payments table and executes after any INSERT, UPDATE, or DELETE operation. This ensures that contract financials are updated in real-time as payment records change, eliminating discrepancies that could occur from application-level updates. The trigger handles all payment operations, including partial payments, refunds, and payment cancellations, providing a comprehensive solution for maintaining accurate contract balances.
+
+Additionally, the migration includes a one-time update to correct existing contract records, ensuring data consistency across the entire database. This batch update processes all contracts that have associated payments, recalculating their total_paid and balance_due values based on the current payment data. This comprehensive approach ensures that both new and existing data adhere to the same consistency rules.
+
+```mermaid
+erDiagram
+PAYMENT ||--o{ CONTRACT : "updates"
+CONTRACT {
+uuid id PK
+numeric contract_amount
+numeric total_paid
+numeric balance_due
+}
+PAYMENT {
+uuid id PK
+uuid contract_id FK
+numeric amount
+string payment_status
+}
+```
+
+**Diagram sources**
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
+
+**Section sources**
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
+
 ## Conclusion
 
-The database schema design of FleetifyApp represents a sophisticated and well-architected solution for enterprise data management across multiple business domains. The schema demonstrates a deep understanding of both database principles and business requirements, implementing a robust foundation for fleet, finance, HR, property, and contract management. Through a combination of normalized data structures, comprehensive constraints, and advanced features like automated journal entry creation and payment allocation rules, the schema ensures data integrity, security, and auditability.
+The database schema design of FleetifyApp represents a sophisticated and well-architected solution for enterprise data management across multiple business domains. The schema demonstrates a deep understanding of both database principles and business requirements, implementing a robust foundation for fleet, finance, HR, property, and contract management. Through a combination of normalized data structures, comprehensive constraints, and advanced features like automated journal entry creation, payment allocation rules, bulk invoice generation, and AI-powered OCR processing, the schema ensures data integrity, security, and auditability.
 
-The evolution of the schema through over 100 migration files reflects a mature development process that values version control, reproducibility, and incremental improvement. The migrations demonstrate best practices in database evolution, including the use of idempotent operations, comprehensive documentation, and careful handling of function conflicts and data consistency issues. The integration between the database schema and application code is seamless, with TypeScript type definitions and Zod validation schemas providing a single source of truth that ensures type safety and validation consistency across the stack.
+The evolution of the schema through over 100 migration files reflects a mature development process that values version control, reproducibility, and incremental improvement. Recent additions such as the bulk invoice generation system, invoice scanning OCR, and contract payment calculation fixes demonstrate the team's commitment to addressing real-world business challenges through robust database solutions. The migrations demonstrate best practices in database evolution, including the use of idempotent operations, comprehensive documentation, and careful handling of function conflicts and data consistency issues.
 
-Key strengths of the schema design include its modular architecture, which allows for independent development of different business domains while maintaining necessary integration points; its robust security model, which leverages Row Level Security to enforce data access controls; and its comprehensive error handling, which ensures graceful degradation in the face of partial failures. The system's ability to handle complex financial operations, such as automated payment allocation and journal entry creation, demonstrates a sophisticated understanding of accounting principles and business requirements.
+The integration between the database schema and application code is seamless, with TypeScript type definitions and Zod validation schemas providing a single source of truth that ensures type safety and validation consistency across the stack. The addition of AI-powered features like invoice OCR shows how the system is evolving to incorporate modern technologies while maintaining strong database fundamentals.
 
-For future development, the schema provides a solid foundation that can be extended to support additional business domains or enhanced with new features. The use of JSONB columns for flexible data storage and the modular migration approach suggest that the system is well-positioned to adapt to changing business requirements. Continued investment in documentation, automated testing, and performance optimization will ensure that the database remains a reliable and efficient component of the FleetifyApp ecosystem.
+Key strengths of the schema design include its modular architecture, which allows for independent development of different business domains while maintaining necessary integration points; its robust security model, which leverages Row Level Security to enforce data access controls; and its comprehensive error handling, which ensures graceful degradation in the face of partial failures. The system's ability to handle complex financial operations, such as automated payment allocation, bulk invoice processing, and real-time contract balance calculations, demonstrates a sophisticated understanding of accounting principles and business requirements.
+
+For future development, the schema provides a solid foundation that can be extended to support additional business domains or enhanced with new features. The use of JSONB columns for flexible data storage, the modular migration approach, and the integration of AI services suggest that the system is well-positioned to adapt to changing business requirements. Continued investment in documentation, automated testing, and performance optimization will ensure that the database remains a reliable and efficient component of the FleetifyApp ecosystem.
 
 **Section sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
 - [20250831000000_create_customer_account_statement_function.sql](file://supabase/migrations/20250831000000_create_customer_account_statement_function.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)

@@ -10,7 +10,20 @@
 - [20250829220100_fix_customer_accounts.sql](file://supabase/migrations/20250829220100_fix_customer_accounts.sql)
 - [20250829220200_complete_customer_account_fix.sql](file://supabase/migrations/20250829220200_complete_customer_account_fix.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql) - *Added in recent commit*
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql) - *Updated in recent commit*
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts) - *Added in recent commit*
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx) - *Added in recent commit*
+- [createInvoiceForPayment.ts](file://src/utils/createInvoiceForPayment.ts) - *Modified in recent commit*
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section for Bulk Invoice Generation feature
+- Updated Payments Table section to reflect new functionality
+- Added new diagram for bulk invoice generation workflow
+- Updated section sources to include new and modified files
+- Enhanced data validation section with new business rules for invoice creation
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -22,10 +35,11 @@
 7. [Financial Accounts Table](#financial-accounts-table)
 8. [Employees Table](#employees-table)
 9. [Payments Table](#payments-table)
-10. [Data Validation and Business Rules](#data-validation-and-business-rules)
-11. [Indexing and Performance Considerations](#indexing-and-performance-considerations)
-12. [Data Lifecycle and Retention Policies](#data-lifecycle-and-retention-policies)
-13. [Security and Access Control](#security-and-access-control)
+10. [Bulk Invoice Generation](#bulk-invoice-generation)
+11. [Data Validation and Business Rules](#data-validation-and-business-rules)
+12. [Indexing and Performance Considerations](#indexing-and-performance-considerations)
+13. [Data Lifecycle and Retention Policies](#data-lifecycle-and-retention-policies)
+14. [Security and Access Control](#security-and-access-control)
 
 ## Introduction
 This document provides comprehensive documentation for the core database tables in FleetifyApp, detailing entity relationships, field definitions, data types, constraints, and business rules implemented in the PostgreSQL schema via Supabase migrations. The system is designed to manage contracts, customers, vehicles, properties, financial accounts, employees, and payments with robust data validation, referential integrity, and security controls.
@@ -864,6 +878,43 @@ PAYMENT ||--|| INVOICE : "settles"
 - [payment.schema.ts](file://src/schemas/payment.schema.ts#L1-L88)
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql#L1-L470)
 
+## Bulk Invoice Generation
+The bulk invoice generation feature enables the system to automatically create invoices for payments that are linked to contracts but lack corresponding invoices. This functionality addresses data consistency issues and ensures proper financial tracking across all transactions.
+
+The system provides both programmatic and user interface access to this functionality through database functions, React hooks, and UI components. The process involves identifying payments without invoices, creating corresponding invoice records, and linking them appropriately.
+
+```mermaid
+flowchart TD
+A[Start Bulk Invoice Generation] --> B{Get Company Context}
+B --> C[Fetch Payments Without Invoices]
+C --> D{Payments Found?}
+D --> |No| E[Show "All Payments Have Invoices" Message]
+D --> |Yes| F[Display Statistics Summary]
+F --> G[User Confirms Generation]
+G --> H[Process Each Payment]
+H --> I[Create Invoice for Payment]
+I --> J{Invoice Created Successfully?}
+J --> |Yes| K[Update Success Count]
+J --> |No| L[Log Error]
+H --> M{All Payments Processed?}
+M --> |No| H
+M --> |Yes| N[Return Results Summary]
+N --> O[Show Success/Error Toasts]
+O --> P[Refresh Related Data]
+P --> Q[End Process]
+```
+
+**Diagram sources**
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql#L1-L147)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts#L1-L115)
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx#L1-L197)
+
+**Section sources**
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql#L1-L147)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts#L1-L115)
+- [BulkInvoiceGenerationDialog.tsx](file://src/components/contracts/BulkInvoiceGenerationDialog.tsx#L1-L197)
+- [createInvoiceForPayment.ts](file://src/utils/createInvoiceForPayment.ts#L16-L159)
+
 ## Data Validation and Business Rules
 The FleetifyApp database implements comprehensive data validation and business rules through constraints, triggers, and application-level validation. These rules ensure data integrity, enforce business logic, and prevent invalid states across all core entities.
 
@@ -915,11 +966,13 @@ AB --> AC
 - [contract.schema.ts](file://src/schemas/contract.schema.ts#L50-L100)
 - [customer.schema.ts](file://src/schemas/customer.schema.ts#L50-L75)
 - [payment.schema.ts](file://src/schemas/payment.schema.ts#L50-L88)
+- [createInvoiceForPayment.ts](file://src/utils/createInvoiceForPayment.ts#L16-L159)
 
 **Section sources**
 - [contract.schema.ts](file://src/schemas/contract.schema.ts#L1-L103)
 - [customer.schema.ts](file://src/schemas/customer.schema.ts#L1-L75)
 - [payment.schema.ts](file://src/schemas/payment.schema.ts#L1-L88)
+- [createInvoiceForPayment.ts](file://src/utils/createInvoiceForPayment.ts#L16-L159)
 
 ## Indexing and Performance Considerations
 The FleetifyApp database implements strategic indexing to optimize query performance for high-traffic tables and common access patterns. The indexing strategy balances read performance with write overhead, focusing on the most critical query paths.

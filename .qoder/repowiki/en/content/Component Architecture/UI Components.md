@@ -11,7 +11,23 @@
 - [tailwind.config.ts](file://tailwind.config.ts)
 - [FeatureGate.tsx](file://src/components/common/FeatureGate.tsx)
 - [PermissionGuard.tsx](file://src/components/common/PermissionGuard.tsx)
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx) - *Added in recent commit*
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx) - *Added in recent commit*
+- [InvoiceMatchingView.tsx](file://src/components/invoices/InvoiceMatchingView.tsx) - *Added in recent commit*
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx) - *Added in recent commit*
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts) - *Added in recent commit*
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts) - *Added in recent commit*
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts) - *Added in recent commit*
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts) - *Added in recent commit*
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section for Invoice Scanning and OCR Components
+- Added new section for OCR Data Processing and Matching
+- Updated Table of Contents to include new sections
+- Added references to new invoice scanning components and related files
+- Added new Mermaid diagrams for OCR workflow and data flow
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -24,6 +40,8 @@
 8. [Usage Examples and Composition](#usage-examples-and-composition)
 9. [Performance Considerations](#performance-considerations)
 10. [Cross-Browser Compatibility](#cross-browser-compatibility)
+11. [Invoice Scanning and OCR Components](#invoice-scanning-and-ocr-components)
+12. [OCR Data Processing and Matching](#ocr-data-processing-and-matching)
 
 ## Introduction
 
@@ -563,3 +581,307 @@ The library uses standardized APIs and avoids browser-specific features, ensurin
 **Section sources**
 - [compatibilityManager.ts](file://src/lib/compatibilityManager.ts#L1-L47)
 - [tailwind.config.ts](file://tailwind.config.ts#L1-L298)
+
+## Invoice Scanning and OCR Components
+
+The new invoice scanning and OCR system provides a comprehensive solution for digitizing paper invoices through image capture and optical character recognition. This system consists of several specialized UI components that work together to provide a seamless user experience for processing scanned invoices.
+
+### InvoiceCameraCapture Component
+
+The InvoiceCameraCapture component provides a user interface for capturing invoice images through either camera capture or file upload. It supports both mobile camera capture and gallery selection, with a preview interface for confirming the captured image before processing.
+
+```mermaid
+classDiagram
+class InvoiceCameraCapture {
++onImageCapture : function
++onCancel : function
++preview : string
++capturedFile : File
+}
+class CameraInput {
++capture : string
++accept : string
+}
+class FileInput {
++accept : string
+}
+class Preview {
++aspectRatio : string
++objectFit : string
+}
+InvoiceCameraCapture --> CameraInput : "controls"
+InvoiceCameraCapture --> FileInput : "controls"
+InvoiceCameraCapture --> Preview : "displays"
+```
+
+**Diagram sources**
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx#L1-L120)
+
+**Section sources**
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx#L1-L120)
+
+### InvoiceOCRResults Component
+
+The InvoiceOCRResults component displays the extracted data from the OCR process alongside the original invoice image. It provides a side-by-side comparison with editable fields for correcting any inaccuracies in the extracted data. The component also displays a confidence score for the OCR results.
+
+```mermaid
+classDiagram
+class InvoiceOCRResults {
++data : ExtractedInvoiceData
++confidence : number
++imageUrl : string
++onChange : function
+}
+class ImagePreview {
++aspectRatio : string
++objectFit : string
+}
+class DataForm {
++invoice_number : string
++invoice_date : string
++customer_name : string
++contract_number : string
++total_amount : number
++notes : string
+}
+class ConfidenceBadge {
++color : string
++icon : Component
++text : string
+}
+InvoiceOCRResults --> ImagePreview : "contains"
+InvoiceOCRResults --> DataForm : "contains"
+InvoiceOCRResults --> ConfidenceBadge : "contains"
+```
+
+**Diagram sources**
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx#L1-L135)
+
+**Section sources**
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx#L1-L135)
+
+### InvoiceMatchingView Component
+
+The InvoiceMatchingView component displays the results of the intelligent matching algorithm that attempts to associate the scanned invoice with existing customers and contracts in the system. It shows the best match with confidence score and provides alternative matches for user selection.
+
+```mermaid
+classDiagram
+class InvoiceMatchingView {
++matchResult : InvoiceMatchResult
++onSelectMatch : function
++onCreateNew : function
+}
+class BestMatch {
++customer_name : string
++contract_number : string
++confidence : number
++match_reasons : string[]
+}
+class AlternativeMatches {
++list : Array
++confidence : number
++reason : string
+}
+class MatchActions {
++onSelectMatch : function
++onCreateNew : function
+}
+InvoiceMatchingView --> BestMatch : "displays"
+InvoiceMatchingView --> AlternativeMatches : "displays"
+InvoiceMatchingView --> MatchActions : "contains"
+```
+
+**Diagram sources**
+- [InvoiceMatchingView.tsx](file://src/components/invoices/InvoiceMatchingView.tsx#L1-L142)
+
+**Section sources**
+- [InvoiceMatchingView.tsx](file://src/components/invoices/InvoiceMatchingView.tsx#L1-L142)
+
+### InvoiceScannerDashboard Component
+
+The InvoiceScannerDashboard component orchestrates the entire invoice scanning workflow through a multi-step interface. It manages the state transitions between capturing, processing, matching, and saving invoice data, providing a guided experience for users.
+
+```mermaid
+classDiagram
+class InvoiceScannerDashboard {
++step : string
++imageFile : File
++extractedData : ExtractedInvoiceData
++confidence : number
++matchResult : InvoiceMatchResult
+}
+class CaptureStep {
++onImageCapture : function
+}
+class ResultsStep {
++handleDataChange : function
++handleProceedToMatching : function
+}
+class MatchingStep {
++handleSelectMatch : function
+}
+class SaveStep {
++handleSave : function
+}
+InvoiceScannerDashboard --> CaptureStep : "contains"
+InvoiceScannerDashboard --> ResultsStep : "contains"
+InvoiceScannerDashboard --> MatchingStep : "contains"
+InvoiceScannerDashboard --> SaveStep : "contains"
+```
+
+**Diagram sources**
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx#L1-L307)
+
+**Section sources**
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx#L1-L307)
+
+## OCR Data Processing and Matching
+
+The OCR data processing and matching system provides the backend functionality for extracting data from invoice images and associating them with existing records in the database. This system consists of custom hooks and type definitions that work with the UI components to provide a complete solution.
+
+### useInvoiceOCR Hook
+
+The useInvoiceOCR hook provides the interface between the UI components and the Supabase edge function that performs the actual OCR processing. It handles image conversion to base64, API invocation, and result parsing with appropriate error handling and user feedback.
+
+```mermaid
+sequenceDiagram
+participant UI as InvoiceScannerDashboard
+participant Hook as useInvoiceOCR
+participant Supabase as Supabase Edge Function
+participant Toast as Toast System
+UI->>Hook : processImage(file)
+Hook->>Hook : Convert image to base64
+Hook->>Supabase : invoke('scan-invoice')
+Supabase-->>Hook : Return OCR results
+alt Success
+Hook->>Toast : Show success toast
+Hook->>UI : Return extracted data
+else Error
+Hook->>Toast : Show error toast
+Hook->>UI : Return null
+end
+```
+
+**Diagram sources**
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts#L1-L75)
+
+**Section sources**
+- [useInvoiceOCR.ts](file://src/hooks/useInvoiceOCR.ts#L1-L75)
+
+### useInvoiceMatching Hook
+
+The useInvoiceMatching hook implements the intelligent matching algorithm that attempts to associate extracted invoice data with existing customers and contracts. It queries the database using multiple strategies including contract number matching, customer name matching, and amount/date range matching.
+
+```mermaid
+flowchart TD
+A[Extracted Data] --> B{Matching Strategy}
+B --> |Contract Number| C[Query Contracts by Number]
+B --> |Customer Name| D[Query Customers by Name]
+B --> |Amount & Date| E[Query Active Contracts by Amount]
+C --> F[Calculate Confidence]
+D --> F
+E --> F
+F --> G[Sort by Confidence]
+G --> H[Return Best Match]
+H --> I[InvoiceMatchingView]
+```
+
+**Diagram sources**
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts#L1-L163)
+
+**Section sources**
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts#L1-L163)
+
+### OCR Data Types
+
+The invoiceOCR.ts file defines the TypeScript interfaces for the OCR system, providing type safety for the data flow between components, hooks, and the backend. These types ensure consistency across the entire invoice scanning workflow.
+
+```mermaid
+classDiagram
+class ExtractedInvoiceData {
++invoice_number : string
++invoice_date : string
++customer_name : string
++contract_number : string
++total_amount : number
++items : InvoiceItem[]
++notes : string
+}
+class InvoiceItem {
++description : string
++quantity : number
++unit_price : number
++total : number
+}
+class OCRResult {
++success : boolean
++data : ExtractedInvoiceData
++confidence : number
++raw_response : string
++error : string
+}
+class InvoiceMatchResult {
++confidence : number
++customer_id : string
++customer_name : string
++contract_id : string
++contract_number : string
++match_reasons : string[]
++alternatives : AlternativeMatch[]
+}
+class AlternativeMatch {
++customer_id : string
++customer_name : string
++contract_id : string
++contract_number : string
++confidence : number
++reason : string
+}
+class InvoiceOCRLog {
++id : string
++company_id : string
++invoice_id : string
++image_url : string
++ocr_confidence : number
++extracted_data : ExtractedInvoiceData
++matched_customer_id : string
++matched_contract_id : string
++match_confidence : number
++match_reasons : string[]
++processing_status : string
++error_message : string
++processed_by : string
++created_at : string
++updated_at : string
+}
+```
+
+**Diagram sources**
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts#L1-L59)
+
+**Section sources**
+- [invoiceOCR.ts](file://src/types/invoiceOCR.ts#L1-L59)
+
+### OCR Edge Function
+
+The scan-invoice edge function implements the server-side OCR processing using the Google Gemini 2.5 Flash model through the Lovable AI gateway. It receives base64-encoded images, processes them with AI, and returns structured JSON data with confidence scores.
+
+```mermaid
+sequenceDiagram
+participant UI as Frontend
+participant Supabase as Supabase
+participant Lovable as Lovable AI Gateway
+participant Gemini as Google Gemini
+UI->>Supabase : invoke('scan-invoice')
+Supabase->>Lovable : POST /v1/chat/completions
+Lovable->>Gemini : Process image with OCR
+Gemini-->>Lovable : Return extracted text
+Lovable-->>Supabase : Return JSON response
+Supabase-->>UI : Return structured data
+```
+
+**Diagram sources**
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts#L1-L183)
+
+**Section sources**
+- [scan-invoice/index.ts](file://supabase/functions/scan-invoice/index.ts#L1-L183)

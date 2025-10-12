@@ -4,9 +4,21 @@
 **Referenced Files in This Document**   
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
 - [apply-migration.js](file://apply-migration.js)
 - [test-database.mjs](file://test-database.mjs)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section on bulk invoice generation migration pattern
+- Added new section on invoice scanning and OCR migration pattern
+- Updated key migration patterns section to include financial calculation fixes
+- Enhanced significant migration examples with new bulk invoice generation functionality
+- Updated diagram sources to reflect new migration patterns
+- Added references to new migration files in document sources
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -75,6 +87,10 @@ The migration system in FleetifyApp provides robust rollback capabilities to han
 ## Key Migration Patterns
 The FleetifyApp migration system implements several key patterns for common database modification scenarios. Schema additions follow a pattern of creating new tables, columns, or constraints with appropriate default values and nullability settings. Data migrations use batch processing to handle large datasets efficiently, minimizing impact on database performance. Constraint modifications are implemented with careful consideration of existing data, often including data validation steps before applying constraints. Index optimizations follow a pattern of analyzing query patterns and creating indexes that improve performance without negatively impacting write operations.
 
+The system has recently introduced new migration patterns for financial calculation accuracy and bulk data processing. The contract payment calculation fix migration (20250919102842) implements a trigger-based approach to ensure accurate financial calculations by automatically updating contract totals when payments change. This pattern uses database triggers to maintain data consistency and prevent calculation drift.
+
+Additionally, the bulk invoice generation migration (20250925124613) introduces a pattern for handling large-scale data operations with progress tracking and error handling. This migration creates functions that process payments in batches, provide detailed statistics, and include safeguards against system overload through controlled processing rates.
+
 ```mermaid
 flowchart TD
 subgraph SchemaAddition
@@ -97,18 +113,36 @@ IO1["Analyze query patterns"] --> IO2["Identify slow queries"]
 IO2 --> IO3["Create targeted indexes"]
 IO3 --> IO4["Monitor performance impact"]
 end
+subgraph FinancialCalculationFix
+FC1["Create trigger function"] --> FC2["Calculate total paid"]
+FC2 --> FC3["Update contract balance"]
+FC3 --> FC4["Handle insert/update/delete"]
+end
+subgraph BulkDataProcessing
+BD1["Process in batches"] --> BD2["Track progress"]
+BD2 --> BD3["Handle errors gracefully"]
+BD3 --> BD4["Include processing delays"]
+end
 ```
 
 **Diagram sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
 
 **Section sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
 
 ## Significant Migration Examples
 Two significant migration examples demonstrate the capabilities of the FleetifyApp migration system. The `professional_payment_system.sql` migration introduced a comprehensive payment processing system with multiple new tables for payment allocations, journal entries, and audit logs. This migration included complex RLS policies, triggers for automatic timestamp updates, and default data insertion. The `final_contract_creation_fix.sql` migration addressed issues with contract creation by creating a unified function that handles all contract creation scenarios, including automatic journal entry creation and error handling. This migration also included cleanup of conflicting functions and creation of essential account lookup functions.
+
+Recent migrations have expanded the system's capabilities with new features. The `backfill_all_contract_invoices.sql` migration (20250925124613) implements a bulk invoice generation system that creates invoices for all payments without invoices across all contracts. This migration includes comprehensive error handling, progress tracking, and performance optimization through batch processing with controlled delays. The system processes payments in batches of 50 with 0.1-second delays to prevent system overload.
+
+Additionally, the `get_payments_without_invoices_stats.sql` migration (20251011155237) enhances the invoice scanning and OCR system by providing detailed statistics about payments without invoices. This migration uses CTEs (Common Table Expressions) for better performance and clarity, aggregating statistics by contract and providing comprehensive data for the invoice scanning dashboard.
 
 ```mermaid
 classDiagram
@@ -127,18 +161,39 @@ class ContractCreationFix {
 +get_or_create_essential_account()
 +create_contract_journal_entry()
 }
+class BulkInvoiceGeneration {
++backfill_all_contract_invoices()
++get_payments_without_invoices_stats()
++processing_time_seconds
++error_messages
+}
+class FinancialCalculationFix {
++update_contract_total_paid()
++total_paid
++balance_due
+}
 ProfessionalPaymentSystem --> "creates" ContractCreationFix
 ContractCreationFix --> "uses" journal_entries
 ContractCreationFix --> "logs to" audit_logs
+BulkInvoiceGeneration --> "processes" payments
+BulkInvoiceGeneration --> "creates" invoices
+FinancialCalculationFix --> "updates" contracts
+FinancialCalculationFix --> "listens to" payments
 ```
 
 **Diagram sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
 
 **Section sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql](file://supabase/migrations/20251011155237_6d753134-22cb-48ea-92de-d393cceb81f9.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
 
 ## Migration Tooling and Scripts
 The FleetifyApp migration system is supported by several tooling scripts that automate common migration tasks. The `apply-migration.js` script handles the application of customer account migrations, including creating necessary functions, updating company settings, and creating fix functions for existing data issues. This script uses the Supabase client to execute SQL commands and provides detailed logging of the migration process. The `test-database.mjs` script verifies database connectivity and tests the ability to read from and update the companies table, ensuring that the database is in a valid state before migration execution. These scripts follow a modular design, making them reusable for different migration scenarios.
@@ -177,10 +232,14 @@ Supabase-->>Script : Success
 ## Best Practices
 The FleetifyApp migration system follows several best practices for writing and deploying migrations. Migrations are kept small and focused, with each migration addressing a single logical change to the database. All migrations include comprehensive error handling and rollback procedures to ensure database integrity. Production deployments follow a staged approach, with migrations first applied to development and testing environments before being deployed to production. Migration files include detailed comments explaining the purpose of the changes and any potential impacts. The system also maintains a migration history that can be used for auditing and troubleshooting.
 
+For complex data migrations, the system implements additional best practices. The bulk invoice generation migration demonstrates how to handle large datasets with batch processing, progress tracking, and error logging. The migration includes controlled delays between batches to prevent system overload. Financial calculation migrations use triggers to maintain data consistency and prevent calculation drift, ensuring that contract totals are always accurate regardless of how payments are modified.
+
 **Section sources**
 - [20250117000000_professional_payment_system.sql](file://supabase/migrations/20250117000000_professional_payment_system.sql)
 - [20250829210000_final_contract_creation_fix.sql](file://supabase/migrations/20250829210000_final_contract_creation_fix.sql)
 - [apply-migration.js](file://apply-migration.js)
+- [20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql](file://supabase/migrations/20250925124613_55db1b61-0c10-412c-9f4d-52100be0a42e.sql)
+- [20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql](file://supabase/migrations/20250919102842_303f6e68-fd76-4957-acc6-993601198310.sql)
 
 ## Environment Consistency
 The migration system ensures database consistency across development, testing, and production environments through several mechanisms. All environments use the same migration files, ensuring that schema changes are applied identically across all environments. The system includes environment-specific configuration options that allow for differences in settings without affecting the core schema. Before applying migrations, the system verifies the current database state to prevent conflicts. The migration framework also includes tools for comparing database schemas across environments, helping to identify and resolve any discrepancies that may arise.

@@ -12,7 +12,21 @@
 - [card.tsx](file://src/components/ui/card.tsx)
 - [ui](file://src/components/ui)
 - [components](file://src/components)
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx) - *Added in recent commit*
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx) - *Added in recent commit*
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx) - *Added in recent commit*
+- [FinancialSystemAnalysis.tsx](file://src/pages/finance/settings/FinancialSystemAnalysis.tsx) - *Added in recent commit*
+- [DuplicateContractsDiagnostic.tsx](file://src/components/contracts/DuplicateContractsDiagnostic.tsx) - *Added in recent commit*
+- [DuplicateContractsManager.tsx](file://src/components/contracts/DuplicateContractsManager.tsx) - *Added in recent commit*
 </cite>
+
+## Update Summary
+- Added documentation for new invoice scanning and OCR components
+- Added documentation for Smart Financial System Analysis feature
+- Added documentation for duplicate contract diagnosis and management components
+- Updated component organization section to include new directories
+- Added new sections for invoice processing and financial analysis features
+- Added new section for contract duplication management
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -24,6 +38,9 @@
 7. [Component Composition and Reuse](#component-composition-and-reuse)
 8. [Configuration and Customization](#configuration-and-customization)
 9. [Common Issues and Solutions](#common-issues-and-solutions)
+10. [Invoice Processing and OCR System](#invoice-processing-and-ocr-system)
+11. [Smart Financial System Analysis](#smart-financial-system-analysis)
+12. [Contract Duplication Management](#contract-duplication-management)
 
 ## Introduction
 The FleetifyApp component architecture is designed to support a scalable, maintainable, and reusable UI system. The architecture organizes over 100 components into domain-specific directories, enabling teams to develop features in isolation while maintaining consistency across the application. This document explains the architectural principles, implementation details, and practical usage patterns that make the component system effective for both beginners and experienced developers.
@@ -31,7 +48,7 @@ The FleetifyApp component architecture is designed to support a scalable, mainta
 ## Component Organization and Domain Structure
 The component architecture follows a domain-driven organization pattern, with components grouped into functional directories based on business domains. This structure enhances maintainability by colocating related functionality and reducing cognitive load when navigating the codebase.
 
-The primary domain directories include: admin, analytics, approval, auth, common, contracts, customers, dashboard, finance, fleet, hr, landing, layouts, navigation, notifications, properties, reports, settings, shared, subscription, super-admin, tenants, ui, and vehicle-installments. Each directory contains components specific to its domain, with the `ui` directory serving as the foundation for reusable primitive components.
+The primary domain directories include: admin, analytics, approval, auth, common, contracts, customers, dashboard, finance, fleet, hr, landing, layouts, navigation, notifications, properties, reports, settings, shared, subscription, super-admin, tenants, ui, vehicle-installments, and invoices. Each directory contains components specific to its domain, with the `ui` directory serving as the foundation for reusable primitive components.
 
 This organization enables developers to quickly locate relevant components and understand their purpose within the application context. The domain-based structure also supports independent development and testing of features, reducing coupling between different parts of the application.
 
@@ -226,3 +243,133 @@ These solutions create a robust foundation for component development, reducing c
 - [ProtectedRoute.tsx](file://src/components/common/ProtectedRoute.tsx)
 - [PermissionGuard.tsx](file://src/components/common/PermissionGuard.tsx)
 - [FeatureGate.tsx](file://src/components/common/FeatureGate.tsx)
+
+## Invoice Processing and OCR System
+The invoice processing and OCR system provides a comprehensive solution for digitizing paper invoices and integrating them into the financial system. This system consists of several components that work together to capture, process, and validate invoice data.
+
+The core components include:
+- `InvoiceCameraCapture`: Allows users to capture invoice images using their device camera or select from the gallery
+- `InvoiceOCRResults`: Displays extracted data from OCR processing with confidence indicators
+- `InvoiceMatchingView`: Provides intelligent matching of invoices to customers and contracts
+- `InvoiceScannerDashboard`: Orchestrates the complete invoice scanning workflow
+
+The system uses a multi-step process:
+1. Image capture and upload
+2. OCR processing using Supabase edge functions
+3. Data extraction and confidence scoring
+4. Intelligent matching to existing customers and contracts
+5. Manual review and confirmation
+6. Storage and integration with financial records
+
+This system significantly reduces manual data entry and improves accuracy through automated data extraction and validation.
+
+```mermaid
+graph TD
+A[User] --> B[InvoiceCameraCapture]
+B --> C[Image Processing]
+C --> D[OCR Processing]
+D --> E[InvoiceOCRResults]
+E --> F[InvoiceMatchingView]
+F --> G[InvoiceScannerDashboard]
+G --> H[Financial System]
+```
+
+**Diagram sources**
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx)
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx)
+- [InvoiceMatchingView.tsx](file://src/components/invoices/InvoiceMatchingView.tsx)
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx)
+
+**Section sources**
+- [InvoiceCameraCapture.tsx](file://src/components/invoices/InvoiceCameraCapture.tsx)
+- [InvoiceOCRResults.tsx](file://src/components/invoices/InvoiceOCRResults.tsx)
+- [InvoiceMatchingView.tsx](file://src/components/invoices/InvoiceMatchingView.tsx)
+- [InvoiceScannerDashboard.tsx](file://src/components/invoices/InvoiceScannerDashboard.tsx)
+
+## Smart Financial System Analysis
+The Smart Financial System Analysis feature provides comprehensive analysis of the financial system's health and completeness. This feature is implemented through the `FinancialSystemAnalysis` component, which provides a detailed assessment of various aspects of the financial system.
+
+Key features include:
+- Overall financial health score
+- Chart of accounts completeness analysis
+- Account linkage verification
+- Cost centers configuration assessment
+- Operations and journal entries validation
+- AI-powered insights and recommendations
+
+The component uses a tabbed interface to organize different aspects of the analysis:
+- Overview: Summary of key metrics and urgent issues
+- Accounts: Detailed analysis of chart of accounts
+- Linkage: Assessment of entity-account linkages
+- Cost Centers: Evaluation of cost center configuration
+- Operations: Validation of financial operations
+- AI Insights: Intelligent analysis and recommendations
+
+The system also provides actionable recommendations and one-click fixes for common issues, making it easier for users to maintain a healthy financial system.
+
+```mermaid
+graph TD
+A[FinancialSystemAnalysis] --> B[Chart of Accounts]
+A --> C[Account Linkage]
+A --> D[Cost Centers]
+A --> E[Operations]
+A --> F[AI Analysis]
+B --> G[Completeness Score]
+C --> H[Linkage Score]
+D --> I[Configuration Score]
+E --> J[Operations Score]
+F --> K[Insights]
+F --> L[Recommendations]
+```
+
+**Diagram sources**
+- [FinancialSystemAnalysis.tsx](file://src/pages/finance/settings/FinancialSystemAnalysis.tsx)
+
+**Section sources**
+- [FinancialSystemAnalysis.tsx](file://src/pages/finance/settings/FinancialSystemAnalysis.tsx)
+
+## Contract Duplication Management
+The contract duplication management system helps identify and resolve duplicate contracts in the system. This is implemented through two main components: `DuplicateContractsManager` and `DuplicateContractsDiagnostic`.
+
+The `DuplicateContractsManager` provides a user interface for:
+- Identifying duplicate contract groups
+- Analyzing duplicate contracts based on contract number
+- Determining safe-to-delete contracts (those without payments)
+- Bulk deletion of duplicate contracts
+- Filtering by recommended action type
+
+The `DuplicateContractsDiagnostic` component provides detailed technical information about the duplicate contract detection process, including:
+- Database query results
+- Contract grouping analysis
+- Duplicate detection algorithms
+- Error diagnostics
+
+The system uses a sophisticated algorithm to determine which contracts are safe to delete:
+- Contracts without any payments are considered safe for deletion
+- Contracts with payments are protected from deletion
+- The system provides recommendations based on payment history
+- Users can manually review and select contracts for deletion
+
+This system helps maintain data integrity by preventing duplicate contracts from cluttering the database and causing financial discrepancies.
+
+```mermaid
+graph TD
+A[DuplicateContractsManager] --> B[Duplicate Detection]
+B --> C[Payment Analysis]
+C --> D[Safe to Delete?]
+D --> E[Yes: Mark for Deletion]
+D --> F[No: Preserve]
+A --> G[Bulk Deletion]
+G --> H[Progress Tracking]
+A --> I[DuplicateContractsDiagnostic]
+I --> J[Database Analysis]
+J --> K[Query Results]
+```
+
+**Diagram sources**
+- [DuplicateContractsManager.tsx](file://src/components/contracts/DuplicateContractsManager.tsx)
+- [DuplicateContractsDiagnostic.tsx](file://src/components/contracts/DuplicateContractsDiagnostic.tsx)
+
+**Section sources**
+- [DuplicateContractsManager.tsx](file://src/components/contracts/DuplicateContractsManager.tsx)
+- [DuplicateContractsDiagnostic.tsx](file://src/components/contracts/DuplicateContractsDiagnostic.tsx)

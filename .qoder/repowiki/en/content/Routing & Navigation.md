@@ -2,12 +2,19 @@
 
 <cite>
 **Referenced Files in This Document**   
-- [App.tsx](file://src/App.tsx)
-- [CarRentalSidebar.tsx](file://src/components/navigation/CarRentalSidebar.tsx)
-- [RealEstateSidebar.tsx](file://src/components/navigation/RealEstateSidebar.tsx)
-- [ProtectedRoute.tsx](file://src/components/common/ProtectedRoute.tsx)
-- [ResponsiveDashboardLayout.tsx](file://src/components/layouts/ResponsiveDashboardLayout.tsx)
+- [App.tsx](file://src\App.tsx)
+- [AppSidebar.tsx](file://src\components\layouts\AppSidebar.tsx)
+- [MobileSidebar.tsx](file://src\components\layouts\MobileSidebar.tsx)
+- [DuplicateContractsManager.tsx](file://src\components\contracts\DuplicateContractsManager.tsx)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added documentation for the new "Financial System Analysis" feature in the navigation system
+- Added documentation for the new "Duplicate Contracts" tool in the navigation system
+- Updated navigation components section to reflect new menu items
+- Updated routing system architecture to include new routes
+- Added new section for specialized navigation tools
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -18,12 +25,13 @@
 6. [Business-Specific Navigation](#business-specific-navigation)
 7. [Navigation State Management](#navigation-state-management)
 8. [Common Issues and Solutions](#common-issues-and-solutions)
+9. [Specialized Navigation Tools](#specialized-navigation-tools)
 
 ## Introduction
 The FleetifyApp routing and navigation system provides a seamless user experience across different modules and business types. Built on react-router-dom, the system enables intuitive navigation between application sections while maintaining proper authentication and authorization controls. This documentation explains the architecture, implementation details, and usage patterns of the routing system, covering both conceptual overviews for beginners and technical details for experienced developers.
 
 **Section sources**
-- [App.tsx](file://src/App.tsx#L1-L50)
+- [App.tsx](file://src\App.tsx#L1-L50)
 
 ## Routing System Architecture
 The routing system is configured in App.tsx using react-router-dom's BrowserRouter, Routes, and Route components. The application implements a hierarchical routing structure with multiple layout levels and route protection mechanisms. The system supports both desktop and mobile interfaces with responsive navigation patterns.
@@ -47,21 +55,24 @@ B --> I["Catch-all Route (*)"]
 G --> J["Dashboard Route (/dashboard)"]
 G --> K["Subscription Route (/subscription)"]
 G --> L["Finance Route (/finance/*)"]
+G --> M["Contracts Route (/contracts)"]
+G --> N["Duplicate Contracts Route (/contracts/duplicates)"]
+G --> O["Duplicate Contracts Diagnostic Route (/contracts/duplicates/diagnostic)"]
 style A fill:#f9f,stroke:#333
 style B fill:#bbf,stroke:#333
 ```
 
 **Diagram sources**
-- [App.tsx](file://src/App.tsx#L1-L420)
+- [App.tsx](file://src\App.tsx#L1-L420)
 
 **Section sources**
-- [App.tsx](file://src/App.tsx#L1-L420)
+- [App.tsx](file://src\App.tsx#L1-L420)
 
 ## Navigation Components
 The navigation system consists of several key components that work together to provide a consistent user experience across different device types and business modules.
 
 ### AppSidebar
-The AppSidebar component serves as the primary navigation interface on desktop and tablet devices. It provides access to all major application sections and maintains state for collapsed/expanded views.
+The AppSidebar component serves as the primary navigation interface on desktop and tablet devices. It provides access to all major application sections and maintains state for collapsed/expanded views. The sidebar has been updated to include new navigation items for financial system analysis and duplicate contracts management.
 
 ### MobileNavigation
 The MobileNavigation component provides bottom navigation for mobile devices, offering quick access to frequently used sections with icon-based navigation.
@@ -73,7 +84,8 @@ The ResponsiveHeader component adapts to different screen sizes, providing appro
 The DynamicSidebar component renders the appropriate sidebar based on the user's business type, loading either CarRentalSidebar or RealEstateSidebar dynamically.
 
 **Section sources**
-- [ResponsiveDashboardLayout.tsx](file://src/components/layouts/ResponsiveDashboardLayout.tsx#L1-L138)
+- [AppSidebar.tsx](file://src\components\layouts\AppSidebar.tsx#L1-L571)
+- [MobileSidebar.tsx](file://src\components\layouts\MobileSidebar.tsx#L1-L456)
 
 ## Route Protection and Authorization
 The routing system implements comprehensive protection mechanisms to ensure users can only access authorized content. The ProtectedRoute component and its variants provide different levels of access control.
@@ -228,7 +240,7 @@ Navigation state is persisted across sessions through:
 This ensures users return to their previous state when navigating back to the application.
 
 **Section sources**
-- [App.tsx](file://src/App.tsx#L1-L420)
+- [App.tsx](file://src\App.tsx#L1-L420)
 
 ## Common Issues and Solutions
 The routing system addresses several common navigation challenges through specific implementation patterns.
@@ -250,5 +262,48 @@ Issue: Users seeing navigation options they cannot access
 Solution: The AdminOnly component and PermissionGuard hide navigation items based on user permissions, preventing confusion and unnecessary clicks.
 
 **Section sources**
-- [App.tsx](file://src/App.tsx#L1-L420)
+- [App.tsx](file://src\App.tsx#L1-L420)
 - [ProtectedRoute.tsx](file://src/components/common/ProtectedRoute.tsx#L1-L95)
+
+## Specialized Navigation Tools
+The application includes specialized navigation tools for system maintenance and analysis, accessible through the main navigation system.
+
+### Financial System Analysis
+The Financial System Analysis tool has been added to the navigation system, providing administrators with insights into the financial system's performance and integrity. This tool is accessible through the finance settings submenu in the navigation sidebar.
+
+**Section sources**
+- [AppSidebar.tsx](file://src\components\layouts\AppSidebar.tsx#L153-L164)
+- [MobileSidebar.tsx](file://src\components\layouts\MobileSidebar.tsx#L135-L146)
+
+### Duplicate Contracts Management
+The Duplicate Contracts Management tool has been added to help administrators identify and resolve duplicate contract records in the system. This tool is accessible through a dedicated route and requires administrative privileges.
+
+The tool provides:
+- Analysis of duplicate contract groups
+- Safe deletion of identified duplicates
+- Diagnostic capabilities for troubleshooting
+- Progress tracking during deletion operations
+
+```mermaid
+flowchart TD
+A[Duplicate Contracts Manager] --> B[Analyze Contracts]
+B --> C[Identify Duplicates]
+C --> D[Group by Contract Number]
+D --> E[Assess Deletion Safety]
+E --> F[Display Analysis Results]
+F --> G{User Action}
+G --> H[Select Contracts for Deletion]
+H --> I[Verify Deletion Safety]
+I --> J[Execute Deletion]
+J --> K[Update Progress]
+K --> L[Refresh Analysis]
+G --> M[Review Diagnostic Information]
+M --> N[Export Diagnostic Report]
+```
+
+**Diagram sources**
+- [DuplicateContractsManager.tsx](file://src\components\contracts\DuplicateContractsManager.tsx#L1-L382)
+
+**Section sources**
+- [App.tsx](file://src\App.tsx#L86-L437)
+- [DuplicateContractsManager.tsx](file://src\components\contracts\DuplicateContractsManager.tsx#L1-L382)

@@ -7,24 +7,37 @@
 - [useVehicleCondition.ts](file://src/hooks/useVehicleCondition.ts)
 - [useEnhancedContractUpload.ts](file://src/hooks/useEnhancedContractUpload.ts)
 - [useIntelligentContractProcessor.ts](file://src/hooks/useIntelligentContractProcessor.ts)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts) - *Added in recent commit*
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts) - *Added in recent commit*
+- [useFinancialSystemAnalysis.ts](file://src/hooks/useFinancialSystemAnalysis.ts) - *Added in recent commit*
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section for Financial Analysis Hooks covering useFinancialSystemAnalysis
+- Added new section for Invoice Processing Hooks covering useInvoiceMatching and useBulkInvoiceGeneration
+- Updated Table of Contents to include new sections
+- Added new diagrams for the new hook implementations
+- Updated document sources to include newly added hook files
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Core Architecture](#core-architecture)
 3. [Domain-Specific Hooks](#domain-specific-hooks)
-4. [Composition Patterns](#composition-patterns)
-5. [Advanced Hook Implementations](#advanced-hook-implementations)
-6. [Design Patterns and Best Practices](#design-patterns-and-best-practices)
-7. [Error Handling and Cleanup](#error-handling-and-cleanup)
-8. [Creating New Hooks](#creating-new-hooks)
-9. [Conclusion](#conclusion)
+4. [Financial Analysis Hooks](#financial-analysis-hooks)
+5. [Invoice Processing Hooks](#invoice-processing-hooks)
+6. [Composition Patterns](#composition-patterns)
+7. [Advanced Hook Implementations](#advanced-hook-implementations)
+8. [Design Patterns and Best Practices](#design-patterns-and-best-practices)
+9. [Error Handling and Cleanup](#error-handling-and-cleanup)
+10. [Creating New Hooks](#creating-new-hooks)
+11. [Conclusion](#conclusion)
 
 ## Introduction
 
 The FleetifyApp custom hooks architecture represents a sophisticated implementation of React's compositional patterns, designed to manage complex business logic across 100+ hooks in the src/hooks/ directory. These hooks serve as the primary mechanism for encapsulating stateful behavior, side effects, and domain-specific logic while promoting reusability and separation of concerns throughout the application. The architecture demonstrates a mature approach to React development, leveraging React Query for data fetching and mutations, custom state management for complex workflows, and composition patterns that enable the creation of higher-order hooks from simpler primitives.
 
-The hooks ecosystem in FleetifyApp addresses critical business domains including contract management, customer accounts, vehicle condition reporting, file uploads, and AI-assisted processing. Each hook is designed with a clear contract, well-defined interfaces, and comprehensive error handling, making them reliable building blocks for the application's components. The architecture emphasizes type safety through TypeScript interfaces, proper dependency management, and consistent patterns for loading states, error handling, and success callbacks.
+The hooks ecosystem in FleetifyApp addresses critical business domains including contract management, customer accounts, vehicle condition reporting, file uploads, AI-assisted processing, financial system analysis, and invoice processing. Each hook is designed with a clear contract, well-defined interfaces, and comprehensive error handling, making them reliable building blocks for the application's components. The architecture emphasizes type safety through TypeScript interfaces, proper dependency management, and consistent patterns for loading states, error handling, and success callbacks.
 
 **Section sources**
 - [useContractCreation.ts](file://src/hooks/useContractCreation.ts#L1-L702)
@@ -57,11 +70,13 @@ F --> N[supabase client]
 G --> O[Contract Management]
 G --> P[Customer Accounts]
 G --> Q[Vehicle Condition]
-H --> R[useState]
-H --> S[useContext]
-I --> T[Interface Definitions]
-J --> U[Error Boundaries]
-K --> V[Progress State]
+G --> R[Financial Analysis]
+G --> S[Invoice Processing]
+H --> T[useState]
+H --> U[useContext]
+I --> V[Interface Definitions]
+J --> W[Error Boundaries]
+K --> X[Progress State]
 ```
 
 **Diagram sources**
@@ -199,6 +214,166 @@ end
 
 **Section sources**
 - [useVehicleCondition.ts](file://src/hooks/useVehicleCondition.ts#L1-L302)
+
+## Financial Analysis Hooks
+
+### Financial System Analysis Hook
+
+The useFinancialSystemAnalysis hook provides comprehensive financial system analysis, offering a sophisticated solution for evaluating the health and completeness of a company's financial setup. This hook implements a multi-dimensional analysis that evaluates chart of accounts completeness, entity linkage, cost center configuration, and operational activity.
+
+The hook performs a comprehensive assessment by querying multiple tables including chart_of_accounts, customers, vehicles, contracts, cost_centers, journal_entries, and customer_accounts. It calculates several key metrics:
+- Total accounts in the chart of accounts
+- Number of linked customers, vehicles, and contracts
+- Active cost centers
+- Recent journal entries
+- Unlinked entities across all domains
+
+Based on these metrics, the hook calculates four primary scores:
+- Chart of Accounts Score: Evaluates the completeness of the chart of accounts based on essential account types and hierarchy
+- Linkage Score: Measures the percentage of entities that are properly linked to financial accounts
+- Cost Centers Score: Assesses the configuration and utilization of cost centers
+- Operations Score: Evaluates recent financial activity and transaction completeness
+
+```mermaid
+graph TD
+A[Financial System Analysis] --> B[Data Collection]
+A --> C[Score Calculation]
+A --> D[Issue Detection]
+A --> E[Suggestion Generation]
+B --> F[Chart of Accounts]
+B --> G[Customer Linkage]
+B --> H[Vehicle Linkage]
+B --> I[Contract Linkage]
+B --> J[Cost Centers]
+B --> K[Journal Entries]
+C --> L[Chart of Accounts Score]
+C --> M[Linkage Score]
+C --> N[Cost Centers Score]
+C --> O[Operations Score]
+C --> P[Overall Score]
+D --> Q[Missing Accounts]
+D --> R[Unlinked Entities]
+D --> S[Cost Center Issues]
+E --> T[Account Suggestions]
+E --> U[Cost Center Expansion]
+E --> V[Automation Recommendations]
+P --> W[Financial Health Dashboard]
+style A fill:#f9f,stroke:#333,stroke-width:2px
+style B fill:#bbf,stroke:#333,stroke-width:1px
+style C fill:#bbf,stroke:#333,stroke-width:1px
+style D fill:#bbf,stroke:#333,stroke-width:1px
+style E fill:#bbf,stroke:#333,stroke-width:1px
+```
+
+**Diagram sources**
+- [useFinancialSystemAnalysis.ts](file://src/hooks/useFinancialSystemAnalysis.ts#L49-L154)
+
+**Section sources**
+- [useFinancialSystemAnalysis.ts](file://src/hooks/useFinancialSystemAnalysis.ts#L49-L154)
+
+## Invoice Processing Hooks
+
+### Invoice Matching Hook
+
+The useInvoiceMatching hook implements intelligent invoice matching, providing a sophisticated solution for connecting scanned invoice data with existing contracts and customers. This hook implements a multi-stage matching algorithm that uses various data points to find the most likely matches with confidence scoring.
+
+The hook follows a three-stage matching process:
+1. Contract Number Matching: First attempts to match by contract number with 90% confidence if found
+2. Customer Name Matching: If no contract match, tries to match by customer name with up to 70% confidence
+3. Amount and Date Range Matching: As a fallback, matches by amount (within 20% tolerance) and date range with up to 65% confidence
+
+For each match, the hook returns a confidence score and reasons for the match, along with alternative matches that can be presented to users for verification. The hook also handles error cases gracefully and provides meaningful feedback when matches cannot be found.
+
+```mermaid
+sequenceDiagram
+participant OCR as "OCR System"
+participant Hook as "useInvoiceMatching"
+participant Supabase as "Supabase"
+OCR->>Hook : extractedData
+Hook->>Hook : Initialize matching process
+Hook->>Supabase : Query contracts by contract_number
+alt Contract match found
+Supabase-->>Hook : Return contract data
+Hook->>Hook : Set confidence to 90%
+else No contract match
+Hook->>Supabase : Query customers by name
+alt Customer match found
+Supabase-->>Hook : Return customer data
+Hook->>Supabase : Find active contracts for customer
+Supabase-->>Hook : Return contract data
+Hook->>Hook : Set confidence to 75%
+else No customer match
+Hook->>Supabase : Query contracts by amount range
+alt Amount match found
+Supabase-->>Hook : Return contract data
+Hook->>Hook : Set confidence to 65%
+else No matches
+Hook->>Hook : Return no matches with 0% confidence
+end
+end
+end
+Hook-->>OCR : Return match results with confidence scores
+```
+
+**Diagram sources**
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts#L4-L162)
+
+**Section sources**
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts#L4-L162)
+
+### Bulk Invoice Generation Hook
+
+The useBulkInvoiceGeneration hook provides bulk invoice creation functionality, implementing a solution for generating invoices for payments that lack corresponding invoices. This hook is particularly useful for backfilling historical data or processing multiple payments at once.
+
+The hook provides two main functions:
+1. Statistics retrieval: Gets information about payments without invoices, including total count and amount
+2. Bulk generation: Creates invoices for all payments without invoices in a single operation
+
+The hook uses Supabase RPC functions to perform these operations efficiently at the database level. After successful generation, it invalidates relevant query caches to ensure UI components are updated. The hook also provides detailed feedback including the number of invoices created, processing time, and any errors encountered.
+
+```mermaid
+flowchart TD
+A[Start Bulk Invoice Generation] --> B{User authenticated?}
+B --> |Yes| C[Get company ID]
+B --> |No| D[Throw authentication error]
+C --> E[Call get_payments_without_invoices_stats RPC]
+E --> F{Payments found?}
+F --> |Yes| G[Display statistics]
+F --> |No| H[Show no payments message]
+G --> I[User confirms generation]
+I --> J[Call backfill_all_contract_invoices RPC]
+J --> K{Success?}
+K --> |Yes| L[Show success toast with stats]
+K --> |No| M[Show error toast]
+L --> N[Invalidate invoices, payments, contracts queries]
+M --> O[Log error details]
+N --> P[Update statistics display]
+O --> P
+P --> Q[End process]
+style A fill:#f9f,stroke:#333,stroke-width:2px
+style B fill:#bbf,stroke:#333,stroke-width:1px
+style C fill:#bbf,stroke:#333,stroke-width:1px
+style D fill:#f96,stroke:#333,stroke-width:1px
+style E fill:#bbf,stroke:#333,stroke-width:1px
+style F fill:#bbf,stroke:#333,stroke-width:1px
+style G fill:#bbf,stroke:#333,stroke-width:1px
+style H fill:#bbf,stroke:#333,stroke-width:1px
+style I fill:#bbf,stroke:#333,stroke-width:1px
+style J fill:#bbf,stroke:#333,stroke-width:1px
+style K fill:#bbf,stroke:#333,stroke-width:1px
+style L fill:#bbf,stroke:#333,stroke-width:1px
+style M fill:#f96,stroke:#333,stroke-width:1px
+style N fill:#bbf,stroke:#333,stroke-width:1px
+style O fill:#f96,stroke:#333,stroke-width:1px
+style P fill:#bbf,stroke:#333,stroke-width:1px
+style Q fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+**Diagram sources**
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts#L29-L115)
+
+**Section sources**
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts#L29-L115)
 
 ## Composition Patterns
 
@@ -470,7 +645,7 @@ style J fill:#f9f,stroke:#333,stroke-width:2px
 
 The custom hooks architecture in FleetifyApp represents a sophisticated and well-designed implementation of React's compositional patterns. By encapsulating complex business logic, stateful behavior, and side effects within reusable hooks, the architecture promotes separation of concerns and enhances code maintainability. The hooks demonstrate a mature approach to React development, leveraging React Query for data fetching and mutations, custom state management for complex workflows, and composition patterns that enable the creation of higher-order hooks from simpler primitives.
 
-The architecture addresses critical business domains including contract management, customer accounts, vehicle condition reporting, file uploads, and AI-assisted processing, providing a comprehensive solution for the application's needs. Each hook is designed with a clear contract, well-defined interfaces, and comprehensive error handling, making them reliable building blocks for the application's components. The consistent use of TypeScript interfaces, React Query, and the toast notification system ensures a high level of type safety, data consistency, and user feedback throughout the application.
+The architecture addresses critical business domains including contract management, customer accounts, vehicle condition reporting, file uploads, AI-assisted processing, financial system analysis, and invoice processing, providing a comprehensive solution for the application's needs. Each hook is designed with a clear contract, well-defined interfaces, and comprehensive error handling, making them reliable building blocks for the application's components. The consistent use of TypeScript interfaces, React Query, and the toast notification system ensures a high level of type safety, data consistency, and user feedback throughout the application.
 
 By following the established conventions for naming, typing, and error handling, developers can create new hooks that integrate seamlessly with the existing architecture. The composition patterns demonstrated in the codebase provide a blueprint for building complex functionality from simple, reusable parts, making the codebase more maintainable and easier to understand. Overall, the custom hooks architecture in FleetifyApp serves as a model for building scalable and maintainable React applications.
 
@@ -480,3 +655,6 @@ By following the established conventions for naming, typing, and error handling,
 - [useVehicleCondition.ts](file://src/hooks/useVehicleCondition.ts#L1-L302)
 - [useEnhancedContractUpload.ts](file://src/hooks/useEnhancedContractUpload.ts#L18-L352)
 - [useIntelligentContractProcessor.ts](file://src/hooks/useIntelligentContractProcessor.ts#L59-L270)
+- [useBulkInvoiceGeneration.ts](file://src/hooks/useBulkInvoiceGeneration.ts#L29-L115)
+- [useInvoiceMatching.ts](file://src/hooks/useInvoiceMatching.ts#L4-L162)
+- [useFinancialSystemAnalysis.ts](file://src/hooks/useFinancialSystemAnalysis.ts#L49-L154)
