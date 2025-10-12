@@ -82,13 +82,14 @@ export const useOptimizedRecentActivities = () => {
         return belongsToCompany;
       }) || [];
 
-      // إضافة تحقق إضافي للتأكد من عدم وجود أي تسرب للبيانات
+      // Log filtering statistics (filtering unimportant technical activities)
       if (filteredActivities.length !== activities?.length) {
-        console.error('🚨 [ACTIVITIES] Data leak detected - some activities filtered out:', {
+        console.log('✅ [ACTIVITIES] Filtered technical activities:', {
           totalActivities: activities?.length || 0,
-          filteredActivities: filteredActivities.length,
+          displayedActivities: filteredActivities.length,
           companyId,
-          leakedCount: (activities?.length || 0) - filteredActivities.length
+          filteredOutCount: (activities?.length || 0) - filteredActivities.length,
+          reason: 'Technical queries and unimportant logs removed'
         });
       }
 
