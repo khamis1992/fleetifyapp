@@ -53,6 +53,9 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2020',
     minify: 'terser',
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {
