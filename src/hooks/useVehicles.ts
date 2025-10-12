@@ -291,20 +291,31 @@ export interface VehicleActivityLog {
   updated_at: string
 }
 
-export const useVehicles = () => {
+export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const companyId = useCurrentCompanyId()
+  const { limit, status } = options || {}
   
   return useQuery({
-    queryKey: ["vehicles", companyId],
+    queryKey: ["vehicles", companyId, limit, status],
     queryFn: async () => {
       if (!companyId) return []
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("vehicles")
         .select("*")
         .eq("company_id", companyId)
         .eq("is_active", true)
         .order("plate_number")
+      
+      if (status) {
+        query = query.eq("status", status)
+      }
+      
+      if (limit) {
+        query = query.limit(limit)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error("Error fetching vehicles:", error)
@@ -313,7 +324,8 @@ export const useVehicles = () => {
 
       return data as Vehicle[]
     },
-    enabled: !!companyId
+    enabled: !!companyId,
+    staleTime: 3 * 60 * 1000, // 3 minutes cache
   })
 }
 
@@ -628,26 +640,46 @@ export const useCreateVehicleInsurance = () => {
   })
 }
 
-// Vehicle Maintenance Hooks
-export const useVehicleMaintenance = (vehicleId?: string) => {
+// Vehicle Maintenance Hooks - Performance Optimized
+export const useVehicleMaintenance = (vehicleId?: string, options?: {
+  limit?: number;
+  status?: string;
+  priority?: boolean;
+}) => {
   const { user } = useAuth()
+  const { limit = 50, status, priority = false } = options || {}
   
   return useQuery({
-    queryKey: ["vehicle-maintenance", vehicleId, user?.profile?.company_id],
+    queryKey: ["vehicle-maintenance", vehicleId, user?.profile?.company_id, status, limit],
     queryFn: async () => {
       if (!user?.profile?.company_id) return []
       
       let query = supabase
         .from("vehicle_maintenance")
         .select(`
-          *,
+          id,
+          maintenance_number,
+          maintenance_type,
+          priority,
+          status,
+          scheduled_date,
+          actual_cost,
+          estimated_cost,
+          description,
+          created_at,
+          vehicle_id,
           vehicles!inner(plate_number, make, model)
         `)
         .eq("company_id", user.profile.company_id)
         .order("created_at", { ascending: false })
+        .limit(limit)
 
       if (vehicleId) {
         query = query.eq("vehicle_id", vehicleId)
+      }
+      
+      if (status) {
+        query = query.eq("status", status)
       }
 
       const { data, error } = await query
@@ -655,7 +687,9 @@ export const useVehicleMaintenance = (vehicleId?: string) => {
       if (error) throw error
       return data as any[]
     },
-    enabled: !!user?.profile?.company_id
+    enabled: !!user?.profile?.company_id,
+    staleTime: priority ? 0 : 2 * 60 * 1000, // 2 minutes for non-priority
+    gcTime: 5 * 60 * 1000, // 5 minutes cache
   })
 }
 

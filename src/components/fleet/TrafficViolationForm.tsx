@@ -37,36 +37,42 @@ interface TrafficViolationFormProps {
 
 export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
   const createViolationMutation = useCreateTrafficViolation();
-  const { data: vehicles = [] } = useVehicles();
+  
+  // Lazy load vehicles only when form opens
+  const { data: vehicles = [] } = useVehicles({ limit: 50 });
 
-  // جلب قائمة العملاء
+  // جلب قائمة العملاء - محدودة للأداء
   const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
+    queryKey: ['customers-limited'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, phone')
         .eq('is_active', true)
-        .order('first_name');
+        .order('first_name')
+        .limit(100); // Limit to 100 customers for performance
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // جلب قائمة العقود النشطة (مبسطة بدون join)
+  // جلب قائمة العقود النشطة - مبسطة ومحدودة
   const { data: contracts = [] } = useQuery({
-    queryKey: ['active-contracts'],
+    queryKey: ['active-contracts-limited'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contracts')
-        .select('id, contract_number, start_date, end_date, customer_id, vehicle_id')
+        .select('id, contract_number, customer_id, vehicle_id')
         .eq('status', 'active')
-        .order('contract_number');
+        .order('contract_number')
+        .limit(50); // Limit to 50 contracts for performance
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   const form = useForm<ViolationFormData>({

@@ -53,10 +53,12 @@ export interface UpdateTrafficViolationData extends Partial<CreateTrafficViolati
   id: string;
 }
 
-// Hook لجلب جميع المخالفات المرورية
-export function useTrafficViolations() {
+// Hook لجلب جميع المخالفات المرورية مع التحسين
+export function useTrafficViolations(options?: { limit?: number; offset?: number }) {
+  const { limit = 100, offset = 0 } = options || {};
+  
   return useQuery({
-    queryKey: ['traffic-violations'],
+    queryKey: ['traffic-violations', limit, offset],
     queryFn: async () => {
       // الحصول على company_id من المستخدم الحالي
       const { data: user } = await supabase.auth.getUser();
@@ -73,7 +75,17 @@ export function useTrafficViolations() {
       const { data, error } = await supabase
         .from('penalties')
         .select(`
-          *,
+          id,
+          penalty_number,
+          violation_type,
+          penalty_date,
+          amount,
+          location,
+          vehicle_plate,
+          reason,
+          status,
+          payment_status,
+          created_at,
           customers (
             first_name,
             last_name,
@@ -82,7 +94,9 @@ export function useTrafficViolations() {
           )
         `)
         .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit)
+        .range(offset, offset + limit - 1);
 
       if (error) {
         console.error('Error fetching traffic violations:', error);
@@ -90,7 +104,9 @@ export function useTrafficViolations() {
       }
 
       return data as any[];
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    gcTime: 5 * 60 * 1000, // 5 minutes in memory
   });
 }
 

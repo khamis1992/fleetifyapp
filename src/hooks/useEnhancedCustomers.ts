@@ -200,7 +200,15 @@ export const useCustomers = (filters?: CustomerFilters) => {
     enabled: isSystemLevel || !!companyId,
     staleTime: 30 * 1000, // 30 seconds for faster updates
     gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    // Add better error handling and defaults
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Provide fallback data in case of errors
+    placeholderData: {
+      data: [],
+      total: 0
+    }
   });
 };
 

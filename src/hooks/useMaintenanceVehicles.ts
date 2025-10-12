@@ -14,12 +14,13 @@ export interface MaintenanceVehicle {
   maintenance_records?: any[];
 }
 
-// Hook to get vehicles that are currently in maintenance status
-export const useMaintenanceVehicles = () => {
+// Hook to get vehicles that are currently in maintenance status - Performance Optimized
+export const useMaintenanceVehicles = (options?: { limit?: number }) => {
   const companyId = useCurrentCompanyId();
+  const { limit = 20 } = options || {};
 
   return useQuery({
-    queryKey: ['maintenance-vehicles', companyId],
+    queryKey: ['maintenance-vehicles', companyId, limit],
     queryFn: async (): Promise<MaintenanceVehicle[]> => {
       if (!companyId) return [];
 
@@ -38,7 +39,8 @@ export const useMaintenanceVehicles = () => {
         .eq('company_id', companyId)
         .eq('status', 'maintenance')
         .eq('is_active', true)
-        .order('plate_number');
+        .order('plate_number')
+        .limit(limit);
 
       if (error) {
         console.error('Error fetching maintenance vehicles:', error);
@@ -48,7 +50,8 @@ export const useMaintenanceVehicles = () => {
       return data || [];
     },
     enabled: !!companyId,
-    staleTime: 30 * 1000, // 30 seconds - shorter stale time for real-time updates
+    staleTime: 60 * 1000, // 1 minute - faster updates for critical data
+    gcTime: 2 * 60 * 1000, // 2 minutes cache
   });
 };
 

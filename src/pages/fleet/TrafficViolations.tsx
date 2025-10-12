@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,13 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrafficViolationForm } from '@/components/fleet/TrafficViolationForm';
-import { TrafficViolationPaymentsDialog } from '@/components/fleet/TrafficViolationPaymentsDialog';
-import { TrafficViolationPDFImport } from '@/components/fleet/TrafficViolationPDFImport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useTrafficViolations, TrafficViolation } from '@/hooks/useTrafficViolations';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+
+// Lazy load heavy components for better performance
+const TrafficViolationForm = lazy(() => 
+  import('@/components/fleet/TrafficViolationForm').then(m => ({ default: m.TrafficViolationForm }))
+);
+const TrafficViolationPaymentsDialog = lazy(() => 
+  import('@/components/fleet/TrafficViolationPaymentsDialog').then(m => ({ default: m.TrafficViolationPaymentsDialog }))
+);
+const TrafficViolationPDFImport = lazy(() => 
+  import('@/components/fleet/TrafficViolationPDFImport').then(m => ({ default: m.TrafficViolationPDFImport }))
+);
 
 export default function TrafficViolations() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -25,8 +34,8 @@ export default function TrafficViolations() {
 
   const { data: violations = [], isLoading } = useTrafficViolations();
 
-  // إحصائيات المخالفات
-  const stats = {
+  // Memoized statistics for better performance
+  const stats = useMemo(() => ({
     total: violations.length,
     pending: violations.filter(v => v.status === 'pending').length,
     confirmed: violations.filter(v => v.status === 'confirmed').length,
@@ -34,19 +43,21 @@ export default function TrafficViolations() {
     totalAmount: violations.reduce((sum, v) => sum + (v.amount || 0), 0),
     paidAmount: violations.filter(v => v.payment_status === 'paid').reduce((sum, v) => sum + (v.amount || 0), 0),
     unpaidAmount: violations.filter(v => v.payment_status === 'unpaid').reduce((sum, v) => sum + (v.amount || 0), 0)
-  };
+  }), [violations]);
 
-  // تصفية البيانات
-  const filteredViolations = violations.filter(violation => {
-    const matchesSearch = searchTerm === '' || 
-      violation.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      violation.reason?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || violation.status === statusFilter;
-    const matchesPaymentStatus = paymentStatusFilter === 'all' || violation.payment_status === paymentStatusFilter;
-    
-    return matchesSearch && matchesStatus && matchesPaymentStatus;
-  });
+  // Memoized filtered data to prevent recalculation on every render
+  const filteredViolations = useMemo(() => {
+    return violations.filter(violation => {
+      const matchesSearch = searchTerm === '' || 
+        violation.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        violation.reason?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || violation.status === statusFilter;
+      const matchesPaymentStatus = paymentStatusFilter === 'all' || violation.payment_status === paymentStatusFilter;
+      
+      return matchesSearch && matchesStatus && matchesPaymentStatus;
+    });
+  }, [violations, searchTerm, statusFilter, paymentStatusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -77,7 +88,9 @@ export default function TrafficViolations() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6">
-        <div className="text-center">جاري تحميل البيانات...</div>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
   }
@@ -101,17 +114,21 @@ export default function TrafficViolations() {
             <DialogHeader>
               <DialogTitle>إضافة مخالفة مرورية جديدة</DialogTitle>
             </DialogHeader>
-            <TrafficViolationForm onSuccess={() => setIsFormOpen(false)} />
+            <Suspense fallback={<LoadingSpinner size="sm" />}>
+              <TrafficViolationForm onSuccess={() => setIsFormOpen(false)} />
+            </Suspense>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* حوار المدفوعات */}
-      <TrafficViolationPaymentsDialog
-        violation={selectedViolation}
-        open={isPaymentsDialogOpen}
-        onOpenChange={setIsPaymentsDialogOpen}
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <TrafficViolationPaymentsDialog
+          violation={selectedViolation}
+          open={isPaymentsDialogOpen}
+          onOpenChange={setIsPaymentsDialogOpen}
+        />
+      </Suspense>
 
       {/* التابات الرئيسية */}
       <Tabs defaultValue="list" className="space-y-6">
@@ -249,7 +266,14 @@ export default function TrafficViolations() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredViolations.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <LoadingSpinner size="sm" />
+                      <p className="mt-2 text-muted-foreground">جاري تحميل المخالفات...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredViolations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       لا توجد مخالفات مطابقة للبحث
@@ -301,7 +325,9 @@ export default function TrafficViolations() {
         </TabsContent>
 
         <TabsContent value="import">
-          <TrafficViolationPDFImport />
+          <Suspense fallback={<LoadingSpinner size="lg" />}>
+            <TrafficViolationPDFImport />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

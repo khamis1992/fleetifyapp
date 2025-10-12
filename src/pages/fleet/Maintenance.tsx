@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, lazy, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,14 +7,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus, Car, Settings } from "lucide-react"
-import { SmartAlertsPanel } from "@/components/dashboard/SmartAlertsPanel"
-import { useSmartAlerts } from "@/hooks/useSmartAlerts"
-import { MaintenanceForm } from "@/components/fleet/MaintenanceForm"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles"
+import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { useVehicleStatusUpdate, useCompleteMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
+
+// Lazy load heavy components for better performance
+const SmartAlertsPanel = lazy(() => 
+  import("@/components/dashboard/SmartAlertsPanel").then(m => ({ default: m.SmartAlertsPanel }))
+);
+const MaintenanceForm = lazy(() => 
+  import("@/components/fleet/MaintenanceForm").then(m => ({ default: m.MaintenanceForm }))
+);
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -61,21 +67,71 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
-  const [activeTab, setActiveTab] = useState("pending")
+  const [activeTab, setActiveTab] = useState("vehicles")
   
-  const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance()
-  const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles()
-  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts()
+  // Performance-optimized hooks with limits and priorities
+  const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance(undefined, {
+    limit: 100, // Limit initial load
+    priority: activeTab === 'pending' // High priority for pending tab
+  })
+  const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles({
+    limit: 20 // Limit to 20 vehicles
+  })
+  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts({
+    priority: true, // Load critical alerts only
+    limit: 5 // Limit to 5 most important alerts
+  })
   const { formatCurrency } = useCurrencyFormatter()
   const completeMaintenanceStatus = useCompleteMaintenanceStatus()
   const vehicleStatusUpdate = useVehicleStatusUpdate()
 
-  const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
-  const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
-  const completedMaintenance = maintenanceRecords?.filter(m => m.status === 'completed') || []
-  const cancelledMaintenance = maintenanceRecords?.filter(m => m.status === 'cancelled') || []
+  // Memoized filtered data for better performance
+  const maintenanceCounts = useMemo(() => {
+    if (!maintenanceRecords) return { pending: 0, inProgress: 0, completed: 0, cancelled: 0 }
+    
+    return maintenanceRecords.reduce((acc, record) => {
+      acc[record.status === 'in_progress' ? 'inProgress' : record.status] = 
+        (acc[record.status === 'in_progress' ? 'inProgress' : record.status] || 0) + 1
+      return acc
+    }, { pending: 0, inProgress: 0, completed: 0, cancelled: 0 })
+  }, [maintenanceRecords])
 
-  const isLoading = maintenanceLoading || alertsLoading || maintenanceVehiclesLoading
+  const filteredRecords = useMemo(() => {
+    if (!maintenanceRecords) return []
+    
+    switch (activeTab) {
+      case 'pending':
+        return maintenanceRecords.filter(m => m.status === 'pending')
+      case 'in_progress':
+        return maintenanceRecords.filter(m => m.status === 'in_progress')
+      case 'completed':
+        return maintenanceRecords.filter(m => m.status === 'completed')
+      case 'all':
+        return maintenanceRecords
+      default:
+        return []
+    }
+  }, [maintenanceRecords, activeTab])
+
+  const totalMaintenanceCost = useMemo(() => {
+    if (!maintenanceRecords) return 0
+    return maintenanceRecords
+      .filter(m => m.status === 'completed')
+      .reduce((sum, m) => sum + (m.actual_cost || 0), 0)
+  }, [maintenanceRecords])
+
+  // Define filtered arrays from memoized data
+  const pendingMaintenance = useMemo(() => 
+    filteredRecords.filter(m => m.status === 'pending'), [filteredRecords]
+  )
+  const inProgressMaintenance = useMemo(() => 
+    filteredRecords.filter(m => m.status === 'in_progress'), [filteredRecords]
+  )
+  const completedMaintenance = useMemo(() => 
+    filteredRecords.filter(m => m.status === 'completed'), [filteredRecords]
+  )
+
+  const isLoading = maintenanceLoading || maintenanceVehiclesLoading
 
   // Handler to complete maintenance and return vehicle to fleet
   const handleCompleteMaintenance = async (maintenanceId: string, vehicleId: string) => {
@@ -216,10 +272,12 @@ export default function Maintenance() {
 
       {/* Smart Alerts Panel */}
       {smartAlerts && smartAlerts.length > 0 && (
-        <SmartAlertsPanel 
-          alerts={smartAlerts} 
-          loading={alertsLoading}
-        />
+        <Suspense fallback={<LoadingSpinner size="sm" />}>
+          <SmartAlertsPanel 
+            alerts={smartAlerts} 
+            loading={alertsLoading}
+          />
+        </Suspense>
       )}
 
       {/* Overview Cards */}
@@ -242,7 +300,7 @@ export default function Maintenance() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingMaintenance.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{maintenanceCounts.pending}</div>
           </CardContent>
         </Card>
         
@@ -252,7 +310,7 @@ export default function Maintenance() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{inProgressMaintenance.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{maintenanceCounts.inProgress}</div>
           </CardContent>
         </Card>
         
@@ -262,7 +320,7 @@ export default function Maintenance() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedMaintenance.length}</div>
+            <div className="text-2xl font-bold text-green-600">{maintenanceCounts.completed}</div>
           </CardContent>
         </Card>
         
@@ -273,9 +331,7 @@ export default function Maintenance() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(
-                completedMaintenance.reduce((sum, m) => sum + (m.actual_cost || 0), 0)
-              )}
+              {formatCurrency(totalMaintenanceCost)}
             </div>
           </CardContent>
         </Card>
@@ -288,13 +344,13 @@ export default function Maintenance() {
             مركبات قيد الصيانة ({maintenanceVehicles?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="pending">
-            معلقة ({pendingMaintenance.length})
+            معلقة ({maintenanceCounts.pending})
           </TabsTrigger>
           <TabsTrigger value="in_progress">
-            قيد التنفيذ ({inProgressMaintenance.length})
+            قيد التنفيذ ({maintenanceCounts.inProgress})
           </TabsTrigger>
           <TabsTrigger value="completed">
-            مكتملة ({completedMaintenance.length})
+            مكتملة ({maintenanceCounts.completed})
           </TabsTrigger>
           <TabsTrigger value="all">
             الكل ({allRecords?.length || 0})
@@ -476,10 +532,12 @@ export default function Maintenance() {
         </TabsContent>
       </Tabs>
 
-      <MaintenanceForm 
-        open={showMaintenanceForm}
-        onOpenChange={setShowMaintenanceForm}
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <MaintenanceForm 
+          open={showMaintenanceForm}
+          onOpenChange={setShowMaintenanceForm}
+        />
+      </Suspense>
     </div>
   )
 }

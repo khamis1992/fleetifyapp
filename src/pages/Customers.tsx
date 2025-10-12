@@ -70,7 +70,31 @@ const Customers = () => {
     includeInactive,
   };
 
-  const { data: customers = [], isLoading, error, refetch } = useCustomers(filters);
+  const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
+  
+  // Extract customers array and handle potential null/undefined with comprehensive fallbacks
+  const customers = React.useMemo(() => {
+    // Handle different possible return structures
+    if (Array.isArray(customersResult)) {
+      return customersResult;
+    }
+    if (customersResult && typeof customersResult === 'object' && Array.isArray(customersResult.data)) {
+      return customersResult.data;
+    }
+    // Always return an empty array as fallback
+    return [];
+  }, [customersResult]);
+  
+  // Debug log to understand the data structure (remove in production)
+  React.useEffect(() => {
+    console.log('🔍 [Customers] Data structure check:', {
+      customersResult,
+      customers,
+      isArray: Array.isArray(customers),
+      length: customers.length,
+      type: typeof customersResult
+    });
+  }, [customersResult, customers]);
 
   // Event handlers
   const handleCreateCustomer = () => {
@@ -105,11 +129,12 @@ const Customers = () => {
     toast.info('سيتم تنفيذ ميزة القائمة السوداء قريباً');
   };
 
-  // Calculate stats
-  const totalCustomers = customers.length;
-  const individualCustomers = customers.filter(c => c.customer_type === 'individual').length;
-  const corporateCustomers = customers.filter(c => c.customer_type === 'corporate').length;
-  const blacklistedCustomers = customers.filter(c => c.is_blacklisted).length;
+  // Calculate stats with comprehensive safety checks
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const totalCustomers = safeCustomers.length;
+  const individualCustomers = safeCustomers.filter(c => c && c.customer_type === 'individual').length;
+  const corporateCustomers = safeCustomers.filter(c => c && c.customer_type === 'corporate').length;
+  const blacklistedCustomers = safeCustomers.filter(c => c && c.is_blacklisted).length;
 
   // Mobile view
   if (isMobile) {
@@ -202,12 +227,12 @@ const Customers = () => {
             <div className="text-center py-8">
               <p>جارٍ تحميل العملاء...</p>
             </div>
-          ) : customers.length === 0 ? (
+          ) : safeCustomers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">لا يوجد عملاء</p>
             </div>
           ) : (
-            customers.map((customer) => (
+            safeCustomers.map((customer) => (
               <MobileCustomerCard
                 key={customer.id}
                 customer={customer}
@@ -416,7 +441,7 @@ const Customers = () => {
                 إعادة المحاولة
               </Button>
             </div>
-          ) : customers.length === 0 ? (
+          ) : safeCustomers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">لا يوجد عملاء مطابقون للمعايير المحددة</p>
               <Button variant="outline" onClick={handleCreateCustomer} className="mt-4">
@@ -438,7 +463,7 @@ const Customers = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {safeCustomers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
