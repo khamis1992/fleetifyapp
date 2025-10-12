@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useInvoices, useFixedAssets } from "@/hooks/useFinance"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3 } from "lucide-react"
+import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
 import { InvoiceIntegrationPanel } from "@/components/finance/InvoiceIntegrationPanel"
@@ -20,6 +21,7 @@ import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActi
 import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
 
 const Invoices = () => {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
@@ -98,13 +100,23 @@ const Invoices = () => {
             <p className="text-muted-foreground">إدارة فواتير المبيعات والمشتريات</p>
           </div>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          إنشاء فاتورة جديدة
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => navigate('/finance/invoices/scan')}
+            variant="outline"
+            className="gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            مسح فاتورة قديمة
+          </Button>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            إنشاء فاتورة جديدة
+          </Button>
+        </div>
       </div>
 
       <InvoiceForm 

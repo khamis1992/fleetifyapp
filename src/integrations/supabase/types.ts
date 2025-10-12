@@ -4280,6 +4280,96 @@ export type Database = {
           },
         ]
       }
+      invoice_ocr_logs: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          error_message: string | null
+          extracted_data: Json | null
+          id: string
+          image_url: string
+          invoice_id: string | null
+          match_confidence: number | null
+          match_reasons: string[] | null
+          matched_contract_id: string | null
+          matched_customer_id: string | null
+          ocr_confidence: number | null
+          processed_by: string | null
+          processing_status: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          error_message?: string | null
+          extracted_data?: Json | null
+          id?: string
+          image_url: string
+          invoice_id?: string | null
+          match_confidence?: number | null
+          match_reasons?: string[] | null
+          matched_contract_id?: string | null
+          matched_customer_id?: string | null
+          ocr_confidence?: number | null
+          processed_by?: string | null
+          processing_status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          extracted_data?: Json | null
+          id?: string
+          image_url?: string
+          invoice_id?: string | null
+          match_confidence?: number | null
+          match_reasons?: string[] | null
+          matched_contract_id?: string | null
+          matched_customer_id?: string | null
+          ocr_confidence?: number | null
+          processed_by?: string | null
+          processing_status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_ocr_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_ocr_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_ocr_logs_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "invoice_ocr_logs_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_ocr_logs_matched_customer_id_fkey"
+            columns: ["matched_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           balance_due: number | null
@@ -4297,10 +4387,15 @@ export type Database = {
           invoice_date: string
           invoice_number: string
           invoice_type: string
+          is_legacy: boolean | null
           journal_entry_id: string | null
+          manual_review_required: boolean | null
           notes: string | null
+          ocr_confidence: number | null
+          ocr_data: Json | null
           paid_amount: number | null
           payment_status: string
+          scanned_image_url: string | null
           status: string
           subtotal: number
           tax_amount: number | null
@@ -4325,10 +4420,15 @@ export type Database = {
           invoice_date: string
           invoice_number: string
           invoice_type: string
+          is_legacy?: boolean | null
           journal_entry_id?: string | null
+          manual_review_required?: boolean | null
           notes?: string | null
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
           paid_amount?: number | null
           payment_status?: string
+          scanned_image_url?: string | null
           status?: string
           subtotal?: number
           tax_amount?: number | null
@@ -4353,10 +4453,15 @@ export type Database = {
           invoice_date?: string
           invoice_number?: string
           invoice_type?: string
+          is_legacy?: boolean | null
           journal_entry_id?: string | null
+          manual_review_required?: boolean | null
           notes?: string | null
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
           paid_amount?: number | null
           payment_status?: string
+          scanned_image_url?: string | null
           status?: string
           subtotal?: number
           tax_amount?: number | null

@@ -30,6 +30,7 @@ import Treasury from "./finance/Treasury"
 import CostCenters from "./finance/CostCenters"
 import Invoices from "./finance/Invoices"
 import Payments from "./finance/Payments"
+import { InvoiceScannerDashboard } from "@/components/invoices/InvoiceScannerDashboard"
 
 import Reports from "./finance/Reports"
 import FixedAssets from "./finance/FixedAssets"
@@ -347,6 +348,14 @@ const Finance = () => {
         element={
           <ProtectedFinanceRoute permission="finance.invoices.view">
             <Invoices />
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="invoices/scan" 
+        element={
+          <ProtectedFinanceRoute permission="finance.invoices.create">
+            <InvoiceScannerDashboard />
           </ProtectedFinanceRoute>
         } 
       />
