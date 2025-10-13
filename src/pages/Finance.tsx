@@ -29,6 +29,7 @@ const UnifiedFinancialDashboard = lazy(() => import("@/components/finance/Unifie
 
 // Lazy load all finance sub-modules for better performance
 const ChartOfAccounts = lazy(() => import("./finance/ChartOfAccounts"));
+const GeneralLedger = lazy(() => import("./finance/GeneralLedger"));
 const Ledger = lazy(() => import("./finance/Ledger"));
 const Treasury = lazy(() => import("./finance/Treasury"));
 const CostCenters = lazy(() => import("./finance/CostCenters"));
@@ -325,11 +326,21 @@ const Finance = () => {
         } 
       />
       <Route 
+        path="general-ledger" 
+        element={
+          <ProtectedFinanceRoute permission="finance.ledger.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <GeneralLedger />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
         path="ledger" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">
             <Suspense fallback={<PageSkeletonFallback />}>
-              <Ledger />
+              <GeneralLedger />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
