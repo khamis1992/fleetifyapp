@@ -39,8 +39,9 @@ serve(async (req) => {
   }
 
   try {
-    // Verify webhook secret for security
+    // Verify webhook secret for security (allow both webhook secret and Supabase auth)
     const webhookSecret = req.headers.get('x-webhook-secret');
+    const authHeader = req.headers.get('authorization');
     const expectedSecret = Deno.env.get('ZAPIER_WEBHOOK_SECRET');
     
     if (!expectedSecret) {
@@ -51,16 +52,38 @@ serve(async (req) => {
       );
     }
 
-    if (webhookSecret !== expectedSecret) {
-      console.warn('⚠️ Invalid webhook secret provided');
+    // Accept either valid webhook secret OR valid Supabase authorization
+    const hasValidWebhookSecret = webhookSecret === expectedSecret;
+    const hasAuthHeader = authHeader && authHeader.startsWith('Bearer ');
+    
+    if (!hasValidWebhookSecret && !hasAuthHeader) {
+      console.warn('⚠️ No valid authentication provided');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - Invalid webhook secret' }),
+        JSON.stringify({ 
+          error: 'Unauthorized - Missing webhook secret or authorization header',
+          hint: 'Add x-webhook-secret header with the correct value or use Supabase authorization'
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('✅ Authentication successful:', hasValidWebhookSecret ? 'webhook-secret' : 'supabase-auth');
 
     // Parse request body
-    const fineData: TrafficFineData = await req.json();
+    let fineData: TrafficFineData;
+    try {
+      fineData = await req.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     console.log('📥 Received traffic fine data:', {
       penalty_number: fineData.penalty_number,

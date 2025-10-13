@@ -1,12 +1,15 @@
 # Test Webhook Endpoint
 $url = "https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/process-traffic-fine"
 $secret = "fleetify_zapier_webhook_khamis_2025_secure_traffic_fines_integration_v1"
+$anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE3NTEyODYsImV4cCI6MjAzNzMyNzI4Nn0.Ju8U5PqHR9r-CpBbGrfTXIXTHf8qN5EQZcL7ZhVoB88"
 
-# Test 1: Simple ping test
-Write-Host "=== Test 1: Ping Test ===" -ForegroundColor Cyan
+# Test 1: With Supabase Authorization
+Write-Host "=== Test 1: With Supabase Authorization (anon key) ===" -ForegroundColor Cyan
 $headers = @{
     "Content-Type" = "application/json"
     "x-webhook-secret" = $secret
+    "apikey" = $anonKey
+    "Authorization" = "Bearer $anonKey"
 }
 
 $body = @{
