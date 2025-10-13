@@ -159,7 +159,7 @@ Content-Type: application/json
   "due_date": "{{2.due_date}}",
   "email_subject": "{{1.subject}}",
   "email_body": "{{1.body_plain}}",
-  "company_id": "YOUR_COMPANY_ID_HERE"
+  "company_id": "Y24bc0b21-4e2d-4413-9842-31719a3669f4"
 }
 ```
 
