@@ -62,15 +62,23 @@ const Customers = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   // Build filters for the query
   const filters: CustomerFilters = {
     search: searchTerm || undefined,
     customer_type: customerType === 'all' ? undefined : customerType,
     includeInactive,
+    page: currentPage,
+    pageSize: pageSize,
   };
 
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
+  
+  // Extract pagination data
+  const totalCustomersInDB = customersResult?.total || 0;
+  const totalPages = Math.ceil(totalCustomersInDB / pageSize);
   
   // Extract customers array and handle potential null/undefined with comprehensive fallbacks
   const customers = React.useMemo(() => {
@@ -131,10 +139,21 @@ const Customers = () => {
 
   // Calculate stats with comprehensive safety checks
   const safeCustomers = Array.isArray(customers) ? customers : [];
-  const totalCustomers = safeCustomers.length;
+  const totalCustomers = totalCustomersInDB; // Use total from database
   const individualCustomers = safeCustomers.filter(c => c && c.customer_type === 'individual').length;
   const corporateCustomers = safeCustomers.filter(c => c && c.customer_type === 'corporate').length;
   const blacklistedCustomers = safeCustomers.filter(c => c && c.is_blacklisted).length;
+  
+  // Handle page changes
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handlePageSizeChange = (newSize: string) => {
+    setPageSize(Number(newSize));
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Mobile view
   if (isMobile) {
@@ -562,6 +581,68 @@ const Customers = () => {
                 ))}
               </TableBody>
             </Table>
+          )}
+          
+          {/* Pagination Controls */}
+          {!isLoading && !error && safeCustomers.length > 0 && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  عرض {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCustomersInDB)} من أصل {totalCustomersInDB}
+                </span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">لكل صفحة</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                >
+                  الأولى
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  السابقة
+                </Button>
+                <span className="text-sm">
+                  صفحة {currentPage} من {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  التالية
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage >= totalPages}
+                >
+                  الأخيرة
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

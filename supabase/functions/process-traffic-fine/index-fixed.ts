@@ -143,8 +143,8 @@ serve(async (req) => {
       fineData.company_id
     );
 
-    let contractId: string | null = null;
-    let customerId: string | null = null;
+    let contractId = null;
+    let customerId = null;
 
     // 2. Find active contract for the vehicle
     if (vehicleMatch) {
@@ -153,11 +153,6 @@ serve(async (req) => {
         contractId = contractMatch.id;
         customerId = contractMatch.customer_id;
       }
-    }
-
-    // If no customer found, get or create a default "Unknown" customer
-    if (!customerId) {
-      customerId = await getOrCreateDefaultCustomer(supabase, fineData.company_id);
     }
 
     // 3. Prepare violation data (matching actual database schema)
@@ -389,63 +384,6 @@ async function findActiveContract(supabase: any, vehicleId: string): Promise<any
 
   console.warn('⚠️ No active contract found for vehicle:', vehicleId);
   return null;
-}
-
-/**
- * Get or create a default customer for traffic fines without associated customers
- */
-async function getOrCreateDefaultCustomer(supabase: any, companyId: string): Promise<string> {
-  // First, let's try to get ANY existing customer for this company
-  const { data: anyCustomer } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('company_id', companyId)
-    .limit(1)
-    .single();
-  
-  if (anyCustomer) {
-    console.log('✅ Using existing customer:', anyCustomer.id);
-    return anyCustomer.id;
-  }
-
-  // If no customers exist, try to create one with minimal required fields
-  // Let's try different field combinations to find what works
-  const customerAttempts = [
-    {
-      company_id: companyId,
-      customer_name: 'Traffic Violations - Unknown Owner',
-      name: 'Traffic Violations - Unknown Owner', // Alternative field name
-      created_at: new Date().toISOString()
-    },
-    {
-      company_id: companyId,
-      name: 'Traffic Violations - Unknown Owner',
-      created_at: new Date().toISOString()
-    },
-    {
-      company_id: companyId,
-      customer_name: 'Unknown Customer',
-      created_at: new Date().toISOString()
-    }
-  ];
-
-  for (const attempt of customerAttempts) {
-    const { data: newCustomer, error } = await supabase
-      .from('customers')
-      .insert(attempt)
-      .select('id')
-      .single();
-
-    if (!error && newCustomer) {
-      console.log('✅ Created default customer:', newCustomer.id);
-      return newCustomer.id;
-    }
-    
-    console.warn('⚠️ Customer creation attempt failed:', error?.message);
-  }
-  
-  // If we still can't create a customer, this is a critical error
-  throw new Error('Unable to create or find any customer. Please ensure at least one customer exists in your system or check the customers table structure.');
 }
 
 /**
