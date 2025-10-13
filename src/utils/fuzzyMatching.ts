@@ -1,9 +1,10 @@
 /**
  * Advanced Fuzzy Matching Utilities for Invoice Processing
- * Supports Arabic/English names, transliteration, and intelligent similarity scoring
+ * Fixed version with correct database schema and caching integration
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { invoiceScannerCache } from './invoiceScannerCache';
 
 // Arabic to English transliteration mapping
 const ARABIC_TRANSLITERATION: Record<string, string[]> = {
@@ -24,35 +25,11 @@ const ARABIC_TRANSLITERATION: Record<string, string[]> = {
   'إبراهيم': ['Ibrahim', 'Abraham']
 };
 
-// Common Arabic name prefixes and titles
-const ARABIC_PREFIXES = ['أبو', 'أم', 'بن', 'بنت', 'آل', 'عبد', 'الشيخ', 'الدكتور', 'المهندس'];
-const ENGLISH_PREFIXES = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Eng.', 'Prof.', 'Sheikh'];
-
-// Vehicle plate number patterns
-const PLATE_PATTERNS = [
-  /\d{1,4}[-\s]?[A-Z]{1,3}/i,     // 123-ABC format
-  /[A-Z]{1,3}[-\s]?\d{1,4}/i,     // ABC-123 format
-  /\d{1,4}[أ-ي]{1,3}/,            // Arabic letters with numbers
-  /[أ-ي]{1,3}\d{1,4}/             // Arabic letters with numbers
-];
-
-// Month names in Arabic and English
-const MONTH_MAPPING: Record<string, number> = {
-  // Arabic months
-  'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4, 'مايو': 5, 'يونيو': 6,
-  'يوليو': 7, 'أغسطس': 8, 'سبتمبر': 9, 'أكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
-  // English months
-  'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
-  'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
-  // Short forms
-  'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'jun': 6, 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
-};
-
 export interface MatchCandidate {
   id: string;
   name: string;
   phone?: string;
-  car_number?: string;
+  plate_number?: string;
   contract_number?: string;
   agreement_id?: string;
   customer_type?: string;
@@ -69,6 +46,14 @@ export interface FuzzyMatchResult {
   name_similarity: number;
   car_match_score: number;
   context_match_score: number;
+}
+
+interface ExtractedData {
+  customer_name?: string;
+  amount?: number;
+  contract_number?: string;
+  car_number?: string;
+  date?: string;
 }
 
 /**
@@ -179,16 +164,9 @@ function normalizeName(name: string): string {
   if (!name) return '';
   
   let cleaned = name.toLowerCase()
-    .replace(/[^\u0600-\u06FF\u0750-\u077F\w\s]/g, ' ') // Keep Arabic, Latin, numbers, spaces
+    .replace(/[^\u0600-\u06FF\u0750-\u077F\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  
-  // Remove common prefixes
-  const allPrefixes = [...ARABIC_PREFIXES, ...ENGLISH_PREFIXES];
-  for (const prefix of allPrefixes) {
-    const prefixPattern = new RegExp(`^${prefix.toLowerCase()}\\s+`, 'i');
-    cleaned = cleaned.replace(prefixPattern, '');
-  }
   
   // Normalize Arabic
   if (/[\u0600-\u06FF]/.test(cleaned)) {
@@ -199,213 +177,164 @@ function normalizeName(name: string): string {
 }
 
 /**
- * Get transliteration variants for Arabic names
- */
-function getTransliterationVariants(arabicName: string): string[] {
-  const variants: string[] = [arabicName];
-  
-  for (const [arabic, english] of Object.entries(ARABIC_TRANSLITERATION)) {
-    if (arabicName.includes(arabic)) {
-      english.forEach(eng => {
-        variants.push(arabicName.replace(arabic, eng.toLowerCase()));
-      });
-    }
-  }
-  
-  return variants;
-}
-
-/**
  * Calculate name similarity with transliteration support
  */
-function calculateNameSimilarity(extracted: string, candidate: string): number {
-  const normalizedExtracted = normalizeName(extracted);
-  const normalizedCandidate = normalizeName(candidate);
+function calculateNameSimilarity(name1: string, name2: string): number {
+  if (!name1 || !name2) return 0;
   
-  if (!normalizedExtracted || !normalizedCandidate) return 0;
+  const norm1 = normalizeName(name1);
+  const norm2 = normalizeName(name2);
   
-  // Direct comparison
-  const directSimilarity = jaroWinklerSimilarity(normalizedExtracted, normalizedCandidate);
+  // Direct similarity
+  const directSimilarity = jaroWinklerSimilarity(norm1, norm2);
   
-  // Levenshtein similarity
-  const levenshtein = 1 - (levenshteinDistance(normalizedExtracted, normalizedCandidate) / 
-                          Math.max(normalizedExtracted.length, normalizedCandidate.length));
+  // Try transliteration if one is Arabic and other is English
+  let transliterationSimilarity = 0;
   
-  // Transliteration variants
-  let maxTransliterationSimilarity = 0;
-  const extractedVariants = getTransliterationVariants(normalizedExtracted);
-  const candidateVariants = getTransliterationVariants(normalizedCandidate);
-  
-  for (const extVariant of extractedVariants) {
-    for (const candVariant of candidateVariants) {
-      const similarity = jaroWinklerSimilarity(extVariant, candVariant);
-      maxTransliterationSimilarity = Math.max(maxTransliterationSimilarity, similarity);
-    }
-  }
-  
-  // Partial matching (for compound names)
-  const extractedParts = normalizedExtracted.split(' ');
-  const candidateParts = normalizedCandidate.split(' ');
-  let partialMatches = 0;
-  
-  for (const extPart of extractedParts) {
-    for (const candPart of candidateParts) {
-      if (extPart.length > 2 && candPart.length > 2) {
-        const partSimilarity = jaroWinklerSimilarity(extPart, candPart);
-        if (partSimilarity > 0.8) {
-          partialMatches++;
-          break;
+  for (const [arabic, englishVariants] of Object.entries(ARABIC_TRANSLITERATION)) {
+    if (norm1.includes(arabic.toLowerCase())) {
+      for (const english of englishVariants) {
+        if (norm2.includes(english.toLowerCase())) {
+          transliterationSimilarity = Math.max(transliterationSimilarity, 0.8);
         }
       }
     }
   }
   
-  const partialScore = partialMatches / Math.max(extractedParts.length, candidateParts.length);
-  
-  // Combine scores
-  return Math.max(directSimilarity, levenshtein, maxTransliterationSimilarity, partialScore);
+  return Math.max(directSimilarity, transliterationSimilarity);
 }
 
 /**
- * Extract vehicle/car numbers from text
+ * Calculate car/plate number match score
  */
-function extractCarNumbers(text: string): string[] {
-  const carNumbers: string[] = [];
+function calculateCarMatchScore(rawText: string, plateNumber?: string): number {
+  if (!plateNumber || !rawText) return 0;
   
-  for (const pattern of PLATE_PATTERNS) {
-    const matches = text.match(new RegExp(pattern, 'g'));
-    if (matches) {
-      carNumbers.push(...matches);
+  const normalizedPlate = plateNumber.replace(/[\s-]/g, '').toLowerCase();
+  const normalizedText = rawText.replace(/[\s-]/g, '').toLowerCase();
+  
+  if (normalizedText.includes(normalizedPlate)) {
+    return 1.0;
+  }
+  
+  // Partial matching
+  const plateChunks = normalizedPlate.match(/.{1,3}/g) || [];
+  let matches = 0;
+  
+  for (const chunk of plateChunks) {
+    if (normalizedText.includes(chunk)) {
+      matches++;
     }
   }
   
-  return [...new Set(carNumbers)]; // Remove duplicates
+  return plateChunks.length > 0 ? matches / plateChunks.length : 0;
 }
 
 /**
- * Extract month references from text
+ * Calculate context match score based on amount and other factors
  */
-function extractMonthReferences(text: string): number[] {
-  const months: number[] = [];
-  const lowerText = text.toLowerCase();
-  
-  for (const [month, number] of Object.entries(MONTH_MAPPING)) {
-    if (lowerText.includes(month)) {
-      months.push(number);
-    }
-  }
-  
-  return [...new Set(months)];
-}
-
-/**
- * Calculate car number match score
- */
-function calculateCarMatchScore(extractedText: string, candidateCarNumber?: string): number {
-  if (!candidateCarNumber) return 0;
-  
-  const extractedCarNumbers = extractCarNumbers(extractedText);
-  if (extractedCarNumbers.length === 0) return 0;
-  
-  for (const extracted of extractedCarNumbers) {
-    const similarity = jaroWinklerSimilarity(
-      extracted.replace(/[-\s]/g, '').toLowerCase(),
-      candidateCarNumber.replace(/[-\s]/g, '').toLowerCase()
-    );
-    if (similarity > 0.8) {
-      return similarity;
-    }
-  }
-  
-  return 0;
-}
-
-/**
- * Calculate context match score based on amounts, dates, agreement numbers
- */
-function calculateContextMatchScore(
-  extractedData: any,
-  candidate: any,
-  rawText: string
-): number {
+function calculateContextMatchScore(extractedData: ExtractedData, record: any, rawText: string): number {
   let score = 0;
   let factors = 0;
   
   // Amount matching
-  if (extractedData.total_amount && candidate.monthly_amount) {
-    const amountRatio = Math.min(extractedData.total_amount, candidate.monthly_amount) / 
-                       Math.max(extractedData.total_amount, candidate.monthly_amount);
-    if (amountRatio > 0.8) {
-      score += amountRatio * 0.4;
-    }
+  if (extractedData.amount && record.monthly_amount) {
+    const amountSimilarity = 1 - Math.abs(extractedData.amount - record.monthly_amount) / Math.max(extractedData.amount, record.monthly_amount);
+    score += Math.max(0, amountSimilarity);
     factors++;
   }
   
-  // Agreement/Contract number matching
-  if (extractedData.contract_number && candidate.contract_number) {
-    const contractSimilarity = jaroWinklerSimilarity(
-      extractedData.contract_number.toString(),
-      candidate.contract_number.toString()
-    );
-    score += contractSimilarity * 0.3;
+  // Contract number matching
+  if (extractedData.contract_number && record.contract_number) {
+    const contractSimilarity = jaroWinklerSimilarity(extractedData.contract_number, record.contract_number);
+    score += contractSimilarity;
     factors++;
   }
   
-  // Month context matching
-  const extractedMonths = extractMonthReferences(rawText);
-  if (extractedMonths.length > 0 && extractedData.invoice_date) {
-    const invoiceMonth = new Date(extractedData.invoice_date).getMonth() + 1;
-    if (extractedMonths.includes(invoiceMonth)) {
-      score += 0.3;
-    }
-    factors++;
+  // Default score for records with some context
+  if (factors === 0 && (record.monthly_amount || record.contract_number)) {
+    score = 0.1;
+    factors = 1;
   }
   
   return factors > 0 ? score / factors : 0;
 }
 
 /**
- * Main fuzzy matching function
+ * Main fuzzy matching function with caching integration
  */
 export async function performFuzzyMatching(
-  extractedData: any,
-  rawText: string,
   companyId: string,
-  ocrConfidence: number = 50
+  extractedData: ExtractedData,
+  rawText: string,
+  ocrConfidence: number = 85
 ): Promise<FuzzyMatchResult> {
-  
   const candidates: MatchCandidate[] = [];
   
   try {
-    // 1. Fetch customers with their contract information
-    const { data: customers } = await supabase
-      .from('customers')
-      .select(`
-        id,
-        first_name_ar,
-        last_name_ar,
-        first_name,
-        last_name,
-        company_name_ar,
-        company_name,
-        phone,
-        customer_type,
-        contracts(
-          id,
-          contract_number,
-          monthly_amount,
-          car_number,
-          status
-        )
-      `)
-      .eq('company_id', companyId)
-      .eq('is_active', true);
+    // 1. Try to get customers from cache first
+    let customers = invoiceScannerCache.getCachedCustomers(companyId);
     
     if (!customers) {
-      return { all_matches: [], total_confidence: 0, ocr_confidence: ocrConfidence, name_similarity: 0, car_match_score: 0, context_match_score: 0 };
+      // 2. Fetch customers from database with proper vehicle joins
+      const { data: fetchedCustomers } = await supabase
+        .from('customers')
+        .select(`
+          id,
+          first_name_ar,
+          last_name_ar,
+          first_name,
+          last_name,
+          company_name_ar,
+          company_name,
+          phone,
+          customer_type,
+          contracts(
+            id,
+            contract_number,
+            monthly_amount,
+            status,
+            vehicle_id,
+            vehicles(
+              id,
+              plate_number
+            )
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+      
+      if (!fetchedCustomers) {
+        return { 
+          all_matches: [], 
+          total_confidence: 0, 
+          ocr_confidence: ocrConfidence, 
+          name_similarity: 0, 
+          car_match_score: 0, 
+          context_match_score: 0 
+        };
+      }
+      
+      customers = fetchedCustomers;
+      
+      // Cache the customers for future use
+      const processedCustomers = customers.map((customer: any) => ({
+        id: customer.id,
+        name: customer.company_name_ar || customer.company_name || 
+              `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim(),
+        phone: customer.phone,
+        contracts: customer.contracts?.map((contract: any) => ({
+          id: contract.id,
+          contract_number: contract.contract_number,
+          plate_number: contract.vehicles?.plate_number,
+          monthly_amount: contract.monthly_amount
+        })) || []
+      }));
+      
+      invoiceScannerCache.cacheCustomers(companyId, processedCustomers);
     }
-    
-    // 2. Process each customer
+
+    // 3. Process each customer
     for (const customer of customers) {
       const customerName = customer.company_name_ar || customer.company_name || 
                           `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim();
@@ -420,7 +349,8 @@ export async function performFuzzyMatching(
       // Process contracts for this customer
       if (customer.contracts && Array.isArray(customer.contracts)) {
         for (const contract of customer.contracts) {
-          const carMatchScore = calculateCarMatchScore(rawText, contract.car_number);
+          const plateNumber = contract.vehicles?.plate_number;
+          const carMatchScore = calculateCarMatchScore(rawText, plateNumber);
           const contextMatchScore = calculateContextMatchScore(extractedData, contract, rawText);
           
           // Calculate total confidence
@@ -445,7 +375,7 @@ export async function performFuzzyMatching(
             id: customer.id,
             name: customerName,
             phone: customer.phone,
-            car_number: contract.car_number,
+            plate_number: plateNumber,
             contract_number: contract.contract_number,
             agreement_id: contract.id,
             customer_type: customer.customer_type,
@@ -480,16 +410,24 @@ export async function performFuzzyMatching(
       }
     }
     
-    // 3. Sort by confidence
+    // 4. Sort by confidence and cache the result
     candidates.sort((a, b) => b.confidence - a.confidence);
     
-    // 4. Calculate aggregate scores
+    if (candidates.length > 0 && extractedData.customer_name) {
+      invoiceScannerCache.cacheMatchingResult(
+        extractedData.customer_name, 
+        extractedData.car_number || '', 
+        candidates.slice(0, 5)
+      );
+    }
+    
+    // 5. Calculate aggregate scores
     const bestMatch = candidates[0];
     const avgNameSimilarity = candidates.length > 0 ? 
       candidates.reduce((sum, c) => sum + calculateNameSimilarity(extractedData.customer_name || '', c.name), 0) / candidates.length : 0;
     
     const avgCarMatch = candidates.length > 0 ? 
-      candidates.reduce((sum, c) => sum + calculateCarMatchScore(rawText, c.car_number), 0) / candidates.length : 0;
+      candidates.reduce((sum, c) => sum + calculateCarMatchScore(rawText, c.plate_number), 0) / candidates.length : 0;
     
     const avgContextMatch = candidates.length > 0 ? 
       candidates.reduce((sum, c) => sum + calculateContextMatchScore(extractedData, c, rawText), 0) / candidates.length : 0;
@@ -518,6 +456,29 @@ export async function performFuzzyMatching(
 }
 
 /**
+ * Extract car numbers from text
+ */
+export function extractCarNumbers(text: string): string[] {
+  const patterns = [
+    /\d{1,4}[-\s]?[A-Z]{1,3}/gi,     // 123-ABC format
+    /[A-Z]{1,3}[-\s]?\d{1,4}/gi,     // ABC-123 format
+    /\d{1,4}[أ-ي]{1,3}/g,            // Arabic letters with numbers
+    /[أ-ي]{1,3}\d{1,4}/g             // Arabic letters with numbers
+  ];
+  
+  const matches: string[] = [];
+  
+  for (const pattern of patterns) {
+    const found = text.match(pattern);
+    if (found) {
+      matches.push(...found);
+    }
+  }
+  
+  return [...new Set(matches)]; // Remove duplicates
+}
+
+/**
  * Language detection helper
  */
 export function detectLanguage(text: string): 'arabic' | 'english' | 'mixed' {
@@ -533,36 +494,4 @@ export function detectLanguage(text: string): 'arabic' | 'english' | 'mixed' {
   if (arabicCount > 0 && englishCount > 0) return 'mixed';
   if (arabicCount > englishCount) return 'arabic';
   return 'english';
-}
-
-/**
- * Extract key information from raw OCR text
- */
-export function extractKeyInformation(rawText: string) {
-  const language = detectLanguage(rawText);
-  const carNumbers = extractCarNumbers(rawText);
-  const months = extractMonthReferences(rawText);
-  
-  // Extract potential amounts (numbers with currency indicators)
-  const amountPattern = /(?:[\d,]+\.?\d*)\s*(?:د\.ك|KD|دينار|dinar)/gi;
-  const amounts = rawText.match(amountPattern) || [];
-  
-  // Extract agreement/contract numbers
-  const agreementPattern = /(?:عقد|اتفاق|agreement|contract)\s*(?:رقم|no\.?|#)?\s*(\w+)/gi;
-  const agreements = [];
-  let match;
-  while ((match = agreementPattern.exec(rawText)) !== null) {
-    agreements.push(match[1]);
-  }
-  
-  return {
-    language,
-    car_numbers: carNumbers,
-    months,
-    potential_amounts: amounts,
-    agreement_numbers: agreements,
-    text_length: rawText.length,
-    has_arabic: /[\u0600-\u06FF]/.test(rawText),
-    has_english: /[a-zA-Z]/.test(rawText)
-  };
 }

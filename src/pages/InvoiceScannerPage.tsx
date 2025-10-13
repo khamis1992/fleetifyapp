@@ -21,6 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import IntelligentInvoiceScanner from '@/components/IntelligentInvoiceScanner';
+import InvoiceScannerAnalytics from '@/components/InvoiceScannerAnalytics';
 import { useToast } from '@/hooks/use-toast';
 
 const InvoiceScannerPage: React.FC = () => {
@@ -94,10 +95,14 @@ const InvoiceScannerPage: React.FC = () => {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="scanner" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               الماسح الذكي
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              تحليلات متقدمة
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <History className="h-4 w-4" />
@@ -115,6 +120,10 @@ const InvoiceScannerPage: React.FC = () => {
 
           <TabsContent value="scanner">
             <IntelligentInvoiceScanner onScanComplete={handleScanComplete} />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <InvoiceScannerAnalytics />
           </TabsContent>
 
           <TabsContent value="history">

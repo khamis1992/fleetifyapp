@@ -6,7 +6,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { performFuzzyMatching, detectLanguage, extractKeyInformation } from '@/utils/fuzzyMatching';
 
 export interface ScanResult {
   id: string;
@@ -144,21 +143,21 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
         // Show appropriate notification
         if (scanResult.matching.total_confidence >= autoAssignThreshold) {
           toast({
-            title: \"تم التطابق التلقائي ✅\",
-            description: `تم تعيين الفاتورة تلقائياً للعميل: ${scanResult.matching.best_match?.name}`,
-            variant: \"default\"
+            title: "Auto Match Success",
+            description: `Invoice automatically assigned to customer: ${scanResult.matching.best_match?.name}`,
+            variant: "default"
           });
         } else if (scanResult.matching.total_confidence >= reviewThreshold) {
           toast({
-            title: \"يحتاج مراجعة ⚠️\",
-            description: \"تم إيجاد تطابقات محتملة، يرجى المراجعة\",
-            variant: \"default\"
+            title: "Review Required",
+            description: "Potential matches found, please review",
+            variant: "default"
           });
         } else {
           toast({
-            title: \"مراجعة يدوية مطلوبة ❌\",
-            description: \"لم يتم إيجاد تطابق موثوق، يرجى المراجعة اليدوية\",
-            variant: \"destructive\"
+            title: "Manual Review Required",
+            description: "No reliable match found, manual review needed",
+            variant: "destructive"
           });
         }
 
@@ -169,9 +168,9 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
         console.error('Error in OCR processing:', error);
         
         toast({
-          title: \"خطأ في المسح\",
-          description: error instanceof Error ? error.message : \"فشل في معالجة الصورة\",
-          variant: \"destructive\"
+          title: "Scanning Error",
+          description: error instanceof Error ? error.message : "Failed to process image",
+          variant: "destructive"
         });
         
         return null;
@@ -180,9 +179,9 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
     } catch (error) {
       console.error('Error preparing image:', error);
       toast({
-        title: \"خطأ\",
-        description: \"فشل في تحضير الصورة للمعالجة\",
-        variant: \"destructive\"
+        title: "Error",
+        description: "Failed to prepare image for processing",
+        variant: "destructive"
       });
       return null;
     } finally {
@@ -190,48 +189,6 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
       setProgress(0);
     }
   }, [ocrEngine, language, autoAssignThreshold, reviewThreshold, toast]);
-
-  const reprocessWithFuzzyMatching = useCallback(async (
-    scanResult: ScanResult,
-    companyId: string
-  ): Promise<ScanResult | null> => {
-    try {
-      // Perform local fuzzy matching using our advanced utilities
-      const enhancedMatching = await performFuzzyMatching(
-        scanResult.data,
-        scanResult.data.raw_text || '',
-        companyId,
-        scanResult.processing_info.ocr_confidence
-      );
-
-      const updatedResult: ScanResult = {
-        ...scanResult,
-        matching: enhancedMatching
-      };
-
-      // Update scan history
-      setScanHistory(prev => 
-        prev.map(scan => scan.id === scanResult.id ? updatedResult : scan)
-      );
-
-      toast({
-        title: \"تم إعادة المعالجة\",
-        description: `ثقة جديدة: ${Math.round(enhancedMatching.total_confidence)}%`,
-        variant: \"default\"
-      });
-
-      return updatedResult;
-
-    } catch (error) {
-      console.error('Error in reprocessing:', error);
-      toast({
-        title: \"خطأ في إعادة المعالجة\",
-        description: error instanceof Error ? error.message : \"فشل في إعادة المعالجة\",
-        variant: \"destructive\"
-      });
-      return null;
-    }
-  }, [toast]);
 
   const confirmMatch = useCallback(async (
     scanId: string,
@@ -266,9 +223,9 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
       );
 
       toast({
-        title: \"تم تأكيد التطابق\",
-        description: \"شكراً لك، سيساعد هذا في تحسين دقة النظام\",
-        variant: \"default\"
+        title: "Match Confirmed",
+        description: "Thank you, this will help improve system accuracy",
+        variant: "default"
       });
 
       return true;
@@ -276,25 +233,13 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
     } catch (error) {
       console.error('Error confirming match:', error);
       toast({
-        title: \"خطأ في التأكيد\",
-        description: \"فشل في تسجيل التأكيد\",
-        variant: \"destructive\"
+        title: "Confirmation Error",
+        description: "Failed to record confirmation",
+        variant: "destructive"
       });
       return false;
     }
   }, [toast]);
-
-  const analyzeText = useCallback((text: string) => {
-    if (!text) return null;
-    
-    const language = detectLanguage(text);
-    const keyInfo = extractKeyInformation(text);
-    
-    return {
-      language,
-      ...keyInfo
-    };
-  }, []);
 
   const getStatistics = useCallback(() => {
     const total = scanHistory.length;
@@ -325,11 +270,40 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
   const clearHistory = useCallback(() => {
     setScanHistory([]);
     toast({
-      title: \"تم مسح السجل\",
-      description: \"تم مسح جميع عمليات المسح السابقة\",
-      variant: \"default\"
+      title: "History Cleared",
+      description: "All previous scans have been cleared",
+      variant: "default"
     });
   }, [toast]);
+
+  const analyzeText = useCallback((text: string) => {
+    if (!text) return null;
+    
+    // Simple language detection
+    const arabicRegex = /[\u0600-\u06FF]/g;
+    const englishRegex = /[a-zA-Z]/g;
+    
+    const arabicMatches = text.match(arabicRegex);
+    const englishMatches = text.match(englishRegex);
+    
+    const arabicCount = arabicMatches ? arabicMatches.length : 0;
+    const englishCount = englishMatches ? englishMatches.length : 0;
+    
+    let language = 'mixed';
+    if (arabicCount > 0 && englishCount === 0) language = 'arabic';
+    else if (englishCount > 0 && arabicCount === 0) language = 'english';
+    
+    return {
+      language,
+      text_length: text.length,
+      has_arabic: arabicCount > 0,
+      has_english: englishCount > 0,
+      car_numbers: [],
+      months: [],
+      potential_amounts: [],
+      agreement_numbers: []
+    };
+  }, []);
 
   return {
     // State
@@ -339,7 +313,6 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
     
     // Actions
     scanInvoice,
-    reprocessWithFuzzyMatching,
     confirmMatch,
     analyzeText,
     clearHistory,

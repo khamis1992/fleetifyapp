@@ -16,6 +16,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { preprocessImage, quickPreprocess, analyzeImage } from '@/utils/imagePreprocessing';
+import EnhancedMobileCamera from './EnhancedMobileCamera';
+import { useBackgroundQueue } from '@/utils/backgroundProcessingQueue';
 import { 
   Camera, 
   Upload, 
@@ -87,9 +90,17 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
   const [ocrEngine, setOcrEngine] = useState<'gemini' | 'google-vision' | 'hybrid'>('gemini');
   const [language, setLanguage] = useState<'auto' | 'arabic' | 'english'>('auto');
   const [activeTab, setActiveTab] = useState('upload');
+  const [enablePreprocessing, setEnablePreprocessing] = useState(true);
+  const [preprocessingOptions, setPreprocessingOptions] = useState({
+    enhanceContrast: true,
+    reduceNoise: true,
+    sharpenText: true,
+    normalizeSize: true
+  });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { addJob, getJob, getJobs, getStatistics } = useBackgroundQueue();
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -105,6 +116,32 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     setProgress(0);
 
     try {
+      let processedFile = file;
+      let improvements: string[] = [];
+      
+      // Apply preprocessing if enabled
+      if (enablePreprocessing) {
+        toast({
+          title: "تحسين الصورة",
+          description: "جاري تحسين جودة الصورة لدقة أفضل...",
+          variant: "default"
+        });
+        
+        try {
+          const result = await preprocessImage(file, preprocessingOptions);
+          processedFile = result.processedFile;
+          improvements = result.improvements;
+          
+          console.log('Image preprocessing completed:', {
+            originalSize: result.originalSize,
+            processedSize: result.processedSize,
+            improvements: result.improvements
+          });
+        } catch (error) {
+          console.warn('Image preprocessing failed, using original:', error);
+        }
+      }
+
       // Convert to base64
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -207,6 +244,138 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     e.preventDefault();
   };
 
+  const handleBulkUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+    
+    // Limit to 10 files maximum
+    const limitedFiles = files.slice(0, 10);
+    
+    toast({
+      title: "Bulk Processing Started",
+      description: `Adding ${limitedFiles.length} invoices to background processing queue`,
+      variant: "default"
+    });
+
+    // Convert files to base64 and add to background queue
+    const filePromises = limitedFiles.map(async (file) => {
+      return new Promise<{ name: string; base64: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            name: file.name,
+            base64: e.target?.result as string
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+
+    try {
+      const processedFiles = await Promise.all(filePromises);
+      
+      // Add batch job to background queue
+      const jobId = addJob('batch_scan', {
+        files: processedFiles,
+        options: {
+          ocrEngine,
+          language
+        }
+      }, 'high');
+
+      toast({
+        title: "Batch Job Created",
+        description: `Job ID: ${jobId}. Processing in background...`,
+        variant: "default"
+      });
+
+      // Set up progress monitoring
+      const monitorInterval = setInterval(() => {
+        const job = getJob(jobId);
+        if (job) {
+          if (job.status === 'completed') {
+            clearInterval(monitorInterval);
+            toast({
+              title: "Batch Processing Complete",
+              description: `Successfully processed batch job`,
+              variant: "default"
+            });
+          } else if (job.status === 'failed') {
+            clearInterval(monitorInterval);
+            toast({
+              title: "Batch Processing Failed",
+              description: job.error || 'Unknown error occurred',
+              variant: "destructive"
+            });
+          }
+        }
+      }, 2000);
+
+      // Clear monitoring after 10 minutes
+      setTimeout(() => clearInterval(monitorInterval), 10 * 60 * 1000);
+      
+    } catch (error) {
+      toast({
+        title: "Error Processing Files",
+        description: error instanceof Error ? error.message : 'Failed to process files',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const processInvoiceFile = async (file: File) => {
+    // Individual file processing logic
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+        setSelectedImage(base64);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('scan-invoice', {
+            body: {
+              imageBase64: base64,
+              fileName: file.name,
+              ocrEngine,
+              language
+            }
+          });
+
+          if (error) {
+            reject(new Error(error.message || 'OCR processing failed'));
+            return;
+          }
+
+          if (data.success) {
+            const result = {
+              id: Date.now().toString() + Math.random(),
+              data: data.data,
+              matching: data.matching || {
+                all_matches: [],
+                total_confidence: 0,
+                name_similarity: 0,
+                car_match_score: 0,
+                context_match_score: 0
+              },
+              processing_info: data.data.processing_info || {
+                ocr_engine: ocrEngine,
+                language_detected: language,
+                ocr_confidence: 0
+              }
+            };
+            resolve(result);
+          } else {
+            reject(new Error('Failed to process invoice'));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 85) return 'text-green-600';
     if (confidence >= 70) return 'text-yellow-600';
@@ -275,15 +444,82 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
               </Select>
             </div>
           </div>
+          
+          {/* Image Preprocessing Settings */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-blue-900">📷 تحسين جودة الصورة</h4>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="enable-preprocessing"
+                  checked={enablePreprocessing}
+                  onChange={(e) => setEnablePreprocessing(e.target.checked)}
+                  className="rounded"
+                />
+                <label htmlFor="enable-preprocessing" className="text-sm font-medium">
+                  تفعيل التحسين التلقائي
+                </label>
+              </div>
+            </div>
+            
+            {enablePreprocessing && (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={preprocessingOptions.enhanceContrast}
+                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, enhanceContrast: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>تحسين التباين</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={preprocessingOptions.sharpenText}
+                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, sharpenText: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>توضيح النص</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={preprocessingOptions.reduceNoise}
+                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, reduceNoise: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>إزالة التشويش</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={preprocessingOptions.normalizeSize}
+                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, normalizeSize: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>تطبيع الحجم</span>
+                </label>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* Upload Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             رفع صورة
+          </TabsTrigger>
+          <TabsTrigger value="bulk" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            رفع متعدد
           </TabsTrigger>
           <TabsTrigger value="camera" className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
@@ -320,15 +556,58 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           </Card>
         </TabsContent>
 
+        <TabsContent value="bulk">
+          <Card>
+            <CardContent className="pt-6">
+              <div
+                className="border-2 border-dashed border-orange-300 rounded-lg p-8 text-center hover:border-orange-500 transition-colors cursor-pointer bg-orange-50"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (files) {
+                      handleBulkUpload(Array.from(files));
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <FileText className="h-12 w-12 mx-auto mb-4 text-orange-500" />
+                <p className="text-lg font-medium mb-2">رفع عدة فواتير معاً</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  اختر عدة صور لمعالجتها في دفعة واحدة
+                </p>
+                <Button variant="outline" className="mt-2 border-orange-500 text-orange-700 hover:bg-orange-100">
+                  <FileText className="h-4 w-4 mr-2" />
+                  اختيار عدة صور
+                </Button>
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium mb-2 text-blue-900">🚀 ميزات المعالجة المتعددة:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• معالجة حتى 10 فواتير في نفس الوقت</li>
+                  <li>• عرض تقدم شريط موحد لجميع الفواتير</li>
+                  <li>• تجميع النتائج وعرضها في جدول واحد</li>
+                  <li>• حفظ تلقائي للفواتير عالية الثقة</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="camera">
           <Card>
             <CardContent className="pt-6">
-              <Alert>
-                <Camera className="h-4 w-4" />
-                <AlertDescription>
-                  ميزة الكاميرا ستكون متاحة قريباً. يرجى استخدام رفع الصورة حالياً.
-                </AlertDescription>
-              </Alert>
+              <EnhancedMobileCamera 
+                onImageCapture={handleImageUpload}
+                isProcessing={isScanning}
+                enablePreprocessing={enablePreprocessing}
+                preprocessingOptions={preprocessingOptions}
+              />
             </CardContent>
           </Card>
         </TabsContent>
