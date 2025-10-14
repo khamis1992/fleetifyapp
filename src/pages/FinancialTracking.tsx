@@ -616,13 +616,23 @@ const FinancialTracking: React.FC = () => {
           is_active: true,
           created_at: new Date().toISOString()
         })
-        .select()
+        .select('id, first_name, last_name')
         .single();
 
       if (customerError) {
         console.error('Customer creation error:', customerError);
-        throw customerError;
+        throw new Error(
+          customerError.message || 
+          customerError.hint || 
+          `فشل إنشافاء العميل: ${customerError.code || 'خطأ غير معروف'}`
+        );
       }
+
+      if (!newCustomer || !newCustomer.id) {
+        throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل');
+      }
+
+      console.log('Customer created successfully:', newCustomer.id);
 
       if (newCustomer) {
         // Generate unique contract number
@@ -630,6 +640,8 @@ const FinancialTracking: React.FC = () => {
         const startDate = new Date().toISOString().split('T')[0];
         const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]; // 1 year from now
 
+        console.log('Creating contract for customer:', newCustomer.id);
+        
         // Create a contract with the monthly rent
         const { data: newContract, error: contractError } = await supabase
           .from('contracts')
