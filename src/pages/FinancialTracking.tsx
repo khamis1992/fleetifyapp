@@ -634,6 +634,7 @@ const FinancialTracking: React.FC = () => {
         const { data: newContract, error: contractError } = await supabase
           .from('contracts')
           .insert({
+            customer_id: newCustomer.id,
             contract_number: contractNumber,
             contract_date: startDate,
             start_date: startDate,
@@ -651,7 +652,11 @@ const FinancialTracking: React.FC = () => {
           console.error('Contract creation error:', contractError);
           // Delete the customer if contract creation fails
           await supabase.from('customers').delete().eq('id', newCustomer.id);
-          throw contractError;
+          throw new Error(
+            contractError.message || 
+            contractError.hint || 
+            `فشل إنشاء العقد: ${contractError.code || 'خطأ غير معروف'}`
+          );
         }
 
         // Create CustomerWithRental object
@@ -677,7 +682,8 @@ const FinancialTracking: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating customer:', error);
-      toast.error(error.message || 'فشل إنشاء العميل');
+      const errorMessage = error?.message || error?.hint || error?.details || 'فشل إنشاء العميل';
+      toast.error(errorMessage);
     } finally {
       setIsCreatingCustomer(false);
     }
