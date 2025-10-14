@@ -344,17 +344,17 @@ const FinancialTracking: React.FC = () => {
         <div class="summary">
           <div class="summary-row">
             <span>الإيجار الشهري</span>
-            <span>${receipt.rent_amount.toLocaleString('ar-QA')} ريال</span>
+            <span>${(receipt.rent_amount || 0).toLocaleString('ar-QA')} ريال</span>
           </div>
           ${receipt.fine > 0 ? `
           <div class="summary-row">
             <span>غرامة التأخير</span>
-            <span class="fine-badge">${receipt.fine.toLocaleString('ar-QA')} ريال</span>
+            <span class="fine-badge">${(receipt.fine || 0).toLocaleString('ar-QA')} ريال</span>
           </div>
           ` : ''}
           <div class="summary-row total">
             <span>الإجمالي المدفوع</span>
-            <span>${receipt.total_paid.toLocaleString('ar-QA')} ريال</span>
+            <span>${(receipt.total_paid || 0).toLocaleString('ar-QA')} ريال</span>
           </div>
         </div>
 
@@ -1270,7 +1270,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
                           <p className="text-3xl font-bold text-primary mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + m.total, 0).toLocaleString('ar-QA')} ريال
+                            {monthlySummary.reduce((sum, m) => sum + (m.total || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1280,7 +1280,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الإيجار</p>
                           <p className="text-3xl font-bold text-blue-600 mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + m.rent, 0).toLocaleString('ar-QA')} ريال
+                            {monthlySummary.reduce((sum, m) => sum + (m.rent || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1290,7 +1290,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الغرامات</p>
                           <p className="text-3xl font-bold text-destructive mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + m.fines, 0).toLocaleString('ar-QA')} ريال
+                            {monthlySummary.reduce((sum, m) => sum + (m.fines || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1300,7 +1300,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">عدد الإيصالات</p>
                           <p className="text-3xl font-bold text-green-600 mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + m.count, 0).toLocaleString('ar-QA')}
+                            {monthlySummary.reduce((sum, m) => sum + (m.count || 0), 0).toLocaleString('ar-QA')}
                           </p>
                         </div>
                       </CardContent>
@@ -1321,21 +1321,21 @@ const FinancialTracking: React.FC = () => {
                     <TableBody>
                       {monthlySummary.map((monthData) => (
                         <TableRow key={monthData.monthKey}>
-                          <TableCell className="font-bold">{monthData.month}</TableCell>
+                          <TableCell className="font-bold">{monthData.month || '-'}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">
-                              {monthData.count.toLocaleString('ar-QA')}
+                              {(monthData.count || 0).toLocaleString('ar-QA')}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <span className="font-semibold text-blue-600">
-                              {monthData.rent.toLocaleString('ar-QA')} ريال
+                              {(monthData.rent || 0).toLocaleString('ar-QA')} ريال
                             </span>
                           </TableCell>
                           <TableCell>
-                            {monthData.fines > 0 ? (
+                            {(monthData.fines || 0) > 0 ? (
                               <Badge variant="destructive">
-                                {monthData.fines.toLocaleString('ar-QA')} ريال
+                                {(monthData.fines || 0).toLocaleString('ar-QA')} ريال
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -1343,7 +1343,7 @@ const FinancialTracking: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <span className="text-lg font-bold text-primary">
-                              {monthData.total.toLocaleString('ar-QA')} ريال
+                              {(monthData.total || 0).toLocaleString('ar-QA')} ريال
                             </span>
                           </TableCell>
                         </TableRow>
