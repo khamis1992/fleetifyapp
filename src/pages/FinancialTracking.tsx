@@ -14,7 +14,7 @@ import {
 import { Search, Plus, Calendar, DollarSign, AlertTriangle, Download, Printer, FileSpreadsheet, Loader2, TrendingUp, AlertCircle, Clock, Filter, X, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { 
   useRentalPaymentReceipts,
@@ -89,9 +89,14 @@ const FinancialTracking: React.FC = () => {
     const summary: Record<string, { month: string; rent: number; fines: number; total: number; count: number }> = {};
     
     allReceipts.forEach(receipt => {
-      const date = parseISO(receipt.payment_date);
-      const monthKey = format(date, 'yyyy-MM');
-      const monthLabel = format(date, 'MMMM yyyy', { locale: ar });
+      // Validate date before parsing
+      if (!receipt.payment_date) return;
+      
+      const dateObj = new Date(receipt.payment_date);
+      if (isNaN(dateObj.getTime())) return; // Skip invalid dates
+      
+      const monthKey = format(dateObj, 'yyyy-MM');
+      const monthLabel = format(dateObj, 'MMMM yyyy', { locale: ar });
       
       if (!summary[monthKey]) {
         summary[monthKey] = {
@@ -103,9 +108,9 @@ const FinancialTracking: React.FC = () => {
         };
       }
       
-      summary[monthKey].rent += receipt.rent_amount;
-      summary[monthKey].fines += receipt.fine;
-      summary[monthKey].total += receipt.total_paid;
+      summary[monthKey].rent += receipt.rent_amount || 0;
+      summary[monthKey].fines += receipt.fine || 0;
+      summary[monthKey].total += receipt.total_paid || 0;
       summary[monthKey].count += 1;
     });
     
@@ -163,20 +168,22 @@ const FinancialTracking: React.FC = () => {
     // Create CSV content
     const headers = ['الشهر', 'تاريخ الدفع', 'الإيجار', 'الغرامة', 'الإجمالي المدفوع'];
     const rows = customerReceipts.map(receipt => [
-      receipt.month,
-      format(new Date(receipt.payment_date), 'dd/MM/yyyy', { locale: ar }),
-      receipt.rent_amount.toString(),
-      receipt.fine.toString(),
-      receipt.total_paid.toString()
+      receipt.month || '-',
+      receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime())
+        ? format(new Date(receipt.payment_date), 'dd/MM/yyyy', { locale: ar })
+        : 'تاريخ غير متاح',
+      (receipt.rent_amount || 0).toString(),
+      (receipt.fine || 0).toString(),
+      (receipt.total_paid || 0).toString()
     ]);
 
     // Add totals row
     rows.push([
       'الإجمالي',
       '',
-      customerTotals.totalRent.toString(),
-      customerTotals.totalFines.toString(),
-      customerTotals.total.toString()
+      (customerTotals?.totalRent || 0).toString(),
+      (customerTotals?.totalFines || 0).toString(),
+      (customerTotals?.total || 0).toString()
     ]);
 
     // Create CSV content
