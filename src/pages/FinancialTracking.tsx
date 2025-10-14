@@ -1084,7 +1084,10 @@ const FinancialTracking: React.FC = () => {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {format(new Date(month.expected_date), 'dd MMMM yyyy', { locale: ar })}
+                            {month.expected_date && !isNaN(new Date(month.expected_date).getTime())
+                              ? format(new Date(month.expected_date), 'dd MMMM yyyy', { locale: ar })
+                              : 'تاريخ غير متاح'
+                            }
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1165,7 +1168,10 @@ const FinancialTracking: React.FC = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })}
+                          {receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime())
+                            ? format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })
+                            : 'تاريخ غير متاح'
+                          }
                         </div>
                       </TableCell>
                       <TableCell>
