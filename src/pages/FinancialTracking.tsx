@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,11 @@ const FinancialTracking: React.FC = () => {
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [receiptToDelete, setReceiptToDelete] = useState<RentalPaymentReceipt | null>(null);
+
+  // Edit monthly rent state
+  const [editingMonthlyRent, setEditingMonthlyRent] = useState(false);
+  const [newMonthlyRent, setNewMonthlyRent] = useState('');
+  const [isUpdatingRent, setIsUpdatingRent] = useState(false);
 
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
@@ -638,6 +644,65 @@ const FinancialTracking: React.FC = () => {
     }
   };
 
+  /**
+   * Handle updating monthly rent - syncs with contract
+   */
+  const handleEditMonthlyRent = () => {
+    if (!selectedCustomer) return;
+    setNewMonthlyRent(selectedCustomer.monthly_rent.toString());
+    setEditingMonthlyRent(true);
+  };
+
+  const handleCancelEditRent = () => {
+    setEditingMonthlyRent(false);
+    setNewMonthlyRent('');
+  };
+
+  const handleSaveMonthlyRent = async () => {
+    if (!selectedCustomer || !companyId) return;
+
+    const rentAmount = parseFloat(newMonthlyRent);
+    if (isNaN(rentAmount) || rentAmount <= 0) {
+      toast.error('الرجاء إدخال مبلغ صحيح للإيجار الشهري');
+      return;
+    }
+
+    setIsUpdatingRent(true);
+
+    try {
+      // Update the contract's monthly_amount
+      const { error } = await supabase
+        .from('contracts')
+        .update({ monthly_amount: rentAmount })
+        .eq('customer_id', selectedCustomer.id)
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Error updating monthly rent:', error);
+        throw error;
+      }
+
+      // Update local state
+      setSelectedCustomer({
+        ...selectedCustomer,
+        monthly_rent: rentAmount
+      });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
+
+      toast.success(`تم تحديث الإيجار الشهري إلى ${rentAmount.toLocaleString('ar-QA')} ريال ✅`);
+      setEditingMonthlyRent(false);
+      setNewMonthlyRent('');
+    } catch (error: any) {
+      console.error('Error updating monthly rent:', error);
+      toast.error('فشل في تحديث الإيجار الشهري');
+    } finally {
+      setIsUpdatingRent(false);
+    }
+  };
+
   const handleCreateCustomer = async () => {
     if (!newCustomerName.trim()) {
       toast.error('الرجاء إدخال اسم العميل');
@@ -936,7 +1001,58 @@ const FinancialTracking: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">الإيجار الشهري</p>
-                  <p className="text-xl font-bold text-primary">{(selectedCustomer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال</p>
+                  {editingMonthlyRent ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newMonthlyRent}
+                        onChange={(e) => setNewMonthlyRent(e.target.value)}
+                        className="w-32 h-8 text-sm"
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleSaveMonthlyRent}
+                        disabled={isUpdatingRent}
+                        className="h-8"
+                      >
+                        {isUpdatingRent ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          '✓'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancelEditRent}
+                        disabled={isUpdatingRent}
+                        className="h-8"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xl font-bold text-primary">
+                        {(selectedCustomer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleEditMonthlyRent}
+                        className="h-6 w-6 p-0"
+                        title="تعديل الإيجار الشهري"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1247,6 +1363,10 @@ const FinancialTracking: React.FC = () => {
                     const isPartial = receipt.payment_status === 'partial';
                     const isPending = receipt.payment_status === 'pending';
                     
+                    // Calculate values with fallback for older records
+                    const amountDue = receipt.amount_due || (receipt.rent_amount + receipt.fine);
+                    const pendingBalance = receipt.pending_balance ?? Math.max(0, amountDue - receipt.total_paid);
+                    
                     return (
                       <TableRow 
                         key={receipt.id}
@@ -1278,7 +1398,7 @@ const FinancialTracking: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <span className="text-sm font-semibold text-muted-foreground">
-                            {(receipt?.amount_due || 0).toLocaleString('ar-QA')} ريال
+                            {amountDue.toLocaleString('ar-QA')} ريال
                           </span>
                         </TableCell>
                         <TableCell>
@@ -1287,12 +1407,14 @@ const FinancialTracking: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {receipt.pending_balance > 0 ? (
+                          {pendingBalance > 0 ? (
                             <span className="text-lg font-bold text-orange-600">
-                              {(receipt?.pending_balance || 0).toLocaleString('ar-QA')} ريال
+                              {pendingBalance.toLocaleString('ar-QA')} ريال
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-sm font-semibold text-green-600">
+                              0 ريال
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
