@@ -576,18 +576,14 @@ const FinancialTracking: React.FC = () => {
       return;
     }
 
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      toast.error('الرجاء إدخال مبلغ صحيح');
-      return;
-    }
-
     if (!paymentDate) {
       toast.error('الرجاء اختيار تاريخ الدفع');
       return;
     }
 
-    const amount = parseFloat(paymentAmount);
+    // Calculate rent, fine, and total based on payment date
     const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
+    const calculatedTotal = rent_amount + fine;
     
     // Create receipt via Supabase
     await createReceiptMutation.mutateAsync({
@@ -597,7 +593,7 @@ const FinancialTracking: React.FC = () => {
       rent_amount,
       payment_date: paymentDate,
       fine,
-      total_paid: amount
+      total_paid: calculatedTotal  // Must equal rent_amount + fine for database constraint
     });
 
     // Reset form
@@ -921,19 +917,7 @@ const FinancialTracking: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="paymentAmount">المبلغ المدفوع (ريال)</Label>
-                <Input
-                  id="paymentAmount"
-                  type="number"
-                  placeholder="مثال: 5000"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="paymentDate">تاريخ الدفع</Label>
                 <Input
@@ -965,6 +949,42 @@ const FinancialTracking: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Payment Calculation Preview */}
+            {paymentDate && selectedCustomer && (() => {
+              const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
+              const total = rent_amount + fine;
+              return (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <DollarSign className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm w-full">
+                      <p className="font-semibold text-blue-900 mb-2">حساب الدفعة:</p>
+                      <div className="space-y-1 text-blue-800">
+                        <div className="flex justify-between">
+                          <span>• الشهر:</span>
+                          <span className="font-semibold">{month}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>• الإيجار الشهري:</span>
+                          <span className="font-semibold">{rent_amount.toLocaleString('ar-QA')} ريال</span>
+                        </div>
+                        {fine > 0 && (
+                          <div className="flex justify-between text-red-700">
+                            <span>• غرامة التأخير:</span>
+                            <span className="font-bold">{fine.toLocaleString('ar-QA')} ريال</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between border-t border-blue-300 pt-2 mt-2">
+                          <span className="font-bold">الإجمالي المستحق:</span>
+                          <span className="font-bold text-lg">{total.toLocaleString('ar-QA')} ريال</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Fine Calculation Info */}
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
