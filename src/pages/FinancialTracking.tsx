@@ -327,7 +327,10 @@ const FinancialTracking: React.FC = () => {
           </div>
           <div class="info-item">
             <label>تاريخ الدفع</label>
-            <value>${format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })}</value>
+            <value>${receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime()) 
+              ? format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })
+              : 'تاريخ غير متاح'
+            }</value>
           </div>
         </div>
 
@@ -396,11 +399,14 @@ const FinancialTracking: React.FC = () => {
 
     const receiptsRows = customerReceipts.map(receipt => `
       <tr>
-        <td>${receipt.month}</td>
-        <td>${format(new Date(receipt.payment_date), 'dd/MM/yyyy', { locale: ar })}</td>
-        <td>${receipt.rent_amount.toLocaleString('ar-QA')}</td>
-        <td style="color: ${receipt.fine > 0 ? '#c00' : '#666'};">${receipt.fine.toLocaleString('ar-QA')}</td>
-        <td style="font-weight: bold;">${receipt.total_paid.toLocaleString('ar-QA')}</td>
+        <td>${receipt.month || '-'}</td>
+        <td>${receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime())
+          ? format(new Date(receipt.payment_date), 'dd/MM/yyyy', { locale: ar })
+          : 'تاريخ غير متاح'
+        }</td>
+        <td>${(receipt.rent_amount || 0).toLocaleString('ar-QA')}</td>
+        <td style="color: ${receipt.fine > 0 ? '#c00' : '#666'};">${(receipt.fine || 0).toLocaleString('ar-QA')}</td>
+        <td style="font-weight: bold;">${(receipt.total_paid || 0).toLocaleString('ar-QA')}</td>
       </tr>
     `).join('');
 
@@ -488,7 +494,7 @@ const FinancialTracking: React.FC = () => {
         <div class="customer-info">
           <h2>بيانات العميل</h2>
           <p><strong>الاسم:</strong> ${selectedCustomer.name}</p>
-          <p><strong>الإيجار الشهري:</strong> ${selectedCustomer.monthly_rent.toLocaleString('ar-QA')} ريال</p>
+          <p><strong>الإيجار الشهري:</strong> ${(selectedCustomer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال</p>
           <p><strong>تاريخ الطباعة:</strong> ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: ar })}</p>
         </div>
 
@@ -506,9 +512,9 @@ const FinancialTracking: React.FC = () => {
             ${receiptsRows}
             <tr class="totals">
               <td colspan="2">الإجمالي الكلي</td>
-              <td>${customerTotals.totalRent.toLocaleString('ar-QA')}</td>
-              <td>${customerTotals.totalFines.toLocaleString('ar-QA')}</td>
-              <td>${customerTotals.total.toLocaleString('ar-QA')}</td>
+              <td>${(customerTotals?.totalRent || 0).toLocaleString('ar-QA')}</td>
+              <td>${(customerTotals?.totalFines || 0).toLocaleString('ar-QA')}</td>
+              <td>${(customerTotals?.total || 0).toLocaleString('ar-QA')}</td>
             </tr>
           </tbody>
         </table>
@@ -516,11 +522,11 @@ const FinancialTracking: React.FC = () => {
         <div class="summary-cards">
           <div class="summary-card">
             <h3>إجمالي المدفوعات</h3>
-            <p style="color: #007bff;">${customerTotals.total.toLocaleString('ar-QA')} ريال</p>
+            <p style="color: #007bff;">${(customerTotals?.total || 0).toLocaleString('ar-QA')} ريال</p>
           </div>
           <div class="summary-card">
             <h3>إجمالي الغرامات</h3>
-            <p style="color: #dc3545;">${customerTotals.totalFines.toLocaleString('ar-QA')} ريال</p>
+            <p style="color: #dc3545;">${(customerTotals?.totalFines || 0).toLocaleString('ar-QA')} ريال</p>
           </div>
           <div class="summary-card">
             <h3>عدد الإيصالات</h3>
