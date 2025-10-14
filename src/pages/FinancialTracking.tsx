@@ -629,7 +629,26 @@ const FinancialTracking: React.FC = () => {
       }
 
       if (!newCustomer || !newCustomer.id) {
-        throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل');
+        console.error('Customer created but no ID returned. Attempting to fetch...');
+        
+        // Try to fetch the just-created customer by name and company
+        const { data: fetchedCustomer, error: fetchError } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name')
+          .eq('company_id', companyId)
+          .eq('first_name', firstName)
+          .eq('last_name', lastName)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError || !fetchedCustomer) {
+          throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل');
+        }
+        
+        console.log('Successfully fetched customer ID:', fetchedCustomer.id);
+        // Reassign to use the fetched customer
+        Object.assign(newCustomer, fetchedCustomer);
       }
 
       console.log('Customer created successfully:', newCustomer.id);
