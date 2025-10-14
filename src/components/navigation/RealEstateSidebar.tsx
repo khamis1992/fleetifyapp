@@ -136,6 +136,11 @@ const financeSubItems = [
     icon: CreditCard
   },
   {
+    name: 'تتبع المدفوعات',
+    href: '/financial-tracking',
+    icon: Wallet
+  },
+  {
     name: 'الموازنات',
     href: '/finance/budgets',
     icon: Target

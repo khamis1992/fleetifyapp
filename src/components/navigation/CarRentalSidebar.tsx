@@ -30,7 +30,8 @@ import {
   Link,
   TrendingUp,
   Zap,
-  Activity
+  Activity,
+  Wallet
 } from 'lucide-react';
 import {
   Sidebar,
@@ -89,6 +90,11 @@ const financeSubItems = [
     name: 'المدفوعات',
     href: '/finance/payments',
     icon: CreditCard
+  },
+  {
+    name: 'تتبع المدفوعات',
+    href: '/financial-tracking',
+    icon: Wallet
   },
   {
     name: 'الموازنات',

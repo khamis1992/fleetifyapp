@@ -39,6 +39,7 @@ const Quotations = lazy(() => import("./pages/Quotations"));
 const Search = lazy(() => import("./pages/Search"));
 const Import = lazy(() => import("./pages/Import"));
 const InvoiceScannerPage = lazy(() => import("./pages/InvoiceScannerPage"));
+const FinancialTracking = lazy(() => import("./pages/FinancialTracking"));
 
 // Super Admin pages - lazy loaded
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
@@ -122,7 +123,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true }}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
             <TooltipProvider>
@@ -526,6 +527,13 @@ const AppRoutes = () => {
               <InvoiceScannerPage />
             </Suspense>
           </AdminRoute>
+        } />
+        
+        {/* نظام تتبع المدفوعات المالية */}
+        <Route path="financial-tracking" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <FinancialTracking />
+          </Suspense>
         } />
       </Route>
       
