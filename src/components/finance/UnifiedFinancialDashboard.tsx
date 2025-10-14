@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnhancedFinancialOverview } from "@/hooks/useEnhancedFinancialOverview";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +33,7 @@ interface MetricCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
-const MetricCard = ({ title, value, change, description, icon, trend = 'neutral' }: MetricCardProps) => {
+const MetricCard = React.memo(({ title, value, change, description, icon, trend = 'neutral' }: MetricCardProps) => {
   const getTrendIcon = () => {
     switch (trend) {
       case 'up':
@@ -79,7 +79,9 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
       </CardContent>
     </Card>
   );
-};
+});
+
+MetricCard.displayName = 'MetricCard';
 
 export const UnifiedFinancialDashboard = () => {
   const { user } = useAuth();
@@ -101,11 +103,13 @@ export const UnifiedFinancialDashboard = () => {
   }, [overview, error]);
 
   const { formatCurrency: fmt } = useCurrencyFormatter();
-  const formatCurrency = (amount: number) => fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const formatCurrency = useCallback((amount: number) => {
+    return fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }, [fmt]);
 
-  const formatPercentage = (percentage: number) => {
+  const formatPercentage = useCallback((percentage: number) => {
     return `${percentage.toFixed(1)}%`;
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -156,18 +160,18 @@ export const UnifiedFinancialDashboard = () => {
     );
   }
 
-  const getHealthScoreColor = (score: number) => {
+  const getHealthScoreColor = useCallback((score: number) => {
     if (score >= 80) return 'text-success';
     if (score >= 60) return 'text-warning';
     return 'text-destructive';
-  };
+  }, []);
 
-  const getHealthScoreLabel = (score: number) => {
+  const getHealthScoreLabel = useCallback((score: number) => {
     if (score >= 80) return 'Excellent';
     if (score >= 60) return 'Good';
     if (score >= 40) return 'Fair';
     return 'Poor';
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

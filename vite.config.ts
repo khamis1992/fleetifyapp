@@ -60,30 +60,48 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // Performance: Terser optimization options
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production', // Remove console logs in production
+        drop_debugger: true,
+        pure_funcs: mode === 'production' ? ['console.log', 'console.info'] : [],
+      },
+      mangle: {
+        safari10: true,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
           // Core React libraries
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // UI Libraries
-          'ui-vendor': [
+          // UI Libraries - Split Radix components
+          'ui-radix-base': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+          ],
+          'ui-radix-extended': [
             '@radix-ui/react-tabs',
             '@radix-ui/react-toast',
-            'framer-motion'
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
           ],
+          'ui-animation': ['framer-motion'],
           // Data and API
           'data-vendor': [
             '@supabase/supabase-js',
             '@tanstack/react-query'
           ],
-          // Charts and visualization
+          // Charts and visualization - Lazy load recommended
           'charts-vendor': ['recharts'],
           // Icons
           'icons-vendor': ['lucide-react'],
           // Utils
-          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge']
+          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge'],
+          // Forms
+          'forms-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
         },
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId
@@ -107,13 +125,27 @@ export default defineConfig(({ mode }) => ({
             }
           }
           return 'assets/[name]-[hash][extname]'
+        },
+        // Performance: Optimize chunk size warnings
+        experimentalMinChunkSize: 10000, // 10kb minimum chunk size
+      },
+      // Performance: Reduce warnings for large chunks
+      onwarn(warning, warn) {
+        // Suppress certain warnings
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
+          return;
         }
+        warn(warning);
       },
     },
     // Image optimization
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
     cssCodeSplit: true,
     sourcemap: mode === 'development',
+    // Performance: Report compressed sizes
+    reportCompressedSize: true,
+    // Performance: Chunk size warnings
+    chunkSizeWarningLimit: 1000, // 1MB warning threshold
   },
   // Performance optimizations
   css: {
