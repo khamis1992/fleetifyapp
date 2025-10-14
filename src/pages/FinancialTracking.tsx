@@ -604,6 +604,8 @@ const FinancialTracking: React.FC = () => {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || firstName;
 
+      console.log('Attempting to create customer:', { firstName, lastName, companyId });
+
       // Create customer in Supabase with all required fields
       const { data: newCustomer, error: customerError } = await supabase
         .from('customers')
@@ -619,6 +621,8 @@ const FinancialTracking: React.FC = () => {
         .select('id, first_name, last_name')
         .single();
 
+      console.log('Customer insert result:', { data: newCustomer, error: customerError });
+
       if (customerError) {
         console.error('Customer creation error:', customerError);
         throw new Error(
@@ -629,7 +633,10 @@ const FinancialTracking: React.FC = () => {
       }
 
       if (!newCustomer || !newCustomer.id) {
-        console.error('Customer created but no ID returned. Attempting to fetch...');
+        console.error('Customer created but no ID returned. Attempting to fetch...', newCustomer);
+        
+        // Wait a moment for the database to process
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Try to fetch the just-created customer by name and company
         const { data: fetchedCustomer, error: fetchError } = await supabase
@@ -642,13 +649,26 @@ const FinancialTracking: React.FC = () => {
           .limit(1)
           .maybeSingle();
 
-        if (fetchError || !fetchedCustomer) {
-          throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل');
+        console.log('Fetch result:', { data: fetchedCustomer, error: fetchError });
+
+        if (fetchError) {
+          console.error('Fetch error:', fetchError);
+          throw new Error(`فشل في الحصول على معرف العميل: ${fetchError.message}`);
+        }
+        
+        if (!fetchedCustomer || !fetchedCustomer.id) {
+          console.error('No customer found after insert');
+          throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل - يرجى التحقق من أذونات الوصول');
         }
         
         console.log('Successfully fetched customer ID:', fetchedCustomer.id);
         // Reassign to use the fetched customer
         Object.assign(newCustomer, fetchedCustomer);
+      }
+
+      // Double-check we have an ID before proceeding
+      if (!newCustomer.id) {
+        throw new Error('خطأ حرج: معرف العميل غير متوفر');
       }
 
       console.log('Customer created successfully:', newCustomer.id);
