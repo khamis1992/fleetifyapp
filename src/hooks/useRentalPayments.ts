@@ -18,6 +18,9 @@ export interface RentalPaymentReceipt {
   payment_date: string;
   fine: number;
   total_paid: number;
+  amount_due: number;
+  pending_balance: number;
+  payment_status: 'paid' | 'partial' | 'pending';
   notes?: string;
   created_by?: string;
   created_at: string;
@@ -40,8 +43,11 @@ export interface CustomerPaymentTotals {
   total_payments: number;
   total_fines: number;
   total_rent: number;
+  total_pending: number;
+  total_due: number;
   receipt_count: number;
   last_payment_date: string | null;
+  partial_payment_count: number;
 }
 
 /**

@@ -589,11 +589,17 @@ const FinancialTracking: React.FC = () => {
       return;
     }
 
-    // Calculate rent, fine, and total based on payment date
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      toast.error('الرجاء إدخال المبلغ المدفوع');
+      return;
+    }
+
+    // Calculate rent, fine, and total due based on payment date
     const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
-    const calculatedTotal = rent_amount + fine;
+    const totalDue = rent_amount + fine;
+    const paidAmount = parseFloat(paymentAmount);
     
-    // Create receipt via Supabase
+    // Create receipt via Supabase with partial payment support
     await createReceiptMutation.mutateAsync({
       customer_id: selectedCustomer.id,
       customer_name: selectedCustomer.name,
@@ -601,7 +607,10 @@ const FinancialTracking: React.FC = () => {
       rent_amount,
       payment_date: paymentDate,
       fine,
-      total_paid: calculatedTotal  // Must equal rent_amount + fine for database constraint
+      total_paid: paidAmount,  // User-entered amount
+      amount_due: totalDue,    // Auto-calculated total due
+      pending_balance: Math.max(0, totalDue - paidAmount), // Will be auto-calculated by trigger
+      payment_status: paidAmount >= totalDue ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending')
     });
 
     // Reset form
@@ -945,7 +954,7 @@ const FinancialTracking: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="paymentDate">تاريخ الدفع</Label>
                 <Input
@@ -953,6 +962,20 @@ const FinancialTracking: React.FC = () => {
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="paymentAmount">المبلغ المدفوع (ريال)</Label>
+                <Input
+                  id="paymentAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="أدخل المبلغ المدفوع..."
                   className="mt-1"
                 />
               </div>
@@ -981,7 +1004,12 @@ const FinancialTracking: React.FC = () => {
             {/* Payment Calculation Preview */}
             {paymentDate && selectedCustomer && (() => {
               const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
-              const total = rent_amount + fine;
+              const totalDue = rent_amount + fine;
+              const paidAmount = parseFloat(paymentAmount) || 0;
+              const pendingBalance = Math.max(0, totalDue - paidAmount);
+              const isPartialPayment = paidAmount > 0 && paidAmount < totalDue;
+              const isFullyPaid = paidAmount >= totalDue;
+              
               return (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-start gap-2">
@@ -1005,8 +1033,34 @@ const FinancialTracking: React.FC = () => {
                         )}
                         <div className="flex justify-between border-t border-blue-300 pt-2 mt-2">
                           <span className="font-bold">الإجمالي المستحق:</span>
-                          <span className="font-bold text-lg">{total.toLocaleString('ar-QA')} ريال</span>
+                          <span className="font-bold text-lg">{totalDue.toLocaleString('ar-QA')} ريال</span>
                         </div>
+                        {paidAmount > 0 && (
+                          <>
+                            <div className="flex justify-between text-green-700">
+                              <span>• المبلغ المدفوع:</span>
+                              <span className="font-bold">{paidAmount.toLocaleString('ar-QA')} ريال</span>
+                            </div>
+                            {pendingBalance > 0 && (
+                              <div className="flex justify-between text-orange-700 bg-orange-50 -mx-2 px-2 py-1 rounded">
+                                <span className="font-bold">⚠️ الرصيد المتبقي:</span>
+                                <span className="font-bold text-lg">{pendingBalance.toLocaleString('ar-QA')} ريال</span>
+                              </div>
+                            )}
+                            {isFullyPaid && (
+                              <div className="flex items-center justify-center gap-2 bg-green-100 text-green-700 -mx-2 px-2 py-2 rounded mt-2">
+                                <span className="text-2xl">✅</span>
+                                <span className="font-bold">دفع كامل</span>
+                              </div>
+                            )}
+                            {isPartialPayment && (
+                              <div className="flex items-center justify-center gap-2 bg-orange-100 text-orange-700 -mx-2 px-2 py-2 rounded mt-2">
+                                <span className="text-xl">⚠️</span>
+                                <span className="font-bold">دفع جزئي - يوجد رصيد متبقي</span>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1021,7 +1075,7 @@ const FinancialTracking: React.FC = () => {
       {selectedCustomer && customerReceipts.length > 0 && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
@@ -1040,6 +1094,22 @@ const FinancialTracking: React.FC = () => {
                   <p className="text-3xl font-bold text-destructive mt-2">
                     {(customerTotals?.totalFines || 0).toLocaleString('ar-QA')} ريال
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-orange-200">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">الرصيد المتبقي</p>
+                  <p className="text-3xl font-bold text-orange-600 mt-2">
+                    {(totalsData?.total_pending || 0).toLocaleString('ar-QA')} ريال
+                  </p>
+                  {(totalsData?.partial_payment_count || 0) > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      {totalsData?.partial_payment_count} دفعة جزئية
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1164,65 +1234,111 @@ const FinancialTracking: React.FC = () => {
                     <TableHead className="text-right">تاريخ الدفع</TableHead>
                     <TableHead className="text-right">الإيجار</TableHead>
                     <TableHead className="text-right">الغرامة</TableHead>
-                    <TableHead className="text-right">الإجمالي المدفوع</TableHead>
+                    <TableHead className="text-right">المستحق</TableHead>
+                    <TableHead className="text-right">المدفوع</TableHead>
+                    <TableHead className="text-right">المتبقي</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {customerReceipts.map((receipt) => (
-                    <TableRow key={receipt.id}>
-                      <TableCell className="font-medium">{receipt.month}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime())
-                            ? format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })
-                            : 'تاريخ غير متاح'
-                          }
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold">
-                          {(receipt?.rent_amount || 0).toLocaleString('ar-QA')} ريال
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {receipt.fine > 0 ? (
-                          <Badge variant="destructive" className="font-semibold">
-                            {(receipt?.fine || 0).toLocaleString('ar-QA')} ريال
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">لا يوجد</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-lg font-bold text-primary">
-                          {(receipt?.total_paid || 0).toLocaleString('ar-QA')} ريال
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => printReceipt(receipt)}
-                            title="طباعة الإيصال"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(receipt)}
-                            title="حذف الإيصال"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {customerReceipts.map((receipt) => {
+                    const isPaid = receipt.payment_status === 'paid';
+                    const isPartial = receipt.payment_status === 'partial';
+                    const isPending = receipt.payment_status === 'pending';
+                    
+                    return (
+                      <TableRow 
+                        key={receipt.id}
+                        className={isPartial ? 'bg-orange-50/50' : ''}
+                      >
+                        <TableCell className="font-medium">{receipt.month}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            {receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime())
+                              ? format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })
+                              : 'تاريخ غير متاح'
+                            }
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold">
+                            {(receipt?.rent_amount || 0).toLocaleString('ar-QA')} ريال
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {receipt.fine > 0 ? (
+                            <Badge variant="destructive" className="font-semibold">
+                              {(receipt?.fine || 0).toLocaleString('ar-QA')} ريال
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">لا يوجد</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {(receipt?.amount_due || 0).toLocaleString('ar-QA')} ريال
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-lg font-bold text-primary">
+                            {(receipt?.total_paid || 0).toLocaleString('ar-QA')} ريال
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {receipt.pending_balance > 0 ? (
+                            <span className="text-lg font-bold text-orange-600">
+                              {(receipt?.pending_balance || 0).toLocaleString('ar-QA')} ريال
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {isPaid && (
+                            <Badge className="bg-green-500">
+                              <span className="mr-1">✅</span>
+                              مدفوع
+                            </Badge>
+                          )}
+                          {isPartial && (
+                            <Badge className="bg-orange-500">
+                              <span className="mr-1">⚠️</span>
+                              جزئي
+                            </Badge>
+                          )}
+                          {isPending && (
+                            <Badge variant="destructive">
+                              <span className="mr-1">❌</span>
+                              معلق
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => printReceipt(receipt)}
+                              title="طباعة الإيصال"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(receipt)}
+                              title="حذف الإيصال"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
