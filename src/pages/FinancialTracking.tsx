@@ -55,6 +55,7 @@ const FinancialTracking: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [displayPaymentDate, setDisplayPaymentDate] = useState(format(new Date(), 'dd/MM/yyyy')); // Display format
   const [paymentNotes, setPaymentNotes] = useState(''); // User notes for payment
   
   // Date range filter state
@@ -188,6 +189,49 @@ const FinancialTracking: React.FC = () => {
   }, [totalsData, customerReceipts]);
 
   // Fine calculation is now imported from useRentalPayments hook
+
+  /**
+   * Convert DD/MM/YYYY to YYYY-MM-DD
+   */
+  const parseDisplayDate = (displayDate: string): string => {
+    try {
+      const parts = displayDate.split('/');
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+    } catch (e) {
+      console.error('Error parsing date:', e);
+    }
+    return format(new Date(), 'yyyy-MM-dd');
+  };
+
+  /**
+   * Convert YYYY-MM-DD to DD/MM/YYYY
+   */
+  const formatDisplayDate = (isoDate: string): string => {
+    try {
+      const date = new Date(isoDate);
+      if (!isNaN(date.getTime())) {
+        return format(date, 'dd/MM/yyyy');
+      }
+    } catch (e) {
+      console.error('Error formatting date:', e);
+    }
+    return format(new Date(), 'dd/MM/yyyy');
+  };
+
+  /**
+   * Handle display date input change
+   */
+  const handleDisplayDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDisplayPaymentDate(value);
+    
+    // Try to parse and validate the date
+    const isoDate = parseDisplayDate(value);
+    setPaymentDate(isoDate);
+  };
 
   const handleSelectCustomer = (customer: CustomerWithRental) => {
     setSelectedCustomer(customer);
@@ -731,6 +775,7 @@ const FinancialTracking: React.FC = () => {
       // Reset form
       setPaymentAmount('');
       setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+      setDisplayPaymentDate(format(new Date(), 'dd/MM/yyyy'));
       setPaymentNotes('');
       // Reset vehicle selection for multi-vehicle customers
       if (customerVehicles.length > 1) {
@@ -1435,11 +1480,16 @@ const FinancialTracking: React.FC = () => {
                 <Label htmlFor="paymentDate">تاريخ الدفع</Label>
                 <Input
                   id="paymentDate"
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
+                  type="text"
+                  value={displayPaymentDate}
+                  onChange={handleDisplayDateChange}
+                  placeholder="DD/MM/YYYY"
                   className="mt-1"
+                  maxLength={10}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  مثال: 15/10/2024
+                </p>
               </div>
 
               <div>
