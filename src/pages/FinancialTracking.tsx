@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Plus, Calendar, DollarSign, AlertTriangle, Download, Printer, FileSpreadsheet, Loader2, TrendingUp, AlertCircle, Clock, Filter, X, UserPlus } from 'lucide-react';
+import { Search, Plus, Calendar, DollarSign, AlertTriangle, Download, Printer, FileSpreadsheet, Loader2, TrendingUp, AlertCircle, Clock, Filter, X, UserPlus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -21,6 +21,7 @@ import {
   useCustomersWithRental,
   useCustomerPaymentTotals,
   useCreateRentalReceipt,
+  useDeleteRentalReceipt,
   useCustomerOutstandingBalance,
   useCustomerUnpaidMonths,
   calculateDelayFine,
@@ -65,6 +66,10 @@ const FinancialTracking: React.FC = () => {
   
   // Monthly revenue filter state
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all'); // 'all' or 'yyyy-MM' format
+  
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [receiptToDelete, setReceiptToDelete] = useState<RentalPaymentReceipt | null>(null);
 
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
@@ -86,6 +91,9 @@ const FinancialTracking: React.FC = () => {
   
   // Create receipt mutation
   const createReceiptMutation = useCreateRentalReceipt();
+  
+  // Delete receipt mutation
+  const deleteReceiptMutation = useDeleteRentalReceipt();
 
   // Calculate monthly revenue summary
   const monthlySummary = useMemo(() => {
@@ -601,6 +609,26 @@ const FinancialTracking: React.FC = () => {
     setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
   };
 
+  /**
+   * Handle delete receipt with confirmation
+   */
+  const handleDeleteClick = (receipt: RentalPaymentReceipt) => {
+    setReceiptToDelete(receipt);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteReceipt = async () => {
+    if (!receiptToDelete) return;
+
+    try {
+      await deleteReceiptMutation.mutateAsync(receiptToDelete.id);
+      setDeleteDialogOpen(false);
+      setReceiptToDelete(null);
+    } catch (error) {
+      // Error is handled by mutation
+    }
+  };
+
   const handleCreateCustomer = async () => {
     if (!newCustomerName.trim()) {
       toast.error('الرجاء إدخال اسم العميل');
@@ -985,21 +1013,6 @@ const FinancialTracking: React.FC = () => {
                 </div>
               );
             })()}
-
-            {/* Fine Calculation Info */}
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-semibold text-yellow-900">نظام حساب الغرامات:</p>
-                  <ul className="mt-2 space-y-1 text-yellow-800">
-                    <li>• موعد الاستحقاق: يوم 1 من كل شهر</li>
-                    <li>• غرامة التأخير: {DELAY_FINE_PER_DAY} ريال لكل يوم</li>
-                    <li>• الحد الأقصى للغرامة: {MAX_FINE_PER_MONTH} ريال للشهر الواحد</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -1043,57 +1056,7 @@ const FinancialTracking: React.FC = () => {
             </Card>
           </div>
 
-          {/* Outstanding Balance Section */}
-          {outstandingBalance && outstandingBalance.outstanding_balance > 0 && (
-            <Card className="border-destructive">
-              <CardHeader className="bg-destructive/10">
-                <CardTitle className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  الرصيد المستحق
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">المتوقع</p>
-                    <p className="text-2xl font-bold mt-1">
-                      {(outstandingBalance.expected_total || 0).toLocaleString('ar-QA')} ريال
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">المدفوع</p>
-                    <p className="text-2xl font-bold text-green-600 mt-1">
-                      {(outstandingBalance.total_paid || 0).toLocaleString('ar-QA')} ريال
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">المتبقي</p>
-                    <p className="text-3xl font-bold text-destructive mt-1">
-                      {(outstandingBalance.outstanding_balance || 0).toLocaleString('ar-QA')} ريال
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">أشهر غير مدفوعة</p>
-                    <p className="text-3xl font-bold text-destructive mt-1">
-                      {outstandingBalance.unpaid_month_count || 0}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">الأشهر المتوقعة</p>
-                    <p className="font-semibold mt-1">{outstandingBalance.months_expected || 0} شهر</p>
-                  </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">الأشهر المدفوعة</p>
-                    <p className="font-semibold mt-1">{outstandingBalance.months_paid || 0} شهر</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Unpaid Months List with Red Highlighting */}
+          {/* Unpaid Months List - Dynamically Updated */}
           {unpaidMonths.length > 0 && (
             <Card className="border-destructive">
               <CardHeader className="bg-destructive/10">
@@ -1238,14 +1201,25 @@ const FinancialTracking: React.FC = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => printReceipt(receipt)}
-                          title="طباعة الإيصال"
-                        >
-                          <Printer className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => printReceipt(receipt)}
+                            title="طباعة الإيصال"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(receipt)}
+                            title="حذف الإيصال"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1499,6 +1473,87 @@ const FinancialTracking: React.FC = () => {
                 <>
                   <UserPlus className="h-4 w-4 ml-2" />
                   إنشاء العميل
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Receipt Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              تأكيد حذف الإيصال
+            </DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف هذا الإيصال؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+
+          {receiptToDelete && (
+            <div className="space-y-3 py-4">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">العميل:</span>
+                  <span className="font-semibold">{receiptToDelete.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">الشهر:</span>
+                  <span className="font-semibold">{receiptToDelete.month}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">المبلغ:</span>
+                  <span className="font-bold text-primary">
+                    {(receiptToDelete.total_paid || 0).toLocaleString('ar-QA')} ريال
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">تاريخ الدفع:</span>
+                  <span className="font-semibold">
+                    {receiptToDelete.payment_date && !isNaN(new Date(receiptToDelete.payment_date).getTime())
+                      ? format(new Date(receiptToDelete.payment_date), 'dd MMMM yyyy', { locale: ar })
+                      : 'تاريخ غير متاح'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">
+                  <strong>تحذير:</strong> بعد حذف الإيصال، سيتم إضافة الشهر إلى قائمة الأشهر غير المدفوعة.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setReceiptToDelete(null);
+              }}
+              disabled={deleteReceiptMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteReceipt}
+              disabled={deleteReceiptMutation.isPending}
+            >
+              {deleteReceiptMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف الإيصال
                 </>
               )}
             </Button>
