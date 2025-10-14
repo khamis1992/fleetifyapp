@@ -842,7 +842,7 @@ const FinancialTracking: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{customer.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          {customer.monthly_rent.toLocaleString('ar-QA')} ريال/شهر
+                          {(customer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال/شهر
                         </span>
                       </div>
                     </div>
@@ -879,7 +879,7 @@ const FinancialTracking: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">الإيجار الشهري</p>
-                  <p className="text-xl font-bold text-primary">{selectedCustomer.monthly_rent.toLocaleString('ar-QA')} ريال</p>
+                  <p className="text-xl font-bold text-primary">{(selectedCustomer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال</p>
                 </div>
               </div>
             </div>
@@ -970,7 +970,7 @@ const FinancialTracking: React.FC = () => {
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">إجمالي المدفوعات</p>
                   <p className="text-3xl font-bold text-primary mt-2">
-                    {customerTotals.total.toLocaleString('ar-QA')} ريال
+                    {(customerTotals?.total || 0).toLocaleString('ar-QA')} ريال
                   </p>
                 </div>
               </CardContent>
@@ -981,7 +981,7 @@ const FinancialTracking: React.FC = () => {
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">إجمالي الغرامات</p>
                   <p className="text-3xl font-bold text-destructive mt-2">
-                    {customerTotals.totalFines.toLocaleString('ar-QA')} ريال
+                    {(customerTotals?.totalFines || 0).toLocaleString('ar-QA')} ريال
                   </p>
                 </div>
               </CardContent>
@@ -1170,13 +1170,13 @@ const FinancialTracking: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <span className="font-semibold">
-                          {receipt.rent_amount.toLocaleString('ar-QA')} ريال
+                          {(receipt?.rent_amount || 0).toLocaleString('ar-QA')} ريال
                         </span>
                       </TableCell>
                       <TableCell>
                         {receipt.fine > 0 ? (
                           <Badge variant="destructive" className="font-semibold">
-                            {receipt.fine.toLocaleString('ar-QA')} ريال
+                            {(receipt?.fine || 0).toLocaleString('ar-QA')} ريال
                           </Badge>
                         ) : (
                           <Badge variant="secondary">لا يوجد</Badge>
@@ -1184,7 +1184,7 @@ const FinancialTracking: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <span className="text-lg font-bold text-primary">
-                          {receipt.total_paid.toLocaleString('ar-QA')} ريال
+                          {(receipt?.total_paid || 0).toLocaleString('ar-QA')} ريال
                         </span>
                       </TableCell>
                       <TableCell>
