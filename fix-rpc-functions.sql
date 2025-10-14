@@ -38,7 +38,7 @@ BEGIN
     ) as outstanding_balance,
     GREATEST(0, 
       (EXTRACT(MONTH FROM AGE(CURRENT_DATE, c.start_date))::integer + 1) - 
-      COUNT(DISTINCT p.payment_month)::integer
+      COUNT(DISTINCT TO_CHAR(p.payment_date, 'YYYY-MM'))::integer
     ) as months_behind
   FROM customers cu
   INNER JOIN contracts c ON cu.id = c.customer_id
@@ -100,7 +100,7 @@ BEGIN
         (SELECT SUM(amount) 
          FROM payments 
          WHERE customer_id = customer_id_param 
-           AND TO_CHAR(payment_month, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
+           AND TO_CHAR(payment_date, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
            AND payment_type = 'rental'
         ), 0
       ) as paid_amount,
@@ -108,7 +108,7 @@ BEGIN
         (SELECT SUM(amount) 
          FROM payments 
          WHERE customer_id = customer_id_param 
-           AND TO_CHAR(payment_month, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
+           AND TO_CHAR(payment_date, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
            AND payment_type = 'rental'
         ), 0
       ) as balance,
@@ -116,7 +116,7 @@ BEGIN
         SELECT 1 
         FROM payments 
         WHERE customer_id = customer_id_param 
-          AND TO_CHAR(payment_month, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
+          AND TO_CHAR(payment_date, 'YYYY-MM') = TO_CHAR(current_month, 'YYYY-MM')
           AND payment_type = 'rental'
           AND amount >= monthly_rent
       ) as is_paid;
@@ -153,7 +153,7 @@ BEGIN
     ) as outstanding_balance,
     GREATEST(0, 
       (EXTRACT(MONTH FROM AGE(CURRENT_DATE, c.start_date))::integer + 1) - 
-      COUNT(DISTINCT p.payment_month)::integer
+      COUNT(DISTINCT TO_CHAR(p.payment_date, 'YYYY-MM'))::integer
     ) as months_behind,
     MAX(p.payment_date) as last_payment_date
   FROM customers cu
