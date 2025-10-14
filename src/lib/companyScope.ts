@@ -28,17 +28,15 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
   // Extract company_id consistently with useUnifiedCompanyAccess
   const companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
   
-  // تسجيل معلومات تشخيصية
-  console.log('🔧 [getCompanyScopeContext] Processing user context:', {
-    userId: user?.id,
-    companyId,
-    userCompanyFromObject: user?.company?.id,
-    userCompanyFromDirect: (user as any)?.company_id,
-    userCompanyFromProfile: user?.profile?.company_id,
-    normalizedRoles,
-    isSystemLevel: normalizedRoles.includes('super_admin'),
-    isCompanyScoped: normalizedRoles.includes('company_admin') && !normalizedRoles.includes('super_admin')
-  });
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 [getCompanyScopeContext] Processing user context:', {
+      userId: user?.id,
+      companyId,
+      normalizedRoles,
+      isSystemLevel: normalizedRoles.includes('super_admin')
+    });
+  }
   
   return {
     user,
@@ -94,26 +92,18 @@ export const hasFullCompanyControl = (
  * Get the appropriate WHERE clause for filtering data by company
  */
 export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: boolean = false, allowGlobalView: boolean = false): { company_id?: string } => {
-  console.log('📊 [getCompanyFilter] Input parameters:', {
-    forceOwnCompany,
-    allowGlobalView,
-    hasGlobalAccess: hasGlobalAccess(context),
-    companyId: context.companyId,
-    isSystemLevel: context.isSystemLevel
-  });
+  // Removed verbose logging - only log in development if needed
+  // console.log('📊 [getCompanyFilter] Input parameters:', {...});
 
   // تطبيق فلترة صارمة: افتراضياً جميع المستخدمين (بما في ذلك super_admin) محدودون بشركتهم
   // Super admin يحتاج إلى طلب صريح للوصول العالمي
   if (context.isSystemLevel && !forceOwnCompany && allowGlobalView) {
-    console.log('🌐 [getCompanyFilter] Super admin requesting global view (explicitly allowed)');
     return {};
   }
   
   if (context.companyId) {
     // السلوك الافتراضي: جميع المستخدمين محدودون بشركتهم النشطة
-    const result = { company_id: context.companyId };
-    console.log('🏢 [getCompanyFilter] Returning strict company filter:', result);
-    return result;
+    return { company_id: context.companyId };
   }
   
   // احتياطي أمني: عدم الوصول إذا لم توجد شركة مرتبطة

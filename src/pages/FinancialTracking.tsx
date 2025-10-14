@@ -1013,36 +1013,36 @@ const FinancialTracking: React.FC = () => {
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">المتوقع</p>
                     <p className="text-2xl font-bold mt-1">
-                      {outstandingBalance.expected_total.toLocaleString('ar-QA')} ريال
+                      {(outstandingBalance.expected_total || 0).toLocaleString('ar-QA')} ريال
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">المدفوع</p>
                     <p className="text-2xl font-bold text-green-600 mt-1">
-                      {outstandingBalance.total_paid.toLocaleString('ar-QA')} ريال
+                      {(outstandingBalance.total_paid || 0).toLocaleString('ar-QA')} ريال
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">المتبقي</p>
                     <p className="text-3xl font-bold text-destructive mt-1">
-                      {outstandingBalance.outstanding_balance.toLocaleString('ar-QA')} ريال
+                      {(outstandingBalance.outstanding_balance || 0).toLocaleString('ar-QA')} ريال
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">أشهر غير مدفوعة</p>
                     <p className="text-3xl font-bold text-destructive mt-1">
-                      {outstandingBalance.unpaid_month_count}
+                      {outstandingBalance.unpaid_month_count || 0}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="text-muted-foreground">الأشهر المتوقعة</p>
-                    <p className="font-semibold mt-1">{outstandingBalance.months_expected} شهر</p>
+                    <p className="font-semibold mt-1">{outstandingBalance.months_expected || 0} شهر</p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="text-muted-foreground">الأشهر المدفوعة</p>
-                    <p className="font-semibold mt-1">{outstandingBalance.months_paid} شهر</p>
+                    <p className="font-semibold mt-1">{outstandingBalance.months_paid || 0} شهر</p>
                   </div>
                 </div>
               </CardContent>
