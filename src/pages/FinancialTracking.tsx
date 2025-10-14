@@ -62,6 +62,9 @@ const FinancialTracking: React.FC = () => {
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerRent, setNewCustomerRent] = useState('');
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  
+  // Monthly revenue filter state
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all'); // 'all' or 'yyyy-MM' format
 
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
@@ -119,6 +122,14 @@ const FinancialTracking: React.FC = () => {
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([key, data]) => ({ ...data, monthKey: key }));
   }, [allReceipts]);
+
+  // Filtered monthly summary based on selected month
+  const filteredMonthlySummary = useMemo(() => {
+    if (selectedMonthFilter === 'all') {
+      return monthlySummary;
+    }
+    return monthlySummary.filter(m => m.monthKey === selectedMonthFilter);
+  }, [monthlySummary, selectedMonthFilter]);
 
   // Filter customers based on search term
   const filteredCustomers = useMemo(() => {
@@ -1244,10 +1255,40 @@ const FinancialTracking: React.FC = () => {
           {/* Monthly Summary Header */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                الإيرادات الشهرية - ملخص
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  الإيرادات الشهرية - ملخص
+                </CardTitle>
+                
+                {/* Month Filter Selector */}
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <select
+                    value={selectedMonthFilter}
+                    onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm bg-white"
+                  >
+                    <option value="all">جميع الأشهر</option>
+                    {monthlySummary.map((month) => (
+                      <option key={month.monthKey} value={month.monthKey}>
+                        {month.month}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedMonthFilter !== 'all' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedMonthFilter('all')}
+                      className="h-8"
+                    >
+                      <X className="h-4 w-4 ml-1" />
+                      إلغاء الفلتر
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loadingAllReceipts ? (
@@ -1255,11 +1296,21 @@ const FinancialTracking: React.FC = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <span className="mr-2">جاري التحميل...</span>
                 </div>
-              ) : monthlySummary.length === 0 ? (
+              ) : filteredMonthlySummary.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <TrendingUp className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">لا توجد بيانات شهرية بعد</p>
-                  <p className="text-sm mt-2">قم بإضافة مدفوعات للعملاء لرؤية الإحصائيات</p>
+                  <p className="text-lg">
+                    {selectedMonthFilter === 'all' 
+                      ? 'لا توجد بيانات شهرية بعد' 
+                      : `لا توجد بيانات للشهر المحدد`
+                    }
+                  </p>
+                  <p className="text-sm mt-2">
+                    {selectedMonthFilter === 'all'
+                      ? 'قم بإضافة مدفوعات للعملاء لرؤية الإحصائيات'
+                      : 'جرب اختيار شهر آخر أو عرض جميع الأشهر'
+                    }
+                  </p>
                 </div>
               ) : (
                 <>
@@ -1270,7 +1321,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
                           <p className="text-3xl font-bold text-primary mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + (m.total || 0), 0).toLocaleString('ar-QA')} ريال
+                            {filteredMonthlySummary.reduce((sum, m) => sum + (m.total || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1280,7 +1331,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الإيجار</p>
                           <p className="text-3xl font-bold text-blue-600 mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + (m.rent || 0), 0).toLocaleString('ar-QA')} ريال
+                            {filteredMonthlySummary.reduce((sum, m) => sum + (m.rent || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1290,7 +1341,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">إجمالي الغرامات</p>
                           <p className="text-3xl font-bold text-destructive mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + (m.fines || 0), 0).toLocaleString('ar-QA')} ريال
+                            {filteredMonthlySummary.reduce((sum, m) => sum + (m.fines || 0), 0).toLocaleString('ar-QA')} ريال
                           </p>
                         </div>
                       </CardContent>
@@ -1300,7 +1351,7 @@ const FinancialTracking: React.FC = () => {
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">عدد الإيصالات</p>
                           <p className="text-3xl font-bold text-green-600 mt-2">
-                            {monthlySummary.reduce((sum, m) => sum + (m.count || 0), 0).toLocaleString('ar-QA')}
+                            {filteredMonthlySummary.reduce((sum, m) => sum + (m.count || 0), 0).toLocaleString('ar-QA')}
                           </p>
                         </div>
                       </CardContent>
@@ -1319,7 +1370,7 @@ const FinancialTracking: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {monthlySummary.map((monthData) => (
+                      {filteredMonthlySummary.map((monthData) => (
                         <TableRow key={monthData.monthKey}>
                           <TableCell className="font-bold">{monthData.month || '-'}</TableCell>
                           <TableCell>
@@ -1439,3 +1490,4 @@ const FinancialTracking: React.FC = () => {
 };
 
 export default FinancialTracking;
+ 
