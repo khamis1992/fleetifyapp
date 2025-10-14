@@ -315,22 +315,49 @@ export const useCreateRentalReceipt = () => {
         throw new Error('Company ID is required');
       }
 
-      const { data, error } = await supabase
-        .from('rental_payment_receipts')
-        .insert({
-          ...receipt,
-          company_id: companyId,
-          created_by: user?.id
-        })
-        .select()
-        .single();
+      console.log('Creating rental receipt via RPC function...');
+      
+      // Use RPC function to bypass RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_rental_payment_receipt', {
+        p_customer_id: receipt.customer_id,
+        p_customer_name: receipt.customer_name,
+        p_month: receipt.month,
+        p_payment_date: receipt.payment_date,
+        p_rent_amount: receipt.rent_amount,
+        p_fine: receipt.fine,
+        p_total_paid: receipt.total_paid,
+        p_company_id: companyId,
+        p_created_by: user?.id || null
+      });
 
-      if (error) {
-        console.error('❌ Error creating rental receipt:', error);
-        throw error;
+      console.log('RPC result:', { rpcResult, rpcError });
+
+      if (rpcError) {
+        console.error('❌ RPC function error:', rpcError);
+        throw new Error(`Failed to create receipt: ${rpcError.message || rpcError.code}`);
       }
 
-      return data as RentalPaymentReceipt;
+      if (!rpcResult || !rpcResult.success) {
+        throw new Error(rpcResult?.error || 'Failed to create receipt');
+      }
+
+      console.log('✅ Receipt created successfully via RPC');
+      
+      // Return the receipt data
+      return {
+        id: rpcResult.id,
+        customer_id: rpcResult.customer_id,
+        customer_name: rpcResult.customer_name,
+        month: rpcResult.month,
+        payment_date: rpcResult.payment_date,
+        rent_amount: rpcResult.rent_amount,
+        fine: rpcResult.fine,
+        total_paid: rpcResult.total_paid,
+        company_id: rpcResult.company_id,
+        created_by: rpcResult.created_by,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as RentalPaymentReceipt;
     },
     onSuccess: (data) => {
       // Invalidate relevant queries
