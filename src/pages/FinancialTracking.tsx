@@ -604,133 +604,113 @@ const FinancialTracking: React.FC = () => {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || firstName;
 
-      console.log('Attempting to create customer:', { firstName, lastName, companyId });
+      console.log('Step 1: Creating customer:', { firstName, lastName, companyId });
 
-      // Create customer in Supabase with all required fields
-      const { data: newCustomer, error: customerError } = await supabase
+      // STEP 1: Create customer WITHOUT .select() to avoid RLS issues
+      const { error: customerError } = await supabase
         .from('customers')
         .insert({
           first_name: firstName,
           last_name: lastName,
           customer_type: 'individual',
-          phone: '000000000', // Default placeholder
+          phone: '000000000',
           company_id: companyId,
-          is_active: true,
-          created_at: new Date().toISOString()
-        })
-        .select('id, first_name, last_name')
-        .single();
-
-      console.log('Customer insert result:', { data: newCustomer, error: customerError });
+          is_active: true
+        });
 
       if (customerError) {
         console.error('Customer creation error:', customerError);
         throw new Error(
           customerError.message || 
           customerError.hint || 
-          `فشل إنشافاء العميل: ${customerError.code || 'خطأ غير معروف'}`
+          `فشل إنشاء العميل: ${customerError.code || 'خطأ غير معروف'}`
         );
       }
 
-      if (!newCustomer || !newCustomer.id) {
-        console.error('Customer created but no ID returned. Attempting to fetch...', newCustomer);
-        
-        // Wait a moment for the database to process
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Try to fetch the just-created customer by name and company
-        const { data: fetchedCustomer, error: fetchError } = await supabase
-          .from('customers')
-          .select('id, first_name, last_name')
-          .eq('company_id', companyId)
-          .eq('first_name', firstName)
-          .eq('last_name', lastName)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      console.log('Step 2: Customer inserted, now fetching ID...');
 
-        console.log('Fetch result:', { data: fetchedCustomer, error: fetchError });
+      // STEP 2: Wait and fetch the customer ID separately
+      // This works better with RLS policies
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      
+      const { data: fetchedCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name')
+        .eq('company_id', companyId)
+        .eq('first_name', firstName)
+        .eq('last_name', lastName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-        if (fetchError) {
-          console.error('Fetch error:', fetchError);
-          throw new Error(`فشل في الحصول على معرف العميل: ${fetchError.message}`);
-        }
-        
-        if (!fetchedCustomer || !fetchedCustomer.id) {
-          console.error('No customer found after insert');
-          throw new Error('فشل إنشاء العميل: لم يتم إرجاع معرف العميل - يرجى التحقق من أذونات الوصول');
-        }
-        
-        console.log('Successfully fetched customer ID:', fetchedCustomer.id);
-        // Reassign to use the fetched customer
-        Object.assign(newCustomer, fetchedCustomer);
+      console.log('Step 3: Fetch result:', { data: fetchedCustomer, error: fetchError });
+
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw new Error(`فشل في الحصول على معرف العميل: ${fetchError.message}`);
+      }
+      
+      if (!fetchedCustomer || !fetchedCustomer.id) {
+        console.error('No customer found after insert');
+        throw new Error('فشل إنشاء العميل: لم يتم العثور على العميل - يرجى التحقق من أذونات الوصول أو المحاولة مرة أخرى');
+      }
+      
+      const customerId = fetchedCustomer.id;
+      console.log('Step 4: Customer created successfully with ID:', customerId);
+
+      // STEP 3: Create contract with the fetched customer ID
+      const contractNumber = `CNT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+
+      console.log('Step 5: Creating contract for customer ID:', customerId);
+      
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .insert({
+          customer_id: customerId,
+          contract_number: contractNumber,
+          contract_date: startDate,
+          start_date: startDate,
+          end_date: endDate,
+          company_id: companyId,
+          contract_type: 'vehicle_rental',
+          monthly_amount: parseFloat(newCustomerRent),
+          status: 'active'
+        });
+
+      if (contractError) {
+        console.error('Contract creation error:', contractError);
+        // Try to clean up - delete the customer if contract creation fails
+        await supabase.from('customers').delete().eq('id', customerId);
+        throw new Error(
+          contractError.message || 
+          contractError.hint || 
+          `فشل إنشاء العقد: ${contractError.code || 'خطأ غير معروف'}`
+        );
       }
 
-      // Double-check we have an ID before proceeding
-      if (!newCustomer.id) {
-        throw new Error('خطأ حرج: معرف العميل غير متوفر');
-      }
+      console.log('Step 6: Contract created successfully');
 
-      console.log('Customer created successfully:', newCustomer.id);
+      // STEP 4: Create the CustomerWithRental object for UI
+      const customerWithRental: CustomerWithRental = {
+        id: customerId,
+        name: `${firstName} ${lastName}`,
+        monthly_rent: parseFloat(newCustomerRent)
+      };
 
-      if (newCustomer) {
-        // Generate unique contract number
-        const contractNumber = `CNT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
-        const startDate = new Date().toISOString().split('T')[0];
-        const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]; // 1 year from now
+      // STEP 5: Refresh the customer list and select the new customer
+      await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
 
-        console.log('Creating contract for customer:', newCustomer.id);
-        
-        // Create a contract with the monthly rent
-        const { data: newContract, error: contractError } = await supabase
-          .from('contracts')
-          .insert({
-            customer_id: newCustomer.id,
-            contract_number: contractNumber,
-            contract_date: startDate,
-            start_date: startDate,
-            end_date: endDate,
-            company_id: companyId,
-            contract_type: 'vehicle_rental',
-            monthly_amount: parseFloat(newCustomerRent),
-            status: 'active',
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+      setSelectedCustomer(customerWithRental);
+      setSearchTerm(`${firstName} ${lastName}`);
+      
+      // Close dialog and reset form
+      setShowCreateCustomer(false);
+      setNewCustomerName('');
+      setNewCustomerRent('');
 
-        if (contractError) {
-          console.error('Contract creation error:', contractError);
-          // Delete the customer if contract creation fails
-          await supabase.from('customers').delete().eq('id', newCustomer.id);
-          throw new Error(
-            contractError.message || 
-            contractError.hint || 
-            `فشل إنشاء العقد: ${contractError.code || 'خطأ غير معروف'}`
-          );
-        }
-
-        // Create CustomerWithRental object
-        const customerWithRental: CustomerWithRental = {
-          id: newCustomer.id,
-          name: `${firstName} ${lastName}`,
-          monthly_rent: parseFloat(newCustomerRent)
-        };
-
-        // Invalidate and refetch customers list to show the new customer
-        await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-
-        // Select the newly created customer
-        setSelectedCustomer(customerWithRental);
-        setSearchTerm(`${firstName} ${lastName}`);
-        
-        // Close dialog and reset form
-        setShowCreateCustomer(false);
-        setNewCustomerName('');
-        setNewCustomerRent('');
-
-        toast.success(`تم إنشاء العميل "${firstName} ${lastName}" بنجاح`);
-      }
+      toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح ✅`);
     } catch (error: any) {
       console.error('Error creating customer:', error);
       const errorMessage = error?.message || error?.hint || error?.details || 'فشل إنشاء العميل';
