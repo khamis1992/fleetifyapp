@@ -3,6 +3,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { initWebVitals } from './utils/performance/webVitals'
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -21,3 +22,6 @@ if (import.meta.env.DEV) {
 } else {
   root.render(<App />);
 }
+
+// Initialize Web Vitals monitoring
+initWebVitals();
