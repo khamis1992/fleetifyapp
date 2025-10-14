@@ -670,27 +670,74 @@ const FinancialTracking: React.FC = () => {
     setIsUpdatingRent(true);
 
     try {
-      // Update the contract's monthly_amount
-      const { error } = await supabase
+      // Step 1: Update the contract's monthly_amount
+      const { error: contractError } = await supabase
         .from('contracts')
         .update({ monthly_amount: rentAmount })
         .eq('customer_id', selectedCustomer.id)
         .eq('company_id', companyId)
         .eq('status', 'active');
 
-      if (error) {
-        console.error('Error updating monthly rent:', error);
-        throw error;
+      if (contractError) {
+        console.error('Error updating contract monthly rent:', contractError);
+        throw contractError;
       }
 
-      // Update local state
+      // Step 2: Fetch all existing receipts for this customer
+      const { data: existingReceipts, error: fetchError } = await supabase
+        .from('rental_payment_receipts')
+        .select('*')
+        .eq('customer_id', selectedCustomer.id)
+        .eq('company_id', companyId);
+
+      if (fetchError) {
+        console.error('Error fetching receipts:', fetchError);
+        throw fetchError;
+      }
+
+      // Step 3: Recalculate and update each receipt
+      if (existingReceipts && existingReceipts.length > 0) {
+        const updatePromises = existingReceipts.map(async (receipt) => {
+          // Recalculate with new rent amount
+          const newAmountDue = rentAmount + receipt.fine;
+          const newPendingBalance = Math.max(0, newAmountDue - receipt.total_paid);
+          const newPaymentStatus = 
+            newPendingBalance === 0 ? 'paid' : 
+            (receipt.total_paid > 0 ? 'partial' : 'pending');
+
+          return supabase
+            .from('rental_payment_receipts')
+            .update({
+              rent_amount: rentAmount,
+              amount_due: newAmountDue,
+              pending_balance: newPendingBalance,
+              payment_status: newPaymentStatus
+            })
+            .eq('id', receipt.id);
+        });
+
+        const results = await Promise.all(updatePromises);
+        
+        // Check for errors in updates
+        const errors = results.filter(r => r.error);
+        if (errors.length > 0) {
+          console.error('Some receipts failed to update:', errors);
+          toast.error(`تم تحديث ${results.length - errors.length} من ${results.length} سجل دفع`);
+        } else {
+          toast.success(`تم تحديث ${results.length} سجل دفع بنجاح ✅`);
+        }
+      }
+
+      // Step 4: Update local state
       setSelectedCustomer({
         ...selectedCustomer,
         monthly_rent: rentAmount
       });
 
-      // Invalidate queries to refresh data
+      // Step 5: Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', selectedCustomer.id] });
 
       toast.success(`تم تحديث الإيجار الشهري إلى ${rentAmount.toLocaleString('ar-QA')} ريال ✅`);
       setEditingMonthlyRent(false);
