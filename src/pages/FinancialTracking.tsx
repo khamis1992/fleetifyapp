@@ -25,9 +25,11 @@ import {
   useDeleteRentalReceipt,
   useCustomerOutstandingBalance,
   useCustomerUnpaidMonths,
+  useCustomerVehicles,
   calculateDelayFine,
   type CustomerWithRental,
-  type RentalPaymentReceipt
+  type RentalPaymentReceipt,
+  type CustomerVehicle
 } from '@/hooks/useRentalPayments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -53,6 +55,7 @@ const FinancialTracking: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [paymentNotes, setPaymentNotes] = useState(''); // User notes for payment
   
   // Date range filter state
   const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
@@ -77,8 +80,19 @@ const FinancialTracking: React.FC = () => {
   const [newMonthlyRent, setNewMonthlyRent] = useState('');
   const [isUpdatingRent, setIsUpdatingRent] = useState(false);
 
+  // Edit customer name state
+  const [editingCustomerName, setEditingCustomerName] = useState(false);
+  const [editedCustomerName, setEditedCustomerName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+
+  // Vehicle selection state (for customers with multiple vehicles)
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
+  
+  // Fetch customer's vehicles
+  const { data: customerVehicles = [], isLoading: loadingVehicles } = useCustomerVehicles(selectedCustomer?.id);
   
   // Fetch ALL receipts for company (for monthly summaries)
   const { data: allReceipts = [], isLoading: loadingAllReceipts } = useRentalPaymentReceipts();
@@ -600,28 +614,132 @@ const FinancialTracking: React.FC = () => {
       return;
     }
 
-    // Calculate rent, fine, and total due based on payment date
-    const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
-    const totalDue = rent_amount + fine;
-    const paidAmount = parseFloat(paymentAmount);
-    
-    // Create receipt via Supabase with partial payment support
-    await createReceiptMutation.mutateAsync({
-      customer_id: selectedCustomer.id,
-      customer_name: selectedCustomer.name,
-      month,
-      rent_amount,
-      payment_date: paymentDate,
-      fine,
-      total_paid: paidAmount,  // User-entered amount
-      amount_due: totalDue,    // Auto-calculated total due
-      pending_balance: Math.max(0, totalDue - paidAmount), // Will be auto-calculated by trigger
-      payment_status: paidAmount >= totalDue ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending')
-    });
+    // Validate vehicle selection for customers with multiple vehicles
+    if (customerVehicles.length > 1 && !selectedVehicleId) {
+      toast.error('الرجاء تحديد السيارة - لدى هذا العميل عدة سيارات');
+      return;
+    }
 
-    // Reset form
-    setPaymentAmount('');
-    setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+    // Get vehicle_id: either selected one or the only one available
+    const vehicleId = customerVehicles.length === 1 
+      ? customerVehicles[0].id 
+      : selectedVehicleId;
+
+    // Get contract_id for the selected vehicle
+    const contractId = customerVehicles.find(v => v.id === vehicleId)?.contract_id;
+
+    try {
+      // Calculate rent, fine, and total due based on payment date
+      const { fine, month, rent_amount } = calculateDelayFine(paymentDate, selectedCustomer.monthly_rent);
+      const totalDue = rent_amount + fine;
+      const paidAmount = parseFloat(paymentAmount);
+      
+      let autoNotes = paymentNotes.trim(); // Start with user notes
+      let previousMonthUpdated = null;
+
+      // LATE FEE CLEARING LOGIC
+      // Check if payment covers previous month's late fee
+      if (paidAmount > totalDue && companyId) {
+        // Fetch receipts from previous months with unpaid late fees
+        // @ts-expect-error - Supabase type issue
+        const { data: previousReceipts, error: fetchError } = await supabase
+          .from('rental_payment_receipts')
+          .select('*')
+          .eq('customer_id', selectedCustomer.id)
+          .eq('company_id', companyId)
+          .gt('fine', 0)
+          .gt('pending_balance', 0)
+          .order('payment_date', { ascending: false })
+          .limit(10);
+
+        if (!fetchError && previousReceipts && previousReceipts.length > 0) {
+          // Sort by date to get the most recent unpaid late fee
+          const receiptsWithUnpaidFines = (previousReceipts as any[]).filter(
+            receipt => receipt.pending_balance >= receipt.fine && receipt.fine > 0
+          );
+
+          if (receiptsWithUnpaidFines.length > 0) {
+            const previousReceipt = receiptsWithUnpaidFines[0];
+            const excessAmount = paidAmount - totalDue;
+
+            // Check if excess amount covers the previous month's late fee
+            if (excessAmount >= previousReceipt.fine) {
+              // Clear the previous month's late fee
+              const newPendingBalance = Math.max(0, previousReceipt.pending_balance - previousReceipt.fine);
+              const newPaymentStatus = newPendingBalance === 0 ? 'paid' : 'partial';
+              
+              // Update previous receipt to clear the late fee
+              const clearedFeeNote = `تم دفع غرامة التأخير (${previousReceipt.fine.toLocaleString('ar-QA')} ريال) من شهر ${previousReceipt.month} في تاريخ ${format(new Date(paymentDate), 'dd/MM/yyyy')}`;
+              
+              const previousNotes = previousReceipt.notes ? `${previousReceipt.notes}\n\n${clearedFeeNote}` : clearedFeeNote;
+
+              // @ts-expect-error - Supabase type issue
+              const { error: updateError } = await supabase
+                .from('rental_payment_receipts')
+                .update({
+                  pending_balance: newPendingBalance,
+                  payment_status: newPaymentStatus,
+                  notes: previousNotes,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', previousReceipt.id);
+
+              if (!updateError) {
+                previousMonthUpdated = previousReceipt.month;
+                // Add auto-note to current payment
+                const currentPaymentNote = `تم تطبيق ${excessAmount.toLocaleString('ar-QA')} ريال لسداد غرامة شهر ${previousReceipt.month} (${previousReceipt.fine.toLocaleString('ar-QA')} ريال)`;
+                autoNotes = autoNotes ? `${autoNotes}\n\n${currentPaymentNote}` : currentPaymentNote;
+                
+                console.log(`✅ Cleared late fee of ${previousReceipt.fine} QAR from ${previousReceipt.month}`);
+              } else {
+                console.error('Error updating previous receipt:', updateError);
+              }
+            }
+          }
+        }
+      }
+      
+      // Create receipt via Supabase with partial payment support, notes, and vehicle_id
+      await createReceiptMutation.mutateAsync({
+        customer_id: selectedCustomer.id,
+        customer_name: selectedCustomer.name,
+        month,
+        rent_amount,
+        payment_date: paymentDate,
+        fine,
+        total_paid: paidAmount,
+        amount_due: totalDue,
+        pending_balance: Math.max(0, totalDue - paidAmount),
+        payment_status: paidAmount >= totalDue ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending'),
+        notes: autoNotes || null, // Include notes (user + auto-generated)
+        vehicle_id: vehicleId, // Add vehicle_id
+        contract_id: contractId // Add contract_id
+      } as any);
+
+      // Show success message with late fee clearing info
+      if (previousMonthUpdated) {
+        toast.success(`تم إضافة الدفعة بنجاح ✅\nتم تسوية غرامة شهر ${previousMonthUpdated}`, { duration: 4000 });
+      } else {
+        toast.success('تم إضافة الدفعة بنجاح ✅');
+      }
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts'] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', selectedCustomer.id] });
+
+      // Reset form
+      setPaymentAmount('');
+      setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+      setPaymentNotes('');
+      // Reset vehicle selection for multi-vehicle customers
+      if (customerVehicles.length > 1) {
+        setSelectedVehicleId(null);
+      }
+    } catch (error: any) {
+      console.error('Error adding payment:', error);
+      toast.error(error?.message || 'فشل في إضافة الدفعة');
+    }
   };
 
   /**
@@ -747,6 +865,89 @@ const FinancialTracking: React.FC = () => {
       toast.error('فشل في تحديث الإيجار الشهري');
     } finally {
       setIsUpdatingRent(false);
+    }
+  };
+
+  /**
+   * Handle editing customer name
+   */
+  const handleEditCustomerName = () => {
+    if (!selectedCustomer) return;
+    setEditedCustomerName(selectedCustomer.name);
+    setEditingCustomerName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setEditingCustomerName(false);
+    setEditedCustomerName('');
+  };
+
+  const handleSaveCustomerName = async () => {
+    if (!selectedCustomer || !companyId) return;
+
+    const trimmedName = editedCustomerName.trim();
+    if (!trimmedName) {
+      toast.error('الرجاء إدخال اسم صحيح للعميل');
+      return;
+    }
+
+    setIsUpdatingName(true);
+
+    try {
+      // Parse the name into first and last name
+      const nameParts = trimmedName.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || firstName;
+
+      // Update the customer name in the database
+      const { error: customerError } = await supabase
+        .from('customers')
+        .update({ 
+          first_name: firstName,
+          last_name: lastName
+        })
+        .eq('id', selectedCustomer.id)
+        .eq('company_id', companyId);
+
+      if (customerError) {
+        console.error('Error updating customer name:', customerError);
+        throw customerError;
+      }
+
+      // Update all rental payment receipts with the new customer name
+      const { error: receiptsError } = await supabase
+        .from('rental_payment_receipts')
+        .update({ customer_name: trimmedName })
+        .eq('customer_id', selectedCustomer.id)
+        .eq('company_id', companyId);
+
+      if (receiptsError) {
+        console.error('Error updating receipts with new name:', receiptsError);
+        // Don't throw - this is not critical, customer name is updated
+        toast.warning('تم تحديث العميل لكن فشل تحديث بعض الإيصالات');
+      }
+
+      // Update local state
+      setSelectedCustomer({
+        ...selectedCustomer,
+        name: trimmedName
+      });
+
+      // Update search term to match new name
+      setSearchTerm(trimmedName);
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', selectedCustomer.id] });
+
+      toast.success(`تم تحديث اسم العميل إلى "${trimmedName}" ✅`);
+      setEditingCustomerName(false);
+      setEditedCustomerName('');
+    } catch (error: any) {
+      console.error('Error updating customer name:', error);
+      toast.error('فشل في تحديث اسم العميل');
+    } finally {
+      setIsUpdatingName(false);
     }
   };
 
@@ -1044,7 +1245,57 @@ const FinancialTracking: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">العميل المحدد</p>
-                  <p className="text-xl font-bold">{selectedCustomer.name}</p>
+                  {editingCustomerName ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="text"
+                        value={editedCustomerName}
+                        onChange={(e) => setEditedCustomerName(e.target.value)}
+                        className="w-64 h-8 text-sm"
+                        placeholder="اسم العميل..."
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleSaveCustomerName}
+                        disabled={isUpdatingName}
+                        className="h-8"
+                        title="حفظ"
+                      >
+                        {isUpdatingName ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          '✓'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancelEditName}
+                        disabled={isUpdatingName}
+                        className="h-8"
+                        title="إلغاء"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xl font-bold">{selectedCustomer.name}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleEditCustomerName}
+                        className="h-6 w-6 p-0"
+                        title="تعديل اسم العميل"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">الإيجار الشهري</p>
@@ -1102,6 +1353,68 @@ const FinancialTracking: React.FC = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Vehicle Information */}
+              {loadingVehicles ? (
+                <div className="mt-3 flex items-center text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري تحميل معلومات السيارة...
+                </div>
+              ) : customerVehicles.length > 0 ? (
+                <div className="mt-4 pt-4 border-t border-primary/20">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {customerVehicles.length === 1 ? 'السيارة المخصصة' : 'السيارات المخصصة'}
+                  </p>
+                  {customerVehicles.length === 1 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="bg-white px-4 py-2 rounded-lg border border-primary/30">
+                        <p className="text-sm font-semibold text-primary">
+                          🚗 {customerVehicles[0].make} {customerVehicles[0].model}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {customerVehicles[0].plate_number} • {customerVehicles[0].year || 'N/A'} • {customerVehicles[0].color_ar || ''}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs text-orange-600 mb-2">
+                        ⚠️ لدى هذا العميل {customerVehicles.length} سيارات - يجب تحديد السيارة عند إضافة دفعة
+                      </p>
+                      {customerVehicles.map((vehicle) => (
+                        <div
+                          key={vehicle.id}
+                          className={`flex items-center justify-between gap-2 p-3 rounded-lg border transition-all cursor-pointer ${
+                            selectedVehicleId === vehicle.id
+                              ? 'bg-primary/10 border-primary'
+                              : 'bg-white border-gray-200 hover:border-primary/50'
+                          }`}
+                          onClick={() => setSelectedVehicleId(vehicle.id)}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold">
+                              🚗 {vehicle.make} {vehicle.model}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {vehicle.plate_number} • {vehicle.year || 'N/A'} • {vehicle.color_ar || ''}
+                            </p>
+                          </div>
+                          {selectedVehicleId === vehicle.id && (
+                            <Badge className="bg-green-500">
+                              <span className="mr-1">✓</span>
+                              محدد
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-3 text-xs text-muted-foreground">
+                  ⚠️ لا توجد سيارة مخصصة لهذا العميل
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -1162,6 +1475,22 @@ const FinancialTracking: React.FC = () => {
                   )}
                 </Button>
               </div>
+            </div>
+
+            {/* Payment Notes */}
+            <div className="mt-4">
+              <Label htmlFor="paymentNotes">ملاحظات الدفع (اختياري)</Label>
+              <Input
+                id="paymentNotes"
+                type="text"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="مثال: دفعة متأخرة، دفع غرامة الشهر السابق، إلخ..."
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                ⚡ سيتم إضافة ملاحظة تلقائية إذا تم تسوية غرامة من شهر سابق
+              </p>
             </div>
 
             {/* Payment Calculation Preview */}

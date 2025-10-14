@@ -6,6 +6,18 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 /**
+ * Vehicle info for payment receipts
+ */
+export interface VehicleInfo {
+  id: string;
+  plate_number: string;
+  make: string;
+  model: string;
+  year?: number;
+  color_ar?: string;
+}
+
+/**
  * Rental Payment Receipt Interface
  */
 export interface RentalPaymentReceipt {
@@ -25,6 +37,9 @@ export interface RentalPaymentReceipt {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  vehicle_id?: string;
+  contract_id?: string;
+  vehicle?: VehicleInfo;
 }
 
 /**
@@ -321,20 +336,36 @@ export const useCreateRentalReceipt = () => {
         throw new Error('Company ID is required');
       }
 
-      console.log('Creating rental receipt via RPC function...');
+      console.log('Creating rental receipt with notes support...');
       
-      // Use RPC function to bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_rental_payment_receipt', {
-        p_customer_id: receipt.customer_id,
-        p_customer_name: receipt.customer_name,
-        p_month: receipt.month,
-        p_payment_date: receipt.payment_date,
-        p_rent_amount: receipt.rent_amount,
-        p_fine: receipt.fine,
-        p_total_paid: receipt.total_paid,
-        p_company_id: companyId,
-        p_created_by: user?.id || null
-      });
+      // Direct insert with notes field (bypassing RPC for now to support notes)
+      const { data, error } = await supabase
+        .from('rental_payment_receipts')
+        .insert({
+          customer_id: receipt.customer_id,
+          customer_name: receipt.customer_name,
+          month: receipt.month,
+          payment_date: receipt.payment_date,
+          rent_amount: receipt.rent_amount,
+          fine: receipt.fine,
+          total_paid: receipt.total_paid,
+          amount_due: receipt.amount_due,
+          pending_balance: receipt.pending_balance,
+          payment_status: receipt.payment_status,
+          notes: receipt.notes || null,
+          company_id: companyId,
+          created_by: user?.id || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating receipt:', error);
+        throw error;
+      }
+
+      console.log('✅ Receipt created successfully');
+      return data as RentalPaymentReceipt;
 
       console.log('RPC result:', { rpcResult, rpcError });
 
@@ -543,6 +574,80 @@ export const useAllCustomersOutstandingBalance = () => {
       return (data || []) as CustomerBalanceSummary[];
     },
     enabled: !!companyId,
+    staleTime: 60 * 1000, // 1 minute
+  });
+};
+
+/**
+ * Customer vehicle information
+ */
+export interface CustomerVehicle extends VehicleInfo {
+  contract_id: string;
+  monthly_amount: number;
+  contract_start_date: string;
+  contract_end_date: string;
+  contract_status: string;
+}
+
+/**
+ * Hook to fetch customer's vehicles from active contracts
+ */
+export const useCustomerVehicles = (customerId?: string) => {
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: ['customer-vehicles', companyId, customerId],
+    queryFn: async () => {
+      if (!companyId || !customerId) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          monthly_amount,
+          start_date,
+          end_date,
+          status,
+          vehicle_id,
+          vehicles (
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            color_ar
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('customer_id', customerId)
+        .eq('status', 'active')
+        .not('vehicle_id', 'is', null);
+
+      if (error) {
+        console.error('❌ Error fetching customer vehicles:', error);
+        throw error;
+      }
+
+      // Transform to CustomerVehicle format
+      const vehicles: CustomerVehicle[] = (data || []).map((contract: any) => ({
+        id: contract.vehicles?.id || '',
+        plate_number: contract.vehicles?.plate_number || '',
+        make: contract.vehicles?.make || '',
+        model: contract.vehicles?.model || '',
+        year: contract.vehicles?.year,
+        color_ar: contract.vehicles?.color_ar,
+        contract_id: contract.id,
+        monthly_amount: contract.monthly_amount || 0,
+        contract_start_date: contract.start_date,
+        contract_end_date: contract.end_date,
+        contract_status: contract.status
+      }));
+
+      return vehicles;
+    },
+    enabled: !!companyId && !!customerId,
     staleTime: 60 * 1000, // 1 minute
   });
 };
