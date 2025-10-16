@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { logger } from '@/lib/logger';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -44,7 +45,7 @@ const Vendors = () => {
     try {
       await deleteVendor.mutateAsync(vendor.id)
     } catch (error) {
-      console.error("Error deleting vendor:", error)
+      logger.error("Error deleting vendor:", error)
     }
   }
 

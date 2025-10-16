@@ -4,23 +4,24 @@
  */
 
 import type { Vehicle } from '@/components/vehicle-installments/VehicleSelector';
+import { logger } from '@/lib/logger';
 
 /**
  * التحقق من صحة بيانات المركبة
  */
 export const validateVehicle = (vehicle: any): vehicle is Vehicle => {
   if (!vehicle) {
-    console.warn('مركبة فارغة أو null');
+    logger.warn('مركبة فارغة أو null');
     return false;
   }
 
   if (!vehicle.id) {
-    console.warn('مركبة بدون معرف:', vehicle);
+    logger.warn('مركبة بدون معرف:', vehicle);
     return false;
   }
 
   if (!vehicle.plate_number) {
-    console.warn('مركبة بدون رقم لوحة:', vehicle);
+    logger.warn('مركبة بدون رقم لوحة:', vehicle);
     return false;
   }
 
@@ -32,7 +33,7 @@ export const validateVehicle = (vehicle: any): vehicle is Vehicle => {
  */
 export const sanitizeVehicleList = (vehicles: any[]): Vehicle[] => {
   if (!Array.isArray(vehicles)) {
-    console.warn('قائمة المركبات ليست مصفوفة:', vehicles);
+    logger.warn('قائمة المركبات ليست مصفوفة:', vehicles);
     return [];
   }
 
@@ -205,8 +206,8 @@ export const printDiagnosticReport = (
 ) => {
   const report = diagnoseVehicleSelection(vehicles, selectedId, excludeIds);
   
-  console.group('🚗 تشخيص اختيار المركبة');
-  console.log('📊 الإحصائيات:', {
+  logger.log('🚗 تشخيص اختيار المركبة');
+  logger.log('📊 الإحصائيات:', {
     'إجمالي المركبات': report.vehiclesCount,
     'مركبات صحيحة': report.validVehicles,
     'مركبات غير صحيحة': report.invalidVehicles,
@@ -215,20 +216,18 @@ export const printDiagnosticReport = (
   });
   
   if (selectedId) {
-    console.log('🎯 المركبة المختارة:', {
+    logger.log('🎯 المركبة المختارة:', {
       'المعرف': selectedId,
       'موجودة': report.selectedVehicleFound ? '✅' : '❌'
     });
   }
   
   if (report.issues.length > 0) {
-    console.warn('⚠️ المشاكل المكتشفة:');
-    report.issues.forEach(issue => console.warn(`  - ${issue}`));
+    logger.warn('⚠️ المشاكل المكتشفة:');
+    report.issues.forEach(issue => logger.warn(`  - ${issue}`));
   } else {
-    console.log('✅ لا توجد مشاكل');
+    logger.log('✅ لا توجد مشاكل');
   }
-  
-  console.groupEnd();
   
   return report;
 };

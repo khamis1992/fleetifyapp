@@ -1,49 +1,47 @@
-// Lightweight app logger with opt-in debug in dev only
-// Usage: window.__APP_DEBUG__ = true  // to enable debug logs at runtime
+// Logging configuration utility
+// Control logging verbosity across the application
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+// Log levels:
+// - 'debug': Show all logs (development)
+// - 'info': Show warnings and errors (default)
+// - 'warn': Show only warnings and errors
+// - 'error': Show only errors
+// - 'silent': Show no logs
 
-class Logger {
-  private onceKeys = new Set<string>()
-  public enabled = false
+const LOG_LEVEL = import.meta.env?.DEV ? 'info' : 'warn';
 
-  constructor() {
-    const isDev = typeof import.meta !== 'undefined' && (import.meta as any)?.env?.DEV
-    if (typeof window !== 'undefined' && isDev) {
-      this.enabled = Boolean((window as any).__APP_DEBUG__)
-    } else {
-      this.enabled = false
+const LOG_LEVELS = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+  silent: 4
+};
+
+const CURRENT_LOG_LEVEL = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
+
+export const logger = {
+  debug: (...args: any[]) => {
+    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.debug) {
+      console.debug(...args);
+    }
+  },
+  
+  log: (...args: any[]) => {
+    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.info) {
+      console.log(...args);
+    }
+  },
+  
+  warn: (...args: any[]) => {
+    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.warn) {
+      console.warn(...args);
+    }
+  },
+  
+  error: (...args: any[]) => {
+    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.error) {
+      console.error(...args);
     }
   }
-
-  setEnabled(v: boolean) {
-    this.enabled = v
-  }
-
-  debug(message?: any, ...optionalParams: any[]) {
-    if (!this.enabled) return
-    console.debug(message, ...optionalParams)
-  }
-
-  debugOnce(key: string, message?: any, ...optionalParams: any[]) {
-    if (!this.enabled) return
-    if (this.onceKeys.has(key)) return
-    this.onceKeys.add(key)
-    console.debug(message ?? key, ...optionalParams)
-  }
-
-  info(message?: any, ...optionalParams: any[]) {
-    if (!this.enabled) return
-    console.info(message, ...optionalParams)
-  }
-
-  warn(message?: any, ...optionalParams: any[]) {
-    console.warn(message, ...optionalParams)
-  }
-
-  error(message?: any, ...optionalParams: any[]) {
-    console.error(message, ...optionalParams)
-  }
-}
-
-export const logger = new Logger()
+};

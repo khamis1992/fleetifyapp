@@ -56,7 +56,7 @@ export function useTrafficViolationPayments(violationId: string) {
   });
 }
 
-// Hook لجلب جميع مدفوعات المخالفات للشركة
+// Hook to fetch all traffic violation payments for the company
 export function useAllTrafficViolationPayments() {
   return useQuery({
     queryKey: ['all-traffic-violation-payments'],
@@ -65,26 +65,26 @@ export function useAllTrafficViolationPayments() {
         .from('traffic_violation_payments')
         .select(`
           *,
-          penalties (
+          penalties:traffic_violation_id (
             penalty_number,
             violation_type,
-            amount
+            amount,
+            customer_id,
+            customers (
+              first_name,
+              last_name,
+              company_name
+            )
           )
         `)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching all traffic violation payments:', error);
+        console.error('Error fetching traffic violations:', error);
         throw error;
       }
 
-      return data as (TrafficViolationPayment & {
-        penalties: {
-          penalty_number: string;
-          violation_type: string;
-          amount: number;
-        };
-      })[];
+      return data;
     }
   });
 }

@@ -5,6 +5,8 @@
  * Handles notification delivery, subscription management, and cleanup.
  */
 
+import { logger } from '@/lib/logger';
+
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -38,7 +40,7 @@ export const subscribeToNotifications = (
 
   // Create channel if it doesn't exist
   if (!notificationChannel) {
-    console.log('📡 [REALTIME] Creating notifications channel');
+    logger.log('📡 [REALTIME] Creating notifications channel');
     
     notificationChannel = supabase.channel('notifications-realtime', {
       config: {
@@ -58,7 +60,7 @@ export const subscribeToNotifications = (
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log('🔔 [REALTIME] New notification received:', payload);
+          logger.log('🔔 [REALTIME] New notification received:', payload);
           
           const notification = payload.new as NotificationPayload;
           
@@ -67,18 +69,18 @@ export const subscribeToNotifications = (
             try {
               handler(notification);
             } catch (error) {
-              console.error('❌ [REALTIME] Error in notification handler:', error);
+              logger.error('❌ [REALTIME] Error in notification handler:', error);
             }
           });
         }
       )
       .subscribe((status) => {
-        console.log('📡 [REALTIME] Notifications subscription status:', status);
+        logger.log('📡 [REALTIME] Notifications subscription status:', status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [REALTIME] Notifications subscription established');
+          logger.log('✅ [REALTIME] Notifications subscription established');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [REALTIME] Notifications subscription error');
+          logger.error('❌ [REALTIME] Notifications subscription error');
         }
       });
   }
@@ -89,7 +91,7 @@ export const subscribeToNotifications = (
     
     // If no more handlers, remove channel
     if (notificationHandlers.size === 0 && notificationChannel) {
-      console.log('🔌 [REALTIME] Removing notifications channel');
+      logger.log('🔌 [REALTIME] Removing notifications channel');
       supabase.removeChannel(notificationChannel);
       notificationChannel = null;
     }
@@ -110,10 +112,10 @@ export const sendNotification = async (notification: Omit<NotificationPayload, '
 
     if (error) throw error;
     
-    console.log('✅ [REALTIME] Notification sent successfully');
+    logger.log('✅ [REALTIME] Notification sent successfully');
     return true;
   } catch (error) {
-    console.error('❌ [REALTIME] Failed to send notification:', error);
+    logger.error('❌ [REALTIME] Failed to send notification:', error);
     return false;
   }
 };
@@ -135,10 +137,10 @@ export const broadcastMessage = async (
       payload
     });
 
-    console.log('📢 [REALTIME] Broadcast sent:', { channel, event });
+    logger.log('📢 [REALTIME] Broadcast sent:', { channel, event });
     return true;
   } catch (error) {
-    console.error('❌ [REALTIME] Broadcast failed:', error);
+    logger.error('❌ [REALTIME] Broadcast failed:', error);
     return false;
   }
 };
@@ -173,7 +175,7 @@ export const subscribeToTableChanges = <T = any>(
 
   channel
     .on('postgres_changes', config, (payload) => {
-      console.log(`🔄 [REALTIME] ${table} change:`, payload.eventType);
+      logger.log(`🔄 [REALTIME] ${table} change:`, payload.eventType);
       
       switch (payload.eventType) {
         case 'INSERT':
@@ -188,12 +190,12 @@ export const subscribeToTableChanges = <T = any>(
       }
     })
     .subscribe((status) => {
-      console.log(`📡 [REALTIME] ${table} subscription:`, status);
+      logger.log(`📡 [REALTIME] ${table} subscription:`, status);
     });
 
   // Return cleanup function
   return () => {
-    console.log(`🔌 [REALTIME] Removing ${table} subscription`);
+    logger.log(`🔌 [REALTIME] Removing ${table} subscription`);
     supabase.removeChannel(channel);
   };
 };
@@ -252,9 +254,9 @@ export const cleanupRealtimeSubscriptions = async (): Promise<void> => {
     notificationHandlers.clear();
     notificationChannel = null;
     
-    console.log('🧹 [REALTIME] All subscriptions cleaned up');
+    logger.log('🧹 [REALTIME] All subscriptions cleaned up');
   } catch (error) {
-    console.error('❌ [REALTIME] Cleanup error:', error);
+    logger.error('❌ [REALTIME] Cleanup error:', error);
   }
 };
 

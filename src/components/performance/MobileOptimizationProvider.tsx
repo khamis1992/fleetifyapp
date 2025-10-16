@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
+import { logger } from '@/lib/logger';
 
 interface MobileOptimizationProviderProps {
   children: React.ReactNode;
@@ -149,7 +150,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
           updateViaCache: 'none'
         });
 
-        console.log('🔧 Service Worker registered successfully');
+        logger.log('🔧 Service Worker registered successfully');
 
         // Listen for updates
         registration.addEventListener('updatefound', () => {
@@ -157,7 +158,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔧 New Service Worker available');
+                logger.log('🔧 New Service Worker available');
                 // Optionally show update notification
               }
             });
@@ -165,7 +166,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         });
 
       } catch (error) {
-        console.error('🔧 Service Worker registration failed:', error);
+        logger.error('🔧 Service Worker registration failed:', error);
       }
     };
 
@@ -177,22 +178,8 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
     if (!isMobile) return;
 
     const preloadCriticalResources = () => {
-      // Preload critical fonts
-      const fontPreloads = [
-        '/fonts/inter-var.woff2',
-        '/fonts/cairo-var.woff2'
-      ];
-
-      fontPreloads.forEach(fontUrl => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'font';
-        link.type = 'font/woff2';
-        link.crossOrigin = 'anonymous';
-        link.href = fontUrl;
-        document.head.appendChild(link);
-      });
-
+      // Fonts are loaded via Google Fonts in index.html, no need to preload local fonts
+      
       // Preconnect to external domains
       const preconnectDomains = [
         'https://fonts.googleapis.com',

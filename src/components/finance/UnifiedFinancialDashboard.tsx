@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnhancedFinancialOverview } from "@/hooks/useEnhancedFinancialOverview";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,8 +33,16 @@ interface MetricCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
-const MetricCard = ({ title, value, change, description, icon, trend = 'neutral' }: MetricCardProps) => {
-  const getTrendIcon = () => {
+// Optimized MetricCard with React.memo for better performance
+const MetricCard = React.memo<MetricCardProps>(({ 
+  title, 
+  value, 
+  change, 
+  description, 
+  icon, 
+  trend = 'neutral' 
+}) => {
+  const trendIcon = useMemo(() => {
     switch (trend) {
       case 'up':
         return <TrendingUp className="h-4 w-4 text-success" />;
@@ -43,9 +51,9 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
       default:
         return null;
     }
-  };
+  }, [trend]);
 
-  const getTrendColor = () => {
+  const trendColor = useMemo(() => {
     switch (trend) {
       case 'up':
         return 'text-success';
@@ -54,7 +62,11 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
       default:
         return 'text-muted-foreground';
     }
-  };
+  }, [trend]);
+
+  const trendLabel = useMemo(() => {
+    return trend === 'up' ? 'increase' : trend === 'down' ? 'decrease' : 'change';
+  }, [trend]);
 
   return (
     <Card className="transition-all hover:shadow-md">
@@ -65,12 +77,10 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
         {change !== undefined && (
-          <div className={`flex items-center gap-1 text-xs ${getTrendColor()}`}>
-            {getTrendIcon()}
+          <div className={`flex items-center gap-1 text-xs ${trendColor}`}>
+            {trendIcon}
             <span>{Math.abs(change)}%</span>
-            <span className="text-muted-foreground">
-              {trend === 'up' ? 'increase' : trend === 'down' ? 'decrease' : 'change'}
-            </span>
+            <span className="text-muted-foreground">{trendLabel}</span>
           </div>
         )}
         {description && (
@@ -79,7 +89,17 @@ const MetricCard = ({ title, value, change, description, icon, trend = 'neutral'
       </CardContent>
     </Card>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if these props changed
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.change === nextProps.change &&
+    prevProps.trend === nextProps.trend &&
+    prevProps.title === nextProps.title
+  );
+});
+
+MetricCard.displayName = 'MetricCard';
 
 export const UnifiedFinancialDashboard = () => {
   const { user } = useAuth();
@@ -101,11 +121,17 @@ export const UnifiedFinancialDashboard = () => {
   }, [overview, error]);
 
   const { formatCurrency: fmt } = useCurrencyFormatter();
-  const formatCurrency = (amount: number) => fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  
+  // Memoize formatters to prevent recreation on every render
+  const formatCurrency = useCallback((amount: number) => 
+    fmt(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+    [fmt]
+  );
 
-  const formatPercentage = (percentage: number) => {
-    return `${percentage.toFixed(1)}%`;
-  };
+  const formatPercentage = useCallback((percentage: number) => 
+    `${percentage.toFixed(1)}%`,
+    []
+  );
 
   if (isLoading) {
     return (
@@ -156,18 +182,42 @@ export const UnifiedFinancialDashboard = () => {
     );
   }
 
-  const getHealthScoreColor = (score: number) => {
+  // Memoize health score calculations
+  const healthScoreData = useMemo(() => {
+    if (!overview) return null;
+    
+    const score = overview.healthScore.overall_score;
+    let color, label;
+    
+    if (score >= 80) {
+      color = 'text-success';
+      label = 'Excellent';
+    } else if (score >= 60) {
+      color = 'text-warning';
+      label = 'Good';
+    } else if (score >= 40) {
+      color = 'text-warning';
+      label = 'Fair';
+    } else {
+      color = 'text-destructive';
+      label = 'Poor';
+    }
+    
+    return { color, label, score };
+  }, [overview?.healthScore.overall_score]);
+
+  const getHealthScoreColor = useCallback((score: number) => {
     if (score >= 80) return 'text-success';
     if (score >= 60) return 'text-warning';
     return 'text-destructive';
-  };
+  }, []);
 
-  const getHealthScoreLabel = (score: number) => {
+  const getHealthScoreLabel = useCallback((score: number) => {
     if (score >= 80) return 'Excellent';
     if (score >= 60) return 'Good';
     if (score >= 40) return 'Fair';
     return 'Poor';
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

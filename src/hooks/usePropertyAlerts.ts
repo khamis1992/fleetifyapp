@@ -79,7 +79,8 @@ async function fetchPropertyAlerts(
         customers(id, full_name)
       `))
         .eq('is_active', true)
-        .lte('end_date', next90Days.toISOString()),
+        .lte('end_date', next90Days.toISOString())
+        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Overdue payments
       buildQuery(supabase.from('payments').select(`
@@ -88,15 +89,18 @@ async function fetchPropertyAlerts(
         customers(id, full_name)
       `))
         .in('status', ['pending', 'overdue'])
-        .lte('due_date', currentDate.toISOString()),
+        .lte('due_date', currentDate.toISOString())
+        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Properties
       buildQuery(supabase.from('properties').select('*'))
-        .eq('is_active', true),
+        .eq('is_active', true)
+        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Document expiry alerts (from existing system)
       buildQuery(supabase.from('document_expiry_alerts').select('*'))
         .eq('acknowledged', false)
+        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } }))
     ]);
 
     // Contract Expiry Alerts

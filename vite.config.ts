@@ -2,9 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-// Performance: Bundle analyzer
-// Uncomment to analyze bundle size: npm install --save-dev rollup-plugin-visualizer
-// import { visualizer } from 'rollup-plugin-visualizer';
+import { visualizer } from 'rollup-plugin-visualizer';
+import compression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -18,15 +17,28 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
-    // Performance: Uncomment to generate bundle visualization
-    // visualizer({
-    //   open: true,
-    //   gzipSize: true,
-    //   brotliSize: true,
-    //   filename: './dist/stats.html'
-    // }),
-  ].filter(Boolean),
+    ...(mode === 'development' ? [componentTagger()] : []),
+    ...(process.env.ANALYZE ? [visualizer({
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      filename: './dist/stats.html',
+      template: 'treemap',
+    })] : []),
+    // Compression for production builds
+    ...(mode === 'production' ? [
+      compression({
+        algorithm: 'gzip',
+        ext: '.gz',
+        threshold: 1024,
+      }),
+      compression({
+        algorithm: 'brotliCompress',
+        ext: '.br',
+        threshold: 1024,
+      }),
+    ] : []),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -60,6 +72,19 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // Terser options for better minification
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production', // Remove console.logs in production
+        drop_debugger: true,
+        pure_funcs: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+      },
+      format: {
+        comments: false, // Remove comments
+      },
+    },
+    // Chunk size warning limit
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {

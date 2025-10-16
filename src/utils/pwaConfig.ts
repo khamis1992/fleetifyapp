@@ -8,6 +8,8 @@
  * - Offline support
  */
 
+import { logger } from '@/lib/logger';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -25,12 +27,12 @@ export const initializePWA = (): void => {
     e.preventDefault();
     // Stash the event so it can be triggered later
     deferredPrompt = e as BeforeInstallPromptEvent;
-    console.log('✅ PWA: Install prompt ready');
+    logger.log('✅ PWA: Install prompt ready');
   });
 
   // Listen for app installed event
   window.addEventListener('appinstalled', () => {
-    console.log('✅ PWA: App installed successfully');
+    logger.log('✅ PWA: App installed successfully');
     deferredPrompt = null;
   });
 
@@ -41,7 +43,7 @@ export const initializePWA = (): void => {
 
   // Check if running as installed PWA
   if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('✅ PWA: Running as installed app');
+    logger.log('✅ PWA: Running as installed app');
   }
 };
 
@@ -55,7 +57,7 @@ const registerServiceWorker = async (): Promise<void> => {
       scope: '/',
     });
 
-    console.log('✅ Service Worker registered:', registration.scope);
+    logger.log('✅ Service Worker registered:', registration.scope);
 
     // Check for updates on page load
     registration.update();
@@ -66,7 +68,7 @@ const registerServiceWorker = async (): Promise<void> => {
       if (newWorker) {
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('🔄 New version available! Please refresh.');
+            logger.log('🔄 New version available! Please refresh.');
             // Dispatch custom event for update notification
             window.dispatchEvent(new CustomEvent('pwa-update-available'));
           }
@@ -74,7 +76,7 @@ const registerServiceWorker = async (): Promise<void> => {
       }
     });
   } catch (error) {
-    console.log('⚠️ Service Worker registration failed:', error);
+    logger.warn('⚠️ Service Worker registration failed:', error);
   }
 };
 
@@ -83,7 +85,7 @@ const registerServiceWorker = async (): Promise<void> => {
  */
 export const showInstallPrompt = async (): Promise<boolean> => {
   if (!deferredPrompt) {
-    console.log('⚠️ Install prompt not available');
+    logger.log('⚠️ Install prompt not available');
     return false;
   }
 
@@ -94,14 +96,14 @@ export const showInstallPrompt = async (): Promise<boolean> => {
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
 
-    console.log(`User response to install prompt: ${outcome}`);
+    logger.log(`User response to install prompt: ${outcome}`);
 
     // Clear the deferred prompt
     deferredPrompt = null;
 
     return outcome === 'accepted';
   } catch (error) {
-    console.error('Error showing install prompt:', error);
+    logger.error('Error showing install prompt:', error);
     return false;
   }
 };
@@ -142,10 +144,10 @@ export const updateServiceWorker = async (): Promise<void> => {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
       await registration.update();
-      console.log('✅ Service Worker updated');
+      logger.log('✅ Service Worker updated');
     }
   } catch (error) {
-    console.error('Error updating service worker:', error);
+    logger.error('Error updating service worker:', error);
   }
 };
 
@@ -161,7 +163,7 @@ export const skipWaitingAndActivate = async (): Promise<void> => {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration && registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      console.log('✅ Activating new service worker...');
+      logger.log('✅ Activating new service worker...');
       
       // Reload page after activation
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -169,7 +171,7 @@ export const skipWaitingAndActivate = async (): Promise<void> => {
       });
     }
   } catch (error) {
-    console.error('Error activating service worker:', error);
+    logger.error('Error activating service worker:', error);
   }
 };
 
@@ -194,7 +196,7 @@ export const shareContent = async (data: {
   url?: string;
 }): Promise<boolean> => {
   if (!navigator.share) {
-    console.log('⚠️ Web Share API not supported');
+    logger.log('⚠️ Web Share API not supported');
     return false;
   }
 

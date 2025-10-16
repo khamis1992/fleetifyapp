@@ -1,5 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
+import { logger } from '@/lib/logger';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -145,7 +146,7 @@ export default function Maintenance() {
     try {
       await completeMaintenanceStatus.mutateAsync({ vehicleId, maintenanceId });
     } catch (error) {
-      console.error('Failed to complete maintenance:', error);
+      logger.error('Failed to complete maintenance:', error);
     }
   };
 
@@ -158,7 +159,7 @@ export default function Maintenance() {
         reason: 'Returned to fleet from maintenance'
       });
     } catch (error) {
-      console.error('Failed to return vehicle to fleet:', error);
+      logger.error('Failed to return vehicle to fleet:', error);
     }
   };
 

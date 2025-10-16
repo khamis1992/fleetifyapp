@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
@@ -129,7 +130,29 @@ export const calculateDelayFine = (
   paymentDateStr: string,
   monthlyRent: number
 ): FineCalculation => {
+  // Validate input
+  if (!paymentDateStr) {
+    return {
+      fine: 0,
+      days_late: 0,
+      month: '',
+      rent_amount: monthlyRent
+    };
+  }
+
   const paymentDate = new Date(paymentDateStr);
+  
+  // Check if date is valid
+  if (isNaN(paymentDate.getTime())) {
+    console.error('Invalid date string provided to calculateDelayFine:', paymentDateStr);
+    return {
+      fine: 0,
+      days_late: 0,
+      month: '',
+      rent_amount: monthlyRent
+    };
+  }
+  
   const paymentDay = paymentDate.getDate();
   
   let fine = 0;
@@ -602,48 +625,67 @@ export const useCustomerVehicles = (customerId?: string) => {
         return [];
       }
 
-      const { data, error } = await supabase
+      // Fetch active contracts first
+      const { data: contractsData, error: contractsError } = await supabase
         .from('contracts')
-        .select(`
-          id,
-          monthly_amount,
-          start_date,
-          end_date,
-          status,
-          vehicle_id,
-          vehicles (
-            id,
-            plate_number,
-            make,
-            model,
-            year,
-            color_ar
-          )
-        `)
+        .select('id, monthly_amount, start_date, end_date, status, vehicle_id')
         .eq('company_id', companyId)
         .eq('customer_id', customerId)
         .eq('status', 'active')
         .not('vehicle_id', 'is', null);
 
-      if (error) {
-        console.error('❌ Error fetching customer vehicles:', error);
-        throw error;
+      if (contractsError) {
+        console.error('❌ Error fetching customer contracts:', contractsError);
+        throw contractsError;
       }
 
-      // Transform to CustomerVehicle format
-      const vehicles: CustomerVehicle[] = (data || []).map((contract: any) => ({
-        id: contract.vehicles?.id || '',
-        plate_number: contract.vehicles?.plate_number || '',
-        make: contract.vehicles?.make || '',
-        model: contract.vehicles?.model || '',
-        year: contract.vehicles?.year,
-        color_ar: contract.vehicles?.color_ar,
-        contract_id: contract.id,
-        monthly_amount: contract.monthly_amount || 0,
-        contract_start_date: contract.start_date,
-        contract_end_date: contract.end_date,
-        contract_status: contract.status
-      }));
+      if (!contractsData || contractsData.length === 0) {
+        return [];
+      }
+
+      // Extract vehicle IDs
+      const vehicleIds = contractsData
+        .map((c: any) => c.vehicle_id)
+        .filter((id: any) => id != null);
+
+      if (vehicleIds.length === 0) {
+        return [];
+      }
+
+      // Fetch vehicle details separately
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model, year, color_ar')
+        .in('id', vehicleIds);
+
+      if (vehiclesError) {
+        console.error('❌ Error fetching vehicles:', vehiclesError);
+        throw vehiclesError;
+      }
+
+      // Combine contracts and vehicles data
+      const vehiclesMap = new Map((vehiclesData || []).map((v: any) => [v.id, v]));
+      
+      const vehicles: CustomerVehicle[] = contractsData
+        .map((contract: any) => {
+          const vehicle = vehiclesMap.get(contract.vehicle_id);
+          if (!vehicle) return null;
+          
+          return {
+            id: vehicle.id,
+            plate_number: vehicle.plate_number || '',
+            make: vehicle.make || '',
+            model: vehicle.model || '',
+            year: vehicle.year,
+            color_ar: vehicle.color_ar,
+            contract_id: contract.id,
+            monthly_amount: contract.monthly_amount || 0,
+            contract_start_date: contract.start_date,
+            contract_end_date: contract.end_date,
+            contract_status: contract.status
+          };
+        })
+        .filter((v: any) => v !== null) as CustomerVehicle[];
 
       return vehicles;
     },

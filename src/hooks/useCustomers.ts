@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
+import { useMemo } from 'react';
 
 // Re-export types for compatibility
 export type { Customer, CustomerFormData, CustomerFilters };
@@ -14,8 +15,18 @@ export const useCustomers = (filters?: CustomerFilters) => {
   const { user } = useAuth();
   const { companyId, filter, isBrowsingMode, browsedCompany, hasGlobalAccess } = useUnifiedCompanyAccess();
   
+  // Memoize filters to prevent unnecessary re-queries
+  const memoizedFilters = useMemo(() => filters, [
+    filters?.search,
+    filters?.searchTerm,
+    filters?.customer_type,
+    filters?.is_blacklisted,
+    filters?.includeInactive,
+    filters?.limit
+  ]);
+  
   return useQuery({
-    queryKey: ['customers', companyId, isBrowsingMode, browsedCompany?.id, filters],
+    queryKey: ['customers', companyId, isBrowsingMode, browsedCompany?.id, memoizedFilters],
     queryFn: async () => {
       console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
         companyId,
@@ -52,23 +63,23 @@ export const useCustomers = (filters?: CustomerFilters) => {
       }
 
       // Apply active filter
-      if (!filters?.includeInactive) {
+      if (!memoizedFilters?.includeInactive) {
         query = query.eq('is_active', true);
       }
 
       // Apply customer type filter
-      if (filters?.customer_type) {
-        query = query.eq('customer_type', filters.customer_type);
+      if (memoizedFilters?.customer_type) {
+        query = query.eq('customer_type', memoizedFilters.customer_type);
       }
 
       // Apply blacklist filter
-      if (filters?.is_blacklisted !== undefined) {
-        query = query.eq('is_blacklisted', filters.is_blacklisted);
+      if (memoizedFilters?.is_blacklisted !== undefined) {
+        query = query.eq('is_blacklisted', memoizedFilters.is_blacklisted);
       }
 
-      // Apply search filters
-      const searchTerm = filters?.search || filters?.searchTerm;
-      if (searchTerm?.trim()) {
+      // Apply search filters with minimum length check
+      const searchTerm = memoizedFilters?.search || memoizedFilters?.searchTerm;
+      if (searchTerm?.trim() && searchTerm.trim().length >= 2) {
         const search = searchTerm.trim();
         query = query.or(
           `first_name.ilike.%${search}%,` +
@@ -84,8 +95,8 @@ export const useCustomers = (filters?: CustomerFilters) => {
       }
 
       // Apply limit
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
+      if (memoizedFilters?.limit) {
+        query = query.limit(memoizedFilters.limit);
       }
 
       // Order by creation date

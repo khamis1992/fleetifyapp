@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { logger } from '@/lib/logger';
 
 export interface AuthUser extends User {
   profile?: {
@@ -63,7 +64,7 @@ export const authService = {
       
       return { error };
     } catch (error) {
-      console.error('📝 [AUTH_SERVICE] Sign in error:', error);
+      logger.error('📝 [AUTH_SERVICE] Sign in error:', error);
       return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تسجيل الدخول') };
     }
   },
@@ -73,49 +74,54 @@ export const authService = {
       const { error } = await supabase.auth.signOut();
       return { error };
     } catch (error) {
-      console.error('📝 [AUTH_SERVICE] Sign out error:', error);
+      logger.error('📝 [AUTH_SERVICE] Sign out error:', error);
       return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تسجيل الخروج') };
     }
   },
 
   async getCurrentUser() {
     try {
+      logger.log('📝 [AUTH] Starting getCurrentUser...');
+      const startTime = Date.now();
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
-        console.error('📝 [AUTH] Error getting user:', userError);
+        logger.error('📝 [AUTH] Error getting user:', userError);
+        // Handle invalid JWT errors
+        if (userError.message && userError.message.includes('invalid JWT')) {
+          logger.log('📝 [AUTH] Invalid JWT detected in getUser, clearing local storage');
+          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
+          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+        }
         return null;
       }
       
       if (!user) {
-        console.log('📝 [AUTH] No user found');
+        logger.log('📝 [AUTH] No user found');
         return null;
       }
 
-      console.log('📝 [AUTH] Fetching profile for user:', user.id);
+      logger.log('📝 [AUTH] Fetching profile for user:', user.id);
 
-      // Get user profile with company info - with better error handling
-      let { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          companies:company_id (
-            id,
-            name,
-            name_ar,
-            business_type,
-            active_modules
-          )
-        `)
-        .eq('user_id', user.id)
-        .single();
-
-      console.log('📝 [AUTH] Profile query result:', { profile, profileError });
-
-      // If no company from profile, try to get from employees table
-      let employeeCompany = null;
-      if (!profile?.company_id) {
-        const { data: empData } = await supabase
+      // OPTIMIZATION: Execute profile, employee, and roles queries IN PARALLEL
+      const [profileResult, employeeResult, rolesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(`
+            *,
+            companies:company_id (
+              id,
+              name,
+              name_ar,
+              business_type,
+              active_modules
+            )
+          `)
+          .eq('user_id', user.id)
+          .single(),
+        
+        supabase
           .from('employees')
           .select(`
             company_id,
@@ -128,62 +134,19 @@ export const authService = {
             )
           `)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(), // Use maybeSingle to avoid error if not found
         
-        employeeCompany = empData;
-      }
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+      ]);
 
-      if (profileError) {
-        console.error('📝 [AUTH] Profile fetch error:', profileError);
-        
-        // If profile doesn't exist, try to create it
-        if (profileError.code === 'PGRST116') {
-          console.log('📝 [AUTH] No profile found, attempting to create one...');
-          try {
-            const { data, error } = await supabase.functions.invoke('create-super-admin-profile');
-            if (error) {
-              console.error('📝 [AUTH] Failed to create profile via edge function:', error);
-            } else {
-              console.log('📝 [AUTH] Profile created successfully:', data);
-              // Retry fetching the profile
-              const { data: newProfile, error: retryError } = await supabase
-                .from('profiles')
-                .select(`
-                  *,
-                  companies:company_id (
-                    id,
-                    name,
-                    name_ar,
-                    business_type,
-                    active_modules
-                  )
-                `)
-                .eq('user_id', user.id)
-                .single();
-              
-              if (!retryError && newProfile) {
-                console.log('📝 [AUTH] Successfully fetched newly created profile');
-                // Continue with the new profile
-                profile = newProfile;
-              }
-            }
-          } catch (edgeFunctionError) {
-            console.error('📝 [AUTH] Edge function call failed:', edgeFunctionError);
-          }
-        }
-      }
+      const { data: profile, error: profileError } = profileResult;
+      const { data: employeeCompany } = employeeResult;
+      const { data: roles } = rolesResult;
 
-      console.log('📝 [AUTH] Profile data:', profile);
-
-      // Get user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-
-      if (rolesError) {
-        console.error('📝 [AUTH] Roles fetch error:', rolesError);
-      }
+      logger.log('📝 [AUTH] Parallel queries completed in', Date.now() - startTime, 'ms');
 
       // Get company info - prioritize from profiles, fallback to employees
       let companyInfo = profile?.companies;
@@ -193,8 +156,12 @@ export const authService = {
       if (!companyInfo && employeeCompany) {
         companyInfo = employeeCompany.companies;
         companyId = employeeCompany.company_id;
-        
-        console.log('📝 [AUTH] Using company info from employees table:', companyInfo);
+        logger.log('📝 [AUTH] Using company info from employees table');
+      }
+
+      // If still no profile, log warning but continue (don't block login)
+      if (profileError) {
+        logger.warn('📝 [AUTH] Profile fetch error (continuing anyway):', profileError.code);
       }
 
       const authUser: AuthUser = {
@@ -204,29 +171,23 @@ export const authService = {
         roles: roles?.map(r => r.role) || []
       };
 
-      // Enhanced logging for debugging
-      console.log('📝 [AUTH] Creating AuthUser with:', {
-        hasProfile: !!profile,
-        profileCompanyId: profile?.company_id,
-        companyId,
-        hasCompanyInfo: !!companyInfo,
-        businessType: companyInfo?.business_type,
-        activeModules: companyInfo?.active_modules,
-        roles: authUser.roles
-      });
-
-      console.log('📝 [AUTH] Final authUser:', {
+      logger.log('📝 [AUTH] User loaded in', Date.now() - startTime, 'ms:', {
         id: authUser.id,
         email: authUser.email,
         company_id: companyId,
-        company: authUser.company,
-        business_type: authUser.company?.business_type,
-        roles: authUser.roles
+        hasCompany: !!companyInfo,
+        rolesCount: authUser.roles.length
       });
 
       return authUser;
     } catch (error) {
-      console.error('📝 [AUTH] Unexpected error in getCurrentUser:', error);
+      logger.error('📝 [AUTH] Unexpected error in getCurrentUser:', error);
+      // Handle invalid JWT errors
+      if (error?.message && error.message.includes('invalid JWT')) {
+        logger.log('📝 [AUTH] Invalid JWT in getCurrentUser, clearing local storage');
+        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
+        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+      }
       return null;
     }
   },

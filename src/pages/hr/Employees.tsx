@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -207,7 +208,7 @@ const { user } = useAuth();
         if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
 
         // Show account details dialog
-        console.log('[ACCOUNT_CREATED_WHATSAPP] accountData (Employees createUserAccount):', {
+        logger.log('[ACCOUNT_CREATED_WHATSAPP] accountData (Employees createUserAccount):', {
           employee_name: `${employee.first_name} ${employee.last_name}`,
           employee_email: employeeData.accountEmail,
           temporary_password: result.temporary_password || employeeData.accountPassword,

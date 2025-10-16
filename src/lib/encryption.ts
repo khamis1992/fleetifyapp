@@ -3,6 +3,8 @@
  * Implements AES-256-GCM encryption for API keys and sensitive information
  */
 
+import { logger } from '@/lib/logger';
+
 // Browser-compatible encryption using Web Crypto API
 class EncryptionService {
   private algorithm = 'AES-GCM';
@@ -61,7 +63,7 @@ class EncryptionService {
       // Convert to base64
       return btoa(String.fromCharCode(...combined));
     } catch (error) {
-      console.error('Encryption failed:', error);
+      logger.error('Encryption failed:', error);
       throw new Error('Failed to encrypt data');
     }
   }
@@ -90,7 +92,7 @@ class EncryptionService {
       const decoder = new TextDecoder();
       return decoder.decode(decrypted);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      logger.error('Decryption failed:', error);
       throw new Error('Failed to decrypt data. Invalid password or corrupted data.');
     }
   }
@@ -191,7 +193,7 @@ export class SecureStorage {
       const encrypted = await encryptionService.encrypt(value, userId);
       localStorage.setItem(this.prefix + key, encrypted);
     } catch (error) {
-      console.error('Failed to store encrypted item:', error);
+      logger.error('Failed to store encrypted item:', error);
       throw error;
     }
   }
@@ -206,7 +208,7 @@ export class SecureStorage {
       
       return await encryptionService.decrypt(encrypted, userId);
     } catch (error) {
-      console.error('Failed to retrieve encrypted item:', error);
+      logger.error('Failed to retrieve encrypted item:', error);
       // Clear corrupted data
       this.removeItem(key);
       return null;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -113,7 +114,7 @@ export default function UserManagement() {
           .in('user_id', employeeIds);
 
         if (rolesError) {
-          console.warn('Error fetching roles:', rolesError);
+          logger.warn('Error fetching roles:', rolesError);
         }
 
         // Aggregate roles by user_id
@@ -132,7 +133,7 @@ export default function UserManagement() {
           .in('user_id', employeeIds);
 
         if (profilesError) {
-          console.warn('Error fetching profiles:', profilesError);
+          logger.warn('Error fetching profiles:', profilesError);
         }
 
         // Create profiles map
@@ -160,7 +161,7 @@ export default function UserManagement() {
 
         return enrichedData;
       } catch (error) {
-        console.error('Error fetching employees with access:', error);
+        logger.error('Error fetching employees with access:', error);
         throw error;
       }
     },
@@ -216,7 +217,7 @@ export default function UserManagement() {
       const employee = employeesWithAccess?.find(emp => emp.user_id === userId);
       
       if (!employee) {
-        console.warn(`Employee not found for user_id: ${userId}`);
+        logger.warn(`Employee not found for user_id: ${userId}`);
         toast({
           title: "خطأ",
           description: "لم يتم العثور على بيانات المستخدم المحدد",
@@ -232,7 +233,7 @@ export default function UserManagement() {
         roles: Array.isArray(employee.user_roles) ? employee.user_roles : []
       };
 
-      console.log('Selected user for matrix:', user);
+      logger.log('Selected user for matrix:', user);
       setSelectedUserForMatrix(user);
       setHasUnsavedChanges(false);
       
@@ -241,7 +242,7 @@ export default function UserManagement() {
         description: `تم اختيار ${user.first_name} ${user.last_name} بنجاح`,
       });
     } catch (error) {
-      console.error('Error in handleUserSelection:', error);
+      logger.error('Error in handleUserSelection:', error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء اختيار المستخدم",
@@ -275,10 +276,10 @@ export default function UserManagement() {
   const handleSaveChanges = async () => {
     if (!selectedUserForMatrix) return;
 
-    console.log('Saving changes for user:', selectedUserForMatrix.user_id);
-    console.log('Pending permission changes:', pendingPermissionChanges);
-    console.log('Pending role changes:', pendingRoleChanges);
-    console.log('Current user roles:', selectedUserForMatrix.roles);
+    logger.log('Saving changes for user:', selectedUserForMatrix.user_id);
+    logger.log('Pending permission changes:', pendingPermissionChanges);
+    logger.log('Pending role changes:', pendingRoleChanges);
+    logger.log('Current user roles:', selectedUserForMatrix.roles);
 
     try {
       // Always save permission changes (even if empty to clear permissions)

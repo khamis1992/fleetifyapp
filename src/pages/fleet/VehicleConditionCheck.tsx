@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,7 +117,7 @@ export const VehicleConditionCheck = () => {
       // Navigate back to dispatch permits
       navigate('/fleet/dispatch-permits');
     } catch (error) {
-      console.error('Error saving condition check:', error);
+      logger.error('Error saving condition check:', error);
       toast({
         title: "خطأ في حفظ التقرير",
         description: "حدث خطأ أثناء حفظ تقرير الفحص. يرجى المحاولة مرة أخرى.",

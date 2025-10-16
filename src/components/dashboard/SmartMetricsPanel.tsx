@@ -26,6 +26,9 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
   financialData, 
   loading = false 
 }) => {
+  // Call hooks at the top level - BEFORE any conditionals
+  const { formatCurrency } = useCurrencyFormatter();
+  
   if (loading) {
     return (
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -71,13 +74,13 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
   const metrics = [
     {
       label: 'الإيرادات الشهرية',
-      value: useCurrencyFormatter().formatCurrency(financialData.monthlyRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+      value: formatCurrency(financialData.monthlyRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: financialData.monthlyGrowth || 0,
       positive: (financialData.monthlyGrowth || 0) > 0
     },
     {
       label: 'إجمالي الأرباح',
-      value: useCurrencyFormatter().formatCurrency(financialData.totalProfit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+      value: formatCurrency(financialData.totalProfit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: financialData.profitMargin || 0,
       positive: (financialData.profitMargin || 0) > 0,
       suffix: '%'

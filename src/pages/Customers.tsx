@@ -76,6 +76,22 @@ const Customers = () => {
 
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
   
+  // Fetch counts for all customer types (without pagination filters)
+  const { data: individualCountResult } = useCustomers({
+    customer_type: 'individual',
+    includeInactive: false
+  });
+  
+  const { data: corporateCountResult } = useCustomers({
+    customer_type: 'corporate',
+    includeInactive: false
+  });
+  
+  const { data: blacklistedCountResult } = useCustomers({
+    is_blacklisted: true,
+    includeInactive: true // Include both active and inactive blacklisted customers
+  });
+  
   // Extract pagination data
   const totalCustomersInDB = customersResult?.total || 0;
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
@@ -140,9 +156,9 @@ const Customers = () => {
   // Calculate stats with comprehensive safety checks
   const safeCustomers = Array.isArray(customers) ? customers : [];
   const totalCustomers = totalCustomersInDB; // Use total from database
-  const individualCustomers = safeCustomers.filter(c => c && c.customer_type === 'individual').length;
-  const corporateCustomers = safeCustomers.filter(c => c && c.customer_type === 'corporate').length;
-  const blacklistedCustomers = safeCustomers.filter(c => c && c.is_blacklisted).length;
+  const individualCustomers = individualCountResult?.total || 0; // Use total count from separate query
+  const corporateCustomers = corporateCountResult?.total || 0; // Use total count from separate query
+  const blacklistedCustomers = blacklistedCountResult?.total || 0; // Use total count from separate query
   
   // Handle page changes
   const handlePageChange = (newPage: number) => {

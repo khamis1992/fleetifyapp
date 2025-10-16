@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(node verify-integration.js)",
+      "Bash(start verify-frontend-performance.html)",
+      "Read(//c/Users/khamis/Desktop/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

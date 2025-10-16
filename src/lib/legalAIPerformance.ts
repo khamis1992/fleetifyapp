@@ -3,6 +3,8 @@
  * Tracks query performance, API costs, and system health
  */
 
+import { logger } from './logger';
+
 export interface LegalAIPerformanceMetrics {
   queryId: string;
   queryType: 'consultation' | 'document' | 'risk_analysis';
@@ -91,7 +93,7 @@ class LegalAIPerformanceMonitor {
 
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.log('🔍 Legal AI Query Performance:', {
+      logger.log('🔍 Legal AI Query Performance:', {
         type: metric.queryType,
         duration: `${metric.duration.toFixed(2)}ms`,
         tokens: metric.tokensUsed,
@@ -110,7 +112,7 @@ class LegalAIPerformanceMonitor {
   private checkPerformanceThresholds(metric: LegalAIPerformanceMetrics) {
     // Check query duration
     if (metric.duration > this.performanceThresholds.queryDuration) {
-      console.warn(`⚠️ Slow Legal AI query detected: ${metric.duration.toFixed(2)}ms`);
+      logger.warn(`⚠️ Slow Legal AI query detected: ${metric.duration.toFixed(2)}ms`);
       
       // Could trigger an alert or log to monitoring service
       this.logSlowQuery(metric);
@@ -119,7 +121,7 @@ class LegalAIPerformanceMonitor {
     // Check daily cost limit
     const dailyCost = this.getDailyCost();
     if (dailyCost > this.performanceThresholds.dailyCostLimit) {
-      console.warn(`⚠️ Daily cost limit exceeded: $${dailyCost.toFixed(2)}`);
+      logger.warn(`⚠️ Daily cost limit exceeded: $${dailyCost.toFixed(2)}`);
       
       // Could trigger an alert to admin
       this.logCostAlert(dailyCost);
@@ -128,7 +130,7 @@ class LegalAIPerformanceMonitor {
     // Check hourly query limit
     const hourlyQueries = this.getHourlyQueryCount();
     if (hourlyQueries > this.performanceThresholds.hourlyQueryLimit) {
-      console.warn(`⚠️ Hourly query limit exceeded: ${hourlyQueries} queries`);
+      logger.warn(`⚠️ Hourly query limit exceeded: ${hourlyQueries} queries`);
       
       // Could trigger rate limiting
       this.logRateLimitAlert(hourlyQueries);
@@ -256,7 +258,7 @@ class LegalAIPerformanceMonitor {
       const recentMetrics = this.metrics.slice(-100); // Store last 100 only
       localStorage.setItem('legalAIMetrics', JSON.stringify(recentMetrics));
     } catch (error) {
-      console.error('Failed to persist metrics:', error);
+      logger.error('Failed to persist metrics:', error);
     }
   }
 
@@ -270,7 +272,7 @@ class LegalAIPerformanceMonitor {
         this.metrics = JSON.parse(stored);
       }
     } catch (error) {
-      console.error('Failed to load persisted metrics:', error);
+      logger.error('Failed to load persisted metrics:', error);
     }
   }
 

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
+import { logger } from '@/lib/logger';
 import {
   Activity,
   Smartphone,
@@ -157,9 +158,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         }
       }
       
-      console.log('🚀 Performance optimized successfully');
+      logger.log('🚀 Performance optimized successfully');
     } catch (error) {
-      console.error('❌ Error optimizing performance:', error);
+      logger.error('❌ Error optimizing performance:', error);
     } finally {
       setIsOptimizing(false);
     }

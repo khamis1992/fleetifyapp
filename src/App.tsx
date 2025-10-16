@@ -4,6 +4,7 @@ import { SimpleToaster } from "@/components/ui/simple-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import ErrorBoundary from "@/lib/errorBoundary";
 import { performanceMonitor } from "@/lib/performanceMonitor";
 import { compatibilityManager } from "@/lib/compatibilityManager";
@@ -18,6 +19,7 @@ import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
 import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout";
 import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+import { LazyLoadErrorBoundary } from "@/components/common/LazyLoadErrorBoundary";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 
@@ -101,7 +103,30 @@ const DuplicateContractsDiagnostic = lazy(() => import("./components/contracts/D
 const Tenants = lazy(() => import("./modules/tenants").then(m => ({ default: m.Tenants })));
 const PerformanceMonitor = lazy(() => import("@/components/performance").then(m => ({ default: m.PerformanceMonitor })));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce refetch frequency for better performance
+      refetchOnWindowFocus: false, // Too aggressive for desktop app
+      refetchOnReconnect: true,    // Keep this for network recovery
+      refetchOnMount: true,        // Keep this for fresh data
+      
+      // Increase stale time globally (2 minutes)
+      staleTime: 2 * 60 * 1000,
+      
+      // Increase cache time (15 minutes)
+      gcTime: 15 * 60 * 1000,
+      
+      // Add retry configuration
+      retry: 1, // Retry failed queries once
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      // Add retry for mutations
+      retry: 1,
+    }
+  }
+});
 
 const App = () => {
   React.useEffect(() => {
@@ -123,20 +148,24 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter future={{ v7_startTransition: true }}>
+      <BrowserRouter future={{ 
+        v7_startTransition: true,
+        v7_relativeSplatPath: true 
+      }}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <AuthProvider>
-                <CompanyContextProvider>
+            <AuthProvider>
+              <CompanyContextProvider>
+                <TooltipProvider>
                   <MobileOptimizationProvider>
                     <PWAInstallPrompt />
                     <SimpleToaster />
                     <AppRoutes />
                   </MobileOptimizationProvider>
-                </CompanyContextProvider>
-              </AuthProvider>
-            </TooltipProvider>
+                </TooltipProvider>
+              </CompanyContextProvider>
+            </AuthProvider>
+            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
           </QueryClientProvider>
         </ThemeProvider>
       </BrowserRouter>
@@ -406,11 +435,13 @@ const AppRoutes = () => {
         <Route path="invoices" element={<Navigate to="/finance/invoices" replace />} />
         <Route path="reports" element={<Navigate to="/finance/reports" replace />} />
         
-        <Route path="finance/*" element={
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <Finance />
-          </Suspense>
-        } />
+        <Route path="finance/*" element={(
+          <LazyLoadErrorBoundary>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Finance />
+            </Suspense>
+          </LazyLoadErrorBoundary>
+        )} />
         <Route path="hr/employees" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>

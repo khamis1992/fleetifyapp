@@ -36,10 +36,22 @@ export const useDocumentExpiryAlerts = () => {
         .eq('is_acknowledged', false)
         .order('expiry_date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          console.log('[useDocumentExpiryAlerts] Table not available for this business type');
+          return [];
+        }
+        throw error;
+      }
       return data as DocumentExpiryAlert[];
     },
     enabled: !!user,
+    retry: (failureCount, error: any) => {
+      if (error?.code === 'PGRST116' || error?.message?.includes('does not exist')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   const acknowledgeAlert = useMutation({

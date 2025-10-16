@@ -1,4 +1,7 @@
 // Responsive testing utilities and frameworks
+
+import { logger } from '@/lib/logger';
+
 export interface DeviceTestConfig {
   name: string
   width: number
@@ -249,7 +252,7 @@ export class ResponsiveTester {
       result.screenshot = await this.captureScreenshot()
       
     } catch (error) {
-      console.error('Test execution failed:', error)
+      logger.error('Test execution failed:', error)
     }
 
     const endTime = performance.now()
@@ -264,7 +267,7 @@ export class ResponsiveTester {
     const results: ResponsiveTestResult[] = []
     
     for (const device of DEVICE_CONFIGS) {
-      console.log(`Testing device: ${device.name}`)
+      logger.log(`Testing device: ${device.name}`)
       const result = await this.testDevice(device, route)
       results.push(result)
       

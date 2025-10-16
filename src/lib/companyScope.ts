@@ -2,6 +2,7 @@
 
 import { UserRole } from '@/types/permissions';
 import { AuthUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export interface CompanyScopeContext {
   user: AuthUser | null;
@@ -30,7 +31,7 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
   
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔧 [getCompanyScopeContext] Processing user context:', {
+    logger.log('🔧 [getCompanyScopeContext] Processing user context:', {
       userId: user?.id,
       companyId,
       normalizedRoles,
@@ -107,7 +108,7 @@ export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: 
   }
   
   // احتياطي أمني: عدم الوصول إذا لم توجد شركة مرتبطة
-  console.error('🚨 [getCompanyFilter] SECURITY: No company association - blocking access');
+  logger.error('🚨 [getCompanyFilter] SECURITY: No company association - blocking access');
   return { company_id: 'no-access-security-block' };
 };
 

@@ -75,25 +75,36 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         throw error
       }
 
-      // Fetch linked payments amounts for each contract
-      const contractsWithPayments = await Promise.all(
-        (data || []).map(async (contract) => {
-          const { data: paymentsData } = await supabase
-            .from('payments')
-            .select('amount')
-            .eq('contract_id', contract.id)
-            .eq('payment_status', 'completed')
+      // Optimized: Fetch all payments in a single query instead of N+1
+      if (!data || data.length === 0) {
+        return []
+      }
 
-          const linkedPaymentsAmount = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
-          
-          return {
-            ...contract,
-            linked_payments_amount: linkedPaymentsAmount,
-            total_paid: (contract.total_paid || 0) + linkedPaymentsAmount,
-            balance_due: contract.contract_amount - ((contract.total_paid || 0) + linkedPaymentsAmount)
-          }
-        })
-      )
+      const contractIds = data.map(c => c.id)
+      
+      // Single query to get all payments for all contracts
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('contract_id, amount')
+        .in('contract_id', contractIds)
+        .eq('payment_status', 'completed')
+      
+      // Group payments by contract_id
+      const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
+        if (!acc[payment.contract_id]) {
+          acc[payment.contract_id] = 0
+        }
+        acc[payment.contract_id] += payment.amount || 0
+        return acc
+      }, {} as Record<string, number>)
+      
+      // Map contracts with their payment totals
+      const contractsWithPayments = data.map(contract => ({
+        ...contract,
+        linked_payments_amount: paymentsByContract[contract.id] || 0,
+        total_paid: (contract.total_paid || 0) + (paymentsByContract[contract.id] || 0),
+        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
+      }))
 
       return contractsWithPayments
     },
@@ -143,25 +154,36 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         throw error
       }
       
-      // Fetch linked payments amounts for each contract
-      const contractsWithPayments = await Promise.all(
-        (data || []).map(async (contract) => {
-          const { data: paymentsData } = await supabase
-            .from('payments')
-            .select('amount')
-            .eq('contract_id', contract.id)
-            .eq('payment_status', 'completed')
+      // Optimized: Fetch all payments in a single query instead of N+1
+      if (!data || data.length === 0) {
+        return []
+      }
 
-          const linkedPaymentsAmount = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
-          
-          return {
-            ...contract,
-            linked_payments_amount: linkedPaymentsAmount,
-            total_paid: (contract.total_paid || 0) + linkedPaymentsAmount,
-            balance_due: contract.contract_amount - ((contract.total_paid || 0) + linkedPaymentsAmount)
-          }
-        })
-      )
+      const contractIds = data.map(c => c.id)
+      
+      // Single query to get all payments for all contracts
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('contract_id, amount')
+        .in('contract_id', contractIds)
+        .eq('payment_status', 'completed')
+      
+      // Group payments by contract_id
+      const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
+        if (!acc[payment.contract_id]) {
+          acc[payment.contract_id] = 0
+        }
+        acc[payment.contract_id] += payment.amount || 0
+        return acc
+      }, {} as Record<string, number>)
+      
+      // Map contracts with their payment totals
+      const contractsWithPayments = data.map(contract => ({
+        ...contract,
+        linked_payments_amount: paymentsByContract[contract.id] || 0,
+        total_paid: (contract.total_paid || 0) + (paymentsByContract[contract.id] || 0),
+        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
+      }))
 
       return contractsWithPayments
     },

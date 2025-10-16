@@ -110,12 +110,14 @@ const EnhancedStatsCard: React.FC<EnhancedStatsCardProps> = ({
 
           {/* Background Glow Effect */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            animate={{
-              background: isHovered 
-                ? "radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.05) 0%, transparent 70%)"
-                : "transparent"
+            className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent"
+            style={{
+              background: "radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.05) 0%, transparent 70%)"
             }}
+            animate={{
+              opacity: isHovered ? 1 : 0
+            }}
+            transition={{ duration: 0.5 }}
           />
           
           {/* Animated Corner Accent */}

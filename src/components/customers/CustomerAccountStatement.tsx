@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -194,7 +194,8 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
     }
   };
 
-  const getTransactionTypeBadge = (type: string) => {
+  // Memoize helper functions
+  const getTransactionTypeBadge = useCallback((type: string) => {
     const variants = {
       'invoice': 'destructive',
       'payment': 'default',
@@ -216,9 +217,9 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         {labels[type as keyof typeof labels] || type}
       </Badge>
     );
-  };
+  }, []);
 
-  const getTransactionTypeLabel = (type: string) => {
+  const getTransactionTypeLabel = useCallback((type: string) => {
     const labels = {
       'invoice': 'فاتورة',
       'payment': 'دفعة',
@@ -227,17 +228,25 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       'opening_balance': 'رصيد افتتاحي'
     };
     return labels[type as keyof typeof labels] || type;
-  };
+  }, []);
 
-  // Professional financial calculations
-  const totalDebit = transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
-  const totalCredit = transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
-  const netBalance = totalDebit - totalCredit;
+  // Memoize expensive financial calculations
+  const financialTotals = useMemo(() => {
+    const totalDebit = transactions.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
+    const totalCredit = transactions.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
+    const netBalance = totalDebit - totalCredit;
+    return { totalDebit, totalCredit, netBalance };
+  }, [transactions]);
 
-  // Get customer name for display
-  const customerName = customer.customer_type === 'corporate' 
-    ? customer.company_name 
-    : `${customer.first_name} ${customer.last_name}`;
+  const { totalDebit, totalCredit, netBalance } = financialTotals;
+
+  // Memoize customer name
+  const customerName = useMemo(() => 
+    customer.customer_type === 'corporate' 
+      ? customer.company_name 
+      : `${customer.first_name} ${customer.last_name}`,
+    [customer.customer_type, customer.company_name, customer.first_name, customer.last_name]
+  );
 
   if (isLoading) {
     return (

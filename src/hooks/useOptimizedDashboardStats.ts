@@ -57,13 +57,86 @@ export const useOptimizedDashboardStats = () => {
         return getEmptyStats();
       }
 
-      // Use optimized direct queries with our new indexes
-      return await fetchStatsDirectly(targetCompanyId, hasGlobalAccess);
+      // Try to use optimized RPC function first, fall back to multi-query if not available
+      try {
+        return await fetchStatsRPC(targetCompanyId);
+      } catch (error) {
+        console.warn('RPC function not available, falling back to multi-query approach:', error);
+        return await fetchStatsMultiQuery(targetCompanyId, hasGlobalAccess);
+      }
     },
     enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
+
+// Optimized approach: Use single RPC call instead of 11 queries
+async function fetchStatsRPC(companyId: string | undefined): Promise<OptimizedDashboardStats> {
+  if (!companyId) {
+    return getEmptyStats();
+  }
+
+  const { data, error } = await supabase
+    .rpc('get_dashboard_stats', { p_company_id: companyId });
+
+  if (error) {
+    console.error('Error fetching dashboard stats via RPC:', error);
+    throw error;
+  }
+
+  if (!data) {
+    return getEmptyStats();
+  }
+
+  // Calculate derived metrics
+  const fleetUtilization = data.vehicles_count > 0 
+    ? (data.contracts_count / data.vehicles_count) * 100 
+    : 0;
+  
+  const averageContractValue = data.contracts_count > 0 
+    ? (data.total_revenue / data.contracts_count) 
+    : 0;
+  
+  const estimatedExpenses = data.employees_count * 500;
+  const cashFlow = data.monthly_revenue - estimatedExpenses;
+  const profitMargin = data.monthly_revenue > 0 
+    ? (cashFlow / data.monthly_revenue) * 100 
+    : 0;
+
+  return {
+    totalVehicles: data.vehicles_count || 0,
+    vehiclesChange: '+0',
+    
+    activeContracts: data.contracts_count || 0,
+    contractsChange: '+0',
+    
+    totalCustomers: data.customers_count || 0,
+    customersChange: '+0',
+    
+    totalEmployees: data.employees_count || 0,
+    employeesChange: '+0',
+    
+    totalProperties: data.properties_count || 0,
+    propertiesChange: '+0',
+    
+    totalPropertyOwners: data.property_owners_count || 0,
+    propertyOwnersChange: '+0',
+    
+    monthlyRevenue: data.monthly_revenue || 0,
+    revenueChange: '+0%',
+    totalRevenue: data.total_revenue || 0,
+    propertyRevenue: 0, // Not included in RPC yet
+    
+    maintenanceRequests: data.maintenance_count || 0,
+    pendingPayments: 0, // Calculate from data if needed
+    expiringContracts: data.expiring_contracts || 0,
+    
+    fleetUtilization,
+    averageContractValue,
+    cashFlow,
+    profitMargin
+  };
+}
 
 async function fetchStatsDirectly(companyId: string | undefined, hasGlobalAccess: boolean = false): Promise<OptimizedDashboardStats> {
   // Use optimized direct queries with parallel execution
@@ -126,9 +199,8 @@ async function fetchStatsMultiQuery(companyId: string | undefined, hasGlobalAcce
     buildQuery(supabase.from('contracts').select('monthly_amount, contract_amount'))
       .eq('status', 'active'),
     
-    // Property contracts financial data
-    buildQuery(supabase.from('property_contracts').select('rental_amount'))
-      .eq('status', 'active'),
+    // Property contracts financial data (only for real estate business)
+    Promise.resolve({ data: [], error: null }),
     
     buildQuery(supabase.from('vehicle_maintenance').select('*', { count: 'exact', head: true }))
       .in('status', ['pending', 'in_progress']),

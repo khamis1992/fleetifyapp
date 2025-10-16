@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -187,26 +187,26 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
     }
   }, [contractData.contract_amount])
 
-  // Calculate end date based on start date and rental days
-  const calculateEndDate = (startDate: string, days: number) => {
+  // Memoize end date calculation function
+  const calculateEndDate = useCallback((startDate: string, days: number) => {
     if (!startDate || days <= 0) return ''
     const start = new Date(startDate)
     const end = new Date(start)
     end.setDate(start.getDate() + days)
     return end.toISOString().slice(0, 10)
-  }
+  }, []);
 
-  const handleStartDateChange = (newStartDate: string) => {
+  const handleStartDateChange = useCallback((newStartDate: string) => {
     const newData = { ...contractData, start_date: newStartDate }
     newData.end_date = calculateEndDate(newStartDate, contractData.rental_days)
     setContractData(newData)
-  }
+  }, [contractData, calculateEndDate]);
 
-  const handleRentalDaysChange = (days: number) => {
+  const handleRentalDaysChange = useCallback((days: number) => {
     const newData = { ...contractData, rental_days: days }
     newData.end_date = calculateEndDate(contractData.start_date, days)
     setContractData(newData)
-  }
+  }, [contractData, calculateEndDate]);
 
   // Auto-update financial calculations
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
@@ -169,7 +170,7 @@ export const useCreateVendorPayment = () => {
       toast.success('تم إنشاء دفع المورد بنجاح');
     },
     onError: (error) => {
-      console.error('Error creating vendor payment:', error);
+      logger.error('Error creating vendor payment:', error);
       toast.error('حدث خطأ أثناء إنشاء دفع المورد');
     },
   });
@@ -192,7 +193,7 @@ export const useUpdateVendorPayment = () => {
       toast.success('تم تحديث دفع المورد بنجاح');
     },
     onError: (error) => {
-      console.error('Error updating vendor payment:', error);
+      logger.error('Error updating vendor payment:', error);
       toast.error('حدث خطأ أثناء تحديث دفع المورد');
     },
   });
@@ -215,7 +216,7 @@ export const useDeleteVendorPayment = () => {
       toast.success('تم حذف دفع المورد بنجاح');
     },
     onError: (error) => {
-      console.error('Error deleting vendor payment:', error);
+      logger.error('Error deleting vendor payment:', error);
       toast.error('حدث خطأ أثناء حذف دفع المورد');
     },
   });

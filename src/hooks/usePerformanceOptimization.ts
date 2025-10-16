@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { logger } from '@/lib/logger'
 
 export interface PerformanceMetrics {
   renderTime: number
@@ -23,7 +24,7 @@ const DEFAULT_CONFIG: PerformanceConfig = {
   enableLazyLoading: true,
   imageOptimization: true,
   enableVirtualization: true,
-  memoryThreshold: 128, // 128MB - زيادة الحد لتقليل التحذيرات غير الضرورية
+  memoryThreshold: 256, // 256MB - more realistic threshold for modern apps
   maxConcurrentImages: 8,
   prefetchCriticalResources: true
 }
@@ -63,7 +64,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       // إعادة تعيين metrics
       componentCountRef.current = 0
     } catch (error) {
-      console.debug('Memory cleanup attempt failed:', error)
+      logger.debug('Memory cleanup attempt failed:', error)
     }
   }, [])
   
@@ -80,33 +81,39 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
         
         const now = Date.now()
         
-        // تجنب التحذيرات المتكررة (كل 30 ثانية على الأكثر)
-        if (usageInMB > finalConfig.memoryThreshold && now - lastMemoryWarning.current > 30000) {
-          console.warn(`High memory usage detected: ${usageInMB.toFixed(2)}MB (${memoryPercentage.toFixed(1)}%)`)
-          lastMemoryWarning.current = now
+        // Only warn if percentage > 70% OR absolute value is very high (500MB+)
+        // Avoid repeated warnings (every 60 seconds at most)
+        const shouldWarn = (memoryPercentage > 70 || usageInMB > 500) && 
+                          now - lastMemoryWarning.current > 60000
+        
+        if (shouldWarn) {
+          logger.warn(`⚠️ High memory usage: ${usageInMB.toFixed(2)}MB (${memoryPercentage.toFixed(1)}% of ${memoryLimit.toFixed(0)}MB limit)`);
+          lastMemoryWarning.current = now;
           
-          // تحسين تلقائي للإعدادات
-          setPerformanceConfig(prev => ({
-            ...prev,
-            imageOptimization: true,
-            enableVirtualization: true,
-            maxConcurrentImages: Math.max(3, Math.floor(prev.maxConcurrentImages * 0.7))
-          }))
+          // Auto-optimize settings only if > 80% memory
+          if (memoryPercentage > 80) {
+            setPerformanceConfig(prev => ({
+              ...prev,
+              imageOptimization: true,
+              enableVirtualization: true,
+              maxConcurrentImages: Math.max(3, Math.floor(prev.maxConcurrentImages * 0.7))
+            }))
+          }
         }
         
-        // تنظيف تلقائي عند الوصول لـ 90% من الذاكرة المتاحة
+        // Auto cleanup at 90% memory
         if (memoryPercentage > 90) {
           cleanupMemory()
         }
       }
     }
     
-    // فحص كل 15 ثانية بدلاً من 5 ثوانِ
-    const interval = setInterval(checkMemoryUsage, 15000)
-    checkMemoryUsage() // فحص فوري
+    // Check every 30 seconds (less frequent than before)
+    const interval = setInterval(checkMemoryUsage, 30000)
+    checkMemoryUsage() // Initial check
     
     return () => clearInterval(interval)
-  }, [finalConfig.memoryThreshold, cleanupMemory])
+  }, [finalConfig.memoryThreshold, cleanupMemory, setPerformanceConfig])
 
   const measureRenderTime = useCallback((componentName?: string) => {
     const startTime = performance.now()
@@ -121,12 +128,12 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       const slowRenderThreshold = memoryUsage > 100 ? 50 : 100
       
       if (renderTime > slowRenderThreshold) {
-        console.warn(`⚠️ Slow render in ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
+        logger.warn(`⚠️ Slow render in ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
       }
       
       // تسجيل محدود في التطوير
       if (process.env.NODE_ENV === 'development' && renderTime > 16) {
-        console.debug(`🎯 ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
+        logger.debug(`🎯 ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
       }
     }
   }, [memoryUsage])
@@ -145,7 +152,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       return src
     }
 
-    // إنشاء مفتاح للـ cache
+    // Create cache key
     const cacheKey = `${src}-${JSON.stringify(options)}`
     if (imageCache.current.has(cacheKey)) {
       return imageCache.current.get(cacheKey)!
@@ -154,13 +161,13 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     const {
       width,
       height,
-      quality = memoryUsage > 100 ? 50 : memoryUsage > 80 ? 65 : 80,
+      quality = memoryUsage > 200 ? 60 : memoryUsage > 150 ? 75 : 85,
       format = 'webp',
       devicePixelRatio = window.devicePixelRatio || 1
     } = options
 
-    // حساب الأبعاد المثلى مع أخذ الذاكرة في الاعتبار
-    const pixelRatioMultiplier = memoryUsage > 100 ? Math.min(devicePixelRatio, 1.5) : devicePixelRatio
+    // Calculate optimal dimensions considering memory
+    const pixelRatioMultiplier = memoryUsage > 200 ? Math.min(devicePixelRatio, 1.5) : devicePixelRatio
     const optimalWidth = width ? Math.ceil(width * pixelRatioMultiplier) : undefined
     const optimalHeight = height ? Math.ceil(height * pixelRatioMultiplier) : undefined
 
@@ -172,15 +179,20 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     
     const optimizedSrc = `${src}${src.includes('?') ? '&' : '?'}${params.toString()}`
     
-    // حفظ في الـ cache مع حد أقصى
-    if (imageCache.current.size < 100) {
+    // Cache with limit to prevent memory bloat
+    if (imageCache.current.size < 200) {
+      imageCache.current.set(cacheKey, optimizedSrc)
+    } else {
+      // Clear old cache when limit reached
+      const firstKey = imageCache.current.keys().next().value
+      if (firstKey) imageCache.current.delete(firstKey)
       imageCache.current.set(cacheKey, optimizedSrc)
     }
     
     return optimizedSrc
   }, [finalConfig.imageOptimization, memoryUsage])
 
-  // Virtual list implementation محسن
+  // Virtual list implementation optimized
   const virtualizeList = useCallback((
     items: any[], 
     containerHeight: number, 
@@ -188,8 +200,8 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     scrollTop: number = 0,
     overscan: number = 5
   ) => {
-    // تقليل حد التفعيل بناءً على استخدام الذاكرة
-    const enableThreshold = memoryUsage > 100 ? 10 : 20
+    // Lower threshold based on memory usage
+    const enableThreshold = memoryUsage > 150 ? 15 : 30
     
     if (!finalConfig.enableVirtualization || items.length < enableThreshold) {
       return {
@@ -200,9 +212,9 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       }
     }
 
-    // تحسين العمليات الحسابية
+    // Optimize calculations
     const visibleCount = Math.ceil(containerHeight / itemHeight)
-    const adjustedOverscan = memoryUsage > 100 ? Math.min(overscan, 3) : overscan
+    const adjustedOverscan = memoryUsage > 200 ? Math.min(overscan, 2) : overscan
     const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - adjustedOverscan)
     const endIndex = Math.min(items.length - 1, startIndex + visibleCount + adjustedOverscan * 2)
     
@@ -217,11 +229,11 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     }
   }, [finalConfig.enableVirtualization, memoryUsage])
 
-  // Prefetch critical resources محسن
+  // Prefetch critical resources optimized
   const prefetchResource = useCallback((url: string, type: 'image' | 'script' | 'style' | 'font' = 'image') => {
-    if (!finalConfig.prefetchCriticalResources || memoryUsage > 120) return
+    if (!finalConfig.prefetchCriticalResources || memoryUsage > 200) return
 
-    // تجنب التحميل المسبق المكرر
+    // Avoid duplicate prefetching
     if (imageLoadQueue.current.has(url)) return
     imageLoadQueue.current.add(url)
 
@@ -287,8 +299,8 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
 
   // Image preloader utility محسن
   const preloadImages = useCallback((urls: string[], priority: 'high' | 'low' = 'low') => {
-    // تقليل عدد الصور المحملة مسبقاً عند ارتفاع استخدام الذاكرة
-    const maxConcurrent = memoryUsage > 100 ? 3 : finalConfig.maxConcurrentImages
+    // Reduce preloaded images based on memory usage
+    const maxConcurrent = memoryUsage > 200 ? 2 : memoryUsage > 150 ? 4 : finalConfig.maxConcurrentImages
     const urlsToLoad = urls.slice(0, maxConcurrent)
     
     return Promise.all(
@@ -313,8 +325,8 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
           
           img.src = getOptimizedImageSrc(url)
           
-          // Set loading priority
-          if (priority === 'high' && memoryUsage < 100) {
+          // Set loading priority based on memory
+          if (priority === 'high' && memoryUsage < 150) {
             img.loading = 'eager'
             if ('fetchPriority' in img) {
               (img as any).fetchPriority = 'high'
