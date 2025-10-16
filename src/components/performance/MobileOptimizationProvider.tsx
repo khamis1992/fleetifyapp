@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
-import { logger } from '@/lib/logger';
 
 interface MobileOptimizationProviderProps {
   children: React.ReactNode;
@@ -150,7 +149,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
           updateViaCache: 'none'
         });
 
-        logger.log('🔧 Service Worker registered successfully');
+        console.log('🔧 Service Worker registered successfully');
 
         // Listen for updates
         registration.addEventListener('updatefound', () => {
@@ -158,7 +157,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                logger.log('🔧 New Service Worker available');
+                console.log('🔧 New Service Worker available');
                 // Optionally show update notification
               }
             });
@@ -166,7 +165,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         });
 
       } catch (error) {
-        logger.error('🔧 Service Worker registration failed:', error);
+        console.error('🔧 Service Worker registration failed:', error);
       }
     };
 

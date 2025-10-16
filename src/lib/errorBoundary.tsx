@@ -15,11 +15,11 @@ export class ErrorBoundary extends Component<Props, State> {
   private compatibilityLogger = {
     logReactVersionIssue: (error: Error) => {
       logger.error('React compatibility issue:', error);
-      logger.warn('React compatibility issue:', error);
+      console.warn('React compatibility issue:', error);
     },
     logLibraryConflict: (lib: string, error: Error) => {
       logger.error(`${lib} conflict:`, error);
-      logger.warn(`${lib} conflict:`, error);
+      console.warn(`${lib} conflict:`, error);
     }
   };
 

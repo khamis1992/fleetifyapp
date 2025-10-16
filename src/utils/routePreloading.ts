@@ -5,8 +5,6 @@
  * Uses requestIdleCallback for non-blocking preloading.
  */
 
-import { logger } from '@/lib/logger';
-
 // Track preloaded routes to avoid duplicate preloading
 const preloadedRoutes = new Set<string>();
 
@@ -57,9 +55,9 @@ export const preloadRoute = async (path: string, importFn: RouteImportFn): Promi
     // Preload the module
     await importFn();
     
-    logger.log(`✅ Preloaded route: ${path}`);
+    console.log(`✅ Preloaded route: ${path}`);
   } catch (error) {
-    logger.error(`❌ Failed to preload route: ${path}`, error);
+    console.error(`❌ Failed to preload route: ${path}`, error);
     // Remove from preloaded set on failure so it can be retried
     preloadedRoutes.delete(path);
   }

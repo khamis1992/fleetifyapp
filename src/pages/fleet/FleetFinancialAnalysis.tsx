@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { logger } from '@/lib/logger';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,7 +50,7 @@ const FleetFinancialAnalysis = () => {
         description: "تم تحديث قيم الاستهلاك بنجاح"
       });
     } catch (error: any) {
-      logger.error("خطأ في معالجة الاستهلاك:", error);
+      console.error("خطأ في معالجة الاستهلاك:", error);
       toast.error("فشل في معالجة الاستهلاك", {
         description: error.message || "حدث خطأ غير متوقع"
       });

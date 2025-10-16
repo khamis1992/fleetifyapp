@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
@@ -127,7 +126,7 @@ export const useCreateVendorAccount = () => {
       toast.success('تم ربط حساب المورد بنجاح');
     },
     onError: (error) => {
-      logger.error('Error creating vendor account:', error);
+      console.error('Error creating vendor account:', error);
       toast.error('حدث خطأ أثناء ربط حساب المورد');
     },
   });
@@ -150,7 +149,7 @@ export const useUpdateVendorAccount = () => {
       toast.success('تم تحديث حساب المورد بنجاح');
     },
     onError: (error) => {
-      logger.error('Error updating vendor account:', error);
+      console.error('Error updating vendor account:', error);
       toast.error('حدث خطأ أثناء تحديث حساب المورد');
     },
   });
@@ -173,7 +172,7 @@ export const useDeleteVendorAccount = () => {
       toast.success('تم حذف ربط حساب المورد بنجاح');
     },
     onError: (error) => {
-      logger.error('Error deleting vendor account:', error);
+      console.error('Error deleting vendor account:', error);
       toast.error('حدث خطأ أثناء حذف ربط حساب المورد');
     },
   });

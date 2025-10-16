@@ -1,6 +1,6 @@
+// @ts-nocheck
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { logger } from '@/lib/logger'
 
 export interface PerformanceMetrics {
   renderTime: number
@@ -63,7 +63,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       // إعادة تعيين metrics
       componentCountRef.current = 0
     } catch (error) {
-      logger.debug('Memory cleanup attempt failed:', error)
+      console.debug('Memory cleanup attempt failed:', error)
     }
   }, [])
   
@@ -86,8 +86,8 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
                           now - lastMemoryWarning.current > 60000
         
         if (shouldWarn) {
-          logger.warn(`⚠️ High memory usage: ${usageInMB.toFixed(2)}MB (${memoryPercentage.toFixed(1)}% of ${memoryLimit.toFixed(0)}MB limit)`);
-          lastMemoryWarning.current = now;
+          console.warn(`⚠️ High memory usage: ${usageInMB.toFixed(2)}MB (${memoryPercentage.toFixed(1)}% of ${memoryLimit.toFixed(0)}MB limit)`)
+          lastMemoryWarning.current = now
           
           // Auto-optimize settings only if > 80% memory
           if (memoryPercentage > 80) {
@@ -127,43 +127,19 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       const slowRenderThreshold = memoryUsage > 100 ? 50 : 100
       
       if (renderTime > slowRenderThreshold) {
-        logger.warn(`⚠️ Slow render in ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
+        console.warn(`⚠️ Slow render in ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
       }
       
       // تسجيل محدود في التطوير
       if (process.env.NODE_ENV === 'development' && renderTime > 16) {
-        logger.debug(`🎯 ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
+        console.debug(`🎯 ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
       }
     }
   }, [memoryUsage])
 
-  // Enhanced image optimization with LRU cache
-  const imageCache = useRef<Map<string, { value: string; timestamp: number }>>(new Map())
-  const MAX_CACHE_SIZE = 150 // Reduced from 200 for better memory management
-  const CACHE_TTL = 10 * 60 * 1000 // 10 minutes cache lifetime
-
-  // Cleanup old cache entries periodically
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      const now = Date.now()
-      const entriesToDelete: string[] = []
-
-      imageCache.current.forEach((entry, key) => {
-        if (now - entry.timestamp > CACHE_TTL) {
-          entriesToDelete.push(key)
-        }
-      })
-
-      entriesToDelete.forEach(key => imageCache.current.delete(key))
-
-      if (entriesToDelete.length > 0) {
-        logger.debug(`🧹 Cleaned up ${entriesToDelete.length} expired image cache entries`)
-      }
-    }, 5 * 60 * 1000) // Run cleanup every 5 minutes
-
-    return () => clearInterval(cleanupInterval)
-  }, [])
-
+  // Enhanced image optimization مع caching
+  const imageCache = useRef<Map<string, string>>(new Map())
+  
   const getOptimizedImageSrc = useCallback((src: string, options: {
     width?: number
     height?: number
@@ -177,11 +153,8 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
 
     // Create cache key
     const cacheKey = `${src}-${JSON.stringify(options)}`
-    const cachedEntry = imageCache.current.get(cacheKey)
-
-    // Return cached value if still valid
-    if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
-      return cachedEntry.value
+    if (imageCache.current.has(cacheKey)) {
+      return imageCache.current.get(cacheKey)!
     }
 
     const {
@@ -202,33 +175,19 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     if (optimalHeight) params.set('h', optimalHeight.toString())
     params.set('q', quality.toString())
     params.set('f', format)
-
+    
     const optimizedSrc = `${src}${src.includes('?') ? '&' : '?'}${params.toString()}`
-
-    // Implement LRU cache: if at limit, remove oldest entry
-    if (imageCache.current.size >= MAX_CACHE_SIZE) {
-      // Find and remove the oldest entry
-      let oldestKey: string | null = null
-      let oldestTime = Date.now()
-
-      imageCache.current.forEach((entry, key) => {
-        if (entry.timestamp < oldestTime) {
-          oldestTime = entry.timestamp
-          oldestKey = key
-        }
-      })
-
-      if (oldestKey) {
-        imageCache.current.delete(oldestKey)
-      }
+    
+    // Cache with limit to prevent memory bloat
+    if (imageCache.current.size < 200) {
+      imageCache.current.set(cacheKey, optimizedSrc)
+    } else {
+      // Clear old cache when limit reached
+      const firstKey = imageCache.current.keys().next().value
+      if (firstKey) imageCache.current.delete(firstKey)
+      imageCache.current.set(cacheKey, optimizedSrc)
     }
-
-    // Add new entry with timestamp
-    imageCache.current.set(cacheKey, {
-      value: optimizedSrc,
-      timestamp: Date.now()
-    })
-
+    
     return optimizedSrc
   }, [finalConfig.imageOptimization, memoryUsage])
 

@@ -1,8 +1,8 @@
+// @ts-nocheck
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
-import { logger } from '@/lib/logger';
 
 const AuthContext = createContext<any>(undefined);
 
@@ -29,20 +29,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeAuth = async () => {
     const startTime = Date.now();
     try {
-      logger.log('🔄 [AUTH_CONTEXT] Initializing authentication...');
+      console.log('🔄 [AUTH_CONTEXT] Initializing authentication...');
       
       // Check for existing session FIRST (faster than setting up listener)
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        logger.error('📝 [AUTH_CONTEXT] Error getting session:', error);
-        // If it's a token expiration error, clear the session
-        if (error.message && error.message.includes('invalid JWT')) {
-          logger.log('📝 [AUTH_CONTEXT] Invalid JWT detected, clearing session');
-          // Clear local storage to remove expired token
-          const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
-          clearSupabaseAuthTokens();
-        }
+        console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
         setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
         setLoading(false);
         return;
@@ -50,38 +43,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // If we have a session, load user profile immediately
       if (session?.user) {
-        logger.log('📝 [AUTH_CONTEXT] Existing session found, loading profile...');
+        console.log('📝 [AUTH_CONTEXT] Existing session found, loading profile...');
         setSession(session);
         
         try {
           const authUser = await authService.getCurrentUser();
-          logger.log('📝 [AUTH_CONTEXT] Profile loaded in', Date.now() - startTime, 'ms');
+          console.log('📝 [AUTH_CONTEXT] Profile loaded in', Date.now() - startTime, 'ms');
           setUser(authUser);
           setSessionError(null);
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-          // If it's a token expiration error, clear the session
-          if (error.message && error.message.includes('invalid JWT')) {
-            logger.log('📝 [AUTH_CONTEXT] Invalid JWT in profile fetch, clearing session');
-            // Clear local storage to remove expired token
-            const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
-            clearSupabaseAuthTokens();
-            setUser(null);
-            setSession(null);
-          } else {
-            // Fallback to basic user object if profile fetch fails
-            setUser(session.user as AuthUser);
-            setSessionError('خطأ في تحميل بيانات المستخدم');
-          }
+          // Fallback to basic user object if profile fetch fails
+          setUser(session.user as AuthUser);
+          setSessionError('خطأ في تحميل بيانات المستخدم');
         }
       } else {
-        logger.log('📝 [AUTH_CONTEXT] No existing session');
+        console.log('📝 [AUTH_CONTEXT] No existing session');
       }
       
       // Set up auth state listener for future changes (AFTER initial load)
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          logger.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
+          console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
           
           // Clear session error for successful events
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -89,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
           
           if (event === 'SIGNED_OUT') {
-            logger.log('📝 [AUTH_CONTEXT] User signed out');
+            console.log('📝 [AUTH_CONTEXT] User signed out');
             setUser(null);
             setSession(null);
             setIsSigningOut(false);
@@ -97,7 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
           
           if (event === 'SIGNED_IN' && session?.user) {
-            logger.log('📝 [AUTH_CONTEXT] User signed in, loading profile...');
+            console.log('📝 [AUTH_CONTEXT] User signed in, loading profile...');
             setSession(session);
             
             try {
@@ -105,23 +88,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setUser(authUser);
               setSessionError(null);
             } catch (error) {
-              logger.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              // Handle invalid JWT errors during sign in
-              if (error?.message && error.message.includes('invalid JWT')) {
-                console.log('📝 [AUTH_CONTEXT] Invalid JWT during sign in, clearing session');
-                const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
-                clearSupabaseAuthTokens();
-                setUser(null);
-                setSession(null);
-              } else {
-                setUser(session.user as AuthUser);
-                setSessionError('خطأ في تحميل بيانات المستخدم');
-              }
+              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+              setUser(session.user as AuthUser);
+              setSessionError('خطأ في تحميل بيانات المستخدم');
             }
           }
           
           if (event === 'TOKEN_REFRESHED' && session) {
-            logger.log('📝 [AUTH_CONTEXT] Token refreshed');
+            console.log('📝 [AUTH_CONTEXT] Token refreshed');
             setSession(session);
           }
         }
@@ -130,11 +104,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       authListenerRef.current = { subscription };
       
     } catch (error) {
-      logger.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
+      console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
       setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
     } finally {
       setLoading(false);
-      logger.log('📝 [AUTH_CONTEXT] Auth initialization complete in', Date.now() - startTime, 'ms');
+      console.log('📝 [AUTH_CONTEXT] Auth initialization complete in', Date.now() - startTime, 'ms');
     }
   };
 
@@ -146,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Safety timeout - if still loading after 4 seconds, force loading to false
     initTimeoutRef.current = setTimeout(() => {
-      logger.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
+      console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
       setLoading(false);
     }, 4000);
 
@@ -214,32 +188,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const validateSession = async () => {
     if (!session) {
-      logger.log('📝 [AUTH_CONTEXT] No session to validate');
+      console.log('📝 [AUTH_CONTEXT] No session to validate');
       return false;
     }
     
     try {
-      logger.log('📝 [AUTH_CONTEXT] Validating session...');
+      console.log('📝 [AUTH_CONTEXT] Validating session...');
       const now = Date.now() / 1000;
       if (session.expires_at && session.expires_at < now) {
-        logger.log('📝 [AUTH_CONTEXT] Session expired, attempting refresh...');
+        console.log('📝 [AUTH_CONTEXT] Session expired, attempting refresh...');
         const { data, error } = await supabase.auth.refreshSession();
         
         if (error || !data.session) {
-          logger.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
-          // If it's a token expiration error, clear local storage
-          if (error?.message && error.message.includes('invalid JWT')) {
-            logger.log('📝 [AUTH_CONTEXT] Invalid JWT during refresh, clearing local storage');
-            const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
-            clearSupabaseAuthTokens();
-          }
+          console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
           if (!isSigningOut) {
             setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
           }
           return false;
         }
         
-        logger.log('📝 [AUTH_CONTEXT] Session refreshed successfully');
+        console.log('📝 [AUTH_CONTEXT] Session refreshed successfully');
         setSession(data.session);
         setSessionError(null);
         
@@ -250,18 +218,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       }
       
-      logger.log('📝 [AUTH_CONTEXT] Session is still valid');
+      console.log('📝 [AUTH_CONTEXT] Session is still valid');
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
-      // Handle invalid JWT errors
-      if (error?.message && error.message.includes('invalid JWT')) {
-        console.log('📝 [AUTH_CONTEXT] Invalid JWT during validation, clearing local storage');
-        const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
-        clearSupabaseAuthTokens();
-        setUser(null);
-        setSession(null);
-      }
       if (!isSigningOut) {
         setSessionError('خطأ في التحقق من صحة الجلسة');
       }

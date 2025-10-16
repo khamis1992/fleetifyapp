@@ -3,7 +3,6 @@
 
 // Force React to be available globally for Lovable's development environment
 import React from 'react';
-import { logger } from '@/lib/logger';
 
 // Lovable platform compatibility checks
 const isLovableEnvironment = () => {
@@ -18,12 +17,12 @@ const setupLovableErrorHandling = () => {
 
   // Catch unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    logger.error('🔧 Lovable: Unhandled promise rejection:', event.reason);
+    console.error('🔧 Lovable: Unhandled promise rejection:', event.reason);
     
     // Don't prevent default for React-related errors in development
     if (event.reason?.message?.includes('useState') || 
         event.reason?.message?.includes('React')) {
-      logger.log('🔧 Lovable: React-related error detected, allowing default handling');
+      console.log('🔧 Lovable: React-related error detected, allowing default handling');
       return;
     }
     
@@ -32,16 +31,16 @@ const setupLovableErrorHandling = () => {
 
   // Enhanced error boundary for global errors
   window.addEventListener('error', (event) => {
-    logger.error('🔧 Lovable: Global error:', event.error);
+    console.error('🔧 Lovable: Global error:', event.error);
     
     // Special handling for React errors
     if (event.error?.message?.includes('useState') || 
         event.error?.message?.includes('React')) {
-      logger.log('🔧 Lovable: React error detected, attempting recovery...');
+      console.log('🔧 Lovable: React error detected, attempting recovery...');
       
       // Attempt to reload if React is completely broken
       if (!window.React || typeof window.React.useState !== 'function') {
-        logger.log('🔧 Lovable: React is broken, reloading...');
+        console.log('🔧 Lovable: React is broken, reloading...');
         setTimeout(() => window.location.reload(), 1000);
       }
     }
@@ -59,7 +58,7 @@ const setupLovableReact = () => {
   }
 
   // Log React status for Lovable debugging
-  logger.log('🔧 Lovable: React setup complete', {
+  console.log('🔧 Lovable: React setup complete', {
     version: React.version,
     hooks: {
       useState: typeof React.useState !== 'undefined',
@@ -89,13 +88,13 @@ const setupLovableOptimizations = () => {
 
 // Initialize Lovable compatibility
 export const initializeLovableCompatibility = () => {
-  logger.log('🔧 Lovable: Initializing compatibility layer...');
+  console.log('🔧 Lovable: Initializing compatibility layer...');
   
   setupLovableReact();
   setupLovableErrorHandling();
   setupLovableOptimizations();
   
-  logger.log('🔧 Lovable: Compatibility layer initialized successfully');
+  console.log('🔧 Lovable: Compatibility layer initialized successfully');
 };
 
 // Auto-initialize if in Lovable environment

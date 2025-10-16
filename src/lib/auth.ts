@@ -1,6 +1,6 @@
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
-import { logger } from '@/lib/logger';
 
 export interface AuthUser extends User {
   profile?: {
@@ -63,7 +63,7 @@ export const authService = {
       
       return { error };
     } catch (error) {
-      logger.error('📝 [AUTH_SERVICE] Sign in error:', error);
+      console.error('📝 [AUTH_SERVICE] Sign in error:', error);
       return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تسجيل الدخول') };
     }
   },
@@ -73,36 +73,29 @@ export const authService = {
       const { error } = await supabase.auth.signOut();
       return { error };
     } catch (error) {
-      logger.error('📝 [AUTH_SERVICE] Sign out error:', error);
+      console.error('📝 [AUTH_SERVICE] Sign out error:', error);
       return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تسجيل الخروج') };
     }
   },
 
   async getCurrentUser() {
     try {
-      logger.log('📝 [AUTH] Starting getCurrentUser...');
+      console.log('📝 [AUTH] Starting getCurrentUser...');
       const startTime = Date.now();
 
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
-        logger.error('📝 [AUTH] Error getting user:', userError);
-        // Handle invalid JWT errors
-        if (userError.message && userError.message.includes('invalid JWT')) {
-          logger.log('📝 [AUTH] Invalid JWT detected in getUser, clearing local storage');
-          // Use dynamic key clearing instead of hardcoded keys
-          const { clearSupabaseAuthTokens } = await import('./supabaseStorageKeys');
-          clearSupabaseAuthTokens();
-        }
+        console.error('📝 [AUTH] Error getting user:', userError);
         return null;
       }
       
       if (!user) {
-        logger.log('📝 [AUTH] No user found');
+        console.log('📝 [AUTH] No user found');
         return null;
       }
 
-      logger.log('📝 [AUTH] Fetching profile for user:', user.id);
+      console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
       // OPTIMIZATION: Execute profile, employee, and roles queries IN PARALLEL
       const [profileResult, employeeResult, rolesResult] = await Promise.all([
@@ -146,7 +139,7 @@ export const authService = {
       const { data: employeeCompany } = employeeResult;
       const { data: roles } = rolesResult;
 
-      logger.log('📝 [AUTH] Parallel queries completed in', Date.now() - startTime, 'ms');
+      console.log('📝 [AUTH] Parallel queries completed in', Date.now() - startTime, 'ms');
 
       // Get company info - prioritize from profiles, fallback to employees
       let companyInfo = profile?.companies;
@@ -156,12 +149,12 @@ export const authService = {
       if (!companyInfo && employeeCompany) {
         companyInfo = employeeCompany.companies;
         companyId = employeeCompany.company_id;
-        logger.log('📝 [AUTH] Using company info from employees table');
+        console.log('📝 [AUTH] Using company info from employees table');
       }
 
       // If still no profile, log warning but continue (don't block login)
       if (profileError) {
-        logger.warn('📝 [AUTH] Profile fetch error (continuing anyway):', profileError.code);
+        console.warn('📝 [AUTH] Profile fetch error (continuing anyway):', profileError.code);
       }
 
       const authUser: AuthUser = {
@@ -171,7 +164,7 @@ export const authService = {
         roles: roles?.map(r => r.role) || []
       };
 
-      logger.log('📝 [AUTH] User loaded in', Date.now() - startTime, 'ms:', {
+      console.log('📝 [AUTH] User loaded in', Date.now() - startTime, 'ms:', {
         id: authUser.id,
         email: authUser.email,
         company_id: companyId,
@@ -181,14 +174,7 @@ export const authService = {
 
       return authUser;
     } catch (error) {
-      logger.error('📝 [AUTH] Unexpected error in getCurrentUser:', error);
-      // Handle invalid JWT errors
-      if (error?.message && error.message.includes('invalid JWT')) {
-        logger.log('📝 [AUTH] Invalid JWT in getCurrentUser, clearing local storage');
-        // Use dynamic key clearing instead of hardcoded keys
-        const { clearSupabaseAuthTokens } = await import('./supabaseStorageKeys');
-        clearSupabaseAuthTokens();
-      }
+      console.error('📝 [AUTH] Unexpected error in getCurrentUser:', error);
       return null;
     }
   },

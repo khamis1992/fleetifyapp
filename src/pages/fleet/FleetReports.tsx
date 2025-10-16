@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { logger } from '@/lib/logger';
 import { Badge } from "@/components/ui/badge";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useFleetAnalytics, useProcessVehicleDepreciation } from "@/hooks/useVehicles";
@@ -47,7 +46,7 @@ export default function FleetReports() {
   }
 
   if (error) {
-    logger.error("Fleet analytics error:", error);
+    console.error("Fleet analytics error:", error);
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">

@@ -5,8 +5,6 @@
  * Provides fallback to localStorage for browsers with limited IndexedDB support
  */
 
-import { logger } from '@/lib/logger';
-
 const DB_NAME = 'fleetify-offline';
 const DB_VERSION = 1;
 const STORES = {
@@ -73,16 +71,16 @@ export const saveToOfflineStorage = async <T>(
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        logger.log(`✅ Saved to offline storage: ${store}/${key}`);
+        console.log(`✅ Saved to offline storage: ${store}/${key}`);
         resolve(true);
       };
       request.onerror = () => {
-        logger.error(`❌ Error saving to offline storage: ${store}/${key}`);
+        console.error(`❌ Error saving to offline storage: ${store}/${key}`);
         reject(request.error);
       };
     });
   } catch (error) {
-    logger.error('Error saving to IndexedDB:', error);
+    console.error('Error saving to IndexedDB:', error);
     // Fallback to localStorage
     return saveToLocalStorage(store, key, data, expiryMs);
   }
@@ -114,22 +112,22 @@ export const loadFromOfflineStorage = async <T>(
         if (cachedData.expiry) {
           const age = Date.now() - cachedData.timestamp;
           if (age > cachedData.expiry) {
-            logger.log(`⏰ Cached data expired: ${store}/${key}`);
+            console.log(`⏰ Cached data expired: ${store}/${key}`);
             resolve(null);
             return;
           }
         }
 
-        logger.log(`✅ Loaded from offline storage: ${store}/${key}`);
+        console.log(`✅ Loaded from offline storage: ${store}/${key}`);
         resolve(cachedData.data);
       };
       request.onerror = () => {
-        logger.error(`❌ Error loading from offline storage: ${store}/${key}`);
+        console.error(`❌ Error loading from offline storage: ${store}/${key}`);
         reject(request.error);
       };
     });
   } catch (error) {
-    logger.error('Error loading from IndexedDB:', error);
+    console.error('Error loading from IndexedDB:', error);
     // Fallback to localStorage
     return loadFromLocalStorage<T>(store, key);
   }
@@ -150,16 +148,16 @@ export const deleteFromOfflineStorage = async (
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        logger.log(`✅ Deleted from offline storage: ${store}/${key}`);
+        console.log(`✅ Deleted from offline storage: ${store}/${key}`);
         resolve(true);
       };
       request.onerror = () => {
-        logger.error(`❌ Error deleting from offline storage: ${store}/${key}`);
+        console.error(`❌ Error deleting from offline storage: ${store}/${key}`);
         reject(request.error);
       };
     });
   } catch (error) {
-    logger.error('Error deleting from IndexedDB:', error);
+    console.error('Error deleting from IndexedDB:', error);
     return deleteFromLocalStorage(store, key);
   }
 };
@@ -176,16 +174,16 @@ export const clearOfflineStore = async (store: StoreName): Promise<boolean> => {
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        logger.log(`✅ Cleared offline store: ${store}`);
+        console.log(`✅ Cleared offline store: ${store}`);
         resolve(true);
       };
       request.onerror = () => {
-        logger.error(`❌ Error clearing offline store: ${store}`);
+        console.error(`❌ Error clearing offline store: ${store}`);
         reject(request.error);
       };
     });
   } catch (error) {
-    logger.error('Error clearing IndexedDB store:', error);
+    console.error('Error clearing IndexedDB store:', error);
     return clearLocalStorageStore(store);
   }
 };
@@ -211,7 +209,7 @@ export const getOfflineStorageKeys = async (
       };
     });
   } catch (error) {
-    logger.error('Error getting IndexedDB keys:', error);
+    console.error('Error getting IndexedDB keys:', error);
     return getLocalStorageKeys(store);
   }
 };
@@ -237,10 +235,10 @@ const saveToLocalStorage = <T>(
       expiry: expiryMs,
     };
     localStorage.setItem(getLocalStorageKey(store, key), JSON.stringify(cachedData));
-    logger.log(`✅ Saved to localStorage: ${store}/${key}`);
+    console.log(`✅ Saved to localStorage: ${store}/${key}`);
     return true;
   } catch (error) {
-    logger.error('Error saving to localStorage:', error);
+    console.error('Error saving to localStorage:', error);
     return false;
   }
 };
@@ -259,16 +257,16 @@ const loadFromLocalStorage = <T>(
     if (cachedData.expiry) {
       const age = Date.now() - cachedData.timestamp;
       if (age > cachedData.expiry) {
-        logger.log(`⏰ Cached data expired (localStorage): ${store}/${key}`);
+        console.log(`⏰ Cached data expired (localStorage): ${store}/${key}`);
         localStorage.removeItem(getLocalStorageKey(store, key));
         return null;
       }
     }
 
-    logger.log(`✅ Loaded from localStorage: ${store}/${key}`);
+    console.log(`✅ Loaded from localStorage: ${store}/${key}`);
     return cachedData.data;
   } catch (error) {
-    logger.error('Error loading from localStorage:', error);
+    console.error('Error loading from localStorage:', error);
     return null;
   }
 };
@@ -276,10 +274,10 @@ const loadFromLocalStorage = <T>(
 const deleteFromLocalStorage = (store: StoreName, key: string): boolean => {
   try {
     localStorage.removeItem(getLocalStorageKey(store, key));
-    logger.log(`✅ Deleted from localStorage: ${store}/${key}`);
+    console.log(`✅ Deleted from localStorage: ${store}/${key}`);
     return true;
   } catch (error) {
-    logger.error('Error deleting from localStorage:', error);
+    console.error('Error deleting from localStorage:', error);
     return false;
   }
 };
@@ -297,10 +295,10 @@ const clearLocalStorageStore = (store: StoreName): boolean => {
     }
     
     keysToDelete.forEach(key => localStorage.removeItem(key));
-    logger.log(`✅ Cleared localStorage store: ${store}`);
+    console.log(`✅ Cleared localStorage store: ${store}`);
     return true;
   } catch (error) {
-    logger.error('Error clearing localStorage store:', error);
+    console.error('Error clearing localStorage store:', error);
     return false;
   }
 };
@@ -319,7 +317,7 @@ const getLocalStorageKeys = (store: StoreName): string[] => {
     
     return keys;
   } catch (error) {
-    logger.error('Error getting localStorage keys:', error);
+    console.error('Error getting localStorage keys:', error);
     return [];
   }
 };

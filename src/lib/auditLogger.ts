@@ -4,7 +4,6 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from './logger';
 
 export type AuditEventType =
   | 'user_login'
@@ -90,7 +89,7 @@ class AuditLogger {
 
       // Log to console in development
       if (import.meta.env.DEV) {
-        logger.log('📝 Audit Log:', {
+        console.log('📝 Audit Log:', {
           type: enrichedEntry.event_type,
           action: enrichedEntry.action,
           severity: enrichedEntry.severity,
@@ -103,7 +102,7 @@ class AuditLogger {
         await this.flush();
       }
     } catch (error) {
-      logger.error('Failed to log audit entry:', error);
+      console.error('Failed to log audit entry:', error);
     }
   }
 
@@ -122,12 +121,12 @@ class AuditLogger {
         .insert(logsToFlush);
 
       if (error) {
-        logger.error('Failed to flush audit logs:', error);
+        console.error('Failed to flush audit logs:', error);
         // Put logs back for retry
         this.pendingLogs.unshift(...logsToFlush);
       }
     } catch (error) {
-      logger.error('Error flushing audit logs:', error);
+      console.error('Error flushing audit logs:', error);
       this.pendingLogs.unshift(...logsToFlush);
     }
   }
@@ -341,7 +340,7 @@ class AuditLogger {
     const { data, error } = await query;
 
     if (error) {
-      logger.error('Failed to query audit logs:', error);
+      console.error('Failed to query audit logs:', error);
       return [];
     }
 

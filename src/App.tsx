@@ -154,17 +154,17 @@ const App = () => {
       }}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <CompanyContextProvider>
-                <TooltipProvider>
+            <TooltipProvider>
+              <AuthProvider>
+                <CompanyContextProvider>
                   <MobileOptimizationProvider>
                     <PWAInstallPrompt />
                     <SimpleToaster />
                     <AppRoutes />
                   </MobileOptimizationProvider>
-                </TooltipProvider>
-              </CompanyContextProvider>
-            </AuthProvider>
+                </CompanyContextProvider>
+              </AuthProvider>
+            </TooltipProvider>
             {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
           </QueryClientProvider>
         </ThemeProvider>

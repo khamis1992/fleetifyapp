@@ -1,62 +1,49 @@
-// Logging configuration utility
-// Control logging verbosity across the application
+// Lightweight app logger with opt-in debug in dev only
+// Usage: window.__APP_DEBUG__ = true  // to enable debug logs at runtime
 
-// Log levels:
-// - 'debug': Show all logs (development)
-// - 'info': Show warnings and errors (default)
-// - 'warn': Show only warnings and errors
-// - 'error': Show only errors
-// - 'silent': Show no logs
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-const LOG_LEVEL = import.meta.env?.DEV ? 'info' : 'warn';
+class Logger {
+  private onceKeys = new Set<string>()
+  public enabled = false
 
-const LOG_LEVELS = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-  silent: 4
-};
-
-const CURRENT_LOG_LEVEL = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
-
-// Create a safe console wrapper that won't be affected by minification
-const safeConsole = {
-  debug: console.debug.bind(console),
-  log: console.log.bind(console),
-  info: console.info.bind(console) || console.log.bind(console), // Fallback to log if info is not available
-  warn: console.warn.bind(console),
-  error: console.error.bind(console)
-};
-
-export const logger = {
-  debug: (...args: any[]) => {
-    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.debug) {
-      safeConsole.debug(...args);
-    }
-  },
-  
-  log: (...args: any[]) => {
-    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.info) {
-      safeConsole.log(...args);
-    }
-  },
-  
-  info: (...args: any[]) => {
-    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.info) {
-      safeConsole.info(...args);
-    }
-  },
-  
-  warn: (...args: any[]) => {
-    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.warn) {
-      safeConsole.warn(...args);
-    }
-  },
-  
-  error: (...args: any[]) => {
-    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.error) {
-      safeConsole.error(...args);
+  constructor() {
+    const isDev = typeof import.meta !== 'undefined' && (import.meta as any)?.env?.DEV
+    if (typeof window !== 'undefined' && isDev) {
+      this.enabled = Boolean((window as any).__APP_DEBUG__)
+    } else {
+      this.enabled = false
     }
   }
-};
+
+  setEnabled(v: boolean) {
+    this.enabled = v
+  }
+
+  debug(message?: any, ...optionalParams: any[]) {
+    if (!this.enabled) return
+    console.debug(message, ...optionalParams)
+  }
+
+  debugOnce(key: string, message?: any, ...optionalParams: any[]) {
+    if (!this.enabled) return
+    if (this.onceKeys.has(key)) return
+    this.onceKeys.add(key)
+    console.debug(message ?? key, ...optionalParams)
+  }
+
+  info(message?: any, ...optionalParams: any[]) {
+    if (!this.enabled) return
+    console.info(message, ...optionalParams)
+  }
+
+  warn(message?: any, ...optionalParams: any[]) {
+    console.warn(message, ...optionalParams)
+  }
+
+  error(message?: any, ...optionalParams: any[]) {
+    console.error(message, ...optionalParams)
+  }
+}
+
+export const logger = new Logger()
