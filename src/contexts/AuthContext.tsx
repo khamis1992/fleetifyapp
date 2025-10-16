@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
@@ -41,8 +40,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (error.message && error.message.includes('invalid JWT')) {
           logger.log('📝 [AUTH_CONTEXT] Invalid JWT detected, clearing session');
           // Clear local storage to remove expired token
-          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+          const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
+          clearSupabaseAuthTokens();
         }
         setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
         setLoading(false);
@@ -65,8 +64,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (error.message && error.message.includes('invalid JWT')) {
             logger.log('📝 [AUTH_CONTEXT] Invalid JWT in profile fetch, clearing session');
             // Clear local storage to remove expired token
-            localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-            localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+            const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
+            clearSupabaseAuthTokens();
             setUser(null);
             setSession(null);
           } else {
@@ -110,8 +109,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // Handle invalid JWT errors during sign in
               if (error?.message && error.message.includes('invalid JWT')) {
                 console.log('📝 [AUTH_CONTEXT] Invalid JWT during sign in, clearing session');
-                localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-                localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+                const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
+                clearSupabaseAuthTokens();
                 setUser(null);
                 setSession(null);
               } else {
@@ -231,8 +230,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // If it's a token expiration error, clear local storage
           if (error?.message && error.message.includes('invalid JWT')) {
             logger.log('📝 [AUTH_CONTEXT] Invalid JWT during refresh, clearing local storage');
-            localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-            localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+            const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
+            clearSupabaseAuthTokens();
           }
           if (!isSigningOut) {
             setSessionError('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.');
@@ -258,8 +257,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Handle invalid JWT errors
       if (error?.message && error.message.includes('invalid JWT')) {
         console.log('📝 [AUTH_CONTEXT] Invalid JWT during validation, clearing local storage');
-        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+        const { clearSupabaseAuthTokens } = await import('@/lib/supabaseStorageKeys');
+        clearSupabaseAuthTokens();
         setUser(null);
         setSession(null);
       }

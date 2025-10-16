@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { logger } from '@/lib/logger';
@@ -91,8 +90,9 @@ export const authService = {
         // Handle invalid JWT errors
         if (userError.message && userError.message.includes('invalid JWT')) {
           logger.log('📝 [AUTH] Invalid JWT detected in getUser, clearing local storage');
-          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-          localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+          // Use dynamic key clearing instead of hardcoded keys
+          const { clearSupabaseAuthTokens } = await import('./supabaseStorageKeys');
+          clearSupabaseAuthTokens();
         }
         return null;
       }
@@ -185,8 +185,9 @@ export const authService = {
       // Handle invalid JWT errors
       if (error?.message && error.message.includes('invalid JWT')) {
         logger.log('📝 [AUTH] Invalid JWT in getCurrentUser, clearing local storage');
-        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-auth-token');
-        localStorage.removeItem('sb-qwhunliohlkkahbspfiu-refresh-token');
+        // Use dynamic key clearing instead of hardcoded keys
+        const { clearSupabaseAuthTokens } = await import('./supabaseStorageKeys');
+        clearSupabaseAuthTokens();
       }
       return null;
     }

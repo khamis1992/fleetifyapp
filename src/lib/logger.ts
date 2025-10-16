@@ -20,28 +20,43 @@ const LOG_LEVELS = {
 
 const CURRENT_LOG_LEVEL = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
 
+// Create a safe console wrapper that won't be affected by minification
+const safeConsole = {
+  debug: console.debug.bind(console),
+  log: console.log.bind(console),
+  info: console.info.bind(console) || console.log.bind(console), // Fallback to log if info is not available
+  warn: console.warn.bind(console),
+  error: console.error.bind(console)
+};
+
 export const logger = {
   debug: (...args: any[]) => {
     if (CURRENT_LOG_LEVEL <= LOG_LEVELS.debug) {
-      console.debug(...args);
+      safeConsole.debug(...args);
     }
   },
   
   log: (...args: any[]) => {
     if (CURRENT_LOG_LEVEL <= LOG_LEVELS.info) {
-      console.log(...args);
+      safeConsole.log(...args);
+    }
+  },
+  
+  info: (...args: any[]) => {
+    if (CURRENT_LOG_LEVEL <= LOG_LEVELS.info) {
+      safeConsole.info(...args);
     }
   },
   
   warn: (...args: any[]) => {
     if (CURRENT_LOG_LEVEL <= LOG_LEVELS.warn) {
-      console.warn(...args);
+      safeConsole.warn(...args);
     }
   },
   
   error: (...args: any[]) => {
     if (CURRENT_LOG_LEVEL <= LOG_LEVELS.error) {
-      console.error(...args);
+      safeConsole.error(...args);
     }
   }
 };

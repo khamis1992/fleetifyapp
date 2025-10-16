@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { logger } from '@/lib/logger'
@@ -138,9 +137,33 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     }
   }, [memoryUsage])
 
-  // Enhanced image optimization مع caching
-  const imageCache = useRef<Map<string, string>>(new Map())
-  
+  // Enhanced image optimization with LRU cache
+  const imageCache = useRef<Map<string, { value: string; timestamp: number }>>(new Map())
+  const MAX_CACHE_SIZE = 150 // Reduced from 200 for better memory management
+  const CACHE_TTL = 10 * 60 * 1000 // 10 minutes cache lifetime
+
+  // Cleanup old cache entries periodically
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now()
+      const entriesToDelete: string[] = []
+
+      imageCache.current.forEach((entry, key) => {
+        if (now - entry.timestamp > CACHE_TTL) {
+          entriesToDelete.push(key)
+        }
+      })
+
+      entriesToDelete.forEach(key => imageCache.current.delete(key))
+
+      if (entriesToDelete.length > 0) {
+        logger.debug(`🧹 Cleaned up ${entriesToDelete.length} expired image cache entries`)
+      }
+    }, 5 * 60 * 1000) // Run cleanup every 5 minutes
+
+    return () => clearInterval(cleanupInterval)
+  }, [])
+
   const getOptimizedImageSrc = useCallback((src: string, options: {
     width?: number
     height?: number
@@ -154,8 +177,11 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
 
     // Create cache key
     const cacheKey = `${src}-${JSON.stringify(options)}`
-    if (imageCache.current.has(cacheKey)) {
-      return imageCache.current.get(cacheKey)!
+    const cachedEntry = imageCache.current.get(cacheKey)
+
+    // Return cached value if still valid
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
+      return cachedEntry.value
     }
 
     const {
@@ -176,19 +202,33 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
     if (optimalHeight) params.set('h', optimalHeight.toString())
     params.set('q', quality.toString())
     params.set('f', format)
-    
+
     const optimizedSrc = `${src}${src.includes('?') ? '&' : '?'}${params.toString()}`
-    
-    // Cache with limit to prevent memory bloat
-    if (imageCache.current.size < 200) {
-      imageCache.current.set(cacheKey, optimizedSrc)
-    } else {
-      // Clear old cache when limit reached
-      const firstKey = imageCache.current.keys().next().value
-      if (firstKey) imageCache.current.delete(firstKey)
-      imageCache.current.set(cacheKey, optimizedSrc)
+
+    // Implement LRU cache: if at limit, remove oldest entry
+    if (imageCache.current.size >= MAX_CACHE_SIZE) {
+      // Find and remove the oldest entry
+      let oldestKey: string | null = null
+      let oldestTime = Date.now()
+
+      imageCache.current.forEach((entry, key) => {
+        if (entry.timestamp < oldestTime) {
+          oldestTime = entry.timestamp
+          oldestKey = key
+        }
+      })
+
+      if (oldestKey) {
+        imageCache.current.delete(oldestKey)
+      }
     }
-    
+
+    // Add new entry with timestamp
+    imageCache.current.set(cacheKey, {
+      value: optimizedSrc,
+      timestamp: Date.now()
+    })
+
     return optimizedSrc
   }, [finalConfig.imageOptimization, memoryUsage])
 
