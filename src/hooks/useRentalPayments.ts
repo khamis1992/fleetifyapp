@@ -189,7 +189,30 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
 
       let query = supabase
         .from('rental_payment_receipts')
-        .select('*')
+        .select(`
+          *,
+          customer:customers!customer_id(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            phone
+          ),
+          contract:contracts!contract_id(
+            id,
+            contract_number,
+            contract_amount,
+            status
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            plate_number,
+            make,
+            model,
+            year
+          )
+        `)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
 
@@ -227,7 +250,30 @@ export const useAllRentalPaymentReceipts = () => {
 
       const { data, error } = await supabase
         .from('rental_payment_receipts')
-        .select('*')
+        .select(`
+          *,
+          customer:customers!customer_id(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            phone
+          ),
+          contract:contracts!contract_id(
+            id,
+            contract_number,
+            contract_amount,
+            status
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            plate_number,
+            make,
+            model,
+            year
+          )
+        `)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
 

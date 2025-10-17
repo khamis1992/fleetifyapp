@@ -33,6 +33,23 @@ export interface Contract {
   total_paid?: number;
   balance_due?: number;
   linked_payments_amount?: number;
+  customer?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    first_name_ar?: string;
+    last_name_ar?: string;
+    phone?: string;
+    email?: string;
+  };
+  vehicle?: {
+    id: string;
+    plate_number: string;
+    make: string;
+    model: string;
+    year?: number;
+    status: string;
+  };
 }
 
 export const useContracts = (customerId?: string, vehicleId?: string, overrideCompanyId?: string) => {
@@ -55,7 +72,26 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
 
       let query = supabase
         .from("contracts")
-        .select("*")
+        .select(`
+          *,
+          customer:customers!customer_id(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            phone,
+            email
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            status
+          )
+        `)
         .eq("company_id", targetCompanyId)
         .order("created_at", { ascending: false })
 
@@ -134,7 +170,26 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       
       let query = supabase
         .from("contracts")
-        .select("*")
+        .select(`
+          *,
+          customer:customers!customer_id(
+            id,
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            phone,
+            email
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            status
+          )
+        `)
         .eq("company_id", targetCompanyId)
         .eq("status", "active")
         .order("contract_date", { ascending: false })
