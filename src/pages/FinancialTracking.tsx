@@ -1415,11 +1415,11 @@ const FinancialTracking: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+    <div className="container mx-auto p-4 md:p-6 space-y-6" dir="rtl">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">نظام تتبع المدفوعات</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">نظام تتبع المدفوعات</h1>
           <p className="text-muted-foreground mt-1">إدارة مدفوعات إيجار السيارات والغرامات</p>
         </div>
         <DollarSign className="h-12 w-12 text-primary" />
@@ -1428,11 +1428,11 @@ const FinancialTracking: React.FC = () => {
       {/* Tabs: Customer Payments vs Monthly Revenue */}
       <Tabs defaultValue="customers" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="customers" className="flex items-center gap-2">
+          <TabsTrigger value="customers" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <Search className="h-4 w-4" />
             مدفوعات العملاء
           </TabsTrigger>
-          <TabsTrigger value="monthly" className="flex items-center gap-2">
+          <TabsTrigger value="monthly" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <TrendingUp className="h-4 w-4" />
             الإيرادات الشهرية
           </TabsTrigger>
@@ -1514,7 +1514,7 @@ const FinancialTracking: React.FC = () => {
 
           {selectedCustomer && (
             <div className="mt-4 p-4 bg-primary/10 rounded-lg">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">العميل المحدد</p>
                   {editingCustomerName ? (
@@ -1553,7 +1553,7 @@ const FinancialTracking: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-xl font-bold">{selectedCustomer.name}</p>
+                      <p className="text-lg sm:text-xl font-bold">{selectedCustomer.name}</p>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -1606,7 +1606,7 @@ const FinancialTracking: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-xl font-bold text-primary">
+                      <p className="text-lg sm:text-xl font-bold text-primary">
                         {(selectedCustomer?.monthly_rent || 0).toLocaleString('ar-QA')} ريال
                       </p>
                       <Button
@@ -1950,6 +1950,7 @@ const FinancialTracking: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -2005,6 +2006,7 @@ const FinancialTracking: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
                 
                 {unpaidMonths.filter(m => m.is_overdue).length > 0 && (
                   <div className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
@@ -2026,9 +2028,9 @@ const FinancialTracking: React.FC = () => {
           {/* Payment History Table */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>سجل المدفوعات - {selectedCustomer.name}</CardTitle>
-                <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="text-lg sm:text-xl">سجل المدفوعات - {selectedCustomer.name}</CardTitle>
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" onClick={exportToExcel}>
                     <FileSpreadsheet className="h-4 w-4 ml-2" />
                     تصدير Excel
@@ -2041,6 +2043,7 @@ const FinancialTracking: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -2183,6 +2186,7 @@ const FinancialTracking: React.FC = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </>
@@ -2311,6 +2315,7 @@ const FinancialTracking: React.FC = () => {
                   </div>
 
                   {/* Monthly Breakdown Table */}
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -2353,7 +2358,8 @@ const FinancialTracking: React.FC = () => {
                       ))}
                     </TableBody>
                   </Table>
-                </>
+                  </div>
+                <>
               )}
             </CardContent>
           </Card>
