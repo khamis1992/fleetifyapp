@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,85 @@ const FinancialTracking: React.FC = () => {
   // Vehicle selection state (for customers with multiple vehicles)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
+  // Set up real-time subscription for rental payment receipts
+  useEffect(() => {
+    if (!companyId) return;
+
+    console.log('📡 [REALTIME] Setting up rental receipts subscription:', {
+      companyId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Create channel with unique name
+    const channel = supabase
+      .channel('rental-receipts-realtime', {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'rental-receipts' }
+        }
+      });
+
+    // Subscription config
+    const subscriptionConfig = {
+      event: '*' as const,
+      schema: 'public' as const,
+      table: 'rental_payment_receipts' as const,
+      filter: `company_id=eq.${companyId}`
+    };
+
+    console.log('📡 [REALTIME] Subscription config:', subscriptionConfig);
+
+    channel
+      .on('postgres_changes', subscriptionConfig, (payload) => {
+        console.log('🔔 [REALTIME] Rental receipt event received:', {
+          eventType: payload.eventType,
+          recordId: (payload.new as any)?.id || (payload.old as any)?.id,
+          timestamp: new Date().toISOString()
+        });
+
+        try {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
+          
+          // تأخير قصير لتجنب التضارب مع Optimistic Updates
+          setTimeout(() => {
+            // Invalidate relevant queries to refresh data
+            queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
+            queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
+            
+            // If we have a selected customer, invalidate their specific queries too
+            if (selectedCustomer) {
+              queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
+              queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId, selectedCustomer.id] });
+              queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', companyId, selectedCustomer.id] });
+              queryClient.invalidateQueries({ queryKey: ['customer-unpaid-months', companyId, selectedCustomer.id] });
+            }
+          }, 100); // تأخير 100ms لتجنب التضارب
+        } catch (error) {
+          console.error('❌ [REALTIME] Error processing event:', error);
+        }
+      })
+      .subscribe((status) => {
+        console.log('📡 [REALTIME] Subscription status:', {
+          status,
+          timestamp: new Date().toISOString(),
+          companyId
+        });
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [REALTIME] Rental receipts subscription established');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [REALTIME] Subscription error');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ [REALTIME] Subscription timed out');
+        }
+      });
+
+    return () => {
+      console.log('🔌 [REALTIME] Cleaning up rental receipts subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, selectedCustomer, queryClient]);
+
   // Fetch customers with rental info from Supabase
   const { data: allCustomers = [], isLoading: loadingCustomers } = useCustomersWithRental();
   
@@ -96,7 +175,7 @@ const FinancialTracking: React.FC = () => {
   const { data: customerVehicles = [], isLoading: loadingVehicles } = useCustomerVehicles(selectedCustomer?.id);
   
   // Fetch ALL receipts for company (for monthly summaries)
-  const { data: allReceipts = [], isLoading: loadingAllReceipts } = useRentalPaymentReceipts();
+  const { data: allReceipts = [], isLoading: loadingAllReceipts } = useAllRentalPaymentReceipts();
   
   // Fetch receipts for selected customer
   const { data: receipts = [], isLoading: loadingReceipts } = useRentalPaymentReceipts(selectedCustomer?.id);
@@ -781,9 +860,11 @@ const FinancialTracking: React.FC = () => {
       }
 
       // Invalidate queries to refresh data
-      await queryClient.invalidateQueries({ queryKey: ['rental-receipts'] });
-      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', selectedCustomer.id] });
-      await queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
 
       // Reset form
       setPaymentAmount('');
@@ -914,8 +995,9 @@ const FinancialTracking: React.FC = () => {
 
       // Step 5: Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', selectedCustomer.id] });
-      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
 
       toast.success(`تم تحديث الإيجار الشهري إلى ${rentAmount.toLocaleString('ar-QA')} ريال ✅`);
       setEditingMonthlyRent(false);
@@ -999,7 +1081,8 @@ const FinancialTracking: React.FC = () => {
 
       // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
+      await queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
 
       toast.success(`تم تحديث اسم العميل إلى "${trimmedName}" ✅`);
       setEditingCustomerName(false);
@@ -2358,4 +2441,3 @@ const FinancialTracking: React.FC = () => {
 };
 
 export default FinancialTracking;
- 
