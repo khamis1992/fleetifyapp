@@ -19,6 +19,7 @@ import {
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useInvoiceCostCenterAnalysis, useInvoiceBudgetComparison, useFixedAssetInvoiceAnalysis } from "@/hooks/useInvoiceAnalysis";
 import { useCostCenters } from "@/hooks/useCostCenters";
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const InvoiceReports = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -61,7 +62,10 @@ const InvoiceReports = () => {
             <BarChart3 className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">تقارير تكامل الفواتير</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">تقارير تكامل الفواتير</h1>
+              <HelpIcon topic="accountTypes" />
+            </div>
             <p className="text-muted-foreground">تحليل شامل لتكامل الفواتير مع مراكز التكلفة والميزانية والأصول</p>
           </div>
         </div>

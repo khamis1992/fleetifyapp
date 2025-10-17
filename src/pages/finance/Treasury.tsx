@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -222,7 +223,10 @@ export default function Treasury() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">الخزينة والبنوك</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">الخزينة والبنوك</h1>
+            <HelpIcon topic="debitCredit" />
+          </div>
           <p className="text-muted-foreground">
             إدارة الحسابات المصرفية والمعاملات النقدية
           </p>

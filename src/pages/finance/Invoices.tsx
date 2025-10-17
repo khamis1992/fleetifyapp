@@ -19,6 +19,7 @@ import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog"
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog"
 import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions"
 import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Invoices = () => {
   const navigate = useNavigate()
@@ -96,7 +97,10 @@ const Invoices = () => {
             <Receipt className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">الفواتير</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">الفواتير</h1>
+              <HelpIcon topic="debitCredit" />
+            </div>
             <p className="text-muted-foreground">إدارة فواتير المبيعات والمشتريات</p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const JournalEntries = () => {
   return (
@@ -22,7 +23,10 @@ const JournalEntries = () => {
               <FileText className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">القيود اليومية</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold">القيود اليومية</h1>
+                <HelpIcon topic="journalEntries" />
+              </div>
               <p className="text-muted-foreground">إدارة القيود المحاسبية اليومية</p>
             </div>
           </div>

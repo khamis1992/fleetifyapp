@@ -13,6 +13,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit } from "lucide-react"
 import { useBudgets, useCreateBudget, useUpdateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Budgets = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -152,7 +153,10 @@ const Budgets = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">الموازنات</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">الموازنات</h1>
+            <HelpIcon topic="accountTypes" />
+          </div>
           <p className="text-muted-foreground">إدارة الموازنات والتخطيط المالي</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

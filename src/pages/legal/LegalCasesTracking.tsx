@@ -34,6 +34,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 export const LegalCasesTracking: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,7 +114,10 @@ export const LegalCasesTracking: React.FC = () => {
                 <Scale className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-2xl">تتبع القضايا القانونية</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-2xl">تتبع القضايا القانونية</CardTitle>
+                  <HelpIcon topic="accountTypes" />
+                </div>
                 <CardDescription className="text-base mt-1">
                   إدارة ومتابعة جميع القضايا القانونية للشركة
                 </CardDescription>

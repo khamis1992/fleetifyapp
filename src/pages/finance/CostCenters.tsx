@@ -14,6 +14,7 @@ import { useCostCenters } from "@/hooks/useCostCenters";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 export default function CostCenters() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -278,7 +279,10 @@ export default function CostCenters() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>مراكز التكلفة</CardTitle>
+              <div className="flex items-center gap-2">
+                  <CardTitle>مراكز التكلفة</CardTitle>
+                  <HelpIcon topic="accountTypes" />
+                </div>
               <CardDescription>قائمة جميع مراكز التكلفة المسجلة</CardDescription>
             </div>
             <div className="flex items-center space-x-2">

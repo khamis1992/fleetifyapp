@@ -13,6 +13,7 @@ import { PurchaseOrderForm } from '@/components/finance/PurchaseOrderForm';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const getStatusVariant = (status: PurchaseOrder['status']) => {
   switch (status) {
@@ -180,7 +181,10 @@ export default function PurchaseOrders() {
       {/* Search and Filter */}
       <Card>
         <CardHeader>
-          <CardTitle>أوامر الشراء</CardTitle>
+          <div className="flex items-center gap-2">
+                  <CardTitle>أوامر الشراء</CardTitle>
+                  <HelpIcon topic="debitCredit" />
+                </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">

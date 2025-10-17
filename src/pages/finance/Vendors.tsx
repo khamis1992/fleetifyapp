@@ -13,6 +13,7 @@ import { Building, Plus, Search, Eye, Edit, Trash2, Phone, Mail } from "lucide-r
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { VendorForm } from "@/components/finance/VendorForm"
 import { VendorDetailsDialog } from "@/components/finance/VendorDetailsDialog"
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Vendors = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -79,7 +80,10 @@ const Vendors = () => {
             <Building className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">الموردين</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">الموردين</h1>
+              <HelpIcon topic="accountTypes" />
+            </div>
             <p className="text-muted-foreground">إدارة بيانات الموردين والحسابات</p>
           </div>
         </div>

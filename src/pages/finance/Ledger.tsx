@@ -24,6 +24,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Ledger = () => {
   const { formatCurrency } = useCurrencyFormatter();
@@ -85,7 +86,10 @@ const Ledger = () => {
               <FileText className="h-6 w-6" />
             </div>
             <div className="text-right">
-              <h1 className="text-3xl font-bold">دفتر الأستاذ</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold">دفتر الأستاذ</h1>
+                <HelpIcon topic="generalLedger" />
+              </div>
               <p className="text-muted-foreground">إنشاء وإدارة القيود المحاسبية والحركات المالية</p>
             </div>
           </div>

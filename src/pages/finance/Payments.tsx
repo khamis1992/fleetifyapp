@@ -28,6 +28,7 @@ import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDele
 import { ProfessionalPaymentSystem } from "@/components/finance/ProfessionalPaymentSystem";
 
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
+import { HelpIcon } from '@/components/help/HelpIcon';
 const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -146,7 +147,10 @@ const Payments = () => {
               <CreditCard className="h-6 w-6" />
             </div>
             <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>المدفوعات</h1>
+              <div className="flex items-center gap-2">
+                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>المدفوعات</h1>
+                <HelpIcon topic="debitCredit" />
+              </div>
               <p className="text-muted-foreground text-sm">إدارة المدفوعات والمقبوضات مع النظام الموحد المتطور</p>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useFinancialAnalysis, useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
 import { useAdvancedFinancialAnalytics } from "@/hooks/useAdvancedFinancialAnalytics"
 import { CostCenterReports } from "@/components/finance/CostCenterReports"
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const FinancialAnalysis = () => {
   const { data: analysisData, isLoading, error } = useFinancialAnalysis()
@@ -83,7 +84,10 @@ const FinancialAnalysis = () => {
             <PieChart className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">التحليل المالي</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">التحليل المالي</h1>
+              <HelpIcon topic="accountTypes" />
+            </div>
             <p className="text-muted-foreground">تحليل الأداء المالي والمؤشرات والنسب</p>
           </div>
         </div>

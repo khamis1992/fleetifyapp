@@ -24,6 +24,7 @@ import { formatCurrency } from '@/lib/utils';
 import { DepositDialog } from '@/components/finance/DepositDialog';
 import { DepositDetailsDialog } from '@/components/finance/DepositDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Deposits = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false);
@@ -84,7 +85,10 @@ const Deposits = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">إدارة الودائع</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">إدارة الودائع</h1>
+            <HelpIcon topic="debitCredit" />
+          </div>
           <p className="text-muted-foreground">
             إدارة ودائع العملاء وضمانات التأجير
           </p>

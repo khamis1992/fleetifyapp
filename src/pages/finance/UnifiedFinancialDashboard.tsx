@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const UnifiedFinancialDashboard = () => {
   return (
@@ -38,7 +39,10 @@ const UnifiedFinancialDashboard = () => {
                 <BarChart3 className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">الوحة المالية الموحدة</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold">الوحة المالية الموحدة</h1>
+                  <HelpIcon topic="generalLedger" />
+                </div>
                 <p className="text-muted-foreground">نظرة شاملة على الوضع المالي للشركة</p>
               </div>
             </div>

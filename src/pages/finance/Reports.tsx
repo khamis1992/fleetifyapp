@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { EnhancedFinancialReportsViewer } from "@/components/finance/EnhancedFinancialReportsViewer"
+import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("balance-sheet")
@@ -216,7 +217,10 @@ const Reports = () => {
             <FileText className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">التقارير المالية</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">التقارير المالية</h1>
+              <HelpIcon topic="accountTypes" />
+            </div>
             <p className="text-muted-foreground">الميزانية العمومية وقائمة الدخل والتقارير التحليلية</p>
           </div>
         </div>
