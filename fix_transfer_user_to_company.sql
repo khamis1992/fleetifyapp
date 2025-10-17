@@ -81,19 +81,25 @@ BEGIN
     user_id,
     from_company_id,
     to_company_id,
-    transferred_at,
+    transferred_by,
     transfer_reason,
     data_handling_strategy,
-    new_roles
+    new_roles,
+    status,
+    created_at,
+    updated_at
   )
   VALUES (
     p_user_id,
     p_from_company_id,
     p_to_company_id,
-    NOW(),
+    auth.uid(), -- Current authenticated user
     p_transfer_reason,
     p_data_handling_strategy,
-    p_new_roles
+    p_new_roles,
+    'completed',
+    NOW(),
+    NOW()
   )
   RETURNING id INTO v_transfer_log_id;
 
