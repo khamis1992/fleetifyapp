@@ -71,6 +71,10 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
   onTransferComplete
 }) => {
   const [selectedCompany, setSelectedCompany] = useState<string>('');
+  
+  // Debug logging
+  console.log('🔵 [TransferUserDialog] Render - selectedCompany:', selectedCompany);
+  console.log('🔵 [TransferUserDialog] Render - companies:', companies);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [transferReason, setTransferReason] = useState('');
   const [dataHandling, setDataHandling] = useState({
@@ -84,11 +88,19 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
   const transferMutation = useTransferUser();
 
   const handleRoleChange = (role: string, checked: boolean) => {
+    console.log('🟢 [handleRoleChange] role:', role, 'checked:', checked);
     setSelectedRoles(prev => 
       checked 
         ? [...prev, role]
         : prev.filter(r => r !== role)
     );
+  };
+  
+  const handleCompanyChange = (value: string) => {
+    console.log('🟢 [handleCompanyChange] New company selected:', value);
+    console.log('🟢 [handleCompanyChange] Before state update - selectedCompany:', selectedCompany);
+    setSelectedCompany(value);
+    console.log('🟢 [handleCompanyChange] After setSelectedCompany called');
   };
 
   const handleDataHandlingChange = (type: keyof typeof dataHandling, value: string) => {
@@ -196,6 +208,9 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
   const availableCompanies = companies.filter(
     company => company.id !== currentCompanyId
   );
+  
+  console.log('🔵 [TransferUserDialog] currentCompanyId:', currentCompanyId);
+  console.log('🔵 [TransferUserDialog] availableCompanies:', availableCompanies);
 
   if (!user) return null;
 
@@ -245,7 +260,7 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
               <Building2 className="h-4 w-4 inline ml-2" />
               الشركة المستهدفة *
             </Label>
-            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+            <Select value={selectedCompany} onValueChange={handleCompanyChange}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر الشركة المستهدفة" />
               </SelectTrigger>
