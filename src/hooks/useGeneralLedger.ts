@@ -288,20 +288,66 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
           throw error
         }
         
-        // For now, return simplified account balances
-        // In a full implementation, we would calculate running balances with journal entries
-        const accountBalances: AccountBalance[] = (accounts || []).map(account => ({
-          account_id: account.id,
-          account_code: account.account_code,
-          account_name: account.account_name,
-          account_name_ar: account.account_name_ar,
-          account_type: account.account_type,
-          balance_type: account.balance_type as 'debit' | 'credit',
-          opening_balance: account.current_balance || 0,
-          total_debits: 0,
-          total_credits: 0,
-          closing_balance: account.current_balance || 0
-        }))
+        // Get journal entry lines to calculate actual balances
+        const { data: journalLines, error: linesError } = await supabase
+          .from("journal_entry_lines")
+          .select(`
+            account_id,
+            debit_amount,
+            credit_amount,
+            journal_entry:journal_entries!inner(
+              status,
+              company_id
+            )
+          `)
+          .eq("journal_entry.status", "posted")
+        
+        if (linesError) {
+          console.error("Journal lines query error:", linesError)
+        }
+        
+        // Calculate totals per account
+        const accountTotals = new Map<string, { debits: number; credits: number }>()
+        
+        journalLines?.forEach(line => {
+          // Apply company filter
+          if (filter.company_id && line.journal_entry?.company_id !== filter.company_id) {
+            return
+          }
+          
+          const current = accountTotals.get(line.account_id) || { debits: 0, credits: 0 }
+          accountTotals.set(line.account_id, {
+            debits: current.debits + (line.debit_amount || 0),
+            credits: current.credits + (line.credit_amount || 0)
+          })
+        })
+        
+        // Build account balances with calculated totals
+        const accountBalances: AccountBalance[] = (accounts || []).map(account => {
+          const totals = accountTotals.get(account.id) || { debits: 0, credits: 0 }
+          const opening = account.current_balance || 0
+          
+          // Calculate closing balance based on account type
+          let closing = opening
+          if (account.balance_type === 'debit') {
+            closing = opening + totals.debits - totals.credits
+          } else {
+            closing = opening + totals.credits - totals.debits
+          }
+          
+          return {
+            account_id: account.id,
+            account_code: account.account_code,
+            account_name: account.account_name,
+            account_name_ar: account.account_name_ar,
+            account_type: account.account_type,
+            balance_type: account.balance_type as 'debit' | 'credit',
+            opening_balance: opening,
+            total_debits: totals.debits,
+            total_credits: totals.credits,
+            closing_balance: closing
+          }
+        })
         
         return accountBalances
         
