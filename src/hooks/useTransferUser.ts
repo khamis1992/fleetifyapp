@@ -25,28 +25,33 @@ interface TransferUserResponse {
 export const useTransferUser = () => {
   return useMutation<TransferUserResponse, Error, TransferUserRequest>({
     mutationFn: async (transferData) => {
-      // Use RPC function instead of Edge Function
-      const { data, error } = await supabase.rpc('transfer_user_to_company', {
-        p_user_id: transferData.userId,
-        p_from_company_id: transferData.fromCompanyId,
-        p_to_company_id: transferData.toCompanyId,
-        p_new_roles: transferData.newRoles,
-        p_transfer_reason: transferData.transferReason || null,
-        p_data_handling_strategy: transferData.dataHandlingStrategy
-      });
-
-      if (error) {
-        console.error('RPC function error:', error);
-        throw new Error(error.message || 'Transfer failed due to a database error');
+      // Get the current user's session token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error('You must be logged in to transfer users');
       }
 
-      // data is the JSONB result from the function
-      const result = data as TransferUserResponse;
+      // Call our API route instead of RPC directly
+      // This allows us to use service role on the backend
+      const response = await fetch('/api/admin/transfer-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(transferData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result: TransferUserResponse = await response.json();
 
       if (!result.success) {
-        console.error('Transfer business logic error:', result);
-        const errorMessage = result.error || 'Transfer failed for unknown reasons';
-        throw new Error(errorMessage);
+        throw new Error(result.error || 'Transfer failed for unknown reasons');
       }
 
       return result;
