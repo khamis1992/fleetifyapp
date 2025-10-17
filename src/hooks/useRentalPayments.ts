@@ -5,6 +5,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { createJournalEntryForRentalPayment, deleteJournalEntryForRentalPayment } from './useRentalPaymentJournalIntegration';
 
 /**
  * Vehicle info for payment receipts
@@ -433,7 +434,7 @@ export const useCreateRentalReceipt = () => {
       console.log('✅ Receipt created successfully');
       return data as RentalPaymentReceipt;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Invalidate relevant queries with correct keys
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, data.customer_id] });
@@ -441,6 +442,31 @@ export const useCreateRentalReceipt = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', companyId, data.customer_id] });
       queryClient.invalidateQueries({ queryKey: ['customer-unpaid-months', companyId, data.customer_id] });
       queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
+      
+      // Create journal entry for this payment
+      if (companyId) {
+        const journalResult = await createJournalEntryForRentalPayment(companyId, {
+          payment_id: data.id,
+          customer_name: data.customer_name,
+          payment_date: data.payment_date,
+          rent_amount: data.rent_amount,
+          fine: data.fine,
+          total_paid: data.total_paid,
+          month: data.month
+        });
+        
+        if (journalResult.success) {
+          console.log('✅ Journal entry created for payment:', journalResult.entry_id);
+          // Invalidate general ledger queries
+          queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries', companyId] });
+          queryClient.invalidateQueries({ queryKey: ['accountBalances', companyId] });
+          queryClient.invalidateQueries({ queryKey: ['trialBalance', companyId] });
+          queryClient.invalidateQueries({ queryKey: ['financialSummary', companyId] });
+        } else {
+          console.error('❌ Failed to create journal entry:', journalResult.error);
+          toast.warning(`تم إضافة الإيصال لكن فشل إنشاء القيد المحاسبي: ${journalResult.error}`);
+        }
+      }
       
       toast.success(
         data.fine > 0
@@ -513,12 +539,26 @@ export const useDeleteRentalReceipt = () => {
 
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-outstanding-balance', companyId] });
       queryClient.invalidateQueries({ queryKey: ['customer-unpaid-months', companyId] });
       queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
+      
+      // Delete associated journal entry
+      const journalResult = await deleteJournalEntryForRentalPayment(deletedId);
+      if (journalResult.success) {
+        console.log('✅ Journal entry deleted for payment:', deletedId);
+        // Invalidate general ledger queries
+        queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['accountBalances', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['trialBalance', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['financialSummary', companyId] });
+      } else if (journalResult.error) {
+        console.error('❌ Failed to delete journal entry:', journalResult.error);
+      }
+      
       toast.success('تم حذف الإيصال بنجاح');
     },
     onError: (error: any) => {
