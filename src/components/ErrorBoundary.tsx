@@ -30,6 +30,24 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🔧 ErrorBoundary: Component did catch:', error, errorInfo);
+    
+    // Check if this is a chunk loading error
+    const isChunkLoadError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('error loading dynamically imported module') ||
+      error?.message?.includes('ChunkLoadError');
+    
+    if (isChunkLoadError) {
+      console.warn('🔄 [ErrorBoundary] Detected chunk load error, attempting reload...');
+      const hasReloaded = sessionStorage.getItem('chunk_reload_attempted');
+      if (!hasReloaded) {
+        sessionStorage.setItem('chunk_reload_attempted', 'true');
+        window.location.reload();
+        return;
+      }
+    }
+    
     this.setState({
       error,
       errorInfo
@@ -38,6 +56,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError) {
+      const isChunkLoadError = 
+        this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
+        this.state.error?.message?.includes('Importing a module script failed') ||
+        this.state.error?.message?.includes('error loading dynamically imported module') ||
+        this.state.error?.message?.includes('ChunkLoadError');
+      
       const isReactHookError = this.state.error?.message?.includes('useState') || 
                               this.state.error?.message?.includes('React hooks');
       
@@ -54,7 +78,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         }}>
           <h2>خطأ في التطبيق</h2>
           <p>
-            {isReactHookError 
+            {isChunkLoadError
+              ? 'تم نشر نسخة جديدة من التطبيق. يتم إعادة التحميل تلقائياً...'
+              : isReactHookError 
               ? 'حدث خطأ في تحميل React. هذا قد يكون بسبب مشكلة في البيئة.'
               : 'حدث خطأ غير متوقع في التطبيق.'
             }
