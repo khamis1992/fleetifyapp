@@ -57,6 +57,8 @@ const FinancialTracking: React.FC = () => {
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [displayPaymentDate, setDisplayPaymentDate] = useState(format(new Date(), 'dd/MM/yyyy')); // Display format
   const [paymentNotes, setPaymentNotes] = useState(''); // User notes for payment
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // Payment method
+  const [referenceNumber, setReferenceNumber] = useState(''); // Reference/check number
   
   // Date range filter state
   const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
@@ -488,8 +490,25 @@ const FinancialTracking: React.FC = () => {
           </div>
           <div class="info-item">
             <label>رقم الإيصال</label>
-            <value>${receipt.id.substring(0, 8)}</value>
+            <value>${(receipt as any).receipt_number || receipt.id.substring(0, 8)}</value>
           </div>
+          <div class="info-item">
+            <label>طريقة الدفع</label>
+            <value>${
+              (receipt as any).payment_method === 'cash' ? 'نقداً' :
+              (receipt as any).payment_method === 'bank_transfer' ? 'تحويل بنكي' :
+              (receipt as any).payment_method === 'check' ? 'شيك' :
+              (receipt as any).payment_method === 'credit_card' ? 'بطاقة ائتمان' :
+              (receipt as any).payment_method === 'debit_card' ? 'بطاقة مدين' :
+              'غير محدد'
+            }</value>
+          </div>
+          ${(receipt as any).reference_number ? `
+          <div class="info-item">
+            <label>رقم المرجع</label>
+            <value>${(receipt as any).reference_number}</value>
+          </div>
+          ` : ''}
           <div class="info-item">
             <label>الشهر</label>
             <value>${receipt.month}</value>
@@ -835,7 +854,7 @@ const FinancialTracking: React.FC = () => {
         }
       }
       
-      // Create receipt via Supabase with partial payment support, notes, and vehicle_id
+      // Create receipt via Supabase with partial payment support, notes, vehicle_id, payment_method, and reference_number
       await createReceiptMutation.mutateAsync({
         customer_id: selectedCustomer.id,
         customer_name: selectedCustomer.name,
@@ -849,7 +868,9 @@ const FinancialTracking: React.FC = () => {
         payment_status: paidAmount >= totalDue ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending'),
         notes: autoNotes || null, // Include notes (user + auto-generated)
         vehicle_id: vehicleId, // Add vehicle_id
-        contract_id: contractId // Add contract_id
+        contract_id: contractId, // Add contract_id
+        payment_method: paymentMethod, // Add payment_method
+        reference_number: referenceNumber || null // Add reference_number
       } as any);
 
       // Show success message with late fee clearing info
@@ -871,6 +892,8 @@ const FinancialTracking: React.FC = () => {
       setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
       setDisplayPaymentDate(format(new Date(), 'dd/MM/yyyy'));
       setPaymentNotes('');
+      setPaymentMethod('cash');
+      setReferenceNumber('');
       // Reset vehicle selection for multi-vehicle customers
       if (customerVehicles.length > 1) {
         setSelectedVehicleId(null);
@@ -1710,7 +1733,44 @@ const FinancialTracking: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-end">
+              <div>
+                <Label htmlFor="paymentMethod">طريقة الدفع</Label>
+                <select
+                  id="paymentMethod"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="cash">نقداً</option>
+                  <option value="bank_transfer">تحويل بنكي</option>
+                  <option value="check">شيك</option>
+                  <option value="credit_card">بطاقة ائتمان</option>
+                  <option value="debit_card">بطاقة مدين</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Second row for reference number and add button */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <div>
+                <Label htmlFor="referenceNumber">رقم المرجع / الشيك (اختياري)</Label>
+                <Input
+                  id="referenceNumber"
+                  type="text"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  placeholder="رقم التحويل أو الشيك..."
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {paymentMethod === 'bank_transfer' && 'رقم التحويل البنكي'}
+                  {paymentMethod === 'check' && 'رقم الشيك'}
+                  {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && 'آخر 4 أرقام من البطاقة'}
+                  {paymentMethod === 'cash' && 'اختياري'}
+                </p>
+              </div>
+
+              <div className="md:col-span-2 flex items-end">
                 <Button 
                   onClick={handleAddPayment} 
                   className="w-full"
@@ -1984,8 +2044,10 @@ const FinancialTracking: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="text-right">رقم الإيصال</TableHead>
                     <TableHead className="text-right">الشهر</TableHead>
                     <TableHead className="text-right">تاريخ الدفع</TableHead>
+                    <TableHead className="text-right">طريقة الدفع</TableHead>
                     <TableHead className="text-right">الإيجار</TableHead>
                     <TableHead className="text-right">الغرامة</TableHead>
                     <TableHead className="text-right">المستحق</TableHead>
@@ -2010,6 +2072,11 @@ const FinancialTracking: React.FC = () => {
                         key={receipt.id}
                         className={isPartial ? 'bg-orange-50/50' : ''}
                       >
+                        <TableCell>
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                            {(receipt as any).receipt_number || 'غير متاح'}
+                          </span>
+                        </TableCell>
                         <TableCell className="font-medium">{receipt.month}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -2019,6 +2086,21 @@ const FinancialTracking: React.FC = () => {
                               : 'تاريخ غير متاح'
                             }
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs">
+                            {(receipt as any).payment_method === 'cash' && '💵 نقداً'}
+                            {(receipt as any).payment_method === 'bank_transfer' && '🏦 تحويل بنكي'}
+                            {(receipt as any).payment_method === 'check' && '📄 شيك'}
+                            {(receipt as any).payment_method === 'credit_card' && '💳 بطاقة ائتمان'}
+                            {(receipt as any).payment_method === 'debit_card' && '💳 بطاقة مدين'}
+                            {!(receipt as any).payment_method && 'غير محدد'}
+                          </span>
+                          {(receipt as any).reference_number && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              رقم المرجع: {(receipt as any).reference_number}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="font-semibold">
