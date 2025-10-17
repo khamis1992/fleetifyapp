@@ -77,10 +77,14 @@ export const useUnifiedCompanyAccess = () => {
     // Store original user roles before modifying context
     const originalUserRoles = rolesNormalized;
     
-    // Special handling: super_admin browsing their own company should maintain system level access
-    const isBrowsingOwnCompany = isBrowsingMode && browsedCompany && browsedCompany.id === userCompanyId;
+    // Security check: Only super admins can be in browsing mode
+    const canBrowse = rolesNormalized.includes('super_admin');
+    const effectiveBrowsingMode = isBrowsingMode && canBrowse;
     
-    if (isBrowsingMode && browsedCompany && rolesNormalized.includes('super_admin') && !isBrowsingOwnCompany) {
+    // Special handling: super_admin browsing their own company should maintain system level access
+    const isBrowsingOwnCompany = effectiveBrowsingMode && browsedCompany && browsedCompany.id === userCompanyId;
+    
+    if (effectiveBrowsingMode && browsedCompany && !isBrowsingOwnCompany) {
       context = {
         ...context,
         companyId: browsedCompany.id,
@@ -147,8 +151,8 @@ export const useUnifiedCompanyAccess = () => {
       },
       
       // Browse mode information
-      isBrowsingMode,
-      browsedCompany,
+      isBrowsingMode: effectiveBrowsingMode,
+      browsedCompany: effectiveBrowsingMode ? browsedCompany : null,
       actualUserCompanyId: user?.company?.id || null,
       
       // Authentication state

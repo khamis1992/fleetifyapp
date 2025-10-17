@@ -37,20 +37,28 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
 
   const setBrowsedCompany = (company: Company | null) => {
     // Only super admins can browse companies
-    if (user?.roles?.includes('super_admin')) {
-      // Check if trying to browse own company
-      const userCompanyId = user?.company?.id || (user as any)?.company_id;
-      const isBrowsingOwnCompany = company?.id === userCompanyId;
-      
-      if (isBrowsingOwnCompany) {
-        console.log('🏢 [COMPANY_CONTEXT] Warning: Super admin attempting to browse their own company');
-      }
-      
-      setBrowsedCompanyState(company);
+    if (!user?.roles?.includes('super_admin')) {
+      console.warn('🏢 [COMPANY_CONTEXT] Unauthorized attempt to set browsed company by non-super-admin');
+      return;
     }
+    
+    // Check if trying to browse own company
+    const userCompanyId = user?.company?.id || (user as any)?.company_id;
+    const isBrowsingOwnCompany = company?.id === userCompanyId;
+    
+    if (isBrowsingOwnCompany) {
+      console.log('🏢 [COMPANY_CONTEXT] Warning: Super admin attempting to browse their own company');
+    }
+    
+    setBrowsedCompanyState(company);
   };
 
   const exitBrowseMode = () => {
+    // Only super admins can exit browse mode
+    if (!user?.roles?.includes('super_admin')) {
+      console.warn('🏢 [COMPANY_CONTEXT] Unauthorized attempt to exit browse mode by non-super-admin');
+      return;
+    }
     console.log('🏢 [COMPANY_CONTEXT] Exiting browse mode, current company:', browsedCompany?.name);
     setBrowsedCompanyState(null);
   };

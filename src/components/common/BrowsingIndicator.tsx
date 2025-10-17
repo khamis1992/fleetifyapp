@@ -1,5 +1,6 @@
 import React from 'react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { motion } from 'framer-motion';
 import { useCompanyContext } from '@/contexts/CompanyContext';
 
 export const BrowsingIndicator: React.FC = () => {
+  const { user } = useAuth();
   const { 
     isBrowsingMode, 
     browsedCompany, 
@@ -15,6 +17,11 @@ export const BrowsingIndicator: React.FC = () => {
   } = useUnifiedCompanyAccess();
   
   const { exitBrowseMode } = useCompanyContext();
+
+  // Only show for super admins
+  if (!user?.roles?.includes('super_admin')) {
+    return null;
+  }
 
   if (!isBrowsingMode || !browsedCompany) {
     return null;
