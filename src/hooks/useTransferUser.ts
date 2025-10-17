@@ -46,17 +46,21 @@ export const useTransferUser = () => {
       console.log("🔄 Calling RPC function: transfer_user_to_company");
       console.log("📤 RPC Parameters:", {
         p_user_id: transferData.userId,
-        p_target_company_id: transferData.toCompanyId,
+        p_from_company_id: transferData.fromCompanyId,
+        p_to_company_id: transferData.toCompanyId,
         p_new_roles: transferData.newRoles,
-        p_reason: transferData.transferReason || null,
+        p_transfer_reason: transferData.transferReason || null,
+        p_data_handling_strategy: transferData.dataHandlingStrategy || {},
       });
 
       // Call the RPC function directly with proper parameters
       const { data, error } = await supabase.rpc("transfer_user_to_company", {
         p_user_id: transferData.userId,
-        p_target_company_id: transferData.toCompanyId,
+        p_from_company_id: transferData.fromCompanyId,
+        p_to_company_id: transferData.toCompanyId,
         p_new_roles: transferData.newRoles,
-        p_reason: transferData.transferReason || null,
+        p_transfer_reason: transferData.transferReason || null,
+        p_data_handling_strategy: transferData.dataHandlingStrategy || {},
       });
 
       console.log("📥 RPC Response - Data:", data);
