@@ -3,16 +3,18 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Building2, Check, ChevronsUpDown, X, Eye } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown, X, Eye, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export const CompanySelector: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: companies, isLoading } = useCompanies();
   const { browsedCompany, setBrowsedCompany, isBrowsingMode, exitBrowseMode } = useCompanyContext();
   const [open, setOpen] = useState(false);
@@ -31,6 +33,11 @@ export const CompanySelector: React.FC = () => {
 
   const handleExitBrowseMode = () => {
     exitBrowseMode();
+  };
+
+  const handleNavigateToSuperAdminDashboard = () => {
+    navigate('/super-admin/dashboard');
+    setOpen(false);
   };
 
   const filteredCompanies = companies?.filter(company =>
@@ -143,6 +150,16 @@ export const CompanySelector: React.FC = () => {
                         </div>
                       </CommandItem>
                     ))}
+                  </CommandGroup>
+                  <CommandSeparator />
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={handleNavigateToSuperAdminDashboard}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Crown className="h-4 w-4 text-destructive" />
+                      <span>لوحة تحكم السوبر ادمن</span>
+                    </CommandItem>
                   </CommandGroup>
                 </>
               )}
