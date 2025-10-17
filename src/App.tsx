@@ -42,6 +42,7 @@ const Search = lazy(() => import("./pages/Search"));
 const Import = lazy(() => import("./pages/Import"));
 const InvoiceScannerPage = lazy(() => import("./pages/InvoiceScannerPage"));
 const FinancialTracking = lazy(() => import("./pages/FinancialTracking"));
+const SyncPaymentsToLedger = lazy(() => import("./pages/SyncPaymentsToLedger"));
 
 // Super Admin pages - lazy loaded
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
@@ -565,6 +566,15 @@ const AppRoutes = () => {
           <Suspense fallback={<PageSkeletonFallback />}>
             <FinancialTracking />
           </Suspense>
+        } />
+        
+        {/* مزامنة المدفوعات مع دفتر الأستاذ */}
+        <Route path="sync-payments-ledger" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SyncPaymentsToLedger />
+            </Suspense>
+          </AdminRoute>
         } />
       </Route>
       
