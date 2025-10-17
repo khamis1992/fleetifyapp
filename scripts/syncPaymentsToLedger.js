@@ -130,13 +130,15 @@ async function syncPayments() {
         lines.push(
           {
             account_id: accountMap['1200'],
-            debit: payment.rental_amount,
-            credit: 0,
+            debit_amount: payment.rental_amount,
+            credit_amount: 0,
+            line_number: lines.length + 1,
           },
           {
             account_id: accountMap['4110'],
-            debit: 0,
-            credit: payment.rental_amount,
+            debit_amount: 0,
+            credit_amount: payment.rental_amount,
+            line_number: lines.length + 2,
           }
         );
       }
@@ -146,13 +148,15 @@ async function syncPayments() {
         lines.push(
           {
             account_id: accountMap['1200'],
-            debit: payment.fine_amount,
-            credit: 0,
+            debit_amount: payment.fine_amount,
+            credit_amount: 0,
+            line_number: lines.length + 1,
           },
           {
             account_id: accountMap['4200'],
-            debit: 0,
-            credit: payment.fine_amount,
+            debit_amount: 0,
+            credit_amount: payment.fine_amount,
+            line_number: lines.length + 2,
           }
         );
       }
@@ -162,13 +166,15 @@ async function syncPayments() {
         lines.push(
           {
             account_id: accountMap['1010'],
-            debit: payment.amount_paid,
-            credit: 0,
+            debit_amount: payment.amount_paid,
+            credit_amount: 0,
+            line_number: lines.length + 1,
           },
           {
             account_id: accountMap['1200'],
-            debit: 0,
-            credit: payment.amount_paid,
+            debit_amount: 0,
+            credit_amount: payment.amount_paid,
+            line_number: lines.length + 2,
           }
         );
       }
