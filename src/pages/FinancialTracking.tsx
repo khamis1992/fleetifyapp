@@ -43,6 +43,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQueryClient } from '@tanstack/react-query';
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 const DELAY_FINE_PER_DAY = 120; // QAR
 const MAX_FINE_PER_MONTH = 3000; // QAR
@@ -1419,7 +1421,15 @@ const FinancialTracking: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">نظام تتبع المدفوعات</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold">نظام تتبع المدفوعات</h1>
+            <HelpIcon
+              title={financialHelpContent.financialTracking.title}
+              content={financialHelpContent.financialTracking.content}
+              examples={financialHelpContent.financialTracking.examples}
+              size="md"
+            />
+          </div>
           <p className="text-muted-foreground mt-1">إدارة مدفوعات إيجار السيارات والغرامات</p>
         </div>
         <DollarSign className="h-12 w-12 text-primary" />

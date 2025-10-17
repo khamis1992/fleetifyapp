@@ -10,6 +10,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 export default function DepreciationAutomation() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -32,7 +34,15 @@ export default function DepreciationAutomation() {
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
       <div>
-        <h1 className="text-3xl font-bold">الاستهلاك التلقائي</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold">الاستهلاك التلقائي</h1>
+          <HelpIcon
+            title={financialHelpContent.depreciationSystem.title}
+            content={financialHelpContent.depreciationSystem.content}
+            examples={financialHelpContent.depreciationSystem.examples}
+            size="md"
+          />
+        </div>
         <p className="text-muted-foreground mt-2">
           حساب وتسجيل الاستهلاك الشهري للأصول الثابتة تلقائياً
         </p>

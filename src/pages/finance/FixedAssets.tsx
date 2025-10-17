@@ -14,6 +14,8 @@ import { useFixedAssets, useCreateFixedAsset, useUpdateFixedAsset, useDeleteFixe
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 const FixedAssets = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -246,7 +248,15 @@ const FixedAssets = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">الأصول الثابتة</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">الأصول الثابتة</h1>
+            <HelpIcon
+              title={financialHelpContent.fixedAssets.title}
+              content={financialHelpContent.fixedAssets.content}
+              examples={financialHelpContent.fixedAssets.examples}
+              size="md"
+            />
+          </div>
           <p className="text-muted-foreground">إدارة الأصول والإهلاك والصيانة</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

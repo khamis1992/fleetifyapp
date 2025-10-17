@@ -26,6 +26,8 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 export const DefaultersList: React.FC = () => {
   const { data: lateCustomers, isLoading, error } = useLatePaymentCustomers();
@@ -109,7 +111,15 @@ export const DefaultersList: React.FC = () => {
                 <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
               <div>
-                <CardTitle className="text-2xl">قائمة المتأخرين عن الدفع</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-2xl">قائمة المتأخرين عن الدفع</CardTitle>
+                  <HelpIcon
+                    title={financialHelpContent.defaultersList.title}
+                    content={financialHelpContent.defaultersList.content}
+                    examples={financialHelpContent.defaultersList.examples}
+                    size="md"
+                  />
+                </div>
                 <CardDescription className="text-base mt-1">
                   العملاء المتأخرون عن سداد الإيجار الشهري
                 </CardDescription>

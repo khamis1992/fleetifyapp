@@ -25,6 +25,8 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 interface LegalReport {
   id: string;
@@ -346,8 +348,16 @@ export const LegalReports: React.FC = () => {
             <div className="p-3 rounded-xl bg-primary/10">
               <FileText className="h-8 w-8 text-primary" />
             </div>
-            <div>
-              <CardTitle className="text-2xl">البلاغات القانونية</CardTitle>
+             <div>
+               <div className="flex items-center gap-2">
+                 <CardTitle className="text-2xl">البلاغات القانونية</CardTitle>
+                 <HelpIcon
+                   title={financialHelpContent.legalReports.title}
+                   content={financialHelpContent.legalReports.content}
+                   examples={financialHelpContent.legalReports.examples}
+                   size="md"
+                 />
+               </div>
               <CardDescription className="text-base mt-1">
                 بلاغات تجمع 4 عملاء متأخرين لكل بلاغ (بعد 30 يوم من التأخير)
               </CardDescription>

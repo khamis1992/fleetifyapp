@@ -7,6 +7,8 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { AlertCircle, Calculator } from "lucide-react";
 import { useBadDebtProvision } from "@/hooks/useBadDebtProvision";
 import { toast } from "sonner";
+import { HelpIcon } from '@/components/help/HelpIcon';
+import { financialHelpContent } from '@/data/helpContent';
 
 const BadDebtProvision = () => {
   const [analysisDate, setAnalysisDate] = useState(new Date().toISOString().split('T')[0]);
@@ -55,7 +57,15 @@ const BadDebtProvision = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">مخصص الديون المعدومة</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">مخصص الديون المعدومة</h1>
+            <HelpIcon
+              title={financialHelpContent.badDebtProvision.title}
+              content={financialHelpContent.badDebtProvision.content}
+              examples={financialHelpContent.badDebtProvision.examples}
+              size="md"
+            />
+          </div>
           <p className="text-muted-foreground mt-2">
             تحليل العملاء المتعثرين وإنشاء مخصص للديون المشكوك في تحصيلها
           </p>
