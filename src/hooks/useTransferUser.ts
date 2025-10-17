@@ -75,6 +75,13 @@ export const useTransferUser = () => {
         throw new Error(error.message || 'فشل نقل المستخدم');
       }
 
+      // Check if the RPC function returned an error in the data
+      if (data && typeof data === 'object' && 'success' in data && data.success === false) {
+        console.error("❌ ===== TRANSFER FAILED (RPC returned error) =====");
+        console.error("Error from RPC:", data.error);
+        throw new Error(data.error || 'فشل نقل المستخدم');
+      }
+
       console.log("✅ ===== TRANSFER SUCCESSFUL =====");
       console.log("Transfer Log ID:", data);
 
