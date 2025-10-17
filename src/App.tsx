@@ -99,9 +99,15 @@ const AuditPage = lazy(() => import("./pages/AuditPage"));
 const ApprovalSystem = lazy(() => import("./pages/ApprovalSystem"));
 const Support = lazy(() => import("./pages/Support"));
 const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
+const Tenants = lazy(() => import("./pages/Tenants"));
+const PerformanceDashboard = lazy(() => import("./pages/PerformanceDashboard"));
+
+// Legal pages
+const LegalCasesTracking = lazy(() => import("./pages/legal/LegalCasesTracking"));
+const DefaultersList = lazy(() => import("./pages/legal/DefaultersList"));
+const LegalReports = lazy(() => import("./pages/legal/LegalReports"));
 const DuplicateContractsManager = lazy(() => import("./components/contracts/DuplicateContractsManager"));
 const DuplicateContractsDiagnostic = lazy(() => import("./components/contracts/DuplicateContractsDiagnostic"));
-const Tenants = lazy(() => import("./modules/tenants").then(m => ({ default: m.Tenants })));
 const PerformanceMonitor = lazy(() => import("@/components/performance").then(m => ({ default: m.PerformanceMonitor })));
 
 const queryClient = new QueryClient({
@@ -526,6 +532,30 @@ const AppRoutes = () => {
             <SupportTicketDetail />
           </Suspense>
         } />
+        
+        {/* Legal System Routes */}
+        <Route path="legal/cases" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <LegalCasesTracking />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="legal/defaulters" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <DefaultersList />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="legal/reports" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <LegalReports />
+            </Suspense>
+          </AdminRoute>
+        } />
+        
         <Route path="performance" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
