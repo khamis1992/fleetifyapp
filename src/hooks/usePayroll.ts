@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
+import { usePayrollJournalIntegration } from "@/hooks/usePayrollJournalIntegration";
 
 // Types
 export interface PayrollRecord {
@@ -200,6 +201,7 @@ export function useCreatePayroll() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { log } = useSystemLogger();
+  const { accruePayroll } = usePayrollJournalIntegration();
 
   return useMutation({
     mutationFn: async (payrollData: CreatePayrollData) => {
@@ -272,8 +274,26 @@ export function useCreatePayroll() {
       
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['payroll-records'] });
+      
+      // Create journal entry for payroll accrual
+      try {
+        await accruePayroll({
+          payrollId: data.id,
+          employeeId: data.employee_id,
+          basicSalary: data.basic_salary,
+          allowances: data.allowances || 0,
+          overtimeAmount: data.overtime_amount || 0,
+          deductions: data.deductions || 0,
+          taxAmount: data.tax_amount || 0,
+          netAmount: data.net_amount,
+          date: data.payroll_date
+        });
+      } catch (error) {
+        console.error('Failed to create payroll journal entry:', error);
+      }
+      
       toast.success('تم إنشاء راتب الموظف بنجاح');
     },
     onError: (error: Error) => {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTrafficViolationJournalIntegration } from '@/hooks/useTrafficViolationJournalIntegration';
 
 export interface TrafficViolation {
   id: string;
@@ -156,6 +157,7 @@ export function useTrafficViolation(id: string) {
 // Hook لإنشاء مخالفة جديدة
 export function useCreateTrafficViolation() {
   const queryClient = useQueryClient();
+  const { createViolationJournalEntry } = useTrafficViolationJournalIntegration();
 
   return useMutation({
     mutationFn: async (data: CreateTrafficViolationData) => {
@@ -210,8 +212,22 @@ export function useCreateTrafficViolation() {
 
       return violation;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      
+      // Create journal entry for traffic violation
+      try {
+        await createViolationJournalEntry({
+          violationId: data.id,
+          amount: data.amount,
+          isCompanyLiability: !data.customer_id, // If no customer, company pays
+          customerId: data.customer_id,
+          date: data.penalty_date
+        });
+      } catch (error) {
+        console.error('Failed to create traffic violation journal entry:', error);
+      }
+      
       toast.success('تم إنشاء المخالفة بنجاح');
     },
     onError: (error) => {

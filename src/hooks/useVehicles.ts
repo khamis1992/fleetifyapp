@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useSystemLogger } from "@/hooks/useSystemLogger"
 import { useCurrentCompanyId } from "./useUnifiedCompanyAccess"
+import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration"
 
 export interface Vehicle {
   id: string
@@ -701,6 +702,7 @@ export const useCreateVehicleMaintenance = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { user } = useAuth()
+  const { createMaintenanceJournalEntry } = useMaintenanceJournalIntegration()
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -746,8 +748,22 @@ export const useCreateVehicleMaintenance = () => {
       if (error) throw error
       return data
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle-maintenance"] })
+      
+      // Create journal entry for maintenance
+      try {
+        await createMaintenanceJournalEntry({
+          maintenanceId: data.id,
+          amount: data.estimated_cost || 0,
+          taxAmount: data.tax_amount || 0,
+          isPaid: false,
+          description: data.description,
+          date: data.scheduled_date || new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to create journal entry for maintenance:', error);
+      }
       queryClient.invalidateQueries({ queryKey: ["vehicles"] })
       toast({
         title: "نجح",

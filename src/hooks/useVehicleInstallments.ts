@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useVehicleInstallmentJournalIntegration } from "@/hooks/useVehicleInstallmentJournalIntegration";
 import type { 
   VehicleInstallment, 
   VehicleInstallmentSchedule, 
@@ -233,6 +234,7 @@ export const useUpdateVehicleInstallment = () => {
 export const useProcessInstallmentPayment = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { recordInstallmentPayment } = useVehicleInstallmentJournalIntegration();
 
   return useMutation({
     mutationFn: async (paymentData: VehicleInstallmentPaymentData) => {
@@ -281,9 +283,23 @@ export const useProcessInstallmentPayment = () => {
 
       return updatedSchedule;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installment-schedules'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
+      
+      // Create journal entry for installment payment
+      try {
+        await recordInstallmentPayment({
+          installmentId: data.installment_id,
+          scheduleId: data.id,
+          principalAmount: variables.paid_amount * 0.9, // Assuming 90% principal, 10% interest
+          interestAmount: variables.paid_amount * 0.1,
+          date: variables.payment_date || new Date().toISOString().split('T')[0]
+        });
+      } catch (error) {
+        console.error('Failed to create installment payment journal entry:', error);
+      }
+      
       toast.success('تم تسجيل الدفعة بنجاح');
     },
     onError: (error: any) => {
