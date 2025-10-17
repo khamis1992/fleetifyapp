@@ -16,7 +16,7 @@ interface SyncResult {
 }
 
 const SyncPaymentsToLedger: React.FC = () => {
-  const [isSync ing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [logs, setLogs] = useState<string[]>([]);

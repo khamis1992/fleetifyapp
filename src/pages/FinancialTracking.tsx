@@ -2369,7 +2369,7 @@ const FinancialTracking: React.FC = () => {
                     </TableBody>
                   </Table>
                   </div>
-                <>
+                </>  
               )}
             </CardContent>
           </Card>
