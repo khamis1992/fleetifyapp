@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface TransferUserRequest {
   userId: string;
@@ -25,36 +26,36 @@ interface TransferUserResponse {
 export const useTransferUser = () => {
   return useMutation<TransferUserResponse, Error, TransferUserRequest>({
     mutationFn: async (transferData) => {
-      // Get the current user's session token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('You must be logged in to transfer users');
-      }
+      console.log("🔄 Starting user transfer via RPC:", transferData);
 
-      // Call our API route instead of RPC directly
-      // This allows us to use service role on the backend
-      const response = await fetch('/api/admin/transfer-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(transferData)
+      // Call the RPC function directly with proper parameters
+      const { data, error } = await supabase.rpc("transfer_user_to_company", {
+        p_user_id: transferData.userId,
+        p_target_company_id: transferData.toCompanyId,
+        p_new_roles: transferData.newRoles,
+        p_reason: transferData.transferReason || null,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      if (error) {
+        console.error("❌ Transfer RPC error:", error);
+        throw new Error(error.message || 'فشل نقل المستخدم');
       }
 
-      const result: TransferUserResponse = await response.json();
+      console.log("✅ Transfer RPC successful:", data);
 
-      if (!result.success) {
-        throw new Error(result.error || 'Transfer failed for unknown reasons');
-      }
-
-      return result;
+      return {
+        success: true,
+        transferLogId: data,
+        message: 'تم نقل المستخدم بنجاح'
+      };
+    },
+    onSuccess: (data) => {
+      console.log("✅ Transfer mutation success:", data);
+      toast.success(data.message || 'تم نقل المستخدم بنجاح');
+    },
+    onError: (error: Error) => {
+      console.error("❌ Transfer mutation error:", error);
+      toast.error(error.message || 'فشل نقل المستخدم');
     },
   });
 };
