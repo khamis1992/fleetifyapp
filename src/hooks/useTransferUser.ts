@@ -25,22 +25,32 @@ interface TransferUserResponse {
 export const useTransferUser = () => {
   return useMutation<TransferUserResponse, Error, TransferUserRequest>({
     mutationFn: async (transferData) => {
-      const { data, error } = await supabase.functions.invoke('transfer-user-company', {
-        body: transferData
+      // Use RPC function instead of Edge Function
+      const { data, error } = await supabase.rpc('transfer_user_to_company', {
+        p_user_id: transferData.userId,
+        p_from_company_id: transferData.fromCompanyId,
+        p_to_company_id: transferData.toCompanyId,
+        p_new_roles: transferData.newRoles,
+        p_transfer_reason: transferData.transferReason || null,
+        p_data_handling_strategy: transferData.dataHandlingStrategy
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Transfer failed due to a network or server error');
+        console.error('RPC function error:', error);
+        throw new Error(error.message || 'Transfer failed due to a database error');
       }
 
-      if (!data.success) {
-        console.error('Transfer business logic error:', data);
-        const errorMessage = data.error || 'Transfer failed for unknown reasons';
+      // data is the JSONB result from the function
+      const result = data as TransferUserResponse;
+
+      if (!result.success) {
+        console.error('Transfer business logic error:', result);
+        const errorMessage = result.error || 'Transfer failed for unknown reasons';
         throw new Error(errorMessage);
       }
 
-      return data;
+      return result;
     },
   });
 };
+
