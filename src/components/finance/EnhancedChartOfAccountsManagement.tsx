@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useDefaultPermissions } from '@/hooks/useDefaultPermissions';
 import { supabase } from '@/integrations/supabase/client';
+import { HelpIcon } from '@/components/help/HelpIcon';
 import { ChartOfAccountsCSVUpload } from './ChartOfAccountsCSVUpload';
 import { DemoDataGenerator } from './DemoDataGenerator';
 import { AccountsTreeView } from './AccountsTreeView';
@@ -472,7 +473,10 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center" dir="rtl">
         <div className="text-right">
-          <h2 className="text-2xl font-bold">دليل الحسابات </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">دليل الحسابات</h2>
+            <HelpIcon topic="chartOfAccounts" />
+          </div>
           <p className="text-muted-foreground">نظام ذكي لإدارة وتنظيم دليل الحسابات</p>
         </div>
       </div>
