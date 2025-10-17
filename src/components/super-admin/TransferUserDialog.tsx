@@ -99,10 +99,19 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
   };
 
   const handleTransfer = async () => {
-    if (!user || !selectedCompany || selectedRoles.length === 0 || !confirmTransfer) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة وتأكيد النقل');
+    console.log('🔵 handleTransfer called!');
+    console.log('🔵 user:', user);
+    console.log('🔵 selectedCompany:', selectedCompany);
+    console.log('🔵 selectedRoles:', selectedRoles);
+    console.log('🔵 confirmTransfer:', confirmTransfer);
+    
+    if (!user || !selectedCompany || selectedRoles.length === 0) {
+      console.log('❌ Validation failed');
+      toast.error('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
+    
+    console.log('✅ Validation passed');
 
     // Extract current company ID - prioritize profiles data, fallback to orphaned employee data
     let currentCompanyId: string;
@@ -130,6 +139,8 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
       return;
     }
 
+    console.log('🔵 Starting transfer...');
+    
     try {
       console.log('Transfer request:', {
         userId: user.id,
@@ -140,6 +151,8 @@ export const TransferUserDialog: React.FC<TransferUserDialogProps> = ({
         dataHandlingStrategy: dataHandling
       });
 
+      console.log('🔵 Calling transferMutation.mutateAsync...');
+      
       await transferMutation.mutateAsync({
         userId: user.id,
         fromCompanyId: currentCompanyId,
