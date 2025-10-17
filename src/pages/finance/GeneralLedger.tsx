@@ -34,6 +34,8 @@ import { AuthChecker } from "@/components/auth/AuthChecker";
 import { SessionValidator } from "@/components/auth/SessionValidator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { HelpIcon } from "@/components/help/HelpIcon";
+import { financialHelpContent } from "@/data/helpContent";
 
 export default function Ledger() {
   const { isMobile } = useSimpleBreakpoint();
@@ -153,7 +155,15 @@ export default function Ledger() {
       {/* Header */}
       <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-start'}`}>
         <div className={isMobile ? 'text-center' : ''}>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold tracking-tight`}>دفتر الأستاذ العام</h1>
+          <div className="flex items-center gap-2">
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold tracking-tight`}>دفتر الأستاذ العام</h1>
+            <HelpIcon
+              title={financialHelpContent.generalLedger.title}
+              content={financialHelpContent.generalLedger.content}
+              examples={financialHelpContent.generalLedger.examples}
+              size="md"
+            />
+          </div>
           <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
             عرض وإدارة جميع القيود المحاسبية والتقارير المالية المتقدمة
           </p>
