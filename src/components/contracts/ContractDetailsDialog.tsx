@@ -49,7 +49,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onCreateInvoice
 }) => {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editData, setEditData] = React.useState(contract || {});
+  const [editData, setEditData] = React.useState<any>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
   
   // Payment dialog state
@@ -58,6 +58,22 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   
   // Invoice generation state
   const [isGeneratingInvoices, setIsGeneratingInvoices] = React.useState(false);
+
+  // Update editData when contract changes
+  React.useEffect(() => {
+    if (contract) {
+      setEditData({
+        contract_type: contract.contract_type || '',
+        start_date: contract.start_date || '',
+        end_date: contract.end_date || '',
+        contract_amount: contract.contract_amount || 0,
+        monthly_amount: contract.monthly_amount || 0,
+        description: contract.description || '',
+        terms: contract.terms || '',
+        ...contract
+      });
+    }
+  }, [contract]);
 
   // Fetch related data
   const { data: customer } = useQuery({
@@ -334,7 +350,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <div>
                         <Label>نوع العقد</Label>
                         <Input
-                          value={editData.contract_type}
+                          value={editData.contract_type || contract.contract_type || ''}
                           onChange={(e) => setEditData({...editData, contract_type: e.target.value})}
                         />
                       </div>
@@ -342,7 +358,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Label>تاريخ البداية</Label>
                         <Input
                           type="date"
-                          value={editData.start_date}
+                          value={editData.start_date || contract.start_date || ''}
                           onChange={(e) => setEditData({...editData, start_date: e.target.value})}
                         />
                       </div>
@@ -350,7 +366,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Label>تاريخ النهاية</Label>
                         <Input
                           type="date"
-                          value={editData.end_date}
+                          value={editData.end_date || contract.end_date || ''}
                           onChange={(e) => setEditData({...editData, end_date: e.target.value})}
                         />
                       </div>
@@ -407,7 +423,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Input
                           type="number"
                           step="0.001"
-                          value={editData.contract_amount}
+                          value={editData.contract_amount !== undefined ? editData.contract_amount : (contract?.contract_amount || 0)}
                           onChange={(e) => setEditData({...editData, contract_amount: parseFloat(e.target.value) || 0})}
                         />
                       </div>
@@ -416,7 +432,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Input
                           type="number"
                           step="0.001"
-                          value={editData.monthly_amount}
+                          value={editData.monthly_amount !== undefined ? editData.monthly_amount : (contract?.monthly_amount || 0)}
                           onChange={(e) => setEditData({...editData, monthly_amount: parseFloat(e.target.value) || 0})}
                         />
                       </div>
@@ -576,7 +592,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.description || ''}
+                      value={editData.description !== undefined ? editData.description : (contract?.description || '')}
                       onChange={(e) => setEditData({...editData, description: e.target.value})}
                       rows={4}
                     />
@@ -595,7 +611,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.terms || ''}
+                      value={editData.terms !== undefined ? editData.terms : (contract?.terms || '')}
                       onChange={(e) => setEditData({...editData, terms: e.target.value})}
                       rows={4}
                     />
