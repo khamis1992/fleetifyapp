@@ -43,7 +43,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   const [isExporting, setIsExporting] = React.useState(false);
 
   // Fetch contracts for export
-  const { data: contracts } = useQuery({
+  const { data: contracts, error, isLoading } = useQuery({
     queryKey: ['contracts-export', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
@@ -82,11 +82,24 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
       const { data, error } = await query.order('contract_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Contract export query error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched contracts for export:', data?.length || 0);
       return data || [];
     },
     enabled: !!user?.profile?.company_id && open
   });
+
+  // Error handling for contract fetching
+  React.useEffect(() => {
+    if (error) {
+      console.error('Contract export error:', error);
+      toast.error('حدث خطأ أثناء جلب بيانات العقود: ' + error.message);
+    }
+  }, [error]);
 
   const generatePDF = () => {
     if (!contracts || contracts.length === 0) {
@@ -94,83 +107,88 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       return;
     }
 
-    // Create HTML content for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <title>تقرير العقود</title>
-        <style>
-          body { font-family: Arial, sans-serif; direction: rtl; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-          th { background-color: #f2f2f2; font-weight: bold; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .summary { margin-bottom: 20px; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>تقرير العقود</h1>
-          <p>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</p>
-          <p>عدد العقود: ${contracts.length}</p>
-        </div>
-        
-        <div class="summary">
-          <h3>ملخص العقود</h3>
-          <p>العقود النشطة: ${contracts.filter(c => c.status === 'active').length}</p>
-          <p>العقود المنتهية: ${contracts.filter(c => c.status === 'expired').length}</p>
-          <p>إجمالي القيمة: ${formatCurrency(contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
-        </div>
+    try {
+      // Create HTML content for PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>تقرير العقود</title>
+          <style>
+            body { font-family: Arial, sans-serif; direction: rtl; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .summary { margin-bottom: 20px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>تقرير العقود</h1>
+            <p>تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</p>
+            <p>عدد العقود: ${contracts.length}</p>
+          </div>
+          
+          <div class="summary">
+            <h3>ملخص العقود</h3>
+            <p>العقود النشطة: ${contracts.filter(c => c.status === 'active').length}</p>
+            <p>العقود المنتهية: ${contracts.filter(c => c.status === 'expired').length}</p>
+            <p>إجمالي القيمة: ${formatCurrency(contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0), { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</p>
+          </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>رقم العقد</th>
-              <th>نوع العقد</th>
-              <th>الحالة</th>
-              ${includeCustomer ? '<th>العميل</th>' : ''}
-              <th>تاريخ البداية</th>
-              <th>تاريخ النهاية</th>
-              ${includeFinancial ? `<th>المبلغ (${currency})</th>` : ''}
-              ${includeVehicle ? '<th>المركبة</th>' : ''}
-            </tr>
-          </thead>
-          <tbody>
-            ${contracts.map(contract => `
+          <table>
+            <thead>
               <tr>
-                <td>${contract.contract_number}</td>
-                <td>${contract.contract_type === 'rental' ? 'إيجار' : 
-                     contract.contract_type === 'service' ? 'خدمة' : 
-                     contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}</td>
-                <td>${contract.status === 'active' ? 'نشط' :
-                     contract.status === 'draft' ? 'مسودة' :
-                     contract.status === 'expired' ? 'منتهي' :
-                     contract.status === 'suspended' ? 'معلق' :
-                     contract.status === 'cancelled' ? 'ملغي' : contract.status}</td>
-                ${includeCustomer ? `<td>${(contract.customer as any)?.customer_type === 'individual' 
-                  ? `${(contract.customer as any)?.first_name} ${(contract.customer as any)?.last_name}`
-                  : (contract.customer as any)?.company_name || 'غير محدد'}</td>` : ''}
-                <td>${new Date(contract.start_date).toLocaleDateString('en-GB')}</td>
-                <td>${new Date(contract.end_date).toLocaleDateString('en-GB')}</td>
-                ${includeFinancial ? `<td>${formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>` : ''}
-                ${includeVehicle ? `<td>${(contract.vehicle as any)?.plate_number || 'لا يوجد'}</td>` : ''}
+                <th>رقم العقد</th>
+                <th>نوع العقد</th>
+                <th>الحالة</th>
+                ${includeCustomer ? '<th>العميل</th>' : ''}
+                <th>تاريخ البداية</th>
+                <th>تاريخ النهاية</th>
+                ${includeFinancial ? `<th>المبلغ (${currency})</th>` : ''}
+                ${includeVehicle ? '<th>المركبة</th>' : ''}
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
+            </thead>
+            <tbody>
+              ${contracts.map(contract => `
+                <tr>
+                  <td>${contract.contract_number || 'غير محدد'}</td>
+                  <td>${contract.contract_type === 'rental' ? 'إيجار' : 
+                       contract.contract_type === 'service' ? 'خدمة' : 
+                       contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}</td>
+                  <td>${contract.status === 'active' ? 'نشط' :
+                       contract.status === 'draft' ? 'مسودة' :
+                       contract.status === 'expired' ? 'منتهي' :
+                       contract.status === 'suspended' ? 'معلق' :
+                       contract.status === 'cancelled' ? 'ملغي' : contract.status}</td>
+                  ${includeCustomer ? `<td>${(contract.customer as any)?.customer_type === 'individual' 
+                    ? `${(contract.customer as any)?.first_name || ''} ${(contract.customer as any)?.last_name || ''}`.trim() || (contract.customer as any)?.company_name || 'غير محدد'
+                    : (contract.customer as any)?.company_name || 'غير محدد'}</td>` : ''}
+                  <td>${contract.start_date ? new Date(contract.start_date).toLocaleDateString('en-GB') : 'غير محدد'}</td>
+                  <td>${contract.end_date ? new Date(contract.end_date).toLocaleDateString('en-GB') : 'غير محدد'}</td>
+                  ${includeFinancial ? `<td>${formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>` : ''}
+                  ${includeVehicle ? `<td>${(contract.vehicle as any)?.plate_number || 'لا يوجد'}</td>` : ''}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
 
-    // Create and download PDF
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.print();
+      // Create and download PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('حدث خطأ أثناء إنشاء تقرير PDF');
     }
   };
 
@@ -180,63 +198,83 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       return;
     }
 
-    // Create CSV data
-    const headers = [
-      'رقم العقد',
-      'نوع العقد', 
-      'الحالة',
-      ...(includeCustomer ? ['العميل'] : []),
-      'تاريخ البداية',
-      'تاريخ النهاية',
-      ...(includeFinancial ? [`المبلغ (${currency})`, `المبلغ الشهري (${currency})`] : []),
-      ...(includeVehicle ? ['رقم اللوحة'] : [])
-    ];
+    try {
+      // Create CSV data
+      const headers = [
+        'رقم العقد',
+        'نوع العقد', 
+        'الحالة',
+        ...(includeCustomer ? ['العميل'] : []),
+        'تاريخ البداية',
+        'تاريخ النهاية',
+        ...(includeFinancial ? [`المبلغ (${currency})`, `المبلغ الشهري (${currency})`] : []),
+        ...(includeVehicle ? ['رقم اللوحة'] : [])
+      ];
 
-    const csvData = contracts.map(contract => [
-      contract.contract_number,
-      contract.contract_type === 'rental' ? 'إيجار' : 
-      contract.contract_type === 'service' ? 'خدمة' : 
-      contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات',
-      contract.status === 'active' ? 'نشط' :
-      contract.status === 'draft' ? 'مسودة' :
-      contract.status === 'expired' ? 'منتهي' :
-      contract.status === 'suspended' ? 'معلق' :
-      contract.status === 'cancelled' ? 'ملغي' : contract.status,
-      ...(includeCustomer ? [
-        (contract.customer as any)?.customer_type === 'individual' 
-          ? `${(contract.customer as any)?.first_name} ${(contract.customer as any)?.last_name}`
-          : (contract.customer as any)?.company_name || 'غير محدد'
-      ] : []),
-      new Date(contract.start_date).toLocaleDateString('en-GB'),
-      new Date(contract.end_date).toLocaleDateString('en-GB'),
-      ...(includeFinancial ? [
-        formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
-        formatCurrency(contract.monthly_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
-      ] : []),
-      ...(includeVehicle ? [(contract.vehicle as any)?.plate_number || 'لا يوجد'] : [])
-    ]);
+      const csvData = contracts.map(contract => [
+        contract.contract_number || 'غير محدد',
+        contract.contract_type === 'rental' ? 'إيجار' : 
+        contract.contract_type === 'service' ? 'خدمة' : 
+        contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات',
+        contract.status === 'active' ? 'نشط' :
+        contract.status === 'draft' ? 'مسودة' :
+        contract.status === 'expired' ? 'منتهي' :
+        contract.status === 'suspended' ? 'معلق' :
+        contract.status === 'cancelled' ? 'ملغي' : contract.status,
+        ...(includeCustomer ? [
+          (contract.customer as any)?.customer_type === 'individual' 
+            ? `${(contract.customer as any)?.first_name || ''} ${(contract.customer as any)?.last_name || ''}`.trim() || (contract.customer as any)?.company_name || 'غير محدد'
+            : (contract.customer as any)?.company_name || 'غير محدد'
+        ] : []),
+        contract.start_date ? new Date(contract.start_date).toLocaleDateString('en-GB') : 'غير محدد',
+        contract.end_date ? new Date(contract.end_date).toLocaleDateString('en-GB') : 'غير محدد',
+        ...(includeFinancial ? [
+          formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+          formatCurrency(contract.monthly_amount || 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+        ] : []),
+        ...(includeVehicle ? [(contract.vehicle as any)?.plate_number || 'لا يوجد'] : [])
+      ]);
 
-    // Create CSV content
-    const csvContent = [headers, ...csvData]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+      // Create CSV content
+      const csvContent = [headers, ...csvData]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
 
-    // Add BOM for Arabic support in Excel
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    // Create download link
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `contracts_report_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Add BOM for Arabic support in Excel
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      // Create download link
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `contracts_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Excel generation error:', error);
+      toast.error('حدث خطأ أثناء إنشاء تقرير Excel');
+    }
   };
 
   const handleExport = async () => {
+    if (isLoading) {
+      toast.error('جاري تحميل البيانات...');
+      return;
+    }
+    
+    if (error) {
+      toast.error('حدث خطأ في تحميل البيانات');
+      return;
+    }
+    
+    if (!contracts || contracts.length === 0) {
+      toast.error('لا توجد عقود للتصدير');
+      return;
+    }
+
     setIsExporting(true);
     
     try {
@@ -250,7 +288,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       onOpenChange(false);
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('حدث خطأ أثناء التصدير');
+      toast.error('حدث خطأ أثناء التصدير: ' + (error as Error).message);
     } finally {
       setIsExporting(false);
     }
@@ -442,14 +480,28 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
             </Card>
           )}
 
+          {/* Error Message */}
+          {error && (
+            <Card className="border-destructive bg-destructive/10">
+              <CardContent className="pt-4">
+                <p className="text-destructive text-sm">
+                  حدث خطأ أثناء تحميل البيانات: {error.message}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button onClick={handleExport} disabled={isExporting || !contracts?.length}>
+            <Button 
+              onClick={handleExport} 
+              disabled={isExporting || isLoading || !contracts?.length}
+            >
               <Download className="h-4 w-4 mr-2" />
-              {isExporting ? 'جاري التصدير...' : 'تصدير'}
+              {isExporting ? 'جاري التصدير...' : isLoading ? 'جاري التحميل...' : 'تصدير'}
             </Button>
           </div>
         </div>

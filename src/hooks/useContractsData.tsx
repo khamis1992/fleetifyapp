@@ -165,17 +165,21 @@ export const useContractsData = (filters: any = {}) => {
       totalRevenue: 0
     };
 
+    // Function to check if contract amounts are zero or invalid
     const isZeroAmount = (c: any) => {
-      const ca = c?.contract_amount
-      const ma = c?.monthly_amount
-      const caNum = ca === undefined || ca === null || ca === '' ? null : Number(ca)
-      const maNum = ma === undefined || ma === null || ma === '' ? null : Number(ma)
-      return (caNum === 0) || (maNum === 0)
-    }
+      const ca = c?.contract_amount;
+      const ma = c?.monthly_amount;
+      const caNum = ca === undefined || ca === null || ca === '' ? null : Number(ca);
+      const maNum = ma === undefined || ma === null || ma === '' ? null : Number(ma);
+      
+      // Consider as zero amount only if both are explicitly zero
+      return (caNum === 0 && maNum === 0);
+    };
 
-    const activeContracts = contracts.filter((c: any) => c.status === 'active' && !isZeroAmount(c));
+    // Active contracts should not be filtered by zero amounts
+    const activeContracts = contracts.filter((c: any) => c.status === 'active');
     const underReviewContracts = contracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
-    const draftContracts = contracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review'].includes(c.status)));
+    const draftContracts = contracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
     const expiredContracts = contracts.filter((c: any) => c.status === 'expired');
     const suspendedContracts = contracts.filter((c: any) => c.status === 'suspended');
     const cancelledContracts = contracts.filter((c: any) => c.status === 'cancelled');

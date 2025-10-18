@@ -159,22 +159,6 @@ const Payments = () => {
           {!isMobile && (
             <div className="flex items-center gap-2">
               <Button 
-                variant="outline" 
-                onClick={() => setIsProfessionalSystemOpen(true)}
-                className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0"
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                النظام الاحترافي
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsUnifiedUploadOpen(true)}
-                className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                رفع المدفوعات الذكي
-              </Button>
-              <Button 
                 variant="destructive" 
                 onClick={() => setIsBulkDeleteOpen(true)}
                 className="flex items-center gap-2"
@@ -192,15 +176,6 @@ const Payments = () => {
           {/* Mobile Action Buttons */}
           {isMobile && (
             <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="h-12 text-base justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0"
-                onClick={() => setIsUnifiedUploadOpen(true)}
-              >
-                <Sparkles className="h-5 w-5 mr-2" />
-                رفع المدفوعات الذكي
-              </Button>
               <Button 
                 variant="destructive" 
                 size="lg"
@@ -224,24 +199,16 @@ const Payments = () => {
 
           
           <Tabs defaultValue="list" className="w-full">
-           <TabsList className="grid w-full grid-cols-3">
+           <TabsList className="grid w-full grid-cols-2">
              <TabsTrigger value="list" className="flex items-center gap-2">
                <CreditCard className="h-4 w-4" />
                قائمة المدفوعات
-             </TabsTrigger>
-             <TabsTrigger value="professional" className="flex items-center gap-2">
-               <Brain className="h-4 w-4" />
-               النظام الاحترافي
              </TabsTrigger>
              <TabsTrigger value="analytics" className="flex items-center gap-2">
                <BarChart3 className="h-4 w-4" />
                التحليلات والتقارير
              </TabsTrigger>
            </TabsList>
-
-          <TabsContent value="professional" className="mt-6">
-            <ProfessionalPaymentSystem />
-          </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">

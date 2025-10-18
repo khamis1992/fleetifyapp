@@ -61,7 +61,7 @@ export function useUnifiedContractUpload() {
   // القيم الافتراضية الذكية
   const SMART_DEFAULTS = {
     monthly_amount: 1500,
-    contract_type: 'تحت التدقيق',
+    contract_type: 'rental', // Changed from 'تحت التدقيق' to 'rental' for proper vehicle status
     rental_months: 12,
     contract_date: new Date().toISOString().split('T')[0]
   };
@@ -115,13 +115,13 @@ export function useUnifiedContractUpload() {
             issues.push(`تم حساب القيمة الإجمالية: ${enhanced.contract_amount} ريال (${monthlyAmount} × ${rentalMonths} شهر)`);
           } else if (originalTotal !== monthlyAmount * rentalMonths) {
             // تحذير في حالة عدم تطابق الحسابات
-            issues.push(`تحذير: القيمة الإجمالية (${originalTotal}) لا تتطابق مع الحساب المتوقع (${monthlyAmount * rentalMonths})`);
+            issues.push(`تحذير: القيمة الإجمالية (${originalTotal}) لا تتطابق مع الحصل المتوقع (${monthlyAmount * rentalMonths})`);
           }
           
           // تعيين نوع العقد
           if (!enhanced.contract_type || enhanced.contract_type === '') {
             enhanced.contract_type = SMART_DEFAULTS.contract_type;
-            issues.push('تم تعيين نوع العقد: تحت التدقيق');
+            issues.push('تم تعيين نوع العقد: إيجار');
           }
           
           // تعيين تاريخ العقد
@@ -398,6 +398,24 @@ export function useUnifiedContractUpload() {
             continue;
           }
           
+          // البحث عن المركبة باستخدام رقم اللوحة إذا كانت متوفرة
+          let vehicleId = null;
+          if (contract.vehicle_plate) {
+            const { data: vehicleData, error: vehicleError } = await supabase
+              .from('vehicles')
+              .select('id')
+              .eq('plate_number', contract.vehicle_plate)
+              .eq('company_id', companyId)
+              .single();
+            
+            if (vehicleData && !vehicleError) {
+              vehicleId = vehicleData.id;
+            } else {
+              console.warn(`لم يتم العثور على مركبة برقم لوحة: ${contract.vehicle_plate}`);
+              result.warnings.push(`السطر ${i + 1}: لم يتم العثور على مركبة برقم لوحة ${contract.vehicle_plate}`);
+            }
+          }
+          
           // إعداد بيانات العقد
           const contractData = {
             company_id: companyId,
@@ -406,11 +424,12 @@ export function useUnifiedContractUpload() {
             contract_type: contract.contract_type === 'تحت التدقيق' ? 'rental' : contract.contract_type,
             description: contract.description || contract.ai_notes || 'تم إنشاؤه من الرفع الذكي',
             customer_id: customerId || contract.customer_id,
+            vehicle_id: vehicleId, // إضافة vehicle_id إذا تم العثور عليه
             monthly_amount: Number(contract.monthly_amount) || SMART_DEFAULTS.monthly_amount,
             contract_amount: Number(contract.contract_amount) || 0,
             start_date: contract.start_date,
             end_date: contract.end_date,
-            status: contract.requires_review ? 'under_review' : 'draft',
+            status: contract.requires_review ? 'under_review' : 'active', // Changed to 'active' to properly set vehicle status
             created_by: user?.id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()

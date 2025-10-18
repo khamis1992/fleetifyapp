@@ -6,24 +6,45 @@ ALTER TABLE advanced_late_fee_calculations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_ai_analysis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_contract_matching ENABLE ROW LEVEL SECURITY;
 
--- 2. إنشاء RLS policies للجداول المعطلة
+-- 2. إنشاء RLS policies للجداول المعطلة (فقط إذا لم تكن موجودة)
 -- Advanced Late Fee Calculations
-CREATE POLICY "Users can manage late fee calculations in their company"
-ON advanced_late_fee_calculations
-FOR ALL
-USING (company_id = get_user_company(auth.uid()));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy WHERE polname = 'Users can manage late fee calculations in their company'
+    ) THEN
+        CREATE POLICY "Users can manage late fee calculations in their company"
+        ON advanced_late_fee_calculations
+        FOR ALL
+        USING (company_id = get_user_company(auth.uid()));
+    END IF;
+END $$;
 
 -- Payment AI Analysis
-CREATE POLICY "Users can manage payment AI analysis in their company"
-ON payment_ai_analysis
-FOR ALL
-USING (company_id = get_user_company(auth.uid()));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy WHERE polname = 'Users can manage payment AI analysis in their company'
+    ) THEN
+        CREATE POLICY "Users can manage payment AI analysis in their company"
+        ON payment_ai_analysis
+        FOR ALL
+        USING (company_id = get_user_company(auth.uid()));
+    END IF;
+END $$;
 
 -- Payment Contract Matching
-CREATE POLICY "Users can manage payment contract matching in their company"
-ON payment_contract_matching
-FOR ALL
-USING (company_id = get_user_company(auth.uid()));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy WHERE polname = 'Users can manage payment contract matching in their company'
+    ) THEN
+        CREATE POLICY "Users can manage payment contract matching in their company"
+        ON payment_contract_matching
+        FOR ALL
+        USING (company_id = get_user_company(auth.uid()));
+    END IF;
+END $$;
 
 -- 3. إضافة SET search_path TO 'public' للدوال الناقصة
 CREATE OR REPLACE FUNCTION public.add_vehicles_to_installment(installment_id_param uuid, vehicle_ids_param uuid[])
@@ -230,6 +251,11 @@ BEGIN
             UPDATE vehicles 
             SET status = 'rented'::vehicle_status
             WHERE id = NEW.vehicle_id;
+        -- إذا كان العقد تحت التدقيق، وضع المركبة في حالة محجوزة
+        ELSIF NEW.status = 'under_review' AND OLD.status != 'under_review' THEN
+            UPDATE vehicles 
+            SET status = 'reserved'::vehicle_status
+            WHERE id = NEW.vehicle_id;
         END IF;
     END IF;
     
@@ -243,3 +269,10 @@ BEGIN
     RETURN COALESCE(NEW, OLD);
 END;
 $function$;
+
+-- إنشاء trigger لتحديث حالة المركبة عند تغيير العقد
+DROP TRIGGER IF EXISTS contracts_vehicle_status_update ON public.contracts;
+CREATE TRIGGER contracts_vehicle_status_update
+    AFTER INSERT OR UPDATE OR DELETE ON public.contracts
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_vehicle_status_from_contract();

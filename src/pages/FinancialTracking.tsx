@@ -1249,29 +1249,40 @@ const FinancialTracking: React.FC = () => {
       // Handle specific error codes
       let errorMessage = 'فشل إنشاء العميل';
       
-      if (error?.code === '23505') {
-        // Duplicate key violation
-        if (error?.message?.includes('customer_code')) {
-          errorMessage = 'رمز العميل مكرر. جاري إعادة المحاولة...';
-          // Automatically retry with manual creation
-          try {
-            await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
-            return; // Success via manual creation
-          } catch (retryError: any) {
-            errorMessage = retryError?.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
+      // Ensure we're working with a proper error object
+      if (error && typeof error === 'object') {
+        if (error?.code === '23505') {
+          // Duplicate key violation
+          if (error?.message?.includes('customer_code')) {
+            errorMessage = 'رمز العميل مكرر. جاري إعادة المحاولة...';
+            // Automatically retry with manual creation
+            try {
+              await createCustomerManually(firstName, lastName, companyId, parseFloat(newCustomerRent));
+              return; // Success via manual creation
+            } catch (retryError: any) {
+              errorMessage = retryError?.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
+            }
+          } else if (error?.message?.includes('email')) {
+            errorMessage = 'البريد الإلكتروني مستخدم بالفعل';
+          } else if (error?.message?.includes('phone')) {
+            errorMessage = 'رقم الهاتف مستخدم بالفعل';
+          } else {
+            errorMessage = 'البيانات مكررة - يرجى التحقق من معلومات العميل';
           }
-        } else if (error?.message?.includes('email')) {
-          errorMessage = 'البريد الإلكتروني مستخدم بالفعل';
-        } else if (error?.message?.includes('phone')) {
-          errorMessage = 'رقم الهاتف مستخدم بالفعل';
         } else {
-          errorMessage = 'البيانات مكررة - يرجى التحقق من معلومات العميل';
+          // Handle other error types with better fallbacks
+          errorMessage = error?.message || error?.hint || error?.details || 
+                        (error?.toString && error.toString() !== '[object Object]' ? error.toString() : 'فشل إنشاء العميل');
         }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       } else {
-        errorMessage = error?.message || error?.hint || error?.details || 'فشل إنشاء العميل';
+        errorMessage = 'فشل إنشاء العميل - خطأ غير معروف';
       }
       
-      toast.error(errorMessage);
+      // Ensure errorMessage is a string before passing to toast
+      const displayMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      toast.error(displayMessage);
     } finally {
       setIsCreatingCustomer(false);
     }
@@ -1325,10 +1336,14 @@ const FinancialTracking: React.FC = () => {
           });
         
         if (retryError) {
-          throw new Error(retryError.message || 'فشل إنشاء العميل');
+          // Better error handling for retry errors
+          const retryErrorMessage = retryError.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
+          throw new Error(retryErrorMessage);
         }
       } else {
-        throw new Error(customerError.message || 'فشل إنشاء العميل');
+        // Better error handling for initial errors
+        const initialErrorMessage = customerError.message || 'فشل إنشاء العميل';
+        throw new Error(initialErrorMessage);
       }
     }
 
@@ -1387,7 +1402,9 @@ const FinancialTracking: React.FC = () => {
       console.error('Manual creation - Contract error:', contractError);
       // Clean up customer
       await supabase.from('customers').delete().eq('id', fetchedCustomer.id);
-      throw new Error(contractError.message || 'فشل إنشاء العقد');
+      // Better error handling for contract errors
+      const contractErrorMessage = contractError.message || 'فشل إنشاء العقد';
+      throw new Error(contractErrorMessage);
     }
 
     console.log('Manual creation - Success!');
