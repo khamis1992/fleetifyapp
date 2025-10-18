@@ -22,6 +22,7 @@ import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 import { LazyLoadErrorBoundary } from "@/components/common/LazyLoadErrorBoundary";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
+import { lazyWithRetry } from "@/utils/lazyWithRetry";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -29,9 +30,9 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
-// Heavy pages - lazy loaded for better performance
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Finance = lazy(() => import("./pages/Finance"));
+// Heavy pages - lazy loaded with retry for better reliability
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
+const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
 const Customers = lazy(() => import("./pages/Customers"));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const Fleet = lazy(() => import("./pages/Fleet"));

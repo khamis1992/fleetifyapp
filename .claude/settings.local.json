@@ -7,7 +7,11 @@
       "Read(//c/Users/khamis/Desktop/**)",
       "Bash(claude mcp add:*)",
       "Bash(claude mcp status:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "Read(//c/Users/khamis/Pictures/**)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

@@ -270,6 +270,45 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     }
   };
 
+  // Enhanced vehicle data handling - use contract.vehicle if available, otherwise fetch separately
+  const vehicleData = React.useMemo(() => {
+    // First check if vehicle data is already embedded in the contract
+    if (contract?.vehicle) {
+      return contract.vehicle;
+    }
+
+    // Then check if we have fetched vehicle data
+    if (vehicle) {
+      return vehicle;
+    }
+
+    // Check for direct vehicle properties on contract (from contracts table)
+    if (contract?.license_plate || contract?.make || contract?.model) {
+      return {
+        id: contract.vehicle_id,
+        plate_number: contract.license_plate,
+        make: contract.make,
+        model: contract.model,
+        year: contract.year,
+        status: contract.vehicle_status || 'active'
+      };
+    }
+
+    // Finally, check if only vehicle_id exists (backward compatibility)
+    if (contract?.vehicle_id) {
+      return {
+        id: contract.vehicle_id,
+        plate_number: contract.plate_number || contract.license_plate,
+        make: contract.make,
+        model: contract.model,
+        year: contract.year,
+        status: contract.vehicle_status || 'active'
+      };
+    }
+
+    return null;
+  }, [contract, vehicle]);
+
   // Log contract data for debugging
   React.useEffect(() => {
     if (contract) {
@@ -278,37 +317,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         contract_number: contract.contract_number,
         vehicle_id: contract.vehicle_id,
         hasVehicle: !!contract.vehicle,
-        vehicle: contract.vehicle
-      });
-    }
-  }, [contract]);
-
-  // Enhanced vehicle data handling - use contract.vehicle if available, otherwise fetch separately
-  const vehicleData = React.useMemo(() => {
-    // First check if vehicle data is already embedded in the contract
-    if (contract?.vehicle) {
-      return contract.vehicle;
-    }
-    
-    // Then check if we have fetched vehicle data
-    if (vehicle) {
-      return vehicle;
-    }
-    
-    // Finally, check for direct vehicle properties on contract
-    if (contract?.vehicle_id) {
-      return {
-        id: contract.vehicle_id,
-        plate_number: contract.plate_number,
+        vehicle: contract.vehicle,
+        // Direct vehicle fields
+        license_plate: contract.license_plate,
         make: contract.make,
         model: contract.model,
         year: contract.year,
-        status: contract.vehicle_status || 'active'
-      };
+        vehicle_status: contract.vehicle_status,
+        // Check if any vehicle data exists
+        hasAnyVehicleData: !!(contract.vehicle_id || contract.license_plate || contract.make || contract.model)
+      });
+
+      // Log the actual vehicle data that will be displayed
+      console.log('🚗 [CONTRACT_DETAILS] Vehicle data to display:', vehicleData);
     }
-    
-    return null;
-  }, [contract, vehicle]);
+  }, [contract, vehicleData]);
 
   if (!contract) return null;
 
@@ -568,8 +591,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 </Card>
               )}
 
-              {/* Vehicle Information - Show when contract has a vehicle_id */}
-              {contract?.vehicle_id && (
+              {/* Vehicle Information - Show when contract has vehicle data */}
+              {(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -581,28 +604,28 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
                       <span className="font-medium">
-                        {vehicleData?.plate_number || 'غير محدد'}
+                        {vehicleData?.plate_number || contract?.license_plate || 'غير محدد'}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">نوع المركبة</span>
                       <span className="font-medium">
-                        {(vehicleData?.make || '') + ' ' + (vehicleData?.model || '')}
+                        {vehicleData?.make || contract?.make || ''} {vehicleData?.model || contract?.model || ''}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">سنة الصنع</span>
                       <span className="font-medium">
-                        {vehicleData?.year || 'غير محدد'}
+                        {vehicleData?.year || contract?.year || 'غير محدد'}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">حالة المركبة</span>
                       <Badge variant="outline">
-                        {vehicleData?.status || 'غير محدد'}
+                        {vehicleData?.status || contract?.vehicle_status || 'غير محدد'}
                       </Badge>
                     </div>
                   </CardContent>

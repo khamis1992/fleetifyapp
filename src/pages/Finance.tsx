@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
-import { lazy, Suspense } from "react"
+import { Suspense } from "react"
+import { lazyWithRetry } from "@/utils/lazyWithRetry"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
@@ -25,33 +26,33 @@ import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
 
 // Lazy load UnifiedFinancialDashboard (heavy component)
-const UnifiedFinancialDashboard = lazy(() => import("@/components/finance/UnifiedFinancialDashboard").then(m => ({ default: m.UnifiedFinancialDashboard })));
+const UnifiedFinancialDashboard = lazyWithRetry(() => import("@/components/finance/UnifiedFinancialDashboard").then(m => ({ default: m.UnifiedFinancialDashboard })), "UnifiedFinancialDashboard");
 
-// Lazy load all finance sub-modules for better performance
-const ChartOfAccounts = lazy(() => import("./finance/ChartOfAccounts"));
-const GeneralLedger = lazy(() => import("./finance/GeneralLedger"));
-const Ledger = lazy(() => import("./finance/Ledger"));
-const Treasury = lazy(() => import("./finance/Treasury"));
-const CostCenters = lazy(() => import("./finance/CostCenters"));
-const Invoices = lazy(() => import("./finance/Invoices"));
-const Payments = lazy(() => import("./finance/Payments"));
-const InvoiceScannerDashboard = lazy(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })));
-const Reports = lazy(() => import("./finance/Reports"));
-const FixedAssets = lazy(() => import("./finance/FixedAssets"));
-const Budgets = lazy(() => import("./finance/Budgets"));
-const Vendors = lazy(() => import("./finance/Vendors"));
-const FinancialAnalysis = lazy(() => import("./finance/FinancialAnalysis"));
-const AccountMappings = lazy(() => import("./finance/AccountMappings"));
-const JournalEntries = lazy(() => import("./finance/JournalEntries"));
-const NewEntry = lazy(() => import("./finance/NewEntry"));
-const JournalEntriesSettings = lazy(() => import("./finance/settings/JournalEntriesSettings"));
-const AccountsSettings = lazy(() => import("./finance/settings/AccountsSettings"));
-const CostCentersSettings = lazy(() => import("./finance/settings/CostCentersSettings"));
-const AutomaticAccountsSettings = lazy(() => import("./finance/settings/AutomaticAccountsSettings"));
-const FinancialSystemAnalysis = lazy(() => import("./finance/settings/FinancialSystemAnalysis"));
-const AccountingWizard = lazy(() => import("./finance/AccountingWizard"));
-const FinancialCalculator = lazy(() => import("./finance/Calculator"));
-const Deposits = lazy(() => import("./finance/Deposits"));
+// Lazy load all finance sub-modules with retry for better reliability
+const ChartOfAccounts = lazyWithRetry(() => import("./finance/ChartOfAccounts"), "ChartOfAccounts");
+const GeneralLedger = lazyWithRetry(() => import("./finance/GeneralLedger"), "GeneralLedger");
+const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
+const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
+const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
+const Invoices = lazyWithRetry(() => import("./finance/Invoices"), "Invoices");
+const Payments = lazyWithRetry(() => import("./finance/Payments"), "Payments");
+const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
+const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
+const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
+const Budgets = lazyWithRetry(() => import("./finance/Budgets"), "Budgets");
+const Vendors = lazyWithRetry(() => import("./finance/Vendors"), "Vendors");
+const FinancialAnalysis = lazyWithRetry(() => import("./finance/FinancialAnalysis"), "FinancialAnalysis");
+const AccountMappings = lazyWithRetry(() => import("./finance/AccountMappings"), "AccountMappings");
+const JournalEntries = lazyWithRetry(() => import("./finance/JournalEntries"), "JournalEntries");
+const NewEntry = lazyWithRetry(() => import("./finance/NewEntry"), "NewEntry");
+const JournalEntriesSettings = lazyWithRetry(() => import("./finance/settings/JournalEntriesSettings"), "JournalEntriesSettings");
+const AccountsSettings = lazyWithRetry(() => import("./finance/settings/AccountsSettings"), "AccountsSettings");
+const CostCentersSettings = lazyWithRetry(() => import("./finance/settings/CostCentersSettings"), "CostCentersSettings");
+const AutomaticAccountsSettings = lazyWithRetry(() => import("./finance/settings/AutomaticAccountsSettings"), "AutomaticAccountsSettings");
+const FinancialSystemAnalysis = lazyWithRetry(() => import("./finance/settings/FinancialSystemAnalysis"), "FinancialSystemAnalysis");
+const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"), "AccountingWizard");
+const FinancialCalculator = lazyWithRetry(() => import("./finance/Calculator"), "FinancialCalculator");
+const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
 
 const FinanceModules = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary()

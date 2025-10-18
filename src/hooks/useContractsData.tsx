@@ -225,9 +225,9 @@ export const useContractsData = (filters: any = {}) => {
           contract.contract_number || '',
           contract.description || '',
           contract.terms || '',
-          contract.vehicle?.plate_number || '',
-          contract.vehicle?.make || '',
-          contract.vehicle?.model || ''
+          contract.vehicle?.plate_number || contract.license_plate || '',
+          contract.vehicle?.make || contract.make || '',
+          contract.vehicle?.model || contract.model || ''
         ].join(' ').toLowerCase();
         
         if (!searchableText.includes(searchTerm)) {

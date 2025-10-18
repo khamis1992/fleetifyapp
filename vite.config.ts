@@ -113,6 +113,10 @@ export default defineConfig(({ mode }) => ({
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId
           if (facadeModuleId) {
+            // Ensure consistent naming for finance pages to prevent chunk loading errors
+            if (facadeModuleId.includes('pages/finance/Payments')) {
+              return 'pages/Payments-[hash].js'
+            }
             if (facadeModuleId.includes('pages/')) {
               return 'pages/[name]-[hash].js'
             }

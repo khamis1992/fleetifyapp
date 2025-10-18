@@ -17,8 +17,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { 
+import {
   useRentalPaymentReceipts,
+  useAllRentalPaymentReceipts,
   useCustomersWithRental,
   useCustomerPaymentTotals,
   useCreateRentalReceipt,
