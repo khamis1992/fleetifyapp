@@ -469,8 +469,4 @@ import { useToast } from '@/hooks/use-toast';
 
 **تذكر: النظام موحد 100% - لا تكسر هذا التوحيد!**
 
----
-
-*آخر تحديث: بعد إكمال توحيد الأنظمة*
-*حالة النظام: ✅ موحد ومستقر*
----
+please note there is a documentation for the system in this path fleetifyapp-3\.qoder\repowiki\en\content

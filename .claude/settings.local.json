@@ -4,7 +4,10 @@
       "Bash(npm run build)",
       "Bash(node verify-integration.js)",
       "Bash(start verify-frontend-performance.html)",
-      "Read(//c/Users/khamis/Desktop/**)"
+      "Read(//c/Users/khamis/Desktop/**)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp status:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []
