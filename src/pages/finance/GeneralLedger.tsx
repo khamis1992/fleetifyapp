@@ -253,64 +253,47 @@ export default function Ledger() {
 
         {/* Journal Entries Tab */}
         <TabsContent value="entries">
+          {/* Control Panel - Search and Filter */}
           <Card>
             <CardHeader>
-              <div className={`flex flex-col ${isMobile ? 'space-y-4' : 'items-end space-y-4'}`}>
-                <div className={isMobile ? 'text-center' : 'text-right'}>
-                  <CardTitle className={isMobile ? 'text-lg' : ''}>القيود المحاسبية</CardTitle>
-                  <CardDescription className={isMobile ? 'text-sm' : ''}>قائمة جميع القيود المحاسبية مع إمكانيات البحث والتصفية المتقدمة</CardDescription>
-                </div>
-                <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center space-x-2'}`}>
-                  <div className={`relative flex items-center ${isMobile ? 'w-full' : ''}`}>
-                    <Search className="absolute right-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="البحث في القيود..."
-                      value={filters.searchTerm || ''}
-                      onChange={(e) => updateFilters({ searchTerm: e.target.value })}
-                      className={`${isMobile ? 'w-full pl-3 pr-10 h-11' : 'w-64'}`}
-                    />
-                  </div>
-                  <div className={`flex ${isMobile ? 'grid grid-cols-2 gap-2' : 'space-x-2'}`}>
-                    <Select value={filters.status || 'all'} onValueChange={(value) => updateFilters({ status: value })}>
-                      <SelectTrigger className={isMobile ? 'h-11' : 'w-40'}>
-                        <SelectValue placeholder="تصفية بالحالة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع الحالات</SelectItem>
-                        <SelectItem value="draft">مسودة</SelectItem>
-                        <SelectItem value="posted">مرحل</SelectItem>
-                        <SelectItem value="reversed">ملغي</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="date"
-                      placeholder="من تاريخ"
-                      value={filters.dateFrom || ''}
-                      onChange={(e) => updateFilters({ dateFrom: e.target.value })}
-                      className={isMobile ? 'h-11' : 'w-40'}
-                    />
-                  </div>
-                  {isMobile && (
-                    <Input
-                      type="date"
-                      placeholder="إلى تاريخ"
-                      value={filters.dateTo || ''}
-                      onChange={(e) => updateFilters({ dateTo: e.target.value })}
-                      className="h-11"
-                    />
-                  )}
-                  {!isMobile && (
-                    <Input
-                      type="date"
-                      placeholder="إلى تاريخ"
-                      value={filters.dateTo || ''}
-                      onChange={(e) => updateFilters({ dateTo: e.target.value })}
-                      className="w-40"
-                    />
-                  )}
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2 text-right">
+                <Filter className="h-5 w-5" />
+                البحث والفلتر
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative md:col-span-2">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="البحث في القيود..."
+                    value={filters.searchTerm || ''}
+                    onChange={(e) => updateFilters({ searchTerm: e.target.value })}
+                    className="pr-10 text-right"
+                  />
+                </div>
+                
+                <Input
+                  type="date"
+                  placeholder="من تاريخ"
+                  value={filters.dateFrom || ''}
+                  onChange={(e) => updateFilters({ dateFrom: e.target.value })}
+                  className="text-right"
+                />
+                
+                <Input
+                  type="date"
+                  placeholder="إلى تاريخ"
+                  value={filters.dateTo || ''}
+                  onChange={(e) => updateFilters({ dateTo: e.target.value })}
+                  className="text-right"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Journal Entries List */}
+          <Card className="mt-6">
             <CardContent>
               <ChartOfAccountsErrorBoundary
                 error={entriesError}
@@ -320,7 +303,7 @@ export default function Ledger() {
                 {entriesLoading ? (
                   <LoadingSpinner />
                 ) : (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {journalEntries?.map((entry) => (
                     <RedesignedJournalEntryCard key={entry.id} entry={entry as any} />
                   ))}

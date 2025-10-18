@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +23,14 @@ import {
   Eye,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ContractDocuments } from './ContractDocuments';
-import { InvoiceCard } from '@/components/finance/InvoiceCard';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
+import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { LateFinesTab } from './LateFinesTab';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -52,9 +54,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   const [editData, setEditData] = React.useState<any>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
   
-  // Payment dialog state
+  // Payment and preview dialog state
   const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
   
   // Invoice generation state
   const [isGeneratingInvoices, setIsGeneratingInvoices] = React.useState(false);
@@ -170,22 +173,24 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     }
   };
 
-  // Handlers for invoice actions - these will be created for each invoice
-  const createInvoiceHandlers = (invoice: any) => ({
-    handlePay: () => {
-      setSelectedInvoice(invoice);
-      setIsPayDialogOpen(true);
-    },
-    handlePreview: () => {
-      console.log("Preview invoice:", invoice);
-    },
-    handleEdit: () => {
-      console.log("Edit invoice:", invoice);
-    },
-    handleDelete: () => {
-      console.log("Delete invoice:", invoice);
-    }
-  });
+  // Handlers for invoice actions
+  const handleInvoicePreview = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setIsPreviewDialogOpen(true);
+  };
+
+  const handleInvoicePay = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setIsPayDialogOpen(true);
+  };
+
+  const handleInvoiceEdit = (invoice: any) => {
+    console.log("Edit invoice:", invoice);
+  };
+
+  const handleInvoiceDelete = (invoice: any) => {
+    console.log("Delete invoice:", invoice);
+  };
 
   const handleSave = async () => {
     try {
@@ -592,19 +597,6 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
               )}
 
               {/* Vehicle Information - Always show if there's ANY vehicle-related data */}
-              {/* Debug: Check what vehicle data we have */}
-              {console.log('🚗 [VEHICLE_CARD_DEBUG]', {
-                hasVehicleId: !!contract?.vehicle_id,
-                hasLicensePlate: !!contract?.license_plate,
-                hasMake: !!contract?.make,
-                hasModel: !!contract?.model,
-                hasVehicleData: !!vehicleData,
-                vehicleData,
-                contractData: contract,
-                shouldShowCard: !!(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model || vehicleData)
-              })}
-
-              {/* Show vehicle card if we have any vehicle information */}
               {(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model || vehicleData) ? (
                 <Card>
                   <CardHeader>
@@ -741,16 +733,92 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             {invoices && invoices.length > 0 ? (
               <div className="space-y-4">
                 {invoices.map((invoice) => {
-                  const invoiceHandlers = createInvoiceHandlers(invoice);
+                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partially_paid';
+                  
+                  const getPaymentStatusBadge = (paymentStatus: string) => {
+                    const statusConfig = {
+                      paid: { label: 'مدفوعة', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
+                      unpaid: { label: 'غير مدفوعة', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
+                      partially_paid: { label: 'مدفوعة جزئياً', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
+                      overdue: { label: 'متأخرة', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' }
+                    };
+                    
+                    const config = statusConfig[paymentStatus as keyof typeof statusConfig] || 
+                                   { label: paymentStatus, className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' };
+                    
+                    return (
+                      <Badge className={config.className}>
+                        {config.label}
+                      </Badge>
+                    );
+                  };
+
                   return (
-                    <InvoiceCard
-                      key={invoice.id}
-                      invoice={invoice}
-                      onPreview={invoiceHandlers.handlePreview}
-                      onEdit={invoiceHandlers.handleEdit}
-                      onDelete={invoiceHandlers.handleDelete}
-                      onPay={invoiceHandlers.handlePay}
-                    />
+                    <Card key={invoice.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          {/* Left side - Actions */}
+                          <div className="flex items-center gap-2">
+                            {/* Pay button - only show for unpaid/partial invoices */}
+                            {canPay && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleInvoicePay(invoice)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <DollarSign className="h-4 w-4 ml-1" />
+                                دفع الآن
+                              </Button>
+                            )}
+                            
+                            {/* Action buttons */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInvoicePreview(invoice)}
+                              title="عرض الفاتورة"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInvoiceEdit(invoice)}
+                              title="تعديل الفاتورة"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInvoiceDelete(invoice)}
+                              title="حذف الفاتورة"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* Right side - Invoice details */}
+                          <div className="flex-1 space-y-2 mr-4">
+                            <div className="flex items-center gap-3 justify-end">
+                              {getPaymentStatusBadge(invoice.payment_status)}
+                              <h3 className="font-semibold text-lg">فاتورة رقم {invoice.invoice_number}</h3>
+                            </div>
+                            
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground justify-end">
+                              <span>تاريخ الإنشاء: {new Date(invoice.invoice_date || invoice.created_at).toLocaleDateString('en-GB')}</span>
+                              {invoice.due_date && (
+                                <span>تاريخ الاستحقاق: {new Date(invoice.due_date).toLocaleDateString('en-GB')}</span>
+                              )}
+                              <span className="font-semibold">{formatCurrency(invoice.total_amount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -830,8 +898,16 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             onPaymentCreated={() => {
               setIsPayDialogOpen(false);
               setSelectedInvoice(null);
-              // Optionally refetch invoices here
             }}
+          />
+        )}
+
+        {/* Invoice Preview Dialog - Using Professional Template */}
+        {selectedInvoice && (
+          <InvoicePreviewDialog
+            open={isPreviewDialogOpen}
+            onOpenChange={setIsPreviewDialogOpen}
+            invoice={selectedInvoice}
           />
         )}
       </DialogContent>
