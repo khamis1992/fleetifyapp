@@ -111,6 +111,9 @@ const DuplicateContractsManager = lazy(() => import("./components/contracts/Dupl
 const DuplicateContractsDiagnostic = lazy(() => import("./components/contracts/DuplicateContractsDiagnostic"));
 const PerformanceMonitor = lazy(() => import("@/components/performance").then(m => ({ default: m.PerformanceMonitor })));
 
+// Fix pages
+const FixVehicleData = lazy(() => import("./pages/FixVehicleData"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

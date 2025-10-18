@@ -591,8 +591,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 </Card>
               )}
 
-              {/* Vehicle Information - Show when contract has vehicle data */}
-              {(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model) && (
+              {/* Vehicle Information - Always show if there's ANY vehicle-related data */}
+              {/* Debug: Check what vehicle data we have */}
+              {console.log('🚗 [VEHICLE_CARD_DEBUG]', {
+                hasVehicleId: !!contract?.vehicle_id,
+                hasLicensePlate: !!contract?.license_plate,
+                hasMake: !!contract?.make,
+                hasModel: !!contract?.model,
+                hasVehicleData: !!vehicleData,
+                vehicleData,
+                contractData: contract,
+                shouldShowCard: !!(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model || vehicleData)
+              })}
+
+              {/* Show vehicle card if we have any vehicle information */}
+              {(contract?.vehicle_id || contract?.license_plate || contract?.make || contract?.model || vehicleData) ? (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -604,14 +617,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
                       <span className="font-medium">
-                        {vehicleData?.plate_number || contract?.license_plate || 'غير محدد'}
+                        {vehicleData?.plate_number || contract?.license_plate || contract?.plate_number || 'غير محدد'}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">نوع المركبة</span>
                       <span className="font-medium">
-                        {vehicleData?.make || contract?.make || ''} {vehicleData?.model || contract?.model || ''}
+                        {(vehicleData?.make || contract?.make || '') + ' ' + (vehicleData?.model || contract?.model || '') || 'غير محدد'}
                       </span>
                     </div>
 
@@ -628,6 +641,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         {vehicleData?.status || contract?.vehicle_status || 'غير محدد'}
                       </Badge>
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                // If no vehicle data, show a placeholder card for better UX
+                <Card className="opacity-60">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Car className="h-5 w-5" />
+                      معلومات المركبة
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      لا توجد معلومات مركبة مرتبطة بهذا العقد
+                    </p>
                   </CardContent>
                 </Card>
               )}

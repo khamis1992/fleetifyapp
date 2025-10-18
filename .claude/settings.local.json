@@ -11,7 +11,8 @@
       "Read(//c/Users/khamis/Pictures/**)",
       "Bash(node:*)",
       "Bash(cat:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npx supabase:*)"
     ],
     "deny": [],
     "ask": []
