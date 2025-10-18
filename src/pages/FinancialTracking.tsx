@@ -1276,12 +1276,19 @@ const FinancialTracking: React.FC = () => {
         }
       } else if (typeof error === 'string') {
         errorMessage = error;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       } else {
-        errorMessage = 'فشل إنشاء العميل - خطأ غير معروف';
+        // Last resort - try to get a meaningful error message
+        try {
+          errorMessage = JSON.stringify(error, null, 2);
+        } catch (stringifyError) {
+          errorMessage = 'فشل إنشاء العميل - خطأ غير معروف';
+        }
       }
       
       // Ensure errorMessage is a string before passing to toast
-      const displayMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      const displayMessage = typeof errorMessage === 'string' ? errorMessage : 'فشل إنشاء العميل - خطأ غير معروف';
       toast.error(displayMessage);
     } finally {
       setIsCreatingCustomer(false);
@@ -1302,135 +1309,157 @@ const FinancialTracking: React.FC = () => {
     
     console.log('Generated unique customer code:', uniqueCustomerCode);
     
-    const { error: customerError } = await supabase
-      .from('customers')
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        customer_type: 'individual',
-        customer_code: uniqueCustomerCode,
-        phone: searchPhone, // Unique phone to help identify
-        company_id: companyId,
-        is_active: true
-      });
-
-    if (customerError) {
-      console.error('Customer creation error:', customerError);
-      
-      // Handle duplicate customer code error by retrying with new code
-      if (customerError.code === '23505' && customerError.message?.includes('customer_code')) {
-        console.log('Customer code conflict, retrying with new code...');
-        const retryCode = `CUST-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-        searchPhone = `${Date.now().toString().slice(-8)}`;
-        
-        const { error: retryError } = await supabase
-          .from('customers')
-          .insert({
-            first_name: firstName,
-            last_name: lastName,
-            customer_type: 'individual',
-            customer_code: retryCode,
-            phone: searchPhone,
-            company_id: companyId,
-            is_active: true
-          });
-        
-        if (retryError) {
-          // Better error handling for retry errors
-          const retryErrorMessage = retryError.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
-          throw new Error(retryErrorMessage);
-        }
-      } else {
-        // Better error handling for initial errors
-        const initialErrorMessage = customerError.message || 'فشل إنشاء العميل';
-        throw new Error(initialErrorMessage);
-      }
-    }
-
-    console.log('Manual creation - Step 2: Waiting and fetching customer...');
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-    
-    // Try multiple fetch attempts
-    let fetchedCustomer = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      console.log(`Manual creation - Fetch attempt ${attempt}/3`);
-      
-      const { data, error } = await supabase
+    try {
+      const { error: customerError } = await supabase
         .from('customers')
-        .select('id, first_name, last_name')
-        .eq('company_id', companyId)
-        .eq('phone', searchPhone)
-        .maybeSingle();
+        .insert({
+          first_name: firstName,
+          last_name: lastName,
+          customer_type: 'individual',
+          customer_code: uniqueCustomerCode,
+          phone: searchPhone, // Unique phone to help identify
+          company_id: companyId,
+          is_active: true
+        });
 
-      console.log(`Attempt ${attempt} result:`, { data, error });
+      if (customerError) {
+        console.error('Customer creation error:', customerError);
+        
+        // Handle duplicate customer code error by retrying with new code
+        if (customerError.code === '23505' && customerError.message?.includes('customer_code')) {
+          console.log('Customer code conflict, retrying with new code...');
+          const retryCode = `CUST-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+          searchPhone = `${Date.now().toString().slice(-8)}`;
+          
+          const { error: retryError } = await supabase
+            .from('customers')
+            .insert({
+              first_name: firstName,
+              last_name: lastName,
+              customer_type: 'individual',
+              customer_code: retryCode,
+              phone: searchPhone,
+              company_id: companyId,
+              is_active: true
+            });
+          
+          if (retryError) {
+            // Better error handling for retry errors
+            const retryErrorMessage = retryError.message || 'فشل إنشاء العميل بعد إعادة المحاولة';
+            throw new Error(retryErrorMessage);
+          }
+        } else {
+          // Better error handling for initial errors
+          const initialErrorMessage = customerError.message || 'فشل إنشاء العميل';
+          throw new Error(initialErrorMessage);
+        }
+      }
+
+      console.log('Manual creation - Step 2: Waiting and fetching customer...');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
       
-      if (data && data.id) {
-        fetchedCustomer = data;
-        break;
+      // Try multiple fetch attempts
+      let fetchedCustomer = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`Manual creation - Fetch attempt ${attempt}/3`);
+        
+        const { data, error } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name')
+          .eq('company_id', companyId)
+          .eq('phone', searchPhone)
+          .maybeSingle();
+
+        console.log(`Attempt ${attempt} result:`, { data, error });
+        
+        if (data && data.id) {
+          fetchedCustomer = data;
+          break;
+        }
+        
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      if (!fetchedCustomer || !fetchedCustomer.id) {
+        throw new Error('فشل في العثور على العميل بعد الإنشاء - يرجى التحقق من أذونات قاعدة البيانات');
+      }
+
+      console.log('Manual creation - Step 3: Creating contract for customer:', fetchedCustomer.id);
+      
+      const contractNumber = `CNT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+      
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .insert({
+          customer_id: fetchedCustomer.id,
+          contract_number: contractNumber,
+          contract_date: startDate,
+          start_date: startDate,
+          end_date: endDate,
+          company_id: companyId,
+          contract_type: 'vehicle_rental',
+          monthly_amount: monthlyAmount,
+          status: 'active'
+        });
+
+      if (contractError) {
+        console.error('Manual creation - Contract error:', contractError);
+        // Clean up customer
+        await supabase.from('customers').delete().eq('id', fetchedCustomer.id);
+        // Better error handling for contract errors
+        const contractErrorMessage = contractError.message || 'فشل إنشاء العقد';
+        throw new Error(contractErrorMessage);
+      }
+
+      console.log('Manual creation - Success!');
+      
+      // Update the phone to normal value
+      await supabase
+        .from('customers')
+        .update({ phone: '000000000' })
+        .eq('id', fetchedCustomer.id);
+
+      // Create CustomerWithRental object for UI
+      const customerWithRental: CustomerWithRental = {
+        id: fetchedCustomer.id,
+        name: `${firstName} ${lastName}`,
+        monthly_rent: monthlyAmount
+      };
+
+      // Refresh and select
+      await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
+      setSelectedCustomer(customerWithRental);
+      setSearchTerm(`${firstName} ${lastName}`);
+      setShowCreateCustomer(false);
+      setNewCustomerName('');
+      setNewCustomerRent('');
+
+      toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح (الطريقة اليدوية) ✅`);
+    } catch (error: any) {
+      console.error('Error in manual customer creation:', error);
+      let errorMessage = 'فشل إنشاء العميل';
+      
+      if (error && typeof error === 'object' && error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        // Last resort - try to get a meaningful error message
+        try {
+          errorMessage = JSON.stringify(error, null, 2);
+        } catch (stringifyError) {
+          errorMessage = 'فشل إنشاء العميل - خطأ غير معروف';
+        }
       }
       
-      if (attempt < 3) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      throw new Error(errorMessage);
     }
-
-    if (!fetchedCustomer || !fetchedCustomer.id) {
-      throw new Error('فشل في العثور على العميل بعد الإنشاء - يرجى التحقق من أذونات قاعدة البيانات');
-    }
-
-    console.log('Manual creation - Step 3: Creating contract for customer:', fetchedCustomer.id);
-    
-    const contractNumber = `CNT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
-    const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
-    
-    const { error: contractError } = await supabase
-      .from('contracts')
-      .insert({
-        customer_id: fetchedCustomer.id,
-        contract_number: contractNumber,
-        contract_date: startDate,
-        start_date: startDate,
-        end_date: endDate,
-        company_id: companyId,
-        contract_type: 'vehicle_rental',
-        monthly_amount: monthlyAmount,
-        status: 'active'
-      });
-
-    if (contractError) {
-      console.error('Manual creation - Contract error:', contractError);
-      // Clean up customer
-      await supabase.from('customers').delete().eq('id', fetchedCustomer.id);
-      // Better error handling for contract errors
-      const contractErrorMessage = contractError.message || 'فشل إنشاء العقد';
-      throw new Error(contractErrorMessage);
-    }
-
-    console.log('Manual creation - Success!');
-    
-    // Update the phone to normal value
-    await supabase
-      .from('customers')
-      .update({ phone: '000000000' })
-      .eq('id', fetchedCustomer.id);
-
-    // Create CustomerWithRental object for UI
-    const customerWithRental: CustomerWithRental = {
-      id: fetchedCustomer.id,
-      name: `${firstName} ${lastName}`,
-      monthly_rent: monthlyAmount
-    };
-
-    // Refresh and select
-    await queryClient.invalidateQueries({ queryKey: ['customers-with-rental', companyId] });
-    setSelectedCustomer(customerWithRental);
-    setSearchTerm(`${firstName} ${lastName}`);
-    setShowCreateCustomer(false);
-    setNewCustomerName('');
-    setNewCustomerRent('');
-
-    toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح (الطريقة اليدوية) ✅`);
   };
 
   return (
@@ -2247,30 +2276,48 @@ const FinancialTracking: React.FC = () => {
                 {/* Month Filter Selector */}
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <select
-                    value={selectedMonthFilter}
-                    onChange={(e) => setSelectedMonthFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm bg-white"
-                  >
-                    <option value="all">جميع الأشهر</option>
-                    {monthlySummary.map((month) => (
-                      <option key={month.monthKey} value={month.monthKey}>
-                        {month.month}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedMonthFilter}
+                      onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-md text-sm bg-white appearance-none pr-8"
+                      disabled={loadingAllReceipts}
+                    >
+                      <option value="all">جميع الأشهر</option>
+                      {monthlySummary.map((month) => (
+                        <option key={month.monthKey} value={month.monthKey}>
+                          {month.month}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
                   {selectedMonthFilter !== 'all' && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedMonthFilter('all')}
                       className="h-8"
+                      disabled={loadingAllReceipts}
                     >
                       <X className="h-4 w-4 ml-1" />
                       إلغاء الفلتر
                     </Button>
                   )}
                 </div>
+                {(loadingAllReceipts || monthlySummary.length === 0) && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    {loadingAllReceipts ? (
+                      <span>جاري تحميل البيانات...</span>
+                    ) : (
+                      <span>لا توجد بيانات شهرية متاحة</span>
+                    )}
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -2297,7 +2344,6 @@ const FinancialTracking: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* Total Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <Card>
                       <CardContent className="pt-6">

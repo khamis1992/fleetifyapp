@@ -283,6 +283,33 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     }
   }, [contract]);
 
+  // Enhanced vehicle data handling - use contract.vehicle if available, otherwise fetch separately
+  const vehicleData = React.useMemo(() => {
+    // First check if vehicle data is already embedded in the contract
+    if (contract?.vehicle) {
+      return contract.vehicle;
+    }
+    
+    // Then check if we have fetched vehicle data
+    if (vehicle) {
+      return vehicle;
+    }
+    
+    // Finally, check for direct vehicle properties on contract
+    if (contract?.vehicle_id) {
+      return {
+        id: contract.vehicle_id,
+        plate_number: contract.plate_number,
+        make: contract.make,
+        model: contract.model,
+        year: contract.year,
+        status: contract.vehicle_status || 'active'
+      };
+    }
+    
+    return null;
+  }, [contract, vehicle]);
+
   if (!contract) return null;
 
   return (
@@ -541,8 +568,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 </Card>
               )}
 
-              {/* Vehicle Information */}
-              {(vehicle || (contract.vehicle && Object.keys(contract.vehicle).length > 0)) && (
+              {/* Vehicle Information - Show when contract has a vehicle_id */}
+              {contract?.vehicle_id && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -554,28 +581,28 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
                       <span className="font-medium">
-                        {vehicle?.plate_number || contract.vehicle?.plate_number || 'غير محدد'}
+                        {vehicleData?.plate_number || 'غير محدد'}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">نوع المركبة</span>
                       <span className="font-medium">
-                        {(vehicle?.make || contract.vehicle?.make || '') + ' ' + (vehicle?.model || contract.vehicle?.model || '')}
+                        {(vehicleData?.make || '') + ' ' + (vehicleData?.model || '')}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">سنة الصنع</span>
                       <span className="font-medium">
-                        {vehicle?.year || contract.vehicle?.year || 'غير محدد'}
+                        {vehicleData?.year || 'غير محدد'}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">حالة المركبة</span>
                       <Badge variant="outline">
-                        {vehicle?.status || contract.vehicle?.status || 'غير محدد'}
+                        {vehicleData?.status || 'غير محدد'}
                       </Badge>
                     </div>
                   </CardContent>
