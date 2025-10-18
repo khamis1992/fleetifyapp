@@ -14,6 +14,7 @@ import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+import { LazyImage } from '@/components/common/LazyImage';
 
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
@@ -52,7 +53,7 @@ export const DashboardLayout: React.FC = () => {
           <header className="h-14 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              <img 
+              <LazyImage 
                 src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
                 alt="Fleetify Logo" 
                 className="h-12 w-auto"

@@ -21,6 +21,7 @@ import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface ResponsiveHeaderProps {
   onMenuToggle?: () => void;
@@ -64,7 +65,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
         {!isMobile && <SidebarTrigger />}
 
         {/* Logo */}
-        <img 
+        <LazyImage 
           src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
           alt="Fleetify Logo" 
           className={`w-auto ${isMobile ? 'h-8' : 'h-10 md:h-12'}`}

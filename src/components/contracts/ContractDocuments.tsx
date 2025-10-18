@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -802,7 +803,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                       />
                     ) : selectedDocumentForPreview.mime_type?.includes('image') ? (
                       <div className="flex justify-center p-4">
-                        <img
+                        <LazyImage
                           src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${selectedDocumentForPreview.file_path}`}
                           alt={selectedDocumentForPreview.document_name}
                           className="max-w-full max-h-[600px] object-contain"

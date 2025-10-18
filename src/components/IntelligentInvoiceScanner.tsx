@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { preprocessImage, quickPreprocess, analyzeImage } from '@/utils/imagePreprocessing';
+import { LazyImage } from '@/components/common/LazyImage';
 import EnhancedMobileCamera from './EnhancedMobileCamera';
 import { useBackgroundQueue } from '@/utils/backgroundProcessingQueue';
 import { 
@@ -645,7 +646,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           </CardHeader>
           <CardContent>
             <div className="flex justify-center">
-              <img
+              <LazyImage
                 src={selectedImage}
                 alt="Invoice preview"
                 className="max-w-full max-h-96 rounded-lg shadow-lg"

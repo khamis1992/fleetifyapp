@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { ContractCard } from './ContractCard';
 import { ContractsEmptyState } from './ContractsEmptyState';
 
@@ -27,23 +29,50 @@ export const ContractsList: React.FC<ContractsListProps> = ({
   hasFilters,
   hasContracts
 }) => {
+  const { isMobile } = useSimpleBreakpoint();
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Virtual scrolling implementation
+  const rowVirtualizer = useVirtualizer({
+    count: contracts.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => isMobile ? 200 : 120,
+    overscan: 5,
+  });
+
   if (contracts.length > 0) {
     return (
-      <div className="grid gap-4 w-full">
-        {contracts.map((contract) => (
-          <ContractCard
-            key={contract.id}
-            contract={contract}
-            onRenew={onRenewContract}
-            onManageStatus={onManageStatus}
-            onViewDetails={onViewDetails}
-            onCancelContract={onCancelContract}
-            onDeleteContract={onDeleteContract}
-            showRenewButton={contract.status === 'active'}
-            showCancelButton={contract.status === 'active'}
-            showDeleteButton={true}
-          />
-        ))}
+      <div ref={parentRef} className="w-full h-[calc(100vh-200px)] overflow-auto">
+        <div 
+          className="relative w-full" 
+          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+            const contract = contracts[virtualItem.index];
+            return (
+              <div
+                key={virtualItem.key}
+                className="absolute top-0 left-0 w-full"
+                style={{
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <ContractCard
+                  contract={contract}
+                  onRenew={onRenewContract}
+                  onManageStatus={onManageStatus}
+                  onViewDetails={onViewDetails}
+                  onCancelContract={onCancelContract}
+                  onDeleteContract={onDeleteContract}
+                  showRenewButton={contract.status === 'active'}
+                  showCancelButton={contract.status === 'active'}
+                  showDeleteButton={true}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }

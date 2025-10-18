@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, AlertTriangle, Download, FileText } from 'lucide-react';
 import { useDamageReportExport } from '@/hooks/useDamageReportExport';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface DamagePoint {
   id: string;
@@ -223,7 +224,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
         >
           {/* Vehicle Diagram Background */}
           <div className="absolute inset-0">
-            <img
+            <LazyImage
               src="/مخطط.png"
               alt="مخطط المركبة"
               className="w-full h-full object-contain transition-transform duration-200"

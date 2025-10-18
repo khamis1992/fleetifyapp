@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ExtractedInvoiceData } from '@/types/invoiceOCR';
 import { CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface InvoiceOCRResultsProps {
   data: ExtractedInvoiceData;
@@ -50,7 +51,7 @@ export const InvoiceOCRResults = ({
       <Card className="p-4">
         <h3 className="font-semibold mb-4">الصورة الأصلية</h3>
         <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-          <img
+          <LazyImage
             src={imageUrl}
             alt="Invoice"
             className="w-full h-full object-contain"

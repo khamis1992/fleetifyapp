@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface InvoiceCameraCaptureProps {
   onImageCapture: (file: File) => void;
@@ -97,7 +98,7 @@ export const InvoiceCameraCapture = ({ onImageCapture, onCancel }: InvoiceCamera
         ) : (
           <div className="space-y-4">
             <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-              <img
+              <LazyImage
                 src={preview}
                 alt="Invoice preview"
                 className="w-full h-full object-contain"

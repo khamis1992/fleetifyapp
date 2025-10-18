@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import FeedbackForm from './FeedbackForm';
+import { LazyImage } from '@/components/common/LazyImage';
 import {
   TestTube,
   CheckCircle,
@@ -478,7 +479,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                     {testCases.slice(0, 8).map((testCase, index) => (
                       <div key={testCase.id} className="bg-white p-2 rounded border">
-                        <img 
+                        <LazyImage 
                           src={testCase.invoice_image} 
                           alt={`Test case ${index + 1}`}
                           className="w-full h-20 object-cover rounded mb-1"

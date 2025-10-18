@@ -6,6 +6,7 @@ import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormat
 import { ContractVehicleConditionReport } from './ContractVehicleConditionReport';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useSignatureSettings } from '@/hooks/useSignatureSettings';
+import { LazyImage } from '@/components/common/LazyImage';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
@@ -375,7 +376,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
               <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
                 <div className="signature-label font-bold mb-3">توقيع العميل</div>
                 {contractData.customer_signature ? (
-                  <img 
+                  <LazyImage 
                     src={contractData.customer_signature} 
                     alt="توقيع العميل" 
                     className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
@@ -389,7 +390,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
               <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
                 <div className="signature-label font-bold mb-3">توقيع ممثل الشركة</div>
                 {contractData.company_signature ? (
-                  <img 
+                  <LazyImage 
                     src={contractData.company_signature} 
                     alt="توقيع الشركة" 
                     className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"

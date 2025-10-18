@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
+import { LazyImage } from '@/components/common/LazyImage';
 
 const navigationItems = [
   { 
@@ -240,7 +241,7 @@ export function CarRentalSidebar() {
       {/* Header */}
       <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
-          <img 
+          <LazyImage 
             src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
             className="h-16 w-auto filter brightness-0 invert"

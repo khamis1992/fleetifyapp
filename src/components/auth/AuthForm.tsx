@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
+import { LazyImage } from '@/components/common/LazyImage';
 
 export const AuthForm: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -89,7 +90,7 @@ export const AuthForm: FC = () => {
             {/* Logo with animated holes/gaps */}
             <div className="relative z-10 flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl shadow-accent overflow-hidden">
               {/* Base logo */}
-              <img 
+              <LazyImage 
                 src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
                 alt="Fleetify Logo" 
                 className="h-24 w-auto filter brightness-0 invert relative z-10"

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCustomers } from '@/hooks/useEnhancedCustomers';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,6 +52,7 @@ const Customers = () => {
   const { user } = useAuth();
   const { isMobile } = useSimpleBreakpoint();
   const { hasFullCompanyControl } = useUnifiedCompanyAccess();
+  const parentRef = useRef<HTMLDivElement>(null);
   
   // State management
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,6 +111,16 @@ const Customers = () => {
     return [];
   }, [customersResult]);
   
+  // Virtual scrolling implementation
+  const virtualizer = useVirtualizer({
+    count: customers.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => isMobile ? 120 : 60,
+    overscan: 10,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
   // Debug log to understand the data structure (remove in production)
   React.useEffect(() => {
     console.log('🔍 [Customers] Data structure check:', {
@@ -199,7 +211,7 @@ const Customers = () => {
             )}
             <Button onClick={handleCreateCustomer}>
               <Plus className="h-4 w-4 ml-2" />
-              إضافة عميل
+              عميل جديد
             </Button>
           </div>
         </div>
@@ -207,9 +219,9 @@ const Customers = () => {
         {/* Search and Filters */}
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="البحث في العملاء..."
+              placeholder="البحث عن العملاء..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-10"
@@ -222,131 +234,149 @@ const Customers = () => {
                 <SelectValue placeholder="نوع العميل" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع العملاء</SelectItem>
+                <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="individual">أفراد</SelectItem>
                 <SelectItem value="corporate">شركات</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button 
+              variant={includeInactive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIncludeInactive(!includeInactive)}
+            >
+              <Filter className="h-4 w-4 ml-2" />
+              شامل غير النشطين
+            </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <Users className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">إجمالي العملاء</p>
-                  <p className="text-2xl font-bold">{totalCustomers}</p>
-                </div>
-              </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalCustomers}</div>
             </CardContent>
           </Card>
+          
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <Building2 className="h-4 w-4 text-blue-500" />
-                <div>
-                  <p className="text-sm text-muted-foreground">الشركات</p>
-                  <p className="text-2xl font-bold">{corporateCustomers}</p>
-                </div>
-              </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">القائمة السوداء</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">{blacklistedCustomers}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Customer List */}
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-8">
-              <p>جارٍ تحميل العملاء...</p>
-            </div>
-          ) : safeCustomers.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">لا يوجد عملاء</p>
-            </div>
-          ) : (
-            safeCustomers.map((customer) => (
-              <MobileCustomerCard
-                key={customer.id}
-                customer={customer}
-                onView={() => handleViewCustomer(customer)}
-                onEdit={() => handleEditCustomer(customer)}
-                onToggleBlacklist={() => handleToggleBlacklist(customer)}
-                onDelete={() => handleDeleteCustomer(customer)}
-                canEdit={true}
-                canDelete={true}
-              />
-            ))
-          )}
+        {/* Customer List with Virtual Scrolling */}
+        <div ref={parentRef} className="h-[calc(100vh-250px)] overflow-auto">
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualItems.map((virtualItem) => {
+              const customer = customers[virtualItem.index];
+              return (
+                <div
+                  key={customer.id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <MobileCustomerCard
+                    customer={customer}
+                    onView={() => handleViewCustomer(customer)}
+                    onEdit={() => handleEditCustomer(customer)}
+                    onDelete={() => handleDeleteCustomer(customer)}
+                    onToggleBlacklist={() => handleToggleBlacklist(customer)}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              الصفحة {currentPage} من {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                السابق
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Dialogs */}
         <EnhancedCustomerDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          onSuccess={() => {
-            refetch();
-            setShowCreateDialog(false);
-          }}
+          mode="create"
         />
-
-        {selectedCustomer && (
-          <>
-            <CustomerDetailsDialog
-              customerId={selectedCustomer.id}
-              open={showDetailsDialog}
-              onOpenChange={setShowDetailsDialog}
-              onEdit={() => handleEditCustomer(selectedCustomer)}
-              onCreateContract={() => toast.info('سيتم تنفيذ ميزة إنشاء العقد قريباً')}
-              onCreateInvoice={() => toast.info('سيتم تنفيذ ميزة إنشاء الفاتورة قريباً')}
-            />
-            <EnhancedCustomerDialog
-              open={showEditDialog}
-              onOpenChange={setShowEditDialog}
-              editingCustomer={selectedCustomer}
-              onSuccess={() => {
-                refetch();
-                setShowEditDialog(false);
-                setSelectedCustomer(null);
-              }}
-            />
-          </>
-        )}
-
-        {/* Bulk Delete Dialog */}
+        
+        <CustomerDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          customer={selectedCustomer}
+        />
+        
+        <EnhancedCustomerDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          customer={selectedCustomer}
+          mode="edit"
+        />
+        
         <BulkDeleteCustomersDialog
           open={showBulkDeleteDialog}
           onOpenChange={setShowBulkDeleteDialog}
         />
-
-        {/* CSV Upload Dialog */}
+        
         <CustomerCSVUpload
           open={showCSVUpload}
           onOpenChange={setShowCSVUpload}
-          onUploadComplete={() => {
-            refetch();
-            setShowCSVUpload(false);
-          }}
         />
       </div>
     );
   }
 
-  // Desktop view
+  // Desktop view with virtual scrolling
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">إدارة العملاء</h1>
-          <p className="text-muted-foreground">عرض وإدارة بيانات العملاء</p>
-        </div>
-        <div className="flex gap-3">
+        <h1 className="text-3xl font-bold">إدارة العملاء</h1>
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
-            size="lg"
             onClick={handleCSVUpload}
           >
             <Upload className="h-4 w-4 ml-2" />
@@ -355,367 +385,298 @@ const Customers = () => {
           {hasFullCompanyControl && totalCustomers > 0 && (
             <Button 
               variant="destructive" 
-              size="lg"
               onClick={handleBulkDelete}
             >
               <Trash2 className="h-4 w-4 ml-2" />
-              حذف جميع العملاء
+              حذف الكل
             </Button>
           )}
-          <Button onClick={handleCreateCustomer} size="lg">
+          <Button onClick={handleCreateCustomer}>
             <Plus className="h-4 w-4 ml-2" />
-            إضافة عميل جديد
+            عميل جديد
           </Button>
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="flex gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="البحث عن العملاء..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pr-10"
+          />
+        </div>
+        
+        <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="نوع العميل" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع الأنواع</SelectItem>
+            <SelectItem value="individual">أفراد</SelectItem>
+            <SelectItem value="corporate">شركات</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Button 
+          variant={includeInactive ? "default" : "outline"}
+          onClick={() => setIncludeInactive(!includeInactive)}
+        >
+          <Filter className="h-4 w-4 ml-2" />
+          شامل غير النشطين
+        </Button>
+      </div>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCustomers}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              أفراد: {individualCustomers} | شركات: {corporateCustomers}
+            </p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الأفراد</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{individualCustomers}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الشركات</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{corporateCustomers}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">القائمة السوداء</CardTitle>
-            <Users className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{blacklistedCustomers}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              عملاء محظورين
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">العملاء النشطون</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {totalCustomers - blacklistedCustomers}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalCustomers > 0 
+                ? `${Math.round(((totalCustomers - blacklistedCustomers) / totalCustomers) * 100)}% من الإجمالي` 
+                : '0%'}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">الصفحات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPages}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              صفحة {currentPage} من {totalPages}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            البحث والتصفية
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="البحث بالاسم، الهاتف، أو البريد الإلكتروني..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-            
-            <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="نوع العميل" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع العملاء</SelectItem>
-                <SelectItem value="individual">أفراد</SelectItem>
-                <SelectItem value="corporate">شركات</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <input
-                type="checkbox"
-                id="includeInactive"
-                checked={includeInactive}
-                onChange={(e) => setIncludeInactive(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="includeInactive" className="text-sm">
-                تضمين العملاء غير النشطين
-              </label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Customers Table */}
+      {/* Customer Table with Virtual Scrolling */}
       <Card>
         <CardHeader>
           <CardTitle>قائمة العملاء</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">
-              <p>جارٍ تحميل العملاء...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-destructive">
-              <p>حدث خطأ في تحميل البيانات</p>
-              <Button variant="outline" onClick={() => refetch()} className="mt-2">
-                إعادة المحاولة
-              </Button>
-            </div>
-          ) : safeCustomers.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">لا يوجد عملاء مطابقون للمعايير المحددة</p>
-              <Button variant="outline" onClick={handleCreateCustomer} className="mt-4">
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة أول عميل
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>الاسم / الشركة</TableHead>
-                  <TableHead>رمز العميل</TableHead>
-                  <TableHead>الهاتف</TableHead>
-                  <TableHead>البريد الإلكتروني</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {safeCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {customer.customer_type === 'individual' ? (
-                          <Users className="h-4 w-4" />
-                        ) : (
-                          <Building2 className="h-4 w-4" />
-                        )}
-                        <span className="text-xs">
-                          {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {customer.customer_type === 'individual'
-                            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-                            : customer.company_name}
-                        </p>
-                        {customer.customer_type === 'individual' && customer.company_name && (
-                          <p className="text-xs text-muted-foreground">{customer.company_name}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-xs">
-                        {customer.customer_code || 'غير محدد'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-mono">{customer.phone}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {customer.email ? (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.email}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">غير محدد</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {customer.is_blacklisted && (
-                          <Badge variant="destructive" className="text-xs">
-                            قائمة سوداء
-                          </Badge>
-                        )}
-                        {!customer.is_active && (
-                          <Badge variant="secondary" className="text-xs">
-                            غير نشط
-                          </Badge>
-                        )}
-                        {customer.is_active && !customer.is_blacklisted && (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                            نشط
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            عرض التفاصيل
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            تعديل
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleBlacklist(customer)}>
-                            {customer.is_blacklisted ? 'إلغاء' : 'إضافة إلى'} القائمة السوداء
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteCustomer(customer)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            حذف
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <div ref={parentRef} className="h-[calc(100vh-350px)] overflow-auto">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>الهاتف</TableHead>
+                    <TableHead>البريد الإلكتروني</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>الإجراءات</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          
-          {/* Pagination Controls */}
-          {!isLoading && !error && safeCustomers.length > 0 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  عرض {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCustomersInDB)} من أصل {totalCustomersInDB}
-                </span>
-                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="200">200</SelectItem>
-                    <SelectItem value="500">500</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-muted-foreground">لكل صفحة</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1}
-                >
-                  الأولى
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  السابقة
-                </Button>
-                <span className="text-sm">
-                  صفحة {currentPage} من {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  التالية
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage >= totalPages}
-                >
-                  الأخيرة
-                </Button>
-              </div>
+                </TableHeader>
+                <TableBody>
+                  {virtualItems.map((virtualItem) => {
+                    const customer = customers[virtualItem.index];
+                    return (
+                      <TableRow
+                        key={customer.id}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`,
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">
+                              {customer.customer_type === 'individual' 
+                                ? `${customer.first_name} ${customer.last_name}` 
+                                : customer.company_name}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}>
+                            {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{customer.phone || '-'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span>{customer.email || '-'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={customer.is_active ? 'default' : 'destructive'}>
+                            {customer.is_active ? 'نشط' : 'غير نشط'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                                <Eye className="h-4 w-4 ml-2" />
+                                عرض التفاصيل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                <Edit className="h-4 w-4 ml-2" />
+                                تعديل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteCustomer(customer)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 ml-2" />
+                                حذف
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">الصفحات:</span>
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-sm text-muted-foreground">...</span>
+                  <Button
+                    variant={currentPage === totalPages ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                السابق
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       <EnhancedCustomerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSuccess={() => {
-          refetch();
-          setShowCreateDialog(false);
-        }}
+        mode="create"
       />
-
-      {selectedCustomer && (
-        <>
-          <CustomerDetailsDialog
-            customerId={selectedCustomer.id}
-            open={showDetailsDialog}
-            onOpenChange={setShowDetailsDialog}
-            onEdit={() => handleEditCustomer(selectedCustomer)}
-            onCreateContract={() => toast.info('سيتم تنفيذ ميزة إنشاء العقد قريباً')}
-            onCreateInvoice={() => toast.info('سيتم تنفيذ ميزة إنشاء الفاتورة قريباً')}
-          />
-          <EnhancedCustomerDialog
-            open={showEditDialog}
-            onOpenChange={setShowEditDialog}
-            editingCustomer={selectedCustomer}
-            onSuccess={() => {
-              refetch();
-              setShowEditDialog(false);
-              setSelectedCustomer(null);
-            }}
-          />
-        </>
-      )}
-
-      {/* Bulk Delete Dialog */}
+      
+      <CustomerDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        customer={selectedCustomer}
+      />
+      
+      <EnhancedCustomerDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        customer={selectedCustomer}
+        mode="edit"
+      />
+      
       <BulkDeleteCustomersDialog
         open={showBulkDeleteDialog}
-        onOpenChange={(open) => {
-          setShowBulkDeleteDialog(open);
-          if (!open) {
-            // Refresh data after bulk delete
-            refetch();
-          }
-        }}
+        onOpenChange={setShowBulkDeleteDialog}
       />
-
-      {/* CSV Upload Dialog */}
+      
       <CustomerCSVUpload
         open={showCSVUpload}
         onOpenChange={setShowCSVUpload}
-        onUploadComplete={() => {
-          refetch();
-          setShowCSVUpload(false);
-        }}
       />
     </div>
   );

@@ -44,6 +44,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LazyImage } from '@/components/common/LazyImage';
 
 const navigationItems = [
   { 
@@ -272,7 +273,7 @@ export function MobileSidebar() {
       {/* Header */}
       <div className="border-b border-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
-          <img 
+          <LazyImage 
             src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
             alt="Fleetify Logo" 
             className="h-16 w-auto"
