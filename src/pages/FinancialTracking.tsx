@@ -1253,7 +1253,7 @@ const FinancialTracking: React.FC = () => {
       if (error && typeof error === 'object') {
         if (error?.code === '23505') {
           // Duplicate key violation
-          if (error?.message?.includes('customer_code')) {
+          if (error?.message?.includes('customer_code') || error?.message?.includes('customers_company_customer_code_unique')) {
             errorMessage = 'رمز العميل مكرر. جاري إعادة المحاولة...';
             // Automatically retry with manual creation
             try {
@@ -1326,10 +1326,11 @@ const FinancialTracking: React.FC = () => {
         console.error('Customer creation error:', customerError);
         
         // Handle duplicate customer code error by retrying with new code
-        if (customerError.code === '23505' && customerError.message?.includes('customer_code')) {
+        if (customerError.code === '23505' && (customerError.message?.includes('customer_code') || customerError.message?.includes('customers_company_customer_code_unique'))) {
           console.log('Customer code conflict, retrying with new code...');
-          const retryCode = `CUST-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-          searchPhone = `${Date.now().toString().slice(-8)}`;
+          // Generate a more unique customer code with additional randomness
+          const retryCode = `CUST-${Date.now()}-${Math.random().toString(36).substring(2, 12).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+          searchPhone = `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 100)}`;
           
           const { error: retryError } = await supabase
             .from('customers')
@@ -1411,7 +1412,7 @@ const FinancialTracking: React.FC = () => {
         // Clean up customer
         await supabase.from('customers').delete().eq('id', fetchedCustomer.id);
         // Better error handling for contract errors
-        const contractErrorMessage = contractError.message || 'فشل إنشاء العقد';
+        const contractErrorMessage = contractError.message || contractError.details || 'فشل إنشاء العقد';
         throw new Error(contractErrorMessage);
       }
 
