@@ -127,6 +127,7 @@ export const authService = {
             )
           `)
           .eq('user_id', user.id)
+          .eq('is_active', true)
           .maybeSingle(), // Use maybeSingle to avoid error if not found
         
         supabase
