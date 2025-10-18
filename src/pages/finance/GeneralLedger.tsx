@@ -322,7 +322,7 @@ export default function Ledger() {
                 ) : (
                 <div className="space-y-6">
                   {journalEntries?.map((entry) => (
-                    <RedesignedJournalEntryCard key={entry.id} entry={entry} />
+                    <RedesignedJournalEntryCard key={entry.id} entry={entry as any} />
                   ))}
                 </div>
                 )}
@@ -590,7 +590,16 @@ export default function Ledger() {
             </DialogHeader>
             {journalEntries?.find(e => e.id === selectedEntryId) && (
               <DetailedJournalEntryView 
-                entry={journalEntries.find(e => e.id === selectedEntryId)!} 
+                entry={{
+                  id: journalEntries.find(e => e.id === selectedEntryId)!.id,
+                  entry_number: journalEntries.find(e => e.id === selectedEntryId)!.entry_number,
+                  entry_date: journalEntries.find(e => e.id === selectedEntryId)!.entry_date,
+                  description: journalEntries.find(e => e.id === selectedEntryId)!.description,
+                  status: journalEntries.find(e => e.id === selectedEntryId)!.status,
+                  reference_type: journalEntries.find(e => e.id === selectedEntryId)!.reference_type || undefined,
+                  total_debit: journalEntries.find(e => e.id === selectedEntryId)!.total_debit,
+                  total_credit: journalEntries.find(e => e.id === selectedEntryId)!.total_credit,
+                }}
                 showAsCard={false}
               />
             )}

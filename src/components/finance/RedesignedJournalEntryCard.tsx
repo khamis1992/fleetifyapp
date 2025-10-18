@@ -13,28 +13,28 @@ interface JournalEntryLine {
   line_description?: string | null;
   line_number: number;
   account_id: string;
-  journal_entry_id: string;
+  journal_entry_id?: string;
   cost_center_id?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   chart_of_accounts?: {
     id: string;
-    company_id: string;
+    company_id?: string;
     account_code: string;
     account_name: string;
     account_name_ar?: string | null;
-    account_type: string;
-    account_level: number;
+    account_type?: string;
+    account_level?: number;
     parent_account_id?: string | null;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
   } | null;
 }
 
 interface JournalEntry {
   id: string;
-  company_id: string;
+  company_id?: string;
   entry_number: string;
   entry_date: string;
   description: string;
@@ -43,8 +43,8 @@ interface JournalEntry {
   status: string;
   reference_type?: string | null;
   reference_id?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   journal_entry_lines?: JournalEntryLine[];
 }
 

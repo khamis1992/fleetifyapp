@@ -68,7 +68,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
         if (unit === 0) {
           return arabicTens[ten];
         } else {
-          return `${arabicOnes[unit]} و ${arabicTens[ten]}`;
+          return arabicOnes[unit] + " و " + arabicTens[ten];
         }
       } else {
         const hundred = Math.floor(num / 100);
@@ -76,7 +76,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
         if (remainder === 0) {
           return arabicHundreds[hundred];
         } else {
-          return `${arabicHundreds[hundred]} و ${convertLessThanThousand(remainder)}`;
+          return arabicHundreds[hundred] + " و " + convertLessThanThousand(remainder);
         }
       }
     };
@@ -98,17 +98,17 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
         } else if (thousands === 2) {
           thousandWord = "ألفان";
         } else if (thousands > 2 && thousands < 11) {
-          thousandWord = `${arabicOnes[thousands]} آلاف`;
+          thousandWord = arabicOnes[thousands] + " آلاف";
         } else {
-          thousandWord = `${convertLessThanThousand(thousands)} ألف";
+          thousandWord = convertLessThanThousand(thousands) + " ألف";
         }
         
         result = thousandWord;
         if (remainder > 0) {
-          result += ` و ${convertLessThanThousand(remainder)}`;
+          result += " و " + convertLessThanThousand(remainder);
         }
       } else {
-        result = convertLessThanThousand(remainder);
+        result = convertLessThanThousand(intAmount);
       }
     }
     
@@ -117,7 +117,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
     
     // Add decimal part if exists
     if (decimal > 0) {
-      result += ` و ${decimal} درهم`;
+      result += " و " + decimal + " درهم";
     }
     
     result += " فقط لا غير";
@@ -136,7 +136,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
   };
 
   return (
-    <Card className={`w-full max-w-4xl mx-auto bg-white shadow-lg border-2 border-gray-800 ${className}`}>
+    <Card className={"w-full max-w-4xl mx-auto bg-white shadow-lg border-2 border-gray-800 " + (className || "")}>
       {/* Header Section */}
       <CardHeader className="bg-[#004d40] text-white p-6 flex justify-between items-center flex-wrap">
         <div className="space-y-1 text-left rtl:text-right">
@@ -229,7 +229,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
           </div>
 
           {/* Cheque Details (Hidden by default) */}
-          <div className={`space-y-3 transition duration-300 ${isCheque ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+          <div className={"space-y-3 transition duration-300 " + (isCheque ? 'opacity-100' : 'opacity-50 pointer-events-none')}>
             <div>
               <Label className="block text-xs font-medium text-gray-500 mb-1">شيك رقم | Cheque No.</Label>
               <Input
