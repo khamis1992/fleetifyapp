@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePayments } from "@/hooks/useFinance";
 import { PaymentForm } from "@/components/finance/PaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
+import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ const Payments = () => {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isUnifiedUploadOpen, setIsUnifiedUploadOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
@@ -447,119 +448,11 @@ const Payments = () => {
         />
 
         {/* مكون معاينة تفاصيل الدفعة */}
-        <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>تفاصيل الدفعة</DialogTitle>
-            </DialogHeader>
-            {selectedPayment && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">رقم الدفعة</label>
-                    <p className="font-medium">{selectedPayment.payment_number}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">نوع الدفعة</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor((selectedPayment as any).transaction_type)}`}>
-                      {getTypeLabel((selectedPayment as any).transaction_type)}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">تاريخ الدفعة</label>
-                    <p className="font-medium">
-                      {new Date(selectedPayment.payment_date).toLocaleDateString('en-GB', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">المبلغ</label>
-                    <p className="font-medium text-lg font-mono">
-                      {formatCurrency(selectedPayment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">طريقة الدفع</label>
-                    <p className="font-medium">{getMethodLabel(selectedPayment.payment_type || selectedPayment.payment_method)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">الحالة</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedPayment.payment_status)}`}>
-                      {getStatusLabel(selectedPayment.payment_status)}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">العملة</label>
-                    <p className="font-medium">{selectedPayment.currency}</p>
-                  </div>
-                  
-                  {/* القيد المحاسبي المرتبط */}
-                  {(selectedPayment as any).journal_entry_id && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">القيد المحاسبي</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
-                          قيد محاسبي #{(selectedPayment as any).journal_entry_id?.slice(-8)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* تفاصيل بنكية إضافية */}
-                  {(selectedPayment.payment_method === 'bank_transfer' || selectedPayment.payment_method === 'check') && (
-                    <>
-                      {selectedPayment.bank_account && (
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">الحساب البنكي</label>
-                          <p className="font-medium font-mono">{selectedPayment.bank_account}</p>
-                        </div>
-                      )}
-                      {(selectedPayment as any).check_number && (
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">رقم الشيك</label>
-                          <p className="font-medium">{(selectedPayment as any).check_number}</p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  
-                  {selectedPayment.reference_number && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">رقم المرجع</label>
-                      <p className="font-medium">{selectedPayment.reference_number}</p>
-                    </div>
-                  )}
-                </div>
-                
-                {selectedPayment.notes && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">ملاحظات</label>
-                    <p className="text-sm bg-muted p-3 rounded-md mt-1">
-                      {selectedPayment.notes}
-                    </p>
-                  </div>
-                )}
-                
-                <div className="pt-4 border-t">
-                  <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-                    <div>
-                      <span>تاريخ الإنشاء: </span>
-                      {new Date(selectedPayment.created_at).toLocaleString('en-GB')}
-                    </div>
-                    <div>
-                      <span>آخر تحديث: </span>
-                      {new Date(selectedPayment.updated_at).toLocaleString('en-GB')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <PaymentPreviewDialog 
+          payment={selectedPayment} 
+          open={isPreviewDialogOpen} 
+          onOpenChange={setIsPreviewDialogOpen} 
+        />
 
         {/* نافذة النظام الاحترافي */}
         <Dialog open={isProfessionalSystemOpen} onOpenChange={setIsProfessionalSystemOpen}>

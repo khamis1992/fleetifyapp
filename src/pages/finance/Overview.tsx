@@ -143,6 +143,14 @@ const Overview = () => {
       icon: Settings,
       path: "/finance/accounting-wizard",
       color: "bg-gradient-to-br from-emerald-500 to-emerald-600"
+    },
+    {
+      title: "سند القبض",
+      titleEn: "Cash Receipt Voucher",
+      description: "نموذج سند القبض بتصميم شركة العراف",
+      icon: Receipt,
+      path: "/finance/cash-receipt",
+      color: "bg-gradient-to-br from-green-500 to-green-600"
     }
   ];
 

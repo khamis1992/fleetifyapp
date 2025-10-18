@@ -31,6 +31,7 @@ const FinancialSystemAnalysis = lazyWithRetry(() => import("./finance/settings/F
 const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"), "AccountingWizard");
 const FinancialCalculator = lazyWithRetry(() => import("./finance/Calculator"), "FinancialCalculator");
 const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
+const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), "CashReceiptDemo");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -240,6 +241,18 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.deposits.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Deposits />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* نموذج سند القبض */}
+      <Route 
+        path="cash-receipt" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <CashReceiptDemo />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
