@@ -20,3 +20,5 @@ export { CustomerAccountSelector } from './CustomerAccountSelector';
 export { EnhancedCustomerAccountSelector } from './EnhancedCustomerAccountSelector';
 export { CashReceiptVoucher } from './CashReceiptVoucher';
 export { PaymentPreviewDialog } from './PaymentPreviewDialog';
+export { ProfessionalInvoiceTemplate } from './ProfessionalInvoiceTemplate';
+export { RedesignedJournalEntryCard } from './RedesignedJournalEntryCard';

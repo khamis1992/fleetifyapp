@@ -84,6 +84,12 @@ Last Updated: 2025-10-18
    - Attendance tracking
    - Leave management
 
+7. **Financial Accounting** (`/src/pages/finance/`)
+   - General ledger management
+   - Chart of accounts
+   - Journal entries with redesigned UI
+   - Financial reporting
+
 ---
 
 ## 🔄 Core Flows
@@ -225,6 +231,11 @@ export function useResourceData(filters?: FilterType) {
   - framer-motion: 12.23.12 - Animations
   - lucide-react: 0.544.0 - Icons
   - sonner: 2.0.7 - Toast notifications
+
+- **Custom Components**
+  - `RedesignedJournalEntryCard`: Modern journal entry display component with collapsible details
+  - `CashReceiptVoucher`: Al Arraf Cash Receipt Voucher design implementation
+  - `ProfessionalInvoiceTemplate`: Professional invoice template with bilingual support
 
 - **Utilities**
   - date-fns: 4.1.0 - Date manipulation

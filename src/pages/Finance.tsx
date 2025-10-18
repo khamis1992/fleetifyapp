@@ -32,6 +32,8 @@ const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"
 const FinancialCalculator = lazyWithRetry(() => import("./finance/Calculator"), "FinancialCalculator");
 const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
 const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), "CashReceiptDemo");
+const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
+const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -253,6 +255,30 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <CashReceiptDemo />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* نموذج الفاتورة الاحترافية */}
+      <Route 
+        path="professional-invoice" 
+        element={
+          <ProtectedFinanceRoute permission="finance.invoices.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ProfessionalInvoiceDemo />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* نموذج القيود المحاسبية المُعاد تصميمها */}
+      <Route 
+        path="journal-entries-demo" 
+        element={
+          <ProtectedFinanceRoute permission="finance.ledger.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <JournalEntriesDemo />
             </Suspense>
           </ProtectedFinanceRoute>
         } 

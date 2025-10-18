@@ -151,6 +151,22 @@ const Overview = () => {
       icon: Receipt,
       path: "/finance/cash-receipt",
       color: "bg-gradient-to-br from-green-500 to-green-600"
+    },
+    {
+      title: "فاتورة احترافية",
+      titleEn: "Professional Invoice",
+      description: "نموذج الفاتورة الاحترافية",
+      icon: FileText,
+      path: "/finance/professional-invoice",
+      color: "bg-gradient-to-br from-blue-500 to-blue-600"
+    },
+    {
+      title: "القيود المحاسبية المُعاد تصميمها",
+      titleEn: "Redesigned Journal Entries",
+      description: "نموذج القيود المحاسبية بتصميم جديد",
+      icon: BookOpen,
+      path: "/finance/journal-entries-demo",
+      color: "bg-gradient-to-br from-indigo-500 to-indigo-600"
     }
   ];
 
