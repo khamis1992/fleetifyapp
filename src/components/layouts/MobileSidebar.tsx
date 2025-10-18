@@ -2,6 +2,7 @@ import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useModuleConfig } from '@/modules/core/hooks/useModuleConfig';
 import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
 import { 
   Car, 
@@ -37,7 +38,8 @@ import {
   CheckSquare,
   Headphones,
   TrendingUp,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
@@ -226,6 +228,7 @@ export function MobileSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
+  const { moduleContext, isLoading } = useModuleConfig();
   
   // Check active sections
   const isFinanceActive = location.pathname.startsWith('/finance');
@@ -244,6 +247,25 @@ export function MobileSidebar() {
         ? "bg-primary/10 text-primary font-medium border-r-4 border-primary" 
         : "text-foreground hover:bg-accent/60"
     );
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex flex-col bg-background">
+        {/* Header */}
+        <div className="border-b border-border p-6">
+          <div className="flex flex-col items-center text-center space-y-2">
+            <div className="h-16 w-16 bg-muted rounded-lg animate-pulse" />
+            <div className="h-3 w-48 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Loading Content */}
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -274,99 +296,109 @@ export function MobileSidebar() {
               </NavLink>
             ))}
             
-            {/* Fleet Section */}
-            <Collapsible defaultOpen={isFleetActive}>
-              <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                <Car className="h-5 w-5 flex-shrink-0" />
-                <span className="font-medium flex-1">الأسطول</span>
-                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="mr-8 mt-1 space-y-1">
-                  {fleetSubItems.map((subItem) => (
-                    <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
-                      <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                      <span>{subItem.name}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            {/* Fleet Section - Only show if vehicles module is enabled */}
+            {moduleContext?.activeModules.includes('vehicles') && (
+              <Collapsible defaultOpen={isFleetActive}>
+                <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                  <Car className="h-5 w-5 flex-shrink-0" />
+                  <span className="font-medium flex-1">الأسطول</span>
+                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mr-8 mt-1 space-y-1">
+                    {fleetSubItems.map((subItem) => (
+                      <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
+                        <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                        <span>{subItem.name}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
-            {/* Quotations */}
-            <NavLink to="/quotations" className={getNavClassName}>
-              <FileText className="h-5 w-5 flex-shrink-0" />
-              <span className="font-medium">عروض الأسعار</span>
-            </NavLink>
+            {/* Properties Section - Only show if properties module is enabled */}
+            {moduleContext?.activeModules.includes('properties') && (
+              <NavLink to="/properties" className={getNavClassName}>
+                <Building2 className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium">العقارات</span>
+              </NavLink>
+            )}
 
-            {/* Contracts */}
-            <NavLink to="/contracts" className={getNavClassName}>
-              <FileText className="h-5 w-5 flex-shrink-0" />
-              <span className="font-medium">العقود</span>
-            </NavLink>
+            {/* Contracts Section - Show if contracts or customers module is enabled */}
+            {(moduleContext?.activeModules.includes('contracts') || moduleContext?.activeModules.includes('customers')) && (
+              <NavLink to="/contracts" className={getNavClassName}>
+                <FileText className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium">العقود</span>
+              </NavLink>
+            )}
             
-            {/* Finance Section */}
-            <AdminOnly hideIfNoAccess>
-              <Collapsible defaultOpen={isFinanceActive}>
-                <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                  <DollarSign className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium flex-1">المالية</span>
-                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="mr-8 mt-1 space-y-1">
-                    {financeSubItems.map((subItem) => (
-                      <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
-                        <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                        <span>{subItem.name}</span>
-                      </NavLink>
-                    ))}
-                    
-                    {/* Finance Settings */}
-                    <AdminOnly hideIfNoAccess>
-                      <Collapsible>
-                        <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-2 text-right transition-colors rounded-md hover:bg-accent/60">
-                          <Settings className="h-4 w-4 flex-shrink-0" />
-                          <span className="flex-1 text-sm">إعدادات المالية</span>
-                          <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="mr-8 mt-1 space-y-1">
-                            {financeSettingsItems.map((settingItem) => (
-                              <NavLink key={settingItem.href} to={settingItem.href} className={getNavClassName}>
-                                <settingItem.icon className="h-3 w-3 flex-shrink-0" />
-                                <span className="text-xs">{settingItem.name}</span>
-                              </NavLink>
-                            ))}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </AdminOnly>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </AdminOnly>
+            {/* Finance Section - Only show if finance module is enabled */}
+            {moduleContext?.activeModules.includes('finance') && (
+              <AdminOnly hideIfNoAccess>
+                <Collapsible defaultOpen={isFinanceActive}>
+                  <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                    <DollarSign className="h-5 w-5 flex-shrink-0" />
+                    <span className="font-medium flex-1">المالية</span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mr-8 mt-1 space-y-1">
+                      {financeSubItems.map((subItem) => (
+                        <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
+                          <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                          <span>{subItem.name}</span>
+                        </NavLink>
+                      ))}
+                      
+                      {/* Finance Settings */}
+                      <AdminOnly hideIfNoAccess>
+                        <Collapsible>
+                          <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-2 text-right transition-colors rounded-md hover:bg-accent/60">
+                            <Settings className="h-4 w-4 flex-shrink-0" />
+                            <span className="flex-1 text-sm">إعدادات المالية</span>
+                            <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="mr-8 mt-1 space-y-1">
+                              {financeSettingsItems.map((settingItem) => (
+                                <NavLink key={settingItem.href} to={settingItem.href} className={getNavClassName}>
+                                  <settingItem.icon className="h-3 w-3 flex-shrink-0" />
+                                  <span className="text-xs">{settingItem.name}</span>
+                                </NavLink>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </AdminOnly>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </AdminOnly>
+            )}
 
-            {/* HR Section */}
-            <AdminOnly hideIfNoAccess>
-              <Collapsible defaultOpen={isHRActive}>
-                <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                  <UserCheck className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium flex-1">الموارد البشرية</span>
-                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="mr-8 mt-1 space-y-1">
-                    {hrSubItems.map((subItem) => (
-                      <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
-                        <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                        <span>{subItem.name}</span>
-                      </NavLink>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </AdminOnly>
+            {/* HR Section - Only show if HR module is enabled */}
+            {moduleContext?.activeModules.includes('hr') && (
+              <AdminOnly hideIfNoAccess>
+                <Collapsible defaultOpen={isHRActive}>
+                  <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                    <UserCheck className="h-5 w-5 flex-shrink-0" />
+                    <span className="font-medium flex-1">الموارد البشرية</span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mr-8 mt-1 space-y-1">
+                      {hrSubItems.map((subItem) => (
+                        <NavLink key={subItem.href} to={subItem.href} className={getNavClassName}>
+                          <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                          <span>{subItem.name}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </AdminOnly>
+            )}
 
             {/* Legal Section */}
             <Collapsible defaultOpen={location.pathname.startsWith('/legal')}>
@@ -395,61 +427,56 @@ export function MobileSidebar() {
               <span className="font-medium">التقارير</span>
             </NavLink>
 
-            {/* Settings */}
-            <AdminOnly hideIfNoAccess>
-              <NavLink to="/settings" className={getNavClassName}>
-                <Settings className="h-5 w-5 flex-shrink-0" />
-                <span className="font-medium">الإعدادات</span>
-              </NavLink>
-            </AdminOnly>
-          </div>
-        </div>
-
-        {/* Admin Section */}
-        <SuperAdminOnly hideIfNoAccess>
-          <div className="mb-6">
-            <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">
-              إدارة النظام
-            </h3>
-            <div className="space-y-1">
-              {adminItems.map((item) => (
-                <NavLink key={item.href} to={item.href} className={getNavClassName}>
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium">{item.name}</span>
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        </SuperAdminOnly>
-
-        {/* Support Section */}
-        <div className="mb-6">
-          <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">
-            الدعم والمساعدة
-          </h3>
-          <div className="space-y-1">
+            {/* Support */}
             <NavLink to="/support" className={getNavClassName}>
               <Headphones className="h-5 w-5 flex-shrink-0" />
               <span className="font-medium">الدعم الفني</span>
             </NavLink>
-            <NavLink to="/help" className={getNavClassName}>
-              <FileText className="h-5 w-5 flex-shrink-0" />
-              <span className="font-medium">المساعدة</span>
-            </NavLink>
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="border-t border-border p-4">
-        <Button
-          onClick={handleSignOut}
-          variant="ghost"
-          className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>تسجيل الخروج</span>
-        </Button>
+        {/* Admin Section */}
+        <AdminOnly hideIfNoAccess>
+          <div className="mb-6">
+            <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">
+              الإدارة
+            </h3>
+            <div className="space-y-1">
+              {adminItems.map((item) => {
+                // Filter admin items based on permissions
+                if (item.href === '/backup') {
+                  return (
+                    <SuperAdminOnly key={item.href} hideIfNoAccess>
+                      <NavLink to={item.href} className={getNavClassName}>
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="font-medium">{item.name}</span>
+                      </NavLink>
+                    </SuperAdminOnly>
+                  );
+                }
+                
+                return (
+                  <NavLink key={item.href} to={item.href} className={getNavClassName}>
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="font-medium">{item.name}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        </AdminOnly>
+
+        {/* Logout */}
+        <div className="mt-auto pt-4 border-t border-border">
+          <Button 
+            onClick={handleSignOut}
+            variant="ghost" 
+            className="w-full justify-start gap-3 px-4 py-3 text-right text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <LogOut className="h-5 w-5 flex-shrink-0" />
+            <span className="font-medium">تسجيل الخروج</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -6,41 +6,14 @@ import {
   FileText, 
   Car, 
   BarChart3,
-  Menu
+  Building2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useModuleConfig } from '@/modules/core/hooks/useModuleConfig';
 import { cn } from '@/lib/utils';
-
-const navigationItems = [
-  { 
-    name: 'الرئيسية', 
-    href: '/dashboard', 
-    icon: Home 
-  },
-  { 
-    name: 'العقارات', 
-    href: '/properties', 
-    icon: Home 
-  },
-  { 
-    name: 'العقود', 
-    href: '/contracts', 
-    icon: FileText 
-  },
-  { 
-    name: 'الأسطول', 
-    href: '/fleet', 
-    icon: Car 
-  },
-  { 
-    name: 'التقارير', 
-    href: '/reports', 
-    icon: BarChart3 
-  }
-];
 
 export const MobileNavigation: React.FC = () => {
   const location = useLocation();
+  const { moduleContext, isLoading } = useModuleConfig();
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -48,6 +21,69 @@ export const MobileNavigation: React.FC = () => {
     }
     return location.pathname.startsWith(href);
   };
+
+  // Generate navigation items based on enabled modules
+  const navigationItems = React.useMemo(() => {
+    if (isLoading || !moduleContext) return [];
+    
+    const items = [
+      { 
+        name: 'الرئيسية', 
+        href: '/dashboard', 
+        icon: Home 
+      }
+    ];
+
+    // Add modules based on what's enabled
+    if (moduleContext.activeModules.includes('properties')) {
+      items.push({
+        name: 'العقارات', 
+        href: '/properties', 
+        icon: Building2 
+      });
+    }
+
+    if (moduleContext.activeModules.includes('contracts') || moduleContext.activeModules.includes('customers')) {
+      items.push({
+        name: 'العقود', 
+        href: '/contracts', 
+        icon: FileText 
+      });
+    }
+
+    if (moduleContext.activeModules.includes('vehicles')) {
+      items.push({
+        name: 'الأسطول', 
+        href: '/fleet', 
+        icon: Car 
+      });
+    }
+
+    items.push({
+      name: 'التقارير', 
+      href: '/reports', 
+      icon: BarChart3 
+    });
+
+    return items;
+  }, [moduleContext, isLoading]);
+
+  if (isLoading) {
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border">
+        <div className="grid grid-cols-5 h-mobile-bottom-nav">
+          {/* Loading skeleton */}
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex flex-col items-center justify-center gap-1 py-2 px-1">
+              <div className="h-5 w-5 bg-muted rounded-full animate-pulse" />
+              <div className="h-3 w-12 bg-muted rounded-full animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className="h-mobile-safe-bottom bg-card" />
+      </nav>
+    );
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border">
