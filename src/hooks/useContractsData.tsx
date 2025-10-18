@@ -3,6 +3,64 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
+// Extend the contract type to include vehicle data
+interface ContractWithVehicle extends Record<string, any> {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  vehicle_id?: string | null;
+  contract_number: string;
+  contract_date: string;
+  start_date: string;
+  end_date: string;
+  contract_amount: number;
+  monthly_amount: number;
+  status: string;
+  contract_type: string;
+  description?: string;
+  terms?: string;
+  created_at: string;
+  updated_at: string;
+  cost_center_id?: string;
+  account_id?: string;
+  journal_entry_id?: string;
+  auto_renew_enabled?: boolean;
+  renewal_terms?: any;
+  vehicle_returned?: boolean;
+  last_renewal_check?: string;
+  last_payment_check_date?: string;
+  suspension_reason?: string;
+  expired_at?: string;
+  created_by?: string;
+  total_paid?: number;
+  balance_due?: number;
+  linked_payments_amount?: number;
+  customers?: {
+    id: string;
+    first_name_ar?: string;
+    last_name_ar?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name_ar?: string;
+    company_name?: string;
+    customer_type?: string;
+  };
+  cost_center?: {
+    id: string;
+    center_code?: string;
+    center_name?: string;
+    center_name_ar?: string;
+  };
+  vehicle?: {
+    id: string;
+    plate_number: string;
+    make: string;
+    model: string;
+    year?: number;
+    status: string;
+  };
+}
+
 export const useContractsData = (filters: any = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
@@ -52,7 +110,44 @@ export const useContractsData = (filters: any = {}) => {
         throw error;
       }
       
-      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts:', data?.length || 0);
+      // If we have contracts, fetch vehicle data separately to avoid PostgREST relationship issues
+      if (data && data.length > 0) {
+        // Extract unique vehicle IDs (filter out null/undefined values)
+        const vehicleIds = [...new Set(
+          data
+            .filter((contract: any) => contract.vehicle_id)
+            .map((contract: any) => contract.vehicle_id)
+            .filter((id: any) => id != null)
+        )];
+        
+        console.log('🔍 [CONTRACTS_QUERY] Found vehicle IDs to fetch:', vehicleIds.length);
+        
+        if (vehicleIds.length > 0) {
+          // Fetch vehicles in a separate query
+          const { data: vehiclesData, error: vehiclesError } = await supabase
+            .from('vehicles')
+            .select('id, plate_number, make, model, year, status')
+            .in('id', vehicleIds);
+          
+          if (!vehiclesError && vehiclesData) {
+            console.log('✅ [CONTRACTS_QUERY] Successfully fetched vehicles:', vehiclesData.length);
+            
+            // Create a map for quick lookup
+            const vehiclesMap = new Map(vehiclesData.map((vehicle: any) => [vehicle.id, vehicle]));
+            
+            // Attach vehicle data to contracts
+            data.forEach((contract: any) => {
+              if (contract.vehicle_id && vehiclesMap.has(contract.vehicle_id)) {
+                contract.vehicle = vehiclesMap.get(contract.vehicle_id);
+              }
+            });
+          } else if (vehiclesError) {
+            console.error('❌ [CONTRACTS_QUERY] Error fetching vehicles:', vehiclesError);
+          }
+        }
+      }
+      
+      console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts with vehicle data:', data?.length || 0);
       return data || [];
     },
     enabled: !!user?.id,
@@ -78,15 +173,15 @@ export const useContractsData = (filters: any = {}) => {
       return (caNum === 0) || (maNum === 0)
     }
 
-    const activeContracts = contracts.filter(c => c.status === 'active' && !isZeroAmount(c));
-    const underReviewContracts = contracts.filter(c => c.status === 'under_review' && !isZeroAmount(c));
-    const draftContracts = contracts.filter(c => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review'].includes(c.status)));
-    const expiredContracts = contracts.filter(c => c.status === 'expired');
-    const suspendedContracts = contracts.filter(c => c.status === 'suspended');
-    const cancelledContracts = contracts.filter(c => c.status === 'cancelled');
+    const activeContracts = contracts.filter((c: any) => c.status === 'active' && !isZeroAmount(c));
+    const underReviewContracts = contracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
+    const draftContracts = contracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review'].includes(c.status)));
+    const expiredContracts = contracts.filter((c: any) => c.status === 'expired');
+    const suspendedContracts = contracts.filter((c: any) => c.status === 'suspended');
+    const cancelledContracts = contracts.filter((c: any) => c.status === 'cancelled');
     
     // Include both active and under_review contracts in revenue calculation
-    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract) => sum + (contract.contract_amount || 0), 0);
+    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract: any) => sum + (contract.contract_amount || 0), 0);
 
     return {
       activeContracts,
@@ -118,14 +213,17 @@ export const useContractsData = (filters: any = {}) => {
       return contracts;
     }
     
-    const result = contracts.filter(contract => {
+    const result = contracts.filter((contract: any) => {
       // Search filter
       if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.toLowerCase().trim();
         const searchableText = [
           contract.contract_number || '',
           contract.description || '',
-          contract.terms || ''
+          contract.terms || '',
+          contract.vehicle?.plate_number || '',
+          contract.vehicle?.make || '',
+          contract.vehicle?.model || ''
         ].join(' ').toLowerCase();
         
         if (!searchableText.includes(searchTerm)) {
@@ -157,6 +255,13 @@ export const useContractsData = (filters: any = {}) => {
       // Cost center filter
       if (filters.cost_center_id && filters.cost_center_id !== 'all' && filters.cost_center_id !== '') {
         if (contract.cost_center_id !== filters.cost_center_id) {
+          return false;
+        }
+      }
+
+      // Vehicle filter
+      if (filters.vehicle_id && filters.vehicle_id !== 'all' && filters.vehicle_id !== '') {
+        if (contract.vehicle_id !== filters.vehicle_id) {
           return false;
         }
       }

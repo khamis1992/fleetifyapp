@@ -77,12 +77,30 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   const { data: vehicle } = useQuery({
     queryKey: ['vehicle', contract?.vehicle_id],
     queryFn: async () => {
-      if (!contract?.vehicle_id) return null;
-      const { data } = await supabase
+      // Log for debugging
+      console.log('🔍 [VEHICLE_FETCH] Fetching vehicle data for contract:', {
+        contractId: contract?.id,
+        vehicleId: contract?.vehicle_id,
+        hasVehicleId: !!contract?.vehicle_id
+      });
+      
+      if (!contract?.vehicle_id) {
+        console.log('⚠️ [VEHICLE_FETCH] No vehicle_id found in contract');
+        return null;
+      }
+      
+      const { data, error } = await supabase
         .from('vehicles')
         .select('*')
         .eq('id', contract.vehicle_id)
         .single();
+      
+      if (error) {
+        console.error('❌ [VEHICLE_FETCH] Error fetching vehicle:', error);
+        return null;
+      }
+      
+      console.log('✅ [VEHICLE_FETCH] Successfully fetched vehicle:', data);
       return data;
     },
     enabled: !!contract?.vehicle_id
@@ -235,6 +253,19 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       setIsGeneratingInvoices(false);
     }
   };
+
+  // Log contract data for debugging
+  React.useEffect(() => {
+    if (contract) {
+      console.log('🔍 [CONTRACT_DETAILS] Contract data received:', {
+        id: contract.id,
+        contract_number: contract.contract_number,
+        vehicle_id: contract.vehicle_id,
+        hasVehicle: !!contract.vehicle,
+        vehicle: contract.vehicle
+      });
+    }
+  }, [contract]);
 
   if (!contract) return null;
 
@@ -495,7 +526,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
               )}
 
               {/* Vehicle Information */}
-              {vehicle && (
+              {(vehicle || (contract.vehicle && Object.keys(contract.vehicle).length > 0)) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -506,22 +537,30 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">رقم اللوحة</span>
-                      <span className="font-medium">{vehicle.plate_number}</span>
+                      <span className="font-medium">
+                        {vehicle?.plate_number || contract.vehicle?.plate_number || 'غير محدد'}
+                      </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">نوع المركبة</span>
-                      <span className="font-medium">{vehicle.make} {vehicle.model}</span>
+                      <span className="font-medium">
+                        {(vehicle?.make || contract.vehicle?.make || '') + ' ' + (vehicle?.model || contract.vehicle?.model || '')}
+                      </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">سنة الصنع</span>
-                      <span className="font-medium">{vehicle.year}</span>
+                      <span className="font-medium">
+                        {vehicle?.year || contract.vehicle?.year || 'غير محدد'}
+                      </span>
                     </div>
                     
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">حالة المركبة</span>
-                      <Badge variant="outline">{vehicle.status}</Badge>
+                      <Badge variant="outline">
+                        {vehicle?.status || contract.vehicle?.status || 'غير محدد'}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>

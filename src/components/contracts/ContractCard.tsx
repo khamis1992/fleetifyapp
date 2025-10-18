@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2 } from 'lucide-react';
+import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +103,19 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                 )}
               </div>
             </div>
+            
+            {/* Vehicle information */}
+            {contract.vehicle && (
+              <div className="flex items-center gap-3 md:col-span-2">
+                <Car className="h-5 w-5 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">المركبة</p>
+                  <p className="font-medium truncate">
+                    {contract.vehicle.make} {contract.vehicle.model} ({contract.vehicle.plate_number})
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
             
           {/* Cost center */}
