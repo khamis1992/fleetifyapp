@@ -131,7 +131,6 @@ export const unifyDigits = (input: string, targetType: 'arabic' | 'english' = 'e
 
 /**
  * Get default number formatting preferences for the company
- * TODO: Integrate with database to store company-specific preferences
  */
 export const getNumberPreferences = (): NumberFormatOptions => {
   return {
