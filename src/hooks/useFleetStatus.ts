@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface FleetStatus {
   available: number;
@@ -11,12 +11,12 @@ export interface FleetStatus {
 }
 
 export const useFleetStatus = () => {
-  const { user } = useAuth();
+  const { companyId, filter } = useUnifiedCompanyAccess();
   
   return useQuery({
-    queryKey: ['fleet-status', user?.profile?.company_id],
+    queryKey: ['fleet-status', companyId],
     queryFn: async (): Promise<FleetStatus> => {
-      if (!user?.profile?.company_id) {
+      if (!companyId) {
         return {
           available: 0,
           rented: 0,
@@ -30,7 +30,7 @@ export const useFleetStatus = () => {
       const { data: vehicles } = await supabase
         .from('vehicles')
         .select('status')
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .eq('is_active', true);
 
       if (!vehicles) {
@@ -63,7 +63,7 @@ export const useFleetStatus = () => {
         total
       };
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
