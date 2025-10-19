@@ -12,7 +12,13 @@
       "Bash(node:*)",
       "Bash(cat:*)",
       "Bash(npm run dev:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(pnpm typecheck)",
+      "Bash(while read file)",
+      "Bash(done)",
+      "Bash(for file in src/hooks/useFinance.ts src/hooks/useReportExport.ts src/hooks/useLandingAnalytics.ts src/hooks/useContracts.ts src/hooks/usePayments.ts)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(for file in src/hooks/useFinance.ts src/hooks/useLandingAnalytics.ts src/hooks/useContracts.ts)"
     ],
     "deny": [],
     "ask": []

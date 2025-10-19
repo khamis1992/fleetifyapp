@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useInvoices, useFixedAssets } from "@/hooks/useFinance"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -20,9 +30,15 @@ import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog"
 import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions"
 import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
 import { HelpIcon } from '@/components/help/HelpIcon';
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import { toast } from "sonner"
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 
 const Invoices = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { companyId } = useUnifiedCompanyAccess()
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
@@ -33,10 +49,77 @@ const Invoices = () => {
   const [editingInvoice, setEditingInvoice] = useState<any>(null)
   const [showPayDialog, setShowPayDialog] = useState(false)
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
 
   const { data: invoices, isLoading, error } = useInvoices()
   const { data: costCenters } = useCostCenters()
   const { data: fixedAssets } = useFixedAssets()
+
+  // Delete invoice mutation
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // Check if invoice has related payments
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('invoice_id', invoiceId)
+        .limit(1)
+
+      if (payments && payments.length > 0) {
+        throw new Error('لا يمكن حذف الفاتورة لأنها مرتبطة بدفعات. يرجى حذف الدفعات أولاً.')
+      }
+
+      // Check if invoice has journal entry
+      const { data: invoice } = await supabase
+        .from('invoices')
+        .select('journal_entry_id')
+        .eq('id', invoiceId)
+        .single()
+
+      if (invoice?.journal_entry_id) {
+        throw new Error('لا يمكن حذف الفاتورة لأنها مرتبطة بقيد محاسبي. يرجى عكس القيد أولاً.')
+      }
+
+      // Delete invoice items first
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoiceId)
+
+      if (itemsError) throw itemsError
+
+      // Delete invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceId)
+
+      if (error) throw error
+
+      return invoiceId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices', companyId] })
+      toast.success('تم حذف الفاتورة بنجاح')
+      setDeleteDialogOpen(false)
+      setInvoiceToDelete(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'فشل حذف الفاتورة')
+    }
+  })
+
+  const handleDeleteInvoice = (invoice: any) => {
+    setInvoiceToDelete(invoice)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (invoiceToDelete) {
+      deleteInvoiceMutation.mutate(invoiceToDelete.id)
+    }
+  }
 
   const filteredInvoices = invoices?.filter(invoice => {
     const matchesSearch = invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -293,10 +376,7 @@ const Invoices = () => {
                          onEdit={() => {
                            setEditingInvoice(invoice);
                          }}
-                         onDelete={() => {
-                           // TODO: Implement delete functionality
-                           console.log('Delete invoice:', invoice.id);
-                         }}
+                         onDelete={() => handleDeleteInvoice(invoice)}
                          onPay={() => {
                            setSelectedInvoice(invoice);
                            setShowPayDialog(true);
@@ -341,6 +421,33 @@ const Invoices = () => {
           }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الفاتورة</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف الفاتورة رقم <strong>{invoiceToDelete?.invoice_number}</strong>؟
+              <br />
+              <br />
+              <span className="text-destructive font-medium">
+                هذا الإجراء لا يمكن التراجع عنه. سيتم حذف الفاتورة وجميع بنودها نهائياً.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteInvoiceMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteInvoiceMutation.isPending ? 'جاري الحذف...' : 'حذف الفاتورة'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

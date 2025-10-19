@@ -14,7 +14,7 @@ export type { Customer, CustomerFormData, CustomerFilters };
 export const useCustomers = (filters?: CustomerFilters) => {
   const { user } = useAuth();
   const { companyId, filter, isBrowsingMode, browsedCompany, hasGlobalAccess } = useUnifiedCompanyAccess();
-  
+
   // Memoize filters to prevent unnecessary re-queries
   const memoizedFilters = useMemo(() => filters, [
     filters?.search,
@@ -22,9 +22,11 @@ export const useCustomers = (filters?: CustomerFilters) => {
     filters?.customer_type,
     filters?.is_blacklisted,
     filters?.includeInactive,
-    filters?.limit
+    filters?.limit,
+    filters?.page,
+    filters?.pageSize
   ]);
-  
+
   return useQuery({
     queryKey: ['customers', companyId, isBrowsingMode, browsedCompany?.id, memoizedFilters],
     queryFn: async () => {
@@ -94,10 +96,66 @@ export const useCustomers = (filters?: CustomerFilters) => {
         );
       }
 
-      // Apply limit
-      if (memoizedFilters?.limit) {
-        query = query.limit(memoizedFilters.limit);
+      // Apply pagination or limit
+      const page = memoizedFilters?.page || 1;
+      const pageSize = memoizedFilters?.pageSize || memoizedFilters?.limit || 50;
+
+      // For pagination, we need total count
+      let totalCount = 0;
+      if (memoizedFilters?.page || memoizedFilters?.pageSize) {
+        // Build count query with same filters
+        let countQuery = supabase
+          .from('customers')
+          .select('*', { count: 'exact', head: true });
+
+        // Apply same filters to count query
+        if (filter.company_id) {
+          countQuery = countQuery.eq('company_id', filter.company_id);
+        } else if (hasGlobalAccess && !isBrowsingMode) {
+          if (companyId) {
+            countQuery = countQuery.eq('company_id', companyId);
+          }
+        } else if (companyId) {
+          countQuery = countQuery.eq('company_id', companyId);
+        }
+
+        if (!memoizedFilters?.includeInactive) {
+          countQuery = countQuery.eq('is_active', true);
+        }
+        if (memoizedFilters?.customer_type) {
+          countQuery = countQuery.eq('customer_type', memoizedFilters.customer_type);
+        }
+        if (memoizedFilters?.is_blacklisted !== undefined) {
+          countQuery = countQuery.eq('is_blacklisted', memoizedFilters.is_blacklisted);
+        }
+        const searchTerm = memoizedFilters?.search || memoizedFilters?.searchTerm;
+        if (searchTerm?.trim() && searchTerm.trim().length >= 2) {
+          const search = searchTerm.trim();
+          countQuery = countQuery.or(
+            `first_name.ilike.%${search}%,` +
+            `last_name.ilike.%${search}%,` +
+            `first_name_ar.ilike.%${search}%,` +
+            `last_name_ar.ilike.%${search}%,` +
+            `company_name.ilike.%${search}%,` +
+            `company_name_ar.ilike.%${search}%,` +
+            `phone.ilike.%${search}%,` +
+            `email.ilike.%${search}%,` +
+            `national_id.ilike.%${search}%`
+          );
+        }
+
+        const { count, error: countError } = await countQuery;
+        if (countError) {
+          console.error('❌ [CUSTOMERS] Error fetching count:', countError);
+        } else {
+          totalCount = count || 0;
+        }
       }
+
+      // Apply pagination with range
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
 
       // Order by creation date
       query = query.order('created_at', { ascending: false });
@@ -109,14 +167,28 @@ export const useCustomers = (filters?: CustomerFilters) => {
         throw error;
       }
 
+      const result = {
+        data: data || [],
+        pagination: memoizedFilters?.page || memoizedFilters?.pageSize ? {
+          page,
+          pageSize,
+          totalCount,
+          totalPages: Math.ceil(totalCount / pageSize),
+          hasMore: (page * pageSize) < totalCount
+        } : undefined
+      };
+
       console.log('✅ [CUSTOMERS] Successfully fetched customers:', {
         count: data?.length || 0,
+        totalCount,
+        page,
+        pageSize,
         companyFilter: filter.company_id,
         isBrowsingMode,
         browsedCompanyName: browsedCompany?.name
       });
-      
-      return data || [];
+
+      return result;
     },
     enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000,
@@ -224,13 +296,16 @@ export const useCreateCustomer = () => {
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
-        (oldData: any) => {
+        (oldData: unknown) => {
           if (!oldData) return [data];
-          
+
+          // Type guard: check if oldData is an array
+          if (!Array.isArray(oldData)) return [data];
+
           // Check if customer already exists to avoid duplicates
-          const exists = oldData.some((customer: any) => customer.id === data.id);
+          const exists = (oldData as Customer[]).some((customer: Customer) => customer.id === data.id);
           if (exists) return oldData;
-          
+
           // Add new customer to the beginning of the list
           return [data, ...oldData];
         }
@@ -251,14 +326,15 @@ export const useCreateCustomer = () => {
       
       toast.success(`تم إضافة العميل "${customerName}" بنجاح`);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('💥 Customer creation failed:', error);
-      
+
       // التحقق من رسالة العميل المحظور
-      if (error.message && error.message.includes('العميل محظور:')) {
-        toast.error(error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('العميل محظور:')) {
+        toast.error(errorMessage);
       } else {
-        toast.error(error.message || 'حدث خطأ أثناء إضافة العميل');
+        toast.error(errorMessage || 'حدث خطأ أثناء إضافة العميل');
       }
     }
   });
@@ -317,11 +393,14 @@ export const useUpdateCustomer = () => {
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
-        (oldData: any) => {
+        (oldData: unknown) => {
           if (!oldData) return [data];
-          
+
+          // Type guard: check if oldData is an array
+          if (!Array.isArray(oldData)) return [data];
+
           // Update the existing customer in the list
-          return oldData.map((customer: any) => 
+          return (oldData as Customer[]).map((customer: Customer) =>
             customer.id === data.id ? { ...customer, ...data } : customer
           );
         }
@@ -340,14 +419,15 @@ export const useUpdateCustomer = () => {
       
       toast.success(`تم تحديث بيانات العميل "${customerName}" بنجاح`);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('❌ Customer update failed:', error);
-      
+
       // التحقق من رسالة العميل المحظور
-      if (error.message && error.message.includes('العميل محظور:')) {
-        toast.error(error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('العميل محظور:')) {
+        toast.error(errorMessage);
       } else {
-        toast.error(error.message || 'حدث خطأ أثناء تحديث بيانات العميل');
+        toast.error(errorMessage || 'حدث خطأ أثناء تحديث بيانات العميل');
       }
     }
   });
@@ -376,17 +456,20 @@ export const useToggleCustomerBlacklist = () => {
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
-        (oldData: any) => {
+        (oldData: unknown) => {
           if (!oldData) return oldData;
-          
+
+          // Type guard: check if oldData is an array
+          if (!Array.isArray(oldData)) return oldData;
+
           // Update the existing customer in the list
-          return oldData.map((customer: any) => 
-            customer.id === variables.customerId 
-              ? { 
-                  ...customer, 
+          return (oldData as Customer[]).map((customer: Customer) =>
+            customer.id === variables.customerId
+              ? {
+                  ...customer,
                   is_blacklisted: variables.isBlacklisted,
                   blacklist_reason: variables.isBlacklisted ? variables.reason : null
-                } 
+                }
               : customer
           );
         }
@@ -670,8 +753,8 @@ export const useCustomerDiagnostics = () => {
             console.log('🧹 Test customer cleaned up');
           }
 
-        } catch (error: any) {
-          diagnostics.database.error = error.message;
+        } catch (error: unknown) {
+          diagnostics.database.error = error instanceof Error ? error.message : String(error);
           console.error('❌ Database diagnostics error:', error);
         }
       }

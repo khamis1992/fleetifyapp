@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 // تعريف أنواع البيانات للتعلم المستمر
 interface LearningData {
@@ -106,6 +107,8 @@ interface RelationshipEdge {
 }
 
 export const useContinuousLearningSystem = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+
   // حالات النظام
   const [isLearning, setIsLearning] = useState(false);
   const [learningStats, setLearningStats] = useState({
@@ -169,23 +172,36 @@ export const useContinuousLearningSystem = () => {
     // إضافة للمخزن المؤقت
     learningDataBuffer.current.push(learningData);
 
-    // حفظ في قاعدة البيانات - تم تعطيله مؤقتاً لحين إنشاء جدول learning_interactions
+    // حفظ في قاعدة البيانات
     try {
-      // TODO: إنشاء جدول learning_interactions
-      // await supabase
-      //   .from('learning_interactions')
-      //   .insert({
-      //     id: learningData.id,
-      //     query: learningData.query,
-      //     response: learningData.response,
-      //     context_data: learningData.contextData,
-      //     performance_metrics: learningData.performanceMetrics,
-      //     user_id: userId,
-      //     session_id: sessionId,
-      //     created_at: learningData.timestamp.toISOString()
-      //   });
+      if (!companyId) {
+        console.warn('Company ID not available for learning interaction');
+        return learningData.id;
+      }
 
-      console.log('Learning interaction recorded (in memory):', learningData.id);
+      const { error } = await supabase
+        .from('learning_interactions')
+        .insert({
+          id: learningData.id,
+          company_id: companyId,
+          user_id: userId,
+          session_id: sessionId,
+          query: learningData.query,
+          response: learningData.response,
+          intent: learningData.contextData.intent,
+          context_data: learningData.contextData,
+          response_time_ms: learningData.performanceMetrics.responseTime,
+          confidence_score: learningData.performanceMetrics.confidence,
+          sources_used: learningData.performanceMetrics.sourcesUsed || [],
+          cache_hit: learningData.performanceMetrics.cacheHit || false,
+          created_at: learningData.timestamp.toISOString()
+        });
+
+      if (error) {
+        console.error('Error inserting learning interaction:', error);
+      } else {
+        console.log('Learning interaction recorded in database:', learningData.id);
+      }
     } catch (error) {
       console.error('Error recording learning interaction:', error);
     }
@@ -216,11 +232,24 @@ export const useContinuousLearningSystem = () => {
         interaction.userFeedback = { ...interaction.userFeedback, ...feedback };
       }
 
-      // تحديث في قاعدة البيانات - تم تعطيله مؤقتاً
-      // await supabase
-      //   .from('learning_interactions')
-      //   .update({ user_feedback: feedback })
-      //   .eq('id', interactionId);
+      // تحديث في قاعدة البيانات
+      const { error } = await supabase
+        .from('learning_interactions')
+        .update({
+          rating: feedback.rating,
+          helpful: feedback.helpful,
+          accurate: feedback.accurate,
+          relevant: feedback.relevant,
+          feedback_comments: feedback.comments,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', interactionId);
+
+      if (error) {
+        console.error('Error updating feedback in database:', error);
+      } else {
+        console.log('User feedback updated in database:', interactionId);
+      }
 
       // تشغيل التعلم من التقييم
       await learnFromFeedback(interactionId, feedback);

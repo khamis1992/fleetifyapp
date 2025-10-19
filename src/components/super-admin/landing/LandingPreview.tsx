@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Monitor, Smartphone, Tablet, Eye, RefreshCw, ExternalLink } from 'lucide-react';
 import { useLandingSections } from '@/hooks/useLandingSections';
 import { useLandingThemes } from '@/hooks/useLandingThemes';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export const LandingPreview: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
@@ -18,6 +19,7 @@ export const LandingPreview: React.FC = () => {
   
   const { sections, loading: sectionsLoading } = useLandingSections();
   const { themes, loading: themesLoading } = useLandingThemes();
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
 
   const deviceDimensions = {
     desktop: { width: '100%', height: '600px' },
@@ -32,8 +34,15 @@ export const LandingPreview: React.FC = () => {
   };
 
   const handleOpenInNewTab = () => {
-    // TODO: Open preview in new tab/window
-    window.open('/preview', '_blank');
+    const params = new URLSearchParams();
+    if (selectedCompany && selectedCompany !== 'all') {
+      params.set('company', selectedCompany);
+    }
+    if (selectedTheme) {
+      params.set('theme', selectedTheme);
+    }
+    const url = `/landing/preview${params.toString() ? '?' + params.toString() : ''}`;
+    window.open(url, '_blank');
   };
 
   const activeSections = sections.filter(section => section.is_active);
@@ -49,7 +58,15 @@ export const LandingPreview: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies (Global)</SelectItem>
-              {/* TODO: Add company options */}
+              {companiesLoading ? (
+                <SelectItem value="" disabled>Loading companies...</SelectItem>
+              ) : (
+                companies?.map(company => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name_ar || company.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           

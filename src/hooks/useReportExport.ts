@@ -4,14 +4,29 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
+interface DamagePoint {
+  x: number;
+  y: number;
+  severity: 'minor' | 'moderate' | 'severe';
+  description?: string;
+}
+
+interface ReportData {
+  metrics?: Record<string, number | string>;
+  summary?: Record<string, number | string>;
+  data?: Record<string, unknown>[];
+  conditionReport?: Record<string, unknown>;
+  damagePoints?: DamagePoint[];
+}
+
 interface ExportOptions {
   reportId: string;
   moduleType: string;
-  filters: any;
+  filters: Record<string, unknown>;
   title: string;
   format?: 'html' | 'pdf' | 'excel';
   conditionReportId?: string; // For damage reports
-  damagePoints?: any[]; // For damage reports
+  damagePoints?: DamagePoint[]; // For damage reports
 }
 
 export const useReportExport = () => {
@@ -894,7 +909,7 @@ const { toast } = useToast();
     }
   `;
 
-  const generateReportContent = (options: ExportOptions, data: any) => {
+  const generateReportContent = (options: ExportOptions, data: ReportData) => {
     // Handle damage report specific content
     if (options.moduleType === 'damage_report') {
       return generateDamageReportContent(options, data);
@@ -952,7 +967,7 @@ const { toast } = useToast();
     return content;
   };
 
-  const generateDamageReportContent = (options: ExportOptions, data: any) => {
+  const generateDamageReportContent = (options: ExportOptions, data: ReportData) => {
     const { conditionReport, damagePoints, summary } = data;
 
     if (!conditionReport) {
@@ -1034,7 +1049,7 @@ const { toast } = useToast();
     `;
   };
 
-  const generateDamageVisualization = (damagePoints: any[]) => {
+  const generateDamageVisualization = (damagePoints: DamagePoint[]) => {
     if (!damagePoints || damagePoints.length === 0) {
       return `
         <div class="damage-visualization">
@@ -1089,7 +1104,7 @@ const { toast } = useToast();
     `;
   };
 
-  const generateDamageTable = (damagePoints: any[]) => {
+  const generateDamageTable = (damagePoints: DamagePoint[]) => {
     if (!damagePoints || damagePoints.length === 0) {
       return '';
     }
@@ -1171,7 +1186,7 @@ const { toast } = useToast();
     return labels[key] || key;
   };
 
-  const generateDataTable = (data: any[], moduleType: string): string => {
+  const generateDataTable = (data: Record<string, unknown>[], moduleType: string): string => {
     if (!data || data.length === 0) {
       return `
         <div class="no-data">
@@ -1224,19 +1239,19 @@ const { toast } = useToast();
     }
   };
 
-  const getTableCells = (item: any, moduleType: string): string => {
+  const getTableCells = (item: Record<string, unknown>, moduleType: string): string => {
     switch (moduleType) {
       case 'hr':
         return `
-          <td>${item.full_name || 'غير محدد'}</td>
-          <td>${item.department || 'غير محدد'}</td>
-          <td>${item.position || 'غير محدد'}</td>
-          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${(item.full_name as string) || 'غير محدد'}</td>
+          <td>${(item.department as string) || 'غير محدد'}</td>
+          <td>${(item.position as string) || 'غير محدد'}</td>
+          <td>${item.created_at ? new Date(item.created_at as string).toLocaleDateString('ar-SA') : 'غير محدد'}</td>
         `;
       case 'fleet':
         return `
-          <td>${item.plate_number || 'غير محدد'}</td>
-          <td>${item.vehicle_type || 'غير محدد'}</td>
+          <td>${(item.plate_number as string) || 'غير محدد'}</td>
+          <td>${(item.vehicle_type as string) || 'غير محدد'}</td>
           <td>${item.status || 'غير محدد'}</td>
           <td>${item.year || 'غير محدد'}</td>
         `;

@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 // import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { BarChart3, TrendingUp, Users, MousePointer, Eye, Download } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MousePointer, Eye, Download, FileText } from 'lucide-react';
 import { useLandingAnalytics } from '@/hooks/useLandingAnalytics';
+import { useCompanies } from '@/hooks/useCompanies';
+import { exportAnalyticsSummaryToPDF } from '@/utils/exportHelpers';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export const LandingAnalytics: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
@@ -18,39 +21,101 @@ export const LandingAnalytics: React.FC = () => {
     companyId: selectedCompany,
     dateRange
   });
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
 
-  const handleExport = async () => {
+  const handleExportCSV = async () => {
     try {
       await exportAnalytics({ companyId: selectedCompany, dateRange });
     } catch (error) {
-      console.error('Failed to export analytics:', error);
+      console.error('Failed to export analytics to CSV:', error);
     }
   };
 
-  const mockMetrics = {
-    totalViews: 12547,
-    uniqueVisitors: 8932,
-    conversionRate: 3.2,
-    averageTimeOnPage: '2:34',
-    bounceRate: 42.1,
-    topPages: [
-      { path: '/', views: 8934, title: 'Homepage' },
-      { path: '/features', views: 2156, title: 'Features' },
-      { path: '/pricing', views: 1457, title: 'Pricing' }
-    ],
-    deviceBreakdown: {
-      desktop: 58.2,
-      mobile: 36.8,
-      tablet: 5.0
-    },
-    trafficSources: {
-      direct: 34.2,
-      organic: 28.9,
-      social: 18.3,
-      referral: 12.4,
-      email: 6.2
+  const handleExportPDF = async () => {
+    try {
+      const companyName = companies?.find(c => c.id === selectedCompany)?.name || 'All Companies';
+      await exportAnalyticsSummaryToPDF(metrics, companyName, dateRange);
+    } catch (error) {
+      console.error('Failed to export analytics to PDF:', error);
     }
   };
+
+  // Use analytics data from hook, or fallback to defaults if not available
+  const metrics = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? {
+        totalViews: analytics.reduce((sum, item) => sum + (item.views || 0), 0),
+        uniqueVisitors: new Set(analytics.map(item => item.visitor_id).filter(Boolean)).size,
+        conversionRate: analytics.filter(item => item.converted).length / analytics.length * 100 || 0,
+        averageTimeOnPage: calculateAverageTime(analytics),
+        bounceRate: analytics.filter(item => item.bounced).length / analytics.length * 100 || 0,
+        topPages: getTopPages(analytics),
+        deviceBreakdown: getDeviceBreakdown(analytics),
+        trafficSources: getTrafficSources(analytics),
+      }
+    : {
+        // Default fallback data when no analytics available
+        totalViews: 0,
+        uniqueVisitors: 0,
+        conversionRate: 0,
+        averageTimeOnPage: '0:00',
+        bounceRate: 0,
+        topPages: [],
+        deviceBreakdown: { desktop: 0, mobile: 0, tablet: 0 },
+        trafficSources: { direct: 0, organic: 0, social: 0, referral: 0, email: 0 },
+      };
+
+  function calculateAverageTime(data: any[]): string {
+    if (!data.length) return '0:00';
+    const avgSeconds = data.reduce((sum, item) => sum + (item.time_on_page || 0), 0) / data.length;
+    const minutes = Math.floor(avgSeconds / 60);
+    const seconds = Math.floor(avgSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  function getTopPages(data: any[]) {
+    const pageCounts: Record<string, {path: string; title: string; views: number}> = {};
+    data.forEach(item => {
+      if (item.page_path) {
+        if (!pageCounts[item.page_path]) {
+          pageCounts[item.page_path] = { path: item.page_path, title: item.page_title || item.page_path, views: 0 };
+        }
+        pageCounts[item.page_path].views++;
+      }
+    });
+    return Object.values(pageCounts).sort((a, b) => b.views - a.views).slice(0, 3);
+  }
+
+  function getDeviceBreakdown(data: any[]) {
+    if (!data.length) return { desktop: 0, mobile: 0, tablet: 0 };
+    const counts = { desktop: 0, mobile: 0, tablet: 0 };
+    data.forEach(item => {
+      const device = item.device_type?.toLowerCase() || 'desktop';
+      if (device in counts) counts[device as keyof typeof counts]++;
+    });
+    const total = data.length;
+    return {
+      desktop: (counts.desktop / total * 100) || 0,
+      mobile: (counts.mobile / total * 100) || 0,
+      tablet: (counts.tablet / total * 100) || 0,
+    };
+  }
+
+  function getTrafficSources(data: any[]) {
+    if (!data.length) return { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
+    const counts = { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
+    data.forEach(item => {
+      const source = item.traffic_source?.toLowerCase() || 'direct';
+      if (source in counts) counts[source as keyof typeof counts]++;
+    });
+    const total = data.length;
+    return {
+      direct: (counts.direct / total * 100) || 0,
+      organic: (counts.organic / total * 100) || 0,
+      social: (counts.social / total * 100) || 0,
+      referral: (counts.referral / total * 100) || 0,
+      email: (counts.email / total * 100) || 0,
+    };
+  }
 
   return (
     <div className="space-y-6">
@@ -62,7 +127,15 @@ export const LandingAnalytics: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies</SelectItem>
-              {/* TODO: Add company options */}
+              {companiesLoading ? (
+                <SelectItem value="" disabled>Loading companies...</SelectItem>
+              ) : (
+                companies?.map(company => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name_ar || company.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           
@@ -71,10 +144,24 @@ export const LandingAnalytics: React.FC = () => {
           </Button>
         </div>
         
-        <Button onClick={handleExport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportCSV}>
+              <FileText className="h-4 w-4 mr-2" />
+              Export to CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Export to PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Key Metrics */}
@@ -85,7 +172,7 @@ export const LandingAnalytics: React.FC = () => {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockMetrics.totalViews.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : metrics.totalViews.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+12.5%</span> from last month
             </p>
@@ -98,7 +185,7 @@ export const LandingAnalytics: React.FC = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockMetrics.uniqueVisitors.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : metrics.uniqueVisitors.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+8.3%</span> from last month
             </p>
@@ -111,7 +198,7 @@ export const LandingAnalytics: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockMetrics.conversionRate}%</div>
+            <div className="text-2xl font-bold">{loading ? '...' : metrics.conversionRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-red-600">-0.4%</span> from last month
             </p>
@@ -124,7 +211,7 @@ export const LandingAnalytics: React.FC = () => {
             <MousePointer className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockMetrics.averageTimeOnPage}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : metrics.averageTimeOnPage}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+0:12</span> from last month
             </p>
@@ -137,7 +224,7 @@ export const LandingAnalytics: React.FC = () => {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockMetrics.bounceRate}%</div>
+            <div className="text-2xl font-bold">{loading ? '...' : metrics.bounceRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">-2.1%</span> from last month
             </p>
@@ -153,7 +240,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockMetrics.topPages.map((page, index) => (
+              {metrics.topPages.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No page data available</p>
+              ) : (
+                metrics.topPages.map((page, index) => (
                 <div key={page.path} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{page.title}</p>
@@ -164,7 +254,8 @@ export const LandingAnalytics: React.FC = () => {
                     <p className="text-sm text-muted-foreground">views</p>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -176,16 +267,16 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(mockMetrics.deviceBreakdown).map(([device, percentage]) => (
+              {Object.entries(metrics.deviceBreakdown).map(([device, percentage]) => (
                 <div key={device} className="space-y-2">
                   <div className="flex justify-between">
                     <span className="capitalize">{device}</span>
-                    <span>{percentage}%</span>
+                    <span>{typeof percentage === 'number' ? percentage.toFixed(1) : percentage}%</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full"
-                      style={{ width: `${percentage}%` }}
+                      style={{ width: `${typeof percentage === 'number' ? percentage : 0}%` }}
                     />
                   </div>
                 </div>
@@ -201,7 +292,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(mockMetrics.trafficSources).map(([source, percentage]) => (
+              {Object.entries(metrics.trafficSources).map(([source, percentage]) => (
                 <div key={source} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize">
@@ -209,7 +300,7 @@ export const LandingAnalytics: React.FC = () => {
                     </Badge>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">{percentage}%</p>
+                    <p className="font-medium">{typeof percentage === 'number' ? percentage.toFixed(1) : percentage}%</p>
                   </div>
                 </div>
               ))}

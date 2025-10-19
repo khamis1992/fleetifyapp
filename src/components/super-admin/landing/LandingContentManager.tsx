@@ -9,9 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Globe, Languages, FileText, Image, Video, Link2 } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Globe, Languages, FileText, Image, Video, Link2, Copy } from 'lucide-react';
 import { useLandingSections } from '@/hooks/useLandingSections';
 import { useLandingContent } from '@/hooks/useLandingContent';
+import { useCompanies } from '@/hooks/useCompanies';
 import { toast } from 'sonner';
 
 interface Section {
@@ -28,6 +29,7 @@ interface Section {
 export const LandingContentManager: React.FC = () => {
   const { sections, loading: sectionsLoading, createSection, updateSection, deleteSection } = useLandingSections();
   const { content, loading: contentLoading, createContent, updateContent, deleteContent } = useLandingContent();
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,6 +89,23 @@ export const LandingContentManager: React.FC = () => {
     });
   };
 
+  const handleDuplicateSection = async (section: Section) => {
+    try {
+      await createSection({
+        section_type: section.section_type,
+        section_name: `${section.section_name} (Copy)`,
+        section_name_ar: section.section_name_ar ? `${section.section_name_ar} (نسخة)` : '',
+        is_active: false, // Start duplicates as inactive
+        sort_order: sections.length + 1,
+        settings: section.settings || {},
+        company_id: section.company_id,
+      });
+      toast.success('Section duplicated successfully');
+    } catch (error) {
+      toast.error('Failed to duplicate section');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -97,7 +116,15 @@ export const LandingContentManager: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies (Global)</SelectItem>
-              {/* TODO: Add company options */}
+              {companiesLoading ? (
+                <SelectItem value="" disabled>Loading companies...</SelectItem>
+              ) : (
+                companies?.map(company => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name_ar || company.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -162,6 +189,7 @@ export const LandingContentManager: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleSectionVisibility(section)}
+                      title={section.is_active ? "Hide section" : "Show section"}
                     >
                       {section.is_active ? (
                         <EyeOff className="h-4 w-4" />
@@ -172,10 +200,19 @@ export const LandingContentManager: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDuplicateSection(section)}
+                      title="Duplicate section"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setEditingSection(section);
                         setIsDialogOpen(true);
                       }}
+                      title="Edit section"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -183,6 +220,7 @@ export const LandingContentManager: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteSection(section.id)}
+                      title="Delete section"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

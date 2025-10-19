@@ -6,6 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { 
   Plus, 
   Search, 
@@ -94,22 +107,28 @@ const Customers = () => {
     includeInactive: true // Include both active and inactive blacklisted customers
   });
   
-  // Extract pagination data
-  const totalCustomersInDB = customersResult?.total || 0;
-  const totalPages = Math.ceil(totalCustomersInDB / pageSize);
-  
-  // Extract customers array and handle potential null/undefined with comprehensive fallbacks
+  // Extract pagination data and customers array
   const customers = React.useMemo(() => {
-    // Handle different possible return structures
+    // Handle new pagination structure
+    if (customersResult && typeof customersResult === 'object' && 'data' in customersResult) {
+      return Array.isArray(customersResult.data) ? customersResult.data : [];
+    }
+    // Handle legacy structure (array returned directly)
     if (Array.isArray(customersResult)) {
       return customersResult;
     }
-    if (customersResult && typeof customersResult === 'object' && Array.isArray(customersResult.data)) {
-      return customersResult.data;
-    }
-    // Always return an empty array as fallback
     return [];
   }, [customersResult]);
+
+  const paginationInfo = React.useMemo(() => {
+    if (customersResult && typeof customersResult === 'object' && 'pagination' in customersResult) {
+      return customersResult.pagination;
+    }
+    return undefined;
+  }, [customersResult]);
+
+  const totalCustomersInDB = paginationInfo?.totalCount || customers.length;
+  const totalPages = paginationInfo?.totalPages || Math.ceil(totalCustomersInDB / pageSize);
   
   // Virtual scrolling implementation
   const virtualizer = useVirtualizer({
@@ -155,14 +174,103 @@ const Customers = () => {
     setShowEditDialog(true);
   };
 
+  // Delete & Blacklist state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  // Delete customer mutation
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      // Check for dependencies - contracts
+      const { data: contracts } = await supabase
+        .from('contracts')
+        .select('id')
+        .eq('customer_id', customerId)
+        .limit(1);
+
+      if (contracts && contracts.length > 0) {
+        throw new Error('لا يمكن حذف العميل لأنه مرتبط بعقود. يرجى حذف العقود أولاً.');
+      }
+
+      // Check for dependencies - payments
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('customer_id', customerId)
+        .limit(1);
+
+      if (payments && payments.length > 0) {
+        throw new Error('لا يمكن حذف العميل لأنه مرتبط بدفعات. يرجى حذف الدفعات أولاً.');
+      }
+
+      // Delete customer_accounts links first
+      const { error: accountsError } = await supabase
+        .from('customer_accounts')
+        .delete()
+        .eq('customer_id', customerId);
+
+      if (accountsError) throw accountsError;
+
+      // Delete customer
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      return customerId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
+      toast.success('تم حذف العميل بنجاح');
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'فشل حذف العميل');
+    }
+  });
+
+  // Toggle blacklist mutation
+  const toggleBlacklistMutation = useMutation({
+    mutationFn: async ({ customerId, isBlacklisted }: { customerId: string; isBlacklisted: boolean }) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ is_blacklisted: !isBlacklisted })
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      return { customerId, newStatus: !isBlacklisted };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
+      toast.success(data.newStatus ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'فشل تحديث حالة القائمة السوداء');
+    }
+  });
+
   const handleDeleteCustomer = (customer: Customer) => {
-    // TODO: Implement delete functionality
-    toast.info('سيتم تنفيذ ميزة الحذف قريباً');
+    setCustomerToDelete(customer);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (customerToDelete) {
+      deleteCustomerMutation.mutate(customerToDelete.id);
+    }
   };
 
   const handleToggleBlacklist = (customer: Customer) => {
-    // TODO: Implement blacklist toggle
-    toast.info('سيتم تنفيذ ميزة القائمة السوداء قريباً');
+    toggleBlacklistMutation.mutate({
+      customerId: customer.id,
+      isBlacklisted: customer.is_blacklisted || false
+    });
   };
 
   // Calculate stats with comprehensive safety checks
@@ -678,6 +786,39 @@ const Customers = () => {
         open={showCSVUpload}
         onOpenChange={setShowCSVUpload}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف العميل{' '}
+              <strong>
+                {customerToDelete?.customer_type === 'individual'
+                  ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
+                  : customerToDelete?.company_name}
+              </strong>
+              ؟
+              <br />
+              <br />
+              <span className="text-destructive font-medium">
+                هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteCustomerMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -30,8 +30,8 @@ export interface Vehicle {
   monthly_rate?: number
   deposit_amount?: number
   notes?: string
-  images?: any[]
-  features?: any[]
+  images?: string[] | Record<string, unknown>[]
+  features?: string[]
   is_active?: boolean
   created_at: string
   updated_at: string
@@ -50,9 +50,9 @@ export interface Vehicle {
   warranty_end_date?: string
   current_location?: string
   gps_tracking_device?: string
-  safety_features?: any[]
-  entertainment_features?: any[]
-  comfort_features?: any[]
+  safety_features?: string[]
+  entertainment_features?: string[]
+  comfort_features?: string[]
   vehicle_condition?: string
   fuel_type?: string
   ownership_status?: string
@@ -64,10 +64,10 @@ export interface Vehicle {
   total_fuel_cost?: number
   average_fuel_consumption?: number
   total_distance_km?: number
-  vehicle_documents?: any[]
-  emergency_contact_info?: any
-  maintenance_schedule?: any[]
-  performance_metrics?: any
+  vehicle_documents?: Record<string, unknown>[]
+  emergency_contact_info?: Record<string, unknown>
+  maintenance_schedule?: Record<string, unknown>[]
+  performance_metrics?: Record<string, unknown>
   // Legacy fields for backward compatibility
   transmission?: string
   body_type?: string
@@ -181,7 +181,7 @@ export interface VehicleMaintenance {
   created_by?: string
   assigned_to?: string
   notes?: string
-  attachments?: any[]
+  attachments?: Record<string, unknown>[]
 }
 
 // New interfaces for enhanced fleet management
@@ -225,7 +225,7 @@ export interface VehicleInspection {
   estimated_repair_cost?: number
   next_inspection_due?: string
   inspection_certificate_url?: string
-  photos?: any[]
+  photos?: string[] | Record<string, unknown>[]
   is_passed: boolean
   notes?: string
   created_by?: string
@@ -265,8 +265,8 @@ export interface TrafficViolation {
   vehicle_impounded: boolean
   impound_location?: string
   impound_release_date?: string
-  photos?: any[]
-  documents?: any[]
+  photos?: string[] | Record<string, unknown>[]
+  documents?: Record<string, unknown>[]
   notes?: string
   created_by?: string
   created_at: string
@@ -986,7 +986,7 @@ export const useFleetAnalytics = (companyId?: string) => {
         console.log("Fetched vehicles:", vehicles?.length || 0)
 
         // Get vehicle pricing data separately
-        let vehiclePricing: any[] = []
+        let vehiclePricing: VehiclePricing[] = []
         if (vehicles && vehicles.length > 0) {
           const { data: pricingData, error: pricingError } = await supabase
             .from("vehicle_pricing")
@@ -1004,7 +1004,12 @@ export const useFleetAnalytics = (companyId?: string) => {
         console.log("Fetched vehicle pricing:", vehiclePricing.length)
 
         // Get fixed assets data separately
-        let fixedAssets: any[] = []
+        let fixedAssets: Array<{
+          id: string
+          book_value?: number
+          accumulated_depreciation?: number
+          purchase_cost?: number
+        }> = []
         if (vehicles && vehicles.length > 0) {
           const { data: assetsData, error: assetsError } = await supabase
             .from("fixed_assets")
@@ -1022,7 +1027,7 @@ export const useFleetAnalytics = (companyId?: string) => {
         console.log("Fetched fixed assets:", fixedAssets.length)
 
         // Get maintenance statistics
-        let maintenance: any[] = []
+        let maintenance: Array<VehicleMaintenance & { vehicles?: { plate_number: string } }> = []
         if (vehicles && vehicles.length > 0) {
           const { data: maintenanceData, error: maintenanceError } = await supabase
             .from("vehicle_maintenance")

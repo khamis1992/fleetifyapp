@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useApprovalWorkflows, RequestSource } from '@/hooks/useApprovalWorkflows';
 import { toast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 const REQUEST_SOURCE_LABELS: Record<RequestSource, { ar: string; en: string }> = {
   payroll: { ar: 'الرواتب', en: 'Payroll' },
@@ -30,21 +33,39 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
 }) => {
   const [selectedSourceType, setSelectedSourceType] = useState<RequestSource | undefined>();
   const { data: workflows, isLoading } = useApprovalWorkflows(selectedSourceType);
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
 
-  const handleToggleWorkflow = async (workflowId: string, currentStatus: boolean) => {
-    try {
-      // TODO: Implement toggle workflow status
+  // Toggle workflow status mutation
+  const toggleWorkflowMutation = useMutation({
+    mutationFn: async ({ workflowId, currentStatus }: { workflowId: string; currentStatus: boolean }) => {
+      const { error } = await supabase
+        .from('approval_workflows')
+        .update({ is_active: !currentStatus })
+        .eq('id', workflowId);
+
+      if (error) throw error;
+
+      return { workflowId, newStatus: !currentStatus };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['approval-workflows', companyId] });
       toast({
-        title: currentStatus ? "تم إيقاف سير العمل" : "تم تفعيل سير العمل",
+        title: data.newStatus ? "تم تفعيل سير العمل" : "تم إيقاف سير العمل",
         description: "تم تحديث حالة سير العمل بنجاح",
       });
-    } catch (error) {
+    },
+    onError: (error: any) => {
       toast({
         title: "خطأ في تحديث سير العمل",
-        description: "حدث خطأ أثناء تحديث حالة سير العمل",
+        description: error.message || "حدث خطأ أثناء تحديث حالة سير العمل",
         variant: "destructive",
       });
     }
+  });
+
+  const handleToggleWorkflow = async (workflowId: string, currentStatus: boolean) => {
+    toggleWorkflowMutation.mutate({ workflowId, currentStatus });
   };
 
   const getStepsCount = (workflow: any) => {

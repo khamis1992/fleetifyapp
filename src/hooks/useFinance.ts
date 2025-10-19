@@ -798,8 +798,8 @@ export const useUpdateInvoice = () => {
       }
     }) => {
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
-      
-      const updateData: any = {
+
+      const updateData: Record<string, unknown> = {
         ...invoiceData,
         updated_at: new Date().toISOString()
       }
@@ -1343,8 +1343,8 @@ export const useUpdateFixedAsset = () => {
       depreciation_account_id?: string
       notes?: string
     }) => {
-      const updateData: any = { ...assetData }
-      
+      const updateData: Record<string, unknown> = { ...assetData }
+
       // Recalculate book value if purchase cost or salvage value changed
       if (assetData.purchase_cost !== undefined || assetData.salvage_value !== undefined) {
         const { data: currentAsset } = await supabase

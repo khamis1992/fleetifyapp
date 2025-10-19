@@ -23,7 +23,7 @@ export interface Contract {
   account_id?: string;
   journal_entry_id?: string;
   auto_renew_enabled?: boolean;
-  renewal_terms?: any;
+  renewal_terms?: Record<string, unknown>;
   vehicle_returned?: boolean;
   last_renewal_check?: string;
   last_payment_check_date?: string;
