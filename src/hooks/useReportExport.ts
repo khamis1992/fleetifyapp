@@ -4,7 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getReportStyles } from "@/utils/reportStyles";
-import { getConditionLabel, getSeverityLabel, getSummaryLabel, getModuleTitle } from "@/utils/reportLabels";
+import { getModuleTitle } from "@/utils/reportLabels";
+import {
+  generateReportContent,
+  generateDataTable,
+  getTableHeaders,
+  getTableCells
+} from "@/utils/reportFormatters";
 
 interface DamagePoint {
   x: number;
@@ -43,7 +49,7 @@ const { toast } = useToast();
     try {
       // Generate report data
       const reportData = await fetchReportData(options);
-      const reportContent = generateReportContent(options, reportData);
+      const reportContent = generateReportContent(options, reportData, formatCurrency);
       
       // Create simple print-friendly content matching the template
       const printContent = `
@@ -378,7 +384,7 @@ const { toast } = useToast();
 
         <!-- Report Content -->
         <main class="report-content">
-            ${generateReportContent(options, reportData)}
+            ${generateReportContent(options, reportData, formatCurrency)}
         </main>
 
         <!-- Report Footer -->

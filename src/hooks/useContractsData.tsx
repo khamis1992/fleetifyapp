@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { queryKeys } from '@/utils/queryKeys';
 
 // Extend the contract type to include vehicle data
 interface ContractWithVehicle extends Record<string, any> {
@@ -66,7 +67,11 @@ export const useContractsData = (filters: any = {}) => {
 
   // Fetch contracts with customer data
   const { data: contractsResponse, isLoading, refetch } = useQuery({
-    queryKey: getQueryKey(['contracts', filters?.page, filters?.pageSize]),
+    queryKey: queryKeys.contracts.list({
+      page: filters?.page,
+      pageSize: filters?.pageSize,
+      companyId: filter?.company_id
+    }),
     queryFn: async () => {
       const companyId = filter?.company_id || null;
       console.log('🔍 [CONTRACTS_QUERY] Fetching contracts', {

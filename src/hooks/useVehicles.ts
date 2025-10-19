@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useSystemLogger } from "@/hooks/useSystemLogger"
 import { useCurrentCompanyId } from "./useUnifiedCompanyAccess"
 import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration"
+import { queryKeys } from "@/utils/queryKeys"
 
 export interface Vehicle {
   id: string
@@ -297,7 +298,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const { limit, status } = options || {}
   
   return useQuery({
-    queryKey: ["vehicles", companyId, limit, status],
+    queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }),
     queryFn: async () => {
       if (!companyId) return []
       
@@ -334,7 +335,7 @@ export const useAvailableVehicles = () => {
   const companyId = useCurrentCompanyId()
   
   return useQuery({
-    queryKey: ["available-vehicles", companyId],
+    queryKey: queryKeys.vehicles.available(companyId),
     queryFn: async () => {
       if (!companyId) return []
       
@@ -455,14 +456,14 @@ export const useCreateVehicle = () => {
       console.log("🔄 [USE_CREATE_VEHICLE] Invalidating vehicle queries...");
       
       // Invalidate all related queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["vehicles", companyId] })
-      queryClient.invalidateQueries({ queryKey: ["available-vehicles", companyId] })
-      queryClient.invalidateQueries({ queryKey: ["fleet-analytics"] })
-      queryClient.invalidateQueries({ queryKey: ["fleet-status"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.fleetAnalytics() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.fleetStatus() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
       
       // Force a refetch to ensure data is updated immediately
-      queryClient.refetchQueries({ queryKey: ["vehicles", companyId] })
+      queryClient.refetchQueries({ queryKey: queryKeys.vehicles.lists() })
       
       console.log("✅ [USE_CREATE_VEHICLE] Success flow completed");
     },
@@ -501,9 +502,9 @@ export const useUpdateVehicle = () => {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
-      queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
       toast({
         title: "Success",
         description: "Vehicle updated successfully",
@@ -534,9 +535,9 @@ export const useDeleteVehicle = () => {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
-      queryClient.invalidateQueries({ queryKey: ["available-vehicles"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles-paginated"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
       toast({
         title: "Success",
         description: "Vehicle deactivated successfully",
@@ -556,7 +557,7 @@ export const useDeleteVehicle = () => {
 // Vehicle Pricing Hooks
 export const useVehiclePricing = (vehicleId: string) => {
   return useQuery({
-    queryKey: ["vehicle-pricing", vehicleId],
+    queryKey: queryKeys.vehicles.pricing(vehicleId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_pricing")
@@ -588,7 +589,7 @@ export const useCreateVehiclePricing = () => {
       return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-pricing", data.vehicle_id] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.pricing(data.vehicle_id) })
       toast({
         title: "Success",
         description: "Vehicle pricing created successfully",
@@ -600,7 +601,7 @@ export const useCreateVehiclePricing = () => {
 // Vehicle Insurance Hooks
 export const useVehicleInsurance = (vehicleId: string) => {
   return useQuery({
-    queryKey: ["vehicle-insurance", vehicleId],
+    queryKey: queryKeys.vehicles.insurance(vehicleId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_insurance")
@@ -632,7 +633,7 @@ export const useCreateVehicleInsurance = () => {
       return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-insurance", data.vehicle_id] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.insurance(data.vehicle_id) })
       toast({
         title: "Success",
         description: "Vehicle insurance created successfully",
@@ -651,7 +652,7 @@ export const useVehicleMaintenance = (vehicleId?: string, options?: {
   const { limit = 50, status, priority = false } = options || {}
   
   return useQuery({
-    queryKey: ["vehicle-maintenance", vehicleId, user?.profile?.company_id, status, limit],
+    queryKey: queryKeys.vehicles.maintenance(vehicleId),
     queryFn: async () => {
       if (!user?.profile?.company_id) return []
       
@@ -749,7 +750,7 @@ export const useCreateVehicleMaintenance = () => {
       return data
     },
     onSuccess: async (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-maintenance"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
       
       // Create journal entry for maintenance
       try {
@@ -764,7 +765,7 @@ export const useCreateVehicleMaintenance = () => {
       } catch (error) {
         console.error('Failed to create journal entry for maintenance:', error);
       }
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "نجح",
         description: "تم إنشاء طلب الصيانة بنجاح",
@@ -790,8 +791,8 @@ export const useUpdateVehicleMaintenance = () => {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-maintenance"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "Success",
         description: "Maintenance updated successfully",
@@ -835,7 +836,7 @@ export const useProcessVehicleDepreciation = () => {
       return data
     },
     onSuccess: (processedCount) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: ["fixed-assets"] })
       queryClient.invalidateQueries({ queryKey: ["depreciation-records"] })
       toast({
@@ -858,7 +859,7 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
   const { log } = useSystemLogger();
   
   return useQuery({
-    queryKey: ['available-vehicles-for-contracts', companyId],
+    queryKey: queryKeys.vehicles.availableForContracts(companyId),
     queryFn: async () => {
       log.info('vehicles', 'fetch_available_for_contracts', `استعلام المركبات للشركة ${companyId}`, {
         resource_type: 'vehicle',
@@ -964,7 +965,7 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
 // Hook for fleet analytics and reports
 export const useFleetAnalytics = (companyId?: string) => {
   return useQuery({
-    queryKey: ["fleet-analytics", companyId],
+    queryKey: queryKeys.vehicles.fleetAnalytics(companyId),
     queryFn: async () => {
       if (!companyId) throw new Error("Company ID is required")
 
@@ -1114,7 +1115,7 @@ export const useOdometerReadings = (vehicleId?: string) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["odometer-readings", vehicleId, user?.profile?.company_id],
+    queryKey: queryKeys.vehicles.odometerReadings(vehicleId),
     queryFn: async () => {
       if (!user?.profile?.company_id) return []
       
@@ -1156,8 +1157,8 @@ export const useCreateOdometerReading = () => {
       return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["odometer-readings"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "نجح",
         description: "تم تسجيل قراءة العداد بنجاح",
@@ -1171,7 +1172,7 @@ export const useVehicleInspections = (vehicleId?: string) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["vehicle-inspections", vehicleId, user?.profile?.company_id],
+    queryKey: queryKeys.vehicles.inspections(vehicleId),
     queryFn: async () => {
       if (!user?.profile?.company_id) return []
       
@@ -1213,8 +1214,8 @@ export const useCreateVehicleInspection = () => {
       return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-inspections"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "نجح",
         description: "تم تسجيل تقييم المركبة بنجاح",
@@ -1231,7 +1232,7 @@ export const useVehicleActivityLog = (vehicleId?: string) => {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ["vehicle-activity-log", vehicleId, user?.profile?.company_id],
+    queryKey: queryKeys.vehicles.activityLog(vehicleId),
     queryFn: async () => {
       if (!user?.profile?.company_id) return []
       
@@ -1274,8 +1275,8 @@ export const useCreateVehicleActivity = () => {
       return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle-activity-log"] })
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "نجح",
         description: "تم تسجيل النشاط بنجاح",

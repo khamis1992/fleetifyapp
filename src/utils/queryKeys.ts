@@ -81,6 +81,9 @@ export const queryKeys = {
     list: (filters?: CustomerFilters) => [...queryKeys.customers.lists(), filters] as const,
     details: () => [...queryKeys.customers.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.customers.details(), id] as const,
+    notes: (customerId: string) => [...queryKeys.customers.all, 'notes', customerId] as const,
+    financialSummary: (customerId: string) => [...queryKeys.customers.all, 'financial-summary', customerId] as const,
+    diagnostics: (userId?: string) => [...queryKeys.customers.all, 'diagnostics', userId] as const,
   },
 
   // CONTRACTS
@@ -117,6 +120,17 @@ export const queryKeys = {
     list: (filters?: VehicleFilters) => [...queryKeys.vehicles.lists(), filters] as const,
     details: () => [...queryKeys.vehicles.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.vehicles.details(), id] as const,
+    available: (companyId?: string) => [...queryKeys.vehicles.all, 'available', companyId] as const,
+    availableForContracts: (companyId?: string) => [...queryKeys.vehicles.all, 'available-for-contracts', companyId] as const,
+    paginated: () => [...queryKeys.vehicles.all, 'paginated'] as const,
+    pricing: (vehicleId: string) => [...queryKeys.vehicles.all, 'pricing', vehicleId] as const,
+    insurance: (vehicleId: string) => [...queryKeys.vehicles.all, 'insurance', vehicleId] as const,
+    maintenance: (vehicleId?: string) => [...queryKeys.vehicles.all, 'maintenance', vehicleId] as const,
+    odometerReadings: (vehicleId: string) => [...queryKeys.vehicles.all, 'odometer', vehicleId] as const,
+    inspections: (vehicleId: string) => [...queryKeys.vehicles.all, 'inspections', vehicleId] as const,
+    activityLog: (vehicleId: string) => [...queryKeys.vehicles.all, 'activity-log', vehicleId] as const,
+    fleetAnalytics: (companyId?: string) => ['fleet-analytics', companyId] as const,
+    fleetStatus: () => ['fleet-status'] as const,
   },
 
   // COMPANIES

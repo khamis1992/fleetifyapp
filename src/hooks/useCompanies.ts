@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCompanyScopeContext, hasGlobalAccess } from '@/lib/companyScope';
+import { queryKeys } from '@/utils/queryKeys';
 
 export interface Company {
   id: string;
@@ -21,7 +22,7 @@ export const useCompanies = () => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['companies'],
+    queryKey: queryKeys.companies.list(),
     queryFn: async (): Promise<Company[]> => {
       const context = getCompanyScopeContext(user);
       

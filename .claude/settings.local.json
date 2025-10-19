@@ -18,7 +18,8 @@
       "Bash(done)",
       "Bash(for file in src/hooks/useFinance.ts src/hooks/useReportExport.ts src/hooks/useLandingAnalytics.ts src/hooks/useContracts.ts src/hooks/usePayments.ts)",
       "Bash(do echo \"=== $file ===\")",
-      "Bash(for file in src/hooks/useFinance.ts src/hooks/useLandingAnalytics.ts src/hooks/useContracts.ts)"
+      "Bash(for file in src/hooks/useFinance.ts src/hooks/useLandingAnalytics.ts src/hooks/useContracts.ts)",
+      "Bash(git checkout -- src/hooks/useReportExport.ts)"
     ],
     "deny": [],
     "ask": []

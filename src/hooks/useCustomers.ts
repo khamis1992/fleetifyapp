@@ -7,6 +7,7 @@ import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 import { useMemo } from 'react';
+import { queryKeys } from "@/utils/queryKeys";
 
 // Re-export types for compatibility
 export type { Customer, CustomerFormData, CustomerFilters };
@@ -28,7 +29,10 @@ export const useCustomers = (filters?: CustomerFilters) => {
   ]);
 
   return useQuery({
-    queryKey: ['customers', companyId, isBrowsingMode, browsedCompany?.id, memoizedFilters],
+    queryKey: queryKeys.customers.list({
+      ...memoizedFilters,
+      companyId,
+    }),
     queryFn: async () => {
       console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
         companyId,
@@ -295,7 +299,7 @@ export const useCreateCustomer = () => {
       
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
-        { queryKey: ['customers'] },
+        { queryKey: queryKeys.customers.lists() },
         (oldData: unknown) => {
           if (!oldData) return [data];
 
@@ -315,8 +319,8 @@ export const useCreateCustomer = () => {
       queryClient.setQueryData(['customer', data.id], data);
       
       // Trigger refetch as backup (but don't wait for it)
-      queryClient.refetchQueries({ 
-        queryKey: ['customers'],
+      queryClient.refetchQueries({
+        queryKey: queryKeys.customers.lists(),
         type: 'active' 
       });
       
@@ -392,7 +396,7 @@ export const useUpdateCustomer = () => {
       
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
-        { queryKey: ['customers'] },
+        { queryKey: queryKeys.customers.lists() },
         (oldData: unknown) => {
           if (!oldData) return [data];
 
@@ -411,7 +415,7 @@ export const useUpdateCustomer = () => {
       
       // Also trigger refetch as a backup (but don't wait for it)
       queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' });
-      queryClient.refetchQueries({ queryKey: ['customer', data.id], type: 'active' });
+      queryClient.refetchQueries({ queryKey: queryKeys.customers.detail(data.id), type: 'active' });
       
       const customerName = data.customer_type === 'individual' 
         ? `${data.first_name} ${data.last_name}`
@@ -455,7 +459,7 @@ export const useToggleCustomerBlacklist = () => {
     onSuccess: async (_, variables) => {
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
-        { queryKey: ['customers'] },
+        { queryKey: queryKeys.customers.lists() },
         (oldData: unknown) => {
           if (!oldData) return oldData;
 
@@ -476,8 +480,8 @@ export const useToggleCustomerBlacklist = () => {
       );
       
       // Also trigger refetch as a backup (but don't wait for it)
-      queryClient.refetchQueries({ 
-        queryKey: ['customers'],
+      queryClient.refetchQueries({
+        queryKey: queryKeys.customers.lists(),
         type: 'active' 
       });
       
@@ -492,7 +496,7 @@ export const useToggleCustomerBlacklist = () => {
 
 export const useCustomer = (customerId: string) => {
   return useQuery({
-    queryKey: ['customer', customerId],
+    queryKey: queryKeys.customers.detail(customerId),
     queryFn: async () => {
       console.log('🔍 Fetching customer data for ID:', customerId);
       
@@ -555,7 +559,7 @@ export const useCustomer = (customerId: string) => {
 
 export const useCustomerNotes = (customerId: string) => {
   return useQuery({
-    queryKey: ['customer-notes', customerId],
+    queryKey: queryKeys.customers.notes(customerId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_notes')
@@ -605,7 +609,7 @@ export const useCreateCustomerNote = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['customer-notes', variables.customerId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.notes(variables.customerId) });
       toast.success('تم إضافة الملاحظة بنجاح');
     },
     onError: (error) => {
@@ -617,7 +621,7 @@ export const useCreateCustomerNote = () => {
 
 export const useCustomerFinancialSummary = (customerId: string) => {
   return useQuery({
-    queryKey: ['customer-financial-summary', customerId],
+    queryKey: queryKeys.customers.financialSummary(customerId),
     queryFn: async () => {
       return {
         currentBalance: 0,
@@ -640,7 +644,7 @@ export const useCustomerDiagnostics = () => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['customer-diagnostics', user?.id],
+    queryKey: queryKeys.customers.diagnostics(user?.id),
     queryFn: async () => {
       const companyId = user?.profile?.company_id || user?.company?.id;
       
