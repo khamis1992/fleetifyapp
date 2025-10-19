@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { HelpIcon } from '@/components/help/HelpIcon';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function CostCenters() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +28,7 @@ export default function CostCenters() {
   const createCostCenter = useCreateCostCenter();
   const updateCostCenter = useUpdateCostCenter();
   const deleteCostCenter = useDeleteCostCenter();
+  const { formatCurrency } = useCurrencyFormatter();
 
   console.log('📝 [COST_CENTERS_PAGE] Component state:', {
     costCenters,
@@ -69,12 +71,12 @@ export default function CostCenters() {
     setIsCreateDialogOpen(false);
   };
 
-  const handleViewCostCenter = (center: CostCenter) => {
+  const handleViewCostCenter = (center: any) => {
     setSelectedCostCenter(center);
     setIsViewDialogOpen(true);
   };
 
-  const handleEditCostCenter = (center: CostCenter) => {
+  const handleEditCostCenter = (center: any) => {
     setSelectedCostCenter(center);
     setIsEditDialogOpen(true);
   };
@@ -238,7 +240,7 @@ export default function CostCenters() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBudget.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalBudget)}</div>
             <p className="text-xs text-muted-foreground">
               الموازنة المخصصة
             </p>
@@ -251,7 +253,7 @@ export default function CostCenters() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalActual.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalActual)}</div>
             <p className="text-xs text-muted-foreground">
               المبلغ المصروف
             </p>
@@ -312,8 +314,10 @@ export default function CostCenters() {
             </TableHeader>
             <TableBody>
               {filteredCostCenters?.map((center) => {
-                const remaining = (center.budget_amount || 0) - (center.actual_amount || 0);
-                const utilization = center.budget_amount > 0 ? ((center.actual_amount || 0) / center.budget_amount) * 100 : 0;
+                const budgetAmount = center.budget_amount ?? 0;
+                const actualAmount = center.actual_amount ?? 0;
+                const remaining = budgetAmount - actualAmount;
+                const utilization = budgetAmount > 0 ? (actualAmount / budgetAmount) * 100 : 0;
                 
                 return (
                   <TableRow key={center.id}>
@@ -326,10 +330,10 @@ export default function CostCenters() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{center.budget_amount?.toFixed(3)} د.ك</TableCell>
-                    <TableCell>{center.actual_amount?.toFixed(3)} د.ك</TableCell>
+                    <TableCell>{formatCurrency(center.budget_amount || 0)}</TableCell>
+                    <TableCell>{formatCurrency(center.actual_amount || 0)}</TableCell>
                     <TableCell className={remaining < 0 ? 'text-red-600' : 'text-green-600'}>
-                      {remaining.toFixed(3)} د.ك
+                      {formatCurrency(remaining)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
@@ -356,7 +360,7 @@ export default function CostCenters() {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => handleViewCostCenter(center)}
+                                onClick={() => handleViewCostCenter(center as CostCenter)}
                                 className="h-8 w-8"
                               >
                                 <Eye className="h-4 w-4" />
@@ -372,7 +376,7 @@ export default function CostCenters() {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => handleEditCostCenter(center)}
+                                onClick={() => handleEditCostCenter(center as CostCenter)}
                                 className="h-8 w-8"
                               >
                                 <Edit className="h-4 w-4" />
@@ -460,11 +464,11 @@ export default function CostCenters() {
               )}
               <div>
                 <Label>المبلغ المخصص</Label>
-                <p className="mt-1 font-medium">{selectedCostCenter.budget_amount?.toFixed(3)} د.ك</p>
+                <p className="mt-1 font-medium">{formatCurrency(selectedCostCenter.budget_amount || 0)}</p>
               </div>
               <div>
                 <Label>المصروف الفعلي</Label>
-                <p className="mt-1 font-medium">{selectedCostCenter.actual_amount?.toFixed(3)} د.ك</p>
+                <p className="mt-1 font-medium">{formatCurrency(selectedCostCenter.actual_amount || 0)}</p>
               </div>
               {selectedCostCenter.description && (
                 <div>

@@ -99,7 +99,10 @@ export const useVehiclesPaginated = (
         nextMonth.setMonth(nextMonth.getMonth() + 1);
         const nextMonthStr = nextMonth.toISOString().split('T')[0];
         
-        query = query.gte('inspection_due_date', today).lte('inspection_due_date', nextMonthStr);
+        query = query
+          .not('inspection_due_date', 'is', null)
+          .gte('inspection_due_date', today)
+          .lte('inspection_due_date', nextMonthStr);
       }
 
       // Apply insurance expiring filter
@@ -109,7 +112,10 @@ export const useVehiclesPaginated = (
         nextMonth.setMonth(nextMonth.getMonth() + 1);
         const nextMonthStr = nextMonth.toISOString().split('T')[0];
         
-        query = query.gte('insurance_expiry', today).lte('insurance_expiry', nextMonthStr);
+        query = query
+          .not('insurance_expiry', 'is', null)
+          .gte('insurance_expiry', today)
+          .lte('insurance_expiry', nextMonthStr);
       }
 
       // Apply pagination and ordering

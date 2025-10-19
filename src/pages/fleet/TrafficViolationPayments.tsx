@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAllTrafficViolationPayments, useTrafficViolationPaymentsStats } from '@/hooks/useTrafficViolationPayments';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -17,6 +18,7 @@ export default function TrafficViolationPayments() {
 
   const { data: payments = [], isLoading } = useAllTrafficViolationPayments();
   const { data: stats } = useTrafficViolationPaymentsStats();
+  const { formatCurrency } = useCurrencyFormatter();
 
   // تصفية البيانات
   const filteredPayments = payments.filter(payment => {
@@ -110,7 +112,7 @@ export default function TrafficViolationPayments() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAmount.toFixed(3)} د.ك</div>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalAmount)}</div>
               <p className="text-xs text-muted-foreground">
                 من جميع المدفوعات
               </p>
@@ -123,7 +125,7 @@ export default function TrafficViolationPayments() {
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completedAmount.toFixed(3)} د.ك</div>
+              <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.completedAmount)}</div>
               <p className="text-xs text-muted-foreground">
                 من المدفوعات المكتملة
               </p>
@@ -136,7 +138,7 @@ export default function TrafficViolationPayments() {
               <Calendar className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingAmount.toFixed(3)} د.ك</div>
+              <div className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.pendingAmount)}</div>
               <p className="text-xs text-muted-foreground">
                 من المدفوعات المعلقة
               </p>
@@ -260,7 +262,7 @@ export default function TrafficViolationPayments() {
                       <TableCell>
                         {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
-                      <TableCell className="font-bold">{payment.amount.toFixed(3)} د.ك</TableCell>
+                      <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
                       <TableCell>{getPaymentMethodLabel(payment.payment_method)}</TableCell>
                       <TableCell>{getPaymentTypeBadge(payment.payment_type)}</TableCell>
                       <TableCell>{getStatusBadge(payment.status)}</TableCell>

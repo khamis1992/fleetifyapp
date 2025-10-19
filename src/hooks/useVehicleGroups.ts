@@ -26,9 +26,19 @@ export const useVehicleGroups = () => {
         return [];
       }
 
-      // Since the table doesn't exist yet, return empty array
-      // TODO: Implement after database migration is successful
-      return [];
+      const { data, error } = await supabase
+        .from('vehicle_groups')
+        .select('*')
+        .eq('company_id', user.profile.company_id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching vehicle groups:', error);
+        throw error;
+      }
+
+      return data || [];
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -45,18 +55,22 @@ export const useCreateVehicleGroup = () => {
         throw new Error('Company ID is required');
       }
 
-      // Since the table doesn't exist yet, simulate success
-      // TODO: Implement after database migration is successful
-      const mockData = {
-        id: Date.now().toString(),
-        ...groupData,
-        company_id: user.profile.company_id,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      const { data, error } = await supabase
+        .from('vehicle_groups')
+        .insert({
+          ...groupData,
+          company_id: user.profile.company_id,
+          is_active: true,
+        })
+        .select()
+        .single();
 
-      return mockData;
+      if (error) {
+        console.error('Error creating vehicle group:', error);
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-groups'] });

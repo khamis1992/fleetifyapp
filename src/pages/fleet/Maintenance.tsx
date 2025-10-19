@@ -67,6 +67,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export default function Maintenance() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined)
   const [activeTab, setActiveTab] = useState("vehicles")
   
   // Performance-optimized hooks with conditional loading based on active tab
@@ -424,7 +425,10 @@ export default function Maintenance() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => setShowMaintenanceForm(true)}>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedVehicleId(vehicle.id);
+                                setShowMaintenanceForm(true);
+                              }}>
                                 <Settings className="h-4 w-4 mr-2" />
                                 جدولة صيانة
                               </DropdownMenuItem>
@@ -541,8 +545,12 @@ export default function Maintenance() {
 
       <Suspense fallback={<div>Loading...</div>}>
         <MaintenanceForm 
+          vehicleId={selectedVehicleId}
           open={showMaintenanceForm}
-          onOpenChange={setShowMaintenanceForm}
+          onOpenChange={(open) => {
+            setShowMaintenanceForm(open);
+            if (!open) setSelectedVehicleId(undefined);
+          }}
         />
       </Suspense>
     </div>

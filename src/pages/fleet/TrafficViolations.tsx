@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useTrafficViolations, TrafficViolation } from '@/hooks/useTrafficViolations';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -33,6 +34,7 @@ export default function TrafficViolations() {
   const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
 
   const { data: violations = [], isLoading } = useTrafficViolations();
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Memoized statistics for better performance
   const stats = useMemo(() => ({
@@ -165,7 +167,7 @@ export default function TrafficViolations() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAmount.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalAmount)}</div>
             <p className="text-xs text-muted-foreground">
               من جميع المخالفات
             </p>
@@ -178,7 +180,7 @@ export default function TrafficViolations() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.paidAmount.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.paidAmount)}</div>
             <p className="text-xs text-muted-foreground">
               من المخالفات المدفوعة
             </p>
@@ -191,7 +193,7 @@ export default function TrafficViolations() {
             <XCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.unpaidAmount.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-red-600">{formatCurrency(stats.unpaidAmount)}</div>
             <p className="text-xs text-muted-foreground">
               من المخالفات غير المدفوعة
             </p>
@@ -287,7 +289,7 @@ export default function TrafficViolations() {
                         {violation.penalty_date && format(new Date(violation.penalty_date), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
                       <TableCell>{violation.violation_type || violation.reason}</TableCell>
-                      <TableCell className="font-bold">{violation.amount?.toFixed(3)} د.ك</TableCell>
+                      <TableCell className="font-bold">{formatCurrency(violation.amount || 0)}</TableCell>
                       <TableCell>{getStatusBadge(violation.status)}</TableCell>
                       <TableCell>{getPaymentStatusBadge(violation.payment_status || 'unpaid')}</TableCell>
                       <TableCell>

@@ -14,6 +14,7 @@ import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit }
 import { useBudgets, useCreateBudget, useUpdateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { HelpIcon } from '@/components/help/HelpIcon';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const Budgets = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -27,6 +28,7 @@ const Budgets = () => {
   const { data: budgets, isLoading, error } = useBudgets()
   const createBudget = useCreateBudget()
   const updateBudget = useUpdateBudget()
+  const { formatCurrency } = useCurrencyFormatter()
 
   const [newBudget, setNewBudget] = useState<Partial<Budget>>({
     budget_name: '',
@@ -247,7 +249,7 @@ const Budgets = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalBudgetedRevenue.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalBudgetedRevenue)}</div>
             <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
           </CardContent>
         </Card>
@@ -258,7 +260,7 @@ const Budgets = () => {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{totalBudgetedExpenses.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-red-600">{formatCurrency(totalBudgetedExpenses)}</div>
             <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
           </CardContent>
         </Card>
@@ -270,7 +272,7 @@ const Budgets = () => {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totalNetIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {totalNetIncome.toFixed(3)} د.ك
+              {formatCurrency(totalNetIncome)}
             </div>
             <p className="text-xs text-muted-foreground">الربح المتوقع</p>
           </CardContent>
@@ -330,13 +332,13 @@ const Budgets = () => {
                     <TableCell className="font-medium">{budget.budget_name}</TableCell>
                     <TableCell>{budget.budget_year}</TableCell>
                     <TableCell className="text-green-600">
-                      {(budget.total_revenue || 0).toFixed(3)} د.ك
+                      {formatCurrency(budget.total_revenue || 0)}
                     </TableCell>
                     <TableCell className="text-red-600">
-                      {(budget.total_expenses || 0).toFixed(3)} د.ك
+                      {formatCurrency(budget.total_expenses || 0)}
                     </TableCell>
                     <TableCell className={netIncome >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {netIncome.toFixed(3)} د.ك
+                      {formatCurrency(netIncome)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusColor(budget.status)}>
@@ -405,13 +407,13 @@ const Budgets = () => {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">الإيرادات المتوقعة</Label>
                   <p className="text-lg font-semibold text-green-600">
-                    {(selectedBudget.total_revenue || 0).toFixed(3)} د.ك
+                    {formatCurrency(selectedBudget.total_revenue || 0)}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">المصروفات المتوقعة</Label>
                   <p className="text-lg font-semibold text-red-600">
-                    {(selectedBudget.total_expenses || 0).toFixed(3)} د.ك
+                    {formatCurrency(selectedBudget.total_expenses || 0)}
                   </p>
                 </div>
               </div>
@@ -419,7 +421,7 @@ const Budgets = () => {
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">صافي الدخل المتوقع</Label>
                 <p className={`text-xl font-bold ${((selectedBudget.total_revenue || 0) - (selectedBudget.total_expenses || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {((selectedBudget.total_revenue || 0) - (selectedBudget.total_expenses || 0)).toFixed(3)} د.ك
+                  {formatCurrency((selectedBudget.total_revenue || 0) - (selectedBudget.total_expenses || 0))}
                 </p>
               </div>
 

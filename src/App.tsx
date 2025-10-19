@@ -93,6 +93,9 @@ const Payroll = lazy(() => import("./pages/hr/Payroll"));
 const HRReports = lazy(() => import("./pages/hr/Reports"));
 const HRSettings = lazy(() => import("./pages/hr/Settings"));
 
+// Inventory Management pages
+const Inventory = lazy(() => import("./pages/inventory/Inventory"));
+
 // Other pages
 const QuotationApproval = lazy(() => import("./pages/QuotationApproval"));
 const BackupPage = lazy(() => import("./pages/BackupPage"));
@@ -453,6 +456,13 @@ const AppRoutes = () => {
             </Suspense>
           </LazyLoadErrorBoundary>
         )} />
+        <Route path="inventory" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Inventory />
+            </Suspense>
+          </AdminRoute>
+        } />
         <Route path="hr/employees" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>

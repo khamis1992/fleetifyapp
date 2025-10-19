@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Sparkles, Trash2, Brain, Zap } from "lucide-react";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -37,9 +37,6 @@ const Payments = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-  const [isUnifiedUploadOpen, setIsUnifiedUploadOpen] = useState(false);
-  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
-  const [isProfessionalSystemOpen, setIsProfessionalSystemOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
@@ -159,14 +156,6 @@ const Payments = () => {
           {/* Desktop Action Buttons */}
           {!isMobile && (
             <div className="flex items-center gap-2">
-              <Button 
-                variant="destructive" 
-                onClick={() => setIsBulkDeleteOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                حذف جميع المدفوعات
-              </Button>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 دفع جديد
@@ -176,25 +165,14 @@ const Payments = () => {
 
           {/* Mobile Action Buttons */}
           {isMobile && (
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="destructive" 
-                size="lg"
-                className="h-12 text-base justify-start"
-                onClick={() => setIsBulkDeleteOpen(true)}
-              >
-                <Trash2 className="h-5 w-5 mr-2" />
-                حذف جميع المدفوعات
-              </Button>
-              <Button 
-                size="lg"
-                className="h-12 text-base justify-start"
-                onClick={() => setIsCreateDialogOpen(true)}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                دفع جديد
-              </Button>
-            </div>
+            <Button 
+              size="lg"
+              className="h-12 text-base w-full"
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              دفع جديد
+            </Button>
           )}
         </div>
 

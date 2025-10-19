@@ -315,7 +315,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      {financialSummary.totalContracts.toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.totalContracts)}
                     </div>
                   </CardContent>
                 </Card>
@@ -327,7 +327,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-purple-600">
-                      {financialSummary.totalPayments.toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.totalPayments)}
                     </div>
                   </CardContent>
                 </Card>
@@ -339,7 +339,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-orange-600">
-                      {financialSummary.outstandingBalance.toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.outstandingBalance)}
                     </div>
                   </CardContent>
                 </Card>
@@ -351,7 +351,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-indigo-600">
-                      {(financialSummary.totalInvoices || 0).toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.totalInvoices || 0)}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {financialSummary.invoicesCount || 0} فاتورة
@@ -366,7 +366,7 @@ export function CustomerDetailsDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-600">
-                      {(financialSummary.totalInvoicesOutstanding || 0).toFixed(3)} د.ك
+                      {formatCurrency(financialSummary.totalInvoicesOutstanding || 0)}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       مبلغ غير مدفوع
@@ -385,7 +385,7 @@ export function CustomerDetailsDialog({
                   {customer.credit_limit && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">الحد الائتماني:</span>
-                      <span className="font-medium">{customer.credit_limit.toFixed(3)} د.ك</span>
+                      <span className="font-medium">{formatCurrency(customer.credit_limit)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -410,11 +410,11 @@ export function CustomerDetailsDialog({
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">مدفوعات الفواتير:</span>
-                    <span className="font-medium">{(financialSummary?.totalInvoicesPaid || 0).toFixed(3)} د.ك</span>
+                    <span className="font-medium">{formatCurrency(financialSummary?.totalInvoicesPaid || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">فواتير مستحقة:</span>
-                    <span className="font-medium text-red-600">{(financialSummary?.totalInvoicesOutstanding || 0).toFixed(3)} د.ك</span>
+                    <span className="font-medium text-red-600">{formatCurrency(financialSummary?.totalInvoicesOutstanding || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">حالة الحساب:</span>
@@ -445,7 +445,7 @@ export function CustomerDetailsDialog({
                         <div>
                           <div className="font-semibold">عقد #{contract.contract_number}</div>
                           <div className="text-sm text-muted-foreground">
-                            {contract.contract_amount.toFixed(3)} د.ك - {contract.status}
+                            {formatCurrency(contract.contract_amount)} - {contract.status}
                           </div>
                         </div>
                         <Badge variant={contract.status === 'active' ? 'default' : 'secondary'}>

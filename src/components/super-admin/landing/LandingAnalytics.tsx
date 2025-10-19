@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +9,22 @@ import { useLandingAnalytics } from '@/hooks/useLandingAnalytics';
 import { useCompanies } from '@/hooks/useCompanies';
 import { exportAnalyticsSummaryToPDF } from '@/utils/exportHelpers';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
+
+interface RecentEvent {
+  id: string;
+  event_type?: string;
+  page_path?: string;
+  created_at: string;
+}
+
+interface EventStats {
+  event_type: string;
+  count: number;
+  conversion_rate: number;
+  category: string;
+}
 
 export const LandingAnalytics: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
@@ -16,8 +32,11 @@ export const LandingAnalytics: React.FC = () => {
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     to: new Date()
   });
+  const [activeUsers, setActiveUsers] = useState<number>(0);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [eventStats, setEventStats] = useState<EventStats[]>([]);
 
-  const { analytics, loading, exportAnalytics } = useLandingAnalytics({
+  const { analytics, previousPeriodAnalytics, loading, exportAnalytics } = useLandingAnalytics({
     companyId: selectedCompany,
     dateRange
   });
@@ -40,18 +59,184 @@ export const LandingAnalytics: React.FC = () => {
     }
   };
 
+  // Fetch active users (sessions active in last 5 minutes)
+  useEffect(() => {
+    const fetchActiveUsers = async () => {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const { data, error } = await supabase
+        .from('landing_analytics')
+        .select('visitor_id')
+        .gte('created_at', fiveMinutesAgo.toISOString());
+
+      if (!error && data) {
+        const uniqueVisitors = new Set(data.map(item => item.visitor_id).filter(Boolean));
+        setActiveUsers(uniqueVisitors.size);
+      }
+    };
+
+    fetchActiveUsers();
+    const interval = setInterval(fetchActiveUsers, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch recent events
+  useEffect(() => {
+    const fetchRecentEvents = async () => {
+      const { data, error } = await supabase
+        .from('landing_analytics')
+        .select('id, event_type, page_path, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!error && data) {
+        setRecentEvents(data as RecentEvent[]);
+      }
+    };
+
+    fetchRecentEvents();
+    const interval = setInterval(fetchRecentEvents, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch event statistics grouped by event_type
+  useEffect(() => {
+    const fetchEventStats = async () => {
+      const { data, error } = await supabase
+        .from('landing_analytics')
+        .select('event_type, converted')
+        .gte('created_at', dateRange.from.toISOString())
+        .lte('created_at', dateRange.to.toISOString());
+
+      if (!error && data) {
+        const eventMap = new Map<string, { count: number; conversions: number }>();
+
+        data.forEach(item => {
+          const eventType = item.event_type || 'page_view';
+          const existing = eventMap.get(eventType) || { count: 0, conversions: 0 };
+          existing.count++;
+          if (item.converted) existing.conversions++;
+          eventMap.set(eventType, existing);
+        });
+
+        const stats: EventStats[] = Array.from(eventMap.entries()).map(([event_type, { count, conversions }]) => ({
+          event_type,
+          count,
+          conversion_rate: count > 0 ? (conversions / count) * 100 : 0,
+          category: categorizeEvent(event_type)
+        }));
+
+        setEventStats(stats);
+      }
+    };
+
+    fetchEventStats();
+  }, [dateRange]);
+
+  // Real-time subscription for live updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('landing_analytics_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'landing_analytics' }, () => {
+        // Refetch recent events and active users when new data arrives
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        supabase
+          .from('landing_analytics')
+          .select('visitor_id')
+          .gte('created_at', fiveMinutesAgo.toISOString())
+          .then(({ data }) => {
+            if (data) {
+              const uniqueVisitors = new Set(data.map(item => item.visitor_id).filter(Boolean));
+              setActiveUsers(uniqueVisitors.size);
+            }
+          });
+
+        supabase
+          .from('landing_analytics')
+          .select('id, event_type, page_path, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10)
+          .then(({ data }) => {
+            if (data) setRecentEvents(data as RecentEvent[]);
+          });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Helper function to categorize events
+  const categorizeEvent = (eventType: string): string => {
+    if (eventType.includes('button') || eventType.includes('click')) return 'CTA';
+    if (eventType.includes('form') || eventType.includes('submit')) return 'Lead';
+    if (eventType.includes('video') || eventType.includes('play')) return 'Engagement';
+    return 'Other';
+  };
+
+  // Helper function to calculate trend percentage
+  const calculateTrend = (currentValue: number, previousValue: number): { value: number; isPositive: boolean } => {
+    if (previousValue === 0) return { value: 0, isPositive: true };
+    const percentChange = ((currentValue - previousValue) / previousValue) * 100;
+    return { value: Math.abs(percentChange), isPositive: percentChange >= 0 };
+  };
+
+  // Calculate previous period metrics for trend comparison
+  const previousMetrics = previousPeriodAnalytics && Array.isArray(previousPeriodAnalytics) && previousPeriodAnalytics.length > 0
+    ? {
+        totalViews: previousPeriodAnalytics.reduce((sum, item) => sum + (item.views || 0), 0),
+        uniqueVisitors: new Set(previousPeriodAnalytics.map(item => item.visitor_id).filter(Boolean)).size,
+        conversionRate: previousPeriodAnalytics.filter(item => item.converted).length / previousPeriodAnalytics.length * 100 || 0,
+        bounceRate: previousPeriodAnalytics.filter(item => item.bounced).length / previousPeriodAnalytics.length * 100 || 0,
+        averageTimeSeconds: previousPeriodAnalytics.reduce((sum, item) => sum + (item.time_on_page || 0), 0) / previousPeriodAnalytics.length
+      }
+    : { totalViews: 0, uniqueVisitors: 0, conversionRate: 0, bounceRate: 0, averageTimeSeconds: 0 };
+
   // Core metrics calculated from live analytics data
   // Source: landing_analytics table via useLandingAnalytics hook
+  const currentTotalViews = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? analytics.reduce((sum, item) => sum + (item.views || 0), 0)
+    : 0;
+  const currentUniqueVisitors = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? new Set(analytics.map(item => item.visitor_id).filter(Boolean)).size
+    : 0;
+  const currentConversionRate = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? analytics.filter(item => item.converted).length / analytics.length * 100
+    : 0;
+  const currentBounceRate = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? analytics.filter(item => item.bounced).length / analytics.length * 100
+    : 0;
+  const currentTimeSeconds = analytics && Array.isArray(analytics) && analytics.length > 0
+    ? analytics.reduce((sum, item) => sum + (item.time_on_page || 0), 0) / analytics.length
+    : 0;
+
+  // Calculate trends
+  const viewsTrend = calculateTrend(currentTotalViews, previousMetrics.totalViews);
+  const visitorsTrend = calculateTrend(currentUniqueVisitors, previousMetrics.uniqueVisitors);
+  const conversionTrend = calculateTrend(currentConversionRate, previousMetrics.conversionRate);
+  const bounceTrend = calculateTrend(currentBounceRate, previousMetrics.bounceRate);
+  const timeTrend = {
+    value: Math.abs(currentTimeSeconds - previousMetrics.averageTimeSeconds),
+    isPositive: currentTimeSeconds >= previousMetrics.averageTimeSeconds
+  };
+
   const metrics = analytics && Array.isArray(analytics) && analytics.length > 0
     ? {
-        totalViews: analytics.reduce((sum, item) => sum + (item.views || 0), 0),
-        uniqueVisitors: new Set(analytics.map(item => item.visitor_id).filter(Boolean)).size,
-        conversionRate: analytics.filter(item => item.converted).length / analytics.length * 100 || 0,
+        totalViews: currentTotalViews,
+        uniqueVisitors: currentUniqueVisitors,
+        conversionRate: currentConversionRate,
         averageTimeOnPage: calculateAverageTime(analytics),
-        bounceRate: analytics.filter(item => item.bounced).length / analytics.length * 100 || 0,
+        bounceRate: currentBounceRate,
         topPages: getTopPages(analytics),
         deviceBreakdown: getDeviceBreakdown(analytics),
         trafficSources: getTrafficSources(analytics),
+        trends: {
+          views: viewsTrend,
+          visitors: visitorsTrend,
+          conversion: conversionTrend,
+          bounce: bounceTrend,
+          time: timeTrend
+        }
       }
     : {
         // Default fallback data when no analytics available
@@ -63,6 +248,13 @@ export const LandingAnalytics: React.FC = () => {
         topPages: [],
         deviceBreakdown: { desktop: 0, mobile: 0, tablet: 0 },
         trafficSources: { direct: 0, organic: 0, social: 0, referral: 0, email: 0 },
+        trends: {
+          views: { value: 0, isPositive: true },
+          visitors: { value: 0, isPositive: true },
+          conversion: { value: 0, isPositive: true },
+          bounce: { value: 0, isPositive: true },
+          time: { value: 0, isPositive: true }
+        }
       };
 
   function calculateAverageTime(data: unknown[]): string {
@@ -174,9 +366,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.totalViews.toLocaleString()}</div>
-            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12.5%</span> from last month
+              <span className={metrics.trends.views.isPositive ? "text-green-600" : "text-red-600"}>
+                {metrics.trends.views.isPositive ? '+' : '-'}{metrics.trends.views.value.toFixed(1)}%
+              </span> from previous period
             </p>
           </CardContent>
         </Card>
@@ -188,9 +381,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.uniqueVisitors.toLocaleString()}</div>
-            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+8.3%</span> from last month
+              <span className={metrics.trends.visitors.isPositive ? "text-green-600" : "text-red-600"}>
+                {metrics.trends.visitors.isPositive ? '+' : '-'}{metrics.trends.visitors.value.toFixed(1)}%
+              </span> from previous period
             </p>
           </CardContent>
         </Card>
@@ -202,9 +396,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.conversionRate.toFixed(1)}%</div>
-            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
-              <span className="text-red-600">-0.4%</span> from last month
+              <span className={metrics.trends.conversion.isPositive ? "text-green-600" : "text-red-600"}>
+                {metrics.trends.conversion.isPositive ? '+' : '-'}{metrics.trends.conversion.value.toFixed(1)}%
+              </span> from previous period
             </p>
           </CardContent>
         </Card>
@@ -216,9 +411,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.averageTimeOnPage}</div>
-            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+0:12</span> from last month
+              <span className={metrics.trends.time.isPositive ? "text-green-600" : "text-red-600"}>
+                {metrics.trends.time.isPositive ? '+' : '-'}{Math.floor(metrics.trends.time.value / 60)}:{Math.floor(metrics.trends.time.value % 60).toString().padStart(2, '0')}
+              </span> from previous period
             </p>
           </CardContent>
         </Card>
@@ -230,9 +426,10 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.bounceRate.toFixed(1)}%</div>
-            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">-2.1%</span> from last month
+              <span className={!metrics.trends.bounce.isPositive ? "text-green-600" : "text-red-600"}>
+                {metrics.trends.bounce.isPositive ? '+' : '-'}{metrics.trends.bounce.value.toFixed(1)}%
+              </span> from previous period
             </p>
           </CardContent>
         </Card>
@@ -315,7 +512,6 @@ export const LandingAnalytics: React.FC = () => {
         </Card>
 
         {/* Real-time Activity */}
-        {/* TODO: Implement WebSocket connection for live event streaming from landing_analytics */}
         <Card>
           <CardHeader>
             <CardTitle>Real-time Activity</CardTitle>
@@ -324,26 +520,24 @@ export const LandingAnalytics: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span>Active users now</span>
-                {/* TODO: Query landing_analytics for sessions active in last 5 minutes */}
-                <Badge variant="default">47</Badge>
+                <Badge variant="default">{activeUsers}</Badge>
               </div>
 
               <div className="space-y-2">
                 <h4 className="font-medium">Recent Events</h4>
-                {/* TODO: Display actual recent events from landing_analytics ordered by created_at DESC */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Page view: /features</span>
-                    <span className="text-muted-foreground">2s ago</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Form submit: Contact</span>
-                    <span className="text-muted-foreground">15s ago</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Button click: Get Started</span>
-                    <span className="text-muted-foreground">28s ago</span>
-                  </div>
+                  {recentEvents.length > 0 ? (
+                    recentEvents.slice(0, 5).map((event) => (
+                      <div key={event.id} className="flex justify-between">
+                        <span>{event.event_type || 'Page view'}: {event.page_path || 'Unknown'}</span>
+                        <span className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No recent events</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -352,7 +546,6 @@ export const LandingAnalytics: React.FC = () => {
       </div>
 
       {/* Event Tracking */}
-      {/* TODO: Query landing_analytics grouped by event_type and aggregate counts/conversions */}
       <Card>
         <CardHeader>
           <CardTitle>Event Tracking</CardTitle>
@@ -365,39 +558,26 @@ export const LandingAnalytics: React.FC = () => {
                   <th className="text-left p-2">Event</th>
                   <th className="text-left p-2">Category</th>
                   <th className="text-left p-2">Count</th>
-                  <th className="text-left p-2">Conversion</th>
-                  <th className="text-left p-2">Trend</th>
+                  <th className="text-left p-2">Conversion Rate</th>
                 </tr>
               </thead>
               <tbody>
-                {/* TODO: Replace with actual event data from landing_analytics */}
-                <tr className="border-b">
-                  <td className="p-2">Button Click: Get Started</td>
-                  <td className="p-2">CTA</td>
-                  <td className="p-2">1,247</td>
-                  <td className="p-2">8.9%</td>
-                  <td className="p-2">
-                    <Badge variant="outline" className="text-green-600">+5.2%</Badge>
-                  </td>
-                </tr>
-                <tr className="border-b">
-                  <td className="p-2">Form Submit: Contact</td>
-                  <td className="p-2">Lead</td>
-                  <td className="p-2">423</td>
-                  <td className="p-2">3.0%</td>
-                  <td className="p-2">
-                    <Badge variant="outline" className="text-green-600">+2.1%</Badge>
-                  </td>
-                </tr>
-                <tr className="border-b">
-                  <td className="p-2">Video Play: Demo</td>
-                  <td className="p-2">Engagement</td>
-                  <td className="p-2">789</td>
-                  <td className="p-2">5.6%</td>
-                  <td className="p-2">
-                    <Badge variant="outline" className="text-red-600">-1.3%</Badge>
-                  </td>
-                </tr>
+                {eventStats.length > 0 ? (
+                  eventStats.map((stat) => (
+                    <tr key={stat.event_type} className="border-b">
+                      <td className="p-2">{stat.event_type}</td>
+                      <td className="p-2">{stat.category}</td>
+                      <td className="p-2">{stat.count.toLocaleString()}</td>
+                      <td className="p-2">{stat.conversion_rate.toFixed(1)}%</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      No event data available for the selected period
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

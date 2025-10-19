@@ -24,19 +24,39 @@ interface AnalyticsRecord {
 
 export const useLandingAnalytics = ({ companyId, dateRange }: LandingAnalyticsParams) => {
   const [analytics, setAnalytics] = useState<AnalyticsRecord[]>([]);
+  const [previousPeriodAnalytics, setPreviousPeriodAnalytics] = useState<AnalyticsRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAnalytics = useCallback(async () => {
     try {
+      // Fetch current period data
       const { data, error } = await supabase
         .from('landing_analytics')
         .select('*')
         .gte('created_at', dateRange.from.toISOString())
         .lte('created_at', dateRange.to.toISOString())
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       setAnalytics(data || []);
+
+      // Calculate previous period date range (same duration)
+      const periodDuration = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - periodDuration);
+      const previousTo = new Date(dateRange.from.getTime() - 1); // End 1ms before current period starts
+
+      // Fetch previous period data for trend calculations
+      const { data: previousData, error: previousError } = await supabase
+        .from('landing_analytics')
+        .select('*')
+        .gte('created_at', previousFrom.toISOString())
+        .lte('created_at', previousTo.toISOString());
+
+      if (previousError) {
+        console.warn('Error fetching previous period analytics:', previousError);
+      } else {
+        setPreviousPeriodAnalytics(previousData || []);
+      }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error fetching analytics:', error);
@@ -80,5 +100,5 @@ export const useLandingAnalytics = ({ companyId, dateRange }: LandingAnalyticsPa
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  return { analytics, loading, exportAnalytics };
+  return { analytics, previousPeriodAnalytics, loading, exportAnalytics };
 };

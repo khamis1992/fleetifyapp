@@ -36,9 +36,19 @@ export const useVehicleInsurance = (vehicleId: string) => {
         return [];
       }
 
-      // Since the table doesn't exist yet, return empty array
-      // TODO: Implement after database migration is successful
-      return [];
+      const { data, error } = await supabase
+        .from('vehicle_insurance')
+        .select('*')
+        .eq('company_id', user.profile.company_id)
+        .eq('vehicle_id', vehicleId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching vehicle insurance:', error);
+        throw error;
+      }
+
+      return data || [];
     },
     enabled: !!user?.profile?.company_id && !!vehicleId,
   });
@@ -55,17 +65,21 @@ export const useCreateVehicleInsurance = () => {
         throw new Error('Company ID is required');
       }
 
-      // Since the table doesn't exist yet, simulate success
-      // TODO: Implement after database migration is successful
-      const mockData = {
-        id: Date.now().toString(),
-        ...insuranceData,
-        company_id: user.profile.company_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      const { data, error } = await supabase
+        .from('vehicle_insurance')
+        .insert({
+          ...insuranceData,
+          company_id: user.profile.company_id,
+        })
+        .select()
+        .single();
 
-      return mockData;
+      if (error) {
+        console.error('Error creating vehicle insurance:', error);
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
