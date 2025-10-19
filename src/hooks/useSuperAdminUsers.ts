@@ -511,7 +511,7 @@ export const useSuperAdminUsers = () => {
       
       return result;
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('=== FRONTEND ERROR CREATING USER ===');
       console.error('Error details:', error);
       
@@ -648,7 +648,7 @@ export const useSuperAdminUsers = () => {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error resetting password:', error);
       }

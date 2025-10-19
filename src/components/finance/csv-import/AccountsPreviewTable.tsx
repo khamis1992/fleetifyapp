@@ -220,7 +220,7 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+            <Select value={filterStatus} onValueChange={(value: unknown) => setFilterStatus(value)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>

@@ -22,7 +22,7 @@ export function useEnhancedContractUpload() {
   const [progress, setProgress] = useState(0)
   const [results, setResults] = useState<UploadResults | null>(null)
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): unknown[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
     const raw = (parsed.data as any[]).filter(Boolean);
     const normalized = raw.map((row) => normalizeCsvHeaders(row));
@@ -303,7 +303,7 @@ export function useEnhancedContractUpload() {
           customerName,
           rows
         })),
-        errors: (bulkResult?.errors || []).map((err: any) => ({
+        errors: (bulkResult?.errors || []).map((err: unknown) => ({
           row: err.row,
           message: err.message,
           customerName: data[err.row - 2]?.customer_name
@@ -335,7 +335,7 @@ export function useEnhancedContractUpload() {
 
       return result
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ خطأ في معالجة العقود:', error)
       toast.error(error.message || 'حدث خطأ أثناء رفع العقود')
       throw error

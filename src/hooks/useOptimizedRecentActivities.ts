@@ -434,7 +434,7 @@ function getTableColor(tableName: string): string {
   return colorMap[tableName] || 'text-gray-600 bg-gray-100';
 }
 
-function generateDescription(item: any): string {
+function generateDescription(item: unknown): string {
   // Generate description based on table and data
   switch (item.table_name) {
     case 'contracts':

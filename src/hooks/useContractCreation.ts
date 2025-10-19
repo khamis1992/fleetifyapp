@@ -30,6 +30,25 @@ export interface ContractCreationState {
   healthStatus: 'good' | 'warning' | 'error'
 }
 
+interface PerformanceBreakdown {
+  [key: string]: number | string | unknown
+}
+
+interface ContractInputData {
+  customer_id: string
+  vehicle_id?: string | null
+  contract_type?: string
+  start_date: string
+  end_date: string
+  contract_amount: number | string
+  monthly_amount?: number | string
+  description?: string | null
+  terms?: string | null
+  cost_center_id?: string | null
+  created_by?: string
+  [key: string]: unknown
+}
+
 interface ContractCreationResult {
   success: boolean
   contract_id: string
@@ -43,7 +62,7 @@ interface ContractCreationResult {
   error?: string
   errors?: string[]
   execution_time_seconds?: number
-  performance_breakdown?: any
+  performance_breakdown?: PerformanceBreakdown
 }
 
 export const useContractCreation = () => {
@@ -100,7 +119,7 @@ export const useContractCreation = () => {
     attemptNum: number = 1,
     errorMsg?: string,
     execTime?: number,
-    meta: any = {}
+    meta: Record<string, unknown> = {}
   ) => {
     if (!companyId) return
     
@@ -122,7 +141,7 @@ export const useContractCreation = () => {
   }
 
   const createContractMutation = useMutation({
-    mutationFn: async (inputContractData: any) => {
+    mutationFn: async (inputContractData: ContractInputData) => {
       console.log('🚀 [CONTRACT_CREATION] بدء عملية إنشاء العقد المحسنة', {
         contractType: inputContractData.contract_type,
         amount: inputContractData.contract_amount,
@@ -202,7 +221,8 @@ export const useContractCreation = () => {
             
             console.log('✅ [CONTRACT_CREATION] تم إنشاء الحسابات والربط بنجاح')
             updateStepStatus('accounts', 'completed', undefined, ['تم إنشاء الحسابات الأساسية وربطها تلقائياً'])
-          } catch (accountError: any) {
+          } catch (accountError: unknown) {
+            const errorMessage = accountError instanceof Error ? accountError.message : 'خطأ غير معروف'
             console.error('❌ [CONTRACT_CREATION] فشل في إنشاء الحسابات الأساسية:', accountError)
             
             // Try alternative approach - let the contract creation handle account creation
@@ -552,13 +572,13 @@ export const useContractCreation = () => {
 
         return createdContractData
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ [CONTRACT_CREATION] فشلت العملية:', error)
-        
+
         // معالجة محسنة للأخطاء وتسجيلها
         let errorMessage = 'حدث خطأ غير متوقع أثناء إنشاء العقد'
         let detailedError = 'خطأ غير معروف'
-        
+
         if (error) {
           // معالجة أنواع مختلفة من الأخطاء
           if (typeof error === 'string') {
@@ -568,12 +588,15 @@ export const useContractCreation = () => {
             errorMessage = error.message || errorMessage
             detailedError = error.message
             console.error('❌ [CONTRACT_CREATION] مكدس الخطأ:', error.stack)
-          } else if (error.message) {
-            errorMessage = error.message
-            detailedError = error.message
-          } else if (error.error) {
-            errorMessage = error.error.message || error.error
-            detailedError = JSON.stringify(error.error)
+          } else if (typeof error === 'object' && error !== null && 'message' in error) {
+            errorMessage = String((error as { message: unknown }).message)
+            detailedError = errorMessage
+          } else if (typeof error === 'object' && error !== null && 'error' in error) {
+            const errorObj = (error as { error: unknown }).error
+            errorMessage = typeof errorObj === 'object' && errorObj !== null && 'message' in errorObj
+              ? String((errorObj as { message: unknown }).message)
+              : String(errorObj)
+            detailedError = JSON.stringify(errorObj)
           } else {
             detailedError = JSON.stringify(error)
             console.error('❌ [CONTRACT_CREATION] كائن الخطأ الخام:', error)
@@ -582,7 +605,7 @@ export const useContractCreation = () => {
           // تسجيل سياق إضافي للخطأ
           console.error('❌ [CONTRACT_CREATION] تفاصيل الخطأ:', {
             errorType: typeof error,
-            errorConstructor: error?.constructor?.name,
+            errorConstructor: error && typeof error === 'object' && 'constructor' in error ? (error.constructor as { name?: string })?.name : undefined,
             errorMessage: errorMessage,
             currentStep: creationState.currentStep,
             timestamp: new Date().toISOString()
@@ -613,9 +636,10 @@ export const useContractCreation = () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
       console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', data)
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'فشل في إنشاء العقد'
       console.error('❌ [CONTRACT_CREATION] فشل في الطفرة:', error)
-      
+
       // رسائل خطأ محسنة للمستخدمين
       let userMessage = 'فشل في إنشاء العقد'
       
@@ -653,18 +677,18 @@ export const useContractCreation = () => {
     }
   })
 
-  const retryCreation = (originalData?: any) => {
+  const retryCreation = (originalData?: ContractInputData) => {
     if (creationState.canRetry) {
       // إعادة تعيين الخطوات الفاشلة وإعادة المحاولة
       setCreationState(prev => ({
         ...prev,
-        steps: prev.steps.map(step => 
+        steps: prev.steps.map(step =>
           step.status === 'failed' ? { ...step, status: 'pending', error: undefined } : step
         ),
         canRetry: false,
         isProcessing: false
       }))
-      
+
       // إعادة المحاولة مع البيانات الأصلية إذا توفرت
       if (originalData) {
         createContractMutation.mutate(originalData)

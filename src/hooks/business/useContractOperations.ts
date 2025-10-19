@@ -12,6 +12,44 @@ export interface ContractOperationsOptions {
   createInvoices?: boolean;
 }
 
+interface VehicleItem {
+  vehicle_id: string;
+  quantity?: number;
+}
+
+interface PaymentScheduleItem {
+  amount: number;
+  due_date: string | Date;
+  installment_number?: number;
+  description?: string;
+  is_deposit?: boolean;
+  late_fee?: number;
+}
+
+interface Contract {
+  id: string;
+  contract_number: string;
+  company_id: string;
+  customer_id: string;
+  vehicle_id?: string | null;
+  contract_type: string;
+  contract_date: string;
+  start_date: string;
+  end_date: string;
+  contract_amount: number;
+  monthly_amount: number;
+  description?: string | null;
+  terms?: string | null;
+  status: 'draft' | 'active' | 'expired' | 'suspended' | 'cancelled' | 'renewed';
+  total_paid?: number;
+  balance_due?: number;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
+  cost_center_id?: string | null;
+}
+
 interface CreateContractData {
   customer_id: string;
   vehicle_id?: string | null;
@@ -25,13 +63,13 @@ interface CreateContractData {
   description?: string;
   terms?: string;
   cost_center_id?: string | null;
-  
+
   // Legacy field mappings for backward compatibility
   total_amount?: number;
   notes?: string;
   terms_and_conditions?: string;
-  vehicles?: any[];
-  payment_schedule?: any[];
+  vehicles?: VehicleItem[];
+  payment_schedule?: PaymentScheduleItem[];
 }
 
 interface UpdateContractData extends CreateContractData {
@@ -154,12 +192,13 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      
+
       toast.success('تم إنشاء العقد بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء العقد'
       console.error('💥 [useContractOperations] Create contract error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إنشاء العقد');
+      toast.error(errorMessage);
     }
   });
 
@@ -230,12 +269,13 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     onSuccess: (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
-      
+
       toast.success('تم تحديث العقد بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث العقد'
       console.error('💥 [useContractOperations] Update contract error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تحديث العقد');
+      toast.error(errorMessage);
     }
   });
 
@@ -324,11 +364,11 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   });
 
   // Contract calculations
-  const calculateContractTotals = (contract: any) => {
+  const calculateContractTotals = (contract: Contract) => {
     const contractAmount = contract.contract_amount || 0;
     const totalPaid = contract.total_paid || 0;
     const balanceDue = contractAmount - totalPaid;
-    
+
     return {
       contract_amount: contractAmount,
       total_paid: totalPaid,
@@ -337,13 +377,13 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     };
   };
 
-  const isContractOverdue = (contract: any) => {
+  const isContractOverdue = (contract: Contract) => {
     const endDate = new Date(contract.end_date);
     const today = new Date();
     return endDate < today && contract.status === 'active';
   };
 
-  const getDaysUntilExpiry = (contract: any) => {
+  const getDaysUntilExpiry = (contract: Contract) => {
     const endDate = new Date(contract.end_date);
     const today = new Date();
     const diffTime = endDate.getTime() - today.getTime();
@@ -407,7 +447,7 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     }
   };
 
-  const createPaymentSchedule = async (contractId: string, schedule: any[]) => {
+  const createPaymentSchedule = async (contractId: string, schedule: PaymentScheduleItem[]) => {
     const scheduleData = schedule.map(item => ({
       contract_id: contractId,
       company_id: companyId,
@@ -435,12 +475,12 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     console.log('✅ Created payment schedule:', scheduleData);
   };
 
-  const createContractJournalEntry = async (contract: any) => {
+  const createContractJournalEntry = async (contract: Contract) => {
     console.log('📄 Creating journal entry for contract:', contract.id);
     // Journal entry creation logic here
   };
 
-  const createContractInvoices = async (contract: any) => {
+  const createContractInvoices = async (contract: Contract) => {
     console.log('📄 Creating contract invoices for:', contract.id);
     // Invoice creation logic here
   };

@@ -120,7 +120,7 @@ export default function UserPermissionsDialog({
       queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الأدوار",
@@ -175,7 +175,7 @@ export default function UserPermissionsDialog({
       });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إرسال الطلب",

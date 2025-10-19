@@ -98,7 +98,7 @@ async function createEssentialAccountsManually(companyId: string): Promise<AutoC
     }
 
     return result
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ [ACCOUNT_MAPPINGS] Manual account creation failed:', error)
     result.errors?.push(error.message || 'Failed to create essential accounts')
     return result
@@ -150,7 +150,7 @@ async function checkAccountsManually(companyId: string): Promise<AutoConfigResul
     }
 
     return result
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ [ACCOUNT_MAPPINGS] Manual account check failed:', error)
     result.errors?.push(error.message || 'Failed to check accounts')
     return result
@@ -179,7 +179,7 @@ export const useEssentialAccountMappings = () => {
         }
 
         return data as AutoConfigResult
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to check account mapping status:', error)
         
         // If functions don't exist, return manual check result
@@ -242,7 +242,7 @@ export const useEssentialAccountMappings = () => {
         toast.info('لا توجد حسابات أساسية بحاجة لربط')
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Auto-configuration error:', error)
       toast.error(error.message || 'فشل في الإعداد التلقائي لربط الحسابات')
     }

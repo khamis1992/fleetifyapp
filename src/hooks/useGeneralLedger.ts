@@ -471,7 +471,7 @@ export const useTrialBalance = (asOfDate?: string) => {
         console.log("✅ [TRIAL_BALANCE] Found", data?.length || 0, "accounts for company", companyId)
         
         // Filter out system accounts for better display
-        const filteredData = (data || []).filter((item: any) => {
+        const filteredData = (data || []).filter((item: unknown) => {
           // Only show non-zero balances or active accounts
           return (item.debit_balance > 0 || item.credit_balance > 0) || 
                  item.account_level <= 4 // Show summary accounts regardless
@@ -629,7 +629,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
 }
 
 // Helper function to calculate from current balances as fallback
-const calculateSummaryFromCurrentBalances = (accounts: any[]): FinancialSummary => {
+const calculateSummaryFromCurrentBalances = (accounts: unknown[]): FinancialSummary => {
   let totalAssets = 0
   let totalLiabilities = 0
   let totalEquity = 0

@@ -12,7 +12,7 @@ interface CreateCustomerWithAccountData extends CustomerFormData {
 }
 
 interface CreateCustomerWithAccountResult {
-  customer: any;
+  customer: unknown;
   financialAccount?: {
     id: string;
     account_code: string;
@@ -282,7 +282,7 @@ export const useCreateCustomerWithAccount = (targetCompanyId?: string) => {
         description: successMessage,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('[CREATE_CUSTOMER_WITH_ACCOUNT] Mutation error:', error);
       toast({
         variant: "destructive",

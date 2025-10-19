@@ -130,7 +130,7 @@ export const PaymentScheduleSection = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="installment-plan">نوع الأقساط</Label>
-              <Select value={installmentPlan} onValueChange={(value: any) => setInstallmentPlan(value)}>
+              <Select value={installmentPlan} onValueChange={(value: unknown) => setInstallmentPlan(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر نوع الأقساط" />
                 </SelectTrigger>

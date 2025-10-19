@@ -108,7 +108,7 @@ export const AttendancePermissionsPanel: React.FC = () => {
         description: 'تم منح جميع الموظفين صلاحيات تسجيل الحضور',
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'خطأ في إصلاح الصلاحيات',
         description: error.message,

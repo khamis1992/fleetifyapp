@@ -78,7 +78,7 @@ export function useContractCSVUploadFixed() {
       }
 
       return { id: newCustomer.id, created: true }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { id: '', created: false, error: error.message }
     }
   }

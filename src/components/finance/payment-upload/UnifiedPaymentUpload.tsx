@@ -27,7 +27,7 @@ export function UnifiedPaymentUpload({
   } = usePaymentsCSVUpload();
 
   // معالجة نجاح الرفع
-  const handleUploadSuccess = async (data: any[]) => {
+  const handleUploadSuccess = async (data: unknown[]) => {
     onUploadComplete();
   };
 

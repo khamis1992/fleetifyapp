@@ -184,7 +184,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       }
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving company:', error);
       toast({
         title: 'خطأ في حفظ البيانات',
@@ -398,7 +398,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                       <Label htmlFor="subscription_plan">باقة الاشتراك</Label>
                       <Select
                         value={watch('subscription_plan')}
-                        onValueChange={(value: any) => setValue('subscription_plan', value)}
+                        onValueChange={(value: unknown) => setValue('subscription_plan', value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="اختر الباقة" />
@@ -417,7 +417,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                       <Label htmlFor="subscription_status">حالة الاشتراك</Label>
                       <Select
                         value={watch('subscription_status')}
-                        onValueChange={(value: any) => setValue('subscription_status', value)}
+                        onValueChange={(value: unknown) => setValue('subscription_status', value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="اختر الحالة" />

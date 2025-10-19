@@ -168,7 +168,7 @@ export const useCreateLegalAccountMapping = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-account-mappings'] });
       toast.success('تم إنشاء ربط الحسابات بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating legal account mapping:', error);
       toast.error('حدث خطأ أثناء إنشاء ربط الحسابات');
     },
@@ -197,7 +197,7 @@ export const useUpdateLegalAccountMapping = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-account-mappings'] });
       toast.success('تم تحديث ربط الحسابات بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating legal account mapping:', error);
       toast.error('حدث خطأ أثناء تحديث ربط الحسابات');
     },
@@ -224,7 +224,7 @@ export const useDeleteLegalAccountMapping = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-account-mappings'] });
       toast.success('تم حذف ربط الحسابات بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting legal account mapping:', error);
       toast.error('حدث خطأ أثناء حذف ربط الحسابات');
     },
@@ -294,7 +294,7 @@ export const useCreateDefaultLegalMappings = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-account-mappings'] });
       toast.success('تم إنشاء الربط الافتراضي لجميع أنواع القضايا');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating default legal mappings:', error);
       toast.error('حدث خطأ أثناء إنشاء الربط الافتراضي');
     },

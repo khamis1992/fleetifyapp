@@ -184,7 +184,7 @@ export const useUpdateCompanyAccountSettings = () => {
         description: "تم حفظ إعدادات الحسابات بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الإعدادات",
@@ -288,7 +288,7 @@ export const useLinkAccountToCustomer = () => {
         description: "تم ربط الحساب المحاسبي بالعميل بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في ربط الحساب",
@@ -330,7 +330,7 @@ export const useUnlinkAccountFromCustomer = () => {
         description: "تم إلغاء ربط الحساب المحاسبي من العميل",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إلغاء ربط الحساب",

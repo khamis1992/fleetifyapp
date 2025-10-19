@@ -12,7 +12,7 @@ export interface CSVTemplate {
   description?: string
   description_ar?: string
   headers: string[]
-  sample_data: any[]
+  sample_data: unknown[]
   field_mappings: Record<string, any>
   validation_rules: Record<string, any>
   usage_count: number
@@ -31,7 +31,7 @@ export interface CreateCSVTemplateData {
   description?: string
   description_ar?: string
   headers: string[]
-  sample_data?: any[]
+  sample_data?: unknown[]
   field_mappings?: Record<string, any>
   validation_rules?: Record<string, any>
   is_default?: boolean

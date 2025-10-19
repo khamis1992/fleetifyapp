@@ -129,7 +129,7 @@ export const useFixChartHierarchy = () => {
           : "تم التحقق من دليل الحسابات - لا توجد مشاكل للإصلاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إصلاح دليل الحسابات",
@@ -231,7 +231,7 @@ export const useCreateSmartAccount = () => {
         description: "تم إنشاء الحساب مع كود تلقائي ومستوى صحيح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",

@@ -99,7 +99,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     };
   };
 
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = (index: number, field: string, value: unknown) => {
     const newItems = [...invoiceData.items];
     newItems[index] = { ...newItems[index], [field]: value };
     
@@ -118,7 +118,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     });
   };
 
-  const calculateTotalsFromItems = (items: any[], discountAmount: number) => {
+  const calculateTotalsFromItems = (items: unknown[], discountAmount: number) => {
     const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
     const totalTax = items.reduce((sum, item) => sum + item.tax_amount, 0);
     const total = subtotal + totalTax - discountAmount;

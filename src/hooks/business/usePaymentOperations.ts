@@ -17,6 +17,15 @@ export interface PaymentOperationsOptions {
   validateBalance?: boolean;
 }
 
+interface Payment {
+  id: string;
+  payment_number?: string;
+  payment_type?: string;
+  payment_status?: string;
+  amount?: number;
+  [key: string]: unknown;
+}
+
 export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
@@ -117,9 +126,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       const paymentType = payment.payment_type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف';
       toast.success(`تم إنشاء ${paymentType} بنجاح`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء الدفعة'
       console.error('💥 [usePaymentOperations] Create payment error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إنشاء الدفعة');
+      toast.error(errorMessage);
     }
   });
 
@@ -191,9 +201,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       
       toast.success('تم تحديث الدفعة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث الدفعة'
       console.error('💥 [usePaymentOperations] Update payment error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تحديث الدفعة');
+      toast.error(errorMessage);
     }
   });
 
@@ -254,9 +265,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       
       toast.success('تم الموافقة على الدفعة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء الموافقة على الدفعة'
       console.error('💥 [usePaymentOperations] Approve payment error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء الموافقة على الدفعة');
+      toast.error(errorMessage);
     }
   });
 
@@ -296,9 +308,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       
       toast.success('تم إلغاء الدفعة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إلغاء الدفعة'
       console.error('💥 [usePaymentOperations] Cancel payment error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إلغاء الدفعة');
+      toast.error(errorMessage);
     }
   });
 
@@ -440,10 +453,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
   };
 
-  const createJournalEntry = async (payment: any) => {
+  const createJournalEntry = async (payment: Payment) => {
     try {
       console.log('📝 Creating journal entry for payment:', payment.id);
-      
+
       // For now, just log the creation - implement actual journal entry logic later
       // when the necessary database functions are available
       console.log('Journal entry creation placeholder for payment:', payment.payment_number);
@@ -464,7 +477,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     }
   };
 
-  const sendPaymentNotifications = async (payment: any) => {
+  const sendPaymentNotifications = async (payment: Payment) => {
     try {
       console.log('📧 Sending payment notifications for:', payment.id);
       // Implementation for sending notifications

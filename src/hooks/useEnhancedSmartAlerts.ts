@@ -26,7 +26,7 @@ export interface SmartAlertConfig {
   company_id: string;
   alert_type: string;
   is_enabled: boolean;
-  trigger_conditions: any;
+  trigger_conditions: unknown;
   notification_settings: any;
   created_by?: string;
   created_at: string;
@@ -110,7 +110,7 @@ export const useRunAlertsCheck = () => {
       queryClient.invalidateQueries({ queryKey: ['smart-alerts'] });
       toast.info('فحص التنبيهات غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error running alerts check:', error);
       toast.error(`خطأ في فحص التنبيهات: ${error.message}`);
     },
@@ -130,7 +130,7 @@ export const useAcknowledgeAlert = () => {
       queryClient.invalidateQueries({ queryKey: ['smart-alerts'] });
       toast.info('الإقرار بالتنبيه غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error acknowledging alert:', error);
       toast.error(`خطأ في الإقرار بالتنبيه: ${error.message}`);
     },
@@ -157,7 +157,7 @@ export const useUpdateAlertStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['smart-alerts'] });
       toast.info('تحديث حالة التنبيه غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating alert status:', error);
       toast.error(`خطأ في تحديث حالة التنبيه: ${error.message}`);
     },
@@ -188,7 +188,7 @@ export const useUpdateAlertConfig = () => {
       queryClient.invalidateQueries({ queryKey: ['alert-configs'] });
       toast.info('تحديث إعدادات التنبيه غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating alert config:', error);
       toast.error(`خطأ في تحديث إعدادات التنبيه: ${error.message}`);
     },

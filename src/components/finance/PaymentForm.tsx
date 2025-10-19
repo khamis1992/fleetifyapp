@@ -216,7 +216,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
         notes: '',
         contract_id: 'none',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating payment:', error);
       
       // Provide more specific error messages

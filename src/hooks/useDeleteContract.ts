@@ -76,7 +76,7 @@ export const useDeleteContract = () => {
       queryClient.invalidateQueries({ queryKey: ['contract-statistics'] });
       toast.success('تم حذف العقد بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting contract:', error);
       toast.error('حدث خطأ في حذف العقد: ' + error.message);
     }

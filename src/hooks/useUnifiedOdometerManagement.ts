@@ -198,7 +198,7 @@ export const useCreateOdometerReading = () => {
         description: `تم تحديث العداد إلى ${result.odometer_reading.toLocaleString()} كم`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "خطأ في تسجيل قراءة العداد",
         description: error.message || "حدث خطأ أثناء تسجيل قراءة العداد",

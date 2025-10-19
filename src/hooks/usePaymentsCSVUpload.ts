@@ -93,7 +93,7 @@ export function usePaymentsCSVUpload() {
 
   const paymentRequiredFields = ['payment_date', 'amount'];
 
-  const enhancePaymentDataWithDates = (data: any[]): any[] => {
+  const enhancePaymentDataWithDates = (data: unknown[]): unknown[] => {
     try {
       // اكتشاف الأعمدة التي تحتوي على تواريخ
       const columnResults = detectDateColumns(data);
@@ -460,7 +460,7 @@ export function usePaymentsCSVUpload() {
   const formatPaymentNumber = (n: number) => `PAY-${String(n).padStart(4, '0')}`;
 
   // Helper functions for data analysis and validation
-  const analyzeDataStructure = (data: any[]) => {
+  const analyzeDataStructure = (data: unknown[]) => {
     if (!data || data.length === 0) return { isEmpty: true };
     
     const sampleRow = data[0];
@@ -483,14 +483,14 @@ export function usePaymentsCSVUpload() {
     };
   };
 
-  const hasRequiredPaymentFields = (row: any) => {
+  const hasRequiredPaymentFields = (row: unknown) => {
     const hasDate = row.payment_date && String(row.payment_date).trim() !== '';
     const hasAmount = (row.amount && parseNumber(row.amount) > 0) || 
                      (row.amount_paid && parseNumber(row.amount_paid) > 0);
     return hasDate && hasAmount;
   };
 
-  const findMissingRequiredFields = (row: any) => {
+  const findMissingRequiredFields = (row: unknown) => {
     const missing = [];
     if (!row.payment_date || String(row.payment_date).trim() === '') {
       missing.push('تاريخ الدفع (payment_date)');
@@ -502,7 +502,7 @@ export function usePaymentsCSVUpload() {
     return missing;
   };
 
-  const analyzePaymentData = async (rows: any[], targetCompanyId?: string): Promise<PaymentPreviewItem[]> => {
+  const analyzePaymentData = async (rows: unknown[], targetCompanyId?: string): Promise<PaymentPreviewItem[]> => {
     const companyIdToUse = targetCompanyId || companyId;
     const items: PaymentPreviewItem[] = [];
     
@@ -719,7 +719,7 @@ export function usePaymentsCSVUpload() {
   };
 
   const smartUploadPayments = async (
-    rows: any[],
+    rows: unknown[],
     options?: { 
       upsert?: boolean; 
       targetCompanyId?: string; 

@@ -317,7 +317,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       
       // Expand target parent to show the moved account
       setExpandedNodes(prev => new Set([...prev, targetParentId]));
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Display the actual database error message for dynamic response
       const errorMessage = error?.message || error?.details || "حدث خطأ أثناء نقل الحساب";
       toast({

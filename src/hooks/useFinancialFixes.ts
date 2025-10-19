@@ -19,7 +19,7 @@ export const useFinancialFixes = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       if (data?.success && data?.message) {
         toast.success(data.message);
       } else {
@@ -27,7 +27,7 @@ export const useFinancialFixes = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Handle duplicate key errors gracefully
       if (error.code === '23505') {
         toast.info('مراكز التكلفة موجودة مسبقاً - تم تخطي المكررات');
@@ -53,7 +53,7 @@ export const useFinancialFixes = () => {
       toast.success('تم إنشاء حسابات العملاء الافتراضية بنجاح');
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(`فشل في إنشاء حسابات العملاء: ${error.message}`);
     }
   });
@@ -74,7 +74,7 @@ export const useFinancialFixes = () => {
       toast.success('تم إعداد ربط الحسابات الأساسية بنجاح');
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Enhanced error handling for better UX
       let errorMsg = error.message || 'خطأ غير محدد';
       
@@ -138,7 +138,7 @@ export const useFinancialFixes = () => {
       toast.success(result.message);
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(`فشل في ربط العقود: ${error.message}`);
     }
   });
@@ -228,7 +228,7 @@ export const useFinancialFixes = () => {
       // Refresh analysis data
       queryClient.invalidateQueries({ queryKey: ['financial-system-analysis'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Enhanced error handling for Run All Fixes
       let errorMsg = error.message || 'خطأ غير محدد';
       

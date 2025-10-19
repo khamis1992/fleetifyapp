@@ -222,7 +222,7 @@ export function useUnifiedContractUpload() {
           });
           
           if (csvParsed.errors && csvParsed.errors.length > 0) {
-            processingWarnings.push(...csvParsed.errors.map((err: any) => `تحذير CSV: ${err.message}`));
+            processingWarnings.push(...csvParsed.errors.map((err: unknown) => `تحذير CSV: ${err.message}`));
           }
           
           rawData = (csvParsed.data as any[]) || [];
@@ -499,7 +499,7 @@ export function useUnifiedContractUpload() {
       
       return result;
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Unified upload error:', error);
       toast.error(`خطأ في الرفع: ${error.message}`);
       throw error;

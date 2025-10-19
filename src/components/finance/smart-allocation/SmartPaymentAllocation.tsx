@@ -88,7 +88,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
     }
   };
 
-  const handleManualAllocationChange = (index: number, field: keyof PaymentAllocation, value: any) => {
+  const handleManualAllocationChange = (index: number, field: keyof PaymentAllocation, value: unknown) => {
     const newAllocations = [...manualAllocations];
     newAllocations[index] = { ...newAllocations[index], [field]: value };
     setManualAllocations(newAllocations);

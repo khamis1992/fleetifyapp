@@ -204,7 +204,7 @@ export const useCreateLegalDocument = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       toast.success('تم إضافة المستند بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating legal document:', error);
       toast.error('حدث خطأ أثناء إضافة المستند');
     },
@@ -269,7 +269,7 @@ export const useDeleteLegalDocument = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
       toast.success('تم حذف المستند بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting legal document:', error);
       toast.error('حدث خطأ أثناء حذف المستند');
     },
@@ -314,7 +314,7 @@ export const useDownloadLegalDocument = () => {
       link.click();
       document.body.removeChild(link);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error downloading document:', error);
       toast.error('حدث خطأ أثناء تحميل المستند');
     },

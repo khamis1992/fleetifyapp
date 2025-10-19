@@ -90,7 +90,7 @@ export default function UserAccountsList({ employees, onEditRoles }: UserAccount
       });
       queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الحساب",

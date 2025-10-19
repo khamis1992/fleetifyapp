@@ -65,7 +65,7 @@ export const HeaderAttendanceButton: React.FC = () => {
       }
       
       refetchAttendance();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('HeaderAttendanceButton error:', error);
       const errorMessage = formatLocationError(error, error);
       toast.error(errorMessage);

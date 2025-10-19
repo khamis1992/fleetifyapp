@@ -337,7 +337,7 @@ export const useCustomersWithRental = (searchTerm?: string) => {
       }
 
       // Transform data to include name and monthly_rent
-      const customers: CustomerWithRental[] = (data || []).map((customer: any) => {
+      const customers: CustomerWithRental[] = (data || []).map((customer: unknown) => {
         const name = customer.customer_type === 'individual'
           ? `${customer.first_name} ${customer.last_name}`
           : customer.company_name;
@@ -474,7 +474,7 @@ export const useCreateRentalReceipt = () => {
           : 'تم إضافة الإيصال بنجاح'
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Error creating receipt:', error);
       const errorMessage = error?.message || error?.hint || error?.details || 'خطأ غير معروف';
       toast.error(`فشل في إضافة الإيصال: ${errorMessage}`);
@@ -511,7 +511,7 @@ export const useUpdateRentalReceipt = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-payment-totals', companyId, data.customer_id] });
       toast.success('تم تحديث الإيصال بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Error updating receipt:', error);
       toast.error(`فشل في تحديث الإيصال: ${error.message}`);
     }
@@ -561,7 +561,7 @@ export const useDeleteRentalReceipt = () => {
       
       toast.success('تم حذف الإيصال بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Error deleting receipt:', error);
       toast.error(`فشل في حذف الإيصال: ${error.message}`);
     }
@@ -726,7 +726,7 @@ export const useCustomerVehicles = (customerId?: string) => {
       const vehiclesMap = new Map((vehiclesData || []).map((v: any) => [v.id, v]));
       
       const vehicles: CustomerVehicle[] = contractsData
-        .map((contract: any) => {
+        .map((contract: unknown) => {
           const vehicle = vehiclesMap.get(contract.vehicle_id);
           if (!vehicle) return null;
           

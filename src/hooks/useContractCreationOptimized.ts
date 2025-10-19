@@ -24,6 +24,26 @@ export interface ContractCreationState {
   healthStatus: 'good' | 'warning' | 'error'
 }
 
+interface PerformanceBreakdown {
+  [key: string]: number | string | unknown
+}
+
+interface ContractInputData {
+  customer_id?: string
+  vehicle_id?: string | null
+  contract_type?: string
+  start_date?: string
+  end_date?: string
+  contract_amount?: number | string
+  monthly_amount?: number | string
+  description?: string | null
+  terms?: string | null
+  cost_center_id?: string | null
+  created_by?: string
+  contract_number?: string
+  [key: string]: unknown
+}
+
 interface ContractCreationResult {
   success: boolean
   contract_id: string
@@ -37,7 +57,7 @@ interface ContractCreationResult {
   error?: string
   errors?: string[]
   execution_time_seconds?: number
-  performance_breakdown?: any
+  performance_breakdown?: PerformanceBreakdown
 }
 
 export const useContractCreationOptimized = () => {
@@ -75,7 +95,7 @@ export const useContractCreationOptimized = () => {
   }
 
   const createContractMutation = useMutation({
-    mutationFn: async (inputContractData: any) => {
+    mutationFn: async (inputContractData: ContractInputData) => {
       console.log('🚀 [CONTRACT_CREATION_OPTIMIZED] بدء عملية إنشاء العقد المحسنة', {
         contractType: inputContractData.contract_type,
         amount: inputContractData.contract_amount,
@@ -211,9 +231,9 @@ export const useContractCreationOptimized = () => {
           end_date: inputContractData.end_date
         }
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('💥 [CONTRACT_CREATION_OPTIMIZED] خطأ في إنشاء العقد:', error)
-        
+
         setCreationState(prev => ({
           ...prev,
           isProcessing: false,
@@ -236,10 +256,11 @@ export const useContractCreationOptimized = () => {
         description: `رقم العقد: ${contract.contract_number || 'غير محدد'}`
       })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع'
       console.error('💥 [CONTRACT_CREATION_OPTIMIZED] خطأ في إنشاء العقد:', error)
       toast.error('فشل في إنشاء العقد', {
-        description: error.message || 'حدث خطأ غير متوقع'
+        description: errorMessage
       })
     }
   })

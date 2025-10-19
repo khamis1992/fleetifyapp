@@ -226,7 +226,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
       // توسيع العقدة الأب لإظهار الحساب الجديد
       setExpandedNodes(prev => new Set([...prev, parentAccount.id]));
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('خطأ في إنشاء الحساب الفرعي:', error);
       toast({
         title: "خطأ في إنشاء الحساب الفرعي",

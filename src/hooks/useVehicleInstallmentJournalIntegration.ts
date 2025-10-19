@@ -73,7 +73,7 @@ export const useVehicleInstallmentJournalIntegration = () => {
       }
 
       // Create journal entry lines
-      const lines: any[] = [];
+      const lines: unknown[] = [];
 
       // Debit: Vehicle Loans Payable (principal portion)
       if (principalAmount > 0) {

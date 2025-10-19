@@ -257,7 +257,7 @@ const { user } = useAuth();
           description: 'تم إنشاء طلب حساب مستخدم للموظف',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'تم إضافة الموظف لكن فشل إنشاء الحساب',

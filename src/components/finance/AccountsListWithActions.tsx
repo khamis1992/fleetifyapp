@@ -74,7 +74,7 @@ export const AccountsListWithActions: React.FC<AccountsListWithActionsProps> = (
       // استدعاء callback إذا كان موجود
       onDeleteAccount?.(account);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[DELETE_SINGLE] فشل حذف الحساب:', error);
       toast.error(`فشل في حذف الحساب ${account.account_code}: ${error.message}`);
     } finally {

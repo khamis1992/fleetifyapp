@@ -6,7 +6,7 @@ export interface ValidationAlert {
   type: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   message: string;
-  conflicts?: any[];
+  conflicts?: unknown[];
   amount?: number;
   count?: number;
 }

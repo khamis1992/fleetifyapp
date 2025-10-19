@@ -249,7 +249,7 @@ export const useAutoCreateLegalCases = () => {
         toast.success(`تم إنشاء ${result.created} قضية قانونية تلقائياً`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error auto-creating legal cases:', error);
       toast.error('حدث خطأ أثناء إنشاء القضايا التلقائية');
     },
@@ -326,7 +326,7 @@ export const useRemoveFromLegalCases = () => {
         toast.success(`تم إغلاق ${result.closed} قضية تلقائياً بعد السداد`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error closing legal cases:', error);
       toast.error('حدث خطأ أثناء إغلاق القضايا');
     },

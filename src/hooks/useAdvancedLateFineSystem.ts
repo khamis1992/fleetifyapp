@@ -130,7 +130,7 @@ export function useAdvancedLateFineSystem() {
       setCurrentSettings(settings);
       return settings;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في جلب إعدادات الغرامات: ${error.message}`);
       return null;
     }
@@ -374,7 +374,7 @@ export function useAdvancedLateFineSystem() {
           operation.total_fines_calculated++;
           operation.total_amount += result.fine_calculation.final_fine;
 
-        } catch (error: any) {
+        } catch (error: unknown) {
           operation.failed++;
           operation.errors.push(`العقد ${result.contract_number}: ${error.message}`);
           
@@ -423,7 +423,7 @@ export function useAdvancedLateFineSystem() {
 
       toast.success('تم إعفاء العقد من الغرامة بنجاح');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في الإعفاء: ${error.message}`);
     }
   }, [user]);

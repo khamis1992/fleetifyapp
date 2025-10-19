@@ -16,7 +16,7 @@ interface LearningData {
   };
   contextData: {
     intent: string;
-    entities: any[];
+    entities: unknown[];
     complexity: number;
     urgency: string;
   };

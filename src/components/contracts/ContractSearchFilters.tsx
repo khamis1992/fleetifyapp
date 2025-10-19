@@ -56,7 +56,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
     enabled: !!user?.profile?.company_id,
   });
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: unknown) => {
     console.log('🔧 [FILTER_CHANGE]', key, '=', value)
     const newFilters = { ...activeFilters };
     

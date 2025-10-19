@@ -16,7 +16,7 @@ import Papa from 'papaparse';
 import { toast } from 'sonner';
 
 interface CSVDragDropUploadProps {
-  onFileProcessed: (data: any[], fileName: string) => void;
+  onFileProcessed: (data: unknown[], fileName: string) => void;
   onError: (error: string) => void;
   acceptedFileTypes?: string[];
   maxFileSize?: number;
@@ -60,13 +60,13 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
       }
 
       // Add row numbers for tracking
-      const dataWithRowNumbers = parseResult.data.map((row: any, index: number) => ({
+      const dataWithRowNumbers = parseResult.data.map((row: unknown, index: number) => ({
         ...row,
         _rowNumber: index + 2 // Account for header row
       }));
 
       // Filter out completely empty rows
-      const validData = dataWithRowNumbers.filter((row: any) => {
+      const validData = dataWithRowNumbers.filter((row: unknown) => {
         const values = Object.values(row).filter(val => val !== '' && val !== null && val !== undefined);
         return values.length > 1; // At least one non-empty value besides row number
       });
@@ -84,7 +84,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
       onFileProcessed(validData, file.name);
       toast.success(`تم تحميل الملف بنجاح - ${validData.length} صف`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('File processing error:', error);
       const errorMessage = error.message || 'خطأ في معالجة الملف';
       onError(errorMessage);

@@ -116,7 +116,7 @@ export const LegalDocumentGenerator: React.FC<LegalDocumentGeneratorProps> = ({
           {/* Document Type */}
           <div className="space-y-2">
             <Label>نوع الوثيقة</Label>
-            <Select value={documentType} onValueChange={(value: any) => setDocumentType(value)}>
+            <Select value={documentType} onValueChange={(value: unknown) => setDocumentType(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

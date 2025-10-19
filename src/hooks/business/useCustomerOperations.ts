@@ -16,6 +16,17 @@ export interface CustomerOperationsOptions {
   sendWelcomeEmail?: boolean;
 }
 
+interface Customer {
+  id: string;
+  email?: string | null;
+  [key: string]: unknown;
+}
+
+interface DeleteCustomerResult {
+  success: boolean;
+  error?: string;
+}
+
 export const useCustomerOperations = (options: CustomerOperationsOptions = {}) => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
@@ -98,16 +109,17 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       // Immediate cache update - add new customer to existing list
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
-        (oldData: any) => {
+        (oldData: unknown) => {
           if (!oldData) return [customer];
-          
+
+          const customerList = oldData as Customer[]
           // Check if customer already exists to avoid duplicates
-          const exists = oldData.some((c: any) => c.id === customer.id);
+          const exists = customerList.some((c) => c.id === customer.id);
           if (exists) return oldData;
-          
+
           // Add new customer at the beginning of the list
           console.log('📋 Cache: Adding new customer to list', customer.id);
-          return [customer, ...oldData];
+          return [customer, ...customerList];
         }
       );
       
@@ -124,9 +136,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       toast.success('تم إنشاء العميل بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء العميل'
       console.error('💥 [useCustomerOperations] Create customer error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إنشاء العميل');
+      toast.error(errorMessage);
     }
   });
 
@@ -187,10 +200,11 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       // Immediate cache update - update customer in existing list
       queryClient.setQueriesData(
         { queryKey: ['customers'] },
-        (oldData: any) => {
+        (oldData: unknown) => {
           if (!oldData) return oldData;
-          
-          return oldData.map((c: any) => 
+
+          const customerList = oldData as Customer[]
+          return customerList.map((c) =>
             c.id === customer.id ? { ...c, ...customer } : c
           );
         }
@@ -209,9 +223,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       toast.success('تم تحديث العميل بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث العميل'
       console.error('💥 [useCustomerOperations] Update customer error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تحديث العميل');
+      toast.error(errorMessage);
     }
   });
 
@@ -243,7 +258,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         throw new Error(`خطأ في حذف العميل: ${error.message}`);
       }
 
-      const result = data as any;
+      const result = data as DeleteCustomerResult;
       if (!result?.success) {
         console.error('❌ [useCustomerOperations] Function error:', result?.error);
         throw new Error(result?.error || 'فشل في حذف العميل');
@@ -258,9 +273,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       toast.success('تم حذف العميل بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء حذف العميل'
       console.error('💥 [useCustomerOperations] Delete customer error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء حذف العميل');
+      toast.error(errorMessage);
     }
   });
 
@@ -297,9 +313,10 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       toast.success(data.isBlacklisted ? 'تم حظر العميل' : 'تم إلغاء حظر العميل');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تغيير حالة الحظر'
       console.error('💥 [useCustomerOperations] Toggle blacklist error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تغيير حالة الحظر');
+      toast.error(errorMessage);
     }
   });
 
@@ -389,7 +406,7 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
     return (contracts && contracts.length > 0) || (invoices && invoices.length > 0);
   };
 
-  const sendWelcomeEmailToCustomer = async (customer: any) => {
+  const sendWelcomeEmailToCustomer = async (customer: Customer) => {
     try {
       // Implementation for sending welcome email
       console.log('📧 Sending welcome email to:', customer.email);

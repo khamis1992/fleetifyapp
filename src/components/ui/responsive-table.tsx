@@ -42,7 +42,7 @@ export interface ResponsiveTableProps
     width?: string
     mobileHidden?: boolean
   }>
-  data: any[]
+  data: unknown[]
   loading?: boolean
   emptyMessage?: string
   onRowClick?: (item: any, index: number) => void

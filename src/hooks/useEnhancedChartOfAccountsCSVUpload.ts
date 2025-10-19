@@ -325,7 +325,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     }
 
     // Filter out empty rows
-    const validData = rawData.filter((row: any) => {
+    const validData = rawData.filter((row: unknown) => {
       const accountCode = (row['رقم الحساب'] || row['account_code'] || '').toString().trim();
       return accountCode !== '';
     });
@@ -393,7 +393,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
     }
 
     // Add row numbers
-    const dataWithRowNumbers = parseResult.data.map((row: any, index: number) => ({
+    const dataWithRowNumbers = parseResult.data.map((row: unknown, index: number) => ({
       ...row,
       _rowNumber: index + 2 // Account for header row
     }));
@@ -697,7 +697,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
               }
             }
 
-          } catch (error: any) {
+          } catch (error: unknown) {
             results.failed++;
             results.errors.push({
               row: rowNumber,
@@ -756,7 +756,7 @@ export function useEnhancedChartOfAccountsCSVUpload() {
         toast.warning(`تم العثور على ${results.hierarchyErrors.length} خطأ في التسلسل الهرمي`);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('🔍 [UPLOAD] Fatal error:', error);
       toast.error(`خطأ في رفع الملف: ${error.message}`);
       setResults({

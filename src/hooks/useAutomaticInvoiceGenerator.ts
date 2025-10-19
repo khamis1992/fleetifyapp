@@ -4,11 +4,47 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';
 
 // 🧾 واجهات نظام الفواتير التلقائي
+
+interface PaymentData {
+  payment_number?: string;
+  amount: number;
+  payment_date: string;
+  payment_method?: string;
+  reference_number?: string;
+  description?: string;
+  due_date?: string;
+  late_fine_handling?: string;
+  late_fine_days_overdue?: number;
+}
+
+interface ContractData {
+  id: string;
+  contract_number: string;
+  customer?: {
+    full_name?: string;
+  };
+}
+
+interface CustomerData {
+  id: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface LateFineCalculation {
+  isApplicable: boolean;
+  cappedFine: number;
+  daysOverdue: number;
+  rawFine?: number;
+  cappedAtMaxMonthly?: boolean;
+}
+
 interface AutoInvoiceRequest {
-  payment: any;
-  contract: any;
-  customer: any;
-  lateFineCalculation?: any;
+  payment: PaymentData;
+  contract: ContractData;
+  customer: CustomerData;
+  lateFineCalculation?: LateFineCalculation;
   invoiceType: 'payment_received' | 'late_fine' | 'combined';
 }
 
@@ -64,8 +100,8 @@ export function useAutomaticInvoiceGenerator() {
 
   // 📝 مولد وصف الفاتورة الذكي
   const generateInvoiceDescription = useCallback((
-    payment: any,
-    contract: any,
+    payment: PaymentData,
+    contract: ContractData,
     type: 'payment' | 'fine'
   ): string => {
     const customerName = contract.customer?.full_name || 'عميل غير محدد';
@@ -84,9 +120,9 @@ export function useAutomaticInvoiceGenerator() {
 
   // 🏗️ إنشاء فاتورة الدفع
   const createPaymentInvoice = useCallback(async (
-    payment: any,
-    contract: any,
-    customer: any
+    payment: PaymentData,
+    contract: ContractData,
+    customer: CustomerData
   ): Promise<GeneratedInvoice> => {
     
     const invoiceNumber = await generateInvoiceNumber('payment');
@@ -144,10 +180,10 @@ export function useAutomaticInvoiceGenerator() {
 
   // ⚖️ إنشاء فاتورة الغرامة
   const createLateFineInvoice = useCallback(async (
-    payment: any,
-    contract: any,
-    customer: any,
-    lateFineCalculation: any
+    payment: PaymentData,
+    contract: ContractData,
+    customer: CustomerData,
+    lateFineCalculation: LateFineCalculation
   ): Promise<GeneratedInvoice> => {
     
     const invoiceNumber = await generateInvoiceNumber('fine');
@@ -232,10 +268,11 @@ export function useAutomaticInvoiceGenerator() {
                 request.contract,
                 request.customer
               );
-              
+
               console.log(`✅ تم إنشاء فاتورة الدفع: ${result.paymentInvoice.invoice_number}`);
-            } catch (error: any) {
-              result.errors.push(`خطأ في إنشاء فاتورة الدفع: ${error.message}`);
+            } catch (error: unknown) {
+              const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
+              result.errors.push(`خطأ في إنشاء فاتورة الدفع: ${errorMessage}`);
             }
           }
 
@@ -251,10 +288,11 @@ export function useAutomaticInvoiceGenerator() {
                 request.customer,
                 request.lateFineCalculation
               );
-              
+
               console.log(`✅ تم إنشاء فاتورة الغرامة: ${result.lateFineInvoice.invoice_number}`);
-            } catch (error: any) {
-              result.errors.push(`خطأ في إنشاء فاتورة الغرامة: ${error.message}`);
+            } catch (error: unknown) {
+              const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
+              result.errors.push(`خطأ في إنشاء فاتورة الغرامة: ${errorMessage}`);
             }
           }
 
@@ -279,14 +317,16 @@ export function useAutomaticInvoiceGenerator() {
               });
 
             console.log(`✅ تم ربط الدفعة بالعقد: ${request.contract.contract_number}`);
-          } catch (error: any) {
-            result.errors.push(`خطأ في ربط الدفعة: ${error.message}`);
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
+            result.errors.push(`خطأ في ربط الدفعة: ${errorMessage}`);
           }
 
           result.success = result.errors.length === 0;
-          
-        } catch (error: any) {
-          result.errors.push(`خطأ عام: ${error.message}`);
+
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'خطأ عام غير معروف'
+          result.errors.push(`خطأ عام: ${errorMessage}`);
         }
 
         results.push(result);

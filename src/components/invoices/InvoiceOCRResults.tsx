@@ -11,7 +11,7 @@ interface InvoiceOCRResultsProps {
   data: ExtractedInvoiceData;
   confidence: number;
   imageUrl: string;
-  onChange: (field: keyof ExtractedInvoiceData, value: any) => void;
+  onChange: (field: keyof ExtractedInvoiceData, value: unknown) => void;
 }
 
 export const InvoiceOCRResults = ({ 

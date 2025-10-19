@@ -246,7 +246,7 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
                   <Label>نظام الألوان</Label>
                   <Select
                     value={options.colorScheme}
-                    onValueChange={(value: any) => updateOption('colorScheme', value)}
+                    onValueChange={(value: unknown) => updateOption('colorScheme', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -290,7 +290,7 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
                     <Label>تكرار الإرسال</Label>
                     <Select
                       value={options.schedule.frequency}
-                      onValueChange={(value: any) => updateOption('schedule', {
+                      onValueChange={(value: unknown) => updateOption('schedule', {
                         ...options.schedule!,
                         frequency: value
                       })}

@@ -195,7 +195,7 @@ export const useCreateVehicleInstallment = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
       toast.success('تم إنشاء اتفاقية الأقساط بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating vehicle installment:', error);
       toast.error('حدث خطأ أثناء إنشاء اتفاقية الأقساط');
     },
@@ -224,7 +224,7 @@ export const useUpdateVehicleInstallment = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
       toast.success('تم تحديث اتفاقية الأقساط بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating vehicle installment:', error);
       toast.error('حدث خطأ أثناء تحديث اتفاقية الأقساط');
     },
@@ -302,7 +302,7 @@ export const useProcessInstallmentPayment = () => {
       
       toast.success('تم تسجيل الدفعة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error processing installment payment:', error);
       toast.error('حدث خطأ أثناء تسجيل الدفعة');
     },
@@ -367,7 +367,7 @@ export const useUpdateOverdueInstallments = () => {
         toast.info(`تم تحديث ${count} قسط متأخر`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating overdue installments:', error);
       toast.error('حدث خطأ أثناء تحديث الأقساط المتأخرة');
     },

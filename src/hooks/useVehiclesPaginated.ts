@@ -20,7 +20,7 @@ export interface VehicleFilters {
 }
 
 export interface PaginatedVehiclesResponse {
-  data: any[];
+  data: unknown[];
   count: number;
   totalPages: number;
   currentPage: number;

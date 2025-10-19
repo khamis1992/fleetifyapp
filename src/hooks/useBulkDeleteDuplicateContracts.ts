@@ -79,9 +79,9 @@ export const useBulkDeleteDuplicateContracts = () => {
 
       console.log(`Successfully deleted contract ${contract.contract_number} (${contract.id})`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting contract ${contract.id}:`, error);
-      return { success: false, error: error.message || 'خطأ غير متوقع' };
+      return { success: false, error: error instanceof Error ? error.message : 'خطأ غير متوقع' };
     }
   };
 
@@ -98,7 +98,7 @@ export const useBulkDeleteDuplicateContracts = () => {
 
       try {
         validateCompanyAccess(companyId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         throw new Error('ليس لديك صلاحية للوصول إلى هذه الشركة');
       }
 
@@ -207,7 +207,7 @@ export const useBulkDeleteDuplicateContracts = () => {
         toast.error(`فشل في حذف جميع العقود (${result.failed} عقد)`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error in bulk delete duplicate contracts:', error);
       toast.error('حدث خطأ في حذف العقود المكررة: ' + error.message);
       

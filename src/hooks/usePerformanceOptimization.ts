@@ -193,7 +193,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
 
   // Virtual list implementation optimized
   const virtualizeList = useCallback((
-    items: any[], 
+    items: unknown[], 
     containerHeight: number, 
     itemHeight: number,
     scrollTop: number = 0,

@@ -56,7 +56,7 @@ export const CreateAccountsForExistingCustomers: React.FC = () => {
       if (error) throw error;
 
       setCustomersWithoutAccounts(customers || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching customers without accounts:', error);
       toast({
         variant: "destructive",
@@ -99,7 +99,7 @@ export const CreateAccountsForExistingCustomers: React.FC = () => {
             error: result.error || result.message || 'Unknown error' 
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`❌ Failed to create account for customer ${customer.customer_code}:`, error);
         failedCustomers.push({ 
           customer, 

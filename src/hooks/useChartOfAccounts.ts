@@ -151,7 +151,7 @@ export const useCreateAccount = () => {
         description: "تم إضافة الحساب الجديد إلى دليل الحسابات",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",
@@ -185,7 +185,7 @@ export const useUpdateAccount = () => {
         description: "تم حفظ التعديلات على الحساب",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الحساب",
@@ -233,7 +233,7 @@ export const useDeleteAccount = () => {
         description: (result as any).operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ [ACCOUNT_DELETE] فشل الحذف:', error);
       toast({
         variant: "destructive",
@@ -263,12 +263,12 @@ export const useCascadeDeleteAccount = () => {
       
       return result;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       
       const deletedCount = data.total_deleted || 0;
-      const permanentDeleted = data.deleted_accounts?.filter((acc: any) => acc.deletion_type === 'permanent')?.length || 0;
-      const softDeleted = data.deleted_accounts?.filter((acc: any) => acc.deletion_type === 'soft')?.length || 0;
+      const permanentDeleted = data.deleted_accounts?.filter((acc: unknown) => acc.deletion_type === 'permanent')?.length || 0;
+      const softDeleted = data.deleted_accounts?.filter((acc: unknown) => acc.deletion_type === 'soft')?.length || 0;
       
       let description = `تم حذف ${deletedCount} حساب`;
       if (permanentDeleted > 0 && softDeleted > 0) {
@@ -284,7 +284,7 @@ export const useCascadeDeleteAccount = () => {
         description,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف الحساب",
@@ -339,7 +339,7 @@ export const useDeleteAllAccounts = () => {
       
       return result;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
       
       const summary = data.summary;
@@ -348,7 +348,7 @@ export const useDeleteAllAccounts = () => {
         description: `تم حذف ${summary.total_processed} حساب (${summary.deleted_permanently} نهائي، ${summary.deleted_soft} مؤقت)`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف جميع الحسابات",
@@ -412,7 +412,7 @@ export const useCopyDefaultAccounts = () => {
         description: "تم إضافة دليل الحسابات الافتراضي للشركة (232 حساب)",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في نسخ الحسابات",

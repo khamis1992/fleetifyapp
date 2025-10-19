@@ -199,7 +199,7 @@ export const useDirectTemplateCopy = () => {
             console.log(`✅ تم إنشاء الحساب: ${accountCode} - ${nameAr} (مستوى محسوب: ${newAccount?.account_level || 'غير محدد'})`);
           }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
           failed_accounts++;
           const accountCode = account.code || account.account_code;
           errors.push(`${accountCode}: ${error.message}`);
@@ -245,7 +245,7 @@ export const useDirectTemplateCopy = () => {
         variant: result.failed_accounts > 0 ? "destructive" : "default"
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ [DIRECT_COPY] فشل النسخ المباشر:', error);
       toast({
         variant: "destructive",

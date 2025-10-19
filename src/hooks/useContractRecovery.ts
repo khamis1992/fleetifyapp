@@ -76,7 +76,7 @@ export const useContractRecovery = () => {
         }
 
         return result
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to create journal entry for contract:', contractId, error)
         throw error
       }
@@ -124,7 +124,7 @@ export const useContractRecovery = () => {
               success: false
             })
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           errors.push({
             contractId: contract.id,
             contractNumber: contract.contract_number,
@@ -156,7 +156,7 @@ export const useContractRecovery = () => {
         toast.warning(`فشل في إنشاء ${errorCount} من القيود المحاسبية`)
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to create all journal entries:', error)
       toast.error(`فشل في عملية الإنشاء الجماعي: ${error.message}`)
     }

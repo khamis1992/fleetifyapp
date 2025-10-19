@@ -102,7 +102,7 @@ export const useAccountingWizard = () => {
 // دالة للتعامل مع تضارب الحسابات
 async function handleAccountsConflictResolution(
   companyId: string, 
-  accountsToCreate: any[], 
+  accountsToCreate: unknown[], 
   strategy?: ConflictResolutionStrategy
 ) {
   if (!strategy || strategy === 'skip') {
@@ -157,7 +157,7 @@ async function handleAccountsConflictResolution(
 // دالة للتعامل مع تضارب البنوك
 async function handleBanksConflictResolution(
   companyId: string, 
-  banksToCreate: any[], 
+  banksToCreate: unknown[], 
   strategy?: ConflictResolutionStrategy
 ) {
   if (!strategy || strategy === 'skip') {

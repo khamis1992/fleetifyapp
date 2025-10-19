@@ -20,8 +20,8 @@ export interface ProcessedContractData {
 
 export interface ProcessingCorrection {
   field: string;
-  original_value: any;
-  suggested_value: any;
+  original_value: unknown;
+  suggested_value: unknown;
   reason: string;
   confidence: number;
 }

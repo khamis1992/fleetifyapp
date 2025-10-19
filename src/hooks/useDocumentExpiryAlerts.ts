@@ -46,7 +46,7 @@ export const useDocumentExpiryAlerts = () => {
       return data as DocumentExpiryAlert[];
     },
     enabled: !!user,
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: unknown) => {
       if (error?.code === 'PGRST116' || error?.message?.includes('does not exist')) {
         return false;
       }

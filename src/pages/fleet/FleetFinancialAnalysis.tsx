@@ -49,7 +49,7 @@ const FleetFinancialAnalysis = () => {
       toast.success(`تم معالجة الاستهلاك لـ ${result.length} مركبة`, {
         description: "تم تحديث قيم الاستهلاك بنجاح"
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("خطأ في معالجة الاستهلاك:", error);
       toast.error("فشل في معالجة الاستهلاك", {
         description: error.message || "حدث خطأ غير متوقع"

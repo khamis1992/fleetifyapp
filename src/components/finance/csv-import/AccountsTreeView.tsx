@@ -26,7 +26,7 @@ interface AccountNode {
 }
 
 interface AccountsTreeViewProps {
-  data: any[]; // البيانات المعالجة من الـ Hook
+  data: unknown[]; // البيانات المعالجة من الـ Hook
   hierarchyErrors?: Array<{ accountCode: string; message: string; rowNumber: number }>;
 }
 

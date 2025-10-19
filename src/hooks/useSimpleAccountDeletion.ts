@@ -365,7 +365,7 @@ export const useSimpleAccountDeletion = () => {
           message
         };
         
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ [SIMPLE_DELETE] خطأ في الحذف:', error);
         
         // Enhanced error messages for specific cases

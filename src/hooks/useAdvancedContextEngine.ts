@@ -55,10 +55,10 @@ export interface BusinessIntelligence {
 
 export interface ContextEnrichment {
   relatedData: {
-    customerHistory?: any[];
-    contractDetails?: any[];
-    financialRecords?: any[];
-    legalPrecedents?: any[];
+    customerHistory?: unknown[];
+    contractDetails?: unknown[];
+    financialRecords?: unknown[];
+    legalPrecedents?: unknown[];
   };
   similarCases: Array<{
     caseId: string;

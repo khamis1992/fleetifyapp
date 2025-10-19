@@ -186,7 +186,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       if (onSuccess) {
         onSuccess(result);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving customer:', error);
       toast.error(error.message || 'حدث خطأ أثناء حفظ العميل');
     }

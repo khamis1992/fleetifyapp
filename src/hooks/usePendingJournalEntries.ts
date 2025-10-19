@@ -15,7 +15,7 @@ export interface PendingJournalEntry {
   next_retry_at: string
   processed_at?: string
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
-  metadata: any
+  metadata: Record<string, unknown>
   priority: number
   contract?: {
     contract_number: string
@@ -89,7 +89,7 @@ export const usePendingJournalEntries = () => {
         toast.info('لا توجد قيود معلقة للمعالجة')
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to process pending entries:', error)
       toast.error('فشل في معالجة القيود المعلقة')
     }
@@ -112,7 +112,7 @@ export const usePendingJournalEntries = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-journal-entries'] })
       toast.success('تم إلغاء القيد المعلق')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to cancel pending entry:', error)
       toast.error('فشل في إلغاء القيد المعلق')
     }
@@ -139,7 +139,7 @@ export const usePendingJournalEntries = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-journal-entries'] })
       toast.success('تم إعادة جدولة القيد للمحاولة مرة أخرى')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to retry pending entry:', error)
       toast.error('فشل في إعادة المحاولة')
     }

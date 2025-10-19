@@ -53,7 +53,7 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
   } = useEnhancedChartOfAccountsCSVUpload();
 
   // معالجة رفع الملف
-  const handleFileProcessed = async (data: any[], fileName: string) => {
+  const handleFileProcessed = async (data: unknown[], fileName: string) => {
     try {
       setUploadError('');
       setCsvData(data);
@@ -67,7 +67,7 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
       
       // الانتقال إلى تبويب المعاينة
       setActiveTab('preview');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUploadError(error.message);
     }
   };

@@ -146,7 +146,7 @@ export const PropertyContractsCalendar: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
+          <Select value={viewMode} onValueChange={(value: unknown) => setViewMode(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>

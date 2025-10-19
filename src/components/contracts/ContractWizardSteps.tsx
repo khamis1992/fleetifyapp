@@ -42,7 +42,7 @@ import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelect
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
 
 // Account Display Component
-const AccountDisplay: React.FC<{ data: any }> = ({ data }) => {
+const AccountDisplay: React.FC<{ data: unknown }> = ({ data }) => {
   const { data: accounts } = useUnifiedAccountSelector({ filterLevel: 'level_5_6' })
   const selectedAccount = accounts?.find(account => account.id === data.account_id)
   const template = useTemplateByType(data.contract_type || '')

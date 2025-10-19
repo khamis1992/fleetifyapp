@@ -91,7 +91,7 @@ export function InvoiceForm({ open, onOpenChange, customerId, vendorId, type, co
     }
   };
 
-  const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
+  const updateItem = (id: string, field: keyof InvoiceItem, value: unknown) => {
     setItems(items.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));

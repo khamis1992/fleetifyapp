@@ -193,7 +193,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     }
   };
 
-  const getDisplayValue = (key: string, value: any): string => {
+  const getDisplayValue = (key: string, value: unknown): string => {
     if (!value && value !== false) return 'فارغ';
     
     switch (key) {

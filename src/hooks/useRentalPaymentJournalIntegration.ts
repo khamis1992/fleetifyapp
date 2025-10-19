@@ -230,7 +230,7 @@ export const createJournalEntryForRentalPayment = async (
     console.log('✅ Journal entry lines created successfully');
 
     return { success: true, entry_id: journalEntry.id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in createJournalEntryForRentalPayment:', error);
     return { 
       success: false, 
@@ -285,7 +285,7 @@ export const deleteJournalEntryForRentalPayment = async (
 
     console.log('✅ Journal entry deleted successfully');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in deleteJournalEntryForRentalPayment:', error);
     return { 
       success: false, 

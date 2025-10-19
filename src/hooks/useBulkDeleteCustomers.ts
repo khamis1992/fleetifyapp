@@ -173,9 +173,9 @@ export const useBulkDeleteCustomers = () => {
 
       console.log(`Successfully deleted customer ${customerId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting customer ${customerId}:`, error);
-      return { success: false, error: error.message || 'Unknown error' };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
@@ -193,7 +193,7 @@ export const useBulkDeleteCustomers = () => {
 
       try {
         validateCompanyAccess(actualCompanyId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         throw new Error('ليس لديك صلاحية للوصول إلى هذه الشركة');
       }
 
@@ -303,7 +303,7 @@ export const useBulkDeleteCustomers = () => {
         toast.warning(`تم حذف ${result.deleted} عميل، فشل حذف ${result.failed} عميل`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error in bulk delete customers:', error);
       toast.error('حدث خطأ في حذف العملاء: ' + error.message);
       

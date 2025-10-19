@@ -40,7 +40,8 @@ export const LandingAnalytics: React.FC = () => {
     }
   };
 
-  // Use analytics data from hook, or fallback to defaults if not available
+  // Core metrics calculated from live analytics data
+  // Source: landing_analytics table via useLandingAnalytics hook
   const metrics = analytics && Array.isArray(analytics) && analytics.length > 0
     ? {
         totalViews: analytics.reduce((sum, item) => sum + (item.views || 0), 0),
@@ -64,7 +65,7 @@ export const LandingAnalytics: React.FC = () => {
         trafficSources: { direct: 0, organic: 0, social: 0, referral: 0, email: 0 },
       };
 
-  function calculateAverageTime(data: any[]): string {
+  function calculateAverageTime(data: unknown[]): string {
     if (!data.length) return '0:00';
     const avgSeconds = data.reduce((sum, item) => sum + (item.time_on_page || 0), 0) / data.length;
     const minutes = Math.floor(avgSeconds / 60);
@@ -72,7 +73,7 @@ export const LandingAnalytics: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  function getTopPages(data: any[]) {
+  function getTopPages(data: unknown[]) {
     const pageCounts: Record<string, {path: string; title: string; views: number}> = {};
     data.forEach(item => {
       if (item.page_path) {
@@ -85,7 +86,7 @@ export const LandingAnalytics: React.FC = () => {
     return Object.values(pageCounts).sort((a, b) => b.views - a.views).slice(0, 3);
   }
 
-  function getDeviceBreakdown(data: any[]) {
+  function getDeviceBreakdown(data: unknown[]) {
     if (!data.length) return { desktop: 0, mobile: 0, tablet: 0 };
     const counts = { desktop: 0, mobile: 0, tablet: 0 };
     data.forEach(item => {
@@ -100,7 +101,7 @@ export const LandingAnalytics: React.FC = () => {
     };
   }
 
-  function getTrafficSources(data: any[]) {
+  function getTrafficSources(data: unknown[]) {
     if (!data.length) return { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
     const counts = { direct: 0, organic: 0, social: 0, referral: 0, email: 0 };
     data.forEach(item => {
@@ -173,6 +174,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.totalViews.toLocaleString()}</div>
+            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+12.5%</span> from last month
             </p>
@@ -186,6 +188,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.uniqueVisitors.toLocaleString()}</div>
+            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+8.3%</span> from last month
             </p>
@@ -199,6 +202,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.conversionRate.toFixed(1)}%</div>
+            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
               <span className="text-red-600">-0.4%</span> from last month
             </p>
@@ -212,6 +216,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.averageTimeOnPage}</div>
+            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+0:12</span> from last month
             </p>
@@ -225,6 +230,7 @@ export const LandingAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : metrics.bounceRate.toFixed(1)}%</div>
+            {/* TODO: Calculate real trend from previous period data */}
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">-2.1%</span> from last month
             </p>
@@ -309,6 +315,7 @@ export const LandingAnalytics: React.FC = () => {
         </Card>
 
         {/* Real-time Activity */}
+        {/* TODO: Implement WebSocket connection for live event streaming from landing_analytics */}
         <Card>
           <CardHeader>
             <CardTitle>Real-time Activity</CardTitle>
@@ -317,11 +324,13 @@ export const LandingAnalytics: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span>Active users now</span>
+                {/* TODO: Query landing_analytics for sessions active in last 5 minutes */}
                 <Badge variant="default">47</Badge>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-medium">Recent Events</h4>
+                {/* TODO: Display actual recent events from landing_analytics ordered by created_at DESC */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Page view: /features</span>
@@ -343,6 +352,7 @@ export const LandingAnalytics: React.FC = () => {
       </div>
 
       {/* Event Tracking */}
+      {/* TODO: Query landing_analytics grouped by event_type and aggregate counts/conversions */}
       <Card>
         <CardHeader>
           <CardTitle>Event Tracking</CardTitle>
@@ -360,6 +370,7 @@ export const LandingAnalytics: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {/* TODO: Replace with actual event data from landing_analytics */}
                 <tr className="border-b">
                   <td className="p-2">Button Click: Get Started</td>
                   <td className="p-2">CTA</td>

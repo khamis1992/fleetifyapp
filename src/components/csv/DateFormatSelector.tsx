@@ -20,8 +20,8 @@ import {
 interface DateFormatSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data: any[];
-  onConfirm: (data: any[], columnFormats: { [column: string]: DateFormatOption }) => void;
+  data: unknown[];
+  onConfirm: (data: unknown[], columnFormats: { [column: string]: DateFormatOption }) => void;
 }
 
 interface ColumnAnalysis {

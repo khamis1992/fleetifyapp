@@ -38,7 +38,7 @@ export const PropertyReportFilters: React.FC<PropertyReportFiltersProps> = ({
   onFiltersChange,
   onClearFilters
 }) => {
-  const updateFilter = (key: keyof PropertyReportFilters, value: any) => {
+  const updateFilter = (key: keyof PropertyReportFilters, value: unknown) => {
     onFiltersChange({
       ...filters,
       [key]: value

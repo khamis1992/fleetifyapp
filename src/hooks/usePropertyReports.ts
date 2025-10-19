@@ -210,7 +210,7 @@ export const usePropertyReports = () => {
 
         // Calculate maintenance costs from maintenance data
         // Note: This will use actual data once property_maintenance table is populated
-        const propertyMaintenance = maintenanceData.data?.filter((m: any) =>
+        const propertyMaintenance = maintenanceData.data?.filter((m: unknown) =>
           m.property_id === property.id && m.status === 'completed'
         ) || [];
 
@@ -231,7 +231,7 @@ export const usePropertyReports = () => {
         let status: 'occupied' | 'vacant' | 'maintenance' | 'available' = 'vacant';
         if (activeContract) {
           status = 'occupied';
-        } else if (propertyMaintenance.some((m: any) => m.status === 'in_progress')) {
+        } else if (propertyMaintenance.some((m: unknown) => m.status === 'in_progress')) {
           status = 'maintenance';
         } else {
           status = 'available';

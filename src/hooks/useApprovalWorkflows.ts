@@ -24,8 +24,8 @@ export interface ApprovalWorkflow {
   workflow_name_ar?: string;
   description?: string;
   source_type: RequestSource;
-  conditions: any;
-  steps: any;
+  conditions: unknown;
+  steps: unknown;
   is_active: boolean;
   created_by?: string;
   created_at: string;
@@ -53,12 +53,12 @@ export interface ApprovalRequest {
   priority: ApprovalPriority;
   status: ApprovalStatus;
   current_step_order: number;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   completed_at?: string;
-  workflow?: any;
-  requester?: any;
+  workflow?: unknown;
+  requester?: unknown;
 }
 
 export interface WorkflowConfiguration {

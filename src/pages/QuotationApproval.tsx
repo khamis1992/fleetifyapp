@@ -80,7 +80,7 @@ export default function QuotationApproval() {
         }
 
         setQuotation(data.quotation)
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message || 'حدث خطأ أثناء جلب بيانات العرض')
       } finally {
         setLoading(false)
@@ -129,7 +129,7 @@ export default function QuotationApproval() {
           approved_at: new Date().toISOString()
         })
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || 'حدث خطأ أثناء معالجة الطلب')
     } finally {
       setProcessing(false)

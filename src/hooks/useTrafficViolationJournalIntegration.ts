@@ -46,7 +46,7 @@ export const useTrafficViolationJournalIntegration = () => {
       const isCustomerResponsible = violation.charged_to_customer || false;
       
       let description = '';
-      let lines: any[] = [];
+      let lines: unknown[] = [];
 
       if (isCustomerResponsible) {
         // Customer pays - treat as revenue

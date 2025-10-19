@@ -67,7 +67,7 @@ export const DeleteDuplicateCustomers: React.FC = () => {
             errors.push(`${customerId}: ${(data as any)?.error}`);
             failedCount++;
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`خطأ غير متوقع في حذف العميل ${customerId}:`, err);
           errors.push(`${customerId}: ${err.message}`);
           failedCount++;
@@ -97,7 +97,7 @@ export const DeleteDuplicateCustomers: React.FC = () => {
         toast.error(`فشل في حذف ${failedCount} عميل`);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('خطأ عام في عملية الحذف:', error);
       toast.error('حدث خطأ في عملية الحذف');
       setResults({

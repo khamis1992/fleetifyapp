@@ -138,7 +138,7 @@ const SyncPaymentsToLedger: React.FC = () => {
       if (linesError) throw linesError;
 
       return { success: true, entry_number: entryNumber };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { success: false, error: error.message };
     }
   };
@@ -235,7 +235,7 @@ const SyncPaymentsToLedger: React.FC = () => {
           // Small delay
           await new Promise(resolve => setTimeout(resolve, 100));
 
-        } catch (error: any) {
+        } catch (error: unknown) {
           addLog(`❌ [${i+1}/${syncResult.total}] خطأ: ${error.message}`);
           syncResult.failed++;
           syncResult.errors.push({ payment_id: payment.id, error: error.message });
@@ -258,7 +258,7 @@ const SyncPaymentsToLedger: React.FC = () => {
         variant: syncResult.failed > 0 ? 'destructive' : 'default'
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       addLog(`❌ خطأ فادح: ${error.message}`);
       toast({
         title: 'خطأ',

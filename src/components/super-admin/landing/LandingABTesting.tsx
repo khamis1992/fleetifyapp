@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Progress } from '@/components/ui/progress';
 import { TestTube, Play, Pause, Trophy, BarChart3, Plus, Eye, Settings } from 'lucide-react';
 import { useLandingABTests } from '@/hooks/useLandingABTests';
+import { useCompanies } from '@/hooks/useCompanies';
 import { toast } from 'sonner';
 
 interface ABTest {
@@ -31,6 +32,7 @@ interface ABTest {
 
 export const LandingABTesting: React.FC = () => {
   const { tests, loading, createTest, updateTest, deleteTest } = useLandingABTests();
+  const { companies } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [editingTest, setEditingTest] = useState<ABTest | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -110,19 +112,41 @@ export const LandingABTesting: React.FC = () => {
     }
   };
 
-  // Mock performance data for demo
-  const getMockPerformance = (testId: string) => ({
-    variant_a: {
-      visitors: Math.floor(Math.random() * 1000) + 500,
-      conversions: Math.floor(Math.random() * 50) + 20,
-      conversion_rate: (Math.random() * 5 + 2).toFixed(2)
-    },
-    variant_b: {
-      visitors: Math.floor(Math.random() * 1000) + 500,
-      conversions: Math.floor(Math.random() * 50) + 20,
-      conversion_rate: (Math.random() * 5 + 2).toFixed(2)
+  // TODO: Replace with real A/B test performance data from landing_analytics table
+  // Currently using placeholder data until backend tracking is implemented
+  // Future: Query landing_analytics where event_data contains {ab_test_id, variant}
+  const getTestPerformance = (testId: string, test: ABTest) => {
+    // Use test ID as seed for deterministic placeholder data (consistent across renders)
+    const seed = testId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const baseVisitors = 500 + (seed % 500);
+
+    // If test hasn't started, show zeros
+    if (test.status === 'draft') {
+      return {
+        variant_a: { visitors: 0, conversions: 0, conversion_rate: '0.00' },
+        variant_b: { visitors: 0, conversions: 0, conversion_rate: '0.00' }
+      };
     }
-  });
+
+    // Generate realistic placeholder data based on traffic split
+    const visitorsA = Math.floor(baseVisitors * (test.traffic_split / 100));
+    const visitorsB = Math.floor(baseVisitors * ((100 - test.traffic_split) / 100));
+    const conversionRateA = 3.5 + ((seed % 20) / 10); // 3.5-5.5%
+    const conversionRateB = 3.2 + ((seed % 25) / 10); // 3.2-5.7%
+
+    return {
+      variant_a: {
+        visitors: visitorsA,
+        conversions: Math.floor(visitorsA * conversionRateA / 100),
+        conversion_rate: conversionRateA.toFixed(2)
+      },
+      variant_b: {
+        visitors: visitorsB,
+        conversions: Math.floor(visitorsB * conversionRateB / 100),
+        conversion_rate: conversionRateB.toFixed(2)
+      }
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -134,7 +158,11 @@ export const LandingABTesting: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies (Global)</SelectItem>
-              {/* TODO: Add company options */}
+              {companies?.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.company_name || company.company_name_ar || 'Unnamed Company'}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -185,7 +213,7 @@ export const LandingABTesting: React.FC = () => {
           </div>
         ) : (
           tests.map((test) => {
-            const performance = getMockPerformance(test.id);
+            const performance = getTestPerformance(test.id, test);
             const isWinnerA = parseFloat(performance.variant_a.conversion_rate) > parseFloat(performance.variant_b.conversion_rate);
             
             return (

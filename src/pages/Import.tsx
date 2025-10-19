@@ -274,7 +274,7 @@ const Import: React.FC = () => {
           } else {
             successCount++;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           errors.push(`السطر ${i}: ${error.message}`);
           failedCount++;
         }
@@ -303,7 +303,7 @@ const Import: React.FC = () => {
         toast.error(`فشل في استيراد ${failedCount} سجل`);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في الاستيراد: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -519,7 +519,7 @@ const Import: React.FC = () => {
                           <tbody>
                             {previewData.map((row, index) => (
                               <tr key={index} className="border-b border-border">
-                                {Object.values(row).map((value: any, cellIndex) => (
+                                {Object.values(row).map((value: unknown, cellIndex) => (
                                   <td key={cellIndex} className="p-2 text-right">
                                     {value}
                                   </td>

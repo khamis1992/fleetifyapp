@@ -154,7 +154,7 @@ export const useFinancialSystemAnalysis = () => {
   });
 };
 
-function calculateChartOfAccountsScore(accounts: any[]): number {
+function calculateChartOfAccountsScore(accounts: unknown[]): number {
   if (accounts.length === 0) return 0;
   
   // Check for essential account types
@@ -189,7 +189,7 @@ function calculateLinkageScore(metrics: FinancialMetrics): number {
   return Math.round((linkedEntities / totalEntities) * 100);
 }
 
-function calculateCostCentersScore(costCenters: any[], accounts: any[]): number {
+function calculateCostCentersScore(costCenters: any[], accounts: unknown[]): number {
   if (costCenters.length === 0) return 0;
   
   // Basic score for having cost centers
@@ -227,7 +227,7 @@ function calculateOperationsScore(journalEntries: any[]): number {
   return Math.min(Math.round(score), 100);
 }
 
-function generateIssues(metrics: FinancialMetrics, accounts: any[], costCenters: any[]): FinancialIssue[] {
+function generateIssues(metrics: FinancialMetrics, accounts: unknown[], costCenters: any[]): FinancialIssue[] {
   const issues: FinancialIssue[] = [];
   
   // Missing accounts issue
@@ -273,7 +273,7 @@ function generateIssues(metrics: FinancialMetrics, accounts: any[], costCenters:
   return issues;
 }
 
-function generateSuggestions(metrics: FinancialMetrics, accounts: any[]): FinancialSuggestion[] {
+function generateSuggestions(metrics: FinancialMetrics, accounts: unknown[]): FinancialSuggestion[] {
   const suggestions: FinancialSuggestion[] = [];
   
   // Vehicle account suggestions

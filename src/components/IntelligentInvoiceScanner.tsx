@@ -420,7 +420,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>محرك التعرف الضوئي</Label>
-              <Select value={ocrEngine} onValueChange={(value: any) => setOcrEngine(value)}>
+              <Select value={ocrEngine} onValueChange={(value: unknown) => setOcrEngine(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -433,7 +433,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
             </div>
             <div className="space-y-2">
               <Label>لغة المعالجة</Label>
-              <Select value={language} onValueChange={(value: any) => setLanguage(value)}>
+              <Select value={language} onValueChange={(value: unknown) => setLanguage(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

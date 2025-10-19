@@ -69,7 +69,7 @@ export function VehicleCSVUpload({ open, onOpenChange, onUploadComplete }: Vehic
           toast.error('لم يتم رفع أي مركبة. يرجى التحقق من تنسيق الملف.')
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [VEHICLE_CSV_UPLOAD_COMPONENT] Upload failed:', error)
       toast.error(error.message || 'حدث خطأ أثناء رفع الملف')
     }

@@ -85,6 +85,55 @@ export const LandingThemeSettings: React.FC = () => {
     }
   };
 
+  const handleDuplicateTheme = async () => {
+    if (!selectedTheme) return;
+
+    try {
+      const duplicatedTheme = await createTheme({
+        theme_name: `${selectedTheme.theme_name} (Copy)`,
+        theme_name_ar: selectedTheme.theme_name_ar ? `${selectedTheme.theme_name_ar} (نسخة)` : undefined,
+        colors: selectedTheme.colors,
+        fonts: selectedTheme.fonts,
+        spacing: selectedTheme.spacing,
+        custom_css: selectedTheme.custom_css,
+        company_id: selectedTheme.company_id,
+        is_default: false,
+        is_active: true
+      });
+      setSelectedTheme(duplicatedTheme);
+      toast.success('Theme duplicated successfully');
+    } catch (error) {
+      toast.error('Failed to duplicate theme');
+    }
+  };
+
+  const handleExportTheme = () => {
+    if (!selectedTheme) return;
+
+    const themeExport = {
+      theme_name: selectedTheme.theme_name,
+      theme_name_ar: selectedTheme.theme_name_ar,
+      colors: selectedTheme.colors,
+      fonts: selectedTheme.fonts,
+      spacing: selectedTheme.spacing,
+      custom_css: selectedTheme.custom_css,
+      exported_at: new Date().toISOString()
+    };
+
+    const dataStr = JSON.stringify(themeExport, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `theme-${selectedTheme.theme_name.toLowerCase().replace(/\s+/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Theme exported successfully');
+  };
+
   const handleDeleteTheme = async (themeId: string) => {
     if (window.confirm('Are you sure you want to delete this theme?')) {
       try {
@@ -356,24 +405,18 @@ export const LandingThemeSettings: React.FC = () => {
                 <CardTitle>Theme Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
-                  onClick={() => {
-                    // TODO: Duplicate theme functionality
-                    toast.info('Duplicate theme feature coming soon');
-                  }}
+                  onClick={handleDuplicateTheme}
                 >
                   Duplicate Theme
                 </Button>
-                
-                <Button 
+
+                <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => {
-                    // TODO: Export theme functionality
-                    toast.info('Export theme feature coming soon');
-                  }}
+                  onClick={handleExportTheme}
                 >
                   Export Theme
                 </Button>

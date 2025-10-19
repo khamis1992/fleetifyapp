@@ -605,7 +605,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       setForceCreate(false)
       
       return result
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 [CONTRACT_WIZARD] Error submitting contract:', {
         error,
         message: error.message,

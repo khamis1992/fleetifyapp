@@ -474,7 +474,7 @@ export const useCreateCustomer = () => {
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
 
   return useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       const targetCompanyId = data.selectedCompanyId || companyId;
       
       if (!targetCompanyId) {
@@ -513,7 +513,7 @@ export const useCreateCustomer = () => {
 
       const typedDuplicateCheck = duplicateCheck as unknown as { has_duplicates: boolean; duplicates: any[] };
       if (typedDuplicateCheck?.has_duplicates && !data.force_create) {
-        const duplicateInfo = typedDuplicateCheck.duplicates.map((dup: any) => 
+        const duplicateInfo = typedDuplicateCheck.duplicates.map((dup: unknown) => 
           `${dup.name} (${dup.duplicate_field}: ${dup.duplicate_value})`
         ).join(', ');
         throw new Error(`يوجد عميل مشابه في النظام: ${duplicateInfo}`);
@@ -644,7 +644,7 @@ export const useCreateCustomer = () => {
       // Update all matching customer query caches immediately
       allCustomerQueries.forEach(([queryKey, oldData]) => {
         if (Array.isArray(oldData)) {
-          const exists = oldData.some((customer: any) => customer.id === customerData.id);
+          const exists = oldData.some((customer: unknown) => customer.id === customerData.id);
           if (!exists) {
             console.log('🔄 [useCreateCustomer] Updating cache for query:', queryKey);
             queryClient.setQueryData(queryKey, [customerData, ...oldData]);
@@ -696,7 +696,7 @@ export const useUpdateCustomer = () => {
   const { companyId, validateCompanyAccess } = useUnifiedCompanyAccess();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
       if (!companyId) {
         throw new Error("No company access available");
       }

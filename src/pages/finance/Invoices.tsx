@@ -134,7 +134,7 @@ const Invoices = () => {
       setDeleteDialogOpen(false)
       setInvoiceToDelete(null)
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.message || 'فشل حذف الفاتورة')
     }
   })

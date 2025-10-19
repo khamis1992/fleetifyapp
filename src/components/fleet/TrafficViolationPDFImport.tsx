@@ -154,7 +154,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
       return processedViolations;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error extracting data from PDF:', error);
       throw error;
     }
@@ -179,7 +179,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
         try {
           const extractedViolations = await extractDataFromPDF(file);
           allViolations = [...allViolations, ...extractedViolations];
-        } catch (error: any) {
+        } catch (error: unknown) {
           // في حالة فشل استخراج بيانات ملف معين، أضف خطأ ولكن لا توقف المعالجة
           console.error(`فشل في معالجة الملف ${file.name}:`, error);
           toast({
@@ -205,7 +205,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
         description: `تم استخراج ${result.totalExtracted} مخالفة، ${result.successfulMatches} منها مطابقة للمركبات`,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "خطأ في المعالجة",
         description: `فشل في معالجة الملفات: ${error.message}`,
@@ -270,7 +270,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
       setUploadedFiles([]);
       setSelectedViolations(new Set());
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "خطأ في الحفظ",
         description: `فشل في حفظ المخالفات: ${error.message}`,

@@ -139,7 +139,7 @@ export const VehicleHandoverForm: React.FC = () => {
     terms_accepted: false,
   });
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     if (field.startsWith('accessories.')) {
       const accessoryKey = field.split('.')[1];
       setFormData(prev => ({

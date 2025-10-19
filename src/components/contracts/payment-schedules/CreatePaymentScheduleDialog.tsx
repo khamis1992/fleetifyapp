@@ -54,7 +54,7 @@ export const CreatePaymentScheduleDialog = ({
         <div className="space-y-4">
           <div>
             <Label htmlFor="installment-plan">نوع الأقساط</Label>
-            <Select value={installmentPlan} onValueChange={(value: any) => setInstallmentPlan(value)}>
+            <Select value={installmentPlan} onValueChange={(value: unknown) => setInstallmentPlan(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر نوع الأقساط" />
               </SelectTrigger>

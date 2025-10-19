@@ -11,7 +11,7 @@ export interface LandingContent {
   is_active: boolean | null;
   link_url: string | null;
   media_url: string | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   section_id: string | null;
   sort_order: number | null;
   updated_at: string | null;

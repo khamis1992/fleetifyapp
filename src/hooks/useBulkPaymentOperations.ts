@@ -38,7 +38,7 @@ export function useBulkPaymentOperations() {
 
   // عملية رفع مجمعة محسنة
   const bulkUploadPayments = async (
-    data: any[], 
+    data: unknown[], 
     options: {
       batchSize?: number;
       autoCreateCustomers?: boolean;
@@ -46,8 +46,8 @@ export function useBulkPaymentOperations() {
       useAutoFix?: boolean;
     } = {}
   ): Promise<BulkOperationResult & { 
-    fixedData?: any[];
-    fixes?: Array<{ row: number; field: string; original: any; fixed: any; reason: string }>;
+    fixedData?: unknown[];
+    fixes?: Array<{ row: number; field: string; original: unknown; fixed: unknown; reason: string }>;
     cleanedCSV?: string;
   }> => {
     const startTime = Date.now();
@@ -61,7 +61,7 @@ export function useBulkPaymentOperations() {
       if (!companyId) throw new Error('معرف الشركة غير متوفر');
 
       let processedData = data;
-      let autoFixes: Array<{ row: number; field: string; original: any; fixed: any; reason: string }> = [];
+      let autoFixes: Array<{ row: number; field: string; original: unknown; fixed: unknown; reason: string }> = [];
       let cleanedCSV = '';
 
       // Apply auto-fix if enabled
@@ -119,7 +119,7 @@ export function useBulkPaymentOperations() {
             successful += insertedCount;
             console.log(`✅ تم إدراج ${insertedCount} مدفوعة من المجموعة ${batchIndex + 1}`);
           }
-        } catch (batchError: any) {
+        } catch (batchError: unknown) {
           console.error(`❌ خطأ في معالجة المجموعة ${batchIndex + 1}:`, batchError);
           failed += batch.length;
           batch.forEach((_, index) => {
@@ -150,7 +150,7 @@ export function useBulkPaymentOperations() {
         cleanedCSV: useAutoFix ? cleanedCSV : undefined
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ خطأ في العملية المجمعة:', error);
       toast.error(`خطأ في العملية المجمعة: ${error.message}`);
       throw error;
@@ -162,7 +162,7 @@ export function useBulkPaymentOperations() {
 
   // تحضير البيانات للعملية المجمعة
   const prepareBulkPayments = async (
-    data: any[], 
+    data: unknown[], 
     companyId: string,
     options: {
       autoCreateCustomers?: boolean;
@@ -288,9 +288,9 @@ export function useBulkPaymentOperations() {
           }
 
           payments.push(paymentData);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.warn(`⚠️ خطأ في تحضير السطر ${i + 1}:`, error);
-          errors.push({ row: i + 1, message: error.message || 'خطأ في معالجة البيانات' });
+          errors.push({ row: i + 1, message: error instanceof Error ? error.message : 'خطأ في معالجة البيانات' });
         }
       }
 
@@ -298,7 +298,7 @@ export function useBulkPaymentOperations() {
       console.log(`⚠️ ${errors.length} أخطاء في التحضير`);
       
       return { payments, errors };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ خطأ في تحضير البيانات:', error);
       throw new Error(`خطأ في تحضير البيانات: ${error.message}`);
     }

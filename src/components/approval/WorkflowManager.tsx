@@ -55,7 +55,7 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
         description: "تم تحديث حالة سير العمل بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "خطأ في تحديث سير العمل",
         description: error.message || "حدث خطأ أثناء تحديث حالة سير العمل",

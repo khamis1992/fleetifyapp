@@ -107,7 +107,7 @@ export const useLegalAI = (companyId: string) => {
         setIsProcessing(false);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error processing query:', error);
       toast.error(error.message || 'حدث خطأ في معالجة الاستفسار');
     }
@@ -473,7 +473,7 @@ function calculateUnpaidAmount(payments: any[]): number {
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 }
 
-async function logConsultation(data: any) {
+async function logConsultation(data: unknown) {
   try {
     await supabase.from('legal_consultations').insert({
       company_id: data.companyId,

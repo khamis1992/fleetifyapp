@@ -46,7 +46,7 @@ export const InvoiceScannerDashboard = () => {
     }
   };
 
-  const handleDataChange = (field: keyof ExtractedInvoiceData, value: any) => {
+  const handleDataChange = (field: keyof ExtractedInvoiceData, value: unknown) => {
     setExtractedData(prev => ({
       ...prev,
       [field]: value

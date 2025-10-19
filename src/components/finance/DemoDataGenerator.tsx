@@ -703,7 +703,7 @@ export const DemoDataGenerator: React.FC = () => {
         description: "تم إنشاء البيانات التجريبية بنجاح",
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('خطأ في إنشاء البيانات التجريبية:', error);
       toast({
         title: "خطأ",
@@ -794,7 +794,7 @@ export const DemoDataGenerator: React.FC = () => {
         description: "تم حذف جميع البيانات التجريبية",
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "خطأ",
         description: `فشل في حذف البيانات: ${error.message}`,

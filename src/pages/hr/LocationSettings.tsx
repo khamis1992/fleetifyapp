@@ -96,7 +96,7 @@ export default function LocationSettings() {
       toast.success('تم تحديث إعدادات الموقع بنجاح');
       queryClient.invalidateQueries({ queryKey: ['company-location'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.message || 'فشل في تحديث الإعدادات');
     },
   });
@@ -123,7 +123,7 @@ export default function LocationSettings() {
       }));
 
       toast.success('تم الحصول على الموقع الحالي بنجاح');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`فشل في الحصول على الموقع: ${error.message}`);
     } finally {
       setIsGettingLocation(false);

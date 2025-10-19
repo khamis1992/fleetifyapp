@@ -75,7 +75,7 @@ export const useInvoiceCostCenterAnalysis = (startDate?: string, endDate?: strin
       if (error) throw error
 
       // تجميع البيانات حسب مركز التكلفة ونوع الفاتورة
-      const groupedData = data.reduce((acc: any, invoice: any) => {
+      const groupedData = data.reduce((acc: unknown, invoice: any) => {
         const key = `${invoice.cost_center_id}_${invoice.invoice_type}`
         
         if (!acc[key]) {
@@ -97,7 +97,7 @@ export const useInvoiceCostCenterAnalysis = (startDate?: string, endDate?: strin
       }, {})
 
       // حساب الانحرافات
-      return Object.values(groupedData).map((item: any) => ({
+      return Object.values(groupedData).map((item: unknown) => ({
         ...item,
         variance_amount: item.total_amount - item.budget_amount,
         variance_percentage: item.budget_amount > 0 

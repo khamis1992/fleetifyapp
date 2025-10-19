@@ -99,7 +99,7 @@ export const FixCustomerAccounts: React.FC = () => {
           newResults.errors.push(errorMsg);
           console.error(`❌ Failed to create accounts for ${customerName}:`, typedResult?.error);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         newResults.failed++;
         const errorMsg = `${customerName}: ${error.message || 'خطأ غير متوقع'}`;
         newResults.errors.push(errorMsg);

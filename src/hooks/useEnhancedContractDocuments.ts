@@ -35,7 +35,7 @@ export interface DocumentOperationLog {
   error_code?: string
   retry_count: number
   file_path?: string
-  metadata: any
+  metadata: Record<string, unknown>
   created_at: string
   completed_at?: string
 }

@@ -89,7 +89,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
       } else {
         toast.success(`تم العثور على ${data?.length || 0} حساب في الاختبار المباشر`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('🧪 [DIRECT_TEST] خطأ:', err);
       toast.error('خطأ في الاختبار: ' + err.message);
     } finally {
@@ -158,7 +158,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
         onSuccess?.();
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SIMPLE_DELETE_ALL] فشل الحذف:', error);
       setResults({
         success: false,

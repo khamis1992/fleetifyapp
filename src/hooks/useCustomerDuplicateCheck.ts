@@ -73,11 +73,11 @@ export const useCustomerDuplicateCheck = (
       
       // تصفية العملاء من الشركات الأخرى وإزالة أي مراجع للعميل المستبعد
       if (result && result.duplicates) {
-        let filteredDuplicates = result.duplicates.filter((d: any) => d.company_id === companyId);
+        let filteredDuplicates = result.duplicates.filter((d: unknown) => d.company_id === companyId);
         
         // التأكد من عدم تضمين العميل المستبعد في النتائج
         if (excludeCustomerId) {
-          filteredDuplicates = filteredDuplicates.filter((d: any) => d.id !== excludeCustomerId);
+          filteredDuplicates = filteredDuplicates.filter((d: unknown) => d.id !== excludeCustomerId);
         }
         
         console.log('🔍 [DUPLICATE_CHECK] Original Results:', {
@@ -98,7 +98,7 @@ export const useCustomerDuplicateCheck = (
         console.log('🔍 [DUPLICATE_CHECK] Filtered Results:', {
           hasDuplicates: filteredResult.has_duplicates,
           count: filteredResult.count,
-          duplicates: filteredResult.duplicates.map((d: any) => ({
+          duplicates: filteredResult.duplicates.map((d: unknown) => ({
             id: d.id,
             name: d.name,
             companyId: d.company_id,

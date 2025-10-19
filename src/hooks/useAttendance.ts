@@ -109,7 +109,7 @@ export const useAttendance = () => {
         toast.error(errorMessage);
       }
     },
-    onError: async (error: any) => {
+    onError: async (error: unknown) => {
       console.error('Clock-in mutation error:', error);
       
       // Try to get detailed error from the response
@@ -176,7 +176,7 @@ export const useAttendance = () => {
         toast.error(errorMessage);
       }
     },
-    onError: async (error: any) => {
+    onError: async (error: unknown) => {
       console.error('Clock-out mutation error:', error);
       
       // Try to get detailed error from the response

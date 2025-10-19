@@ -45,6 +45,42 @@ interface AdvancedFinancialAnalytics {
   financialHealthScore: FinancialHealthScore;
 }
 
+interface JournalEntryLine {
+  cost_center_id?: string;
+  debit_amount?: number;
+  credit_amount?: number;
+  chart_of_accounts?: {
+    account_type?: string;
+    account_name?: string;
+  };
+  cost_centers?: {
+    center_name?: string;
+    center_code?: string;
+  };
+}
+
+interface JournalEntry {
+  entry_date: string;
+  journal_entry_lines?: JournalEntryLine[];
+}
+
+interface Payment {
+  amount: number;
+  payment_type?: string;
+}
+
+interface BankTransaction {
+  amount: number;
+  transaction_type?: string;
+}
+
+interface CostCenter {
+  id: string;
+  center_name: string;
+  center_code: string;
+  budget_amount?: number;
+}
+
 export const useAdvancedFinancialAnalytics = () => {
   const { user } = useAuth();
   
@@ -134,21 +170,21 @@ export const useAdvancedFinancialAnalytics = () => {
   });
 };
 
-function calculateMonthlyTrends(journalEntries: any[], payments: any[]): MonthlyTrend[] {
+function calculateMonthlyTrends(journalEntries: JournalEntry[], payments: Payment[]): MonthlyTrend[] {
   const monthlyData: { [key: string]: { revenue: number; expenses: number } } = {};
-  
+
   // تجميع البيانات حسب الشهر
   journalEntries.forEach(entry => {
-    const month = new Date(entry.entry_date).toLocaleDateString('ar-EG', { 
-      year: 'numeric', 
-      month: 'long' 
+    const month = new Date(entry.entry_date).toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long'
     });
-    
+
     if (!monthlyData[month]) {
       monthlyData[month] = { revenue: 0, expenses: 0 };
     }
-    
-    entry.journal_entry_lines?.forEach((line: any) => {
+
+    entry.journal_entry_lines?.forEach((line) => {
       if (line.chart_of_accounts?.account_type === 'revenue') {
         monthlyData[month].revenue += line.credit_amount || 0;
       } else if (line.chart_of_accounts?.account_type === 'expenses') {
@@ -167,14 +203,14 @@ function calculateMonthlyTrends(journalEntries: any[], payments: any[]): Monthly
 }
 
 function calculateCostCenterPerformance(
-  costCenters: any[],
-  journalEntries: any[]
+  costCenters: CostCenter[],
+  journalEntries: JournalEntry[]
 ): CostCenterPerformance[] {
   return costCenters.map(center => {
     let actualAmount = 0;
-    
+
     journalEntries.forEach(entry => {
-      entry.journal_entry_lines?.forEach((line: any) => {
+      entry.journal_entry_lines?.forEach((line) => {
         if (line.cost_center_id === center.id) {
           actualAmount += line.debit_amount || 0;
         }
@@ -198,8 +234,8 @@ function calculateCostCenterPerformance(
 }
 
 function calculateCashFlowAnalysis(
-  payments: any[],
-  bankTransactions: any[]
+  payments: Payment[],
+  bankTransactions: BankTransaction[]
 ): CashFlowAnalysis {
   let totalInflow = 0;
   let totalOutflow = 0;

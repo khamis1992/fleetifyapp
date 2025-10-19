@@ -135,7 +135,7 @@ export function useChartOfAccountsCSVUpload() {
     document.body.removeChild(link)
   }
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): unknown[] => {
     try {
       console.log('🔍 [CSV_PARSE] Starting CSV parsing...')
       
@@ -160,7 +160,7 @@ export function useChartOfAccountsCSVUpload() {
       console.log('🔍 [CSV_PARSE] Sample headers:', Object.keys(parseResult.data[0] || {}))
       
       // Normalize headers and add row numbers
-      const normalizedData = parseResult.data.map((row: any, index: number) => {
+      const normalizedData = parseResult.data.map((row: unknown, index: number) => {
         const normalizedRow = normalizeCsvHeaders(row, 'chart_account')
         normalizedRow._rowNumber = index + 2 // Account for header row
         return normalizedRow
@@ -175,7 +175,7 @@ export function useChartOfAccountsCSVUpload() {
     }
   }
 
-  const validateAccountData = (data: any, rowNumber: number): { valid: boolean; errors: string[] } => {
+  const validateAccountData = (data: unknown, rowNumber: number): { valid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     // التحقق من الحقول المطلوبة
@@ -386,7 +386,7 @@ export function useChartOfAccountsCSVUpload() {
               }
             }
 
-          } catch (error: any) {
+          } catch (error: unknown) {
             results.failed++
             results.errors.push({
               row: rowNumber,
@@ -423,7 +423,7 @@ export function useChartOfAccountsCSVUpload() {
         toast.warning('لم يتم العثور على بيانات صالحة في الملف')
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('🔍 [UPLOAD] Fatal error:', error)
       toast.error(`خطأ في رفع الملف: ${error.message}`)
       setResults({
@@ -440,7 +440,7 @@ export function useChartOfAccountsCSVUpload() {
     }
   }
 
-  const smartUploadAccounts = async (fixedData: any[]) => {
+  const smartUploadAccounts = async (fixedData: unknown[]) => {
     if (!companyId) {
       toast.error('معرف الشركة غير موجود')
       return
@@ -494,7 +494,7 @@ export function useChartOfAccountsCSVUpload() {
               results.successful++
               console.log(`🔍 [SMART_UPLOAD] Created account: ${accountData.account_code}`)
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             results.failed++
             results.errors.push({
               row: globalIndex + 1,
@@ -525,7 +525,7 @@ export function useChartOfAccountsCSVUpload() {
         toast.error(`فشل في رفع ${results.failed} حساب في الرفع الذكي`)
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('🔍 [SMART_UPLOAD] Fatal error:', error)
       toast.error(`خطأ في الرفع الذكي: ${error.message}`)
     } finally {

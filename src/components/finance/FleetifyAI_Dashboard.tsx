@@ -74,7 +74,7 @@ export function FleetifyAI_Dashboard({
   const [finalResults, setFinalResults] = useState<any>(null);
 
   // 🧠 معالجة الملف بـ FleetifyAI
-  const handleFileUpload = useCallback(async (data: any[]) => {
+  const handleFileUpload = useCallback(async (data: unknown[]) => {
     setUploadedData(data);
     setCurrentStage('processing');
     
@@ -164,7 +164,7 @@ export function FleetifyAI_Dashboard({
       
       toast.success(`🎯 FleetifyAI: تم تحليل ${aiResults.length} دفعة - ${highConfidenceItems.size} جاهزة للربط التلقائي`);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في FleetifyAI: ${error.message}`);
       setCurrentStage('upload');
     }
@@ -210,7 +210,7 @@ export function FleetifyAI_Dashboard({
       
       toast.success(`🎉 FleetifyAI: تمت معالجة ${selectedItems.size} دفعة بنجاح!`);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في المعالجة: ${error.message}`);
     }
   }, [selectedItems, results, generateAutomaticInvoices, getAdvancedStatistics]);

@@ -119,7 +119,7 @@ export function useCSVUpload() {
     document.body.removeChild(link)
   }
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): unknown[] => {
     const lines = csvText.split('\n').map(line => line.trim()).filter(line => line)
     if (lines.length < 2) return []
 
@@ -140,7 +140,7 @@ export function useCSVUpload() {
     return data
   }
 
-  const validateCustomerData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
+  const validateCustomerData = (data: unknown, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     console.log(`🔍 [VALIDATE] Row ${rowNumber} validation data:`, data);
@@ -297,7 +297,7 @@ export function useCSVUpload() {
             console.log(`📝 [CSV] Successfully inserted customer row ${customerData.rowNumber}`);
             results.successful++
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`📝 [CSV] Unexpected error for row ${customerData.rowNumber}:`, error);
           results.failed++
           results.errors.push({
@@ -309,7 +309,7 @@ export function useCSVUpload() {
 
       setResults(results)
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
       throw error
     } finally {
@@ -319,7 +319,7 @@ export function useCSVUpload() {
   }
 
   // دالة رفع ذكية للعملاء
-  const smartUploadCustomers = async (fixedData: any[]) => {
+  const smartUploadCustomers = async (fixedData: unknown[]) => {
     console.log('Smart upload started with data:', fixedData);
     
     setIsUploading(true);
@@ -383,7 +383,7 @@ export function useCSVUpload() {
           
           console.log(`Customer ${i + 1} inserted successfully:`, data);
           uploadResults.successful++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`Failed to insert customer ${i + 1}:`, error);
           uploadResults.failed++;
           uploadResults.errors.push({

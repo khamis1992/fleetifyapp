@@ -324,7 +324,7 @@ export function CSVArchiveManager({ open, onOpenChange }: CSVArchiveManagerProps
                   <label className="text-sm font-medium mb-2 block">تفاصيل الأخطاء</label>
                   <ScrollArea className="h-32 w-full border rounded-md p-3">
                     <div className="space-y-2">
-                      {selectedFile.error_details.map((error: any, index) => (
+                      {selectedFile.error_details.map((error: unknown, index) => (
                         <div key={index} className="text-sm p-2 bg-destructive/10 rounded border-r-2 border-destructive">
                           <span className="font-medium">صف {error.row}:</span> {error.message}
                         </div>

@@ -126,9 +126,9 @@ export const useBulkDeleteContracts = () => {
 
       console.log(`Successfully deleted contract ${contractId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting contract ${contractId}:`, error);
-      return { success: false, error: error.message || 'Unknown error' };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
@@ -146,7 +146,7 @@ export const useBulkDeleteContracts = () => {
 
       try {
         validateCompanyAccess(actualCompanyId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         throw new Error('ليس لديك صلاحية للوصول إلى هذه الشركة');
       }
 
@@ -250,7 +250,7 @@ export const useBulkDeleteContracts = () => {
         toast.warning(`تم حذف ${result.deleted} عقد، فشل حذف ${result.failed} عقد`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error in bulk delete contracts:', error);
       toast.error('حدث خطأ في حذف العقود: ' + error.message);
       

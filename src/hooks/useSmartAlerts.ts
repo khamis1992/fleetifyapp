@@ -94,7 +94,7 @@ export const useSmartAlerts = (options?: { priority?: boolean; limit?: number })
           const pendingMaintenance = maintenanceResult.value.data;
           if (pendingMaintenance.length > 0) {
             const totalCost = pendingMaintenance.reduce((sum: number, m: any) => sum + (m.estimated_cost || 0), 0);
-            const urgentCount = pendingMaintenance.filter((m: any) => m.priority === 'urgent' || m.priority === 'high').length;
+            const urgentCount = pendingMaintenance.filter((m: unknown) => m.priority === 'urgent' || m.priority === 'high').length;
             
             alerts.push({
               id: 'pending-maintenance',

@@ -86,7 +86,7 @@ export function UnifiedContractUpload({ open, onOpenChange, onUploadComplete }: 
       
       setCurrentStep('results');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       toast.error(`خطأ في الرفع: ${error.message}`);
       setCurrentStep('upload');

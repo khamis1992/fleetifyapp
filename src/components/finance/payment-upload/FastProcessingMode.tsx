@@ -29,7 +29,7 @@ import { PaymentUploadDiagnostics } from './PaymentUploadDiagnostics';
 import { toast } from 'sonner';
 
 interface FastProcessingModeProps {
-  onUploadComplete: (data: any[]) => Promise<any>;
+  onUploadComplete: (data: unknown[]) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, any>;
   requiredFields: string[];
@@ -72,7 +72,7 @@ export function FastProcessingMode({
   } = useBulkPaymentOperations();
 
   // معالجة الملف مع النمط السريع
-  const handleFastUpload = useCallback(async (data: any[]) => {
+  const handleFastUpload = useCallback(async (data: unknown[]) => {
     setIsProcessing(true);
     const startTime = Date.now();
     
@@ -159,7 +159,7 @@ export function FastProcessingMode({
         }
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ خطأ في المعالجة السريعة:', error);
       toast.error(`خطأ في المعالجة: ${error.message}`, {
         duration: 10000,
@@ -171,7 +171,7 @@ export function FastProcessingMode({
   }, [processingSettings, bulkUploadPayments, onUploadComplete]);
 
   // تحديث إعدادات المعالجة
-  const updateSetting = (key: string, value: any) => {
+  const updateSetting = (key: string, value: unknown) => {
     setProcessingSettings(prev => ({
       ...prev,
       [key]: value

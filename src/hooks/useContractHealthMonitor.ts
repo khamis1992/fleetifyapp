@@ -81,7 +81,7 @@ export const useContractHealthMonitor = () => {
       }
 
       const essentialTypes = ['RECEIVABLES', 'RENTAL_REVENUE', 'CASH']
-      const foundTypes = mappingsData?.map((m: any) => m.default_account_types?.type_code).filter(Boolean) || []
+      const foundTypes = mappingsData?.map((m: unknown) => m.default_account_types?.type_code).filter(Boolean) || []
       const missingTypes = essentialTypes.filter(type => !foundTypes.includes(type))
 
       const result: CreationRequirements = {
@@ -123,7 +123,7 @@ export const useContractHealthMonitor = () => {
       queryClient.invalidateQueries({ queryKey: ['contract-health'] })
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ [CLEANUP] Cleanup mutation failed:', error)
       toast.error('فشل في عملية التنظيف', {
         description: error.message || 'حدث خطأ غير متوقع'
@@ -169,7 +169,7 @@ export const useContractHealthMonitor = () => {
       queryClient.invalidateQueries({ queryKey: ['contract-health'] })
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ [PENDING_PROCESSOR] Processing mutation failed:', error)
       toast.error('فشل في معالجة العقود المعلقة', {
         description: error.message || 'حدث خطأ غير متوقع'
@@ -215,7 +215,7 @@ export const useContractHealthMonitor = () => {
       queryClient.invalidateQueries({ queryKey: ['contract-health'] })
       queryClient.invalidateQueries({ queryKey: ['contracts'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ [JOURNAL_PROCESSOR] Processing mutation failed:', error)
       toast.error('فشل في معالجة القيود المحاسبية', {
         description: error.message || 'حدث خطأ غير متوقع'

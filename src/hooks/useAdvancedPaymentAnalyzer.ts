@@ -21,8 +21,21 @@ interface PaymentDescription {
   patterns: string[];
 }
 
+interface Contract {
+  id?: string;
+  contract_number?: string;
+  agreement_number?: string;
+  monthly_amount?: number;
+  start_date?: string;
+  customer?: {
+    full_name?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 interface SmartContractMatch {
-  contract: any;
+  contract: Contract;
   confidence: number;
   matchingCriteria: {
     contractNumber: number;
@@ -35,6 +48,29 @@ interface SmartContractMatch {
   totalScore: number;
   suggestedAction: 'auto_link' | 'high_confidence' | 'manual_review' | 'reject';
   reasoning: string[];
+}
+
+interface PaymentInputData {
+  description?: string;
+  due_date?: string;
+  payment_date?: string;
+  amount?: number;
+  late_fine_handling?: string;
+  [key: string]: unknown;
+}
+
+interface AnalysisResult {
+  rowIndex: number;
+  originalPayment: PaymentInputData;
+  analyzedDescription: PaymentDescription;
+  contractMatches: SmartContractMatch[];
+  bestMatch?: SmartContractMatch;
+  lateFineCalculation: AdvancedLateFine | null;
+  recommendedActions: Array<{
+    type: string;
+    description: string;
+    confidence: string;
+  }>;
 }
 
 interface AdvancedLateFine {
@@ -55,7 +91,7 @@ interface AdvancedLateFine {
 export function useAdvancedPaymentAnalyzer() {
   const { companyId } = useUnifiedCompanyAccess();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<any[]>([]);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
 
   // 🎯 محلل الأوصاف الفائق - يفهم كل شيء
   const analyzePaymentDescription = useCallback((description: string): PaymentDescription => {
@@ -88,7 +124,7 @@ export function useAdvancedPaymentAnalyzer() {
       references: /(?:ref|reference|مرجع|رقم)[\s#:]*(\w+)/gi
     };
 
-    const extractedInfo: any = {
+    const extractedInfo: PaymentDescription['extractedInfo'] = {
       paymentType: 'other',
       amount: 0
     };
@@ -189,7 +225,7 @@ export function useAdvancedPaymentAnalyzer() {
   // 🎯 خوارزمية المطابقة الفائقة الذكاء
   const findBestContractMatch = useCallback(async (
     paymentDescription: PaymentDescription,
-    allContracts: any[]
+    allContracts: Contract[]
   ): Promise<SmartContractMatch[]> => {
     
     const matches: SmartContractMatch[] = [];
@@ -327,7 +363,7 @@ export function useAdvancedPaymentAnalyzer() {
 
   // 🚀 المعالج الرئيسي الفائق
   const processAdvancedPaymentFile = useCallback(async (
-    paymentData: any[]
+    paymentData: PaymentInputData[]
   ) => {
     if (!companyId) throw new Error('معرف الشركة مطلوب');
 
@@ -392,7 +428,7 @@ export function useAdvancedPaymentAnalyzer() {
   const generateRecommendedActions = (
     bestMatch: SmartContractMatch | undefined,
     lateFine: AdvancedLateFine | null,
-    payment: any
+    payment: PaymentInputData
   ) => {
     const actions = [];
 

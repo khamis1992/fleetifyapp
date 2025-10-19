@@ -388,7 +388,7 @@ const FixedAssets = () => {
               </div>
               <div>
                 <Label htmlFor="depreciationMethod">طريقة الإهلاك</Label>
-                <Select value={newAsset.depreciation_method} onValueChange={(value: any) => setNewAsset({ ...newAsset, depreciation_method: value })}>
+                <Select value={newAsset.depreciation_method} onValueChange={(value: unknown) => setNewAsset({ ...newAsset, depreciation_method: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر الطريقة" />
                   </SelectTrigger>
@@ -401,7 +401,7 @@ const FixedAssets = () => {
               </div>
               <div>
                 <Label htmlFor="condition">حالة الأصل</Label>
-                <Select value={newAsset.condition_status} onValueChange={(value: any) => setNewAsset({ ...newAsset, condition_status: value })}>
+                <Select value={newAsset.condition_status} onValueChange={(value: unknown) => setNewAsset({ ...newAsset, condition_status: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر الحالة" />
                   </SelectTrigger>
@@ -834,7 +834,7 @@ const FixedAssets = () => {
             </div>
             <div>
               <Label htmlFor="editDepreciationMethod">طريقة الإهلاك</Label>
-              <Select value={newAsset.depreciation_method} onValueChange={(value: any) => setNewAsset({ ...newAsset, depreciation_method: value })}>
+              <Select value={newAsset.depreciation_method} onValueChange={(value: unknown) => setNewAsset({ ...newAsset, depreciation_method: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الطريقة" />
                 </SelectTrigger>
@@ -847,7 +847,7 @@ const FixedAssets = () => {
             </div>
             <div>
               <Label htmlFor="editCondition">حالة الأصل</Label>
-              <Select value={newAsset.condition_status} onValueChange={(value: any) => setNewAsset({ ...newAsset, condition_status: value })}>
+              <Select value={newAsset.condition_status} onValueChange={(value: unknown) => setNewAsset({ ...newAsset, condition_status: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الحالة" />
                 </SelectTrigger>

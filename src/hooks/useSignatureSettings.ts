@@ -46,7 +46,7 @@ export const useUpdateSignatureSettings = () => {
         description: 'تحديث إعدادات التوقيع غير مُفعل حالياً',
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating signature settings:', error);
       toast({
         title: 'خطأ في التحديث',
@@ -73,7 +73,7 @@ export const useCreateSignatureSettings = () => {
         description: 'إنشاء إعدادات التوقيع غير مُفعل حالياً',
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating signature settings:', error);
       toast({
         title: 'خطأ في الإنشاء',

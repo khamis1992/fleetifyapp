@@ -102,7 +102,7 @@ export const useContractDuplicateCheck = (
       }
 
       // Format the results
-      const duplicates = (data || []).map((contract: any) => {
+      const duplicates = (data || []).map((contract: unknown) => {
         const customerName = contract.customers?.customer_type === 'individual' 
           ? `${contract.customers.first_name} ${contract.customers.last_name}`
           : contract.customers?.company_name || 'Unknown Customer';

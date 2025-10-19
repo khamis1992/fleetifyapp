@@ -151,7 +151,7 @@ export const useCreateLegalCorrespondence = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       toast.success('تم إضافة المراسلة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating legal correspondence:', error);
       toast.error('حدث خطأ أثناء إضافة المراسلة');
     },
@@ -181,7 +181,7 @@ export const useUpdateLegalCorrespondence = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-correspondence'] });
       toast.success('تم تحديث المراسلة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating legal correspondence:', error);
       toast.error('حدث خطأ أثناء تحديث المراسلة');
     },
@@ -239,7 +239,7 @@ export const useDeleteLegalCorrespondence = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-correspondence'] });
       toast.success('تم حذف المراسلة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting legal correspondence:', error);
       toast.error('حدث خطأ أثناء حذف المراسلة');
     },

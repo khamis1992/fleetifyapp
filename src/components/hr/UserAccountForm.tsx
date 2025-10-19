@@ -191,7 +191,7 @@ export default function UserAccountForm({ employee, open, onOpenChange, onSucces
       
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الحساب",

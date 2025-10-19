@@ -24,7 +24,7 @@ export const AccountChangeHistory: React.FC<AccountChangeHistoryProps> = ({
   account, 
   changes = [] 
 }) => {
-  const formatValue = (value: any, fieldName: string) => {
+  const formatValue = (value: unknown, fieldName: string) => {
     if (fieldName === 'current_balance' || fieldName === 'balance') {
       return `${Number(value || 0).toFixed(3)} د.ك`;
     }

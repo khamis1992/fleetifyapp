@@ -58,7 +58,7 @@ export const useSuggestedCustomerAccounts = (customerId: string) => {
 
       if (customerAccounts && customerAccounts.length > 0) {
         // Add existing customer accounts as suggestions
-        customerAccounts.forEach((ca: any) => {
+        customerAccounts.forEach((ca: unknown) => {
           if (ca.chart_of_accounts) {
             suggestions.push({
               id: ca.id,
@@ -84,9 +84,9 @@ export const useSuggestedCustomerAccounts = (customerId: string) => {
 
       if (availableAccounts) {
         availableAccounts
-          .filter((acc: any) => acc.is_available)
+          .filter((acc: unknown) => acc.is_available)
           .slice(0, 3) // Limit to 3 suggestions
-          .forEach((acc: any) => {
+          .forEach((acc: unknown) => {
             suggestions.push({
               id: `new-${acc.id}`,
               account_id: acc.id,
@@ -238,7 +238,7 @@ export const useCreateContractFinancialEntry = () => {
         description: "تم تسجيل القيد المحاسبي للعقد بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('[CONTRACT_FINANCIAL_ENTRY] Error:', error);
       toast({
         variant: "destructive",
@@ -290,7 +290,7 @@ export const useLinkContractToCustomerAccount = () => {
         description: "تم ربط العقد بالحساب المحاسبي بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('[LINK_CONTRACT_ACCOUNT] Error:', error);
       toast({
         variant: "destructive",

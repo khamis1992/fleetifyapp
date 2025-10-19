@@ -74,7 +74,7 @@ export const usePayrollJournalIntegration = () => {
       }
 
       // Create journal entry lines
-      const lines: any[] = [];
+      const lines: unknown[] = [];
 
       // Debit: Salaries Expense (basic salary)
       if (basicSalary > 0) {

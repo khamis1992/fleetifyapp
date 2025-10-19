@@ -139,6 +139,91 @@ export const queryKeys = {
     lists: () => [...queryKeys.companies.all, 'list'] as const,
     list: () => [...queryKeys.companies.lists()] as const,
   },
+
+  // EMPLOYEES / HR
+  employees: {
+    all: ['employees'] as const,
+    lists: () => [...queryKeys.employees.all, 'list'] as const,
+    list: (filters?: StatusFilters & CompanyFilters) => [...queryKeys.employees.lists(), filters] as const,
+    details: () => [...queryKeys.employees.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.employees.details(), id] as const,
+    attendance: (employeeId: string) => [...queryKeys.employees.all, 'attendance', employeeId] as const,
+  },
+
+  // CHART OF ACCOUNTS
+  chartOfAccounts: {
+    all: ['chart-of-accounts'] as const,
+    lists: () => [...queryKeys.chartOfAccounts.all, 'list'] as const,
+    list: (filters?: CompanyFilters) => [...queryKeys.chartOfAccounts.lists(), filters] as const,
+    details: () => [...queryKeys.chartOfAccounts.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.chartOfAccounts.details(), id] as const,
+    byType: (accountType: string) => [...queryKeys.chartOfAccounts.all, 'by-type', accountType] as const,
+  },
+
+  // JOURNAL ENTRIES
+  journalEntries: {
+    all: ['journal-entries'] as const,
+    lists: () => [...queryKeys.journalEntries.all, 'list'] as const,
+    list: (filters?: DateRangeFilters & CompanyFilters) => [...queryKeys.journalEntries.lists(), filters] as const,
+    details: () => [...queryKeys.journalEntries.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.journalEntries.details(), id] as const,
+  },
+
+  // VENDORS
+  vendors: {
+    all: ['vendors'] as const,
+    lists: () => [...queryKeys.vendors.all, 'list'] as const,
+    list: (filters?: StatusFilters & CompanyFilters) => [...queryKeys.vendors.lists(), filters] as const,
+    details: () => [...queryKeys.vendors.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.vendors.details(), id] as const,
+  },
+
+  // PROPERTIES (Real Estate Module)
+  properties: {
+    all: ['properties'] as const,
+    lists: () => [...queryKeys.properties.all, 'list'] as const,
+    list: (filters?: StatusFilters & CompanyFilters) => [...queryKeys.properties.lists(), filters] as const,
+    details: () => [...queryKeys.properties.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.properties.details(), id] as const,
+    reports: (propertyId: string) => [...queryKeys.properties.all, 'reports', propertyId] as const,
+    maintenance: (propertyId: string) => [...queryKeys.properties.all, 'maintenance', propertyId] as const,
+  },
+
+  // LEGAL CASES
+  legalCases: {
+    all: ['legal-cases'] as const,
+    lists: () => [...queryKeys.legalCases.all, 'list'] as const,
+    list: (filters?: StatusFilters & CompanyFilters) => [...queryKeys.legalCases.lists(), filters] as const,
+    details: () => [...queryKeys.legalCases.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.legalCases.details(), id] as const,
+  },
+
+  // BRANCHES
+  branches: {
+    all: ['branches'] as const,
+    lists: () => [...queryKeys.branches.all, 'list'] as const,
+    list: (filters?: CompanyFilters) => [...queryKeys.branches.lists(), filters] as const,
+    details: () => [...queryKeys.branches.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.branches.details(), id] as const,
+  },
+
+  // APPROVAL WORKFLOWS
+  approvalWorkflows: {
+    all: ['approval-workflows'] as const,
+    lists: () => [...queryKeys.approvalWorkflows.all, 'list'] as const,
+    list: (filters?: StatusFilters & CompanyFilters) => [...queryKeys.approvalWorkflows.lists(), filters] as const,
+    details: () => [...queryKeys.approvalWorkflows.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.approvalWorkflows.details(), id] as const,
+    requests: (workflowId: string) => [...queryKeys.approvalWorkflows.all, 'requests', workflowId] as const,
+  },
+
+  // REPORTS & ANALYTICS
+  reports: {
+    all: ['reports'] as const,
+    financial: (filters?: DateRangeFilters & CompanyFilters) => [...queryKeys.reports.all, 'financial', filters] as const,
+    fleet: (filters?: DateRangeFilters & CompanyFilters) => [...queryKeys.reports.all, 'fleet', filters] as const,
+    dashboard: (companyId?: string) => [...queryKeys.reports.all, 'dashboard', companyId] as const,
+  },
 };
 
 /**

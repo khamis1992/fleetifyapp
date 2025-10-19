@@ -105,7 +105,7 @@ export default function UnifiedSettings() {
     updateSettings(formData);
   };
 
-  const handleInputChange = (field: keyof HRSettings, value: any) => {
+  const handleInputChange = (field: keyof HRSettings, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {

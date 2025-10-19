@@ -2,7 +2,7 @@ import React from 'react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface SimpleDataTableProps {
-  data: any[];
+  data: unknown[];
   title: string;
 }
 
@@ -16,7 +16,7 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
   const firstItem = data[0];
   const columns = Object.keys(firstItem);
 
-  const formatCellValue = (value: any, column: string) => {
+  const formatCellValue = (value: unknown, column: string) => {
     if (typeof value === 'number' && column.includes('amount')) {
       return formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }

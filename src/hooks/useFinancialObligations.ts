@@ -126,7 +126,7 @@ export const useCreateContractObligations = () => {
       
       toast.info('إنشاء الالتزامات المالية غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating contract obligations:', error);
       toast.error(`خطأ في إنشاء الالتزامات المالية: ${error.message}`);
     },
@@ -169,7 +169,7 @@ export const useSmartPaymentAllocation = () => {
       
       toast.info('تخصيص الدفعة الذكي غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error in smart payment allocation:', error);
       toast.error(`خطأ في تخصيص الدفعة: ${error.message}`);
     },
@@ -207,7 +207,7 @@ export const useManualPaymentAllocation = () => {
       
       toast.info('التخصيص اليدوي غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error in manual payment allocation:', error);
       toast.error(`خطأ في التخصيص اليدوي: ${error.message}`);
     },
@@ -246,7 +246,7 @@ export const useUpdateObligationStatus = () => {
       
       toast.info('تحديث حالة الالتزام المالي غير مُفعل حالياً');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating obligation status:', error);
       toast.error(`خطأ في تحديث الالتزام المالي: ${error.message}`);
     },

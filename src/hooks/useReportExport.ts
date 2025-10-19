@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useCurrentCompanyId } from "@/hooks/useUnifiedCompanyAccess";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getReportStyles } from "@/utils/reportStyles";
 import { getModuleTitle } from "@/utils/reportLabels";
@@ -11,6 +10,7 @@ import {
   getTableHeaders,
   getTableCells
 } from "@/utils/reportFormatters";
+import { fetchReportData } from "@/services/reportDataService";
 
 interface DamagePoint {
   x: number;
@@ -45,10 +45,10 @@ const { toast } = useToast();
 
   const exportToHTML = async (options: ExportOptions) => {
     setIsExporting(true);
-    
+
     try {
       // Generate report data
-      const reportData = await fetchReportData(options);
+      const reportData = await fetchReportData(options, companyId);
       const reportContent = generateReportContent(options, reportData, formatCurrency);
       
       // Create simple print-friendly content matching the template
@@ -747,170 +747,6 @@ const { toast } = useToast();
     }
   };
 
-  const fetchReportData = async (options: ExportOptions) => {
-    
-    try {
-      // Fetch data based on module type
-      switch (options.moduleType) {
-        case 'hr':
-          return await fetchHRData(options, companyId);
-        case 'fleet':
-          return await fetchFleetData(options, companyId);
-        case 'customers':
-          return await fetchCustomersData(options, companyId);
-        case 'legal':
-          return await fetchLegalData(options, companyId);
-        case 'finance':
-          return await fetchFinanceData(options, companyId);
-        case 'damage_report':
-          return await fetchDamageReportData(options, companyId);
-        default:
-          return { data: [], summary: {} };
-      }
-    } catch (error) {
-      console.error('Error fetching report data:', error);
-      return { data: [], summary: {} };
-    }
-  };
-
-  const fetchHRData = async (options: ExportOptions, companyId: string) => {
-    let query = supabase.from('employees').select('*').eq('company_id', companyId);
-    
-    if (options.filters?.startDate) {
-      query = query.gte('created_at', options.filters.startDate);
-    }
-    if (options.filters?.endDate) {
-      query = query.lte('created_at', options.filters.endDate);
-    }
-
-    const { data: employees } = await query;
-    
-    return {
-      data: employees || [],
-      summary: {
-        totalEmployees: employees?.length || 0,
-        activeEmployees: employees?.filter(emp => emp.account_status === 'active').length || 0,
-        departments: [...new Set(employees?.map(emp => emp.department))].length || 0
-      }
-    };
-  };
-
-  const fetchFleetData = async (options: ExportOptions, companyId: string) => {
-    let query = supabase.from('vehicles').select('*').eq('company_id', companyId);
-    
-    if (options.filters?.startDate) {
-      query = query.gte('created_at', options.filters.startDate);
-    }
-    if (options.filters?.endDate) {
-      query = query.lte('created_at', options.filters.endDate);
-    }
-
-    const { data: vehicles } = await query;
-    
-    return {
-      data: vehicles || [],
-      summary: {
-        totalVehicles: vehicles?.length || 0,
-        availableVehicles: vehicles?.filter(v => v.status === 'available').length || 0,
-        rentedVehicles: vehicles?.filter(v => v.status === 'rented').length || 0
-      }
-    };
-  };
-
-  const fetchCustomersData = async (options: ExportOptions, companyId: string) => {
-    let query = supabase.from('customers').select('*').eq('company_id', companyId);
-    
-    if (options.filters?.startDate) {
-      query = query.gte('created_at', options.filters.startDate);
-    }
-    if (options.filters?.endDate) {
-      query = query.lte('created_at', options.filters.endDate);
-    }
-
-    const { data: customers } = await query;
-    
-    return {
-      data: customers || [],
-      summary: {
-        totalCustomers: customers?.length || 0,
-        activeCustomers: customers?.filter(c => c.is_active === true).length || 0
-      }
-    };
-  };
-
-  const fetchLegalData = async (options: ExportOptions, companyId: string) => {
-    let query = supabase.from('legal_cases').select('*').eq('company_id', companyId);
-    
-    if (options.filters?.startDate) {
-      query = query.gte('created_at', options.filters.startDate);
-    }
-    if (options.filters?.endDate) {
-      query = query.lte('created_at', options.filters.endDate);
-    }
-
-    const { data: cases } = await query;
-    
-    return {
-      data: cases || [],
-      summary: {
-        totalCases: cases?.length || 0,
-        activeCases: cases?.filter(c => c.case_status === 'active').length || 0,
-        closedCases: cases?.filter(c => c.case_status === 'closed').length || 0
-      }
-    };
-  };
-
-  const fetchFinanceData = async (options: ExportOptions, companyId: string) => {
-    let query = supabase.from('invoices').select('*').eq('company_id', companyId);
-    
-    if (options.filters?.startDate) {
-      query = query.gte('created_at', options.filters.startDate);
-    }
-    if (options.filters?.endDate) {
-      query = query.lte('created_at', options.filters.endDate);
-    }
-
-    const { data: invoices } = await query;
-    
-    return {
-      data: invoices || [],
-      summary: {
-        totalInvoices: invoices?.length || 0,
-        totalAmount: invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
-        paidInvoices: invoices?.filter(inv => inv.status === 'paid').length || 0
-      }
-    };
-  };
-
-  const fetchDamageReportData = async (options: ExportOptions, companyId: string) => {
-    if (options.conditionReportId) {
-      // Fetch specific condition report
-      const { data: conditionReport } = await supabase
-        .from('vehicle_condition_reports')
-        .select(`
-          *,
-          vehicles (plate_number, make, model, year),
-          profiles:inspector_id (full_name)
-        `)
-        .eq('id', options.conditionReportId)
-        .eq('company_id', companyId)
-        .single();
-
-      if (conditionReport) {
-        return {
-          conditionReport,
-          damagePoints: options.damagePoints || [],
-          summary: {
-            totalDamagePoints: options.damagePoints?.length || 0,
-            severeDamages: options.damagePoints?.filter(p => p.severity === 'severe').length || 0,
-            moderateDamages: options.damagePoints?.filter(p => p.severity === 'moderate').length || 0,
-            minorDamages: options.damagePoints?.filter(p => p.severity === 'minor').length || 0
-          }
-        };
-      }
-    }
-    return { conditionReport: null, damagePoints: [], summary: {} };
-  };
 
   return {
     exportToHTML,

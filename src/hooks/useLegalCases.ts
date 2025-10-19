@@ -209,7 +209,7 @@ export const useCreateLegalCase = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       toast.success('تم إنشاء القضية بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating legal case:', error);
       toast.error('حدث خطأ أثناء إنشاء القضية');
     },
@@ -278,7 +278,7 @@ export const useUpdateLegalCase = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-case'] });
       toast.success('تم تحديث القضية بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating legal case:', error);
       toast.error('حدث خطأ أثناء تحديث القضية');
     },

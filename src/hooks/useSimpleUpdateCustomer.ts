@@ -58,7 +58,7 @@ export const useSimpleUpdateCustomer = () => {
       
       toast.success('تم تحديث بيانات العميل بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Error updating customer:', error);
       let errorMessage = 'حدث خطأ أثناء تحديث بيانات العميل';
       

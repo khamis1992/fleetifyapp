@@ -46,7 +46,7 @@ export default function HRSettings() {
     }
   }, [settings]);
 
-  const handleInputChange = (field: keyof HRSettings, value: any) => {
+  const handleInputChange = (field: keyof HRSettings, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

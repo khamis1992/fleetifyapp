@@ -41,7 +41,7 @@ export default function AccountRequestsList({ requests }: AccountRequestsListPro
       });
       queryClient.invalidateQueries({ queryKey: ['account-requests'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في معالجة الطلب",

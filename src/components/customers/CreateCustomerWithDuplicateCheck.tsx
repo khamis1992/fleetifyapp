@@ -165,7 +165,7 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
         setForceCreate(false);
         setHasDuplicates(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 [CUSTOMER_FORM] Error creating customer:', {
         error,
         message: error.message,

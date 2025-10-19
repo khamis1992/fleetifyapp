@@ -25,7 +25,7 @@ interface SmartCSVUploadProps {
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
   entityType: 'customer' | 'vehicle' | 'contract' | 'payment';
-  uploadFunction: (data: any[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; archiveFile?: boolean; originalFile?: File }) => Promise<any>;
+  uploadFunction: (data: unknown[], options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; archiveFile?: boolean; originalFile?: File }) => Promise<any>;
   downloadTemplate: () => void;
   fieldTypes: Record<string, 'text' | 'number' | 'date' | 'email' | 'phone' | 'boolean'>;
   requiredFields: string[];
@@ -490,7 +490,7 @@ export function SmartCSVUpload({
           toast.error('لم يتم رفع أي سجل. يرجى التحقق من تنسيق الملف.');
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading data (table):', error);
       toast.error(`خطأ في رفع البيانات: ${error.message}`);
     } finally {

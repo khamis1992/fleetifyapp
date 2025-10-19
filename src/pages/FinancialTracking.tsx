@@ -901,7 +901,7 @@ const FinancialTracking: React.FC = () => {
       if (customerVehicles.length > 1) {
         setSelectedVehicleId(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding payment:', error);
       toast.error(error?.message || 'فشل في إضافة الدفعة');
     }
@@ -1028,7 +1028,7 @@ const FinancialTracking: React.FC = () => {
       toast.success(`تم تحديث الإيجار الشهري إلى ${rentAmount.toLocaleString('ar-QA')} ريال ✅`);
       setEditingMonthlyRent(false);
       setNewMonthlyRent('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating monthly rent:', error);
       toast.error('فشل في تحديث الإيجار الشهري');
     } finally {
@@ -1113,7 +1113,7 @@ const FinancialTracking: React.FC = () => {
       toast.success(`تم تحديث اسم العميل إلى "${trimmedName}" ✅`);
       setEditingCustomerName(false);
       setEditedCustomerName('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating customer name:', error);
       toast.error('فشل في تحديث اسم العميل');
     } finally {
@@ -1244,7 +1244,7 @@ const FinancialTracking: React.FC = () => {
       setNewCustomerRent('');
 
       toast.success(`تم إنشاء العميل "${firstName} ${lastName}" والعقد بنجاح ✅`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating customer:', error);
       
       // Handle specific error codes

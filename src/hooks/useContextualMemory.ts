@@ -17,7 +17,7 @@ export interface ConversationContext {
   }>;
   entities: Map<string, {
     type: 'client' | 'case' | 'document' | 'amount' | 'date';
-    value: any;
+    value: unknown;
     confidence: number;
     last_mentioned: Date;
   }>;

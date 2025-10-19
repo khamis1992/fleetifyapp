@@ -528,7 +528,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                   )}
                 </Button>
 
-                <Select value={selectedDifficulty} onValueChange={(value: any) => setSelectedDifficulty(value)}>
+                <Select value={selectedDifficulty} onValueChange={(value: unknown) => setSelectedDifficulty(value)}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>

@@ -189,7 +189,7 @@ export const useCreateConditionReport = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
       toast.success('تم إنشاء تقرير حالة المركبة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating condition report:', error);
       const errorMessage = error.message || 'فشل في إنشاء تقرير حالة المركبة';
       toast.error(errorMessage);
@@ -245,7 +245,7 @@ export const useUpdateConditionReport = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-condition-reports'] });
       toast.success('تم تحديث تقرير حالة المركبة بنجاح');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating condition report:', error);
       const errorMessage = error.message || 'فشل في تحديث تقرير حالة المركبة';
       toast.error(errorMessage);

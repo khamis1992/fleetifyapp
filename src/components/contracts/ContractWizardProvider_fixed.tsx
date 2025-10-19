@@ -524,7 +524,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       
       // إظهار رسالة النجاح فقط بعد نجاح عملية قاعدة البيانات
       console.log('🎉 [CONTRACT_WIZARD] تم إنشاء العقد بنجاح')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [CONTRACT_WIZARD] خطأ في إرسال العقد:', error)
       
       // تحسين رسائل الخطأ للمستخدم

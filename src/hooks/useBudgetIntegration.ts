@@ -267,7 +267,7 @@ export const useBudgetExecutionSummary = (budgetYear: number) => {
       let totalActualExpenses = 0
 
       budgets.forEach(budget => {
-        budget.budget_items.forEach((item: any) => {
+        budget.budget_items.forEach((item: unknown) => {
           if (item.account?.account_type === 'revenue') {
             totalBudgetedRevenue += item.budgeted_amount || 0
             totalActualRevenue += item.actual_amount || 0

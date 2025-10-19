@@ -106,7 +106,7 @@ ${analysisData.operationsScore < 80 ? '• العمليات المالية تح�
         console.log('[useFinancialAIAnalysis] AI analysis completed successfully');
         return data;
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[useFinancialAIAnalysis] Error:', error);
         
         // Return fallback analysis on any error

@@ -301,7 +301,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   }, [companyId, userId]);
 
   // تنفيذ تسجيل المخالفات
-  const executeViolationRegistration = async (params: any): Promise<ExecutionResult> => {
+  const executeViolationRegistration = async (params: unknown): Promise<ExecutionResult> => {
     try {
       // البحث عن العميل
       const { data: customers, error: customerError } = await supabase
@@ -393,7 +393,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   };
 
   // تنفيذ إنشاء العقود
-  const executeContractCreation = async (params: any): Promise<ExecutionResult> => {
+  const executeContractCreation = async (params: unknown): Promise<ExecutionResult> => {
     try {
       // البحث عن العميل أو إنشاؤه
       let customer;
@@ -516,7 +516,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   };
 
   // تنفيذ إنشاء المركبات
-  const executeVehicleCreation = async (params: any): Promise<ExecutionResult> => {
+  const executeVehicleCreation = async (params: unknown): Promise<ExecutionResult> => {
     try {
       const { data: vehicle, error } = await supabase
         .from('vehicles')
@@ -564,7 +564,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   };
 
   // تنفيذ إنشاء العملاء
-  const executeCustomerCreation = async (params: any): Promise<ExecutionResult> => {
+  const executeCustomerCreation = async (params: unknown): Promise<ExecutionResult> => {
     try {
       const nameParts = params.name.split(' ');
       const firstName = nameParts[0];
@@ -614,7 +614,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   };
 
   // تنفيذ إنشاء الفواتير
-  const executeInvoiceCreation = async (params: any): Promise<ExecutionResult> => {
+  const executeInvoiceCreation = async (params: unknown): Promise<ExecutionResult> => {
     try {
       // البحث عن العميل
       const { data: customers } = await supabase
@@ -701,7 +701,7 @@ export const useExecutiveAISystem = (companyId: string, userId: string) => {
   };
 
   // تنفيذ تسجيل المدفوعات
-  const executePaymentRecording = async (params: any): Promise<ExecutionResult> => {
+  const executePaymentRecording = async (params: unknown): Promise<ExecutionResult> => {
     try {
       // البحث عن العميل
       const { data: customers } = await supabase

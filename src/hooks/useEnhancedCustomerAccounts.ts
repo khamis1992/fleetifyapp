@@ -84,7 +84,7 @@ export const useCreateCustomerAccount = () => {
         description: "تم ربط الحساب المحاسبي بالعميل بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating customer account:', error);
       
       let errorMessage = "حدث خطأ أثناء إضافة الحساب المحاسبي";
@@ -167,7 +167,7 @@ export const useUpdateCustomerAccount = () => {
         description: "تم تحديث بيانات الحساب المحاسبي بنجاح",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error updating customer account:', error);
       
       let errorMessage = "حدث خطأ أثناء تحديث الحساب المحاسبي";

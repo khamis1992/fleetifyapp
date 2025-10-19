@@ -55,7 +55,7 @@ const NewEntry = () => {
     }
   };
 
-  const updateLine = (id: string, field: keyof JournalEntryLine, value: any) => {
+  const updateLine = (id: string, field: keyof JournalEntryLine, value: unknown) => {
     setLines(lines.map(line => 
       line.id === id ? { ...line, [field]: value } : line
     ));

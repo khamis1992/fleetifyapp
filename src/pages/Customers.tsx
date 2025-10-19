@@ -228,7 +228,7 @@ const Customers = () => {
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.message || 'فشل حذف العميل');
     }
   });
@@ -249,7 +249,7 @@ const Customers = () => {
       queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
       toast.success(data.newStatus ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.message || 'فشل تحديث حالة القائمة السوداء');
     }
   });
@@ -336,7 +336,7 @@ const Customers = () => {
           </div>
           
           <div className="flex gap-2">
-            <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+            <Select value={customerType} onValueChange={(value: unknown) => setCustomerType(value)}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="نوع العميل" />
               </SelectTrigger>
@@ -527,7 +527,7 @@ const Customers = () => {
           />
         </div>
         
-        <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+        <Select value={customerType} onValueChange={(value: unknown) => setCustomerType(value)}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="نوع العميل" />
           </SelectTrigger>

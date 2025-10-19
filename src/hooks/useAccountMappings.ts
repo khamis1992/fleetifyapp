@@ -109,7 +109,7 @@ export const useCreateAccountMapping = () => {
         description: "تم ربط نوع الحساب بحساب دليل الحسابات",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في إنشاء الربط",
@@ -149,7 +149,7 @@ export const useUpdateAccountMapping = () => {
         description: "تم تحديث ربط الحساب",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في تحديث الربط",
@@ -180,7 +180,7 @@ export const useDeleteAccountMapping = () => {
         description: "تم إلغاء ربط نوع الحساب",
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive",
         title: "خطأ في حذف الربط",

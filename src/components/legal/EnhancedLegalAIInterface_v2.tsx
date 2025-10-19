@@ -169,7 +169,7 @@ export const EnhancedLegalAIInterface_v2: React.FC<LegalAIInterfaceProps> = ({
       }
 
       toast.success('تم معالجة استفسارك بنجاح');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing query:', error);
       
       const errorMessage: Message = {

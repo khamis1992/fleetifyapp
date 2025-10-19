@@ -1,23 +1,26 @@
-import { useState } from "react"
-import Papa from "papaparse"
-import { supabase } from "@/integrations/supabase/client"
-import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
-import { ContractCreationData } from "@/types/contracts"
-import { toast } from "sonner"
-import { normalizeCsvHeaders } from "@/utils/csv"
-import { cleanPhone, normalizeDigits } from "@/lib/phone"
-import { addDays, addMonths, addYears, differenceInMonths, parseISO, isValid as isValidDate, format } from "date-fns"
-import { useCSVArchive } from "@/hooks/useCSVArchive"
+import { useState } from "react";
+import Papa from "papaparse";
+import { supabase } from "@/integrations/supabase/client";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { ContractCreationData } from "@/types/contracts";
+import { toast } from "sonner";
+import { normalizeCsvHeaders } from "@/utils/csv";
+import { cleanPhone, normalizeDigits } from "@/lib/phone";
+import { addDays, addMonths, addYears, differenceInMonths, parseISO, isValid as isValidDate, format } from "date-fns";
+import { useCSVArchive } from "@/hooks/useCSVArchive";
 
-interface CSVUploadResults {
-  total: number
-  successful: number
-  failed: number
-  customersCreated?: number
-  contractsCreated?: number
-  errors: Array<{ row: number; message: string; customerName?: string }>
-  warnings?: Array<{ row: number; message: string; customerName?: string }>
-}
+// Types - Import from centralized CSV contract types file
+import type {
+  CSVUploadResults,
+  CSVRow,
+  CustomerData,
+  ContractPreprocessData,
+  ContractPayload,
+  SmartUploadOptions,
+  CustomerQueryResult,
+  CostCenterQueryResult,
+  VehicleQueryResult
+} from '@/types/csv-contract.types';
 
 export function useContractCSVUpload() {
   const { user, companyId, isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess()
@@ -151,12 +154,12 @@ export function useContractCSVUpload() {
     document.body.removeChild(link)
   }
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): CSVRow[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    const raw = (parsed.data as any[]).filter(Boolean);
+    const raw = (parsed.data as Record<string, unknown>[]).filter(Boolean);
     const normalized = raw.map((row) => normalizeCsvHeaders(row));
     // Add row numbers (starting at 2 to account for header)
-    return normalized.map((row, idx) => ({ ...row, rowNumber: idx + 2 }));
+    return normalized.map((row, idx) => ({ ...row, rowNumber: idx + 2 })) as CSVRow[];
   }
 
   // ===================== Helpers: Resolve IDs from human-friendly fields =====================
@@ -211,7 +214,7 @@ export function useContractCSVUpload() {
                        cleanName.includes('LLC') || cleanName.includes('Ltd') ||
                        cleanName.toUpperCase() === cleanName // إذا كان الاسم بأحرف كبيرة
 
-      let customerData: any = {
+      let customerData: Partial<CustomerData> = {
         company_id: targetCompanyId,
         is_active: true,
         is_blacklisted: false,
@@ -264,12 +267,13 @@ export function useContractCSVUpload() {
       console.log(`✅ تم إنشاء عميل جديد بنجاح: ${newCustomer.id}`)
       return { id: newCustomer.id, created: true }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
       console.error(`❌ خطأ في معالجة العميل "${customerName}":`, error)
-      return { 
-        id: '', 
-        created: false, 
-        error: `خطأ في معالجة العميل "${customerName}": ${error.message}` 
+      return {
+        id: '',
+        created: false,
+        error: `خطأ في معالجة العميل "${customerName}": ${errorMessage}`
       }
     }
   };
@@ -303,7 +307,7 @@ export function useContractCSVUpload() {
       if (error) return { error: `تعذر البحث عن مركز التكلفة بالكود: ${error.message}`, provided };
       if (!data || data.length === 0) return { error: `لم يتم العثور على مركز تكلفة بالكود: ${cost_center_code}`, provided };
       if (data.length > 1) return { error: `الكود غير فريد لمركز التكلفة: ${cost_center_code}`, provided };
-      const id = (data[0] as any).id as string;
+      const id = (data[0] as CostCenterQueryResult).id;
       ccCodeToIdCache.set(key, id);
       return { id, provided };
     }
@@ -322,10 +326,13 @@ export function useContractCSVUpload() {
         .limit(5);
       if (error) return { error: `تعذر البحث عن مركز التكلفة بالاسم: ${error.message}`, provided };
       if (!data || data.length === 0) return { error: `لم يتم العثور على مركز تكلفة بالاسم: ${cost_center_name}`, provided };
-      const exact = data.filter((cc: any) => normalize((cc as any).center_name) === key || normalize((cc as any).center_name_ar) === key);
+      const exact = data.filter((cc) => {
+        const center = cc as CostCenterQueryResult
+        return normalize(center.center_name) === key || normalize(center.center_name_ar) === key
+      });
       const picked = exact.length === 1 ? exact[0] : (data.length === 1 ? data[0] : null);
       if (!picked) return { error: `اسم مركز التكلفة غير فريد: ${cost_center_name}`, provided };
-      const id = (picked as any).id as string;
+      const id = (picked as CostCenterQueryResult).id;
       ccNameToIdCache.set(key, id);
       return { id, provided };
     }
@@ -358,8 +365,9 @@ export function useContractCSVUpload() {
 
     // حاول إيجاد تطابق دقيق أولاً
     const exactMatches = data.filter((c) => {
-      const company = normalize((c as any).company_name);
-      const full = buildFullName((c as any).first_name, (c as any).last_name);
+      const customer = c as CustomerQueryResult
+      const company = normalize(customer.company_name);
+      const full = buildFullName(customer.first_name, customer.last_name);
       return company === key || full === key;
     });
 
@@ -369,7 +377,7 @@ export function useContractCSVUpload() {
       return { error: `الاسم غير فريد، تم العثور على ${candidates.length} نتائج لـ: ${customerName}` };
     }
 
-    const id = (candidates[0] as any).id as string;
+    const id = (candidates[0] as CustomerQueryResult).id;
     nameToIdCache.set(key, id);
     return { id };
   }
@@ -414,18 +422,18 @@ export function useContractCSVUpload() {
       picked = partial[0];
     }
 
-    const id = (picked as any).id as string;
+    const id = (picked as VehicleQueryResult).id;
     plateToIdCache.set(key, id);
     return { id };
   }
   // Preprocess row: resolve non-UUID identifiers and handle placeholders
   const preprocessAndResolveIds = async (
-    input: any,
+    input: CSVRow,
     companyId: string,
     autoCreateCustomers: boolean = false
-  ): Promise<{ data?: any; error?: string }> => {
+  ): Promise<{ data?: ContractPreprocessData; error?: string }> => {
     try {
-      const out: any = { ...input };
+      const out: ContractPreprocessData = { ...input };
       const rowNum = input.rowNumber || 0;
 
       // Normalize obvious alias fields
@@ -461,7 +469,7 @@ export function useContractCSVUpload() {
         if (phoneErr) return { error: `السطر ${rowNum}: تعذر البحث عن العميل برقم الهاتف - ${phoneErr.message}` };
 
         if (byPhone && byPhone.length === 1) {
-          out.customer_id = (byPhone[0] as any).id;
+          out.customer_id = (byPhone[0] as { id: string }).id;
         } else if (byPhone && byPhone.length > 1) {
           return { error: `السطر ${rowNum}: رقم الهاتف غير فريد داخل الشركة: ${cleanedPhone}` };
           } else {
@@ -534,8 +542,9 @@ export function useContractCSVUpload() {
 
       // Cost center placeholders handled in resolver; nothing here
       return { data: out };
-    } catch (e: any) {
-      return { error: e?.message || 'خطأ غير معروف أثناء التحضير المسبق' };
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'خطأ غير معروف أثناء التحضير المسبق'
+      return { error: errorMessage };
     }
   };
 
@@ -565,7 +574,7 @@ export function useContractCSVUpload() {
 
   // ====== Auto-complete helpers for contract fields ======
   const toISODate = (d: Date) => format(d, 'yyyy-MM-dd');
-  const parseDateFlexible = (val?: any): Date | null => {
+  const parseDateFlexible = (val?: unknown): Date | null => {
     if (!val) return null;
     const s = String(val).trim();
     // Try ISO first
@@ -580,7 +589,7 @@ export function useContractCSVUpload() {
     }
     return d;
   };
-  const toNumber = (val: any): number | undefined => {
+  const toNumber = (val: unknown): number | undefined => {
     if (val === undefined || val === null || String(val).trim() === '') return undefined;
     const cleaned = String(val).replace(/\u066B/g, '.').replace(/[٬,\s]/g, '');
     const n = Number(cleaned);
@@ -591,8 +600,8 @@ export function useContractCSVUpload() {
     return diff <= 0 ? 1 : diff + 1; // include the starting month window
   };
 
-  const autoCompleteContractFields = (row: any) => {
-    const out: any = { ...row };
+  const autoCompleteContractFields = (row: CSVRow): CSVRow => {
+    const out: CSVRow = { ...row };
 
     // Normalize contract type and set default
     out.contract_type = normalizeContractType(out.contract_type) || 'monthly_rental';
@@ -705,7 +714,7 @@ export function useContractCSVUpload() {
     return !!data?.id;
   };
 
-  const validateContractData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
+  const validateContractData = (data: CSVRow, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     // Required fields validation
@@ -833,7 +842,7 @@ export function useContractCSVUpload() {
           setProgress(Math.round(((i + 1) / data.length) * 100));
           continue;
         }
-        const contractData: any = pre.data;
+        const contractData: ContractPreprocessData = pre.data!;
 
         // تتبع إنشاء العملاء الجدد
         if (contractData._customerCreated) {
@@ -898,7 +907,7 @@ export function useContractCSVUpload() {
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
           console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${companyId}`);
 
-          const contractPayload: any = {
+          const contractPayload: ContractPayload = {
             company_id: companyId,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
@@ -916,7 +925,7 @@ export function useContractCSVUpload() {
             created_by: user?.id
           };
 
-          let insertError: any = null;
+          let insertError: unknown = null;
           let { error: insertErr } = await supabase
             .from('contracts')
             .insert(contractPayload);
@@ -934,11 +943,12 @@ export function useContractCSVUpload() {
           }
 
           if (insertError) {
+            const errorMessage = insertError instanceof Error ? insertError.message : 'خطأ غير معروف'
             console.error(`📝 [Contract CSV] Database error for row ${contractData.rowNumber}:`, insertError);
             results.failed++;
             results.errors.push({
               row: contractData.rowNumber,
-              message: getFriendlyDbError(insertError.message),
+              message: getFriendlyDbError(errorMessage),
               customerName: filledRow.customer_name || filledRow.customer_id
             });
           } else {
@@ -946,12 +956,13 @@ export function useContractCSVUpload() {
             results.successful++;
             results.contractsCreated!++;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
           console.error(`📝 [Contract CSV] Unexpected error for row ${contractData.rowNumber}:`, error);
           results.failed++;
           results.errors.push({
             row: contractData.rowNumber,
-            message: `خطأ غير متوقع: ${error.message}`
+            message: `خطأ غير متوقع: ${errorMessage}`
           });
         }
       }
@@ -990,9 +1001,10 @@ export function useContractCSVUpload() {
           // لا نوقف العملية إذا فشلت الأرشفة
         }
       }
-      
-    } catch (error: any) {
-      toast.error(`خطأ في معالجة الملف: ${error.message}`)
+
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
+      toast.error(`خطأ في معالجة الملف: ${errorMessage}`)
       throw error
     } finally {
       setIsUploading(false)
@@ -1002,8 +1014,8 @@ export function useContractCSVUpload() {
 
   // دالة رفع ذكية للعقود
   const smartUploadContracts = async (
-    fixedData: any[],
-    options?: { upsert?: boolean; targetCompanyId?: string; autoCreateCustomers?: boolean; autoCompleteDates?: boolean; autoCompleteType?: boolean; autoCompleteAmounts?: boolean; dryRun?: boolean; archiveFile?: boolean; originalFile?: File }
+    fixedData: CSVRow[],
+    options?: SmartUploadOptions
   ) => {
     console.log('📝 [Smart Contract CSV] Starting upload with companyId:', companyId);
     console.log('📝 [Smart Contract CSV] Browsing mode:', isBrowsingMode, 'Target company:', browsedCompany?.name);
@@ -1034,7 +1046,7 @@ export function useContractCSVUpload() {
           // Auto-complete first, then optionally revert fields based on toggles
           const autoFilled = autoCompleteContractFields({ ...originalRow });
           const filledRow = (() => {
-            const out: any = { ...autoFilled };
+            const out: CSVRow = { ...autoFilled };
             // If user disabled type auto-complete and original had no type, remove default
             if (options?.autoCompleteType === false && !originalRow.contract_type) {
               delete out.contract_type;
@@ -1054,7 +1066,7 @@ export function useContractCSVUpload() {
           })();
           const pre = await preprocessAndResolveIds({ ...filledRow }, targetCompanyId, Boolean(options?.autoCreateCustomers));
           if (pre.error) throw new Error(pre.error);
-          const contractData: any = pre.data;
+          const contractData: ContractPreprocessData = pre.data!;
 
           // Normalize type
           contractData.contract_type = normalizeContractType(contractData.contract_type);
@@ -1087,8 +1099,8 @@ export function useContractCSVUpload() {
           }
 
           const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
-          
-          const contractPayload: any = {
+
+          const contractPayload: ContractPayload = {
             company_id: targetCompanyId,
             customer_id: contractData.customer_id,
             vehicle_id: contractData.vehicle_id || null,
@@ -1110,7 +1122,7 @@ export function useContractCSVUpload() {
           if (options?.dryRun) {
             uploadResults.successful++;
           } else {
-            let insertError: any = null;
+            let insertError: unknown = null;
             let { error: insertErr } = await supabase.from('contracts').insert([contractPayload]);
             if (insertErr) {
               const msg = String(insertErr.message || '').toLowerCase();
@@ -1126,9 +1138,9 @@ export function useContractCSVUpload() {
             if (insertError) throw insertError;
             uploadResults.successful++;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           uploadResults.failed++;
-          const dbMessage = error?.message || 'خطأ غير معروف';
+          const dbMessage = error instanceof Error ? error.message : 'خطأ غير معروف';
           uploadResults.errors.push({
             row: rowNum,
             message: getFriendlyDbError(dbMessage),

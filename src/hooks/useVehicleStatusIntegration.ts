@@ -80,7 +80,7 @@ export const useVehicleStatusUpdate = () => {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('❌ Failed to update vehicle status:', error);
       toast({
         title: "خطأ في تحديث حالة المركبة",

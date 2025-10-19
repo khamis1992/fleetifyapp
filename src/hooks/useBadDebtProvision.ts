@@ -222,7 +222,7 @@ export const useBadDebtProvision = () => {
       }
 
       const today = new Date();
-      const breakdown: any[] = [];
+      const breakdown: unknown[] = [];
       let totalProvision = 0;
 
       for (const rec of receivables) {

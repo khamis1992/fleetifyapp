@@ -131,7 +131,7 @@ export const useCreateLegalCaseFromViolation = () => {
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       toast.success('تم إنشاء قضية قانونية من المخالفة المرورية');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating legal case from violation:', error);
       toast.error(error.message || 'حدث خطأ أثناء إنشاء القضية');
     },
@@ -208,7 +208,7 @@ export const useCloseLegalCaseFromViolation = () => {
         toast.success(`تم إغلاق ${result.closed} قضية تلقائياً بعد سداد المخالفة`);
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error closing legal case from violation:', error);
       toast.error('حدث خطأ أثناء إغلاق القضية');
     },

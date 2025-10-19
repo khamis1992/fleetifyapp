@@ -48,7 +48,7 @@ export const useCopySelectedAccounts = () => {
         description: `تم إضافة ${data.selectedCount} حساب من القالب إلى دليل الحسابات`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         variant: "destructive", 
         title: "خطأ في نسخ الحسابات",

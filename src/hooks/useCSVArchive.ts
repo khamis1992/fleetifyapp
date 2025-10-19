@@ -19,10 +19,10 @@ export interface CSVArchiveEntry {
   total_rows: number;
   successful_rows: number;
   failed_rows: number;
-  error_details: any[];
+  error_details: unknown[];
   created_contracts_ids: string[];
   is_archived: boolean;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +35,7 @@ export interface ArchiveCSVParams {
   totalRows?: number;
   successfulRows?: number;
   failedRows?: number;
-  errorDetails?: any[];
+  errorDetails?: unknown[];
   createdContractsIds?: string[];
   metadata?: any;
 }
@@ -227,7 +227,7 @@ export const useCSVArchive = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['csv-archives'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error archiving CSV:', error);
       toast.error('فشل في حفظ الملف في الأرشيف');
     },
@@ -278,7 +278,7 @@ export const useCSVArchive = () => {
       queryClient.invalidateQueries({ queryKey: ['csv-archives'] });
       toast.success('تم حذف الملف من الأرشيف');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting archived file:', error);
       toast.error('فشل في حذف الملف');
     },

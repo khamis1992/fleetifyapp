@@ -118,7 +118,7 @@ export function useVehicleCSVUpload() {
     document.body.removeChild(link)
   }
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): unknown[] => {
     const lines = csvText.split('\n').map(line => line.trim()).filter(line => line)
     if (lines.length < 2) return []
 
@@ -149,7 +149,7 @@ export function useVehicleCSVUpload() {
     return allowed.includes(v as VehicleStatus) ? (v as VehicleStatus) : undefined;
   }
 
-  const validateVehicleData = (data: any, rowNumber: number): { isValid: boolean; errors: string[] } => {
+  const validateVehicleData = (data: unknown, rowNumber: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     // Required fields validation
@@ -225,7 +225,7 @@ export function useVehicleCSVUpload() {
         console.error('⚠️ [VEHICLE_CSV_UPLOAD] Failed to fetch existing plates:', error)
         return new Set()
       }
-      return new Set((data || []).map((d: any) => normalizePlate(d.plate_number)))
+      return new Set((data || []).map((d: unknown) => normalizePlate(d.plate_number)))
     } catch (e) {
       console.error('⚠️ [VEHICLE_CSV_UPLOAD] Unexpected while fetching plates:', e)
       return new Set()
@@ -265,7 +265,7 @@ export function useVehicleCSVUpload() {
       }
 
       // تنظيف وإصلاح البيانات أولاً لضمان عدم إدخال قيم شكلية كـ 0
-      const fixedRows = rawData.map((row: any) =>
+      const fixedRows = rawData.map((row: unknown) =>
         CSVAutoFix.fixRow(row, row.rowNumber, vehicleFieldTypes as any, vehicleRequiredFields)
       )
 
@@ -375,7 +375,7 @@ export function useVehicleCSVUpload() {
             console.log(`✅ [VEHICLE_CSV_UPLOAD] Successfully inserted row ${rowFix.rowNumber}`)
             results.successful++
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`❌ [VEHICLE_CSV_UPLOAD] Unexpected error for row ${rowFix.rowNumber}:`, error)
           results.failed++
           results.errors.push({ row: rowFix.rowNumber, message: `خطأ غير متوقع: ${error.message}` })
@@ -386,7 +386,7 @@ export function useVehicleCSVUpload() {
       setResults(results)
       await queryClient.invalidateQueries({ queryKey: ['vehicles', companyId] })
       return results
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 [VEHICLE_CSV_UPLOAD] Process failed:', error)
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
       throw error
@@ -523,7 +523,7 @@ export function useVehicleCSVUpload() {
           } else {
             uploadResults.successful++
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           uploadResults.failed++
           uploadResults.errors.push({
             row: vehicleData.rowNumber || i + 1,

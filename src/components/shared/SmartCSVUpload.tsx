@@ -36,12 +36,12 @@ export interface SmartCSVFieldType {
   type: 'text' | 'number' | 'boolean' | 'date' | 'email' | 'phone' | 'select';
   options?: string[];
   required?: boolean;
-  validate?: (value: any) => boolean | string;
+  validate?: (value: unknown) => boolean | string;
 }
 
 export interface SmartCSVUploadProps {
   entityType: string;
-  onComplete: (data: any[]) => void;
+  onComplete: (data: unknown[]) => void;
   fieldTypes: Record<string, SmartCSVFieldType>;
   templateData?: {
     headers: string[];

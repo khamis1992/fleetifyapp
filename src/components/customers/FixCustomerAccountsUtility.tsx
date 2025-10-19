@@ -65,7 +65,7 @@ export const FixCustomerAccountsUtility: React.FC = () => {
         title: "تم تحليل الوضع",
         description: `تم العثور على ${customersWithoutAccounts?.length || 0} عميل بدون حسابات مربوطة`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error analyzing customers:', error);
       toast({
         variant: "destructive",
@@ -103,7 +103,7 @@ export const FixCustomerAccountsUtility: React.FC = () => {
         analyzeCustomers();
       }, 1000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fixing customer accounts:', error);
       toast({
         variant: "destructive",
@@ -143,7 +143,7 @@ export const FixCustomerAccountsUtility: React.FC = () => {
       // Refresh analysis
       analyzeCustomers();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error enabling auto create:', error);
       toast({
         variant: "destructive",
@@ -202,7 +202,7 @@ export const FixCustomerAccountsUtility: React.FC = () => {
         analyzeCustomers();
       }, 1000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Migration failed:', error);
       toast({
         variant: "destructive",

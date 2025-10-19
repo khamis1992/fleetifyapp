@@ -74,7 +74,7 @@ export const useMaintenanceJournalIntegration = () => {
       }
 
       // Create journal entry lines based on payment status
-      const lines: any[] = [];
+      const lines: unknown[] = [];
 
       if (isPaid) {
         // Fully paid - debit expense, credit cash

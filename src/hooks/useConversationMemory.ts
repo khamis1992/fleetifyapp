@@ -267,11 +267,11 @@ export const useConversationMemory = () => {
           started_at: new Date(session.started_at),
           last_activity: new Date(session.last_activity)
         });
-        setConversationTurns(turns.map((turn: any) => ({
+        setConversationTurns(turns.map((turn: unknown) => ({
           ...turn,
           timestamp: new Date(turn.timestamp)
         })));
-        setContextualReferences(references.map((ref: any) => ({
+        setContextualReferences(references.map((ref: unknown) => ({
           ...ref,
           created_at: new Date(ref.created_at)
         })));

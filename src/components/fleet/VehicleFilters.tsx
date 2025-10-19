@@ -45,7 +45,7 @@ export function VehicleFilters({ filters, onFiltersChange, activeFiltersCount }:
   const { data: makes = [] } = useVehicleMakes();
   const { data: models = [] } = useVehicleModels(filters.make);
 
-  const handleFilterChange = (key: keyof IVehicleFilters, value: any) => {
+  const handleFilterChange = (key: keyof IVehicleFilters, value: unknown) => {
     const newFilters = { ...filters, [key]: value };
     
     // Reset model when make changes
