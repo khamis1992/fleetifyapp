@@ -396,7 +396,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                           value={line.account_id}
                           onValueChange={(value) => updateLine(line.id, 'account_id', value)}
                           placeholder="اختر الحساب..."
-                          filterLevel="level_5_6"
+                          filterLevel="all_allowed"
                           showAccountType={true}
                           showParentAccount={true}
                           allowSearch={true}

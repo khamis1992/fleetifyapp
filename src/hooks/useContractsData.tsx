@@ -65,8 +65,8 @@ export const useContractsData = (filters: any = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
   // Fetch contracts with customer data
-  const { data: contracts, isLoading, refetch } = useQuery({
-    queryKey: getQueryKey(['contracts']),
+  const { data: contractsResponse, isLoading, refetch } = useQuery({
+    queryKey: getQueryKey(['contracts', filters?.page, filters?.pageSize]),
     queryFn: async () => {
       const companyId = filter?.company_id || null;
       console.log('🔍 [CONTRACTS_QUERY] Fetching contracts', {
@@ -74,7 +74,31 @@ export const useContractsData = (filters: any = {}) => {
         isBrowsingMode,
         browsedCompanyId: browsedCompany?.id,
         actualUserCompanyId,
+        page: filters?.page,
+        pageSize: filters?.pageSize
       });
+
+      // Get total count if pagination is requested
+      let totalCount = 0;
+      const page = filters?.page || 1;
+      const pageSize = filters?.pageSize || 50;
+
+      if (filters?.page || filters?.pageSize) {
+        let countQuery = supabase
+          .from('contracts')
+          .select('*', { count: 'exact', head: true });
+
+        if (companyId) {
+          countQuery = countQuery.eq('company_id', companyId);
+        }
+
+        const { count, error: countError } = await countQuery;
+        if (countError) {
+          console.error('❌ [CONTRACTS_QUERY] Error fetching count:', countError);
+        } else {
+          totalCount = count || 0;
+        }
+      }
 
       let query = supabase
         .from('contracts')
@@ -96,12 +120,20 @@ export const useContractsData = (filters: any = {}) => {
             center_name,
             center_name_ar
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
 
       if (companyId) {
         query = query.eq('company_id', companyId);
       }
+
+      // Apply pagination
+      if (filters?.page || filters?.pageSize) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      }
+
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
@@ -146,12 +178,45 @@ export const useContractsData = (filters: any = {}) => {
           }
         }
       }
-      
+
       console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts with vehicle data:', data?.length || 0);
+
+      // Return with pagination info if pagination is requested
+      if (filters?.page || filters?.pageSize) {
+        return {
+          data: data || [],
+          pagination: {
+            page,
+            pageSize,
+            totalCount,
+            totalPages: Math.ceil(totalCount / pageSize),
+            hasMore: (page * pageSize) < totalCount
+          }
+        };
+      }
+
       return data || [];
     },
     enabled: !!user?.id,
   });
+
+  // Extract contracts from response (handle both array and paginated response)
+  const contracts = useMemo(() => {
+    if (!contractsResponse) return [];
+    if (Array.isArray(contractsResponse)) return contractsResponse;
+    if (contractsResponse && typeof contractsResponse === 'object' && 'data' in contractsResponse) {
+      return Array.isArray(contractsResponse.data) ? contractsResponse.data : [];
+    }
+    return [];
+  }, [contractsResponse]);
+
+  // Extract pagination info if available
+  const paginationInfo = useMemo(() => {
+    if (contractsResponse && typeof contractsResponse === 'object' && 'pagination' in contractsResponse) {
+      return contractsResponse.pagination;
+    }
+    return undefined;
+  }, [contractsResponse]);
 
   // Contract statistics
   const statistics = useMemo(() => {
@@ -314,6 +379,7 @@ export const useContractsData = (filters: any = {}) => {
     filteredContracts,
     isLoading,
     refetch,
-    statistics
+    statistics,
+    pagination: paginationInfo
   };
 };

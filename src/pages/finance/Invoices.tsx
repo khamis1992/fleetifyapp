@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useInvoices, useFixedAssets } from "@/hooks/useFinance"
+import { useInvoices } from "@/hooks/finance/useInvoices"
+import { useFixedAssets } from "@/hooks/useFinance"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera } from "lucide-react"
@@ -51,10 +53,37 @@ const Invoices = () => {
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
 
-  const { data: invoices, isLoading, error } = useInvoices()
+  // Build filters with pagination
+  const filters = useMemo(() => ({
+    type: filterType !== "all" ? filterType : undefined,
+    status: filterStatus !== "all" ? filterStatus : undefined,
+    page,
+    pageSize
+  }), [filterType, filterStatus, page, pageSize])
+
+  const { data: invoicesResponse, isLoading, error } = useInvoices(filters)
   const { data: costCenters } = useCostCenters()
   const { data: fixedAssets } = useFixedAssets()
+
+  // Extract invoices and pagination from response
+  const invoices = useMemo(() => {
+    if (!invoicesResponse) return [];
+    if (Array.isArray(invoicesResponse)) return invoicesResponse;
+    if (invoicesResponse && typeof invoicesResponse === 'object' && 'data' in invoicesResponse) {
+      return Array.isArray(invoicesResponse.data) ? invoicesResponse.data : [];
+    }
+    return [];
+  }, [invoicesResponse]);
+
+  const paginationInfo = useMemo(() => {
+    if (invoicesResponse && typeof invoicesResponse === 'object' && 'pagination' in invoicesResponse) {
+      return invoicesResponse.pagination;
+    }
+    return undefined;
+  }, [invoicesResponse]);
 
   // Delete invoice mutation
   const deleteInvoiceMutation = useMutation({
@@ -315,78 +344,99 @@ const Invoices = () => {
               <p className="text-muted-foreground">لا توجد فواتير</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>رقم الفاتورة</TableHead>
-                  <TableHead>العميل/المورد</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>مركز التكلفة</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInvoices.map((invoice) => (
-                  <TableRow 
-                    key={invoice.id}
-                    className={selectedInvoice?.id === invoice.id ? "bg-muted" : ""}
-                  >
-                    <TableCell className="font-medium">
-                      {invoice.invoice_number}
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getTypeLabel(invoice.invoice_type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {invoice.cost_center_id ? (
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          <span className="text-sm">
-                            {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name_ar || costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">غير محدد</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.total_amount.toFixed(3)} د.ك
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(invoice.status)}>
-                        {getStatusLabel(invoice.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                       <EnhancedInvoiceActions
-                         invoice={invoice}
-                         onPreview={() => {
-                           setSelectedInvoice(invoice);
-                           setIsPreviewOpen(true);
-                         }}
-                         onEdit={() => {
-                           setEditingInvoice(invoice);
-                         }}
-                         onDelete={() => handleDeleteInvoice(invoice)}
-                         onPay={() => {
-                           setSelectedInvoice(invoice);
-                           setShowPayDialog(true);
-                         }}
-                       />
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>رقم الفاتورة</TableHead>
+                    <TableHead>العميل/المورد</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>مركز التكلفة</TableHead>
+                    <TableHead>التاريخ</TableHead>
+                    <TableHead>المبلغ</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>الإجراءات</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
+                    <TableRow
+                      key={invoice.id}
+                      className={selectedInvoice?.id === invoice.id ? "bg-muted" : ""}
+                    >
+                      <TableCell className="font-medium">
+                        {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>-</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {getTypeLabel(invoice.invoice_type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {invoice.cost_center_id ? (
+                          <div className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            <span className="text-sm">
+                              {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name_ar || costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">غير محدد</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.total_amount.toFixed(3)} د.ك
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(invoice.status)}>
+                          {getStatusLabel(invoice.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                         <EnhancedInvoiceActions
+                           invoice={invoice}
+                           onPreview={() => {
+                             setSelectedInvoice(invoice);
+                             setIsPreviewOpen(true);
+                           }}
+                           onEdit={() => {
+                             setEditingInvoice(invoice);
+                           }}
+                           onDelete={() => handleDeleteInvoice(invoice)}
+                           onPay={() => {
+                             setSelectedInvoice(invoice);
+                             setShowPayDialog(true);
+                           }}
+                         />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination Controls */}
+              {paginationInfo && paginationInfo.totalPages > 1 && (
+                <div className="mt-6 border-t pt-4">
+                  <Pagination
+                    currentPage={paginationInfo.page}
+                    totalPages={paginationInfo.totalPages}
+                    totalItems={paginationInfo.totalCount}
+                    pageSize={paginationInfo.pageSize}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onPageSizeChange={(newPageSize) => {
+                      setPageSize(newPageSize)
+                      setPage(1) // Reset to first page when changing page size
+                    }}
+                    showPageSize={true}
+                    showTotalItems={true}
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

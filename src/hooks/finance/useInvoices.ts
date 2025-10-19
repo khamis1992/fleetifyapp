@@ -42,6 +42,8 @@ interface InvoiceFilters {
   status?: string;
   customerId?: string;
   contractId?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export const useInvoices = (filters?: InvoiceFilters) => {
@@ -52,11 +54,39 @@ export const useInvoices = (filters?: InvoiceFilters) => {
     queryFn: async () => {
       if (!companyId) throw new Error("No company access");
 
+      // Get total count if pagination is requested
+      let totalCount = 0;
+      const page = filters?.page || 1;
+      const pageSize = filters?.pageSize || 50;
+
+      if (filters?.page || filters?.pageSize) {
+        let countQuery = supabase
+          .from("invoices")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
+        if (filters?.type) {
+          countQuery = countQuery.eq("invoice_type", filters.type);
+        }
+        if (filters?.status) {
+          countQuery = countQuery.eq("status", filters.status);
+        }
+        if (filters?.customerId) {
+          countQuery = countQuery.eq("customer_id", filters.customerId);
+        }
+
+        const { count, error: countError } = await countQuery;
+        if (countError) {
+          console.error("❌ [INVOICES] Error fetching count:", countError);
+        } else {
+          totalCount = count || 0;
+        }
+      }
+
       let query = supabase
         .from("invoices")
         .select("*")
-        .eq("company_id", companyId)
-        .order("invoice_date", { ascending: false });
+        .eq("company_id", companyId);
 
       if (filters?.type) {
         query = query.eq("invoice_type", filters.type);
@@ -68,8 +98,32 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         query = query.eq("customer_id", filters.customerId);
       }
 
+      // Apply pagination
+      if (filters?.page || filters?.pageSize) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      }
+
+      query = query.order("invoice_date", { ascending: false });
+
       const { data, error } = await query;
       if (error) throw error;
+
+      // Return with pagination info if pagination is requested
+      if (filters?.page || filters?.pageSize) {
+        return {
+          data: data || [],
+          pagination: {
+            page,
+            pageSize,
+            totalCount,
+            totalPages: Math.ceil(totalCount / pageSize),
+            hasMore: (page * pageSize) < totalCount,
+          },
+        };
+      }
+
       return data || [];
     },
     enabled: !!companyId,

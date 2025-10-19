@@ -59,7 +59,6 @@ import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
 import { toast } from 'sonner';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 const Customers = () => {
   const { user } = useAuth();
@@ -447,20 +446,26 @@ const Customers = () => {
         <EnhancedCustomerDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          mode="create"
         />
         
         <CustomerDetailsDialog
           open={showDetailsDialog}
           onOpenChange={setShowDetailsDialog}
-          customer={selectedCustomer}
+          customerId={selectedCustomer?.id || ''}
+          onEdit={() => {
+            setShowDetailsDialog(false);
+            setShowEditDialog(true);
+          }}
+          onCreateContract={() => {
+            // Navigate to create contract page with selected customer
+            toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
+          }}
         />
         
         <EnhancedCustomerDialog
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
-          customer={selectedCustomer}
-          mode="edit"
+          editingCustomer={selectedCustomer}
         />
         
         <BulkDeleteCustomersDialog
@@ -471,6 +476,10 @@ const Customers = () => {
         <CustomerCSVUpload
           open={showCSVUpload}
           onOpenChange={setShowCSVUpload}
+          onUploadComplete={() => {
+            refetch();
+            toast.success('تم رفع ملف العملاء بنجاح');
+          }}
         />
       </div>
     );
@@ -599,104 +608,161 @@ const Customers = () => {
           <CardTitle>قائمة العملاء</CardTitle>
         </CardHeader>
         <CardContent>
-          <div ref={parentRef} className="h-[calc(100vh-350px)] overflow-auto">
-            <div
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>البريد الإلكتروني</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {virtualItems.map((virtualItem) => {
-                    const customer = customers[virtualItem.index];
-                    return (
-                      <TableRow
-                        key={customer.id}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: `${virtualItem.size}px`,
-                          transform: `translateY(${virtualItem.start}px)`,
-                        }}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">
-                              {customer.customer_type === 'individual' 
-                                ? `${customer.first_name} ${customer.last_name}` 
-                                : customer.company_name}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}>
-                            {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{customer.phone || '-'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span>{customer.email || '-'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={customer.is_active ? 'default' : 'destructive'}>
-                            {customer.is_active ? 'نشط' : 'غير نشط'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
-                                <Eye className="h-4 w-4 ml-2" />
-                                عرض التفاصيل
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                                <Edit className="h-4 w-4 ml-2" />
-                                تعديل
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteCustomer(customer)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 ml-2" />
-                                حذف
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-14 bg-muted/50 rounded animate-pulse" />
+              ))}
             </div>
-          </div>
+          ) : customers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <p className="text-lg">لا توجد عملاء</p>
+              <p className="text-sm mt-2">ابدأ بإضافة عميل جديد</p>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              {/* Table Header - Fixed */}
+              <div className="bg-muted/50 border-b">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">#</TableHead>
+                      <TableHead>الاسم</TableHead>
+                      <TableHead>النوع</TableHead>
+                      <TableHead>الهاتف</TableHead>
+                      <TableHead>البريد الإلكتروني</TableHead>
+                      <TableHead>الحالة</TableHead>
+                      <TableHead className="text-left w-[150px]">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Virtualized Table Body */}
+              <div
+                ref={parentRef}
+                className="overflow-auto"
+                style={{ height: 'calc(100vh - 450px)', minHeight: '400px' }}
+              >
+                <div
+                  style={{
+                    height: `${virtualizer.getTotalSize()}px`,
+                    width: '100%',
+                    position: 'relative',
+                  }}
+                >
+                  <Table>
+                    <TableBody>
+                      {virtualItems.map((virtualItem) => {
+                        const customer = customers[virtualItem.index];
+                        const rowNumber = (currentPage - 1) * pageSize + virtualItem.index + 1;
+                        
+                        return (
+                          <TableRow
+                            key={customer.id}
+                            data-index={virtualItem.index}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                            className="hover:bg-muted/50 transition-colors"
+                          >
+                            <TableCell className="w-[50px] font-medium">
+                              {rowNumber}
+                            </TableCell>
+                            
+                            <TableCell className="font-medium">
+                              {customer.customer_type === 'individual' 
+                                ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'N/A'
+                                : customer.company_name || 'N/A'}
+                            </TableCell>
+                            
+                            <TableCell>
+                              <Badge variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}>
+                                {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                              </Badge>
+                            </TableCell>
+                            
+                            <TableCell className="font-mono text-sm">
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span>{customer.phone || '-'}</span>
+                              </div>
+                            </TableCell>
+                            
+                            <TableCell className="text-sm">
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{customer.email || '-'}</span>
+                              </div>
+                            </TableCell>
+                            
+                            <TableCell>
+                              {customer.is_blacklisted ? (
+                                <Badge variant="destructive">محظور</Badge>
+                              ) : customer.is_active ? (
+                                <Badge variant="default">نشط</Badge>
+                              ) : (
+                                <Badge variant="secondary">غير نشط</Badge>
+                              )}
+                            </TableCell>
+                            
+                            <TableCell className="text-left">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewCustomer(customer)}
+                                  title="عرض التفاصيل"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditCustomer(customer)}
+                                  title="تعديل"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  title="حذف"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Footer - Statistics */}
+              <div className="bg-muted/30 border-t px-4 py-3 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>
+                    عرض <strong>{virtualItems.length}</strong> من <strong>{customers.length}</strong> صف
+                  </span>
+                  <span className="text-xs">
+                    الصفحة {currentPage} من {totalPages}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -761,20 +827,26 @@ const Customers = () => {
       <EnhancedCustomerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        mode="create"
       />
       
       <CustomerDetailsDialog
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
-        customer={selectedCustomer}
+        customerId={selectedCustomer?.id || ''}
+        onEdit={() => {
+          setShowDetailsDialog(false);
+          setShowEditDialog(true);
+        }}
+        onCreateContract={() => {
+          // Navigate to create contract page with selected customer
+          toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
+        }}
       />
       
       <EnhancedCustomerDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
-        customer={selectedCustomer}
-        mode="edit"
+        editingCustomer={selectedCustomer}
       />
       
       <BulkDeleteCustomersDialog
@@ -785,6 +857,10 @@ const Customers = () => {
       <CustomerCSVUpload
         open={showCSVUpload}
         onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          refetch();
+          toast.success('تم رفع ملف العملاء بنجاح');
+        }}
       />
 
       {/* Delete Confirmation Dialog */}

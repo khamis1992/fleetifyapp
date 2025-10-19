@@ -17,6 +17,7 @@ import { ResponsiveModal } from "@/components/ui/responsive-modal"
 import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-components"
 import { cn } from "@/lib/utils"
 import { RefreshCw, Filter, Search, Plus } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 
 // Component imports
 import { BulkInvoiceGenerationDialog } from "@/components/contracts/BulkInvoiceGenerationDialog"
@@ -94,6 +95,8 @@ export default function Contracts() {
   const [activeTab, setActiveTab] = useState("all")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
 
   // Hooks
   const location = useLocation()
@@ -102,9 +105,15 @@ export default function Contracts() {
   const queryClient = useQueryClient()
   const autoRenewContracts = useAutoRenewContracts()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
-  
-  // Data fetching
-  const { contracts, filteredContracts, isLoading, refetch, statistics } = useContractsData(filters)
+
+  // Data fetching with pagination
+  const filtersWithPagination = useMemo(() => ({
+    ...filters,
+    page,
+    pageSize
+  }), [filters, page, pageSize])
+
+  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination)
 
   // Swipe gestures for mobile
   const handleSwipe = useCallback((result: any) => {
@@ -355,6 +364,25 @@ export default function Contracts() {
                   hasFilters={Object.keys(filters).length > 0}
                   hasContracts={!!contracts && contracts.length > 0}
                 />
+
+                {/* Pagination Controls */}
+                {pagination && pagination.totalPages > 1 && (
+                  <div className="mt-6 border-t pt-4">
+                    <Pagination
+                      currentPage={pagination.page}
+                      totalPages={pagination.totalPages}
+                      totalItems={pagination.totalCount}
+                      pageSize={pagination.pageSize}
+                      onPageChange={(newPage) => setPage(newPage)}
+                      onPageSizeChange={(newPageSize) => {
+                        setPageSize(newPageSize)
+                        setPage(1) // Reset to first page when changing page size
+                      }}
+                      showPageSize={true}
+                      showTotalItems={true}
+                    />
+                  </div>
+                )}
               </div>
             </TabsContent>
 
