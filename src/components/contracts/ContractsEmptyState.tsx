@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ContractsEmptyStateProps {
-  type: 'no-results' | 'no-contracts' | 'no-suspended' | 'no-expired';
+  type: 'no-results' | 'no-contracts' | 'no-suspended' | 'no-under-review' | 'no-expired';
   onCreateContract?: () => void;
   onClearFilters?: () => void;
 }
@@ -45,6 +45,13 @@ export const ContractsEmptyState: React.FC<ContractsEmptyStateProps> = ({
           icon: <Pause className="h-12 w-12 text-muted-foreground mb-4" />,
           title: 'لا توجد عقود معلقة',
           description: 'جميع العقود في حالة نشطة أو منتهية',
+          action: null
+        };
+      case 'no-under-review':
+        return {
+          icon: <Pause className="h-12 w-12 text-amber-500 mb-4" />,
+          title: 'لا توجد عقود تحت الإجراء',
+          description: 'لا توجد عقود تحت المراجعة حالياً',
           action: null
         };
       case 'no-expired':

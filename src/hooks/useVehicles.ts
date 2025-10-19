@@ -289,7 +289,6 @@ export const useVehiclePricing = (vehicleId: string) => {
         .from("vehicle_pricing")
         .select("*")
         .eq("vehicle_id", vehicleId)
-        .eq("is_active", true)
         .order("effective_from", { ascending: false })
 
       if (error) throw error

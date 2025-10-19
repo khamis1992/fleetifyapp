@@ -72,15 +72,14 @@ export default function Contracts() {
     touchTargetSize: 'large'
   })
 
-  // Performance optimization hooks
-  const performanceOptimization = usePerformanceOptimization()
-  const { measureRenderTime, getOptimizedImageSrc } = performanceOptimization
+  // Performance optimization hooks - Keep for future use
+  usePerformanceOptimization()
 
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
-  const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | null>(null)
+  const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined)
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
@@ -133,7 +132,7 @@ export default function Contracts() {
   // Handle pre-selected customer from navigation
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
-      setPreselectedCustomerId(location.state.selectedCustomerId)
+      setPreselectedCustomerId(location.state.selectedCustomerId || undefined)
       setShowContractWizard(true)
     }
   }, [location.state])
@@ -181,7 +180,7 @@ export default function Contracts() {
   const handleCreationComplete = useCallback(() => {
     setShowCreationProgress(false)
     setShowContractWizard(false)
-    setPreselectedCustomerId(null)
+    setPreselectedCustomerId(undefined)
     refetch()
   }, [refetch])
 
@@ -227,7 +226,7 @@ export default function Contracts() {
   }
 
   const handleCreateContract = () => {
-    setPreselectedCustomerId(null)
+    setPreselectedCustomerId(undefined)
     setShowContractWizard(true)
   }
 
@@ -342,7 +341,7 @@ export default function Contracts() {
                 <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
                   <TabsTrigger value="all">جميع العقود</TabsTrigger>
                   <TabsTrigger value="active">النشطة</TabsTrigger>
-                  <TabsTrigger value="suspended">المعلقة</TabsTrigger>
+                  <TabsTrigger value="under_review">تحت الإجراء</TabsTrigger>
                   <TabsTrigger value="expired">المنتهية</TabsTrigger>
                   <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
                   <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
@@ -389,6 +388,7 @@ export default function Contracts() {
             <ContractsTabsContent
               activeContracts={statistics.activeContracts}
               suspendedContracts={statistics.suspendedContracts}
+              underReviewContracts={statistics.underReviewContracts}
               expiredContracts={statistics.expiredContracts}
               onRenewContract={handleRenewContract}
               onManageStatus={handleManageStatus}

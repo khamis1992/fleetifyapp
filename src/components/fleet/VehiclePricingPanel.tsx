@@ -51,7 +51,16 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
   };
 
   if (isLoading) {
-    return <div>Loading pricing...</div>;
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center space-y-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-sm text-muted-foreground">جاري تحميل التسعير...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const activePricing = pricing?.find(p => p.is_active);
@@ -147,7 +156,9 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {activePricing ? (
+        {pricing && pricing.length > 0 ? (
+          <>
+            {activePricing ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">التسعير الحالي</h4>
@@ -181,6 +192,44 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
               )}
             </div>
           </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-2">يوجد تسعير سابق لكنه غير نشط حالياً</p>
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => setShowForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  إضافة تسعير جديد
+                </Button>
+              </div>
+            )}
+
+            {/* Pricing History */}
+            {pricing && pricing.length > 1 && (
+              <div className="mt-6 pt-6 border-t">
+                <h4 className="font-medium mb-3">تاريخ التسعير</h4>
+                <div className="space-y-2">
+                  {pricing
+                    .filter(p => !p.is_active)
+                    .slice(0, 3)
+                    .map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                        <span>
+                          يومي: {formatCurrency(p.daily_rate)} | 
+                          أسبوعي: {formatCurrency(p.weekly_rate)} | 
+                          شهري: {formatCurrency(p.monthly_rate)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {new Date(p.effective_from).toLocaleDateString('ar-SA')}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-8">
             <p className="text-muted-foreground">لم يتم تحديد تسعير لهذه المركبة</p>
@@ -192,30 +241,6 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
               <Plus className="h-4 w-4 mr-2" />
               إضافة تسعير
             </Button>
-          </div>
-        )}
-
-        {/* Pricing History */}
-        {pricing && pricing.length > 1 && (
-          <div className="mt-6 pt-6 border-t">
-            <h4 className="font-medium mb-3">تاريخ التسعير</h4>
-            <div className="space-y-2">
-              {pricing
-                .filter(p => !p.is_active)
-                .slice(0, 3)
-                .map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm">
-                    <span>
-                      يومي: {formatCurrency(p.daily_rate)} | 
-                      أسبوعي: {formatCurrency(p.weekly_rate)} | 
-                      شهري: {formatCurrency(p.monthly_rate)}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {new Date(p.effective_from).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-            </div>
           </div>
         )}
       </CardContent>

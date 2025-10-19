@@ -7,6 +7,7 @@ import { ContractsEmptyState } from './ContractsEmptyState';
 interface ContractsTabsContentProps {
   activeContracts: any[];
   suspendedContracts: any[];
+  underReviewContracts: any[];
   expiredContracts: any[];
   onRenewContract: (contract: any) => void;
   onManageStatus: (contract: any) => void;
@@ -18,6 +19,7 @@ interface ContractsTabsContentProps {
 export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
   activeContracts,
   suspendedContracts,
+  underReviewContracts,
   expiredContracts,
   onRenewContract,
   onManageStatus,
@@ -53,9 +55,9 @@ export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
         </div>
       </TabsContent>
 
-      <TabsContent value="suspended">
+      <TabsContent value="under_review">
         <div className="grid gap-4">
-          {suspendedContracts.map((contract) => (
+          {underReviewContracts.map((contract) => (
             <ContractCard
               key={contract.id}
               contract={contract}
@@ -67,8 +69,8 @@ export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
             />
           ))}
           
-          {suspendedContracts.length === 0 && (
-            <ContractsEmptyState type="no-suspended" />
+          {underReviewContracts.length === 0 && (
+            <ContractsEmptyState type="no-under-review" />
           )}
         </div>
       </TabsContent>
