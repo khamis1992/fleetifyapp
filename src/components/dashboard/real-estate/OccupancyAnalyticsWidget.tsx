@@ -5,31 +5,39 @@ import { Building2, TrendingUp, Home, Clock } from 'lucide-react';
 import { useRealEstateDashboardStats } from '@/hooks/useRealEstateDashboardStats';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const OccupancyAnalyticsWidget: React.FC = () => {
   const { data: stats, isLoading } = useRealEstateDashboardStats();
   const navigate = useNavigate();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   if (isLoading) {
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
+  }
+
+  if (!stats) {
     return (
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Building2 className="w-5 h-5 text-emerald-500" />
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
             تحليل الإشغال
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
-          </div>
+          <EmptyStateCompact
+            type="no-data"
+            title="لا توجد بيانات"
+            description="ستظهر بيانات تحليل الإشغال هنا"
+          />
         </CardContent>
       </Card>
     );
   }
-
-  if (!stats) return null;
 
   // Calculate occupancy metrics
   const totalUnits = stats.total_properties;
@@ -52,6 +60,15 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
   // Calculate average vacancy duration (mock for now)
   const avgVacancyDuration = vacantUnits > 0 ? Math.round(30 + Math.random() * 60) : 0;
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { 'المؤشر': 'إجمالي الوحدات', 'القيمة': totalUnits },
+    { 'المؤشر': 'الوحدات المؤجرة', 'القيمة': occupiedUnits },
+    { 'المؤشر': 'الوحدات الشاغرة', 'القيمة': vacantUnits },
+    { 'المؤشر': 'معدل الإشغال', 'القيمة': `${occupancyRate.toFixed(1)}%` },
+    { 'المؤشر': 'متوسط فترة الشغور', 'القيمة': `${avgVacancyDuration} يوم` }
+  ], [totalUnits, occupiedUnits, vacantUnits, occupancyRate, avgVacancyDuration]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -65,19 +82,31 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-                تحليل الإشغال
-              </span>
+              <EnhancedTooltip kpi={kpiDefinitions.occupancy}>
+                <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  تحليل الإشغال
+                </span>
+              </EnhancedTooltip>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض العقارات ←
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض العقارات ←
+              </button>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="occupancy_analytics"
+                title="تحليل الإشغال"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-6 space-y-6" ref={chartRef}>
           {/* Overall Occupancy Rate */}
           <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

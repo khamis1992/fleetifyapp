@@ -26,6 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface TopProductsWidgetProps {
   className?: string;
@@ -38,6 +42,7 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
   const { formatCurrency } = useCurrencyFormatter();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [viewMode, setViewMode] = useState<'revenue' | 'quantity'>('revenue');
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading: loadingSales } = useSalesOrders({
     status: 'completed'
@@ -202,21 +207,20 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
     };
   }, [salesOrders, inventoryItems, timePeriod]);
 
+  const exportData = React.useMemo(() => {
+    const displayData = viewMode === 'revenue' ? analytics.topByRevenue : analytics.topByQuantity;
+    return displayData.map(item => ({
+      'اسم المنتج': item.itemName,
+      'رمز المنتج': item.itemCode,
+      'الإيرادات': item.revenue,
+      'الكمية المباعة': item.quantity,
+      'الربح': item.profit,
+      'هامش الربح %': item.profitMargin.toFixed(2)
+    }));
+  }, [analytics.topByRevenue, analytics.topByQuantity, viewMode]);
+
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-orange-500" />
-            أفضل المنتجات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   const displayData = viewMode === 'revenue' ? analytics.topByRevenue : analytics.topByQuantity;
@@ -241,6 +245,14 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
               أفضل المنتجات
             </CardTitle>
             <div className="flex gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="top_products"
+                title="أفضل المنتجات"
+                variant="ghost"
+                size="sm"
+              />
               <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -264,7 +276,7 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Chart */}
           {chartData.length > 0 ? (
             <div>
@@ -323,9 +335,11 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              لا توجد بيانات مبيعات للفترة المحددة
-            </div>
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد بيانات مبيعات"
+              description="لا توجد بيانات مبيعات للفترة المحددة"
+            />
           )}
 
           {/* Top Products List */}

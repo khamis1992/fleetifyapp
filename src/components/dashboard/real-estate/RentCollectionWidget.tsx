@@ -7,8 +7,13 @@ import { usePayments } from '@/hooks/usePayments';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const RentCollectionWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: stats, isLoading: statsLoading } = useRealEstateDashboardStats();
   const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
@@ -17,22 +22,7 @@ export const RentCollectionWidget: React.FC = () => {
   const isLoading = statsLoading || paymentsLoading;
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <DollarSign className="w-5 h-5 text-emerald-500" />
-            تتبع تحصيل الإيجارات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   if (!stats) return null;
@@ -105,6 +95,16 @@ export const RentCollectionWidget: React.FC = () => {
     { name: '60+ يوم', amount: aging60PlusAmount, count: aging60Plus.length },
   ];
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'إيجارات محصلة', القيمة: formatCurrency(rentCollected) },
+    { المؤشر: 'إيجارات متأخرة', القيمة: formatCurrency(outstandingRent) },
+    { المؤشر: 'معدل التحصيل', القيمة: `${collectionRate.toFixed(1)}%` },
+    { المؤشر: 'متأخرات 1-30 يوم', القيمة: formatCurrency(aging1_30Amount), 'عدد الدفعات': aging1_30.length },
+    { المؤشر: 'متأخرات 31-60 يوم', القيمة: formatCurrency(aging31_60Amount), 'عدد الدفعات': aging31_60.length },
+    { المؤشر: 'متأخرات 60+ يوم', القيمة: formatCurrency(aging60PlusAmount), 'عدد الدفعات': aging60Plus.length },
+  ], [rentCollected, outstandingRent, collectionRate, aging1_30Amount, aging1_30.length, aging31_60Amount, aging31_60.length, aging60PlusAmount, aging60Plus.length, formatCurrency]);
+
   // Top late payers (mock for now - would need customer data)
   const topLatePayers = overduePayments
     .sort((a: any, b: any) => (b.amount || 0) - (a.amount || 0))
@@ -127,15 +127,25 @@ export const RentCollectionWidget: React.FC = () => {
                 تتبع تحصيل الإيجارات
               </span>
             </div>
-            <button
-              onClick={() => navigate('/finance/payments')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض المدفوعات ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="rent_collection"
+                title="تتبع تحصيل الإيجارات"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/finance/payments')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض المدفوعات ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
           {/* Collection Summary */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4">
@@ -161,7 +171,9 @@ export const RentCollectionWidget: React.FC = () => {
           {/* Collection Rate */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">معدل التحصيل</span>
+              <EnhancedTooltip kpi={kpiDefinitions.collection_rate}>
+                <span className="text-sm text-gray-600">معدل التحصيل</span>
+              </EnhancedTooltip>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                 collectionRate >= 90
                   ? 'bg-green-100 text-green-700'

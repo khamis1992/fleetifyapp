@@ -17,6 +17,9 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 interface InventoryLevelsWidgetProps {
   className?: string;
@@ -25,6 +28,7 @@ interface InventoryLevelsWidgetProps {
 export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: inventoryItems = [], isLoading: loadingInventory } = useInventoryItems({
     is_active: true
@@ -126,23 +130,18 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
     };
   }, [inventoryItems, salesOrders]);
 
+  const exportData = React.useMemo(() =>
+    analytics.categoryData.map(item => ({
+      'الفئة': item.name,
+      'القيمة': item.value
+    })),
+    [analytics.categoryData]
+  );
+
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5'];
 
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-orange-500" />
-            مستويات المخزون
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={5} />;
   }
 
   return (
@@ -159,6 +158,14 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
               مستويات المخزون
             </CardTitle>
             <div className="flex gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="inventory_levels"
+                title="مستويات المخزون"
+                variant="ghost"
+                size="sm"
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -170,7 +177,7 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {/* Total Value */}

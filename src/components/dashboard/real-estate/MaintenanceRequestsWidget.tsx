@@ -8,6 +8,10 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface MaintenanceRequest {
   id: string;
@@ -39,6 +43,7 @@ const STATUS_COLORS = {
 };
 
 export const MaintenanceRequestsWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
@@ -73,22 +78,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
   });
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Wrench className="w-5 h-5 text-emerald-500" />
-            طلبات الصيانة
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
   }
 
   const requests = maintenanceData || [];
@@ -153,6 +143,17 @@ export const MaintenanceRequestsWidget: React.FC = () => {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3);
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'طلبات مفتوحة', القيمة: openRequests },
+    { المؤشر: 'طلبات مكتملة', القيمة: completedRequests },
+    { المؤشر: 'إجمالي الطلبات', القيمة: totalRequests },
+    { المؤشر: 'متوسط وقت الإصلاح', القيمة: `${avgResolutionTime} يوم` },
+    { المؤشر: 'تكلفة الصيانة الشهرية', القيمة: formatCurrency(monthlyMaintenanceCost) },
+    ...priorityData.map(p => ({ الأولوية: p.name, العدد: p.value })),
+    ...statusData.map(s => ({ الحالة: s.name, العدد: s.value })),
+  ], [openRequests, completedRequests, totalRequests, avgResolutionTime, monthlyMaintenanceCost, priorityData, statusData, formatCurrency]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -170,15 +171,34 @@ export const MaintenanceRequestsWidget: React.FC = () => {
                 طلبات الصيانة
               </span>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض الكل ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="maintenance_requests"
+                title="طلبات الصيانة"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض الكل ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
+          {/* Empty State */}
+          {requests.length === 0 ? (
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد طلبات صيانة"
+              description="ستظهر طلبات الصيانة هنا عند إضافتها"
+            />
+          ) : (
+            <>
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
@@ -303,6 +323,8 @@ export const MaintenanceRequestsWidget: React.FC = () => {
           >
             عرض جميع الطلبات
           </button>
+            </>
+          )}
         </CardContent>
       </Card>
     </motion.div>

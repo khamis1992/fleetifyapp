@@ -9,11 +9,16 @@ import { usePayments } from '@/hooks/usePayments';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 type TimePeriod = 'today' | 'week' | 'month';
 
 export const RentalAnalyticsWidget: React.FC = () => {
   const [timePeriod, setTimePeriod] = React.useState<TimePeriod>('month');
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
@@ -160,22 +165,22 @@ export const RentalAnalyticsWidget: React.FC = () => {
     return current - previous;
   }, [trendData]);
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    return [
+      { المؤشر: 'معدل الاستخدام', القيمة: `${utilizationRate}%` },
+      { المؤشر: 'متوسط مدة التأجير', القيمة: `${avgRentalDuration} يوم` },
+      { المؤشر: 'الإيراد لكل مركبة يومياً', القيمة: `${revenuePerVehiclePerDay} ر.س` },
+      ...popularVehicleTypes.map((type, index) => ({
+        المؤشر: `نوع المركبة ${index + 1}`,
+        النوع: type.type,
+        'عدد التأجيرات': type.count,
+      })),
+    ];
+  }, [utilizationRate, avgRentalDuration, revenuePerVehiclePerDay, popularVehicleTypes]);
+
   if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <TrendingUp className="h-5 w-5" />
-            تحليلات التأجير
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   return (
@@ -194,28 +199,49 @@ export const RentalAnalyticsWidget: React.FC = () => {
               </div>
               <span>تحليلات التأجير</span>
             </div>
-            <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">اليوم</SelectItem>
-                <SelectItem value="week">هذا الأسبوع</SelectItem>
-                <SelectItem value="month">هذا الشهر</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">اليوم</SelectItem>
+                  <SelectItem value="week">هذا الأسبوع</SelectItem>
+                  <SelectItem value="month">هذا الشهر</SelectItem>
+                </SelectContent>
+              </Select>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="rental_analytics"
+                title="تحليلات التأجير"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-2 gap-3">
+        <CardContent className="space-y-4" ref={chartRef}>
+          {/* Empty State */}
+          {rentalContracts.length === 0 ? (
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد بيانات تأجير"
+              description="ابدأ بإضافة عقود تأجير للحصول على التحليلات"
+            />
+          ) : (
+            <>
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-white/80 border border-purple-200/50">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="h-4 w-4 text-purple-600" />
-                <span className="text-xs font-medium text-muted-foreground">
-                  معدل الاستخدام
-                </span>
-              </div>
+              <EnhancedTooltip kpi={kpiDefinitions.utilizationRate}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    معدل الاستخدام
+                  </span>
+                </div>
+              </EnhancedTooltip>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-purple-600">
                   {utilizationRate}%
@@ -332,6 +358,8 @@ export const RentalAnalyticsWidget: React.FC = () => {
                 ))}
               </div>
             </div>
+          )}
+            </>
           )}
         </CardContent>
       </Card>

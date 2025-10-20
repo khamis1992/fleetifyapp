@@ -23,6 +23,7 @@ import { LazyLoadErrorBoundary } from "@/components/common/LazyLoadErrorBoundary
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -187,6 +188,7 @@ const App = () => {
                 <CompanyContextProvider>
                   <MobileOptimizationProvider>
                     <PWAInstallPrompt />
+                    <CommandPalette />
                     <SimpleToaster />
                     <AppRoutes />
                   </MobileOptimizationProvider>

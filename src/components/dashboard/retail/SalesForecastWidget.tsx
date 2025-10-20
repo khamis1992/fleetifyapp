@@ -18,6 +18,9 @@ import {
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 interface SalesForecastWidgetProps {
   className?: string;
@@ -25,6 +28,7 @@ interface SalesForecastWidgetProps {
 
 export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ className }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading } = useSalesOrders({
     status: 'completed'
@@ -200,21 +204,19 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
     };
   }, [salesOrders]);
 
+  const exportData = React.useMemo(() =>
+    analytics.forecastData.map(item => ({
+      'التاريخ': item.date,
+      'المبيعات الفعلية': item.actual || 0,
+      'التوقعات': item.forecast,
+      'الحد الأدنى': item.lowerBound,
+      'الحد الأعلى': item.upperBound
+    })),
+    [analytics.forecastData]
+  );
+
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-orange-500" />
-            توقعات المبيعات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   const getTrendBadge = () => {
@@ -252,10 +254,20 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
               <TrendingUp className="h-5 w-5 text-orange-500" />
               توقعات المبيعات
             </CardTitle>
-            {getTrendBadge()}
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="sales_forecast"
+                title="توقعات المبيعات"
+                variant="ghost"
+                size="sm"
+              />
+              {getTrendBadge()}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Forecast Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-lg border border-blue-100">
@@ -383,9 +395,11 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              لا توجد بيانات كافية لإنشاء التوقعات
-            </div>
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد بيانات كافية"
+              description="لا توجد بيانات كافية لإنشاء التوقعات"
+            />
           )}
 
           {/* Confidence Interval */}

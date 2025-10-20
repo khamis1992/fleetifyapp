@@ -8,12 +8,18 @@ import { useNavigate } from 'react-router-dom';
 import { useSalesPipelineMetrics, useSalesOpportunities } from '@/hooks/useSalesOpportunities';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { DrillDownModal, DrillDownLevel } from '@/components/drilldown';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const SalesPipelineWidget: React.FC = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
   const { data: metrics, isLoading: metricsLoading } = useSalesPipelineMetrics();
   const { data: opportunities, isLoading: opportunitiesLoading } = useSalesOpportunities({ is_active: true });
+  const [drillDownOpen, setDrillDownOpen] = React.useState(false);
+  const [drillDownLevel, setDrillDownLevel] = React.useState(0);
 
   const isLoading = metricsLoading || opportunitiesLoading;
 
@@ -46,7 +52,42 @@ export const SalesPipelineWidget: React.FC = () => {
     'خسر': '#ef4444',
   };
 
+  // Drill-down levels
+  const drillDownLevels: DrillDownLevel[] = [
+    {
+      title: 'مراحل مسار المبيعات',
+      subtitle: 'انقر على أي مرحلة لعرض الفرص',
+      data: chartData.map((item) => ({
+        label: item.stage,
+        value: `${item.count} فرصة`,
+        badge: formatCurrency(item.value),
+        color: stageColors[item.stage],
+      })),
+    },
+  ];
+
+  // Loading state with skeleton
+  if (isLoading) {
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
+  }
+
+  // Handle chart bar click for drill-down
+  const handleChartClick = () => {
+    setDrillDownOpen(true);
+    setDrillDownLevel(0);
+  };
+
   return (
+    <>
+      <DrillDownModal
+        open={drillDownOpen}
+        onOpenChange={setDrillDownOpen}
+        title="مسار المبيعات - تفاصيل المراحل"
+        levels={drillDownLevels}
+        currentLevel={drillDownLevel}
+        onLevelChange={setDrillDownLevel}
+        navigateTo="/sales/pipeline"
+      />
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -70,70 +111,82 @@ export const SalesPipelineWidget: React.FC = () => {
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <EnhancedTooltip
+                kpi={kpiDefinitions.averageRevenue}
+                side="top"
+              >
+                <p className="text-xs text-muted-foreground">إجمالي القيمة</p>
+              </EnhancedTooltip>
+              <p className="text-2xl font-bold text-foreground">{formatCurrency(totalValue)}</p>
             </div>
-          ) : (
-            <>
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">إجمالي القيمة</p>
-                  <p className="text-2xl font-bold text-foreground">{formatCurrency(totalValue)}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">الفرص النشطة</p>
-                  <p className="text-2xl font-bold text-foreground">{activeCount}</p>
-                </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">الفرص النشطة</p>
+              <p className="text-2xl font-bold text-foreground">{activeCount}</p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          {chartData.length > 0 && (
+            <div className="pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-muted-foreground">الفرص حسب المرحلة</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleChartClick}
+                  className="h-6 text-xs hover:text-primary"
+                >
+                  عرض التفاصيل
+                </Button>
               </div>
-
-              {/* Chart */}
-              {chartData.length > 0 && (
-                <div className="pt-4">
-                  <p className="text-xs text-muted-foreground mb-3">الفرص حسب المرحلة</p>
-                  <ResponsiveContainer width="100%" height={150}>
-                    <BarChart data={chartData}>
-                      <XAxis
-                        dataKey="stage"
-                        tick={{ fontSize: 10 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={chartData} onClick={handleChartClick} className="cursor-pointer">
+                  <XAxis
+                    dataKey="stage"
+                    tick={{ fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'count') return [value, 'عدد الفرص'];
+                      return [value, name];
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={stageColors[entry.stage] || '#6366f1'}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
                       />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          fontSize: '12px'
-                        }}
-                        formatter={(value: number, name: string) => {
-                          if (name === 'count') return [value, 'عدد الفرص'];
-                          return [value, name];
-                        }}
-                      />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                        {chartData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={stageColors[entry.stage] || '#6366f1'}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
-              {/* Empty State */}
-              {chartData.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">لا توجد فرص مبيعات نشطة</p>
-                </div>
-              )}
-            </>
+          {/* Empty State */}
+          {chartData.length === 0 && (
+            <EmptyStateCompact
+              type="no-sales"
+              title="لا توجد فرص نشطة"
+              description="ابدأ بإضافة فرص مبيعات جديدة لتتبع مسار المبيعات"
+              onAction={() => navigate('/sales/opportunities')}
+              actionLabel="إضافة فرصة"
+            />
           )}
         </div>
 
@@ -154,5 +207,6 @@ export const SalesPipelineWidget: React.FC = () => {
         <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-primary/50 to-primary/20 w-full" />
       </Card>
     </motion.div>
+    </>
   );
 };

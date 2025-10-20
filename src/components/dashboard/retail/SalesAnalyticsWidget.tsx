@@ -21,6 +21,10 @@ import {
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface SalesAnalyticsWidgetProps {
   className?: string;
@@ -29,6 +33,7 @@ interface SalesAnalyticsWidgetProps {
 export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Get today's date range
   const today = new Date();
@@ -156,23 +161,19 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
     };
   }, [todaySales, yesterdaySales, payments, todayStart, todayEnd, yesterdayStart, yesterdayEnd, weekStart, monthStart]);
 
+  const exportData = React.useMemo(() =>
+    analytics.hourlySales.map(item => ({
+      'الساعة': item.hour,
+      'الإيرادات': item.revenue,
+      'عدد المعاملات': item.count
+    })),
+    [analytics.hourlySales]
+  );
+
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa'];
 
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-orange-500" />
-            تحليلات المبيعات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={4} />;
   }
 
   return (
@@ -188,17 +189,27 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
               <ShoppingCart className="h-5 w-5 text-orange-500" />
               تحليلات المبيعات
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/sales/orders')}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              بيع جديد
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="sales_analytics"
+                title="تحليلات المبيعات"
+                variant="ghost"
+                size="sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/sales/orders')}
+                className="text-orange-600 hover:text-orange-700"
+              >
+                بيع جديد
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Today's Revenue */}
@@ -214,7 +225,11 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
               <div className="text-2xl font-bold text-gray-900">
                 {formatCurrency(analytics.todayRevenue)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">مبيعات اليوم</div>
+              <div className="text-xs text-gray-600 mt-1">
+                <EnhancedTooltip kpi={kpiDefinitions.averageRevenue}>
+                  <span>مبيعات اليوم</span>
+                </EnhancedTooltip>
+              </div>
               <div className={`text-xs mt-1 ${analytics.revenueChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {analytics.revenueChange >= 0 ? '+' : ''}{analytics.revenueChange.toFixed(1)}% من الأمس
               </div>

@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(find src/components/dashboard/retail -name \"*.tsx\" -exec wc -l {} +)",
-      "Bash(test -f dist/index.html)"
+      "Bash(test -f dist/index.html)",
+      "Bash(npm install jspdf jspdf-autotable html2canvas xlsx react-datepicker cmdk @types/react-datepicker)",
+      "Bash(npm run build:dev)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

@@ -20,6 +20,10 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface CategoryPerformanceWidgetProps {
   className?: string;
@@ -28,6 +32,7 @@ interface CategoryPerformanceWidgetProps {
 export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading: loadingSales } = useSalesOrders({
     status: 'completed'
@@ -139,23 +144,23 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
     };
   }, [salesOrders, inventoryItems]);
 
+  const exportData = React.useMemo(() =>
+    analytics.categories.map(item => ({
+      'الفئة': item.name,
+      'الإيرادات': item.revenue,
+      'التكلفة': item.cost,
+      'الربح': item.profit,
+      'هامش الربح %': item.profitMargin.toFixed(2),
+      'وحدات مباعة': item.unitsSold,
+      'معدل النمو %': item.growthRate.toFixed(2)
+    })),
+    [analytics.categories]
+  );
+
   const COLORS = ['#f97316', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-orange-500" />
-            أداء الفئات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
   }
 
   return (
@@ -171,17 +176,27 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
               <BarChart3 className="h-5 w-5 text-orange-500" />
               أداء الفئات
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/inventory/categories')}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              تفاصيل الفئات
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="category_performance"
+                title="أداء الفئات"
+                variant="ghost"
+                size="sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/inventory/categories')}
+                className="text-orange-600 hover:text-orange-700"
+              >
+                تفاصيل الفئات
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Category Performance Chart */}
           {analytics.categories.length > 0 ? (
             <>
@@ -263,7 +278,11 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-500">هامش الربح</div>
+                          <div className="text-xs text-gray-500">
+                            <EnhancedTooltip kpi={kpiDefinitions.grossMargin}>
+                              <span>هامش الربح</span>
+                            </EnhancedTooltip>
+                          </div>
                           <div className="font-bold text-sm text-blue-600">
                             {category.profitMargin.toFixed(1)}%
                           </div>
@@ -305,11 +324,11 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
               )}
             </>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <div className="font-medium">لا توجد بيانات مبيعات</div>
-              <div className="text-sm mt-1">ابدأ بتسجيل المبيعات لرؤية أداء الفئات</div>
-            </div>
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد بيانات مبيعات"
+              description="ابدأ بتسجيل المبيعات لرؤية أداء الفئات"
+            />
           )}
         </CardContent>
       </Card>

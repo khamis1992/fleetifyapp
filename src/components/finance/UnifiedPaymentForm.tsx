@@ -20,6 +20,8 @@ import { useActiveContracts } from "@/hooks/useContracts";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useVendors } from "@/hooks/useFinance";
 import { enhancedPaymentSchema, PaymentJournalPreview } from "@/schemas/payment.schema";
 import { toast } from 'sonner';
 
@@ -94,6 +96,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
   const { data: contracts } = useActiveContracts(customerId, vendorId);
   const { currency: companyCurrency } = useCompanyCurrency();
+  const { data: customers } = useCustomers();
+  const { data: vendors } = useVendors();
 
   // Determine payment subtype based on context
   const getPaymentSubtype = (): 'receipt' | 'payment' => {
@@ -362,22 +366,112 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>العملة</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                              <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                               <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
+                              <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
                               <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                               <SelectItem value="EUR">يورو (EUR)</SelectItem>
+                              <SelectItem value="AED">درهم إماراتي (AED)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {/* Customer Selection - for vendor payments */}
+                    {type === 'vendor_payment' && !customerId && (
+                      <FormField
+                        control={form.control}
+                        name="customer_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>العميل (اختياري)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر العميل" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">بدون ربط بعميل</SelectItem>
+                                {(Array.isArray(customers) ? customers : customers?.data || []).map((customer: any) => (
+                                  <SelectItem key={customer.id} value={customer.id}>
+                                    {customer.customer_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {/* Vendor Selection - for customer payments */}
+                    {type === 'customer_payment' && !vendorId && (
+                      <FormField
+                        control={form.control}
+                        name="vendor_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>المورد (اختياري)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر المورد" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">بدون ربط بمورد</SelectItem>
+                                {vendors?.map((vendor) => (
+                                  <SelectItem key={vendor.id} value={vendor.id}>
+                                    {vendor.vendor_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {/* Contract Selection */}
+                    {!contractId && contracts && contracts.length > 0 && (
+                      <FormField
+                        control={form.control}
+                        name="contract_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>العقد (اختياري)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر العقد" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">بدون ربط بعقد</SelectItem>
+                                {contracts.map((contract: any) => (
+                                  <SelectItem key={contract.id} value={contract.id}>
+                                    {contract.contract_number}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     {/* Payment Method */}
                     <FormField

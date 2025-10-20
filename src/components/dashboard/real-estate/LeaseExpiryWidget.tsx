@@ -8,6 +8,10 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface PropertyContract {
   id: string;
@@ -21,6 +25,7 @@ interface PropertyContract {
 }
 
 export const LeaseExpiryWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
 
@@ -59,21 +64,7 @@ export const LeaseExpiryWidget: React.FC = () => {
   });
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Calendar className="w-5 h-5 text-emerald-500" />
-            انتهاء عقود الإيجار
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-32 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   const contracts = contractsData || [];
@@ -112,6 +103,19 @@ export const LeaseExpiryWidget: React.FC = () => {
     return 'bg-yellow-100 text-yellow-700 border-yellow-200';
   };
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'عقود تنتهي هذا الشهر', القيمة: expiringThisMonth.length },
+    { المؤشر: 'عقود تنتهي في 3 أشهر', القيمة: expiringNext3Months.length },
+    { المؤشر: 'عقود تنتهي في 6 أشهر', القيمة: expiringNext6Months.length },
+    { المؤشر: 'معدل التجديد', القيمة: `${renewalRate}%` },
+    ...[...expiringThisMonth, ...expiringNext3Months].slice(0, 10).map(c => ({
+      'اسم العقار': c.properties?.property_name || 'غير محدد',
+      'تاريخ الانتهاء': format(new Date(c.end_date), 'dd/MM/yyyy'),
+      'الأيام المتبقية': getDaysUntilExpiry(c.end_date),
+    })),
+  ], [expiringThisMonth, expiringNext3Months, expiringNext6Months, renewalRate]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -129,15 +133,25 @@ export const LeaseExpiryWidget: React.FC = () => {
                 انتهاء عقود الإيجار
               </span>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض العقود ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="lease_expiry"
+                title="انتهاء عقود الإيجار"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض العقود ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
           {/* Expiry Summary */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-red-50 rounded-lg p-3 text-center border-2 border-red-200">

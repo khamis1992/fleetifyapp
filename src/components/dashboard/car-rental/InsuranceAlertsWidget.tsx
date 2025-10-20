@@ -12,6 +12,9 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 interface DocumentAlert {
   vehicleId: string;
@@ -28,6 +31,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: vehicles } = useVehicles();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch all insurance records
   const { data: insuranceRecords, isLoading: insuranceLoading } = useQuery({
@@ -165,6 +169,19 @@ export const InsuranceAlertsWidget: React.FC = () => {
     return counts;
   }, [alerts]);
 
+  // Prepare export data
+  const exportData = React.useMemo(() =>
+    alerts.map(alert => ({
+      'رقم اللوحة': alert.vehicleName.split(' - ')[0],
+      'المركبة': alert.vehicleName,
+      'نوع الوثيقة': alert.documentType,
+      'تاريخ الانتهاء': format(alert.expiryDate, 'dd/MM/yyyy'),
+      'الأيام المتبقية': alert.daysUntilExpiry,
+      'الحالة': alert.urgency === 'critical' ? 'عاجل' : alert.urgency === 'warning' ? 'تحذير' : 'معلومة'
+    })),
+    [alerts]
+  );
+
   const getUrgencyBadge = (urgency: UrgencyType) => {
     switch (urgency) {
       case 'critical':
@@ -195,21 +212,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5" />
-            تنبيهات الوثائق
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart={false} hasStats statCount={3} />;
   }
 
   return (
@@ -234,10 +237,18 @@ export const InsuranceAlertsWidget: React.FC = () => {
                   {urgencyCounts.critical} عاجل
                 </Badge>
               )}
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="insurance_alerts"
+                title="تنبيهات الوثائق"
+                variant="ghost"
+                size="sm"
+              />
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={chartRef}>
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-2">
             <div className="p-3 rounded-lg bg-red-50 border border-red-200">
@@ -282,12 +293,11 @@ export const InsuranceAlertsWidget: React.FC = () => {
             </h4>
 
             {alerts.length === 0 ? (
-              <div className="p-4 rounded-lg bg-white/80 border border-green-200 text-center">
-                <Shield className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  جميع الوثائق سارية المفعول
-                </p>
-              </div>
+              <EmptyStateCompact
+                type="no-data"
+                title="جميع الوثائق سارية"
+                description="لا توجد وثائق منتهية أو قريبة من الانتهاء"
+              />
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {alerts.slice(0, 10).map((alert, index) => {

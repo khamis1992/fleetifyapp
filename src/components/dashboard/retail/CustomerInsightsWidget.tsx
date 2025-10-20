@@ -17,6 +17,9 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface CustomerInsightsWidgetProps {
   className?: string;
@@ -25,6 +28,7 @@ interface CustomerInsightsWidgetProps {
 export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers({
     includeInactive: false
@@ -173,23 +177,20 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
     };
   }, [customers, salesOrders]);
 
+  const exportData = React.useMemo(() =>
+    analytics.topCustomers.map(item => ({
+      'اسم العميل': item.customerName,
+      'إجمالي الإنفاق': item.totalSpent,
+      'عدد المشتريات': item.purchaseCount,
+      'متوسط قيمة الشراء': item.totalSpent / item.purchaseCount
+    })),
+    [analytics.topCustomers]
+  );
+
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-orange-500" />
-            رؤى العملاء
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={4} />;
   }
 
   return (
@@ -205,17 +206,27 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <Users className="h-5 w-5 text-orange-500" />
               رؤى العملاء
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/tenants')}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              عرض العملاء
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="customer_insights"
+                title="رؤى العملاء"
+                variant="ghost"
+                size="sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/tenants')}
+                className="text-orange-600 hover:text-orange-700"
+              >
+                عرض العملاء
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Total Customers */}
@@ -268,7 +279,11 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(analytics.avgCLV)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">القيمة الدائمة</div>
+              <div className="text-xs text-gray-600 mt-1">
+                <EnhancedTooltip kpi={kpiDefinitions.clv}>
+                  <span>القيمة الدائمة</span>
+                </EnhancedTooltip>
+              </div>
               <div className="text-xs text-gray-500 mt-1">
                 متوسط CLV
               </div>

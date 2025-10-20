@@ -7,6 +7,7 @@ import { Car, CheckCircle, AlertTriangle, Wrench, XCircle } from 'lucide-react';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ExportButton } from '@/components/exports';
 
 interface VehicleStatusCount {
   status: string;
@@ -20,6 +21,7 @@ interface VehicleStatusCount {
 export const FleetAvailabilityWidget: React.FC = () => {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useVehicles();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Calculate vehicle counts by status
   const statusCounts = React.useMemo(() => {
@@ -122,6 +124,14 @@ export const FleetAvailabilityWidget: React.FC = () => {
     );
   }
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    return statusCounts.map(status => ({
+      الحالة: status.label,
+      العدد: status.count,
+    }));
+  }, [statusCounts]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -138,12 +148,22 @@ export const FleetAvailabilityWidget: React.FC = () => {
               </div>
               <span>توافر الأسطول</span>
             </div>
-            <Badge variant="outline" className="text-sm font-bold">
-              {totalVehicles} مركبة
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-sm font-bold">
+                {totalVehicles} مركبة
+              </Badge>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="fleet_availability"
+                title="توافر الأسطول"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={chartRef}>
           {/* Availability Percentage */}
           <div className="p-4 rounded-lg bg-white/80 border border-teal-200/50">
             <div className="flex items-center justify-between mb-2">

@@ -9,6 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO, startOfWeek, endOfWeek, addWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 type DateRange = 'this_week' | 'next_week' | 'this_month';
 
@@ -26,6 +29,7 @@ interface TimelineItem {
 export const RentalTimelineWidget: React.FC = () => {
   const [dateRange, setDateRange] = React.useState<DateRange>('this_week');
   const [currentWeekOffset, setCurrentWeekOffset] = React.useState(0);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
@@ -123,6 +127,26 @@ export const RentalTimelineWidget: React.FC = () => {
     return vehicles?.slice(0, 8) || [];
   }, [vehicles]);
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    const data: any[] = [];
+    vehicles?.forEach((vehicle) => {
+      const rentals = timelineData[vehicle.id] || [];
+      rentals.forEach((rental) => {
+        data.push({
+          'رقم اللوحة': vehicle.plate_number,
+          'الطراز': `${vehicle.make} ${vehicle.model}`,
+          'العميل': rental.customerName,
+          'رقم العقد': rental.contractNumber,
+          'تاريخ البداية': format(rental.startDate, 'dd/MM/yyyy'),
+          'تاريخ النهاية': format(rental.endDate, 'dd/MM/yyyy'),
+          'الحالة': getStatusLabel(rental.status)
+        });
+      });
+    });
+    return data;
+  }, [vehicles, timelineData]);
+
   const getStatusColor = (status: 'active' | 'reserved' | 'available') => {
     switch (status) {
       case 'active':
@@ -164,19 +188,7 @@ export const RentalTimelineWidget: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5" />
-            الجدول الزمني للتأجير
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-96 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats={false} />;
   }
 
   return (
@@ -225,10 +237,18 @@ export const RentalTimelineWidget: React.FC = () => {
                   <SelectItem value="this_month">هذا الشهر</SelectItem>
                 </SelectContent>
               </Select>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="rental_timeline"
+                title="الجدول الزمني للتأجير"
+                variant="ghost"
+                size="sm"
+              />
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={chartRef}>
           {/* Date Range Display */}
           <div className="p-3 rounded-lg bg-white/80 border border-indigo-200/50 text-center">
             <span className="text-sm font-medium text-muted-foreground">
@@ -256,9 +276,11 @@ export const RentalTimelineWidget: React.FC = () => {
           {/* Timeline Grid */}
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {displayVehicles.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                لا توجد مركبات لعرضها
-              </div>
+              <EmptyStateCompact
+                type="no-data"
+                title="لا توجد مركبات"
+                description="لم يتم العثور على مركبات في هذه الفترة"
+              />
             ) : (
               displayVehicles.map((vehicle) => {
                 const rentals = timelineData[vehicle.id] || [];

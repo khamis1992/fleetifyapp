@@ -11,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 interface ReorderRecommendationsWidgetProps {
   className?: string;
@@ -34,6 +37,7 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: inventoryItems = [], isLoading: loadingInventory } = useInventoryItems({
     is_active: true
@@ -150,6 +154,19 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
     };
   }, [inventoryItems, salesOrders]);
 
+  const exportData = React.useMemo(() =>
+    recommendations.items.map(item => ({
+      'اسم المنتج': item.itemName,
+      'رمز المنتج': item.itemCode,
+      'المخزون الحالي': item.currentStock,
+      'الكمية الموصى بها': item.reorderQuantity,
+      'أيام حتى النفاد': item.daysUntilStockout < 999 ? item.daysUntilStockout : 'غير محدد',
+      'التكلفة المقدرة': item.estimatedCost,
+      'الأولوية': item.urgency
+    })),
+    [recommendations.items]
+  );
+
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'critical':
@@ -180,20 +197,7 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
   }, [recommendations.items, selectedItems]);
 
   if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
-            توصيات إعادة الطلب
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart={false} hasStats statCount={4} />;
   }
 
   return (
@@ -209,17 +213,27 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
               <AlertTriangle className="h-5 w-5 text-orange-500" />
               توصيات إعادة الطلب
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/inventory/reports')}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              تقرير إعادة الطلب
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="reorder_recommendations"
+                title="توصيات إعادة الطلب"
+                variant="ghost"
+                size="sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/inventory/reports')}
+                className="text-orange-600 hover:text-orange-700"
+              >
+                تقرير إعادة الطلب
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent ref={chartRef} className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-gradient-to-br from-red-50 to-pink-50 p-3 rounded-lg border border-red-100">
@@ -319,11 +333,11 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <div className="font-medium">جميع المنتجات في مستويات مخزون آمنة</div>
-              <div className="text-sm mt-1">لا توجد منتجات تحتاج إعادة طلب حالياً</div>
-            </div>
+            <EmptyStateCompact
+              type="no-data"
+              title="جميع المنتجات في مستويات مخزون آمنة"
+              description="لا توجد منتجات تحتاج إعادة طلب حالياً"
+            />
           )}
 
           {/* Selected Items Summary */}

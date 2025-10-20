@@ -7,8 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const TenantSatisfactionWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
 
@@ -43,21 +48,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
   });
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Smile className="w-5 h-5 text-emerald-500" />
-            رضا المستأجرين
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-32 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
   }
 
   const requests = maintenanceData || [];
@@ -146,6 +137,21 @@ export const TenantSatisfactionWidget: React.FC = () => {
     return 'يحتاج تحسين';
   };
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'معدل الرضا العام', القيمة: satisfactionScore.toFixed(1) },
+    { المؤشر: 'متوسط وقت الاستجابة', القيمة: `${avgResponseTime} يوم` },
+    { المؤشر: 'التقييم', القيمة: getSatisfactionLabel(satisfactionScore) },
+    ...topComplaints.map(([type, count]) => ({
+      'نوع الشكوى': getComplaintNameAr(type),
+      العدد: count,
+    })),
+    ...trendData.map(t => ({
+      الشهر: t.month,
+      'معدل الرضا': t.score.toFixed(1),
+    })),
+  ], [satisfactionScore, avgResponseTime, topComplaints, trendData]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -163,15 +169,25 @@ export const TenantSatisfactionWidget: React.FC = () => {
                 رضا المستأجرين
               </span>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض التقييمات ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="tenant_satisfaction"
+                title="رضا المستأجرين"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض التقييمات ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
           {/* Overall Satisfaction Score */}
           <div className={`rounded-lg p-4 ${getSatisfactionColor(satisfactionScore)}`}>
             <div className="flex items-center justify-between mb-2">

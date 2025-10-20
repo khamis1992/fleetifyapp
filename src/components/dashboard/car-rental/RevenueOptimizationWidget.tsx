@@ -10,6 +10,10 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 interface VehicleRevenue {
   vehicleId: string;
@@ -23,6 +27,7 @@ interface VehicleRevenue {
 }
 
 export const RevenueOptimizationWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
   const { data: payments, isLoading: paymentsLoading } = usePayments();
@@ -148,7 +153,25 @@ export const RevenueOptimizationWidget: React.FC = () => {
     return totalIdleDays * avgRevenuePerDay;
   }, [vehicleRevenueData]);
 
+  // Prepare export data
+  const exportData = React.useMemo(() =>
+    vehicleRevenueData.map(v => ({
+      'المركبة': v.vehicleName,
+      'النوع': v.vehicleType,
+      'إجمالي الإيرادات': v.totalRevenue,
+      'أيام التأجير': v.rentalDays,
+      'الإيراد/اليوم': Math.round(v.revenuePerDay),
+      'نسبة الاستخدام': `${v.utilizationRate}%`,
+      'الحالة': v.isUnderutilized ? 'ضعيف الاستخدام' : 'جيد'
+    })),
+    [vehicleRevenueData]
+  );
+
   if (isLoading) {
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
+  }
+
+  if (!vehicles || vehicles.length === 0) {
     return (
       <Card className="h-full">
         <CardHeader>
@@ -157,10 +180,12 @@ export const RevenueOptimizationWidget: React.FC = () => {
             تحسين الإيرادات
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-32 w-full" />
+        <CardContent>
+          <EmptyStateCompact
+            type="no-data"
+            title="لا توجد بيانات إيرادات"
+            description="ستظهر بيانات تحسين الإيرادات عند توفر بيانات الإيجار"
+          />
         </CardContent>
       </Card>
     );
@@ -180,11 +205,21 @@ export const RevenueOptimizationWidget: React.FC = () => {
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
-              <span>تحسين الإيرادات</span>
+              <EnhancedTooltip kpi={kpiDefinitions.revenue}>
+                <span>تحسين الإيرادات</span>
+              </EnhancedTooltip>
             </div>
+            <ExportButton
+              chartRef={chartRef}
+              data={exportData}
+              filename="revenue_optimization"
+              title="تحسين الإيرادات"
+              variant="ghost"
+              size="sm"
+            />
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={chartRef}>
           {/* Revenue Trend */}
           <div className="p-4 rounded-lg bg-white/80 border border-emerald-200/50">
             <div className="flex items-center justify-between mb-2">

@@ -9,6 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO, addDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
 
 interface MaintenanceItem {
   vehicleId: string;
@@ -24,6 +27,7 @@ interface MaintenanceItem {
 export const MaintenanceScheduleWidget: React.FC = () => {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useVehicles();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Calculate maintenance schedule based on last_maintenance_date
   // Assuming maintenance is due every 90 days (3 months)
@@ -108,6 +112,19 @@ export const MaintenanceScheduleWidget: React.FC = () => {
       .slice(0, 5);
   }, [maintenanceSchedule]);
 
+  // Prepare export data
+  const exportData = React.useMemo(() =>
+    maintenanceSchedule.map(item => ({
+      'رقم اللوحة': item.plateNumber,
+      'الطراز': `${item.make} ${item.model}`,
+      'نوع الصيانة': item.maintenanceType,
+      'آخر صيانة': item.lastMaintenanceDate ? format(parseISO(item.lastMaintenanceDate), 'dd/MM/yyyy') : 'لا يوجد',
+      'الأيام المتبقية': item.daysUntilDue,
+      'الحالة': item.urgency === 'overdue' ? 'متأخر' : item.urgency === 'due_soon' ? 'مستحق قريباً' : 'في الموعد'
+    })),
+    [maintenanceSchedule]
+  );
+
   const getUrgencyBadge = (urgency: 'overdue' | 'due_soon' | 'on_schedule') => {
     switch (urgency) {
       case 'overdue':
@@ -135,21 +152,7 @@ export const MaintenanceScheduleWidget: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Wrench className="h-5 w-5" />
-            جدول الصيانة
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart={false} hasStats statCount={3} />;
   }
 
   return (
@@ -174,10 +177,18 @@ export const MaintenanceScheduleWidget: React.FC = () => {
                   {urgencyCounts.overdue} متأخر
                 </Badge>
               )}
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="maintenance_schedule"
+                title="جدول الصيانة"
+                variant="ghost"
+                size="sm"
+              />
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={chartRef}>
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-2">
             <div className="p-3 rounded-lg bg-red-50 border border-red-200">
@@ -219,12 +230,11 @@ export const MaintenanceScheduleWidget: React.FC = () => {
             </h4>
 
             {displayItems.length === 0 ? (
-              <div className="p-4 rounded-lg bg-white/80 border border-green-200 text-center">
-                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  جميع المركبات في موعد الصيانة المحدد
-                </p>
-              </div>
+              <EmptyStateCompact
+                type="no-data"
+                title="جميع المركبات في موعد الصيانة"
+                description="لا توجد صيانات متأخرة أو قادمة"
+              />
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {displayItems.map((item) => {

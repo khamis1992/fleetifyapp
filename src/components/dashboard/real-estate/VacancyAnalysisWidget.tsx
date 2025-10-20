@@ -6,28 +6,19 @@ import { useRealEstateDashboardStats } from '@/hooks/useRealEstateDashboardStats
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const VacancyAnalysisWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: stats, isLoading } = useRealEstateDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Home className="w-5 h-5 text-emerald-500" />
-            تحليل الشواغر
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-32 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={3} />;
   }
 
   if (!stats) return null;
@@ -89,6 +80,27 @@ export const VacancyAnalysisWidget: React.FC = () => {
     return 'يحتاج اهتمام';
   };
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'معدل الشغور الحالي', القيمة: `${vacancyRate.toFixed(1)}%`, 'عدد الوحدات': vacantCount },
+    { المؤشر: 'متوسط وقت التأجير', القيمة: `${avgTimeToFill} يوم` },
+    { المؤشر: 'إيراد ضائع شهرياً', القيمة: formatCurrency(lostRevenuePerMonth) },
+    { المؤشر: 'إيراد ضائع سنوياً', القيمة: formatCurrency(lostRevenuePerMonth * 12) },
+    ...vacancyReasons.map(r => ({
+      'سبب الشغور': r.reason,
+      العدد: r.count,
+      'النسبة %': r.percentage,
+    })),
+    ...areasWithVacancy.map(a => ({
+      المنطقة: a.area,
+      'معدل الشغور %': a.vacancyRate.toFixed(0),
+    })),
+    ...vacancyTrendData.map(t => ({
+      الشهر: t.month,
+      'معدل الشغور %': t.rate.toFixed(1),
+    })),
+  ], [vacancyRate, vacantCount, avgTimeToFill, lostRevenuePerMonth, vacancyReasons, areasWithVacancy, vacancyTrendData, formatCurrency]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -106,15 +118,25 @@ export const VacancyAnalysisWidget: React.FC = () => {
                 تحليل الشواغر
               </span>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض الشواغر ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="vacancy_analysis"
+                title="تحليل الشواغر"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض الشواغر ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
           {/* Current Vacancy Status */}
           <div className={`rounded-lg p-4 ${getVacancyColor(vacancyRate)}`}>
             <div className="flex items-center justify-between mb-2">

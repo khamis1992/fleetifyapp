@@ -5,11 +5,16 @@ import { TrendingUp, ArrowUpDown, Building } from 'lucide-react';
 import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ExportButton } from '@/components/exports';
+import { WidgetSkeleton } from '@/components/ui/skeletons';
+import { EmptyStateCompact } from '@/components/ui/EmptyState';
+import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 type SortField = 'propertyName' | 'occupancyRate' | 'monthlyRent' | 'maintenanceCosts' | 'roi' | 'netIncome';
 type SortDirection = 'asc' | 'desc';
 
 export const PropertyPerformanceWidget: React.FC = () => {
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: reportsData, isLoading } = usePropertyReports();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
@@ -19,21 +24,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
 
   if (isLoading) {
-    return (
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-            مقارنة أداء العقارات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton hasChart hasStats statCount={2} />;
   }
 
   if (!reportsData || !reportsData.performance) return null;
@@ -113,6 +104,20 @@ export const PropertyPerformanceWidget: React.FC = () => {
   // Get unique property types
   const propertyTypes = ['all', ...new Set(properties.map(p => p.propertyType))];
 
+  // Prepare export data
+  const exportData = React.useMemo(() => [
+    { المؤشر: 'متوسط العائد على الاستثمار', القيمة: `${avgROI.toFixed(1)}%` },
+    { المؤشر: 'متوسط هامش الربح', القيمة: `${avgProfitMargin.toFixed(1)}%` },
+    ...sortedProperties.map(p => ({
+      'اسم العقار': p.propertyName,
+      'الإيجار الشهري': formatCurrency(p.monthlyRent),
+      'تكاليف الصيانة': formatCurrency(p.maintenanceCosts),
+      'صافي الدخل': formatCurrency(p.actualRevenue - p.maintenanceCosts),
+      'العائد %': `${p.roi.toFixed(1)}%`,
+      'الحالة': p.status === 'occupied' ? 'مشغول' : p.status === 'vacant' ? 'شاغر' : p.status,
+    })),
+  ], [avgROI, avgProfitMargin, sortedProperties, formatCurrency]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -130,19 +135,40 @@ export const PropertyPerformanceWidget: React.FC = () => {
                 مقارنة أداء العقارات
               </span>
             </div>
-            <button
-              onClick={() => navigate('/properties')}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              عرض التفاصيل ←
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="property_performance"
+                title="مقارنة أداء العقارات"
+                variant="ghost"
+                size="sm"
+              />
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                عرض التفاصيل ←
+              </button>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent ref={chartRef} className="p-6 space-y-6">
+          {/* Empty State */}
+          {properties.length === 0 ? (
+            <EmptyStateCompact
+              type="no-data"
+              title="لا توجد عقارات"
+              description="ستظهر بيانات أداء العقارات هنا عند إضافتها"
+            />
+          ) : (
+            <>
           {/* Average Performance Metrics */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 text-center">
-              <div className="text-sm text-gray-600 mb-1">متوسط العائد على الاستثمار</div>
+              <EnhancedTooltip kpi={kpiDefinitions.roi}>
+                <div className="text-sm text-gray-600 mb-1">متوسط العائد على الاستثمار</div>
+              </EnhancedTooltip>
               <div className="text-3xl font-bold text-blue-700">{avgROI.toFixed(1)}%</div>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 text-center">
@@ -292,6 +318,8 @@ export const PropertyPerformanceWidget: React.FC = () => {
           >
             عرض تفاصيل العقارات
           </button>
+            </>
+          )}
         </CardContent>
       </Card>
     </motion.div>
