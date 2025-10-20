@@ -14,10 +14,20 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+import { SalesPipelineWidget } from '@/components/dashboard/SalesPipelineWidget';
+import { InventoryAlertsWidget } from '@/components/dashboard/InventoryAlertsWidget';
+import { VendorPerformanceWidget } from '@/components/dashboard/VendorPerformanceWidget';
+import { QuickStatsRow } from '@/components/dashboard/QuickStatsRow';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { Car, Users, FileText, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { FleetAvailabilityWidget } from '@/components/dashboard/car-rental/FleetAvailabilityWidget';
+import { RentalAnalyticsWidget } from '@/components/dashboard/car-rental/RentalAnalyticsWidget';
+import { MaintenanceScheduleWidget } from '@/components/dashboard/car-rental/MaintenanceScheduleWidget';
+import { RentalTimelineWidget } from '@/components/dashboard/car-rental/RentalTimelineWidget';
+import { InsuranceAlertsWidget } from '@/components/dashboard/car-rental/InsuranceAlertsWidget';
+import { RevenueOptimizationWidget } from '@/components/dashboard/car-rental/RevenueOptimizationWidget';
 
 const CarRentalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -131,6 +141,9 @@ const CarRentalDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
+        {/* Phase 7B Quick Stats Row */}
+        <QuickStatsRow />
+
         {/* Enhanced Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -156,6 +169,40 @@ const CarRentalDashboard: React.FC = () => {
             />
           ))}
           </DashboardGrid>
+        </motion.div>
+
+        {/* Car Rental Dashboard Widgets - Row 1 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <FleetAvailabilityWidget />
+            <RentalAnalyticsWidget />
+            <MaintenanceScheduleWidget />
+          </div>
+        </motion.div>
+
+        {/* Car Rental Dashboard Widgets - Row 2 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <RevenueOptimizationWidget />
+            <InsuranceAlertsWidget />
+          </div>
+        </motion.div>
+
+        {/* Car Rental Dashboard Widgets - Row 3 (Full Width Timeline) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <RentalTimelineWidget />
         </motion.div>
 
         {/* Quick Actions Panel */}

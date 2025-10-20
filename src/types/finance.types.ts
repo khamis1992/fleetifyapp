@@ -116,8 +116,61 @@ export interface Vendor {
   payment_terms: number;
   credit_limit: number;
   current_balance: number;
+  category_id?: string;
   is_active: boolean;
   notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorCategory {
+  id: string;
+  company_id: string;
+  category_name: string;
+  category_name_ar?: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorContact {
+  id: string;
+  vendor_id: string;
+  company_id: string;
+  contact_name: string;
+  position?: string;
+  phone?: string;
+  email?: string;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorDocument {
+  id: string;
+  vendor_id: string;
+  company_id: string;
+  document_type: string;
+  document_name: string;
+  document_url: string;
+  file_size?: number;
+  expiry_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorPerformance {
+  id: string;
+  vendor_id: string;
+  company_id: string;
+  rating?: number;
+  on_time_delivery_rate?: number;
+  quality_score?: number;
+  response_time_hours?: number;
+  notes?: string;
+  measured_at: string;
   created_at: string;
   updated_at: string;
 }

@@ -13,10 +13,23 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+import { SalesPipelineWidget } from '@/components/dashboard/SalesPipelineWidget';
+import { InventoryAlertsWidget } from '@/components/dashboard/InventoryAlertsWidget';
+import { VendorPerformanceWidget } from '@/components/dashboard/VendorPerformanceWidget';
+import { QuickStatsRow } from '@/components/dashboard/QuickStatsRow';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Warehouse } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+
+// Import Retail-specific widgets
+import { SalesAnalyticsWidget } from '@/components/dashboard/retail/SalesAnalyticsWidget';
+import { InventoryLevelsWidget } from '@/components/dashboard/retail/InventoryLevelsWidget';
+import { TopProductsWidget } from '@/components/dashboard/retail/TopProductsWidget';
+import { CustomerInsightsWidget } from '@/components/dashboard/retail/CustomerInsightsWidget';
+import { ReorderRecommendationsWidget } from '@/components/dashboard/retail/ReorderRecommendationsWidget';
+import { SalesForecastWidget } from '@/components/dashboard/retail/SalesForecastWidget';
+import { CategoryPerformanceWidget } from '@/components/dashboard/retail/CategoryPerformanceWidget';
 
 const RetailDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -55,77 +68,7 @@ const RetailDashboard: React.FC = () => {
     }
   })) || [];
 
-  // Retail specific stats configuration
-  const statsConfig = [
-    {
-      title: 'إجمالي المنتجات',
-      value: String(Math.floor(Math.random() * 500) + 100), // Mock data
-      change: '+12%',
-      icon: Package,
-      trend: 'up' as const,
-      description: 'منتج مسجل',
-      subtitle: 'كتالوج المنتجات',
-      actionText: 'إدارة المنتجات',
-      onAction: () => navigate('/products'),
-      gradient: true
-    },
-    {
-      title: 'المبيعات اليومية',
-      value: String(Math.floor(Math.random() * 50) + 10), // Mock data
-      change: '+8%',
-      icon: ShoppingCart,
-      trend: 'up' as const,
-      description: 'معاملة اليوم',
-      subtitle: 'المبيعات النشطة',
-      actionText: 'تقارير المبيعات',
-      onAction: () => navigate('/sales')
-    },
-    {
-      title: 'العملاء النشطين',
-      value: String(enhancedStats?.totalCustomers || 0),
-      change: String(enhancedStats?.customersChange || '+0%'),
-      icon: Users,
-      trend: 'up' as const,
-      description: 'عميل مسجل',
-      subtitle: 'قاعدة العملاء',
-      actionText: 'إدارة المستأجرين',
-      onAction: () => navigate('/tenants')
-    },
-    {
-      title: 'قيمة المخزون',
-      value: formatCurrency(Math.floor(Math.random() * 100000) + 50000), // Mock data
-      change: '+3%',
-      icon: Warehouse,
-      trend: 'up' as const,
-      description: 'قيمة إجمالية',
-      subtitle: 'إدارة المخزون',
-      actionText: 'تقارير المخزون',
-      onAction: () => navigate('/inventory')
-    },
-    {
-      title: 'الإيرادات الشهرية',
-      value: formatCurrency(enhancedStats?.monthlyRevenue || 0),
-      change: String(enhancedStats?.revenueChange || '+0%'),
-      icon: DollarSign,
-      trend: 'up' as const,
-      description: 'هذا الشهر',
-      subtitle: 'الأداء المالي',
-      actionText: 'التقارير المالية',
-      onAction: () => navigate('/finance'),
-      gradient: true
-    },
-    {
-      title: 'معدل النمو',
-      value: '+15%',
-      change: '+2%',
-      icon: TrendingUp,
-      trend: 'up' as const,
-      description: 'نمو شهري',
-      subtitle: 'أداء الأعمال',
-      actionText: 'تحليل النمو',
-      onAction: () => navigate('/analytics')
-    }
-  ];
+  // Remove mock data - use real data from hooks in widgets
 
 
   return (
@@ -139,31 +82,57 @@ const RetailDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
-        {/* Enhanced Stats Grid */}
+        {/* Phase 7B Quick Stats Row */}
+        <QuickStatsRow />
+
+        {/* Row 2: Sales Analytics, Inventory Levels, Customer Insights */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <DashboardGrid variant="stats" gap="default">
-          {statsConfig.map((stat, index) => (
-            <EnhancedStatsCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              icon={stat.icon}
-              trend={stat.trend}
-              description={stat.description}
-              subtitle={stat.subtitle}
-              actionText={stat.actionText}
-              onAction={stat.onAction}
-              gradient={stat.gradient}
-              isLoading={statsLoading}
-              index={index}
-            />
-          ))}
-          </DashboardGrid>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <SalesAnalyticsWidget className="lg:col-span-1" />
+            <InventoryLevelsWidget className="lg:col-span-1" />
+            <CustomerInsightsWidget className="lg:col-span-1" />
+          </div>
+        </motion.div>
+
+        {/* Row 3: Top Products, Reorder Recommendations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TopProductsWidget />
+            <ReorderRecommendationsWidget />
+          </div>
+        </motion.div>
+
+        {/* Row 4: Sales Forecast, Category Performance */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SalesForecastWidget />
+            <CategoryPerformanceWidget />
+          </div>
+        </motion.div>
+
+        {/* Phase 7B Original Widgets (kept for compatibility) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SalesPipelineWidget />
+            <InventoryAlertsWidget />
+            <VendorPerformanceWidget />
+          </div>
         </motion.div>
 
         {/* Quick Actions Panel */}

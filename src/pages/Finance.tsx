@@ -19,6 +19,7 @@ const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
 const Budgets = lazyWithRetry(() => import("./finance/Budgets"), "Budgets");
 const Vendors = lazyWithRetry(() => import("./finance/Vendors"), "Vendors");
+const VendorCategories = lazyWithRetry(() => import("./finance/VendorCategories"), "VendorCategories");
 const FinancialAnalysis = lazyWithRetry(() => import("./finance/FinancialAnalysis"), "FinancialAnalysis");
 const AccountMappings = lazyWithRetry(() => import("./finance/AccountMappings"), "AccountMappings");
 const JournalEntries = lazyWithRetry(() => import("./finance/JournalEntries"), "JournalEntries");
@@ -173,17 +174,27 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="vendors" 
+      <Route
+        path="vendors"
         element={
           <ProtectedFinanceRoute permission="finance.vendors.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Vendors />
             </Suspense>
           </ProtectedFinanceRoute>
-        } 
+        }
       />
-      <Route 
+      <Route
+        path="vendor-categories"
+        element={
+          <ProtectedFinanceRoute permission="finance.vendors.manage">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <VendorCategories />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        }
+      />
+      <Route
         path="analysis" 
         element={
           <ProtectedFinanceRoute permission="finance.analysis.view">

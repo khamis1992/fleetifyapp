@@ -18,6 +18,33 @@ export type {
   BankTransaction
 } from '@/types/finance.types';
 
+// =====================================================
+// VENDOR HOOKS RE-EXPORTS (for backward compatibility)
+// =====================================================
+// All vendor hooks have been extracted to useVendors.ts
+// Re-exporting here to maintain backward compatibility
+export {
+  useVendors,
+  useCreateVendor,
+  useUpdateVendor,
+  useDeleteVendor,
+  // New vendor features
+  useVendorCategories,
+  useVendorCategory,
+  useCreateVendorCategory,
+  useUpdateVendorCategory,
+  useDeleteVendorCategory,
+  useVendorContacts,
+  useCreateVendorContact,
+  useUpdateVendorContact,
+  useDeleteVendorContact,
+  useVendorDocuments,
+  useUploadVendorDocument,
+  useDeleteVendorDocument,
+  useVendorPerformance,
+  useUpdateVendorPerformance
+} from './useVendors';
+
 // Chart of Accounts Hooks
 export const useChartOfAccounts = () => {
   const { companyId, filter, isAuthenticating, authError } = useUnifiedCompanyAccess()
@@ -694,143 +721,9 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
   })
 }
 
-// Vendors Hooks
-export const useVendors = () => {
-  const { user } = useAuth()
-  
-  return useQuery({
-    queryKey: ["vendors", user?.profile?.company_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("is_active", true)
-        .order("vendor_name")
-      
-      if (error) throw error
-      return data as Vendor[]
-    },
-    enabled: !!user?.profile?.company_id
-  })
-}
-
-export const useCreateVendor = () => {
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
-  
-  return useMutation({
-    mutationFn: async (vendorData: {
-      vendor_code: string
-      vendor_name: string
-      vendor_name_ar?: string
-      contact_person?: string
-      email?: string
-      phone?: string
-      address?: string
-      address_ar?: string
-      tax_number?: string
-      payment_terms?: number
-      credit_limit?: number
-      notes?: string
-    }) => {
-      if (!user?.profile?.company_id) throw new Error("Company ID is required")
-      
-      const { data, error } = await supabase
-        .from("vendors")
-        .insert({
-          vendor_code: vendorData.vendor_code,
-          vendor_name: vendorData.vendor_name,
-          vendor_name_ar: vendorData.vendor_name_ar,
-          contact_person: vendorData.contact_person,
-          email: vendorData.email,
-          phone: vendorData.phone,
-          address: vendorData.address,
-          address_ar: vendorData.address_ar,
-          tax_number: vendorData.tax_number,
-          payment_terms: vendorData.payment_terms || 30,
-          credit_limit: vendorData.credit_limit || 0,
-          current_balance: 0,
-          is_active: true,
-          notes: vendorData.notes,
-          company_id: user.profile.company_id
-        })
-        .select()
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] })
-      toast.success("تم إنشاء المورد بنجاح")
-    },
-    onError: (error) => {
-      toast.error("خطأ في إنشاء المورد: " + error.message)
-    }
-  })
-}
-
-export const useUpdateVendor = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async ({ id, ...vendorData }: {
-      id: string
-      vendor_code?: string
-      vendor_name?: string
-      vendor_name_ar?: string
-      contact_person?: string
-      email?: string
-      phone?: string
-      address?: string
-      address_ar?: string
-      tax_number?: string
-      payment_terms?: number
-      credit_limit?: number
-      notes?: string
-      is_active?: boolean
-    }) => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .update(vendorData)
-        .eq("id", id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] })
-      toast.success("تم تحديث المورد بنجاح")
-    },
-    onError: (error) => {
-      toast.error("خطأ في تحديث المورد: " + error.message)
-    }
-  })
-}
-
-export const useDeleteVendor = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("vendors")
-        .update({ is_active: false })
-        .eq("id", id)
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] })
-      toast.success("تم حذف المورد بنجاح")
-    },
-    onError: (error) => {
-      toast.error("خطأ في حذف المورد: " + error.message)
-    }
-  })
-}
+// Vendors Hooks - REMOVED (now in useVendors.ts)
+// All vendor-related hooks have been extracted to src/hooks/useVendors.ts
+// They are re-exported above for backward compatibility
 
 // Financial Summary Hook
 export const useFinancialSummary = () => {

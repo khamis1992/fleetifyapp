@@ -5,11 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
 import { usePermissions } from '@/hooks/usePermissions';
-import { 
-  Car, 
-  FileText, 
-  Users, 
-  DollarSign, 
+import {
+  Car,
+  FileText,
+  Users,
+  DollarSign,
   Settings,
   LogOut,
   Home,
@@ -39,7 +39,13 @@ import {
   CheckSquare,
   Headphones,
   TrendingUp,
-  Zap
+  Zap,
+  UserPlus,
+  Package,
+  ShoppingCart,
+  Boxes,
+  ArrowUpDown,
+  Tags
 } from 'lucide-react';
 import {
   Sidebar,
@@ -138,6 +144,16 @@ const financeSubItems = [
     name: 'الموردين',
     href: '/finance/vendors',
     icon: Building
+  },
+  {
+    name: 'تصنيفات الموردين',
+    href: '/finance/vendor-categories',
+    icon: Tags
+  },
+  {
+    name: 'أوامر الشراء',
+    href: '/finance/purchase-orders',
+    icon: ShoppingCart
   },
   {
     name: 'التحليل المالي',
@@ -243,6 +259,49 @@ const hrSubItems = [
   }
 ];
 
+// Sales sub-items (Phase 7B)
+const salesSubItems = [
+  {
+    name: 'مسار المبيعات',
+    href: '/sales/pipeline',
+    icon: TrendingUp
+  },
+  {
+    name: 'العملاء المحتملين',
+    href: '/sales/leads',
+    icon: UserPlus
+  },
+  {
+    name: 'الطلبات',
+    href: '/sales/orders',
+    icon: ShoppingCart
+  }
+];
+
+// Inventory sub-items (Phase 7B)
+const inventorySubItems = [
+  {
+    name: 'الأصناف',
+    href: '/inventory',
+    icon: Package
+  },
+  {
+    name: 'التصنيفات',
+    href: '/inventory/categories',
+    icon: Tags
+  },
+  {
+    name: 'حركات المخزون',
+    href: '/inventory/movements',
+    icon: ArrowUpDown
+  },
+  {
+    name: 'التقارير',
+    href: '/inventory/reports',
+    icon: BarChart3
+  }
+];
+
 export function AppSidebar() {
   const { signOut } = useAuth();
   const { state, isMobile } = useSidebar();
@@ -256,6 +315,10 @@ export function AppSidebar() {
   const isHRActive = location.pathname.startsWith('/hr');
   // Check if fleet section should be open
   const isFleetActive = location.pathname.startsWith('/fleet');
+  // Check if sales section should be open
+  const isSalesActive = location.pathname.startsWith('/sales');
+  // Check if inventory section should be open
+  const isInventoryActive = location.pathname.startsWith('/inventory');
 
   const handleSignOut = async () => {
     await signOut();
@@ -353,7 +416,69 @@ export function AppSidebar() {
                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
+                {/* Sales Section with Submenu (Phase 7B) */}
+                <SidebarMenuItem>
+                  <Collapsible defaultOpen={isSalesActive}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="h-10">
+                        <TrendingUp className="h-4 w-4" />
+                         {(!collapsed || isMobile) && (
+                           <>
+                             <span className="font-medium">المبيعات</span>
+                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                           </>
+                         )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {salesSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to={subItem.href} className={getNavClassName}>
+                                <subItem.icon className="h-4 w-4" />
+                                 {(!collapsed || isMobile) && <span>{subItem.name}</span>}
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+
+                {/* Inventory Section with Submenu (Phase 7B) */}
+                <SidebarMenuItem>
+                  <Collapsible defaultOpen={isInventoryActive}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="h-10">
+                        <Boxes className="h-4 w-4" />
+                         {(!collapsed || isMobile) && (
+                           <>
+                             <span className="font-medium">المخزون</span>
+                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                           </>
+                         )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {inventorySubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink to={subItem.href} className={getNavClassName}>
+                                <subItem.icon className="h-4 w-4" />
+                                 {(!collapsed || isMobile) && <span>{subItem.name}</span>}
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+
                 {/* Payments Section */}
                 <AdminOnly hideIfNoAccess>
                   <SidebarMenuItem>

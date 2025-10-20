@@ -1,11 +1,35 @@
 # Welcome to your Lovable project
 
-## 🚀 Performance Optimization - Phase 1 Complete!
+## 🚀 Latest Updates
 
-**NEW:** The Fleetify app has been optimized for significantly better performance!
+### Phase 7B: Module Expansion (NEW!)
+**Fleetify is now a complete ERP solution!**
 
+**Sales & CRM Module:**
+- Lead tracking and qualification
+- Sales pipeline management (Lead → Qualified → Proposal → Won/Lost)
+- Professional quote generation
+- Order fulfillment tracking
+
+**Advanced Inventory Management:**
+- Multi-warehouse stock tracking
+- Real-time inventory movements
+- Stock alerts and reorder points
+- Inventory analytics (valuation, aging, turnover)
+- Automated stock level updates
+
+**Key Features:**
+- 15 new database tables
+- 45+ performance indexes
+- 35+ security policies (RLS)
+- 10 new React Query hooks
+- Advanced analytics views
+
+👉 **See:** [CHANGELOG_FLEETIFY_REVIEW.md](CHANGELOG_FLEETIFY_REVIEW.md) for Phase 7B details
+
+### Performance Optimization - Phase 1 Complete!
 - ⚡ **60% smaller** initial bundle (850KB → 340KB)
-- 🔍 **3-5x faster** search queries  
+- 🔍 **3-5x faster** search queries
 - 📊 **65% reduction** in Finance module size
 - ⏱️ **34% faster** page loads
 

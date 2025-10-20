@@ -93,8 +93,22 @@ const Payroll = lazy(() => import("./pages/hr/Payroll"));
 const HRReports = lazy(() => import("./pages/hr/Reports"));
 const HRSettings = lazy(() => import("./pages/hr/Settings"));
 
-// Inventory Management pages
-const Inventory = lazy(() => import("./pages/inventory/Inventory"));
+// Inventory Management - Main router with lazy loading
+const Inventory = lazyWithRetry(() => import("./pages/Inventory"), "Inventory");
+
+// Integration Dashboard
+const IntegrationDashboard = lazy(() => import("./pages/dashboards/IntegrationDashboard"));
+
+// Finance sub-pages
+const VendorCategories = lazy(() => import("./pages/finance/VendorCategories"));
+
+// Sales/CRM Management pages
+const SalesPipeline = lazyWithRetry(() => import("./pages/sales/SalesPipeline"), "SalesPipeline");
+const SalesLeads = lazyWithRetry(() => import("./pages/sales/SalesLeads"), "SalesLeads");
+const SalesOpportunities = lazyWithRetry(() => import("./pages/sales/SalesOpportunities"), "SalesOpportunities");
+const SalesQuotes = lazyWithRetry(() => import("./pages/sales/SalesQuotes"), "SalesQuotes");
+const SalesOrders = lazyWithRetry(() => import("./pages/sales/SalesOrders"), "SalesOrders");
+const SalesAnalytics = lazyWithRetry(() => import("./pages/sales/SalesAnalytics"), "SalesAnalytics");
 
 // Other pages
 const QuotationApproval = lazy(() => import("./pages/QuotationApproval"));
@@ -261,6 +275,11 @@ const AppRoutes = () => {
         <Route path="dashboard" element={
           <Suspense fallback={<PageSkeletonFallback />}>
             <Dashboard />
+          </Suspense>
+        } />
+        <Route path="dashboards/integration" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <IntegrationDashboard />
           </Suspense>
         } />
         <Route path="subscription" element={
@@ -456,10 +475,58 @@ const AppRoutes = () => {
             </Suspense>
           </LazyLoadErrorBoundary>
         )} />
-        <Route path="inventory" element={
+        <Route path="finance/vendor-categories" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
-              <Inventory />
+              <VendorCategories />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="inventory/*" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <Inventory />
+          </Suspense>
+        } />
+        {/* Sales/CRM Routes */}
+        <Route path="sales/pipeline" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesPipeline />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="sales/leads" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesLeads />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="sales/opportunities" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesOpportunities />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="sales/quotes" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesQuotes />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="sales/orders" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesOrders />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="sales/analytics" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <SalesAnalytics />
             </Suspense>
           </AdminRoute>
         } />
@@ -695,8 +762,15 @@ const AppRoutes = () => {
         <Route path="journal-entries" element={<Navigate to="/browse-company/finance/journal-entries" replace />} />
         <Route path="payments" element={<Navigate to="/browse-company/finance/payments" replace />} />
         <Route path="account-mappings" element={<Navigate to="/browse-company/finance/account-mappings" replace />} />
-        
+
         <Route path="finance/*" element={<Finance />} />
+        <Route path="finance/vendor-categories" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <VendorCategories />
+            </Suspense>
+          </AdminRoute>
+        } />
         <Route path="hr/employees" element={
           <AdminRoute>
             <Employees />

@@ -470,3 +470,5 @@ import { useToast } from '@/hooks/use-toast';
 **تذكر: النظام موحد 100% - لا تكسر هذا التوحيد!**
 
 please note there is a documentation for the system in this path fleetifyapp-3\.qoder\repowiki\en\content
+
+if the task are big allways break them into smaller tasks and devide them into 3 agaentsto work on them on the same time

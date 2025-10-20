@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useVendors, useDeleteVendor, type Vendor } from "@/hooks/useFinance"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useVendors, useDeleteVendor, useVendorCategories, type Vendor } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Building, Plus, Search, Eye, Edit, Trash2, Phone, Mail } from "lucide-react"
+import { Building, Plus, Search, Eye, Edit, Trash2, Phone, Mail, Star, TrendingUp } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { VendorForm } from "@/components/finance/VendorForm"
 import { VendorDetailsDialog } from "@/components/finance/VendorDetailsDialog"
@@ -17,19 +18,32 @@ import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Vendors = () => {
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
 
   const { data: vendors, isLoading, error } = useVendors()
+  const { data: categories } = useVendorCategories()
   const deleteVendor = useDeleteVendor()
 
-  const filteredVendors = vendors?.filter(vendor => 
-    vendor.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  const filteredVendors = vendors?.filter(vendor => {
+    const matchesSearch = vendor.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.email?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesCategory = selectedCategory === "all" || vendor.category_id === selectedCategory
+
+    return matchesSearch && matchesCategory
+  }) || []
+
+  // Calculate stats
+  const activeVendors = vendors?.filter(v => v.is_active).length || 0
+  const vendorsByCategory = selectedCategory === "all"
+    ? vendors?.length || 0
+    : vendors?.filter(v => v.category_id === selectedCategory).length || 0
+  const totalCategories = categories?.length || 0
 
   const handleViewVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor)
@@ -109,60 +123,81 @@ const Vendors = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الموردين</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{vendors?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">مورد نشط</p>
+            <p className="text-xs text-muted-foreground">{activeVendors} مورد نشط</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">التصنيفات</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCategories}</div>
+            <p className="text-xs text-muted-foreground">
+              {vendorsByCategory} مورد في التصنيف الحالي
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">المبالغ المستحقة</CardTitle>
+            <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0.000 د.ك</div>
             <p className="text-xs text-muted-foreground">إجمالي المديونية</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">متوسط أيام الدفع</CardTitle>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">متوسط الأداء</CardTitle>
+            <Star className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">يوم</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المشتريات الشهرية</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0.000 د.ك</div>
-            <p className="text-xs text-muted-foreground">هذا الشهر</p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">غير محسوب بعد</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search & Filter */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">البحث عن الموردين</CardTitle>
+          <CardTitle className="text-lg">البحث والتصفية</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="البحث بالاسم أو جهة الاتصال أو البريد الإلكتروني..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="البحث بالاسم أو جهة الاتصال أو البريد الإلكتروني..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="اختر التصنيف" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع التصنيفات</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.category_name_ar || category.category_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

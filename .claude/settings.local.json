@@ -1,34 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/: any\\[\\] => {/: unknown[] => {/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/const breakdown: any\\[\\] =/const breakdown: unknown[] =/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/async (fixedData: any\\[\\])/async (fixedData: unknown[])/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(csvText: string): any\\[\\]/(csvText: string): unknown[]/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/customerHistory?: any\\[\\];/customerHistory?: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/contractDetails?: any\\[\\];/contractDetails?: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/financialRecords?: any\\[\\];/financialRecords?: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/legalPrecedents?: any\\[\\];/legalPrecedents?: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/error_details: any\\[\\];/error_details: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/errorDetails?: any\\[\\];/errorDetails?: unknown[];/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/sample_data?: any\\[\\]/sample_data?: unknown[]/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(ca: any) =>/(ca: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(contract: any) =>/(contract: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(m: any) =>/(m: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(turn: any) =>/(turn: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(ref: any) =>/(ref: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(d: any) =>/(d: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(err: any) =>/(err: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(dup: any) =>/(dup: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(customer: any) =>/(customer: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(trend: any) =>/(trend: unknown) =>/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(baseData: any = {})/(baseData: Record<string, unknown> = {})/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(newCustomer: any, queryClient: any)/(newCustomer: unknown, queryClient: unknown)/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(updatedCustomer: any, queryClient: any)/(updatedCustomer: unknown, queryClient: unknown)/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(deletedCustomer: any, queryClient: any)/(deletedCustomer: unknown, queryClient: unknown)/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(baseQuery: any)/(baseQuery: unknown)/g' {} +)",
-      "Bash(find . -name \"*.ts\" -type f -exec sed -i 's/(rawData: any\\[\\])/(rawData: unknown[])/g' {} +)",
-      "Bash(xargs sed -i 's/error: any)/error: unknown)/g')"
+      "Bash(find src/components/dashboard/retail -name \"*.tsx\" -exec wc -l {} +)",
+      "Bash(test -f dist/index.html)"
     ],
     "deny": [],
     "ask": []

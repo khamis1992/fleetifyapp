@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useInventoryItems, useDeleteInventoryItem, useLowStockItems, type InventoryItem } from "@/hooks/useInventoryItems";
 import { useInventoryWarehouses } from "@/hooks/useInventoryWarehouses";
 import { useInventoryStockLevels, useItemStockLevels } from "@/hooks/useInventoryStockLevels";
+import { useInventoryCategories } from "@/hooks/useInventoryCategories";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Package, Plus, Search, Eye, Edit, Trash2, AlertTriangle, Warehouse, TrendingDown } from "lucide-react";
+import { Package, Plus, Search, Eye, Edit, Trash2, AlertTriangle, Warehouse, TrendingDown, Settings } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { ItemDetailsDialog } from "@/components/inventory/ItemDetailsDialog";
+import { StockAdjustmentDialog } from "@/components/inventory/StockAdjustmentDialog";
 
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,6 +25,8 @@ const Inventory = () => {
   const [activeTab, setActiveTab] = useState("items");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isAdjustmentDialogOpen, setIsAdjustmentDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   const { data: items, isLoading: itemsLoading } = useInventoryItems({
@@ -29,6 +34,7 @@ const Inventory = () => {
   });
   const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems();
   const { data: warehouses } = useInventoryWarehouses();
+  const { data: categories } = useInventoryCategories({ is_active: true });
   const { data: stockLevels } = useInventoryStockLevels(selectedWarehouse !== "all" ? selectedWarehouse : undefined);
   const deleteItem = useDeleteInventoryItem();
 
@@ -56,10 +62,37 @@ const Inventory = () => {
     setIsEditDialogOpen(true);
   };
 
-  const getStockBadgeVariant = (quantity: number, minLevel: number) => {
+  const handleViewDetails = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleAdjustStock = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsAdjustmentDialogOpen(true);
+  };
+
+  const getStockBadgeVariant = (quantity: number, minLevel: number, reorderPoint?: number) => {
     if (quantity === 0) return "destructive";
-    if (quantity < minLevel) return "warning";
+    if (quantity < minLevel) return "destructive";
+    if (reorderPoint && quantity <= reorderPoint) return "warning";
     return "success";
+  };
+
+  const getStockIndicator = (item: InventoryItem, currentStock?: number) => {
+    const stock = currentStock || 0;
+    const minLevel = item.min_stock_level;
+    const reorderPoint = item.reorder_point || minLevel;
+
+    if (stock === 0) {
+      return { label: "نفذ", color: "bg-red-500", textColor: "text-red-600" };
+    } else if (stock < minLevel) {
+      return { label: "منخفض جداً", color: "bg-red-500", textColor: "text-red-600" };
+    } else if (stock <= reorderPoint) {
+      return { label: "منخفض", color: "bg-orange-500", textColor: "text-orange-600" };
+    } else {
+      return { label: "طبيعي", color: "bg-green-500", textColor: "text-green-600" };
+    }
   };
 
   return (
@@ -188,6 +221,19 @@ const Inventory = () => {
                   />
                 </div>
               </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="التصنيف" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع التصنيفات</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.category_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="اختر المستودع" />
@@ -220,77 +266,107 @@ const Inventory = () => {
                       <TableHead>الصنف</TableHead>
                       <TableHead>الكود</TableHead>
                       <TableHead>SKU</TableHead>
+                      <TableHead>حالة المخزون</TableHead>
                       <TableHead>الوحدة</TableHead>
                       <TableHead>سعر البيع</TableHead>
-                      <TableHead>سعر التكلفة</TableHead>
-                      <TableHead>الحد الأدنى</TableHead>
                       <TableHead>النوع</TableHead>
                       <TableHead>الحالة</TableHead>
                       <TableHead>الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          <div>
-                            <div>{item.item_name}</div>
-                            {item.item_name_ar && (
-                              <div className="text-xs text-muted-foreground">{item.item_name_ar}</div>
+                    {filteredItems.map((item) => {
+                      const stockIndicator = getStockIndicator(item);
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{item.item_name}</div>
+                              {item.item_name_ar && (
+                                <div className="text-xs text-muted-foreground">{item.item_name_ar}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{item.item_code || "-"}</TableCell>
+                          <TableCell>{item.sku || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${stockIndicator.color}`} />
+                              <span className={`text-sm font-medium ${stockIndicator.textColor}`}>
+                                {stockIndicator.label}
+                              </span>
+                            </div>
+                            {item.reorder_point && (
+                              <p className="text-xs text-muted-foreground">
+                                إعادة طلب: {item.reorder_point}
+                              </p>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.item_code || "-"}</TableCell>
-                        <TableCell>{item.sku || "-"}</TableCell>
-                        <TableCell>{item.unit_of_measure}</TableCell>
-                        <TableCell>{item.unit_price.toFixed(2)}</TableCell>
-                        <TableCell>{item.cost_price.toFixed(2)}</TableCell>
-                        <TableCell>{item.min_stock_level}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.item_type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.is_active ? "success" : "secondary"}>
-                            {item.is_active ? "نشط" : "غير نشط"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditItem(item)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    سيتم حذف الصنف "{item.item_name}" من المخزون. هذا الإجراء لا يمكن التراجع عنه.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteItem(item)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    حذف
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>{item.unit_of_measure}</TableCell>
+                          <TableCell>{item.unit_price.toFixed(2)} ريال</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{item.item_type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.is_active ? "success" : "secondary"}>
+                              {item.is_active ? "نشط" : "غير نشط"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(item)}
+                                title="عرض التفاصيل"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleAdjustStock(item)}
+                                title="تسوية المخزون"
+                              >
+                                <Settings className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditItem(item)}
+                                title="تعديل"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" title="حذف">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      سيتم حذف الصنف "{item.item_name}" من المخزون. هذا الإجراء لا يمكن التراجع عنه.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteItem(item)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      حذف
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -388,6 +464,18 @@ const Inventory = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <ItemDetailsDialog
+        item={selectedItem}
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+      />
+      <StockAdjustmentDialog
+        item={selectedItem}
+        open={isAdjustmentDialogOpen}
+        onOpenChange={setIsAdjustmentDialogOpen}
+      />
     </div>
   );
 };

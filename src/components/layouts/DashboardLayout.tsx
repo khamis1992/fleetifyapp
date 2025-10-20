@@ -15,6 +15,7 @@ import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { LazyImage } from '@/components/common/LazyImage';
+import { QuickActionBar } from '@/components/quick-actions/QuickActionBar';
 
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
@@ -116,6 +117,7 @@ export const DashboardLayout: React.FC = () => {
             <Outlet />
           </main>
         </div>
+        <QuickActionBar />
         <KeyboardShortcuts />
         <ForcePasswordChangeDialog />
       </div>

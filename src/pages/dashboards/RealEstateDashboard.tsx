@@ -14,9 +14,22 @@ import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
 import { PropertyContractsCalendar } from '@/components/property/PropertyContractsCalendar';
+import { SalesPipelineWidget } from '@/components/dashboard/SalesPipelineWidget';
+import { InventoryAlertsWidget } from '@/components/dashboard/InventoryAlertsWidget';
+import { VendorPerformanceWidget } from '@/components/dashboard/VendorPerformanceWidget';
+import { QuickStatsRow } from '@/components/dashboard/QuickStatsRow';
 import { DashboardGrid } from '@/components/ui/responsive-grid';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+
+// Real Estate Specific Widgets
+import { OccupancyAnalyticsWidget } from '@/components/dashboard/real-estate/OccupancyAnalyticsWidget';
+import { RentCollectionWidget } from '@/components/dashboard/real-estate/RentCollectionWidget';
+import { MaintenanceRequestsWidget } from '@/components/dashboard/real-estate/MaintenanceRequestsWidget';
+import { PropertyPerformanceWidget } from '@/components/dashboard/real-estate/PropertyPerformanceWidget';
+import { LeaseExpiryWidget } from '@/components/dashboard/real-estate/LeaseExpiryWidget';
+import { TenantSatisfactionWidget } from '@/components/dashboard/real-estate/TenantSatisfactionWidget';
+import { VacancyAnalysisWidget } from '@/components/dashboard/real-estate/VacancyAnalysisWidget';
 
 const RealEstateDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -89,6 +102,9 @@ const RealEstateDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
+        {/* Phase 7B Quick Stats Row */}
+        <QuickStatsRow />
+
         {/* Real Estate Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -124,15 +140,49 @@ const RealEstateDashboard: React.FC = () => {
           />
         </motion.div>
 
-        {/* Real Estate Quick Actions */}
+        {/* Phase 7C.2: Real Estate Analytics Widgets */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <OccupancyAnalyticsWidget />
+            <RentCollectionWidget />
+            <MaintenanceRequestsWidget />
+          </div>
+        </motion.div>
+
+        {/* Property Performance - Full Width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <RealEstateQuickActions />
+          <PropertyPerformanceWidget />
         </motion.div>
 
+        {/* Lease & Satisfaction Widgets */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <LeaseExpiryWidget />
+            <TenantSatisfactionWidget />
+            <VacancyAnalysisWidget />
+          </div>
+        </motion.div>
+
+        {/* Real Estate Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <RealEstateQuickActions />
+        </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -151,14 +201,13 @@ const RealEstateDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
             className="space-y-6"
           >
-            <SmartMetricsPanel 
-              financialData={smartMetricsData} 
-              loading={financialLoading} 
+            <SmartMetricsPanel
+              financialData={smartMetricsData}
+              loading={financialLoading}
             />
-            
           </motion.div>
         </div>
 
