@@ -272,9 +272,19 @@ const salesSubItems = [
     icon: UserPlus
   },
   {
+    name: 'عروض الأسعار',
+    href: '/sales/quotes',
+    icon: FileText
+  },
+  {
     name: 'الطلبات',
     href: '/sales/orders',
     icon: ShoppingCart
+  },
+  {
+    name: 'تحليلات المبيعات',
+    href: '/sales/analytics',
+    icon: BarChart3
   }
 ];
 
@@ -289,6 +299,11 @@ const inventorySubItems = [
     name: 'التصنيفات',
     href: '/inventory/categories',
     icon: Tags
+  },
+  {
+    name: 'المستودعات',
+    href: '/inventory/warehouses',
+    icon: Boxes
   },
   {
     name: 'حركات المخزون',

@@ -13,13 +13,6 @@ import RealEstateQuickActions from '@/components/dashboard/RealEstateQuickAction
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
-import { PropertyContractsCalendar } from '@/components/property/PropertyContractsCalendar';
-import { SalesPipelineWidget } from '@/components/dashboard/SalesPipelineWidget';
-import { InventoryAlertsWidget } from '@/components/dashboard/InventoryAlertsWidget';
-import { VendorPerformanceWidget } from '@/components/dashboard/VendorPerformanceWidget';
-import { QuickStatsRow } from '@/components/dashboard/QuickStatsRow';
-import { DashboardGrid } from '@/components/ui/responsive-grid';
-import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 // Real Estate Specific Widgets
@@ -39,7 +32,6 @@ const RealEstateDashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
   const { formatCurrency } = useCurrencyFormatter();
-  const navigate = useNavigate();
 
   // Check if we have no data (empty state)
   const hasNoData = realEstateStats && realEstateStats.total_properties === 0 && !statsLoading;
@@ -101,9 +93,6 @@ const RealEstateDashboard: React.FC = () => {
           browsedCompany={browsedCompany}
           onExitBrowseMode={exitBrowseMode}
         />
-
-        {/* Phase 7B Quick Stats Row */}
-        <QuickStatsRow />
 
         {/* Real Estate Stats Cards */}
         <motion.div

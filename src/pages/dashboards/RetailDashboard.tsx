@@ -8,18 +8,10 @@ import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActiviti
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
-import EnhancedStatsCard from '@/components/dashboard/EnhancedStatsCard';
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
-import { SalesPipelineWidget } from '@/components/dashboard/SalesPipelineWidget';
-import { InventoryAlertsWidget } from '@/components/dashboard/InventoryAlertsWidget';
-import { VendorPerformanceWidget } from '@/components/dashboard/VendorPerformanceWidget';
-import { QuickStatsRow } from '@/components/dashboard/QuickStatsRow';
-import { DashboardGrid } from '@/components/ui/responsive-grid';
-import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Warehouse } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 // Import Retail-specific widgets
@@ -35,11 +27,9 @@ const RetailDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
-  const { data: enhancedStats, isLoading: statsLoading } = useOptimizedDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
-  const navigate = useNavigate();
 
   // Convert financial overview data
   const smartMetricsData = financialOverview ? {
@@ -82,10 +72,7 @@ const RetailDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
-        {/* Phase 7B Quick Stats Row */}
-        <QuickStatsRow />
-
-        {/* Row 2: Sales Analytics, Inventory Levels, Customer Insights */}
+        {/* Row 1: Sales Analytics, Inventory Levels, Customer Insights */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -119,19 +106,6 @@ const RetailDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SalesForecastWidget />
             <CategoryPerformanceWidget />
-          </div>
-        </motion.div>
-
-        {/* Phase 7B Original Widgets (kept for compatibility) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <SalesPipelineWidget />
-            <InventoryAlertsWidget />
-            <VendorPerformanceWidget />
           </div>
         </motion.div>
 
