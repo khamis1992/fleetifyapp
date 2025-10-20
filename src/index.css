@@ -618,9 +618,6 @@ All colors MUST be HSL.
     -moz-hyphens: none;
 }
 
-/* Import accessibility styles */
-@import './styles/accessibility.css';
-
   /* RTL Support for Vehicle Form */
   [dir="rtl"] .vehicle-form-content * {
     text-align: right;
