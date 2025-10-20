@@ -99,7 +99,7 @@ async function fetchPropertyAlerts(
       
       // Document expiry alerts (from existing system)
       buildQuery(supabase.from('document_expiry_alerts').select('*'))
-        .eq('acknowledged', false)
+        .eq('is_acknowledged', false)
         .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } }))
     ]);
 

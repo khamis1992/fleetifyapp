@@ -37,6 +37,7 @@ export const useDocumentExpiryAlerts = () => {
         .order('expiry_date', { ascending: true });
 
       if (error) {
+        // Handle table not existing (for car rental businesses without this table)
         if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
           console.log('[useDocumentExpiryAlerts] Table not available for this business type');
           return [];
@@ -46,7 +47,8 @@ export const useDocumentExpiryAlerts = () => {
       return data as DocumentExpiryAlert[];
     },
     enabled: !!user,
-    retry: (failureCount, error: unknown) => {
+    retry: (failureCount, error: any) => {
+      // Don't retry if table doesn't exist
       if (error?.code === 'PGRST116' || error?.message?.includes('does not exist')) {
         return false;
       }
