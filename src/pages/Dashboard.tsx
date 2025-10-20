@@ -17,6 +17,13 @@ const Dashboard: React.FC = () => {
   const companyId = currentCompanyId || company?.id;
   const browsedCompany = company;
 
+  // Add error logging
+  useEffect(() => {
+    if (!moduleLoading && !company?.business_type) {
+      console.error('🚨 [DASHBOARD] No business type found:', { company, moduleContext });
+    }
+  }, [moduleLoading, company, moduleContext]);
+
   // Watchdog timer to prevent infinite loading
   useEffect(() => {
     if (moduleLoading) {

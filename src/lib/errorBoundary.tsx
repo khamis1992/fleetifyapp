@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from './logger';
 
 interface Props {
@@ -34,6 +34,14 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     
+    // Enhanced error logging with full details
+    console.group('🔴 ERROR BOUNDARY CAUGHT ERROR');
+    console.error('Error:', error);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    console.error('Component Stack:', errorInfo.componentStack);
+    console.groupEnd();
+    
     // Log compatibility issues
     if (error.message.includes('forwardRef')) {
       this.compatibilityLogger.logLibraryConflict('Radix UI forwardRef', error);
@@ -45,6 +53,15 @@ export class ErrorBoundary extends Component<Props, State> {
     
     if (error.message.includes('framer-motion') || error.message.includes('motion')) {
       this.compatibilityLogger.logLibraryConflict('Framer Motion', error);
+    }
+    
+    // Check for query/hook related errors
+    if (error.message.includes('property_contracts') || error.message.includes('useProperty')) {
+      console.error('🚨 Property-related hook error detected - likely table not found for car rental business');
+    }
+    
+    if (error.message.includes('PGRST') || error.message.includes('does not exist')) {
+      console.error('🚨 Database table error - table may not exist for this business type');
     }
     
     logger.error('ErrorBoundary caught an error:', error, errorInfo);
@@ -66,9 +83,30 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary className="cursor-pointer text-sm text-muted-foreground">
                   تفاصيل الخطأ (للمطورين)
                 </summary>
-                <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto">
-                  {this.state.error.toString()}
-                </pre>
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <div className="text-xs font-semibold text-destructive mb-1">Error Message:</div>
+                    <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                      {this.state.error.toString()}
+                    </pre>
+                  </div>
+                  {this.state.error.stack && (
+                    <div>
+                      <div className="text-xs font-semibold text-destructive mb-1">Stack Trace:</div>
+                      <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
+                        {this.state.error.stack}
+                      </pre>
+                    </div>
+                  )}
+                  {this.state.errorInfo?.componentStack && (
+                    <div>
+                      <div className="text-xs font-semibold text-destructive mb-1">Component Stack:</div>
+                      <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    </div>
+                  )}
+                </div>
               </details>
             )}
             <button

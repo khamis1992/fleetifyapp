@@ -31,7 +31,7 @@ export const usePropertyAlerts = () => {
         return [];
       }
 
-      const targetCompanyId = filter.company_id || companyId;
+      const targetCompanyId = filter.company_id ?? companyId ?? undefined;
       if (!targetCompanyId && !hasGlobalAccess) {
         return [];
       }
@@ -80,7 +80,7 @@ async function fetchPropertyAlerts(
       `))
         .eq('is_active', true)
         .lte('end_date', next90Days.toISOString())
-        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Overdue payments
       buildQuery(supabase.from('payments').select(`
@@ -90,22 +90,22 @@ async function fetchPropertyAlerts(
       `))
         .in('status', ['pending', 'overdue'])
         .lte('due_date', currentDate.toISOString())
-        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Properties
       buildQuery(supabase.from('properties').select('*'))
         .eq('is_active', true)
-        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Document expiry alerts (from existing system)
       buildQuery(supabase.from('document_expiry_alerts').select('*'))
         .eq('is_acknowledged', false)
-        .then(res => res).catch(() => ({ data: null, error: { message: 'Table not found' } }))
+        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } }))
     ]);
 
     // Contract Expiry Alerts
     if (contractsResult.data) {
-      contractsResult.data.forEach(contract => {
+      contractsResult.data.forEach((contract: any) => {
         if (contract.end_date) {
           const endDate = new Date(contract.end_date);
           const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -137,7 +137,7 @@ async function fetchPropertyAlerts(
 
     // Payment Overdue Alerts
     if (paymentsResult.data) {
-      paymentsResult.data.forEach(payment => {
+      paymentsResult.data.forEach((payment: any) => {
         if (payment.due_date) {
           const dueDate = new Date(payment.due_date);
           const daysOverdue = Math.ceil((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -198,7 +198,7 @@ async function fetchPropertyAlerts(
 
     // Contract Renewal Opportunities
     if (contractsResult.data) {
-      contractsResult.data.forEach(contract => {
+      contractsResult.data.forEach((contract: any) => {
         if (contract.end_date && contract.status === 'active') {
           const endDate = new Date(contract.end_date);
           const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -232,7 +232,7 @@ async function fetchPropertyAlerts(
 
     // Maintenance Due Alerts (mock - in real system, have maintenance schedules)
     if (propertiesResult.data) {
-      propertiesResult.data.forEach(property => {
+      propertiesResult.data.forEach((property: any) => {
         // Mock quarterly maintenance check
         const lastMaintenanceDate = addDays(currentDate, -90); // Mock last maintenance
         const nextMaintenanceDate = addDays(lastMaintenanceDate, 90);
@@ -260,7 +260,7 @@ async function fetchPropertyAlerts(
 
     // Document Expiry Alerts (integrate with existing system)
     if (documentsResult.data) {
-      documentsResult.data.forEach(docAlert => {
+      documentsResult.data.forEach((docAlert: any) => {
         alerts.push({
           id: `document_expiry_${docAlert.id}`,
           type: 'document_expiry',
