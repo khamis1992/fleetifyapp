@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Plus, TrendingUp, DollarSign, Target, Award } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
+import { AddOpportunityForm } from "@/components/sales/AddOpportunityForm";
 
 const STAGES = [
   { id: 'lead', name: 'عميل محتمل', color: 'bg-gray-100 border-gray-300' },
@@ -48,9 +49,9 @@ const SalesPipeline = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('ar-QA', {
       style: 'currency',
-      currency: 'SAR',
+      currency: 'QAR',
     }).format(amount);
   };
 
@@ -91,16 +92,14 @@ const SalesPipeline = () => {
               فرصة جديدة
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إضافة فرصة بيعية جديدة</DialogTitle>
               <DialogDescription>
                 أدخل بيانات الفرصة البيعية الجديدة
               </DialogDescription>
             </DialogHeader>
-            <div className="p-4 text-center text-muted-foreground">
-              نموذج إضافة الفرصة سيتم إضافته قريباً
-            </div>
+            <AddOpportunityForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -227,7 +226,7 @@ const SalesPipeline = () => {
                         </div>
                         {opportunity.expected_close_date && (
                           <div className="text-xs text-muted-foreground">
-                            الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('ar-SA')}
+                            الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('ar-QA')}
                           </div>
                         )}
                       </CardContent>

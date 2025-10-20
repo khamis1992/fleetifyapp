@@ -5,7 +5,9 @@
       "Bash(test -f dist/index.html)",
       "Bash(npm install jspdf jspdf-autotable html2canvas xlsx react-datepicker cmdk @types/react-datepicker)",
       "Bash(npm run build:dev)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(find src/pages/sales -name \"*.tsx\" -type f -exec sed -i \"s/currency: ''SAR''/currency: ''QAR''/g\" {} +)",
+      "Bash(find src/pages/sales -name \"*.tsx\" -type f -exec sed -i \"s/''ar-SA''/''ar-QA''/g\" {} +)"
     ],
     "deny": [],
     "ask": []

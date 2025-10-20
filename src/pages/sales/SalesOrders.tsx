@@ -78,9 +78,9 @@ const SalesOrders = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('ar-QA', {
       style: 'currency',
-      currency: 'SAR',
+      currency: 'QAR',
     }).format(amount);
   };
 
@@ -276,11 +276,11 @@ const SalesOrders = () => {
                           {order.order_number}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(order.order_date).toLocaleDateString('ar-SA')}
+                          {new Date(order.order_date).toLocaleDateString('ar-QA')}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {order.delivery_date
-                            ? new Date(order.delivery_date).toLocaleDateString('ar-SA')
+                            ? new Date(order.delivery_date).toLocaleDateString('ar-QA')
                             : '-'
                           }
                         </TableCell>

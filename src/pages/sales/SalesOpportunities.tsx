@@ -149,9 +149,9 @@ const SalesOpportunities = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('ar-QA', {
       style: 'currency',
-      currency: 'SAR',
+      currency: 'QAR',
     }).format(amount);
   };
 
@@ -449,7 +449,7 @@ const SalesOpportunities = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {opportunity.expected_close_date
-                            ? new Date(opportunity.expected_close_date).toLocaleDateString('ar-SA')
+                            ? new Date(opportunity.expected_close_date).toLocaleDateString('ar-QA')
                             : '-'
                           }
                         </TableCell>
@@ -645,7 +645,7 @@ const SalesOpportunities = () => {
                     <Label className="text-muted-foreground">تاريخ الإغلاق المتوقع</Label>
                     <p className="font-medium">
                       {selectedOpportunity.expected_close_date
-                        ? new Date(selectedOpportunity.expected_close_date).toLocaleDateString('ar-SA')
+                        ? new Date(selectedOpportunity.expected_close_date).toLocaleDateString('ar-QA')
                         : '-'
                       }
                     </p>

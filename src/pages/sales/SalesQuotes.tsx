@@ -174,9 +174,9 @@ const SalesQuotes = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('ar-QA', {
       style: 'currency',
-      currency: 'SAR',
+      currency: 'QAR',
     }).format(amount);
   };
 
@@ -469,12 +469,12 @@ const SalesQuotes = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {quote.valid_until
-                            ? new Date(quote.valid_until).toLocaleDateString('ar-SA')
+                            ? new Date(quote.valid_until).toLocaleDateString('ar-QA')
                             : '-'
                           }
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(quote.created_at).toLocaleDateString('ar-SA')}
+                          {new Date(quote.created_at).toLocaleDateString('ar-QA')}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -648,7 +648,7 @@ const SalesQuotes = () => {
                   <Label className="text-muted-foreground">صالح حتى</Label>
                   <p className="font-medium">
                     {selectedQuote.valid_until
-                      ? new Date(selectedQuote.valid_until).toLocaleDateString('ar-SA')
+                      ? new Date(selectedQuote.valid_until).toLocaleDateString('ar-QA')
                       : '-'
                     }
                   </p>
@@ -656,7 +656,7 @@ const SalesQuotes = () => {
                 <div>
                   <Label className="text-muted-foreground">تاريخ الإنشاء</Label>
                   <p className="font-medium">
-                    {new Date(selectedQuote.created_at).toLocaleDateString('ar-SA')}
+                    {new Date(selectedQuote.created_at).toLocaleDateString('ar-QA')}
                   </p>
                 </div>
               </div>

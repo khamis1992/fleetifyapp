@@ -12,6 +12,8 @@ import { useSalesLeads, useDeleteSalesLead, type SalesLead } from "@/hooks/useSa
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Users, Plus, Search, Edit, Trash2, Phone, Mail, TrendingUp } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { AddLeadForm } from "@/components/sales/AddLeadForm";
+import { useToast } from "@/hooks/use-toast";
 
 const SalesLeads = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +23,7 @@ const SalesLeads = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
+  const { toast } = useToast();
 
   const { data: leads, isLoading } = useSalesLeads({
     search: searchTerm,
@@ -137,16 +140,23 @@ const SalesLeads = () => {
               عميل محتمل جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إضافة عميل محتمل جديد</DialogTitle>
               <DialogDescription>
-                أدخل بيانات العميل المحتمل الجديد
+                أدخل بيانات العميل المحتمل الجديد. يمكنك تحويله إلى عميل مباشرة باستخدام زر "تحويل إلى عميل"
               </DialogDescription>
             </DialogHeader>
-            <div className="p-4 text-center text-muted-foreground">
-              نموذج إضافة العميل المحتمل سيتم إضافته قريباً
-            </div>
+            <AddLeadForm
+              onSuccess={() => setIsCreateDialogOpen(false)}
+              onConvertToCustomer={() => {
+                setIsCreateDialogOpen(false);
+                toast({
+                  title: "تم التحويل بنجاح",
+                  description: "تم تحويل العميل المحتمل إلى عميل وإضافته إلى قائمة العملاء",
+                });
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -323,7 +333,7 @@ const SalesLeads = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(lead.created_at).toLocaleDateString('ar-SA')}
+                          {new Date(lead.created_at).toLocaleDateString('ar-QA')}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

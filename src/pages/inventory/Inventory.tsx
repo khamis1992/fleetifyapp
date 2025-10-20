@@ -17,6 +17,7 @@ import { Package, Plus, Search, Eye, Edit, Trash2, AlertTriangle, Warehouse, Tre
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ItemDetailsDialog } from "@/components/inventory/ItemDetailsDialog";
 import { StockAdjustmentDialog } from "@/components/inventory/StockAdjustmentDialog";
+import { AddInventoryItemForm } from "@/components/inventory/AddInventoryItemForm";
 
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -132,13 +133,10 @@ const Inventory = () => {
             <DialogHeader>
               <DialogTitle>إضافة صنف جديد</DialogTitle>
               <DialogDescription>
-                أدخل بيانات الصنف الجديد لإضافته إلى المخزون
+                أدخل بيانات الصنف الجديد لإضافته إلى المخزون. جميع الأسعار بالريال القطري (QAR)
               </DialogDescription>
             </DialogHeader>
-            {/* Form will be added here */}
-            <div className="p-4 text-center text-muted-foreground">
-              نموذج إضافة الصنف سيتم إضافته قريباً
-            </div>
+            <AddInventoryItemForm onSuccess={() => setIsCreateDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
