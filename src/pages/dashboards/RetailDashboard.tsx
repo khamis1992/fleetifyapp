@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -15,6 +15,10 @@ import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlert
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { useExport } from '@/hooks/useExport';
+import { toast } from 'sonner';
 
 // Import Retail-specific widgets
 import { SalesAnalyticsWidget } from '@/components/dashboard/retail/SalesAnalyticsWidget';
@@ -30,13 +34,34 @@ const RetailDashboard: React.FC = () => {
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-
-  useKeyboardShortcuts({
-    onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
-  });
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
+  const { exportDashboardPDF, state: exportState } = useExport();
+
+  // Widget refs for export
+  const widgetRefs = {
+    salesAnalytics: useRef<HTMLDivElement>(null),
+    inventoryLevels: useRef<HTMLDivElement>(null),
+    customerInsights: useRef<HTMLDivElement>(null),
+    topProducts: useRef<HTMLDivElement>(null),
+    reorderRecommendations: useRef<HTMLDivElement>(null),
+    salesForecast: useRef<HTMLDivElement>(null),
+    categoryPerformance: useRef<HTMLDivElement>(null),
+  };
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
+    onOpenSearch: () => {
+      const searchInput = document.querySelector<HTMLInputElement>('input[type="search"]');
+      searchInput?.focus();
+    },
+    onExport: () => {
+      const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export"]');
+      exportButton?.click();
+    },
+  });
 
   // Convert financial overview data
   const smartMetricsData = financialOverview ? {
@@ -65,8 +90,29 @@ const RetailDashboard: React.FC = () => {
     }
   })) || [];
 
-  // Remove mock data - use real data from hooks in widgets
+  // Handle Export All
+  const handleExportAll = async () => {
+    try {
+      const charts = [
+        { element: widgetRefs.salesAnalytics.current!, title: 'تحليلات المبيعات' },
+        { element: widgetRefs.inventoryLevels.current!, title: 'مستويات المخزون' },
+        { element: widgetRefs.customerInsights.current!, title: 'رؤى العملاء' },
+        { element: widgetRefs.topProducts.current!, title: 'أفضل المنتجات' },
+        { element: widgetRefs.reorderRecommendations.current!, title: 'توصيات إعادة الطلب' },
+        { element: widgetRefs.salesForecast.current!, title: 'توقعات المبيعات' },
+        { element: widgetRefs.categoryPerformance.current!, title: 'أداء الفئات' },
+      ].filter(chart => chart.element !== null);
 
+      if (charts.length === 0) {
+        toast.error('لا توجد بيانات للتصدير');
+        return;
+      }
+
+      await exportDashboardPDF(charts, 'retail_dashboard.pdf', 'لوحة معلومات التجزئة');
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  };
 
   return (
     <>
@@ -74,11 +120,24 @@ const RetailDashboard: React.FC = () => {
       <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
-        <EnhancedDashboardHeader
-          isBrowsingMode={isBrowsingMode}
-          browsedCompany={browsedCompany}
-          onExitBrowseMode={exitBrowseMode}
-        />
+        <div className="flex items-center justify-between mb-6">
+          <EnhancedDashboardHeader
+            isBrowsingMode={isBrowsingMode}
+            browsedCompany={browsedCompany}
+            onExitBrowseMode={exitBrowseMode}
+          />
+          <Button
+            onClick={handleExportAll}
+            disabled={exportState.isExporting}
+            variant="outline"
+            size="default"
+            className="gap-2"
+            data-action="export"
+          >
+            <Download className="h-4 w-4" />
+            {exportState.isExporting ? 'جاري التصدير...' : 'تصدير لوحة المعلومات'}
+          </Button>
+        </div>
 
         {/* Row 1: Sales Analytics, Inventory Levels, Customer Insights */}
         <motion.div
@@ -87,9 +146,15 @@ const RetailDashboard: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <SalesAnalyticsWidget className="lg:col-span-1" />
-            <InventoryLevelsWidget className="lg:col-span-1" />
-            <CustomerInsightsWidget className="lg:col-span-1" />
+            <div ref={widgetRefs.salesAnalytics}>
+              <SalesAnalyticsWidget className="lg:col-span-1" />
+            </div>
+            <div ref={widgetRefs.inventoryLevels}>
+              <InventoryLevelsWidget className="lg:col-span-1" />
+            </div>
+            <div ref={widgetRefs.customerInsights}>
+              <CustomerInsightsWidget className="lg:col-span-1" />
+            </div>
           </div>
         </motion.div>
 
@@ -100,8 +165,12 @@ const RetailDashboard: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TopProductsWidget />
-            <ReorderRecommendationsWidget />
+            <div ref={widgetRefs.topProducts}>
+              <TopProductsWidget />
+            </div>
+            <div ref={widgetRefs.reorderRecommendations}>
+              <ReorderRecommendationsWidget />
+            </div>
           </div>
         </motion.div>
 
@@ -112,8 +181,12 @@ const RetailDashboard: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SalesForecastWidget />
-            <CategoryPerformanceWidget />
+            <div ref={widgetRefs.salesForecast}>
+              <SalesForecastWidget />
+            </div>
+            <div ref={widgetRefs.categoryPerformance}>
+              <CategoryPerformanceWidget />
+            </div>
           </div>
         </motion.div>
 

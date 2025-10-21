@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -19,7 +19,10 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
+  Download,
 } from 'lucide-react';
+import { useExport } from '@/hooks/useExport';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   useItemsWithPendingPOs,
@@ -46,9 +49,22 @@ const IntegrationDashboard: React.FC = () => {
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const { exportDashboardPDF, state: exportState } = useExport();
 
+  // Refs for export
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  // Setup keyboard shortcuts
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
+    onOpenSearch: () => {
+      const searchInput = document.querySelector<HTMLInputElement>('input[type="search"]');
+      searchInput?.focus();
+    },
+    onExport: () => {
+      const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export"]');
+      exportButton?.click();
+    },
   });
 
   // Integration data hooks
@@ -81,10 +97,28 @@ const IntegrationDashboard: React.FC = () => {
   const healthColor = healthScore >= 80 ? 'text-green-600' : healthScore >= 60 ? 'text-blue-600' : healthScore >= 40 ? 'text-yellow-600' : 'text-red-600';
   const healthBgColor = healthScore >= 80 ? 'bg-green-100' : healthScore >= 60 ? 'bg-blue-100' : healthScore >= 40 ? 'bg-yellow-100' : 'bg-red-100';
 
+  // Handle Export All
+  const handleExportAll = async () => {
+    try {
+      if (!dashboardRef.current) {
+        toast.error('لا توجد بيانات للتصدير');
+        return;
+      }
+
+      const charts = [
+        { element: dashboardRef.current, title: 'لوحة التكامل' },
+      ];
+
+      await exportDashboardPDF(charts, 'integration_dashboard.pdf', 'لوحة التكامل بين الوحدات');
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  };
+
   return (
     <>
       <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
-      <div className="container mx-auto p-6 space-y-6" dir="rtl">
+      <div className="container mx-auto p-6 space-y-6" dir="rtl" ref={dashboardRef}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -96,13 +130,28 @@ const IntegrationDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Browse Mode Badge */}
-        {isBrowsingMode && browsedCompany && (
-          <Badge variant="outline" className="text-lg py-2 px-4">
-            <Network className="h-4 w-4 mr-2" />
-            تصفح: {browsedCompany.name}
-          </Badge>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Browse Mode Badge */}
+          {isBrowsingMode && browsedCompany && (
+            <Badge variant="outline" className="text-lg py-2 px-4">
+              <Network className="h-4 w-4 mr-2" />
+              تصفح: {browsedCompany.name}
+            </Badge>
+          )}
+
+          {/* Export Button */}
+          <Button
+            onClick={handleExportAll}
+            disabled={exportState.isExporting}
+            variant="outline"
+            size="default"
+            className="gap-2"
+            data-action="export"
+          >
+            <Download className="h-4 w-4" />
+            {exportState.isExporting ? 'جاري التصدير...' : 'تصدير لوحة المعلومات'}
+          </Button>
+        </div>
       </div>
 
       {/* Integration Health Score */}
