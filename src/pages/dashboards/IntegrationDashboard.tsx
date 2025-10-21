@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { CommandPalette } from '@/components/command-palette';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +45,11 @@ const IntegrationDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
+  });
 
   // Integration data hooks
   const { data: itemsWithPendingPOs, isLoading: pendingPOsLoading } = useItemsWithPendingPOs();
@@ -75,7 +82,9 @@ const IntegrationDashboard: React.FC = () => {
   const healthBgColor = healthScore >= 80 ? 'bg-green-100' : healthScore >= 60 ? 'bg-blue-100' : healthScore >= 40 ? 'bg-yellow-100' : 'bg-red-100';
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+    <>
+      <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
+      <div className="container mx-auto p-6 space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -546,6 +555,7 @@ const IntegrationDashboard: React.FC = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -13,6 +13,8 @@ import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { CommandPalette } from '@/components/command-palette';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Import Retail-specific widgets
 import { SalesAnalyticsWidget } from '@/components/dashboard/retail/SalesAnalyticsWidget';
@@ -27,6 +29,11 @@ const RetailDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
+  });
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview();
   const { formatCurrency } = useCurrencyFormatter();
@@ -64,6 +71,7 @@ const RetailDashboard: React.FC = () => {
   return (
     <>
       <ProfessionalBackground />
+      <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
         <EnhancedDashboardHeader

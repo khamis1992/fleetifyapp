@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -14,6 +14,8 @@ import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { CommandPalette } from '@/components/command-palette';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Real Estate Specific Widgets
 import { OccupancyAnalyticsWidget } from '@/components/dashboard/real-estate/OccupancyAnalyticsWidget';
@@ -28,6 +30,11 @@ const RealEstateDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
+  });
   const { data: realEstateStats, isLoading: statsLoading, error: statsError } = useRealEstateDashboardStats();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
@@ -86,6 +93,7 @@ const RealEstateDashboard: React.FC = () => {
   return (
     <>
       <ProfessionalBackground />
+      <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
         <EnhancedDashboardHeader

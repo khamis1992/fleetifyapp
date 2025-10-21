@@ -7,7 +7,16 @@
       "Bash(npm run build:dev)",
       "Bash(npm run build)",
       "Bash(find src/pages/sales -name \"*.tsx\" -type f -exec sed -i \"s/currency: ''SAR''/currency: ''QAR''/g\" {} +)",
-      "Bash(find src/pages/sales -name \"*.tsx\" -type f -exec sed -i \"s/''ar-SA''/''ar-QA''/g\" {} +)"
+      "Bash(find src/pages/sales -name \"*.tsx\" -type f -exec sed -i \"s/''ar-SA''/''ar-QA''/g\" {} +)",
+      "Bash(mkdir -p src/components/loaders src/components/empty-states src/components/tooltips src/components/command-palette)",
+      "Bash(mkdir -p srcutilsexports)",
+      "Bash(mkdir -p srccomponentsexports)",
+      "Bash(mkdir -p srchooks)",
+      "Bash(test -f src/utils/exports/pdfExport.ts)",
+      "Bash(test -f src/hooks/useExport.ts)",
+      "Bash(find src/components/dashboard -name \"*Widget.tsx\" -type f ! -exec grep -q \"ExportButton\" {} ; -print)",
+      "Bash(find src/utils/exports -name \"*.ts\" -exec wc -l {} +)",
+      "Bash(find src/components/exports -name \"*.tsx\" -exec wc -l {} +)"
     ],
     "deny": [],
     "ask": []

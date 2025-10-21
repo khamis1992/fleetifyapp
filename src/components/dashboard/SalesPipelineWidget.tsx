@@ -12,6 +12,7 @@ import { WidgetSkeleton } from '@/components/ui/skeletons';
 import { EmptyStateCompact } from '@/components/ui/EmptyState';
 import { DrillDownModal, DrillDownLevel } from '@/components/drilldown';
 import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
+import { ExportButton } from '@/components/exports';
 
 export const SalesPipelineWidget: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export const SalesPipelineWidget: React.FC = () => {
   const { data: opportunities, isLoading: opportunitiesLoading } = useSalesOpportunities({ is_active: true });
   const [drillDownOpen, setDrillDownOpen] = React.useState(false);
   const [drillDownLevel, setDrillDownLevel] = React.useState(0);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const isLoading = metricsLoading || opportunitiesLoading;
 
@@ -77,6 +79,15 @@ export const SalesPipelineWidget: React.FC = () => {
     setDrillDownLevel(0);
   };
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    return chartData.map(item => ({
+      'المرحلة': item.stage,
+      'عدد الفرص': item.count,
+      'القيمة الإجمالية': formatCurrency(item.value),
+    }));
+  }, [chartData, formatCurrency]);
+
   return (
     <>
       <DrillDownModal
@@ -103,14 +114,24 @@ export const SalesPipelineWidget: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-foreground">مسار المبيعات</h3>
             </div>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              نشط
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                نشط
+              </Badge>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="sales_pipeline"
+                title="مسار المبيعات"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4" ref={chartRef}>
           {/* Stats Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">

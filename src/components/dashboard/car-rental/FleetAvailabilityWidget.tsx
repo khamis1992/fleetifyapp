@@ -180,13 +180,18 @@ export const FleetAvailabilityWidget: React.FC = () => {
             </div>
           </div>
 
-          {/* Status Counts */}
+          {/* Status Counts with Drill-Down */}
           <div className="grid grid-cols-2 gap-3">
             {statusCounts.map((status) => (
               <motion.div
                 key={status.status}
                 whileHover={{ scale: 1.02 }}
-                className={`p-3 rounded-lg border ${status.bgColor} transition-all duration-200`}
+                onClick={() => {
+                  // Drill-down: Navigate to fleet page filtered by this status
+                  navigate(`/fleet?status=${status.status}`);
+                }}
+                className={`p-3 rounded-lg border ${status.bgColor} transition-all duration-200 cursor-pointer hover:shadow-md`}
+                title={`انقر لعرض المركبات ${status.label}`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <status.icon className={`h-4 w-4 ${status.color}`} />
@@ -197,17 +202,28 @@ export const FleetAvailabilityWidget: React.FC = () => {
                 <div className={`text-2xl font-bold ${status.color}`}>
                   {status.count}
                 </div>
+                <div className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  انقر للتفاصيل →
+                </div>
               </motion.div>
             ))}
           </div>
 
-          {/* Vehicle Type Breakdown */}
+          {/* Vehicle Type Breakdown with Drill-Down */}
           {typeBreakdown.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-muted-foreground">توزيع حسب النوع</h4>
               <div className="space-y-1">
                 {typeBreakdown.map((type) => (
-                  <div key={type.type} className="flex items-center justify-between text-sm">
+                  <div
+                    key={type.type}
+                    onClick={() => {
+                      // Drill-down: Navigate to fleet page filtered by vehicle type
+                      navigate(`/fleet?vehicle_type=${encodeURIComponent(type.type)}`);
+                    }}
+                    className="flex items-center justify-between text-sm p-2 rounded hover:bg-white/60 cursor-pointer transition-colors"
+                    title={`انقر لعرض مركبات ${type.type}`}
+                  >
                     <span className="text-muted-foreground">{type.type}</span>
                     <Badge variant="secondary" className="font-semibold">
                       {type.count}

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ExportButton } from '@/components/exports';
 
 interface VendorPerformance {
   vendor_id: string;
@@ -21,6 +22,7 @@ interface VendorPerformance {
 export const VendorPerformanceWidget: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: vendorPerformance, isLoading } = useQuery({
     queryKey: ['vendor-performance-top', user?.profile?.company_id],
@@ -70,6 +72,16 @@ export const VendorPerformanceWidget: React.FC = () => {
     return stars;
   };
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    return vendorPerformance?.map(vendor => ({
+      'المورد': vendor.vendor_name_ar || vendor.vendor_name,
+      'التقييم': vendor.average_rating.toFixed(1),
+      'معدل التسليم بالوقت': `${vendor.on_time_delivery_rate}%`,
+      'إجمالي الطلبات': vendor.total_orders,
+    })) || [];
+  }, [vendorPerformance]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -86,14 +98,24 @@ export const VendorPerformanceWidget: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-foreground">أداء الموردين</h3>
             </div>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              أفضل 5
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                أفضل 5
+              </Badge>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="vendor_performance"
+                title="أداء الموردين"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6" ref={chartRef}>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />

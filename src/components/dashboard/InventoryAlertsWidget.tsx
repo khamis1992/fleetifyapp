@@ -7,12 +7,14 @@ import { AlertTriangle, Package, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLowStockItems, useInventoryItems } from '@/hooks/useInventoryItems';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { ExportButton } from '@/components/exports';
 
 export const InventoryAlertsWidget: React.FC = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
   const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems();
   const { data: allItems, isLoading: allItemsLoading } = useInventoryItems({ is_active: true });
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const isLoading = lowStockLoading || allItemsLoading;
 
@@ -37,6 +39,17 @@ export const InventoryAlertsWidget: React.FC = () => {
   const statusColor = getStatusColor();
   const statusText = getStatusText();
 
+  // Prepare export data
+  const exportData = React.useMemo(() => {
+    return lowStockItems?.map(item => ({
+      'الصنف': item.item_name_ar || item.item_name || 'صنف',
+      'الكمية الحالية': item.current_quantity || 0,
+      'الحد الأدنى': item.min_stock_level || 0,
+      'النقص': item.shortage || 0,
+      'الحالة': item.current_quantity === 0 ? 'نفذ' : 'منخفض',
+    })) || [];
+  }, [lowStockItems]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -57,21 +70,31 @@ export const InventoryAlertsWidget: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-foreground">تنبيهات المخزون</h3>
             </div>
-            <Badge
-              variant="outline"
-              className={`${
-                statusColor === 'destructive' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                statusColor === 'warning' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                'bg-success/10 text-success border-success/20'
-              }`}
-            >
-              {statusText}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={`${
+                  statusColor === 'destructive' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                  statusColor === 'warning' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                  'bg-success/10 text-success border-success/20'
+                }`}
+              >
+                {statusText}
+              </Badge>
+              <ExportButton
+                chartRef={chartRef}
+                data={exportData}
+                filename="inventory_alerts"
+                title="تنبيهات المخزون"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4" ref={chartRef}>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
