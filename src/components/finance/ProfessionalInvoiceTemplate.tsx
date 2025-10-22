@@ -124,6 +124,11 @@ export function ProfessionalInvoiceTemplate({
 
   return (
     <div id="invoice-template" className={`w-full max-w-4xl mx-auto bg-white ${className}`}>
+      {/* Visual Indicator - NEW PROFESSIONAL DESIGN */}
+      <div className="bg-gradient-to-r from-primary to-blue-600 text-white px-4 py-2 rounded-t-lg text-center font-semibold print:hidden mb-2">
+        ✨ New Professional Invoice Design v2.0
+      </div>
+      
       {/* Action Buttons */}
       <div className="flex justify-end gap-2 mb-6 print:hidden">
         <Button variant="outline" size="sm" onClick={handlePrint}>

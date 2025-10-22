@@ -90,20 +90,23 @@ const Customers = () => {
 
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
   
-  // Fetch counts for all customer types (without pagination filters)
+  // Fetch counts for all customer types (without pagination - get total counts)
   const { data: individualCountResult } = useCustomers({
     customer_type: 'individual',
-    includeInactive: false
+    includeInactive: false,
+    pageSize: 999999 // Large number to get all records for accurate count
   });
   
   const { data: corporateCountResult } = useCustomers({
     customer_type: 'corporate',
-    includeInactive: false
+    includeInactive: false,
+    pageSize: 999999 // Large number to get all records for accurate count
   });
   
   const { data: blacklistedCountResult } = useCustomers({
     is_blacklisted: true,
-    includeInactive: true // Include both active and inactive blacklisted customers
+    includeInactive: true, // Include both active and inactive blacklisted customers
+    pageSize: 999999 // Large number to get all records for accurate count
   });
   
   // Extract pagination data and customers array

@@ -11,7 +11,6 @@ import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard'
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { InsuranceAlertsWidget } from '@/components/dashboard/car-rental/InsuranceAlertsWidget';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -88,15 +87,6 @@ const CarRentalDashboard: React.FC = () => {
           browsedCompany={browsedCompany}
           onExitBrowseMode={exitBrowseMode}
         />
-
-        {/* Insurance Alerts Widget */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          <InsuranceAlertsWidget />
-        </motion.div>
 
         {/* Quick Actions Panel */}
         <motion.div
