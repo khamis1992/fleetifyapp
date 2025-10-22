@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,8 @@ export function CSVArchiveManager({ open, onOpenChange }: CSVArchiveManagerProps
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedFile, setSelectedFile] = useState<CSVArchiveEntry | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   // تصفية الملفات
   const filteredFiles = archivedFiles?.filter(file => {
@@ -113,8 +116,15 @@ export function CSVArchiveManager({ open, onOpenChange }: CSVArchiveManagerProps
   };
 
   const handleDelete = (fileId: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا الملف من الأرشيف؟")) {
-      deleteArchivedFile(fileId);
+    setFileToDelete(fileId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (fileToDelete) {
+      deleteArchivedFile(fileToDelete);
+      setDeleteDialogOpen(false);
+      setFileToDelete(null);
     }
   };
 
@@ -347,6 +357,22 @@ export function CSVArchiveManager({ open, onOpenChange }: CSVArchiveManagerProps
           </DialogContent>
         </Dialog>
       )}
+
+      {/* مربع حوار تأكيد الحذف */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذا الملف من الأرشيف؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>حذف</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

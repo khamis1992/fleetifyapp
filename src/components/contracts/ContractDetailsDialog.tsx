@@ -8,15 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { NumberDisplay } from '@/components/ui/NumberDisplay';
-import { 
-  FileText, 
-  Calendar, 
-  DollarSign, 
-  User, 
-  Car, 
-  Building2, 
-  Edit, 
-  Download, 
+import {
+  FileText,
+  Calendar,
+  DollarSign,
+  User,
+  Car,
+  Building2,
+  Edit,
+  Download,
   Printer,
   Plus,
   Eye,
@@ -33,13 +33,28 @@ import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog'
 import { LateFinesTab } from './LateFinesTab';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import type { Contract } from '@/types/contracts';
+import type { Invoice } from '@/types/finance.types';
+
+// SECURITY FIX: Added proper types to replace 'any'
+interface VehicleConditionReportData {
+  [key: string]: unknown;
+}
 
 interface ContractDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: any;
-  onEdit?: (contract: any) => void;
-  onCreateInvoice?: (contract: any) => void;
+  contract: Contract & {
+    vehicle?: Record<string, unknown>;
+    license_plate?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    vehicle_status?: string;
+    plate_number?: string;
+  };
+  onEdit?: (contract: Contract) => void;
+  onCreateInvoice?: (contract: Contract) => void;
 }
 
 export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
@@ -50,14 +65,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onCreateInvoice
 }) => {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editData, setEditData] = React.useState<any>({});
+  const [editData, setEditData] = React.useState<Partial<Contract>>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
-  
+
   // Payment and preview dialog state
-  const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
-  
+
   // Invoice generation state
   const [isGeneratingInvoices, setIsGeneratingInvoices] = React.useState(false);
 
@@ -173,21 +188,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   };
 
   // Handlers for invoice actions
-  const handleInvoicePreview = (invoice: any) => {
+  const handleInvoicePreview = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setIsPreviewDialogOpen(true);
   };
 
-  const handleInvoicePay = (invoice: any) => {
+  const handleInvoicePay = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setIsPayDialogOpen(true);
   };
 
-  const handleInvoiceEdit = (invoice: any) => {
+  const handleInvoiceEdit = (invoice: Invoice) => {
     console.log("Edit invoice:", invoice);
   };
 
-  const handleInvoiceDelete = (invoice: any) => {
+  const handleInvoiceDelete = (invoice: Invoice) => {
     console.log("Delete invoice:", invoice);
   };
 

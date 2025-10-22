@@ -4,8 +4,9 @@ import { useModuleConfig } from '@/modules/core/hooks';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
 import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const Dashboard: React.FC = () => {
+const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
   const { moduleContext, isLoading: moduleLoading, company, refreshData, isBrowsingMode, currentCompanyId } = useModuleConfig();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -166,6 +167,14 @@ const Dashboard: React.FC = () => {
         </div>
       );
   }
+};
+
+const Dashboard: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <DashboardInner />
+    </ErrorBoundary>
+  )
 };
 
 export default Dashboard;

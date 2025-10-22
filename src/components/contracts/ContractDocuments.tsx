@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,6 +54,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
   const [selectedDocumentForPreview, setSelectedDocumentForPreview] = React.useState<any>(null);
   const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [documentToDelete, setDocumentToDelete] = React.useState<string | null>(null);
   const { data: documents = [], isLoading } = useContractDocuments(contractId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
@@ -146,10 +149,17 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     }
   };
 
-  const handleDelete = async (documentId: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+  const handleDelete = (documentId: string) => {
+    setDocumentToDelete(documentId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (documentToDelete) {
       try {
-        await deleteDocument.mutateAsync(documentId);
+        await deleteDocument.mutateAsync(documentToDelete);
+        setDeleteDialogOpen(false);
+        setDocumentToDelete(null);
       } catch (error) {
         console.error('Error deleting document:', error);
       }
@@ -834,6 +844,22 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* مربع حوار تأكيد الحذف */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>حذف</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </Card>
     </div>
   );

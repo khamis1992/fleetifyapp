@@ -2,6 +2,7 @@ import React from 'react';
 import { ProfessionalInvoiceTemplate } from '@/components/finance';
 import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ProfessionalInvoiceDemo = () => {
   // Sample invoice data for demonstration
@@ -38,7 +39,7 @@ const ProfessionalInvoiceDemo = () => {
 
   const handleDownload = () => {
     // In a real implementation, this would generate a PDF
-    alert('سيتم تحميل الفاتورة كملف PDF');
+    toast.info('سيتم تحميل الفاتورة كملف PDF');
   };
 
   return (

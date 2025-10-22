@@ -136,26 +136,11 @@ export function SmartCSVUpload({
 
   const parseCSV = (csvText: string): any[] => {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy' });
-    
-    console.log('🔍 [CSV DEBUG] Raw headers before normalization:', parsed.meta?.fields);
-    console.log('🔍 [CSV DEBUG] Entity type:', entityType);
-    
-    const rows = (parsed.data as any[]).filter(Boolean).map((row, idx) => {
-      const originalRow = row;
-      const normalizedRow = normalizeCsvHeaders(row, entityType);
-      
-      // Log first few rows for debugging
-      if (idx < 3) {
-        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} original keys:`, Object.keys(originalRow));
-        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} original:`, originalRow);
-        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} normalized keys:`, Object.keys(normalizedRow));
-        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} normalized:`, normalizedRow);
-        console.log(`🔍 [CSV DEBUG] Row ${idx + 1} phone field:`, normalizedRow.phone);
-      }
-      
-      return normalizedRow;
+
+    const rows = (parsed.data as any[]).filter(Boolean).map((row) => {
+      return normalizeCsvHeaders(row, entityType);
     });
-    
+
     return rows.map((row, index) => ({ ...row, rowNumber: index + 2 }));
   };
 
@@ -203,19 +188,9 @@ export function SmartCSVUpload({
 
       const csvData = rawRows.map((row, index) => {
         const normalized = normalizeCsvHeaders(row, entityType);
-        console.log(`🔍 [ANALYZE] Row ${index + 1} normalization:`, { 
-          original: row, 
-          normalized, 
-          phone: normalized.phone,
-          hasPhone: !!normalized.phone 
-        });
         return { ...normalized, rowNumber: index + 2 };
       });
-      
-      // Check required fields in normalized data
-      console.log('🔍 [ANALYZE] Required fields:', effectiveRequiredFields);
-      console.log('🔍 [ANALYZE] Sample normalized data (first 3 rows):', csvData.slice(0, 3));
-      
+
       // إظهار محدد تنسيق التواريخ أولاً
       setPendingData(csvData);
       setShowDateSelector(true);
@@ -229,21 +204,10 @@ export function SmartCSVUpload({
 
   const handleDateFormatsConfirmed = (processedData: any[], columnFormats: { [column: string]: DateFormatOption }) => {
     setShowDateSelector(false);
-    
+
     // تطبيق إصلاحات CSV التقليدية على البيانات المعالجة
-    console.log('🔍 [DATE] Processed data before fix:', processedData.slice(0, 3));
-    console.log('🔍 [DATE] Field types:', fieldTypes);
-    console.log('🔍 [DATE] Required fields:', effectiveRequiredFields);
-    
     const fixResults = CSVAutoFix.fixCSVData(processedData, fieldTypes, effectiveRequiredFields, 'qatar');
-    
-    console.log('🔍 [FIX] Fix results preview (first 3):', fixResults.slice(0, 3).map(f => ({
-      hasErrors: f.hasErrors,
-      fixes: f.fixes,
-      phoneField: f.originalData?.phone,
-      fixedPhoneField: f.fixedData?.phone
-    })));
-    
+
     setFixes(fixResults);
     setShowPreview(true);
     setActiveView('preview');
@@ -251,13 +215,11 @@ export function SmartCSVUpload({
     const totalFixes = fixResults.reduce((sum, row) => sum + row.fixes.length, 0);
     const errorRows = fixResults.filter(row => row.hasErrors).length;
     const dateColumns = Object.keys(columnFormats).length;
-    
+
     toast.success(`تم تحليل الملف: ${totalFixes} إصلاح محتمل، ${errorRows} صف يحتوي على أخطاء، ${dateColumns} عمود تاريخ محول`);
   };
 
   const handleApproveFixes = async (approvedFixes: CSVRowFix[]) => {
-    console.log('Handle approve fixes called with:', approvedFixes);
-    
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -265,8 +227,6 @@ export function SmartCSVUpload({
       const dataToUpload = approvedFixes
         .filter(fix => !fix.hasErrors)
         .map(fix => fix.fixedData);
-
-      console.log('Data to upload:', dataToUpload);
 
       if (dataToUpload.length === 0) {
         toast.error("لا توجد بيانات صحيحة للرفع");
@@ -288,27 +248,23 @@ export function SmartCSVUpload({
       const uploadTimeout = setTimeout(() => {
         clearInterval(progressInterval);
         if (setUploadProgress) {
-          console.warn('⚠️ Upload timeout - forcing completion');
           toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
         }
       }, 30000); // 30 seconds timeout
 
-      console.log('🚀 [UPLOAD] Starting upload with companyId:', companyId);
-      
       let result;
       try {
-        result = await uploadFunction(dataToUpload, { 
-          upsert: enableUpsert, 
-          targetCompanyId: companyId, 
+        result = await uploadFunction(dataToUpload, {
+          upsert: enableUpsert,
+          targetCompanyId: companyId,
           autoCreateCustomers: createMissingCustomers,
           autoCompleteDates,
-          autoCompleteType, 
+          autoCompleteType,
           autoCompleteAmounts,
           dryRun: enableDryRun,
           archiveFile: archiveFile,
           originalFile: file
         });
-        console.log('✅ [UPLOAD] Upload function completed:', result);
       } catch (error) {
         console.error('❌ [UPLOAD] Upload function failed:', error);
         throw error;
@@ -383,24 +339,12 @@ export function SmartCSVUpload({
         rowNumber: row?.rowNumber ?? idx + 2,
       }));
 
-      console.log('🔍 [TABLE] Normalized data preview (first 3):', normalized.slice(0, 3));
-      console.log('🔍 [TABLE] Required fields:', effectiveRequiredFields);
-      
-      const dataToUpload = normalized.filter((r, index) => {
+      const dataToUpload = normalized.filter((r) => {
         const missingFields = effectiveRequiredFields.filter(f => {
           const v = r[f];
-          const isEmpty = v === undefined || v === null || String(v).trim() === '';
-          if (isEmpty && index < 3) {
-            console.log(`🔍 [TABLE] Row ${index + 1} missing field '${f}':`, v);
-          }
-          return isEmpty;
+          return v === undefined || v === null || String(v).trim() === '';
         });
-        
-        if (missingFields.length > 0 && index < 3) {
-          console.log(`🔍 [TABLE] Row ${index + 1} excluded due to missing:`, missingFields);
-          console.log(`🔍 [TABLE] Row ${index + 1} data:`, r);
-        }
-        
+
         return missingFields.length === 0;
       });
 
@@ -422,15 +366,14 @@ export function SmartCSVUpload({
       // إضافة timeout للعملية لمنع التعليق
       const uploadTimeout = setTimeout(() => {
         clearInterval(progressInterval);
-        console.warn('⚠️ Table upload timeout - forcing completion');
         toast.warning('العملية تستغرق وقتاً أطول من المتوقع، يرجى التحقق من النتائج');
       }, 30000); // 30 seconds timeout
 
       let result;
       try {
-        result = await uploadFunction(dataToUpload, { 
-          upsert: enableUpsert, 
-          targetCompanyId: companyId, 
+        result = await uploadFunction(dataToUpload, {
+          upsert: enableUpsert,
+          targetCompanyId: companyId,
           autoCreateCustomers: createMissingCustomers,
           autoCompleteDates,
           autoCompleteType,
@@ -439,7 +382,6 @@ export function SmartCSVUpload({
           archiveFile: archiveFile,
           originalFile: file
         });
-        console.log('✅ [TABLE] Upload completed:', result);
       } catch (error) {
         console.error('❌ [TABLE] Upload failed:', error);
         throw error;

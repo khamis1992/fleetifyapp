@@ -162,14 +162,8 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log('=== Invoice Creation Debug ===');
-      console.log('User profile:', user?.profile);
-      console.log('Contract:', contract);
-      console.log('Invoice data:', invoiceData);
-      
       const invoiceNumber = generateInvoiceNumber();
-      console.log('Generated invoice number:', invoiceNumber);
-      
+
       const invoicePayload = {
         company_id: user?.profile?.company_id,
         invoice_number: invoiceNumber,
@@ -190,31 +184,23 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
         payment_status: 'unpaid',
         created_by: user?.id
       };
-      
-      console.log('Invoice payload:', invoicePayload);
-      
+
       // Create the invoice
-      console.log('Attempting to insert invoice...');
       const { data: invoiceResponse, error: invoiceError } = await supabase
         .from('invoices')
         .insert([invoicePayload])
         .select();
 
-      console.log('Insert response:', { invoiceResponse, invoiceError });
-
       if (invoiceError) {
         console.error('Invoice creation error:', invoiceError);
-        console.error('Error details:', JSON.stringify(invoiceError, null, 2));
         throw invoiceError;
       }
 
       if (!invoiceResponse || invoiceResponse.length === 0) {
-        console.error('No invoice data returned from insert');
         throw new Error('Failed to create invoice - no data returned');
       }
 
       const invoice = invoiceResponse[0];
-      console.log('Created invoice:', invoice);
 
       // Create invoice items
       const itemsToInsert = invoiceData.items.map((item, index) => ({

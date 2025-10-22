@@ -63,16 +63,12 @@ const isValidPhone = (str: string): boolean => {
 
 // البحث المحسن عن العملاء
 export const findCustomerEnhanced = async (
-  searchData: CustomerSearchData, 
+  searchData: CustomerSearchData,
   companyId: string
 ): Promise<CustomerSearchResult> => {
-  console.log('🔍 Enhanced Customer Search: Starting search with data:', searchData);
-  
   try {
     // المرحلة 1: البحث بـ UUID إذا كان صحيحاً
     if (searchData.customer_id && isValidUUID(searchData.customer_id)) {
-      console.log('🔍 Searching by UUID:', searchData.customer_id);
-      
       const { data: uuidCustomer } = await supabase
         .from('customers')
         .select('id')
@@ -80,7 +76,7 @@ export const findCustomerEnhanced = async (
         .eq('company_id', companyId)
         .eq('is_active', true)
         .single();
-      
+
       if (uuidCustomer) {
         return {
           id: uuidCustomer.id,
@@ -90,12 +86,10 @@ export const findCustomerEnhanced = async (
         };
       }
     }
-    
+
     // المرحلة 2: البحث بالرقم الوطني
     const nationalId = searchData.customer_id_number || searchData.national_id || searchData.customer_id;
     if (nationalId && isValidNationalId(nationalId)) {
-      console.log('🔍 Searching by National ID:', nationalId);
-      
       const { data: nationalIdCustomer } = await supabase
         .from('customers')
         .select('id')
@@ -103,7 +97,7 @@ export const findCustomerEnhanced = async (
         .eq('national_id', nationalId)
         .eq('is_active', true)
         .single();
-      
+
       if (nationalIdCustomer) {
         return {
           id: nationalIdCustomer.id,
@@ -113,12 +107,11 @@ export const findCustomerEnhanced = async (
         };
       }
     }
-    
+
     // المرحلة 3: البحث بكود العميل
     if (searchData.customer_code || (searchData.customer_id && !isValidUUID(searchData.customer_id))) {
       const customerCode = searchData.customer_code || searchData.customer_id;
-      console.log('🔍 Searching by Customer Code:', customerCode);
-      
+
       const { data: codeCustomer } = await supabase
         .from('customers')
         .select('id')
@@ -126,7 +119,7 @@ export const findCustomerEnhanced = async (
         .eq('customer_code', customerCode)
         .eq('is_active', true)
         .single();
-      
+
       if (codeCustomer) {
         return {
           id: codeCustomer.id,
@@ -136,11 +129,9 @@ export const findCustomerEnhanced = async (
         };
       }
     }
-    
+
     // المرحلة 4: البحث بالهاتف
     if (searchData.customer_phone && isValidPhone(searchData.customer_phone)) {
-      console.log('🔍 Searching by Phone:', searchData.customer_phone);
-      
       const cleanPhone = searchData.customer_phone.replace(/\s|-/g, '');
       const { data: phoneCustomer } = await supabase
         .from('customers')
@@ -149,7 +140,7 @@ export const findCustomerEnhanced = async (
         .eq('phone', cleanPhone)
         .eq('is_active', true)
         .single();
-      
+
       if (phoneCustomer) {
         return {
           id: phoneCustomer.id,
@@ -159,11 +150,9 @@ export const findCustomerEnhanced = async (
         };
       }
     }
-    
+
     // المرحلة 5: البحث بالاسم (أقل دقة)
     if (searchData.customer_name) {
-      console.log('🔍 Searching by Name:', searchData.customer_name);
-      
       const cleanName = searchData.customer_name.trim();
       const { data: nameCustomers } = await supabase
         .from('customers')
@@ -172,16 +161,16 @@ export const findCustomerEnhanced = async (
         .eq('is_active', true)
         .or(`first_name.ilike.%${cleanName}%,last_name.ilike.%${cleanName}%,company_name.ilike.%${cleanName}%,company_name_ar.ilike.%${cleanName}%`)
         .limit(5);
-      
+
       if (nameCustomers && nameCustomers.length > 0) {
         // البحث عن مطابقة دقيقة أولاً
         const exactMatch = nameCustomers.find(customer => {
           const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
           const companyName = customer.company_name || customer.company_name_ar || '';
-          return fullName.toLowerCase() === cleanName.toLowerCase() || 
+          return fullName.toLowerCase() === cleanName.toLowerCase() ||
                  companyName.toLowerCase() === cleanName.toLowerCase();
         });
-        
+
         if (exactMatch) {
           return {
             id: exactMatch.id,
@@ -190,7 +179,7 @@ export const findCustomerEnhanced = async (
             confidence: 0.8
           };
         }
-        
+
         // إذا لم توجد مطابقة دقيقة، استخدم الأول
         return {
           id: nameCustomers[0].id,
@@ -200,7 +189,7 @@ export const findCustomerEnhanced = async (
         };
       }
     }
-    
+
     // لم يتم العثور على عميل
     return {
       id: '',
@@ -208,7 +197,7 @@ export const findCustomerEnhanced = async (
       method: 'created',
       confidence: 0.0
     };
-    
+
   } catch (error) {
     console.error('🔍 Enhanced Customer Search Error:', error);
     return {
@@ -227,10 +216,8 @@ export const createCustomerEnhanced = async (
 ): Promise<{ id: string; created: boolean; errors: string[]; warnings: string[] }> => {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
   try {
-    console.log('🆕 Creating new customer with data:', customerData);
-    
     // التحقق من البيانات الأساسية
     if (!customerData.customer_name || customerData.customer_name.trim() === '') {
       errors.push('اسم العميل مطلوب');
@@ -303,23 +290,20 @@ export const createCustomerEnhanced = async (
         errors.push(`تم حفظ المعرف كرمز عميل: ${nationalId}`);
       }
     }
-    
-    console.log('🆕 Creating customer with data:', newCustomerData);
-    
+
     // إنشاء العميل
     const { data: newCustomer, error } = await supabase
       .from('customers')
       .insert(newCustomerData)
       .select('id')
       .single();
-    
+
     if (error) {
       console.error('🆕 Customer creation error:', error);
       errors.push(`فشل في إنشاء العميل: ${error.message}`);
       return { id: '', created: false, errors, warnings };
     }
-    
-    console.log('🆕 Customer created successfully:', newCustomer.id);
+
     return {
       id: newCustomer.id,
       created: true,
@@ -340,18 +324,16 @@ export const findOrCreateCustomer = async (
   companyId: string
 ): Promise<{ id: string; created: boolean; errors: string[]; warnings: string[] }> => {
   const warnings: string[] = [];
-  
+
   try {
     // أولاً: محاولة العثور على العميل
     const searchResult = await findCustomerEnhanced(customerData, companyId);
-    
+
     if (searchResult.found) {
-      console.log(`🔍 Customer found via ${searchResult.method} with confidence ${searchResult.confidence}`);
-      
       if (searchResult.confidence < 0.8) {
         warnings.push(`تم العثور على عميل مشابه بثقة ${(searchResult.confidence * 100).toFixed(0)}%`);
       }
-      
+
       return {
         id: searchResult.id,
         created: false,
@@ -359,18 +341,17 @@ export const findOrCreateCustomer = async (
         warnings
       };
     }
-    
+
     // ثانياً: إنشاء عميل جديد
-    console.log('🆕 Customer not found, creating new customer');
     const createResult = await createCustomerEnhanced(customerData, companyId);
-    
+
     return {
       id: createResult.id,
       created: createResult.created,
       errors: createResult.errors,
       warnings: [...warnings, ...createResult.warnings]
     };
-    
+
   } catch (error: any) {
     console.error('🔍 Find or Create Customer Error:', error);
     return {

@@ -18,6 +18,7 @@ import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-componen
 import { cn } from "@/lib/utils"
 import { RefreshCw, Filter, Search, Plus } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 // Component imports
 import { BulkInvoiceGenerationDialog } from "@/components/contracts/BulkInvoiceGenerationDialog"
@@ -51,7 +52,7 @@ import { useContractCreation } from "@/hooks/useContractCreation"
 import { useToast } from "@/hooks/use-toast-mock"
 import { useQueryClient } from "@tanstack/react-query"
 
-export default function Contracts() {
+function Contracts() {
   // Responsive hooks
   const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
   const { 
@@ -519,5 +520,13 @@ export default function Contracts() {
         )}
       </ResponsiveContainer>
     </PullToRefresh>
+  )
+}
+
+export default function ContractsWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <Contracts />
+    </ErrorBoundary>
   )
 }

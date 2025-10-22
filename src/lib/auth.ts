@@ -1,4 +1,4 @@
-// @ts-nocheck
+// SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 
@@ -28,20 +28,20 @@ export interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<{ error: any }>;
-  updateProfile: (updates: any) => Promise<{ error: any }>;
-  changePassword: (newPassword: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData?: Record<string, unknown>) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<{ error: Error | null }>;
+  updateProfile: (updates: Record<string, unknown>) => Promise<{ error: Error | null }>;
+  changePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   sessionError?: string | null;
   validateSession?: () => Promise<boolean>;
   refreshUser?: () => Promise<void>;
 }
 
 export const authService = {
-  async signUp(email: string, password: string, userData?: any) {
+  async signUp(email: string, password: string, userData?: Record<string, unknown>) {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -50,7 +50,7 @@ export const authService = {
         data: userData
       }
     });
-    
+
     return { error };
   },
 
@@ -180,12 +180,12 @@ export const authService = {
     }
   },
 
-  async updateProfile(userId: string, updates: any) {
+  async updateProfile(userId: string, updates: Record<string, unknown>) {
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('user_id', userId);
-    
+
     return { error };
   },
 

@@ -1,6 +1,6 @@
-// @ts-nocheck
+// SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
@@ -24,23 +24,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const authListenerRef = useRef<any>(null);
+  const authListenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
+  const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialized = useRef(false);
   const mountedRef = useRef(true);
 
   const initializeAuth = async () => {
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
-      console.log('🔒 [AUTH_CONTEXT] Already initialized, skipping...');
       return;
     }
-    
+
     isInitialized.current = true;
-    const startTime = Date.now();
-    
+
     try {
-      console.log('🔄 [AUTH_CONTEXT] Initializing authentication...');
-      
       // Check for existing session FIRST (faster than setting up listener)
       const { data: { session }, error } = await supabase.auth.getSession();
       
@@ -55,14 +53,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // If we have a session, load user profile immediately
       if (session?.user) {
-        console.log('📝 [AUTH_CONTEXT] Existing session found, loading profile...');
         if (mountedRef.current) {
           setSession(session);
         }
         
         try {
           const authUser = await authService.getCurrentUser();
-          console.log('📝 [AUTH_CONTEXT] Profile loaded in', Date.now() - startTime, 'ms');
           if (mountedRef.current) {
             setUser(authUser);
             setSessionError(null);
@@ -76,15 +72,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       } else {
-        console.log('📝 [AUTH_CONTEXT] No existing session');
       }
       
       // Only set up listener if not already set
       if (!authListenerRef.current) {
         // Set up auth state listener for future changes (AFTER initial load)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('📝 [AUTH_CONTEXT] Auth state change:', event, !!session);
+          async (event: AuthChangeEvent, session: Session | null) => {
             
             if (!mountedRef.current) return;
             
@@ -94,7 +88,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             if (event === 'SIGNED_OUT') {
-              console.log('📝 [AUTH_CONTEXT] User signed out');
               setUser(null);
               setSession(null);
               setIsSigningOut(false);
@@ -102,7 +95,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             if (event === 'SIGNED_IN' && session?.user) {
-              console.log('📝 [AUTH_CONTEXT] User signed in, loading profile...');
               setSession(session);
               
               try {
@@ -121,7 +113,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             if (event === 'TOKEN_REFRESHED' && session) {
-              console.log('📝 [AUTH_CONTEXT] Token refreshed');
               if (mountedRef.current) {
                 setSession(session);
               }
@@ -141,13 +132,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (mountedRef.current) {
         setLoading(false);
       }
-      console.log('📝 [AUTH_CONTEXT] Auth initialization complete in', Date.now() - startTime, 'ms');
     }
   };
 
   // Safety timeout to prevent infinite loading (reduced to 4 seconds since we optimized)
-  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
   React.useEffect(() => {
     mountedRef.current = true;
     
@@ -168,7 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mountedRef.current = false;
       // DON'T reset isInitialized on HMR - only on real unmount
       // isInitialized will naturally reset when the module is actually reloaded
-      
+
       if (authListenerRef.current?.subscription) {
         authListenerRef.current.subscription.unsubscribe();
         authListenerRef.current = null;
@@ -176,19 +164,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
       }
+      if (logTimeoutRef.current) {
+        clearTimeout(logTimeoutRef.current);
+      }
     };
   }, []);
 
 
-  const signUp = async (email: string, password: string, userData?: any) => {
+  const signUp = async (email: string, password: string, userData?: Record<string, unknown>) => {
     return authService.signUp(email, password, userData);
   };
 
   const signIn = async (email: string, password: string) => {
     const result = await authService.signIn(email, password);
-    
+
     if (!result.error) {
-      setTimeout(() => {
+      // MEMORY LEAK FIX: Clear existing timeout before creating new one
+      if (logTimeoutRef.current) {
+        clearTimeout(logTimeoutRef.current);
+      }
+      logTimeoutRef.current = setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
           category: 'authentication',
@@ -198,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       }, 1000);
     }
-    
+
     return result;
   };
 
@@ -206,9 +201,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsSigningOut(true);
     const email = user?.email;
     const result = await authService.signOut();
-    
+
     if (!result.error && email) {
-      setTimeout(() => {
+      // MEMORY LEAK FIX: Clear existing timeout before creating new one
+      if (logTimeoutRef.current) {
+        clearTimeout(logTimeoutRef.current);
+      }
+      logTimeoutRef.current = setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
           category: 'authentication',
@@ -218,11 +217,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       }, 500);
     }
-    
+
     return result;
   };
 
-  const updateProfile = async (updates: any) => {
+  const updateProfile = async (updates: Record<string, unknown>) => {
     if (!user) return { error: new Error('No user logged in') };
     return authService.updateProfile(user.id, updates);
   };
@@ -233,15 +232,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const validateSession = async () => {
     if (!session) {
-      console.log('📝 [AUTH_CONTEXT] No session to validate');
       return false;
     }
     
     try {
-      console.log('📝 [AUTH_CONTEXT] Validating session...');
       const now = Date.now() / 1000;
       if (session.expires_at && session.expires_at < now) {
-        console.log('📝 [AUTH_CONTEXT] Session expired, attempting refresh...');
         const { data, error } = await supabase.auth.refreshSession();
         
         if (error || !data.session) {
@@ -252,7 +248,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return false;
         }
         
-        console.log('📝 [AUTH_CONTEXT] Session refreshed successfully');
         setSession(data.session);
         setSessionError(null);
         
@@ -263,7 +258,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       }
       
-      console.log('📝 [AUTH_CONTEXT] Session is still valid');
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);

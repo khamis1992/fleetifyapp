@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calculator, TrendingUp, TrendingDown, Car, Wrench, DollarSign, BarChart3, FileText, Download } from "lucide-react";
 import { TrafficViolationReports } from "@/components/fleet/TrafficViolationReports";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { toast } from 'sonner';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -91,7 +92,7 @@ export default function FleetReports() {
   // Function to generate vehicle usage report
   const generateVehicleUsageReport = () => {
     if (!safeAnalytics.vehicles || safeAnalytics.vehicles.length === 0) {
-      alert("لا توجد بيانات مركبات لإنشاء التقرير");
+      toast.error("لا توجد بيانات مركبات لإنشاء التقرير");
       return;
     }
 
@@ -149,7 +150,7 @@ export default function FleetReports() {
   // Function to generate maintenance cost analysis report
   const generateMaintenanceCostReport = () => {
     if (!safeAnalytics.maintenance || safeAnalytics.maintenance.length === 0) {
-      alert("لا توجد بيانات صيانة لإنشاء التقرير");
+      toast.error("لا توجد بيانات صيانة لإنشاء التقرير");
       return;
     }
 

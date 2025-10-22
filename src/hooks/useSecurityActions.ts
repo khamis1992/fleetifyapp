@@ -81,17 +81,42 @@ export const useSecurityActions = () => {
       
       if (options.removeOrphaned) {
         // Remove orphaned customer notes (customers that don't exist)
-        const { data: orphanedNotes, error: orphanError } = await supabase
+        // SECURITY FIX: Use safe parameterized approach to prevent SQL injection
+
+        // Step 1: Fetch all valid customer IDs for this company
+        const { data: validCustomers, error: customerError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('company_id', companyId);
+
+        if (customerError) throw customerError;
+
+        // Step 2: Fetch all customer notes for this company
+        const { data: allNotes, error: notesError } = await supabase
           .from('customer_notes')
-          .delete()
-          .not('customer_id', 'in', 
-            `(SELECT id FROM customers WHERE company_id = '${companyId}')`
-          )
-          .eq('company_id', companyId)
-          .select('id');
-        
-        if (orphanError) throw orphanError;
-        results.push(`تم حذف ${orphanedNotes?.length || 0} ملاحظة معزولة`);
+          .select('id, customer_id')
+          .eq('company_id', companyId);
+
+        if (notesError) throw notesError;
+
+        // Step 3: Find orphaned notes (notes where customer_id doesn't exist in validCustomers)
+        const validCustomerIds = new Set(validCustomers?.map(c => c.id) || []);
+        const orphanedNoteIds = allNotes?.filter(note => !validCustomerIds.has(note.customer_id)).map(note => note.id) || [];
+
+        // Step 4: Delete orphaned notes if any exist
+        let deletedCount = 0;
+        if (orphanedNoteIds.length > 0) {
+          const { data: deletedNotes, error: deleteError } = await supabase
+            .from('customer_notes')
+            .delete()
+            .in('id', orphanedNoteIds)
+            .select('id');
+
+          if (deleteError) throw deleteError;
+          deletedCount = deletedNotes?.length || 0;
+        }
+
+        results.push(`تم حذف ${deletedCount} ملاحظة معزولة`);
       }
       
       return results;

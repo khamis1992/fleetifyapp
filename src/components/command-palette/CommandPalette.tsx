@@ -50,6 +50,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
+  const actionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load recent commands from localStorage
   useEffect(() => {
@@ -192,8 +193,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: Plus,
       action: () => {
         navigate('/contracts');
-        setTimeout(() => {
+        // Clear any existing timeout
+        if (actionTimeoutRef.current) {
+          clearTimeout(actionTimeoutRef.current);
+        }
+        actionTimeoutRef.current = setTimeout(() => {
           document.querySelector<HTMLButtonElement>('[data-action="new-contract"]')?.click();
+          actionTimeoutRef.current = null;
         }, 100);
       },
       category: 'إجراءات سريعة',
@@ -207,8 +213,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: UserPlus,
       action: () => {
         navigate('/customers');
-        setTimeout(() => {
+        // Clear any existing timeout
+        if (actionTimeoutRef.current) {
+          clearTimeout(actionTimeoutRef.current);
+        }
+        actionTimeoutRef.current = setTimeout(() => {
           document.querySelector<HTMLButtonElement>('[data-action="new-customer"]')?.click();
+          actionTimeoutRef.current = null;
         }, 100);
       },
       category: 'إجراءات سريعة',
@@ -222,8 +233,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: FileSpreadsheet,
       action: () => {
         navigate('/invoices');
-        setTimeout(() => {
+        // Clear any existing timeout
+        if (actionTimeoutRef.current) {
+          clearTimeout(actionTimeoutRef.current);
+        }
+        actionTimeoutRef.current = setTimeout(() => {
           document.querySelector<HTMLButtonElement>('[data-action="new-invoice"]')?.click();
+          actionTimeoutRef.current = null;
         }, 100);
       },
       category: 'إجراءات سريعة',
@@ -302,11 +318,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
   };
 
-  // Close on Escape
+  // Close on Escape and cleanup
   useEffect(() => {
     if (!open) {
       setSearch('');
     }
+
+    return () => {
+      // Clear any pending action timeouts when component unmounts
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current);
+      }
+    };
   }, [open]);
 
   return (

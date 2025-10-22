@@ -23,14 +23,15 @@ import {
   Trash2,
   RotateCcw
 } from 'lucide-react';
-import { 
-  normalizeCSVHeaders, 
-  detectFieldTypes, 
-  cleanAndNormalizeData, 
+import {
+  normalizeCSVHeaders,
+  detectFieldTypes,
+  cleanAndNormalizeData,
   generateTemplate,
   processAccountsWithHierarchy,
-  validateAccountHierarchy 
+  validateAccountHierarchy
 } from '@/utils/csv';
+import { toast } from 'sonner';
 
 export interface SmartCSVFieldType {
   type: 'text' | 'number' | 'boolean' | 'date' | 'email' | 'phone' | 'select';
@@ -148,13 +149,13 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
 
     // Validate file
     if (file.size > maxFileSize) {
-      alert(`حجم الملف كبير جداً. الحد الأقصى ${maxFileSize / 1024 / 1024}MB`);
+      toast.error(`حجم الملف كبير جداً. الحد الأقصى ${maxFileSize / 1024 / 1024}MB`);
       return;
     }
 
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!allowedExtensions.includes(extension)) {
-      alert(`نوع الملف غير مدعوم. الأنواع المدعومة: ${allowedExtensions.join(', ')}`);
+      toast.error(`نوع الملف غير مدعوم. الأنواع المدعومة: ${allowedExtensions.join(', ')}`);
       return;
     }
 
@@ -209,7 +210,7 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
       
     } catch (error) {
       console.error('Error parsing file:', error);
-      alert(`خطأ في معالجة الملف: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+      toast.error(`خطأ في معالجة الملف: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
     } finally {
       setIsProcessing(false);
     }

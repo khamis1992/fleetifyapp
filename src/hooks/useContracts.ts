@@ -60,11 +60,11 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
   
   return useQuery({
     queryKey: getQueryKey(["contracts"], [targetCompanyId, customerId, vehicleId]),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!targetCompanyId) {
         throw new Error("No company access available")
       }
-      
+
       // Validate access to the target company
       if (overrideCompanyId) {
         validateCompanyAccess(overrideCompanyId)
@@ -94,12 +94,13 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         `)
         .eq("company_id", targetCompanyId)
         .order("created_at", { ascending: false })
+        .abortSignal(signal)
 
       // Apply filters if provided
       if (customerId) {
         query = query.eq("customer_id", customerId)
       }
-      
+
       if (vehicleId) {
         query = query.eq("vehicle_id", vehicleId)
       }
@@ -117,14 +118,15 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
       }
 
       const contractIds = data.map(c => c.id)
-      
-      // Single query to get all payments for all contracts
+
+      // Single query to get all payments for all contracts with abort signal
       const { data: paymentsData } = await supabase
         .from('payments')
         .select('contract_id, amount')
         .in('contract_id', contractIds)
         .eq('payment_status', 'completed')
-      
+        .abortSignal(signal)
+
       // Group payments by contract_id
       const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
         if (!acc[payment.contract_id]) {
@@ -133,7 +135,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         acc[payment.contract_id] += payment.amount || 0
         return acc
       }, {} as Record<string, number>)
-      
+
       // Map contracts with their payment totals
       const contractsWithPayments = data.map(contract => ({
         ...contract,
@@ -146,7 +148,9 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
     },
     enabled: !!targetCompanyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    retryDelay: 1000
   })
 }
 
@@ -158,16 +162,16 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
   
   return useQuery({
     queryKey: getQueryKey(["active-contracts"], [customerId, vendorId, targetCompanyId]),
-    queryFn: async (): Promise<Contract[]> => {
+    queryFn: async ({ signal }): Promise<Contract[]> => {
       if (!targetCompanyId) {
         throw new Error("No company access available")
       }
-      
+
       // Validate access to the target company
       if (overrideCompanyId) {
         validateCompanyAccess(overrideCompanyId)
       }
-      
+
       let query = supabase
         .from("contracts")
         .select(`
@@ -193,6 +197,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         .eq("company_id", targetCompanyId)
         .eq("status", "active")
         .order("contract_date", { ascending: false })
+        .abortSignal(signal)
 
       if (customerId) {
         query = query.eq("customer_id", customerId)
@@ -201,28 +206,29 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         // This would need to be added if needed for vendor contracts
         return []
       }
-      
+
       const { data, error } = await query
-      
+
       if (error) {
         console.error("Error fetching contracts:", error)
         throw error
       }
-      
+
       // Optimized: Fetch all payments in a single query instead of N+1
       if (!data || data.length === 0) {
         return []
       }
 
       const contractIds = data.map(c => c.id)
-      
-      // Single query to get all payments for all contracts
+
+      // Single query to get all payments for all contracts with abort signal
       const { data: paymentsData } = await supabase
         .from('payments')
         .select('contract_id, amount')
         .in('contract_id', contractIds)
         .eq('payment_status', 'completed')
-      
+        .abortSignal(signal)
+
       // Group payments by contract_id
       const paymentsByContract = (paymentsData || []).reduce((acc, payment) => {
         if (!acc[payment.contract_id]) {
@@ -231,7 +237,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         acc[payment.contract_id] += payment.amount || 0
         return acc
       }, {} as Record<string, number>)
-      
+
       // Map contracts with their payment totals
       const contractsWithPayments = data.map(contract => ({
         ...contract,
@@ -244,6 +250,8 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
     staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    retryDelay: 1000
   })
 }
