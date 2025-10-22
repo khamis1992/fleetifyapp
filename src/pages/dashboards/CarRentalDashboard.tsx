@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -11,13 +10,8 @@ import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHea
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { FleetAvailabilityWidget } from '@/components/dashboard/car-rental/FleetAvailabilityWidget';
-import { RentalAnalyticsWidget } from '@/components/dashboard/car-rental/RentalAnalyticsWidget';
-import { MaintenanceScheduleWidget } from '@/components/dashboard/car-rental/MaintenanceScheduleWidget';
 import { InsuranceAlertsWidget } from '@/components/dashboard/car-rental/InsuranceAlertsWidget';
-import { RevenueOptimizationWidget } from '@/components/dashboard/car-rental/RevenueOptimizationWidget';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -95,29 +89,13 @@ const CarRentalDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
-        {/* Car Rental Dashboard Widgets - Row 1 */}
+        {/* Insurance Alerts Widget */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FleetAvailabilityWidget />
-            <RentalAnalyticsWidget />
-            <MaintenanceScheduleWidget />
-          </div>
-        </motion.div>
-
-        {/* Car Rental Dashboard Widgets - Row 2 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <RevenueOptimizationWidget />
-            <InsuranceAlertsWidget />
-          </div>
+          <InsuranceAlertsWidget />
         </motion.div>
 
         {/* Quick Actions Panel */}
@@ -153,7 +131,6 @@ const CarRentalDashboard: React.FC = () => {
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
-            <DocumentExpiryAlerts />
           </motion.div>
         </div>
 
