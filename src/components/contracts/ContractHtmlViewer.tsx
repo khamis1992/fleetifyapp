@@ -7,6 +7,7 @@ import { ContractVehicleConditionReport } from './ContractVehicleConditionReport
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useSignatureSettings } from '@/hooks/useSignatureSettings';
 import { LazyImage } from '@/components/common/LazyImage';
+import { sanitizeHtmlWithFormatting } from '@/utils/htmlSanitizer';
 
 interface ContractHtmlViewerProps {
   contractData: ContractPdfData;
@@ -359,10 +360,11 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
                 الشروط والأحكام
               </div>
               <div className="terms-section bg-gray-50 p-5 rounded-lg">
-                <div 
+                {/* SECURITY FIX: Sanitize HTML to prevent XSS attacks */}
+                <div
                   className="whitespace-pre-line"
-                  dangerouslySetInnerHTML={{ 
-                    __html: contractData.terms.replace(/\n/g, '<br>') 
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtmlWithFormatting(contractData.terms.replace(/\n/g, '<br>'))
                   }}
                 />
               </div>

@@ -15,6 +15,7 @@ import {
 import { Search, Plus, Calendar, DollarSign, AlertTriangle, Download, Printer, FileSpreadsheet, Loader2, TrendingUp, AlertCircle, Clock, Filter, X, UserPlus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -50,7 +51,7 @@ import { financialHelpContent } from '@/data/helpContent';
 const DELAY_FINE_PER_DAY = 120; // QAR
 const MAX_FINE_PER_MONTH = 3000; // QAR
 
-const FinancialTracking: React.FC = () => {
+const FinancialTrackingInner: React.FC = () => {
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -2547,6 +2548,14 @@ const FinancialTracking: React.FC = () => {
       </Dialog>
     </div>
   );
+};
+
+const FinancialTracking: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <FinancialTrackingInner />
+    </ErrorBoundary>
+  )
 };
 
 export default FinancialTracking;

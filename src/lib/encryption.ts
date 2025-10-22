@@ -116,16 +116,25 @@ class EncryptionService {
    * Generate master password from user ID and app secret
    */
   private async generateMasterPassword(userId: string): Promise<string> {
-    // In production, use environment variable for APP_SECRET
-    const APP_SECRET = import.meta.env.VITE_ENCRYPTION_SECRET || 'default-secret-change-in-production';
-    
+    // SECURITY FIX: Removed default fallback secret to prevent production misuse
+    // Environment variable MUST be set in production
+    const APP_SECRET = import.meta.env.VITE_ENCRYPTION_SECRET;
+
+    if (!APP_SECRET) {
+      throw new Error(
+        'VITE_ENCRYPTION_SECRET environment variable is not set. ' +
+        'Please configure encryption secret in your environment variables. ' +
+        'This is required for secure encryption of sensitive data.'
+      );
+    }
+
     const encoder = new TextEncoder();
     const data = encoder.encode(userId + APP_SECRET);
-    
+
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
+
     return hashHex;
   }
 

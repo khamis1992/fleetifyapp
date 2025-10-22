@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Upload, 
-  FileText, 
-  Users, 
-  Car, 
+import {
+  Upload,
+  FileText,
+  Users,
+  Car,
   DollarSign,
   CheckCircle,
   AlertTriangle,
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface ImportResult {
   success: number;
@@ -43,7 +44,7 @@ interface ImportTemplate {
   validation: Record<string, any>;
 }
 
-const Import: React.FC = () => {
+const ImportInner: React.FC = () => {
   const { user } = useAuth();
   const { companyId, hasCompanyAdminAccess } = useUnifiedCompanyAccess();
   
@@ -621,6 +622,14 @@ const Import: React.FC = () => {
       </motion.div>
     </div>
   );
+};
+
+const Import: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <ImportInner />
+    </ErrorBoundary>
+  )
 };
 
 export default Import;

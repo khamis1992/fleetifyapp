@@ -7,11 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileText, 
-  Plus, 
-  Edit3, 
-  Trash2, 
+import {
+  FileText,
+  Plus,
+  Edit3,
+  Trash2,
   Copy,
   Download,
   Upload,
@@ -19,6 +19,7 @@ import {
   Save
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sanitizeTemplateHtml } from '@/utils/htmlSanitizer';
 
 interface Template {
   id: string;
@@ -415,8 +416,9 @@ export const TemplateManagement: React.FC = () => {
           {previewTemplate && (
             <div className="space-y-4">
               <div className="p-4 border rounded-lg bg-muted/50">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: previewTemplate.content }}
+                {/* SECURITY FIX: Sanitize HTML to prevent XSS attacks */}
+                <div
+                  dangerouslySetInnerHTML={{ __html: sanitizeTemplateHtml(previewTemplate.content) }}
                   className="prose prose-sm max-w-none"
                 />
               </div>

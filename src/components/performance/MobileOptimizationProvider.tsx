@@ -16,33 +16,41 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
   useEffect(() => {
     if (!isMobile) return;
 
+    const connection = (navigator as any).connection ||
+                      (navigator as any).mozConnection ||
+                      (navigator as any).webkitConnection;
+
+    const handleConnectionChange = () => {
+      const newType = connection?.effectiveType;
+      setConnectionQuality(
+        newType === 'slow-2g' || newType === '2g' ? 'slow' : 'fast'
+      );
+    };
+
     const detectDeviceCapabilities = () => {
       // Detect low power mode (approximate)
-      const isLowEnd = navigator.hardwareConcurrency <= 2 || 
+      const isLowEnd = navigator.hardwareConcurrency <= 2 ||
                        (navigator as any).deviceMemory <= 2;
       setIsLowPowerMode(isLowEnd);
 
       // Detect connection quality
-      const connection = (navigator as any).connection || 
-                        (navigator as any).mozConnection || 
-                        (navigator as any).webkitConnection;
-      
       if (connection) {
         const effectiveType = connection.effectiveType;
         setConnectionQuality(
           effectiveType === 'slow-2g' || effectiveType === '2g' ? 'slow' : 'fast'
         );
 
-        connection.addEventListener('change', () => {
-          const newType = connection.effectiveType;
-          setConnectionQuality(
-            newType === 'slow-2g' || newType === '2g' ? 'slow' : 'fast'
-          );
-        });
+        connection.addEventListener('change', handleConnectionChange);
       }
     };
 
     detectDeviceCapabilities();
+
+    return () => {
+      if (connection) {
+        connection.removeEventListener('change', handleConnectionChange);
+      }
+    };
   }, [isMobile]);
 
   // Auto-adjust performance settings based on device
@@ -142,9 +150,24 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
   useEffect(() => {
     if (!isMobile || !('serviceWorker' in navigator)) return;
 
+    let registration: ServiceWorkerRegistration | null = null;
+    const handleUpdateFound = () => {
+      if (!registration) return;
+      const newWorker = registration.installing;
+      if (newWorker) {
+        const handleStateChange = () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔧 New Service Worker available');
+            // Optionally show update notification
+          }
+        };
+        newWorker.addEventListener('statechange', handleStateChange);
+      }
+    };
+
     const registerSW = async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js', {
+        registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
           updateViaCache: 'none'
         });
@@ -152,17 +175,7 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         console.log('🔧 Service Worker registered successfully');
 
         // Listen for updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔧 New Service Worker available');
-                // Optionally show update notification
-              }
-            });
-          }
-        });
+        registration.addEventListener('updatefound', handleUpdateFound);
 
       } catch (error) {
         console.error('🔧 Service Worker registration failed:', error);
@@ -170,6 +183,12 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
     };
 
     registerSW();
+
+    return () => {
+      if (registration) {
+        registration.removeEventListener('updatefound', handleUpdateFound);
+      }
+    };
   }, [isMobile]);
 
   // Preload critical resources

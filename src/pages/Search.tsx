@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { 
-  Search as SearchIcon, 
-  Users, 
-  Car, 
-  FileText, 
+import {
+  Search as SearchIcon,
+  Users,
+  Car,
+  FileText,
   DollarSign,
   Building,
   Calendar,
@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface SearchResult {
   id: string;
@@ -49,7 +50,7 @@ interface VehicleRelation {
   plate_number: string;
 }
 
-const Search: React.FC = () => {
+const SearchInner: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { companyId, isSystemLevel } = useUnifiedCompanyAccess();
@@ -273,7 +274,8 @@ const Search: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ خطأ في البحث:', error);
-      toast.error('حدث خطأ أثناء البحث');
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+      toast.error(`خطأ في البحث: ${errorMessage}`);
       setResults([]);
     } finally {
       setIsLoading(false);
@@ -479,6 +481,14 @@ const Search: React.FC = () => {
       </motion.div>
     </div>
   );
+};
+
+const Search: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <SearchInner />
+    </ErrorBoundary>
+  )
 };
 
 export default Search;

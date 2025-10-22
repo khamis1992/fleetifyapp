@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, CreditCard, Wand2, Star } from 'lucide-react';
 import { CustomerAccountForm } from './CustomerAccountForm';
 import { 
@@ -30,7 +31,10 @@ interface CustomerAccountsManagerProps {
 export const CustomerAccountsManager: React.FC<CustomerAccountsManagerProps> = ({ customer }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomerAccount | null>(null);
-  
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
+  const [autoCreateDialogOpen, setAutoCreateDialogOpen] = useState(false);
+
   const { data: accounts = [], isLoading } = useCustomerAccounts(customer.id);
   const deleteAccountMutation = useDeleteCustomerAccount();
   const autoCreateMutation = useAutoCreateCustomerAccounts();
@@ -41,18 +45,28 @@ export const CustomerAccountsManager: React.FC<CustomerAccountsManagerProps> = (
   };
 
   const handleDeleteAccount = (accountId: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الحساب المحاسبي؟')) {
-      deleteAccountMutation.mutate({ accountId, customerId: customer.id });
+    setAccountToDelete(accountId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (accountToDelete) {
+      deleteAccountMutation.mutate({ accountId: accountToDelete, customerId: customer.id });
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
     }
   };
 
   const handleAutoCreate = () => {
-    if (confirm('هل تريد إنشاء الحسابات المحاسبية تلقائياً لهذا العميل؟')) {
-      autoCreateMutation.mutate({ 
-        customerId: customer.id, 
-        companyId: customer.company_id 
-      });
-    }
+    setAutoCreateDialogOpen(true);
+  };
+
+  const confirmAutoCreate = () => {
+    autoCreateMutation.mutate({
+      customerId: customer.id,
+      companyId: customer.company_id
+    });
+    setAutoCreateDialogOpen(false);
   };
 
   const handleFormClose = () => {
@@ -238,6 +252,38 @@ export const CustomerAccountsManager: React.FC<CustomerAccountsManagerProps> = (
           </Table>
         )}
       </CardContent>
+
+      {/* مربع حوار تأكيد الحذف */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذا الحساب المحاسبي؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>حذف</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* مربع حوار تأكيد الإنشاء التلقائي */}
+      <AlertDialog open={autoCreateDialogOpen} onOpenChange={setAutoCreateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>إنشاء الحسابات تلقائياً</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل تريد إنشاء الحسابات المحاسبية تلقائياً لهذا العميل؟ سيتم إنشاء الحسابات الافتراضية.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAutoCreate}>إنشاء</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

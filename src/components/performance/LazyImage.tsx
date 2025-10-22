@@ -17,7 +17,62 @@ interface LazyImageProps {
   [key: string]: any;
 }
 
-const imageLoadQueue = new Set<string>();
+// LRU Cache for image load queue to prevent unbounded growth
+class ImageLoadQueueCache {
+  private queue: Set<string>;
+  private order: Map<string, number>;
+  private maxSize: number;
+  private timestamp: number;
+
+  constructor(maxSize = 100) {
+    this.queue = new Set<string>();
+    this.order = new Map<string, number>();
+    this.maxSize = maxSize;
+    this.timestamp = 0;
+  }
+
+  add(key: string): void {
+    // If at max capacity, remove oldest item
+    if (this.queue.size >= this.maxSize && !this.queue.has(key)) {
+      const oldestKey = this.getOldestKey();
+      if (oldestKey) {
+        this.delete(oldestKey);
+      }
+    }
+
+    this.queue.add(key);
+    this.order.set(key, ++this.timestamp);
+  }
+
+  delete(key: string): void {
+    this.queue.delete(key);
+    this.order.delete(key);
+  }
+
+  has(key: string): boolean {
+    return this.queue.has(key);
+  }
+
+  get size(): number {
+    return this.queue.size;
+  }
+
+  private getOldestKey(): string | null {
+    let oldestKey: string | null = null;
+    let oldestTime = Infinity;
+
+    for (const [key, time] of this.order.entries()) {
+      if (time < oldestTime) {
+        oldestTime = time;
+        oldestKey = key;
+      }
+    }
+
+    return oldestKey;
+  }
+}
+
+const imageLoadQueue = new ImageLoadQueueCache(100);
 
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,

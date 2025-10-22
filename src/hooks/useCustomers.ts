@@ -33,7 +33,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
       ...memoizedFilters,
       companyId,
     }),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
         companyId,
         filter,
@@ -51,7 +51,8 @@ export const useCustomers = (filters?: CustomerFilters) => {
 
       let query = supabase
         .from('customers')
-        .select('*');
+        .select('*')
+        .abortSignal(signal);
 
       // Apply company filter based on unified access logic
       if (filter.company_id) {
@@ -110,7 +111,8 @@ export const useCustomers = (filters?: CustomerFilters) => {
         // Build count query with same filters
         let countQuery = supabase
           .from('customers')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .abortSignal(signal);
 
         // Apply same filters to count query
         if (filter.company_id) {
@@ -197,6 +199,8 @@ export const useCustomers = (filters?: CustomerFilters) => {
     enabled: !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 
@@ -497,15 +501,16 @@ export const useToggleCustomerBlacklist = () => {
 export const useCustomer = (customerId: string) => {
   return useQuery({
     queryKey: queryKeys.customers.detail(customerId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       console.log('🔍 Fetching customer data for ID:', customerId);
-      
+
       try {
         // First fetch the customer data
         const { data: customerData, error: customerError } = await supabase
           .from('customers')
           .select('*')
           .eq('id', customerId)
+          .abortSignal(signal)
           .maybeSingle();
 
         if (customerError) {
@@ -529,7 +534,8 @@ export const useCustomer = (customerId: string) => {
               *,
               account:chart_of_accounts(*)
             `)
-            .eq('customer_id', customerId);
+            .eq('customer_id', customerId)
+            .abortSignal(signal);
 
           if (!accountsError && accountsData) {
             customerAccounts = accountsData;
@@ -560,12 +566,13 @@ export const useCustomer = (customerId: string) => {
 export const useCustomerNotes = (customerId: string) => {
   return useQuery({
     queryKey: queryKeys.customers.notes(customerId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await supabase
         .from('customer_notes')
         .select('*')
         .eq('customer_id', customerId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .abortSignal(signal);
 
       if (error) {
         console.error('Error fetching customer notes:', error);
@@ -642,12 +649,12 @@ export const useCustomerFinancialSummary = (customerId: string) => {
 
 export const useCustomerDiagnostics = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: queryKeys.customers.diagnostics(user?.id),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const companyId = user?.profile?.company_id || user?.company?.id;
-      
+
       console.log('🔍 Running customer diagnostics for user:', user?.id);
       console.log('🏢 Company ID:', companyId);
 
@@ -691,6 +698,7 @@ export const useCustomerDiagnostics = () => {
             .from('companies')
             .select('id')
             .eq('id', companyId)
+            .abortSignal(signal)
             .single();
 
           if (companyError && companyError.code !== 'PGRST116') {
@@ -706,7 +714,8 @@ export const useCustomerDiagnostics = () => {
             .from('customers')
             .select('id')
             .eq('company_id', companyId)
-            .limit(1);
+            .limit(1)
+            .abortSignal(signal);
 
           if (customerError) {
             diagnostics.database.canAccessCustomers = false;
@@ -737,6 +746,7 @@ export const useCustomerDiagnostics = () => {
             .from('customers')
             .insert([testCustomer])
             .select()
+            .abortSignal(signal)
             .single();
 
           if (insertError) {
@@ -753,7 +763,8 @@ export const useCustomerDiagnostics = () => {
             await supabase
               .from('customers')
               .delete()
-              .eq('id', insertData.id);
+              .eq('id', insertData.id)
+              .abortSignal(signal);
             console.log('🧹 Test customer cleaned up');
           }
 

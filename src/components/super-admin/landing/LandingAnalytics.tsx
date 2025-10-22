@@ -162,6 +162,8 @@ export const LandingAnalytics: React.FC = () => {
       .subscribe();
 
     return () => {
+      // Properly unsubscribe before removing channel
+      channel.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, []);

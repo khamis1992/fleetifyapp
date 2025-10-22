@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 // Feature flags configuration
 interface FeatureFlags {
@@ -340,7 +341,7 @@ export function FeatureFlagsDeveloperTools() {
               onClick={() => {
                 const exported = exportFlags()
                 navigator.clipboard.writeText(exported)
-                alert('Flags copied to clipboard!')
+                toast.success('Flags copied to clipboard!')
               }}
               className="w-full text-xs px-2 py-1 bg-blue-500 text-white rounded"
             >

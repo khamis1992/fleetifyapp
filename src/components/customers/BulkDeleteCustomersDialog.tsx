@@ -20,6 +20,7 @@ import { useBulkDeleteCustomers } from '@/hooks/useBulkDeleteCustomers';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface BulkDeleteCustomersDialogProps {
   open: boolean;
@@ -72,16 +73,22 @@ export const BulkDeleteCustomersDialog: React.FC<BulkDeleteCustomersDialogProps>
         .from('contracts')
         .select('id')
         .in('customer_id', customerIds);
-      
-      if (contractsError) console.warn('Error fetching contracts:', contractsError);
+
+      if (contractsError) {
+        console.warn('Error fetching contracts:', contractsError);
+        // Don't toast here as it's not critical to the operation - just log it
+      }
 
       // Get invoices count
       const { data: invoices, error: invoicesError } = await supabase
         .from('invoices')
         .select('id')
         .in('customer_id', customerIds);
-      
-      if (invoicesError) console.warn('Error fetching invoices:', invoicesError);
+
+      if (invoicesError) {
+        console.warn('Error fetching invoices:', invoicesError);
+        // Don't toast here as it's not critical to the operation - just log it
+      }
       
       const individualCustomers = customers.filter(c => c.customer_type === 'individual').length;
       const corporateCustomers = customers.filter(c => c.customer_type === 'corporate').length;
@@ -111,7 +118,7 @@ export const BulkDeleteCustomersDialog: React.FC<BulkDeleteCustomersDialogProps>
 
   const handleConfirmDelete = async () => {
     if (!isConfirmationValid) return;
-    
+
     setStep('processing');
     try {
       await bulkDeleteCustomers.mutateAsync(actualCompanyId);
@@ -119,6 +126,8 @@ export const BulkDeleteCustomersDialog: React.FC<BulkDeleteCustomersDialogProps>
     } catch (error) {
       setStep('warning');
       console.error('Bulk delete failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+      toast.error(`فشل حذف العملاء: ${errorMessage}`);
     }
   };
 
