@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { BusinessType, ModuleName, ModuleSettings, ModuleContext } from '@/types/modules';
 import { MODULE_REGISTRY, BUSINESS_TYPE_MODULES } from '@/modules/moduleRegistry';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 
 // Hook لجلب تكوين الوحدات للشركة الحالية
@@ -84,26 +84,34 @@ export const useModuleConfig = () => {
     retry: 2 // Limit retries
   });
 
-  // تحويل إعدادات الوحدات إلى كائن
-  const moduleSettingsMap = moduleSettings?.reduce((acc, setting) => {
-    acc[setting.module_name] = setting;
-    return acc;
-  }, {} as Record<ModuleName, ModuleSettings>) || {};
+  // تحويل إعدادات الوحدات إلى كائن - use useMemo to prevent infinite re-renders
+  const moduleSettingsMap = useMemo<Record<ModuleName, ModuleSettings>>(() => {
+    return moduleSettings?.reduce((acc, setting) => {
+      acc[setting.module_name] = setting;
+      return acc;
+    }, {} as Record<ModuleName, ModuleSettings>) || {} as Record<ModuleName, ModuleSettings>;
+  }, [moduleSettings]);
 
-  // الحصول على الوحدات المتاحة حسب نوع النشاط
-  const availableModules = company?.business_type 
-    ? BUSINESS_TYPE_MODULES[company.business_type as BusinessType].map(moduleName => MODULE_REGISTRY[moduleName])
-    : [];
+  // الحصول على الوحدات المتاحة حسب نوع النشاط - use useMemo to prevent infinite re-renders
+  const availableModules = useMemo(() => {
+    return company?.business_type 
+      ? BUSINESS_TYPE_MODULES[company.business_type as BusinessType].map(moduleName => MODULE_REGISTRY[moduleName])
+      : [];
+  }, [company?.business_type]);
 
-  // الوحدات النشطة من جدول الشركات
-  const companyActiveModules = (company?.active_modules || []) as ModuleName[];
+  // الوحدات النشطة من جدول الشركات - use useMemo to prevent infinite re-renders
+  const companyActiveModules = useMemo(() => {
+    return (company?.active_modules || []) as ModuleName[];
+  }, [company?.active_modules]);
 
-  // الوحدات المفعلة فعلياً - إذا لم توجد إعدادات، نستخدم active_modules من الشركة
-  const enabledModules = moduleSettings && moduleSettings.length > 0 
-    ? companyActiveModules.filter(moduleName => 
-        moduleSettingsMap[moduleName]?.is_enabled !== false
-      )
-    : companyActiveModules; // fallback to company active_modules if no settings exist
+  // الوحدات المفعلة فعلياً - إذا لم توجد إعدادات، نستخدم active_modules من الشركة - use useMemo to prevent infinite re-renders
+  const enabledModules = useMemo(() => {
+    return moduleSettings && moduleSettings.length > 0 
+      ? companyActiveModules.filter(moduleName => 
+          moduleSettingsMap[moduleName]?.is_enabled !== false
+        )
+      : companyActiveModules; // fallback to company active_modules if no settings exist
+  }, [moduleSettings, companyActiveModules, moduleSettingsMap]);
 
   logger.debug('🔧 [MODULE_CONFIG] =================================');
   logger.debug('🔧 [MODULE_CONFIG] Company ID:', company?.id);
@@ -115,12 +123,13 @@ export const useModuleConfig = () => {
   logger.debug('🔧 [MODULE_CONFIG] Is Browse Mode:', isBrowsingMode);
   logger.debug('🔧 [MODULE_CONFIG] ================================= END');
 
-  const moduleContext: ModuleContext = {
+  // Use useMemo to prevent recreating moduleContext on every render - this was causing infinite re-renders (React error #310)
+  const moduleContext: ModuleContext = useMemo(() => ({
     businessType: company?.business_type as BusinessType,
     activeModules: enabledModules,
     moduleSettings: moduleSettingsMap as Record<ModuleName, ModuleSettings>,
     availableModules
-  };
+  }), [company?.business_type, enabledModules, moduleSettingsMap, availableModules]);
 
   // تحسين منطق التحميل - نعتبر البيانات محملة فقط عندما تكون بيانات الشركة موجودة ومعرفة
   // وجود business_type أمر ضروري لاتخاذ قرار عرض الـ dashboard الصحيح
@@ -134,6 +143,13 @@ export const useModuleConfig = () => {
     companyId
   });
 
+  // Use useCallback to memoize the refresh function - prevents causing re-renders in components using this
+  const refreshData = useCallback(() => {
+    logger.info('🔧 [MODULE_CONFIG] Force refreshing data...');
+    // Use refetch instead of resetQueries to avoid infinite loops
+    Promise.all([refetchCompany(), refetchModuleSettings()]);
+  }, [refetchCompany, refetchModuleSettings]);
+
   return {
     company,
     moduleContext,
@@ -141,13 +157,9 @@ export const useModuleConfig = () => {
     // وظائف مساعدة
     isModuleEnabled: (moduleName: ModuleName) => enabledModules.includes(moduleName),
     getModuleConfig: (moduleName: ModuleName) => MODULE_REGISTRY[moduleName],
-    getModuleSettings: (moduleName: ModuleName) => moduleSettingsMap[moduleName],
+    getModuleSettings: (moduleName: ModuleName) => moduleSettingsMap[moduleName] || null,
     // Refresh functions for Browse Mode
-    refreshData: () => {
-      logger.info('🔧 [MODULE_CONFIG] Force refreshing data...');
-      // Use refetch instead of resetQueries to avoid infinite loops
-      Promise.all([refetchCompany(), refetchModuleSettings()]);
-    },
+    refreshData,
     isBrowsingMode,
     currentCompanyId: companyId
   };

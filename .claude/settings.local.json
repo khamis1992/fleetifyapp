@@ -47,7 +47,9 @@
       "Bash(npm run test:run -- --reporter=verbose)",
       "Bash(npm run lint)",
       "Bash(npm run test:run -- src/hooks/__tests__/useExport.test.ts src/hooks/__tests__/useFinance.test.tsx src/hooks/__tests__/useContracts.test.tsx src/components/exports/__tests__/ExportButton.test.tsx src/components/command-palette/__tests__/CommandPalette.test.tsx --reporter=basic)",
-      "Bash(test -f .env)"
+      "Bash(test -f .env)",
+      "WebFetch(domain:fleetifyapp.vercel.app)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
