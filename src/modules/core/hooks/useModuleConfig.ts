@@ -7,6 +7,11 @@ import { MODULE_REGISTRY, BUSINESS_TYPE_MODULES } from '@/modules/moduleRegistry
 import { useEffect, useMemo, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 
+/**
+ * Hook for fetching module configuration for the current company
+ * FIXED: React error #310 - Added useMemo/useCallback to prevent infinite re-renders
+ */
+
 // Hook لجلب تكوين الوحدات للشركة الحالية
 export const useModuleConfig = () => {
   const { user } = useAuth();
