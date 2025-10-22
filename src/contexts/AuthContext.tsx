@@ -136,8 +136,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Safety timeout to prevent infinite loading (reduced to 4 seconds since we optimized)
-  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
   React.useEffect(() => {
     mountedRef.current = true;
     
