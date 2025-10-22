@@ -11,7 +11,7 @@ import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHea
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import { DocumentExpiryAlerts } from '@/components/dashboard/DocumentExpiryAlerts';
+
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -155,7 +155,6 @@ const RetailDashboard: React.FC = () => {
               financialData={smartMetricsData} 
               loading={financialLoading} 
             />
-            <DocumentExpiryAlerts />
           </motion.div>
         </div>
 
