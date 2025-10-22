@@ -95,7 +95,11 @@ const FinancialTrackingInner: React.FC = () => {
   // Vehicle selection state (for customers with multiple vehicles)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
-  // Set up real-time subscription for rental payment receipts
+  // Real-time subscription state
+  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error' | 'timeout'>('connecting');
+  const [showRealtimeError, setShowRealtimeError] = useState(false);
+
+  // Set up real-time subscription for rental payment receipts with timeout
   useEffect(() => {
     if (!companyId) return;
 
@@ -103,6 +107,19 @@ const FinancialTrackingInner: React.FC = () => {
       companyId,
       timestamp: new Date().toISOString()
     });
+
+    setRealtimeStatus('connecting');
+    setShowRealtimeError(false);
+
+    // Create timeout for subscription setup (10 seconds)
+    const subscriptionTimeout = setTimeout(() => {
+      if (realtimeStatus === 'connecting') {
+        console.warn('⚠️ [REALTIME] Subscription setup timeout after 10 seconds');
+        setRealtimeStatus('timeout');
+        setShowRealtimeError(true);
+        toast.warning('تحذير: تم انتهاء وقت الاتصال بالتحديثات المباشرة. سيتم تحديث البيانات يدوياً.');
+      }
+    }, 10000);
 
     // Create channel with unique name
     const channel = supabase
@@ -133,13 +150,13 @@ const FinancialTrackingInner: React.FC = () => {
 
         try {
           const { eventType, new: newRecord, old: oldRecord } = payload;
-          
+
           // تأخير قصير لتجنب التضارب مع Optimistic Updates
           setTimeout(() => {
             // Invalidate relevant queries to refresh data
             queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
             queryClient.invalidateQueries({ queryKey: ['all-rental-receipts', companyId] });
-            
+
             // If we have a selected customer, invalidate their specific queries too
             if (selectedCustomer) {
               queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId, selectedCustomer.id] });
@@ -158,18 +175,30 @@ const FinancialTrackingInner: React.FC = () => {
           timestamp: new Date().toISOString(),
           companyId
         });
-        
+
         if (status === 'SUBSCRIBED') {
           console.log('✅ [REALTIME] Rental receipts subscription established');
+          clearTimeout(subscriptionTimeout);
+          setRealtimeStatus('connected');
+          setShowRealtimeError(false);
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ [REALTIME] Subscription error');
+          clearTimeout(subscriptionTimeout);
+          setRealtimeStatus('error');
+          setShowRealtimeError(true);
+          toast.error('خطأ في الاتصال بالتحديثات المباشرة. يرجى تحديث الصفحة.');
         } else if (status === 'TIMED_OUT') {
           console.warn('⚠️ [REALTIME] Subscription timed out');
+          clearTimeout(subscriptionTimeout);
+          setRealtimeStatus('timeout');
+          setShowRealtimeError(true);
+          toast.warning('انتهى وقت الاتصال بالتحديثات المباشرة. يمكنك تحديث الصفحة للمحاولة مرة أخرى.');
         }
       });
 
     return () => {
       console.log('🔌 [REALTIME] Cleaning up rental receipts subscription');
+      clearTimeout(subscriptionTimeout);
       supabase.removeChannel(channel);
     };
   }, [companyId, selectedCustomer, queryClient]);

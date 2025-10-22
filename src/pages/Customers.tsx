@@ -59,6 +59,7 @@ import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
 import { toast } from 'sonner';
+import { PageLoadingTimeout } from '@/components/common/PageLoadingTimeout';
 
 const Customers = () => {
   const { user } = useAuth();
@@ -293,9 +294,15 @@ const Customers = () => {
   // Mobile view
   if (isMobile) {
     return (
-      <div className="space-y-6 p-4">
-        {/* Header */}
-        <div className="flex justify-between items-center">
+      <PageLoadingTimeout
+        isLoading={isLoading}
+        timeoutMs={20000}
+        loadingMessage="جاري تحميل بيانات العملاء..."
+        onRetry={refetch}
+      >
+        <div className="space-y-6 p-4">
+          {/* Header */}
+          <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">العملاء</h1>
           <div className="flex gap-2">
             <Button 
@@ -481,15 +488,22 @@ const Customers = () => {
             toast.success('تم رفع ملف العملاء بنجاح');
           }}
         />
-      </div>
+        </div>
+      </PageLoadingTimeout>
     );
   }
 
   // Desktop view with virtual scrolling
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <PageLoadingTimeout
+      isLoading={isLoading}
+      timeoutMs={20000}
+      loadingMessage="جاري تحميل بيانات العملاء..."
+      onRetry={refetch}
+    >
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">إدارة العملاء</h1>
         <div className="flex gap-2">
           <Button 
@@ -887,7 +901,8 @@ const Customers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </PageLoadingTimeout>
   );
 };
 

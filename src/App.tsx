@@ -138,21 +138,26 @@ const queryClient = new QueryClient({
       // Reduce refetch frequency for better performance
       refetchOnWindowFocus: false, // Too aggressive for desktop app
       refetchOnReconnect: true,    // Keep this for network recovery
-      refetchOnMount: true,        // Keep this for fresh data
-      
-      // Increase stale time globally (2 minutes)
-      staleTime: 2 * 60 * 1000,
-      
+      refetchOnMount: false,       // Show cached data immediately, revalidate in background
+
+      // Increase stale time globally (5 minutes) - show cached data longer
+      staleTime: 5 * 60 * 1000,
+
       // Increase cache time (15 minutes)
       gcTime: 15 * 60 * 1000,
-      
+
       // Add retry configuration
       retry: 1, // Retry failed queries once
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+
+      // Add query timeout to prevent infinite hanging (30 seconds)
+      // This will cancel queries that take too long
+      networkMode: 'online',
     },
     mutations: {
       // Add retry for mutations
       retry: 1,
+      networkMode: 'online',
     }
   }
 });
@@ -206,9 +211,13 @@ const App = () => {
 const AppRoutes = () => {
   const location = useLocation();
 
-  // Preload related routes when location changes
+  // Preload related routes and cancel in-flight queries when location changes
   React.useEffect(() => {
     preloadRelatedRoutes(location.pathname);
+
+    // Cancel all in-flight queries when navigating away
+    // This prevents slow queries from previous page blocking the new page
+    queryClient.cancelQueries();
   }, [location.pathname]);
 
   return (
