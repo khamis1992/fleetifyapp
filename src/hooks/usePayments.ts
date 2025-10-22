@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface Payment {
   id: string;
@@ -58,7 +59,7 @@ export const usePayments = (filters?: {
   const { user } = useAuth();
   const { companyId: effectiveCompanyId } = useUnifiedCompanyAccess();
   
-  console.log("🔍 [usePayments] تشخيص المصادقة:", {
+  logger.debug("🔍 [usePayments] تشخيص المصادقة:", {
     user: user ? {
       id: user.id,
       email: user.email,
@@ -71,14 +72,14 @@ export const usePayments = (filters?: {
   return useQuery({
     queryKey: ["payments", effectiveCompanyId, filters],
     queryFn: async () => {
-      console.log("🔍 [usePayments] بدء تحميل المدفوعات");
+      logger.debug("🔍 [usePayments] بدء تحميل المدفوعات");
       
       if (!effectiveCompanyId) {
-        console.error("❌ [usePayments] Company ID غير متاح");
+        logger.error("❌ [usePayments] Company ID غير متاح");
         throw new Error("معرف الشركة مطلوب للوصول للمدفوعات");
       }
       
-      console.log("🔍 [usePayments] استخدام Company ID:", effectiveCompanyId);
+      logger.debug("🔍 [usePayments] استخدام Company ID:", effectiveCompanyId);
       
       let query = supabase
         .from("payments")
@@ -129,15 +130,15 @@ export const usePayments = (filters?: {
         query = query.lte("payment_date", filters.payment_date_lte);
       }
       
-      console.log("🔍 [usePayments] تنفيذ الاستعلام...");
+      logger.debug("🔍 [usePayments] تنفيذ الاستعلام...");
       const { data, error } = await query;
       
       if (error) {
-        console.error("❌ [usePayments] خطأ في الاستعلام:", error);
+        logger.error("❌ [usePayments] خطأ في الاستعلام:", error);
         throw new Error(`فشل في تحميل المدفوعات: ${error.message}`);
       }
       
-      console.log("✅ [usePayments] تم تحميل المدفوعات بنجاح:", {
+      logger.info("✅ [usePayments] تم تحميل المدفوعات بنجاح:", {
         count: data?.length || 0,
         companyId: effectiveCompanyId
       });
@@ -146,7 +147,7 @@ export const usePayments = (filters?: {
     },
     enabled: !!effectiveCompanyId,
     retry: (failureCount, error) => {
-      console.log("🔄 [usePayments] محاولة إعادة التحميل:", { failureCount, error: error.message });
+      logger.debug("🔄 [usePayments] محاولة إعادة التحميل:", { failureCount, error: error.message });
       return failureCount < 3;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
@@ -400,11 +401,11 @@ export const useBulkDeletePayments = () => {
         throw new Error("Company ID is required");
       }
       
-      console.log("🔧 [BULK_DELETE] بدء عملية الحذف مع الخيارات:", options);
-      console.log("🔧 [BULK_DELETE] effective company_id:", effectiveCompanyId);
-      console.log("🔧 [BULK_DELETE] user.profile.company_id:", user?.profile?.company_id);
-      console.log("🔧 [BULK_DELETE] browsing mode:", { isBrowsingMode, browsedCompany: browsedCompany?.name });
-      console.log("🔧 [BULK_DELETE] معلومات المستخدم:", {
+      logger.debug("🔧 [BULK_DELETE] بدء عملية الحذف مع الخيارات:", options);
+      logger.debug("🔧 [BULK_DELETE] effective company_id:", effectiveCompanyId);
+      logger.debug("🔧 [BULK_DELETE] user.profile.company_id:", user?.profile?.company_id);
+      logger.debug("🔧 [BULK_DELETE] browsing mode:", { isBrowsingMode, browsedCompany: browsedCompany?.name });
+      logger.debug("🔧 [BULK_DELETE] معلومات المستخدم:", {
         userId: user?.id,
         email: user?.email,
         userCompanyId: user?.profile?.company_id,
@@ -417,36 +418,36 @@ export const useBulkDeletePayments = () => {
         .select("*")
         .eq("company_id", effectiveCompanyId);
       
-      console.log("🔧 [BULK_DELETE] استعلام أساسي مبني للشركة:", effectiveCompanyId);
+      logger.debug("🔧 [BULK_DELETE] استعلام أساسي مبني للشركة:", effectiveCompanyId);
       
       // Handle deleteAll - ignore all filters when true
       if (options.deleteAll) {
-        console.log("🔥 [BULK_DELETE] وضع حذف الكل مفعل - تجاهل جميع الفلاتر");
+        logger.debug("🔥 [BULK_DELETE] وضع حذف الكل مفعل - تجاهل جميع الفلاتر");
       } else {
         // Apply filters only if deleteAll is not true
         if (options.onlyUnlinked) {
           query = query.is("invoice_id", null).is("contract_id", null);
-          console.log("🔍 تطبيق فلتر: المدفوعات غير المربوطة فقط");
+          logger.debug("🔍 تطبيق فلتر: المدفوعات غير المربوطة فقط");
         }
         
         if (options.startDate) {
           query = query.gte("payment_date", options.startDate);
-          console.log(`🔍 تطبيق فلتر: من تاريخ ${options.startDate}`);
+          logger.debug(`🔍 تطبيق فلتر: من تاريخ ${options.startDate}`);
         }
         
         if (options.endDate) {
           query = query.lte("payment_date", options.endDate);
-          console.log(`🔍 تطبيق فلتر: إلى تاريخ ${options.endDate}`);
+          logger.debug(`🔍 تطبيق فلتر: إلى تاريخ ${options.endDate}`);
         }
         
         if (options.paymentType && options.paymentType !== 'all') {
           query = query.eq("payment_type", options.paymentType);
-          console.log(`🔍 تطبيق فلتر: نوع الدفع ${options.paymentType}`);
+          logger.debug(`🔍 تطبيق فلتر: نوع الدفع ${options.paymentType}`);
         }
         
         if (options.paymentMethod && options.paymentMethod !== 'all') {
           query = query.eq("payment_method", options.paymentMethod);
-          console.log(`🔍 تطبيق فلتر: طريقة الدفع ${options.paymentMethod}`);
+          logger.debug(`🔍 تطبيق فلتر: طريقة الدفع ${options.paymentMethod}`);
         }
       }
       
@@ -456,16 +457,16 @@ export const useBulkDeletePayments = () => {
                         (options.paymentMethod && options.paymentMethod !== 'all'));
       
       if (options.deleteAll) {
-        console.log("🔥 [BULK_DELETE] سيتم حذف جميع المدفوعات للشركة (بدون استثناء)");
+        logger.debug("🔥 [BULK_DELETE] سيتم حذف جميع المدفوعات للشركة (بدون استثناء)");
       } else if (!hasFilters) {
-        console.log("⚠️ لا توجد فلاتر مطبقة - سيتم حذف جميع المدفوعات للشركة");
+        logger.debug("⚠️ لا توجد فلاتر مطبقة - سيتم حذف جميع المدفوعات للشركة");
       } else {
-        console.log("✅ فلاتر مطبقة - سيتم حذف المدفوعات المطابقة فقط");
+        logger.debug("✅ فلاتر مطبقة - سيتم حذف المدفوعات المطابقة فقط");
       }
       
       const { data: paymentsToDelete, error: fetchError } = await query;
       
-      console.log("🔧 [BULK_DELETE] نتيجة الاستعلام:", {
+      logger.debug("🔧 [BULK_DELETE] نتيجة الاستعلام:", {
         paymentsFound: paymentsToDelete?.length || 0,
         error: fetchError,
         firstPayment: paymentsToDelete?.[0] ? {
@@ -476,13 +477,13 @@ export const useBulkDeletePayments = () => {
       });
       
       if (fetchError) {
-        console.error("❌ [BULK_DELETE] خطأ في الاستعلام:", fetchError);
+        logger.error("❌ [BULK_DELETE] خطأ في الاستعلام:", fetchError);
         throw fetchError;
       }
       
       if (!paymentsToDelete || paymentsToDelete.length === 0) {
-        console.log("⚠️ [BULK_DELETE] لم يتم العثور على مدفوعات للحذف");
-        console.log("🔍 [BULK_DELETE] تحقق من effectiveCompanyId:", effectiveCompanyId);
+        logger.debug("⚠️ [BULK_DELETE] لم يتم العثور على مدفوعات للحذف");
+        logger.debug("🔍 [BULK_DELETE] تحقق من effectiveCompanyId:", effectiveCompanyId);
         
         // Let's also check if there are ANY payments in the database for debugging
         const { data: allPayments, error: checkError } = await supabase
@@ -490,7 +491,7 @@ export const useBulkDeletePayments = () => {
           .select("company_id, count")
           .eq("company_id", effectiveCompanyId);
         
-        console.log("🔍 [BULK_DELETE] فحص إجمالي المدفوعات للشركة:", {
+        logger.debug("🔍 [BULK_DELETE] فحص إجمالي المدفوعات للشركة:", {
           totalPayments: allPayments?.length || 0,
           checkError
         });
@@ -557,7 +558,7 @@ export const useBulkDeletePayments = () => {
       let deletedCount = 0;
       const totalToDelete = paymentsToDelete.length;
       
-      console.log(`🗑️ بدء حذف ${totalToDelete} مدفوع على ${Math.ceil(totalToDelete / batchSize)} دفعة`);
+      logger.debug(`🗑️ بدء حذف ${totalToDelete} مدفوع على ${Math.ceil(totalToDelete / batchSize)} دفعة`);
       
       for (let i = 0; i < paymentsToDelete.length; i += batchSize) {
         const batch = paymentsToDelete.slice(i, i + batchSize);
@@ -565,7 +566,7 @@ export const useBulkDeletePayments = () => {
         const batchNumber = Math.floor(i / batchSize) + 1;
         const totalBatches = Math.ceil(totalToDelete / batchSize);
         
-        console.log(`🔄 معالجة الدفعة ${batchNumber}/${totalBatches} (${batch.length} مدفوع)`);
+        logger.debug(`🔄 معالجة الدفعة ${batchNumber}/${totalBatches} (${batch.length} مدفوع)`);
         
         const { error: deleteError, count } = await supabase
           .from("payments")
@@ -574,16 +575,16 @@ export const useBulkDeletePayments = () => {
           .eq("company_id", effectiveCompanyId);
         
         if (deleteError) {
-          console.error(`❌ خطأ في حذف الدفعة ${batchNumber}:`, deleteError);
+          logger.error(`❌ خطأ في حذف الدفعة ${batchNumber}:`, deleteError);
           throw deleteError;
         }
         
         const actualDeleted = count || batch.length;
         deletedCount += actualDeleted;
-        console.log(`✅ تم حذف ${actualDeleted} مدفوع من الدفعة ${batchNumber}`);
+        logger.debug(`✅ تم حذف ${actualDeleted} مدفوع من الدفعة ${batchNumber}`);
       }
       
-      console.log(`🎉 تم الانتهاء من حذف ${deletedCount} مدفوع من أصل ${totalToDelete}`);
+      logger.info(`🎉 تم الانتهاء من حذف ${deletedCount} مدفوع من أصل ${totalToDelete}`);
       
       return { deletedCount, processedInvoices };
     },

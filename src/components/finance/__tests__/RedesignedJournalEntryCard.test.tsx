@@ -1,10 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RedesignedJournalEntryCard } from '../RedesignedJournalEntryCard';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 // Mock the useCurrencyFormatter hook
-jest.mock('@/hooks/useCurrencyFormatter', () => ({
-  useCurrencyFormatter: jest.fn()
+vi.mock('@/hooks/useCurrencyFormatter', () => ({
+  useCurrencyFormatter: vi.fn()
 }));
 
 const mockEntry = {
@@ -76,7 +77,7 @@ const mockEntry = {
 
 describe('RedesignedJournalEntryCard', () => {
   beforeEach(() => {
-    (useCurrencyFormatter as jest.Mock).mockReturnValue({
+    (useCurrencyFormatter as any).mockReturnValue({
       formatCurrency: (amount: number) => `${amount.toFixed(3)} د.ك`
     });
   });

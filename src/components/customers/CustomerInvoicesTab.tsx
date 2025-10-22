@@ -1,17 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { useCustomerInvoices, useCustomerInvoicesSummary } from "@/hooks/useCustomerInvoices";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Eye, Edit, Trash2, DollarSign } from "lucide-react";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import * as React from "react";
-import { Eye, Edit, Trash2, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { StatCardNumber } from "@/components/ui/NumberDisplay";
 
 interface CustomerInvoicesTabProps {

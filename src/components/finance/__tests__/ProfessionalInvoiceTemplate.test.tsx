@@ -1,16 +1,17 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { ProfessionalInvoiceTemplate } from '../ProfessionalInvoiceTemplate';
 
 // Mock the useCurrencyFormatter hook
-jest.mock('@/hooks/useCurrencyFormatter', () => ({
+vi.mock('@/hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => ({
     formatCurrency: (amount: number) => `${amount.toFixed(3)} KWD`
   })
 }));
 
 // Mock the useCompanyCurrency hook
-jest.mock('@/hooks/useCompanyCurrency', () => ({
+vi.mock('@/hooks/useCompanyCurrency', () => ({
   useCompanyCurrency: () => ({
     currency: 'KWD'
   })

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -6,6 +6,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const Auth: React.FC = () => {
   const { user, loading } = useAuth();
+  const hasRedirected = useRef(false);
+
+  // Prevent redirect loop in development
+  useEffect(() => {
+    if (user && !hasRedirected.current) {
+      hasRedirected.current = true;
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -15,7 +23,7 @@ const Auth: React.FC = () => {
     );
   }
 
-  if (user) {
+  if (user && hasRedirected.current) {
     return <Navigate to="/dashboard" replace />;
   }
 

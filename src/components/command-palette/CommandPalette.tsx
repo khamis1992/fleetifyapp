@@ -53,9 +53,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Load recent commands from localStorage
   useEffect(() => {
-    const recent = localStorage.getItem('commandPaletteRecent');
-    if (recent) {
-      setRecentCommands(JSON.parse(recent));
+    try {
+      const recent = localStorage.getItem('commandPaletteRecent');
+      if (recent) {
+        setRecentCommands(JSON.parse(recent));
+      }
+    } catch (error) {
+      // Handle corrupted localStorage data
+      console.error('Failed to load recent commands:', error);
+      localStorage.removeItem('commandPaletteRecent');
     }
   }, []);
 
@@ -284,10 +290,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   }, [recentCommands]);
 
   const handleSelect = (command: CommandItem) => {
-    saveRecentCommand(command.id);
-    command.action();
-    onClose();
-    setSearch('');
+    try {
+      saveRecentCommand(command.id);
+      command.action();
+      onClose();
+      setSearch('');
+    } catch (error) {
+      console.error('Command execution failed:', error);
+      onClose();
+      setSearch('');
+    }
   };
 
   // Close on Escape

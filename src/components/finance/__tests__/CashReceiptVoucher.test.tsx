@@ -1,9 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { CashReceiptVoucher } from '../CashReceiptVoucher';
 
 // Mock the useCurrencyFormatter hook
-jest.mock('@/hooks/useCurrencyFormatter', () => ({
+vi.mock('@/hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => ({
     formatCurrency: (amount: number) => `${amount.toFixed(3)} QAR`
   })
