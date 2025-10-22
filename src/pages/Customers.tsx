@@ -77,7 +77,7 @@ const Customers = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100); // Increased from 50 to 100
 
   // Build filters for the query
   const filters: CustomerFilters = {
@@ -108,7 +108,7 @@ const Customers = () => {
   
   // Extract pagination data and customers array
   const customers = React.useMemo(() => {
-    // Handle new pagination structure
+    // Handle new pagination structure from useEnhancedCustomers
     if (customersResult && typeof customersResult === 'object' && 'data' in customersResult) {
       return Array.isArray(customersResult.data) ? customersResult.data : [];
     }
@@ -119,21 +119,15 @@ const Customers = () => {
     return [];
   }, [customersResult]);
 
-  const paginationInfo = React.useMemo(() => {
-    if (customersResult && typeof customersResult === 'object' && 'pagination' in customersResult) {
-      return customersResult.pagination as {
-        page: number;
-        pageSize: number;
-        totalCount: number;
-        totalPages: number;
-        hasMore: boolean;
-      };
+  const totalCustomersInDB = React.useMemo(() => {
+    // Use 'total' property from useEnhancedCustomers hook
+    if (customersResult && typeof customersResult === 'object' && 'total' in customersResult) {
+      return customersResult.total || 0;
     }
-    return undefined;
-  }, [customersResult]);
+    return customers.length;
+  }, [customersResult, customers.length]);
 
-  const totalCustomersInDB = paginationInfo?.totalCount ?? customers.length;
-  const totalPages = paginationInfo?.totalPages ?? Math.ceil(totalCustomersInDB / pageSize);
+  const totalPages = Math.ceil(totalCustomersInDB / pageSize);
   
   // Virtual scrolling implementation
   const virtualizer = useVirtualizer({
@@ -751,8 +745,24 @@ const Customers = () => {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">عدد العملاء:</span>
+              <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">الصفحات:</span>
