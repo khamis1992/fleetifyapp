@@ -526,7 +526,7 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
             account_id,
             debit_amount,
             credit_amount,
-            journal_entry:journal_entries(
+            journal_entry:journal_entries!inner(
               company_id,
               status,
               entry_date
@@ -551,14 +551,22 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
         // Calculate actual balances from journal entries
         const accountBalances = new Map<string, number>()
         
+        console.log(`📄 [FINANCIAL_SUMMARY] Processing ${journalLines?.length || 0} journal lines`)
+        
         journalLines?.forEach((line: any) => {
-          if (line.journal_entry) {
-            const accountId = line.account_id
-            const currentBalance = accountBalances.get(accountId) || 0
-            const movement = (line.debit_amount || 0) - (line.credit_amount || 0)
-            accountBalances.set(accountId, currentBalance + movement)
+          // Skip if journal_entry is null or undefined
+          if (!line.journal_entry) {
+            console.warn('⚠️ [FINANCIAL_SUMMARY] Line has no journal_entry:', line.id)
+            return
           }
+          
+          const accountId = line.account_id
+          const currentBalance = accountBalances.get(accountId) || 0
+          const movement = (line.debit_amount || 0) - (line.credit_amount || 0)
+          accountBalances.set(accountId, currentBalance + movement)
         })
+        
+        console.log(`📄 [FINANCIAL_SUMMARY] Calculated balances for ${accountBalances.size} accounts`)
         
         // Calculate summary by account type
         let totalAssets = 0

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ const DELAY_FINE_PER_DAY = 120; // QAR
 const MAX_FINE_PER_MONTH = 3000; // QAR
 
 const FinancialTrackingInner: React.FC = () => {
+  const navigate = useNavigate();
   const { companyId, user } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -859,7 +861,7 @@ const FinancialTrackingInner: React.FC = () => {
       }
       
       // Create receipt via Supabase with partial payment support, notes, vehicle_id, payment_method, and reference_number
-      await createReceiptMutation.mutateAsync({
+      const createdReceipt = await createReceiptMutation.mutateAsync({
         customer_id: selectedCustomer.id,
         customer_name: selectedCustomer.name,
         month,
@@ -876,6 +878,72 @@ const FinancialTrackingInner: React.FC = () => {
         payment_method: paymentMethod, // Add payment_method
         reference_number: referenceNumber || null // Add reference_number
       } as any);
+
+      // Create invoice for this rental payment if contract_id exists
+      if (contractId && companyId && createdReceipt) {
+        try {
+          const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
+          const invoiceNumber = await generateInvoiceNumber(companyId);
+          
+          // Get the receipt number from the created receipt
+          const receiptNumber = createdReceipt.receipt_number || 'N/A';
+          
+          // Create invoice description
+          const description = `إيصال دفع رقم ${receiptNumber} - ${month} - ${selectedCustomer.name}`;
+          const invoiceNotes = `مبلغ الإيجار: ${rent_amount.toFixed(3)} د.ك\nغرامة التأخير: ${fine.toFixed(3)} د.ك\nالإجمالي: ${paidAmount.toFixed(3)} د.ك`;
+
+          // Create the invoice
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .insert({
+              company_id: companyId,
+              invoice_number: invoiceNumber,
+              customer_id: selectedCustomer.id,
+              contract_id: contractId,
+              invoice_date: paymentDate,
+              due_date: paymentDate,
+              total_amount: paidAmount,
+              tax_amount: 0,
+              subtotal: paidAmount,
+              status: 'paid',
+              invoice_type: 'rental',
+              description: description,
+              notes: invoiceNotes,
+              payment_terms: 'مدفوع',
+              currency: 'KWD'
+            })
+            .select('id, invoice_number')
+            .single();
+
+          if (!invoiceError && invoice) {
+            // Create invoice item
+            await supabase
+              .from('invoice_items')
+              .insert({
+                invoice_id: invoice.id,
+                item_description: description,
+                quantity: 1,
+                unit_price: paidAmount,
+                line_total: paidAmount,
+                tax_rate: 0,
+                tax_amount: 0
+              });
+
+            // Link the rental payment receipt to the invoice
+            await supabase
+              .from('rental_payment_receipts')
+              .update({ invoice_id: invoice.id })
+              .eq('id', createdReceipt.id);
+
+            console.log('✅ Invoice created for rental payment:', invoice.invoice_number);
+          } else if (invoiceError) {
+            console.error('Error creating invoice for rental payment:', invoiceError);
+          }
+        } catch (invoiceCreationError) {
+          console.error('Exception creating invoice for rental payment:', invoiceCreationError);
+          // Don't fail the payment if invoice creation fails
+        }
+      }
 
       // Show success message with late fee clearing info
       if (previousMonthUpdated) {
@@ -2034,7 +2102,18 @@ const FinancialTrackingInner: React.FC = () => {
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <CardTitle className="text-lg sm:text-xl">سجل المدفوعات - {selectedCustomer.name}</CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-lg sm:text-xl">سجل المدفوعات -</CardTitle>
+                  <Button
+                    variant="link"
+                    className="text-lg sm:text-xl p-0 h-auto font-bold text-primary hover:text-primary/80"
+                    onClick={() => navigate(`/customers?id=${selectedCustomer.id}`)}
+                    title="عرض ملف العميل الكامل"
+                  >
+                    {selectedCustomer.name}
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                  </Button>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" onClick={exportToExcel}>
                     <FileSpreadsheet className="h-4 w-4 ml-2" />

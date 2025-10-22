@@ -68,6 +68,9 @@ const Invoices = () => {
   const { data: costCenters } = useCostCenters()
   const { data: fixedAssets } = useFixedAssets()
 
+  // Fetch all invoices for statistics (without pagination)
+  const { data: allInvoicesForStats } = useInvoices({ pageSize: 999999 })
+
   // Extract invoices and pagination from response
   const invoices = useMemo(() => {
     if (!invoicesResponse) return [];
@@ -134,7 +137,7 @@ const Invoices = () => {
       setDeleteDialogOpen(false)
       setInvoiceToDelete(null)
     },
-    onError: (error: unknown) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل حذف الفاتورة')
     }
   })
@@ -157,6 +160,30 @@ const Invoices = () => {
     const matchesCostCenter = filterCostCenter === "all" || invoice.cost_center_id === filterCostCenter
     return matchesSearch && matchesStatus && matchesType && matchesCostCenter
   }) || []
+
+  // Calculate statistics from all invoices
+  const statistics = useMemo(() => {
+    const allInvoices = Array.isArray(allInvoicesForStats) 
+      ? allInvoicesForStats 
+      : allInvoicesForStats?.data || [];
+
+    const totalRevenue = allInvoices.reduce((sum, inv) => {
+      return sum + (inv.total_amount || 0);
+    }, 0);
+
+    const pendingCount = allInvoices.filter(inv => inv.status === 'pending').length;
+    const draftCount = allInvoices.filter(inv => inv.status === 'draft').length;
+    const underReviewCount = allInvoices.filter(inv => inv.status === 'under_review').length;
+    const activeCount = allInvoices.filter(inv => inv.status === 'paid').length;
+
+    return {
+      totalRevenue,
+      pendingCount,
+      draftCount,
+      underReviewCount,
+      activeCount
+    };
+  }, [allInvoicesForStats]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -233,6 +260,59 @@ const Invoices = () => {
             إنشاء فاتورة جديدة
           </Button>
         </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Total Revenue */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">QAR {statistics.totalRevenue.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Invoices */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">العقود المعلقة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.pendingCount}</div>
+          </CardContent>
+        </Card>
+
+        {/* Draft Invoices */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">مسودات العقود</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.draftCount}</div>
+          </CardContent>
+        </Card>
+
+        {/* Under Review */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">قيد المراجعة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.underReviewCount}</div>
+          </CardContent>
+        </Card>
+
+        {/* Active Invoices */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">العقود النشطة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.activeCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <InvoiceForm 
