@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -15,7 +16,6 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { FleetAvailabilityWidget } from '@/components/dashboard/car-rental/FleetAvailabilityWidget';
 import { RentalAnalyticsWidget } from '@/components/dashboard/car-rental/RentalAnalyticsWidget';
 import { MaintenanceScheduleWidget } from '@/components/dashboard/car-rental/MaintenanceScheduleWidget';
-import { RentalTimelineWidget } from '@/components/dashboard/car-rental/RentalTimelineWidget';
 import { InsuranceAlertsWidget } from '@/components/dashboard/car-rental/InsuranceAlertsWidget';
 import { RevenueOptimizationWidget } from '@/components/dashboard/car-rental/RevenueOptimizationWidget';
 import { CommandPalette } from '@/components/command-palette';
@@ -118,15 +118,6 @@ const CarRentalDashboard: React.FC = () => {
             <RevenueOptimizationWidget />
             <InsuranceAlertsWidget />
           </div>
-        </motion.div>
-
-        {/* Car Rental Dashboard Widgets - Row 3 (Full Width Timeline) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <RentalTimelineWidget />
         </motion.div>
 
         {/* Quick Actions Panel */}
