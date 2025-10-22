@@ -132,30 +132,8 @@ const PerformanceMonitor = lazy(() => import("@/components/performance").then(m 
 // Fix pages
 const FixVehicleData = lazy(() => import("./pages/FixVehicleData"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Reduce refetch frequency for better performance
-      refetchOnWindowFocus: false, // Too aggressive for desktop app
-      refetchOnReconnect: true,    // Keep this for network recovery
-      refetchOnMount: true,        // Keep this for fresh data
-      
-      // Increase stale time globally (2 minutes)
-      staleTime: 2 * 60 * 1000,
-      
-      // Increase cache time (15 minutes)
-      gcTime: 15 * 60 * 1000,
-      
-      // Add retry configuration
-      retry: 1, // Retry failed queries once
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    },
-    mutations: {
-      // Add retry for mutations
-      retry: 1,
-    }
-  }
-});
+// Import the shared QueryClient instead of creating a duplicate
+import { queryClient } from "@/lib/queryClient";
 
 const App = () => {
   React.useEffect(() => {
@@ -206,8 +184,14 @@ const App = () => {
 const AppRoutes = () => {
   const location = useLocation();
 
-  // Preload related routes when location changes
+  // Invalidate stale queries and preload related routes when location changes
   React.useEffect(() => {
+    // Invalidate all stale queries to ensure fresh data on route change
+    queryClient.invalidateQueries({
+      predicate: (query) => query.isStale(),
+      refetchType: 'active' // Only refetch queries that are currently being used
+    });
+
     preloadRelatedRoutes(location.pathname);
   }, [location.pathname]);
 

@@ -10,12 +10,26 @@
 const CACHE_NAME = 'fleetify-v1';
 const RUNTIME_CACHE = 'fleetify-runtime';
 
+// Cache TTL for API responses (5 minutes in milliseconds)
+const API_CACHE_TTL = 5 * 60 * 1000;
+
 // Critical assets to cache on install
 const CRITICAL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
 ];
+
+// Helper function to check if cached response is expired
+function isCacheExpired(cachedResponse) {
+  if (!cachedResponse) return true;
+
+  const cachedTime = cachedResponse.headers.get('sw-cache-time');
+  if (!cachedTime) return true;
+
+  const age = Date.now() - parseInt(cachedTime, 10);
+  return age > API_CACHE_TTL;
+}
 
 // Install event - cache critical assets
 self.addEventListener('install', (event) => {
@@ -63,7 +77,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy for API calls
+  // Network-first strategy for API calls with cache expiration
   if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
     event.respondWith(
       fetch(request)
@@ -76,16 +90,37 @@ self.addEventListener('fetch', (event) => {
           // Clone the response
           const responseToCache = response.clone();
 
-          // Cache successful API responses
+          // Add cache timestamp header and cache successful API responses
           caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseToCache);
+            // Create new response with cache timestamp
+            responseToCache.blob().then((body) => {
+              const headers = new Headers(responseToCache.headers);
+              headers.set('sw-cache-time', Date.now().toString());
+
+              const cachedResponse = new Response(body, {
+                status: responseToCache.status,
+                statusText: responseToCache.statusText,
+                headers: headers
+              });
+
+              cache.put(request, cachedResponse);
+            });
           });
 
           return response;
         })
         .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(request);
+          // Fallback to cache if network fails, but only if not expired
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse && !isCacheExpired(cachedResponse)) {
+              return cachedResponse;
+            }
+            // If cache is expired or doesn't exist, return error
+            return new Response('Network error and no valid cache available', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
         })
     );
     return;
