@@ -20,10 +20,7 @@ import { InsuranceAlertsWidget } from '@/components/dashboard/car-rental/Insuran
 import { RevenueOptimizationWidget } from '@/components/dashboard/car-rental/RevenueOptimizationWidget';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { useExport } from '@/hooks/useExport';
-import { toast } from 'sonner';
+
 
 const CarRentalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -32,20 +29,9 @@ const CarRentalDashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('car_rental');
   const { formatCurrency } = useCurrencyFormatter();
-  const { exportDashboardPDF, state: exportState } = useExport();
 
   // Command Palette State
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-
-  // Widget refs for export
-  const widgetRefs = {
-    fleetAvailability: useRef<HTMLDivElement>(null),
-    rentalAnalytics: useRef<HTMLDivElement>(null),
-    maintenanceSchedule: useRef<HTMLDivElement>(null),
-    revenueOptimization: useRef<HTMLDivElement>(null),
-    insuranceAlerts: useRef<HTMLDivElement>(null),
-    rentalTimeline: useRef<HTMLDivElement>(null),
-  };
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
@@ -89,28 +75,7 @@ const CarRentalDashboard: React.FC = () => {
     }
   })) || [];
 
-  // Handle Export All
-  const handleExportAll = async () => {
-    try {
-      const charts = [
-        { element: widgetRefs.fleetAvailability.current!, title: 'توافر الأسطول' },
-        { element: widgetRefs.rentalAnalytics.current!, title: 'تحليلات الإيجار' },
-        { element: widgetRefs.maintenanceSchedule.current!, title: 'جدول الصيانة' },
-        { element: widgetRefs.revenueOptimization.current!, title: 'تحسين الإيرادات' },
-        { element: widgetRefs.insuranceAlerts.current!, title: 'تنبيهات التأمين' },
-        { element: widgetRefs.rentalTimeline.current!, title: 'جدول الإيجارات' },
-      ].filter(chart => chart.element !== null);
 
-      if (charts.length === 0) {
-        toast.error('لا توجد بيانات للتصدير');
-        return;
-      }
-
-      await exportDashboardPDF(charts, 'car_rental_dashboard.pdf', 'لوحة معلومات تأجير السيارات');
-    } catch (error) {
-      console.error('Export error:', error);
-    }
-  };
 
   return (
     <>
@@ -124,24 +89,11 @@ const CarRentalDashboard: React.FC = () => {
 
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
-        <div className="flex items-center justify-between mb-6">
-          <EnhancedDashboardHeader
-            isBrowsingMode={isBrowsingMode}
-            browsedCompany={browsedCompany}
-            onExitBrowseMode={exitBrowseMode}
-          />
-          <Button
-            onClick={handleExportAll}
-            disabled={exportState.isExporting}
-            variant="outline"
-            size="default"
-            className="gap-2"
-            data-action="export"
-          >
-            <Download className="h-4 w-4" />
-            {exportState.isExporting ? 'جاري التصدير...' : 'تصدير لوحة المعلومات'}
-          </Button>
-        </div>
+        <EnhancedDashboardHeader
+          isBrowsingMode={isBrowsingMode}
+          browsedCompany={browsedCompany}
+          onExitBrowseMode={exitBrowseMode}
+        />
 
         {/* Car Rental Dashboard Widgets - Row 1 */}
         <motion.div
@@ -150,15 +102,9 @@ const CarRentalDashboard: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div ref={widgetRefs.fleetAvailability}>
-              <FleetAvailabilityWidget />
-            </div>
-            <div ref={widgetRefs.rentalAnalytics}>
-              <RentalAnalyticsWidget />
-            </div>
-            <div ref={widgetRefs.maintenanceSchedule}>
-              <MaintenanceScheduleWidget />
-            </div>
+            <FleetAvailabilityWidget />
+            <RentalAnalyticsWidget />
+            <MaintenanceScheduleWidget />
           </div>
         </motion.div>
 
@@ -169,12 +115,8 @@ const CarRentalDashboard: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div ref={widgetRefs.revenueOptimization}>
-              <RevenueOptimizationWidget />
-            </div>
-            <div ref={widgetRefs.insuranceAlerts}>
-              <InsuranceAlertsWidget />
-            </div>
+            <RevenueOptimizationWidget />
+            <InsuranceAlertsWidget />
           </div>
         </motion.div>
 
@@ -184,9 +126,7 @@ const CarRentalDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
         >
-          <div ref={widgetRefs.rentalTimeline}>
-            <RentalTimelineWidget />
-          </div>
+          <RentalTimelineWidget />
         </motion.div>
 
         {/* Quick Actions Panel */}

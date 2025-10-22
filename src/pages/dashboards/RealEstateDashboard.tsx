@@ -16,10 +16,7 @@ import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { useExport } from '@/hooks/useExport';
-import { toast } from 'sonner';
+
 
 // Real Estate Specific Widgets
 import { OccupancyAnalyticsWidget } from '@/components/dashboard/real-estate/OccupancyAnalyticsWidget';
@@ -39,18 +36,6 @@ const RealEstateDashboard: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
   const { formatCurrency } = useCurrencyFormatter();
-  const { exportDashboardPDF, state: exportState } = useExport();
-
-  // Widget refs for export
-  const widgetRefs = {
-    occupancy: useRef<HTMLDivElement>(null),
-    rentCollection: useRef<HTMLDivElement>(null),
-    maintenance: useRef<HTMLDivElement>(null),
-    propertyPerformance: useRef<HTMLDivElement>(null),
-    leaseExpiry: useRef<HTMLDivElement>(null),
-    tenantSatisfaction: useRef<HTMLDivElement>(null),
-    vacancy: useRef<HTMLDivElement>(null),
-  };
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
@@ -58,11 +43,7 @@ const RealEstateDashboard: React.FC = () => {
     onOpenSearch: () => {
       const searchInput = document.querySelector<HTMLInputElement>('input[type="search"]');
       searchInput?.focus();
-    },
-    onExport: () => {
-      const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export"]');
-      exportButton?.click();
-    },
+    }
   });
 
   // Check if we have no data (empty state)
@@ -96,29 +77,7 @@ const RealEstateDashboard: React.FC = () => {
     }
   })) || [];
 
-  // Handle Export All
-  const handleExportAll = async () => {
-    try {
-      const charts = [
-        { element: widgetRefs.occupancy.current!, title: 'تحليلات الإشغال' },
-        { element: widgetRefs.rentCollection.current!, title: 'تحصيل الإيجارات' },
-        { element: widgetRefs.maintenance.current!, title: 'طلبات الصيانة' },
-        { element: widgetRefs.propertyPerformance.current!, title: 'أداء العقارات' },
-        { element: widgetRefs.leaseExpiry.current!, title: 'انتهاء العقود' },
-        { element: widgetRefs.tenantSatisfaction.current!, title: 'رضا المستأجرين' },
-        { element: widgetRefs.vacancy.current!, title: 'تحليل الشواغر' },
-      ].filter(chart => chart.element !== null);
 
-      if (charts.length === 0) {
-        toast.error('لا توجد بيانات للتصدير');
-        return;
-      }
-
-      await exportDashboardPDF(charts, 'real_estate_dashboard.pdf', 'لوحة معلومات العقارات');
-    } catch (error) {
-      console.error('Export error:', error);
-    }
-  };
 
   // Show empty state if no data
   if (hasNoData) {
@@ -143,24 +102,11 @@ const RealEstateDashboard: React.FC = () => {
       <CommandPalette open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
-        <div className="flex items-center justify-between mb-6">
-          <EnhancedDashboardHeader
-            isBrowsingMode={isBrowsingMode}
-            browsedCompany={browsedCompany}
-            onExitBrowseMode={exitBrowseMode}
-          />
-          <Button
-            onClick={handleExportAll}
-            disabled={exportState.isExporting}
-            variant="outline"
-            size="default"
-            className="gap-2"
-            data-action="export"
-          >
-            <Download className="h-4 w-4" />
-            {exportState.isExporting ? 'جاري التصدير...' : 'تصدير لوحة المعلومات'}
-          </Button>
-        </div>
+        <EnhancedDashboardHeader
+          isBrowsingMode={isBrowsingMode}
+          browsedCompany={browsedCompany}
+          onExitBrowseMode={exitBrowseMode}
+        />
 
         {/* Real Estate Stats Cards */}
         <motion.div
