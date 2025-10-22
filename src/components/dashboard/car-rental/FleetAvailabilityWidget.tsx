@@ -108,6 +108,15 @@ export const FleetAvailabilityWidget: React.FC = () => {
 
   const totalVehicles = vehicles?.length || 0;
 
+  // Prepare export data - MUST be before any conditional returns (React Rules of Hooks)
+  const exportData = React.useMemo(() => {
+    if (!statusCounts || statusCounts.length === 0) return [];
+    return statusCounts.map(status => ({
+      الحالة: status.label,
+      العدد: status.count,
+    }));
+  }, [statusCounts]);
+
   if (isLoading) {
     return (
       <Card className="h-full">
@@ -125,15 +134,6 @@ export const FleetAvailabilityWidget: React.FC = () => {
       </Card>
     );
   }
-
-  // Prepare export data - must be after all other hooks
-  const exportData = React.useMemo(() => {
-    if (!statusCounts || statusCounts.length === 0) return [];
-    return statusCounts.map(status => ({
-      الحالة: status.label,
-      العدد: status.count,
-    }));
-  }, [statusCounts]);
 
   return (
     <motion.div
