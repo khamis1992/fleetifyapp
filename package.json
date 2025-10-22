@@ -11,6 +11,10 @@
     "analyze": "ANALYZE=true vite build && open dist/stats.html",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
     "perf:test": "lighthouse http://localhost:8080 --only-categories=performance --view",
     "build:mobile": "npm run build && npx cap sync",
     "android:build": "npm run build:mobile && npx cap build android",
@@ -103,6 +107,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/react": "^4.11.0",
     "@capacitor/android": "^6.1.2",
     "@capacitor/cli": "^6.1.2",
     "@capacitor/core": "^6.1.2",
@@ -110,15 +115,23 @@
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tanstack/react-query-devtools": "^5.90.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.3.3",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.11.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
+    "axe-core": "^4.11.0",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
+    "jest-axe": "^10.0.0",
+    "jsdom": "^27.0.1",
     "lovable-tagger": "^1.1.9",
     "postcss": "^8.5.6",
     "rollup-plugin-visualizer": "^6.0.4",
@@ -127,6 +140,7 @@
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.20",
-    "vite-plugin-compression": "^0.5.1"
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^3.2.4"
   }
 }

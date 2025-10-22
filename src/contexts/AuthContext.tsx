@@ -26,77 +26,112 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const authListenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
   const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialized = useRef(false);
+  const mountedRef = useRef(true);
 
   const initializeAuth = async () => {
+    // Prevent double initialization in development (HMR)
+    if (isInitialized.current) {
+      return;
+    }
+
+    isInitialized.current = true;
+
     try {
       // Check for existing session FIRST (faster than setting up listener)
       const { data: { session }, error } = await supabase.auth.getSession();
-
+      
       if (error) {
         console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
-        setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
-        setLoading(false);
+        if (mountedRef.current) {
+          setSessionError('خطأ في التحقق من جلسة تسجيل الدخول');
+          setLoading(false);
+        }
         return;
       }
 
       // If we have a session, load user profile immediately
       if (session?.user) {
-        setSession(session);
-
+        if (mountedRef.current) {
+          setSession(session);
+        }
+        
         try {
           const authUser = await authService.getCurrentUser();
-          setUser(authUser);
-          setSessionError(null);
+          if (mountedRef.current) {
+            setUser(authUser);
+            setSessionError(null);
+          }
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
           // Fallback to basic user object if profile fetch fails
-          setUser(session.user as AuthUser);
-          setSessionError('خطأ في تحميل بيانات المستخدم');
+          if (mountedRef.current) {
+            setUser(session.user as AuthUser);
+            setSessionError('خطأ في تحميل بيانات المستخدم');
+          }
         }
+      } else {
       }
-
-      // Set up auth state listener for future changes (AFTER initial load)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event: AuthChangeEvent, session: Session | null) => {
-          // Clear session error for successful events
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            setSessionError(null);
-          }
-
-          if (event === 'SIGNED_OUT') {
-            setUser(null);
-            setSession(null);
-            setIsSigningOut(false);
-            return;
-          }
-
-          if (event === 'SIGNED_IN' && session?.user) {
-            setSession(session);
-
-            try {
-              const authUser = await authService.getCurrentUser();
-              setUser(authUser);
+      
+      // Only set up listener if not already set
+      if (!authListenerRef.current) {
+        // Set up auth state listener for future changes (AFTER initial load)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event: AuthChangeEvent, session: Session | null) => {
+            
+            if (!mountedRef.current) return;
+            
+            // Clear session error for successful events
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               setSessionError(null);
-            } catch (error) {
-              console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-              setUser(session.user as AuthUser);
-              setSessionError('خطأ في تحميل بيانات المستخدم');
+            }
+            
+            if (event === 'SIGNED_OUT') {
+              setUser(null);
+              setSession(null);
+              setIsSigningOut(false);
+              return;
+            }
+            
+            if (event === 'SIGNED_IN' && session?.user) {
+              setSession(session);
+              
+              try {
+                const authUser = await authService.getCurrentUser();
+                if (mountedRef.current) {
+                  setUser(authUser);
+                  setSessionError(null);
+                }
+              } catch (error) {
+                console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
+                if (mountedRef.current) {
+                  setUser(session.user as AuthUser);
+                  setSessionError('خطأ في تحميل بيانات المستخدم');
+                }
+              }
+            }
+            
+            if (event === 'TOKEN_REFRESHED' && session) {
+              if (mountedRef.current) {
+                setSession(session);
+              }
             }
           }
+        );
 
-          if (event === 'TOKEN_REFRESHED' && session) {
-            setSession(session);
-          }
-        }
-      );
-
-      authListenerRef.current = { subscription };
-
+        authListenerRef.current = { subscription };
+      }
+      
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
-      setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
+      if (mountedRef.current) {
+        setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -104,17 +139,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   React.useEffect(() => {
-    initializeAuth();
+    mountedRef.current = true;
     
-    // Safety timeout - if still loading after 4 seconds, force loading to false
-    initTimeoutRef.current = setTimeout(() => {
-      console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
-      setLoading(false);
-    }, 4000);
+    // Only initialize if not already done (prevents HMR issues)
+    if (!isInitialized.current) {
+      initializeAuth();
+      
+      // Safety timeout - if still loading after 4 seconds, force loading to false
+      initTimeoutRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
+          setLoading(false);
+        }
+      }, 4000);
+    }
 
     return () => {
+      mountedRef.current = false;
+      // DON'T reset isInitialized on HMR - only on real unmount
+      // isInitialized will naturally reset when the module is actually reloaded
+
       if (authListenerRef.current?.subscription) {
         authListenerRef.current.subscription.unsubscribe();
+        authListenerRef.current = null;
       }
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
@@ -134,11 +181,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await authService.signIn(email, password);
 
     if (!result.error) {
-      // Clear any existing log timeout
+      // MEMORY LEAK FIX: Clear existing timeout before creating new one
       if (logTimeoutRef.current) {
         clearTimeout(logTimeoutRef.current);
       }
-
       logTimeoutRef.current = setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
@@ -147,7 +193,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           message: `تسجيل دخول للمستخدم ${email}`,
           metadata: { email }
         });
-        logTimeoutRef.current = null;
       }, 1000);
     }
 
@@ -160,11 +205,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await authService.signOut();
 
     if (!result.error && email) {
-      // Clear any existing log timeout
+      // MEMORY LEAK FIX: Clear existing timeout before creating new one
       if (logTimeoutRef.current) {
         clearTimeout(logTimeoutRef.current);
       }
-
       logTimeoutRef.current = setTimeout(() => {
         supabase.from('system_logs').insert({
           level: 'info',
@@ -173,7 +217,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           message: `تسجيل خروج للمستخدم ${email}`,
           metadata: { email }
         });
-        logTimeoutRef.current = null;
       }, 500);
     }
 
@@ -193,12 +236,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!session) {
       return false;
     }
-
+    
     try {
       const now = Date.now() / 1000;
       if (session.expires_at && session.expires_at < now) {
         const { data, error } = await supabase.auth.refreshSession();
-
+        
         if (error || !data.session) {
           console.error('📝 [AUTH_CONTEXT] Session refresh failed:', error);
           if (!isSigningOut) {
@@ -206,17 +249,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
           return false;
         }
-
+        
         setSession(data.session);
         setSessionError(null);
-
+        
         // Clear error and refresh user
         setSessionError(null);
         refreshUser();
-
+        
         return true;
       }
-
+      
       return true;
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session validation error:', error);
@@ -238,7 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     loading,

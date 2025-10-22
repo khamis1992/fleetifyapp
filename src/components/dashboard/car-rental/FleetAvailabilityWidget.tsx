@@ -100,9 +100,11 @@ export const FleetAvailabilityWidget: React.FC = () => {
   const availabilityPercentage = React.useMemo(() => {
     if (!vehicles || vehicles.length === 0) return 0;
 
-    const availableCount = statusCounts.find(s => s.status === 'available')?.count || 0;
-    return Math.round((availableCount / vehicles.length) * 100);
-  }, [vehicles, statusCounts]);
+    const availableVehicles = vehicles.filter(v => 
+      (v.status?.toLowerCase() || 'available') === 'available'
+    ).length;
+    return Math.round((availableVehicles / vehicles.length) * 100);
+  }, [vehicles]);
 
   const totalVehicles = vehicles?.length || 0;
 
@@ -124,8 +126,9 @@ export const FleetAvailabilityWidget: React.FC = () => {
     );
   }
 
-  // Prepare export data
+  // Prepare export data - must be after all other hooks
   const exportData = React.useMemo(() => {
+    if (!statusCounts || statusCounts.length === 0) return [];
     return statusCounts.map(status => ({
       الحالة: status.label,
       العدد: status.count,

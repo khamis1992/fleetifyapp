@@ -20,7 +20,21 @@ vi.mock('@/integrations/supabase/client', () => ({
 vi.mock('@/hooks/useUnifiedCompanyAccess', () => ({
   useUnifiedCompanyAccess: () => ({
     companyId: 'test-company-id',
-    user: { id: 'test-user-id', user_metadata: { company_id: 'test-company-id' } }
+    user: { id: 'test-user-id', user_metadata: { company_id: 'test-company-id' } },
+    getQueryKey: (baseKey: string[], additionalKeys: unknown[] = []) => {
+      return [baseKey, 'test-company-id', ...additionalKeys].filter(Boolean);
+    },
+    validateCompanyAccess: (targetCompanyId: string) => {
+      if (!targetCompanyId) {
+        throw new Error('Company ID is required');
+      }
+      if (targetCompanyId !== 'test-company-id') {
+        throw new Error('Access denied: Cannot access data from different company');
+      }
+    },
+    filter: { company_id: 'test-company-id' },
+    isSystemLevel: false,
+    isCompanyScoped: true
   })
 }));
 

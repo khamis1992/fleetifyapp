@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+import { logger } from '@/lib/logger'
 
 interface EnhancedContractFormProps {
   open: boolean
@@ -88,7 +89,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
   });
 
   const companyId = useCurrentCompanyId()
-  console.log("🚗 [EnhancedContractForm] Company ID:", companyId)
+  logger.debug("🚗 [EnhancedContractForm] Company ID:", companyId)
   
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const { data: availableVehicles, isLoading: vehiclesLoading } = useAvailableVehiclesForContracts(companyId)
@@ -132,7 +133,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
       }
     },
     onError: (error) => {
-      console.error('Validation error:', error)
+      logger.error('Validation error:', error)
       toast.error('حدث خطأ في التحقق من البيانات')
     }
   })
@@ -257,7 +258,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
       onOpenChange(false)
       
     } catch (error) {
-      console.error('Error creating contract:', error)
+      logger.error('Error creating contract:', error)
       toast.error('حدث خطأ في إنشاء العقد')
     }
   }
