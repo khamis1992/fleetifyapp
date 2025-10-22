@@ -2,15 +2,14 @@ import { useState, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
-import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { generateUnsignedContractPdf } from '@/utils/unsignedContractPdfGenerator'
 import { useEnhancedContractDocuments } from './useEnhancedContractDocuments'
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
-import type { 
-  DocumentSavingStep, 
+import type {
+  DocumentSavingStep,
   ContractDocumentSavingResult,
   ContractDocumentSavingSettings,
-  UnsignedContractPdfData 
+  UnsignedContractPdfData
 } from '@/types/contractDocumentSaving'
 import type { ContractPdfData } from '@/utils/contractPdfGenerator'
 
@@ -444,7 +443,8 @@ export const useContractDocumentSaving = () => {
       }
 
       updateStep('signed-contract', { status: 'processing', progress: 50 })
-      
+
+      const { generateContractPdf } = await import('@/utils/contractPdfGenerator')
       const pdfBlob = await generateContractPdf(signedPdfData)
       const pdfFile = new File([pdfBlob], `signed-contract-${contractData.contract_number}.pdf`, {
         type: 'application/pdf'
