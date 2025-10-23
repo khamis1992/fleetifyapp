@@ -153,36 +153,68 @@ const Invoices = () => {
     }
   }
 
-  const filteredInvoices = invoices?.filter(invoice => {
-    const matchesSearch = invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === "all" || invoice.status === filterStatus
-    const matchesType = filterType === "all" || invoice.invoice_type === filterType
-    const matchesCostCenter = filterCostCenter === "all" || invoice.cost_center_id === filterCostCenter
-    return matchesSearch && matchesStatus && matchesType && matchesCostCenter
-  }) || []
+  const filteredInvoices = useMemo(() => {
+    try {
+      if (!Array.isArray(invoices)) return [];
+      
+      return invoices.filter(invoice => {
+        if (!invoice) return false;
+        
+        const matchesSearch = invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+        const matchesStatus = filterStatus === "all" || invoice.status === filterStatus;
+        const matchesType = filterType === "all" || invoice.invoice_type === filterType;
+        const matchesCostCenter = filterCostCenter === "all" || invoice.cost_center_id === filterCostCenter;
+        return matchesSearch && matchesStatus && matchesType && matchesCostCenter;
+      });
+    } catch (error) {
+      console.error('Error filtering invoices:', error);
+      return [];
+    }
+  }, [invoices, searchTerm, filterStatus, filterType, filterCostCenter]);
 
   // Calculate statistics from all invoices
   const statistics = useMemo(() => {
-    const allInvoices = Array.isArray(allInvoicesForStats) 
-      ? allInvoicesForStats 
-      : allInvoicesForStats?.data || [];
+    try {
+      const allInvoices = Array.isArray(allInvoicesForStats) 
+        ? allInvoicesForStats 
+        : allInvoicesForStats?.data || [];
 
-    const totalRevenue = allInvoices.reduce((sum, inv) => {
-      return sum + (inv.total_amount || 0);
-    }, 0);
+      if (!Array.isArray(allInvoices)) {
+        return {
+          totalRevenue: 0,
+          pendingCount: 0,
+          draftCount: 0,
+          underReviewCount: 0,
+          activeCount: 0
+        };
+      }
 
-    const pendingCount = allInvoices.filter(inv => inv.status === 'pending').length;
-    const draftCount = allInvoices.filter(inv => inv.status === 'draft').length;
-    const underReviewCount = allInvoices.filter(inv => inv.status === 'under_review').length;
-    const activeCount = allInvoices.filter(inv => inv.status === 'paid').length;
+      const totalRevenue = allInvoices.reduce((sum, inv) => {
+        return sum + (inv?.total_amount || 0);
+      }, 0);
 
-    return {
-      totalRevenue,
-      pendingCount,
-      draftCount,
-      underReviewCount,
-      activeCount
-    };
+      const pendingCount = allInvoices.filter(inv => inv?.status === 'pending').length;
+      const draftCount = allInvoices.filter(inv => inv?.status === 'draft').length;
+      const underReviewCount = allInvoices.filter(inv => inv?.status === 'under_review').length;
+      const activeCount = allInvoices.filter(inv => inv?.status === 'paid').length;
+
+      return {
+        totalRevenue,
+        pendingCount,
+        draftCount,
+        underReviewCount,
+        activeCount
+      };
+    } catch (error) {
+      console.error('Error calculating invoice statistics:', error);
+      return {
+        totalRevenue: 0,
+        pendingCount: 0,
+        draftCount: 0,
+        underReviewCount: 0,
+        activeCount: 0
+      };
+    }
   }, [allInvoicesForStats]);
 
   const getStatusColor = (status: string) => {

@@ -22,6 +22,15 @@ export const ResponsiveDashboardLayout: React.FC = () => {
   const [loadingTimeoutExceeded, setLoadingTimeoutExceeded] = useState(false);
   const navigate = useNavigate();
 
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleMenuToggle = React.useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
+
+  const handleSidebarOpenChange = React.useCallback((open: boolean) => {
+    setSidebarOpen(open);
+  }, []);
+
   // Smart loading timeout
   useEffect(() => {
     if (loading) {
@@ -103,7 +112,7 @@ export const ResponsiveDashboardLayout: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Responsive Header */}
           <ResponsiveHeader 
-            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+            onMenuToggle={handleMenuToggle}
             showMenuButton={isMobile}
           />
 
@@ -123,7 +132,7 @@ export const ResponsiveDashboardLayout: React.FC = () => {
 
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <Sheet open={sidebarOpen} onOpenChange={handleSidebarOpenChange}>
             <SheetContent side="right" className="w-80 p-0 overflow-hidden">
               <MobileSidebar />
             </SheetContent>

@@ -498,7 +498,7 @@ export const useToggleCustomerBlacklist = () => {
   });
 };
 
-export const useCustomer = (customerId: string) => {
+export const useCustomer = (customerId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: queryKeys.customers.detail(customerId),
     queryFn: async ({ signal }) => {
@@ -557,13 +557,15 @@ export const useCustomer = (customerId: string) => {
         throw error;
       }
     },
-    enabled: !!customerId,
+    enabled: options?.enabled !== false && !!customerId,
     retry: 3,
-    retryDelay: 1000
+    retryDelay: 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000,    // 10 minutes - keep in cache longer
   });
 };
 
-export const useCustomerNotes = (customerId: string) => {
+export const useCustomerNotes = (customerId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: queryKeys.customers.notes(customerId),
     queryFn: async ({ signal }) => {
@@ -581,7 +583,9 @@ export const useCustomerNotes = (customerId: string) => {
 
       return data || [];
     },
-    enabled: !!customerId
+    enabled: options?.enabled !== false && !!customerId,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    gcTime: 10 * 60 * 1000,   // 10 minutes
   });
 };
 
@@ -626,10 +630,11 @@ export const useCreateCustomerNote = () => {
   });
 };
 
-export const useCustomerFinancialSummary = (customerId: string) => {
+export const useCustomerFinancialSummary = (customerId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: queryKeys.customers.financialSummary(customerId),
     queryFn: async () => {
+      // Return placeholder data - will be implemented with real calculations later
       return {
         currentBalance: 0,
         totalContracts: 0,
@@ -643,7 +648,9 @@ export const useCustomerFinancialSummary = (customerId: string) => {
         contractsCount: 0
       };
     },
-    enabled: !!customerId
+    enabled: options?.enabled !== false && !!customerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes - financial data doesn't change that often
+    gcTime: 15 * 60 * 1000,   // 15 minutes cache
   });
 };
 

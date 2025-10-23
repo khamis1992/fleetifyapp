@@ -212,7 +212,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
   });
 };
 
-export const useCustomerById = (customerId: string) => {
+export const useCustomerById = (customerId: string, options?: { enabled?: boolean }) => {
   const { companyId, getQueryKey, browsedCompany, isBrowsingMode, isSystemLevel, filter } = useUnifiedCompanyAccess();
   
   // Use customer view context with fallback
@@ -260,8 +260,9 @@ export const useCustomerById = (customerId: string) => {
       
       return data;
     },
-    enabled: !!customerId && (isSystemLevel || !!companyId),
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    enabled: options?.enabled !== false && !!customerId && (isSystemLevel || !!companyId),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000,   // 10 minutes
   });
 };
 
@@ -736,7 +737,7 @@ export const useUpdateCustomer = () => {
   });
 };
 
-export const useCustomerNotes = (customerId: string) => {
+export const useCustomerNotes = (customerId: string, options?: { enabled?: boolean }) => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
@@ -754,8 +755,9 @@ export const useCustomerNotes = (customerId: string) => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!companyId && !!customerId,
-    staleTime: 2 * 60 * 1000 // 2 minutes
+    enabled: options?.enabled !== false && !!companyId && !!customerId,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    gcTime: 10 * 60 * 1000,   // 10 minutes
   });
 };
 
@@ -804,7 +806,7 @@ export const useCreateCustomerNote = () => {
   });
 };
 
-export const useCustomerFinancialSummary = (customerId: string) => {
+export const useCustomerFinancialSummary = (customerId: string, options?: { enabled?: boolean }) => {
   const { companyId, getQueryKey } = useUnifiedCompanyAccess();
 
   return useQuery({
@@ -829,8 +831,9 @@ export const useCustomerFinancialSummary = (customerId: string) => {
         totalInvoicesPaid: 0
       };
     },
-    enabled: !!companyId && !!customerId,
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    enabled: options?.enabled !== false && !!companyId && !!customerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000,   // 15 minutes
   });
 };
 

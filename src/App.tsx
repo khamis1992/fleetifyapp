@@ -9,6 +9,7 @@ import ErrorBoundary from "@/lib/errorBoundary";
 import { performanceMonitor } from "@/lib/performanceMonitor";
 import { compatibilityManager } from "@/lib/compatibilityManager";
 import { preloadCriticalRoutes, preloadRelatedRoutes } from "@/utils/routePreloading";
+import { useStableNavigation } from "@/utils/navigationOptimization";
 import { initializePWA } from "@/utils/pwaConfig";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -132,27 +133,29 @@ const PerformanceMonitor = lazy(() => import("@/components/performance").then(m 
 // Fix pages
 const FixVehicleData = lazy(() => import("./pages/FixVehicleData"));
 
+// Create a stable QueryClient instance to persist across navigation
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Reduce refetch frequency for better performance
-      refetchOnWindowFocus: false, // Too aggressive for desktop app
-      refetchOnReconnect: true,    // Keep this for network recovery
-      refetchOnMount: true,        // Keep this for fresh data
+      // CRITICAL: Optimize refetch behavior for smooth navigation without hard refresh
+      refetchOnWindowFocus: false,  // Don't refetch when switching browser tabs
+      refetchOnReconnect: true,     // Only refetch when internet reconnects
+      refetchOnMount: false,        // DON'T refetch on component mount - use cached data
       
-      // Increase stale time globally (2 minutes)
-      staleTime: 2 * 60 * 1000,
+      // Cache configuration - Keep data fresh longer
+      staleTime: 5 * 60 * 1000,     // Data stays fresh for 5 minutes
+      gcTime: 30 * 60 * 1000,       // Keep unused data in cache for 30 minutes
       
-      // Increase cache time (15 minutes)
-      gcTime: 15 * 60 * 1000,
-      
-      // Add retry configuration
-      retry: 1, // Retry failed queries once
+      // Retry configuration - Fail fast
+      retry: 1,                     // Only retry failed queries once
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      
+      // Network mode - Use cache even when offline
+      networkMode: 'online',        // Only fetch when online
     },
     mutations: {
-      // Add retry for mutations
-      retry: 1,
+      retry: 1,                     // Retry mutations once
+      networkMode: 'online',        // Only mutate when online
     }
   }
 });
@@ -205,11 +208,19 @@ const App = () => {
 
 const AppRoutes = () => {
   const location = useLocation();
+  const { isNavigating, visitCount } = useStableNavigation();
 
   // Preload related routes when location changes
   React.useEffect(() => {
     preloadRelatedRoutes(location.pathname);
   }, [location.pathname]);
+
+  // Log navigation for debugging (only in development)
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log(`🧭 Navigation: ${location.pathname} (visit #${visitCount})`);
+    }
+  }, [location.pathname, visitCount]);
 
   return (
     <Routes>

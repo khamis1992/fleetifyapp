@@ -34,103 +34,43 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
 
-      // استعلام صارم مع فلترة مزدوجة والتحقق من الشركة النشطة فقط
+      // Optimized query - fetch only last 10 activities, no complex joins
       const { data: activities, error } = await supabase
         .from('system_logs')
-        .select(`
-          id,
-          category,
-          action,
-          message,
-          level,
-          created_at,
-          user_id,
-          resource_id,
-          company_id
-        `)
-        .eq('company_id', companyId) // فلترة صارمة بالشركة النشطة فقط
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .select('id, category, action, message, level, created_at')
+        .eq('company_id', companyId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
-        .limit(15);
+        .limit(10); // Reduced from 15 to 10 for faster loading
 
       if (error) {
         console.error('❌ [ACTIVITIES] Error fetching activities:', error);
         return [];
       }
 
-      // فلترة إضافية صارمة للتأكد من أن جميع النشاطات تنتمي للشركة الصحيحة
-      // وإزالة النشاطات التقنية غير المهمة
-      const filteredActivities = activities?.filter(activity => {
-        const belongsToCompany = activity.company_id === companyId;
-        if (!belongsToCompany) {
-          console.error('🚨 [ACTIVITIES] SECURITY ALERT - Found activity from wrong company:', {
-            activityId: activity.id,
-            activityCompanyId: activity.company_id,
-            expectedCompanyId: companyId,
-            category: activity.category,
-            message: activity.message,
-            timestamp: new Date().toISOString()
-          });
-          // يجب تسجيل هذا كحدث أمني مهم
-        }
-        
-        // فلترة النشاطات التقنية غير المهمة
-        if (isUnimportantActivity(activity)) {
-          return false;
-        }
-        
-        return belongsToCompany;
-      }) || [];
+      // Simple filtering without fetching additional data
+      const filteredActivities = activities?.filter(activity => 
+        !isUnimportantActivity(activity)
+      ) || [];
 
-      // Log filtering statistics (filtering unimportant technical activities)
-      if (filteredActivities.length !== activities?.length) {
-        console.log('✅ [ACTIVITIES] Filtered technical activities:', {
-          totalActivities: activities?.length || 0,
-          displayedActivities: filteredActivities.length,
-          companyId,
-          filteredOutCount: (activities?.length || 0) - filteredActivities.length,
-          reason: 'Technical queries and unimportant logs removed'
-        });
-      }
-
-      console.log('✅ [ACTIVITIES] Filtered activities:', {
-        totalReturned: activities?.length || 0,
-        filteredCount: filteredActivities.length,
-        companyId,
-        activities: filteredActivities.map(a => ({
-          id: a.id,
-          category: a.category,
-          company_id: a.company_id,
-          created_at: a.created_at
-        }))
-      });
-
-      // تحويل النتائج إلى التنسيق المطلوب مع معلومات محسّنة
-      const enhancedActivities = await Promise.all(
-        filteredActivities.map(async (activity) => {
-          let enhancedDescription = activity.message || getActivityDescription(activity);
-          
-          // تحسين الرسالة لجميع أنواع النشاطات
-          enhancedDescription = await enhanceActivityMessage(enhancedDescription, activity);
-          
-          return {
-            id: activity.id,
-            type: getCategoryDisplayName(activity.category),
-            description: enhancedDescription,
-            time: getRelativeTime(activity.created_at),
-            icon: getCategoryIcon(activity.category),
-            color: getCategoryColor(activity.category, activity.level),
-            priority: getPriorityFromLevel(activity.level),
-            created_at: activity.created_at,
-            status: activity.action
-          };
-        }) || []
-      );
+      // Convert to display format without async operations
+      const enhancedActivities = filteredActivities.map((activity) => ({
+        id: activity.id,
+        type: getCategoryDisplayName(activity.category),
+        description: cleanTechnicalMessage(activity.message || getActivityDescription(activity)),
+        time: getRelativeTime(activity.created_at),
+        icon: getCategoryIcon(activity.category),
+        color: getCategoryColor(activity.category, activity.level),
+        priority: getPriorityFromLevel(activity.level),
+        created_at: activity.created_at,
+        status: activity.action
+      }));
 
       return enhancedActivities;
     },
     enabled: !!companyId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 5 * 60 * 1000, // Increased from 2 to 5 minutes for better caching
+    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 };
 

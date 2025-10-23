@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,15 +13,17 @@ import {
   TrendingUp, Clock, Plus, AlertTriangle, DollarSign, Calendar,
   User, Shield, MessageSquare, Edit, Save, X
 } from "lucide-react";
-import { useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useEnhancedCustomers";
-import { CustomerInvoicesTab } from "./CustomerInvoicesTab";
-import { CustomerAccountSelector } from "./CustomerAccountSelector";
-import { CustomerAccountStatement } from "./CustomerAccountStatement";
+import { useCustomerById as useCustomer, useCustomerNotes, useCreateCustomerNote, useCustomerFinancialSummary } from "@/hooks/useEnhancedCustomers";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
+
+// Lazy load heavy components that aren't immediately visible
+const CustomerInvoicesTab = lazy(() => import("./CustomerInvoicesTab").then(m => ({ default: m.CustomerInvoicesTab })));
+const CustomerAccountSelector = lazy(() => import("./CustomerAccountSelector").then(m => ({ default: m.CustomerAccountSelector })));
+const CustomerAccountStatement = lazy(() => import("./CustomerAccountStatement").then(m => ({ default: m.CustomerAccountStatement })));
 
 interface CustomerDetailsDialogProps {
   open: boolean;
@@ -49,18 +51,27 @@ export function CustomerDetailsDialog({
 }: CustomerDetailsDialogProps) {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [isEditingAccounts, setIsEditingAccounts] = useState(false);
-  const { data: customer, isLoading, error, isError } = useCustomer(customerId);
-  const { data: notes } = useCustomerNotes(customerId);
-  const { data: financialSummary } = useCustomerFinancialSummary(customerId);
-  const createNoteMutation = useCreateCustomerNote();
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  
+  // OPTIMIZATION: Only fetch data when dialog is open
+  const { data: customer, isLoading, error, isError } = useCustomer(customerId, { enabled: open });
+  
+  // OPTIMIZATION: Only fetch notes when notes tab is active
+  const { data: notes } = useCustomerNotes(customerId, { enabled: open && activeTab === "notes" });
+  
+  // OPTIMIZATION: Only fetch financial summary when financial tab is active
+  const { data: financialSummary } = useCustomerFinancialSummary(customerId, { enabled: open && activeTab === "financial" });
+  
   const { formatCurrency, currency } = useCurrencyFormatter();
+  const createNoteMutation = useCreateCustomerNote();
 
   console.log('🔍 CustomerDetailsDialog state:', {
     customerId,
     isLoading,
     isError,
     error,
-    customer: customer ? 'loaded' : 'not loaded'
+    customer: customer ? 'loaded' : 'not loaded',
+    activeTab
   });
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<NoteFormData>({
@@ -158,7 +169,7 @@ export function CustomerDetailsDialog({
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="financial">المالية</TabsTrigger>
@@ -426,9 +437,20 @@ export function CustomerDetailsDialog({
               </Card>
             </div>
 
-            {/* Professional Customer Account Statement */}
+            {/* Professional Customer Account Statement - Lazy Loaded */}
             <div className="mt-6">
-              <CustomerAccountStatement customer={customer} />
+              <Suspense fallback={
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="flex items-center justify-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      <span className="text-sm text-muted-foreground">جاري تحميل كشف الحساب...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              }>
+                <CustomerAccountStatement customer={customer} />
+              </Suspense>
             </div>
           </TabsContent>
 
@@ -469,10 +491,21 @@ export function CustomerDetailsDialog({
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-6">
-            <CustomerInvoicesTab 
-              customerId={customerId} 
-              onCreateInvoice={onCreateInvoice}
-            />
+            <Suspense fallback={
+              <Card>
+                <CardContent className="py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <LoadingSpinner size="sm" />
+                    <span className="text-sm text-muted-foreground">جاري تحميل الفواتير...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            }>
+              <CustomerInvoicesTab 
+                customerId={customerId} 
+                onCreateInvoice={onCreateInvoice}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="notes" className="space-y-4">
@@ -599,12 +632,19 @@ export function CustomerDetailsDialog({
                 </div>
               </CardHeader>
               <CardContent>
-                <CustomerAccountSelector 
-                  customerId={customerId}
-                  customerName={customerName}
-                  mode={isEditingAccounts ? "edit" : "view"}
-                  companyId={customer.company_id}
-                />
+                <Suspense fallback={
+                  <div className="flex items-center justify-center py-4">
+                    <LoadingSpinner size="sm" />
+                    <span className="mr-2 text-sm text-muted-foreground">جاري تحميل الحسابات...</span>
+                  </div>
+                }>
+                  <CustomerAccountSelector 
+                    customerId={customerId}
+                    customerName={customerName || ''}
+                    mode={isEditingAccounts ? "edit" : "view"}
+                    companyId={customer.company_id}
+                  />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
