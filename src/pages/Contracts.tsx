@@ -96,7 +96,7 @@ function Contracts() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(100) // Increased from 50 to 100 to show more contracts
 
   // Hooks
   const location = useLocation()
@@ -378,6 +378,7 @@ function Contracts() {
                         setPageSize(newPageSize)
                         setPage(1) // Reset to first page when changing page size
                       }}
+                      pageSizeOptions={[50, 100, 200, 500]} // Enhanced page size options
                       showPageSize={true}
                       showTotalItems={true}
                     />
