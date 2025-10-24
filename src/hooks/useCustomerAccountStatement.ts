@@ -34,6 +34,13 @@ export const useCustomerAccountStatement = ({
       }
 
       // Call the database function
+      console.log('🔍 [useCustomerAccountStatement] Calling RPC with:', {
+        p_company_id: profile.company_id,
+        p_customer_code: customerCode,
+        p_date_from: dateFrom || null,
+        p_date_to: dateTo || null
+      });
+
       const { data, error } = await supabase.rpc('get_customer_account_statement_by_code', {
         p_company_id: profile.company_id,
         p_customer_code: customerCode,
@@ -42,7 +49,18 @@ export const useCustomerAccountStatement = ({
       });
 
       if (error) {
-        console.error('Error fetching customer account statement:', error);
+        console.error('❌ [useCustomerAccountStatement] RPC Error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        // Check if function doesn't exist
+        if (error.message?.includes('function') && error.message?.includes('does not exist')) {
+          throw new Error('Database function not installed. Please run CREATE_SIMPLE_CUSTOMER_STATEMENT.sql in Supabase Dashboard.');
+        }
+        
         throw error;
       }
 

@@ -90,15 +90,15 @@ BEGIN
         
       UNION ALL
       
-      -- Historical journal entries before date range
+      -- Historical journal entries before date range (OPTIONAL - only if customer_accounts exists)
       SELECT 
         COALESCE(jel.debit_amount, 0) as debit_amount,
         COALESCE(jel.credit_amount, 0) as credit_amount,
         'journal_entries' as source_table
       FROM journal_entry_lines jel
       JOIN journal_entries je ON jel.journal_entry_id = je.id
-      JOIN customer_accounts ca ON jel.account_id = ca.account_id
-      WHERE ca.customer_id = customer_record.id
+      LEFT JOIN customer_accounts ca ON jel.account_id = ca.account_id
+      WHERE (ca.customer_id = customer_record.id OR jel.description ILIKE '%' || p_customer_code || '%')
         AND je.company_id = p_company_id
         AND je.entry_date < p_date_from
         AND je.status = 'posted'
@@ -113,7 +113,7 @@ BEGIN
       i.id::TEXT as trans_id,
       i.invoice_date::DATE as trans_date,
       'invoice'::TEXT as trans_type,
-      COALESCE(i.description, 'Invoice No: ' || i.invoice_number) as trans_description,
+      COALESCE(i.notes, 'Invoice No: ' || i.invoice_number) as trans_description,
       i.invoice_number as ref_number,
       i.total_amount as debit_amt,
       0::DECIMAL(15,3) as credit_amt,
@@ -148,7 +148,7 @@ BEGIN
 
     UNION ALL
 
-    -- Journal entry transactions (only if customer_accounts table exists)
+    -- Journal entry transactions (OPTIONAL - gracefully handle if customer_accounts doesn't exist)
     SELECT 
       jel.id::TEXT as trans_id,
       je.entry_date::DATE as trans_date,
@@ -168,8 +168,8 @@ BEGIN
       je.created_at as sort_time
     FROM journal_entry_lines jel
     JOIN journal_entries je ON jel.journal_entry_id = je.id
-    JOIN customer_accounts ca ON jel.account_id = ca.account_id
-    WHERE ca.customer_id = customer_record.id
+    LEFT JOIN customer_accounts ca ON jel.account_id = ca.account_id
+    WHERE (ca.customer_id = customer_record.id OR jel.description ILIKE '%' || p_customer_code || '%')
       AND je.company_id = p_company_id
       AND (p_date_from IS NULL OR je.entry_date >= p_date_from)
       AND (p_date_to IS NULL OR je.entry_date <= p_date_to)
