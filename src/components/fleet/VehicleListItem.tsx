@@ -48,8 +48,8 @@ export function VehicleListItem({ vehicle }: VehicleListItemProps) {
   };
 
   const isMaintenanceDue = () => {
-    if (!vehicle.inspection_due_date) return false;
-    const dueDate = new Date(vehicle.inspection_due_date);
+    if (!vehicle.next_service_due) return false;
+    const dueDate = new Date(vehicle.next_service_due);
     const today = new Date();
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

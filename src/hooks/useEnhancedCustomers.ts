@@ -239,6 +239,8 @@ export const useCustomerById = (customerId: string, options?: { enabled?: boolea
       if (!customerId) return null;
       if (!isSystemLevel && !companyId) return null;
       
+      const startTime = performance.now();
+      
       let query = supabase
         .from('customers')
         .select('*')
@@ -252,6 +254,9 @@ export const useCustomerById = (customerId: string, options?: { enabled?: boolea
       
       const { data, error } = await query.single();
       
+      const duration = performance.now() - startTime;
+      console.log(`⏱️ [useCustomerById] Query took ${duration.toFixed(2)}ms`);
+      
       if (error) {
         if (error.code === 'PGRST116') return null;
         console.error('Error fetching customer:', error);
@@ -261,8 +266,10 @@ export const useCustomerById = (customerId: string, options?: { enabled?: boolea
       return data;
     },
     enabled: options?.enabled !== false && !!customerId && (isSystemLevel || !!companyId),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000,   // 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - increased from 2 minutes
+    gcTime: 15 * 60 * 1000,   // 15 minutes - increased from 10 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
   });
 };
 

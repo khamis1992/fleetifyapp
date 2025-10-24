@@ -137,13 +137,13 @@ const FixVehicleData = lazy(() => import("./pages/FixVehicleData"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // CRITICAL: Optimize refetch behavior for smooth navigation without hard refresh
+      // CRITICAL FIX: Use cache but allow fresh data on page navigation
+      refetchOnMount: true,         // Refetch on mount to ensure fresh data
       refetchOnWindowFocus: false,  // Don't refetch when switching browser tabs
       refetchOnReconnect: true,     // Only refetch when internet reconnects
-      refetchOnMount: false,        // DON'T refetch on component mount - use cached data
       
       // Cache configuration - Keep data fresh longer
-      staleTime: 5 * 60 * 1000,     // Data stays fresh for 5 minutes
+      staleTime: 2 * 60 * 1000,     // Data stays fresh for 2 minutes (reduced from 5)
       gcTime: 30 * 60 * 1000,       // Keep unused data in cache for 30 minutes
       
       // Retry configuration - Fail fast

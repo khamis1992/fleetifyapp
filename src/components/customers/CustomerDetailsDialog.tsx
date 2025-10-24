@@ -98,10 +98,38 @@ export function CustomerDetailsDialog({
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <div className="flex items-center justify-center p-8">
-            <LoadingSpinner size="lg" />
-            <span className="ml-3">جاري تحميل بيانات العميل...</span>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-6 bg-muted rounded animate-pulse" />
+              <div>
+                <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-32 bg-muted rounded animate-pulse mt-1" />
+              </div>
+            </div>
+          </DialogHeader>
+          
+          {/* Skeleton for tabs */}
+          <div className="space-y-4 mt-4">
+            <div className="grid grid-cols-6 gap-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+              ))}
+            </div>
+            
+            {/* Skeleton for content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="border rounded-lg p-6">
+                  <div className="h-5 w-32 bg-muted rounded animate-pulse mb-4" />
+                  <div className="space-y-3">
+                    <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-5/6 bg-muted rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

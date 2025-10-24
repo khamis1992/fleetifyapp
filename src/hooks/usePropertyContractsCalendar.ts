@@ -72,18 +72,20 @@ async function fetchCalendarEvents(
       // Property contracts
       buildQuery(supabase.from('property_contracts').select(`
         *,
-        properties(id, property_name, address),
-        customers(id, full_name)
+        properties!property_contracts_property_id_fkey(id, property_name, address),
+        customers!property_contracts_tenant_id_fkey(id, full_name)
       `))
         .eq('is_active', true)
         .gte('end_date', format(defaultStartDate, 'yyyy-MM-dd'))
         .lte('end_date', format(defaultEndDate, 'yyyy-MM-dd')),
       
-      // Payments due
-      buildQuery(supabase.from('payments').select(`
+      // Payments due (using property_payments table)
+      buildQuery(supabase.from('property_payments').select(`
         *,
-        property_contracts(id, properties(id, property_name)),
-        customers(id, full_name)
+        property_contracts!property_payments_property_contract_id_fkey(
+          id,
+          properties!property_contracts_property_id_fkey(id, property_name)
+        )
       `))
         .in('status', ['pending', 'overdue'])
         .gte('due_date', format(defaultStartDate, 'yyyy-MM-dd'))
@@ -156,12 +158,11 @@ async function fetchCalendarEvents(
             date: dueDate,
             property: payment.property_contracts?.properties?.property_name || 'عقار غير معروف',
             propertyId: payment.property_contracts?.properties?.id || '',
-            contractId: payment.contract_id,
+            contractId: payment.property_contract_id,
             paymentId: payment.id,
             priority: isOverdue ? 'high' : 'medium',
             details: {
               amount: payment.amount,
-              tenant: payment.customers?.full_name,
               status: payment.status,
               dueDate: dueDate,
               isOverdue: isOverdue

@@ -297,11 +297,11 @@ export function EnhancedVehicleDetailsDialog({
                       </span>
                     </div>
                   )}
-                  {vehicle.inspection_due_date && (
+                  {vehicle.next_service_due && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">الفحص القادم:</span>
+                      <span className="text-muted-foreground">الصيانة القادمة:</span>
                       <span className="font-medium">
-                        {format(new Date(vehicle.inspection_due_date), 'dd/MM/yyyy')}
+                        {format(new Date(vehicle.next_service_due), 'dd/MM/yyyy')}
                       </span>
                     </div>
                   )}

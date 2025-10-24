@@ -69,7 +69,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       // Registration & Documentation
       registration_date: "",
       registration_expiry: "",
-      inspection_due_date: "",
+      next_service_due: "",
       warranty_start_date: "",
       warranty_end_date: "",
       
@@ -143,7 +143,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         vehicle_condition: vehicle.vehicle_condition || "excellent",
         registration_date: vehicle.registration_date || "",
         registration_expiry: vehicle.registration_expiry || "",
-        inspection_due_date: vehicle.inspection_due_date || "",
+        next_service_due: vehicle.next_service_due || "",
         warranty_start_date: vehicle.warranty_start_date || "",
         warranty_end_date: vehicle.warranty_end_date || "",
         current_location: vehicle.current_location || "",
@@ -275,7 +275,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       // Registration & Documentation
       registration_date: "2023-01-15",
       registration_expiry: "2025-01-15",
-      inspection_due_date: "2024-12-31",
+      next_service_due: "2024-12-31",
       warranty_start_date: "2023-01-15",
       warranty_end_date: "2026-01-15",
       
@@ -963,10 +963,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
                     <FormField
                       control={form.control}
-                      name="inspection_due_date"
+                      name="next_service_due"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تاريخ الفحص القادم</FormLabel>
+                          <FormLabel>تاريخ الصيانة القادمة</FormLabel>
                           <FormControl>
                             <Input {...field} type="date" />
                           </FormControl>

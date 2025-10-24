@@ -100,9 +100,9 @@ export const useVehiclesPaginated = (
         const nextMonthStr = nextMonth.toISOString().split('T')[0];
         
         query = query
-          .not('inspection_due_date', 'is', null)
-          .gte('inspection_due_date', today)
-          .lte('inspection_due_date', nextMonthStr);
+          .not('next_service_due', 'is', null)
+          .gte('next_service_due', today)
+          .lte('next_service_due', nextMonthStr);
       }
 
       // Apply insurance expiring filter

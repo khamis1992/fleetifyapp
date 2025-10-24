@@ -309,16 +309,6 @@ const Customers = () => {
               <Upload className="h-4 w-4 ml-2" />
               استيراد CSV
             </Button>
-            {hasFullCompanyControl && totalCustomers > 0 && (
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                <Trash2 className="h-4 w-4 ml-2" />
-                حذف الكل
-              </Button>
-            )}
             <Button onClick={handleCreateCustomer}>
               <Plus className="h-4 w-4 ml-2" />
               عميل جديد
@@ -502,15 +492,6 @@ const Customers = () => {
             <Upload className="h-4 w-4 ml-2" />
             استيراد CSV
           </Button>
-          {hasFullCompanyControl && totalCustomers > 0 && (
-            <Button 
-              variant="destructive" 
-              onClick={handleBulkDelete}
-            >
-              <Trash2 className="h-4 w-4 ml-2" />
-              حذف الكل
-            </Button>
-          )}
           <Button onClick={handleCreateCustomer}>
             <Plus className="h-4 w-4 ml-2" />
             عميل جديد

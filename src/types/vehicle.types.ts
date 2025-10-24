@@ -44,7 +44,7 @@ export interface Vehicle {
   vehicle_category?: string;
   registration_date?: string;
   registration_expiry?: string;
-  inspection_due_date?: string;
+  next_service_due?: string;
   warranty_start_date?: string;
   warranty_end_date?: string;
   current_location?: string;
