@@ -53,6 +53,31 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Check if customer has required data
+  if (!customer || !customer.customer_code) {
+    return (
+      <Card dir="rtl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            كشف حساب العميل
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
+            <p className="text-gray-600 mb-4">
+              لا يمكن عرض كشف الحساب - كود العميل غير متوفر
+            </p>
+            <p className="text-sm text-muted-foreground">
+              يجب أن يحتوي العميل على كود customer_code صحيح
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const { data: transactions = [], isLoading, refetch, error } = useCustomerAccountStatement({
     customerCode: customer.customer_code,
     dateFrom: dateFrom || undefined,
@@ -268,8 +293,13 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+    const isDbFunctionError = errorMessage.includes('get_customer_account_statement_by_code') || 
+                               errorMessage.includes('function') || 
+                               errorMessage.includes('does not exist');
+    
     return (
-      <Card>
+      <Card dir="rtl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -277,15 +307,23 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <div className="text-destructive text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
-            <p className="text-muted-foreground mb-4">
-              {error instanceof Error ? error.message : 'حدث خطأ غير متوقع'}
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
+            <p className="text-gray-600 mb-4">
+              {isDbFunctionError 
+                ? 'نظام كشف الحساب غير مفعّل حالياً. يرجى التواصل مع الدعم الفني.'
+                : errorMessage
+              }
             </p>
-            <Button onClick={() => refetch()} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              إعادة المحاولة
-            </Button>
+            {!isDbFunctionError && (
+              <Button onClick={() => refetch()} variant="outline" className="mt-2">
+                <RefreshCw className="h-4 w-4 ml-2" />
+                إعادة المحاولة
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
+              كود العميل: {customer.customer_code}
+            </p>
           </div>
         </CardContent>
       </Card>
