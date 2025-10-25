@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Professional currency formatting for accounting
 const formatCurrency = (amount: number, currency: string = 'KWD') => {
@@ -52,6 +53,34 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   const [dateTo, setDateTo] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [companyCurrency, setCompanyCurrency] = useState<string>('KWD'); // Default to KWD
+
+  // Fetch company currency
+  useEffect(() => {
+    const fetchCompanyCurrency = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('companies(currency)')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile && profile.companies) {
+          const currency = (profile.companies as any).currency || 'KWD';
+          setCompanyCurrency(currency);
+          console.log('✅ Company currency loaded:', currency);
+        }
+      } catch (error) {
+        console.error('Failed to fetch company currency:', error);
+        // Keep default KWD
+      }
+    };
+
+    fetchCompanyCurrency();
+  }, []);
 
   // Check if customer has required data
   if (!customer || !customer.customer_code) {
@@ -185,25 +214,25 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                   <td>${getTransactionTypeLabel(t.transaction_type)}</td>
                   <td>${t.description}</td>
                   <td>${t.reference_number}</td>
-                  <td>${t.debit_amount > 0 ? formatCurrency(t.debit_amount) : ''}</td>
-                  <td>${t.credit_amount > 0 ? formatCurrency(t.credit_amount) : ''}</td>
-                  <td>${formatCurrency(Math.abs(t.running_balance))} ${t.running_balance >= 0 ? 'مدين' : 'دائن'}</td>
+                  <td>${t.debit_amount > 0 ? formatCurrency(t.debit_amount, companyCurrency) : ''}</td>
+                  <td>${t.credit_amount > 0 ? formatCurrency(t.credit_amount, companyCurrency) : ''}</td>
+                  <td>${formatCurrency(Math.abs(t.running_balance), companyCurrency)} ${t.running_balance >= 0 ? 'مدين' : 'دائن'}</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
                 <td colspan="4"><strong>الإجماليات</strong></td>
-                <td><strong>${formatCurrency(totalDebit)}</strong></td>
-                <td><strong>${formatCurrency(totalCredit)}</strong></td>
-                <td><strong>${formatCurrency(Math.abs(netBalance))} ${netBalance >= 0 ? 'مدين' : 'دائن'}</strong></td>
+                <td><strong>${formatCurrency(totalDebit, companyCurrency)}</strong></td>
+                <td><strong>${formatCurrency(totalCredit, companyCurrency)}</strong></td>
+                <td><strong>${formatCurrency(Math.abs(netBalance), companyCurrency)} ${netBalance >= 0 ? 'مدين' : 'دائن'}</strong></td>
               </tr>
             </tbody>
           </table>
           
           <div class="summary">
             <h3>ملخص الحساب</h3>
-            <p>إجمالي المدين: ${formatCurrency(totalDebit)}</p>
-            <p>إجمالي الدائن: ${formatCurrency(totalCredit)}</p>
-            <p>الرصيد الصافي: ${formatCurrency(Math.abs(netBalance))} ${netBalance >= 0 ? 'مدين' : 'دائن'}</p>
+            <p>إجمالي المدين: ${formatCurrency(totalDebit, companyCurrency)}</p>
+            <p>إجمالي الدائن: ${formatCurrency(totalCredit, companyCurrency)}</p>
+            <p>الرصيد الصافي: ${formatCurrency(Math.abs(netBalance), companyCurrency)} ${netBalance >= 0 ? 'مدين' : 'دائن'}</p>
             <p>عدد المعاملات: ${transactions.length}</p>
           </div>
         </body>
@@ -427,7 +456,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">إجمالي المدين</div>
             <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(totalDebit)}
+              {formatCurrency(totalDebit, companyCurrency)}
             </div>
             <div className="text-xs text-muted-foreground">
               المبالغ المستحقة على العميل
@@ -439,7 +468,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">إجمالي الدائن</div>
             <div className="text-2xl font-bold text-emerald-600">
-              {formatCurrency(totalCredit)}
+              {formatCurrency(totalCredit, companyCurrency)}
             </div>
             <div className="text-xs text-muted-foreground">
               المدفوعات المستلمة
@@ -450,8 +479,8 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground mb-1">الرصيد الصافي</div>
-            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'}`}>
-              {formatCurrency(Math.abs(netBalance))}
+            <div className={`text-2xl font-bold ${ netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'}`}>
+              {formatCurrency(Math.abs(netBalance), companyCurrency)}
             </div>
             <div className="text-xs text-muted-foreground">
               {netBalance >= 0 ? 'مدين للشركة' : 'دائن للعميل'}
@@ -549,14 +578,14 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                         <TableCell className="text-right">
                           {transaction.debit_amount > 0 && (
                             <span className="text-destructive font-medium">
-                              {formatCurrency(transaction.debit_amount)}
+                              {formatCurrency(transaction.debit_amount, companyCurrency)}
                             </span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           {transaction.credit_amount > 0 && (
                             <span className="text-emerald-600 font-medium">
-                              {formatCurrency(transaction.credit_amount)}
+                              {formatCurrency(transaction.credit_amount, companyCurrency)}
                             </span>
                           )}
                         </TableCell>
@@ -566,7 +595,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                               ? 'text-destructive' 
                               : 'text-emerald-600'
                           }>
-                            {formatCurrency(Math.abs(transaction.running_balance))}
+                            {formatCurrency(Math.abs(transaction.running_balance), companyCurrency)}
                           </span>
                           <span className="text-xs text-muted-foreground ml-1">
                             {transaction.running_balance >= 0 ? 'مدين' : 'دائن'}
@@ -584,13 +613,13 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">إجمالي المدين</div>
                   <div className="text-lg font-bold text-destructive">
-                    {formatCurrency(totalDebit)}
+                    {formatCurrency(totalDebit, companyCurrency)}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">إجمالي الدائن</div>
                   <div className="text-lg font-bold text-emerald-600">
-                    {formatCurrency(totalCredit)}
+                    {formatCurrency(totalCredit, companyCurrency)}
                   </div>
                 </div>
                 <div className="text-center">
@@ -598,7 +627,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                   <div className={`text-lg font-bold ${
                     netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'
                   }`}>
-                    {formatCurrency(Math.abs(netBalance))} 
+                    {formatCurrency(Math.abs(netBalance), companyCurrency)} 
                     <span className="text-sm ml-1">
                       {netBalance >= 0 ? 'مدين' : 'دائن'}
                     </span>

@@ -22,10 +22,10 @@ export const useCustomerAccountStatement = ({
         throw new Error('Customer code is required');
       }
 
-      // Get current user's company
+      // Get current user's company with currency
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_id')
+        .select('company_id, companies(currency)')
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
