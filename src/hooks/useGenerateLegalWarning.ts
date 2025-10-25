@@ -320,58 +320,30 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 
 /**
  * Hook for bulk warning generation (multiple customers at once)
+ * Note: This hook returns the mutation, which should be called sequentially
+ * for each customer to avoid violating React's Rules of Hooks
  */
 export const useBulkGenerateLegalWarnings = () => {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: {
-      delinquentCustomers: DelinquentCustomer[];
-      warningType?: 'initial' | 'formal' | 'final';
-      deadlineDays?: number;
+      warnings: GeneratedWarning[];
     }) => {
-      if (!user?.id) throw new Error('User not authenticated');
-
-      const { delinquentCustomers, warningType = 'formal', deadlineDays = 7 } = params;
-
-      const results = [];
-      const errors = [];
-
-      for (const customer of delinquentCustomers) {
-        try {
-          // Generate warning for each customer
-          const generateWarning = useGenerateLegalWarning();
-          const result = await generateWarning.mutateAsync({
-            delinquentCustomer: customer,
-            warningType,
-            deadlineDays,
-            includeBlacklistThreat: customer.risk_score >= 70,
-          });
-          results.push(result);
-          
-          // Add delay to avoid rate limiting (500ms between requests)
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          errors.push({
-            customer: customer.customer_name,
-            error: error.message
-          });
-        }
-      }
-
-      return { results, errors };
+      // This is just for invalidating queries after bulk operations
+      // The actual generation should be done by calling useGenerateLegalWarning
+      // multiple times in the component
+      return params.warnings;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
       queryClient.invalidateQueries({ queryKey: ['legal-consultations'] });
 
-      toast.success(`تم إنشاء ${data.results.length} إنذار قانوني بنجاح`, {
-        description: data.errors.length > 0 ? `فشل إنشاء ${data.errors.length} إنذار` : undefined,
+      toast.success(`تم إنشاء ${data.length} إنذار قانوني بنجاح`, {
         duration: 5000,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error in bulk warning generation:', error);
       toast.error('حدث خطأ أثناء العملية الجماعية');
     },
