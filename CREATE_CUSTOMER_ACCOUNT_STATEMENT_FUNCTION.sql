@@ -28,7 +28,7 @@ CREATE OR REPLACE FUNCTION get_customer_account_statement_by_code(
   transaction_date DATE,
   transaction_type TEXT,
   description TEXT,
-  reference_number TEXT,
+  reference_number VARCHAR(50),
   debit_amount DECIMAL(15,3),
   credit_amount DECIMAL(15,3),
   running_balance DECIMAL(15,3),
