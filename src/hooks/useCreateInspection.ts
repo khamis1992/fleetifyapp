@@ -15,7 +15,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { DamageRecord } from './useVehicleInspections';
 
@@ -64,7 +63,6 @@ interface PhotoUploadResult {
  */
 export function useCreateInspection() {
   const { currentCompanyId } = useUnifiedCompanyAccess();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -72,6 +70,9 @@ export function useCreateInspection() {
       if (!currentCompanyId) {
         throw new Error('No company context available');
       }
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
         throw new Error('User not authenticated');
