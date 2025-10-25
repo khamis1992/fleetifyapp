@@ -37,6 +37,17 @@ const RealEstateDashboard: React.FC = () => {
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('real_estate');
   const { formatCurrency } = useCurrencyFormatter();
 
+  // Widget refs for dashboard sections
+  const widgetRefs = useRef<Record<string, HTMLDivElement | null>>({
+    occupancy: null,
+    rentCollection: null,
+    maintenance: null,
+    propertyPerformance: null,
+    leaseExpiry: null,
+    tenantSatisfaction: null,
+    vacancy: null
+  });
+
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
