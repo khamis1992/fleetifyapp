@@ -4,6 +4,15 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+// Add loading class to body to disable blur during initial load
+document.body.classList.add('loading');
+
+// Remove loading class after app mounts to enable blur effects
+setTimeout(() => {
+  document.body.classList.remove('loading');
+  document.body.classList.add('loaded');
+}, 1000);
+
 // Global error handler for dynamic import failures
 window.addEventListener('error', (event) => {
   const isChunkLoadError = 

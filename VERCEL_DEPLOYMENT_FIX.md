@@ -85,6 +85,43 @@ if (session?.user) {
 }
 ```
 
+### 6. Blurry UI on Initial Load (Backdrop Blur Performance)
+**Problem**: Application appears blurry when first loading due to multiple layers of `backdrop-blur` effects applied before content is ready.
+
+**Root Cause**: Multiple components use `backdrop-blur-sm` and semi-transparent backgrounds (`bg-card/80`), creating performance issues during initial render.
+
+**Solution**: Implemented progressive blur loading:
+1. Added `loading` class to `<body>` during initial load
+2. Disabled all `backdrop-filter` effects while loading
+3. Re-enabled blur effects after 1 second with smooth transition
+4. Modified `glass-card` class to use less transparency
+
+**Files Modified**:
+- `src/main.tsx`: Added loading class management
+- `src/index.css`: Added CSS rules for progressive blur
+
+```typescript
+// In main.tsx
+document.body.classList.add('loading');
+setTimeout(() => {
+  document.body.classList.remove('loading');
+  document.body.classList.add('loaded');
+}, 1000);
+```
+
+```css
+/* In index.css */
+body.loading .backdrop-blur,
+body.loading .backdrop-blur-sm {
+  backdrop-filter: none !important;
+}
+
+body.loaded .backdrop-blur-sm {
+  backdrop-filter: blur(8px);
+  transition: backdrop-filter 0.3s ease;
+}
+```
+
 ---
 
 ## 📋 Deployment Checklist

@@ -434,7 +434,7 @@ All colors MUST be HSL.
   }
   
   .glass-card {
-    @apply bg-background/80 backdrop-blur-sm border border-border/50;
+    @apply bg-background/95 border border-border/50;
   }
   
   .glow-on-hover {
@@ -580,6 +580,40 @@ All colors MUST be HSL.
   
   [dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
     --tw-space-x-reverse: 1;
+  }
+  
+  /* Performance optimization: Disable blur during initial load */
+  body.loading .backdrop-blur,
+  body.loading .backdrop-blur-sm,
+  body.loading .backdrop-blur-md,
+  body.loading .backdrop-blur-lg {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Re-enable blur after load */
+  body.loaded .backdrop-blur {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body.loaded .backdrop-blur-sm {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body.loaded .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body.loaded .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: backdrop-filter 0.3s ease;
   }
   
   /* Enhanced Arabic font support with better rendering */
