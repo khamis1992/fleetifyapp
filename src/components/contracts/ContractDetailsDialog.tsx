@@ -31,6 +31,8 @@ import { ContractDocuments } from './ContractDocuments';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { LateFinesTab } from './LateFinesTab';
+import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
+import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Contract } from '@/types/contracts';
@@ -166,6 +168,16 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     },
     enabled: !!contract?.id
   });
+
+  // Fetch vehicle inspections
+  const { data: inspections, refetch: refetchInspections } = useVehicleInspections({
+    contractId: contract?.id || '',
+    enabled: !!contract?.id && !!contract?.vehicle_id
+  });
+
+  // Get check-in and check-out inspections
+  const checkInInspection = inspections?.find((i) => i.inspection_type === 'check_in');
+  const checkOutInspection = inspections?.find((i) => i.inspection_type === 'check_out');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -381,9 +393,27 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5" dir="rtl">
+          <TabsList className="grid w-full grid-cols-7" dir="rtl">
             <TabsTrigger value="details">التفاصيل</TabsTrigger>
             <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+            <TabsTrigger value="check-in" className="relative">
+              استلام المركبة
+              {checkInInspection && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="check-out" className="relative">
+              تسليم المركبة
+              {checkOutInspection && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="fines">الغرامات والتأخيرات</TabsTrigger>
             <TabsTrigger value="timeline">التاريخ</TabsTrigger>
             <TabsTrigger value="documents">المستندات</TabsTrigger>
@@ -850,6 +880,177 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   </Button>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="check-in" className="space-y-4">
+            {!contract?.vehicle_id ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    لا توجد مركبة مرتبطة بهذا العقد
+                  </p>
+                </CardContent>
+              </Card>
+            ) : checkInInspection ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>تقرير استلام المركبة</CardTitle>
+                    <Badge variant="default">تم الاستلام</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">مستوى الوقود</p>
+                      <p className="text-2xl font-bold">{checkInInspection.fuel_level}%</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">قراءة العداد</p>
+                      <p className="text-2xl font-bold">{checkInInspection.odometer_reading?.toLocaleString()} كم</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">تقييم النظافة</p>
+                      <p className="text-2xl font-bold">{checkInInspection.cleanliness_rating}/5 ⭐</p>
+                    </div>
+                  </div>
+                  {checkInInspection.notes && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">ملاحظات</p>
+                      <p className="text-sm whitespace-pre-wrap">{checkInInspection.notes}</p>
+                    </div>
+                  )}
+                  {checkInInspection.photo_urls && checkInInspection.photo_urls.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">الصور</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {checkInInspection.photo_urls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`صورة ${index + 1}`}
+                            className="rounded-md w-full h-32 object-cover cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(url, '_blank')}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    تاريخ الاستلام: {new Date(checkInInspection.inspection_date).toLocaleString('ar-SA')}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <VehicleCheckInOut
+                contractId={contract.id}
+                vehicleId={contract.vehicle_id}
+                type="check_in"
+                onComplete={() => {
+                  refetchInspections();
+                  toast.success('تم تسجيل استلام المركبة بنجاح');
+                }}
+                onCancel={() => {
+                  // Optional: close dialog or switch tab
+                }}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="check-out" className="space-y-4">
+            {!contract?.vehicle_id ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    لا توجد مركبة مرتبطة بهذا العقد
+                  </p>
+                </CardContent>
+              </Card>
+            ) : !checkInInspection ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    يجب إتمام استلام المركبة أولاً قبل التسليم
+                  </p>
+                </CardContent>
+              </Card>
+            ) : checkOutInspection ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>تقرير تسليم المركبة</CardTitle>
+                    <Badge variant="secondary">تم التسليم</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">مستوى الوقود</p>
+                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level}%</p>
+                      {checkInInspection && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
+                        <Badge variant="destructive" className="mt-1">
+                          نقص {checkInInspection.fuel_level - checkOutInspection.fuel_level}%
+                        </Badge>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">قراءة العداد</p>
+                      <p className="text-2xl font-bold">{checkOutInspection.odometer_reading?.toLocaleString()} كم</p>
+                      {checkInInspection && checkInInspection.odometer_reading && checkOutInspection.odometer_reading && (
+                        <Badge variant="outline" className="mt-1">
+                          مسافة: {(checkOutInspection.odometer_reading - checkInInspection.odometer_reading).toLocaleString()} كم
+                        </Badge>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">تقييم النظافة</p>
+                      <p className="text-2xl font-bold">{checkOutInspection.cleanliness_rating}/5 ⭐</p>
+                    </div>
+                  </div>
+                  {checkOutInspection.notes && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">ملاحظات</p>
+                      <p className="text-sm whitespace-pre-wrap">{checkOutInspection.notes}</p>
+                    </div>
+                  )}
+                  {checkOutInspection.photo_urls && checkOutInspection.photo_urls.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">الصور</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {checkOutInspection.photo_urls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`صورة ${index + 1}`}
+                            className="rounded-md w-full h-32 object-cover cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(url, '_blank')}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    تاريخ التسليم: {new Date(checkOutInspection.inspection_date).toLocaleString('ar-SA')}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <VehicleCheckInOut
+                contractId={contract.id}
+                vehicleId={contract.vehicle_id}
+                type="check_out"
+                onComplete={() => {
+                  refetchInspections();
+                  toast.success('تم تسجيل تسليم المركبة بنجاح');
+                }}
+                onCancel={() => {
+                  // Optional: close dialog or switch tab
+                }}
+              />
             )}
           </TabsContent>
 
