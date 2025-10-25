@@ -35,6 +35,7 @@ const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
 const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), "CashReceiptDemo");
 const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
 const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
+const MonthlyRentTracking = lazyWithRetry(() => import("./finance/MonthlyRentTracking"), "MonthlyRentTracking");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -290,6 +291,18 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.ledger.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <JournalEntriesDemo />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* متابعة الإيجارات الشهرية */}
+      <Route 
+        path="monthly-rent-tracking" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <MonthlyRentTracking />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
