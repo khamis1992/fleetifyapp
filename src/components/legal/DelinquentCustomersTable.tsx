@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -26,7 +27,7 @@ interface DelinquentCustomersTableProps {
   onSendWarning?: (customer: DelinquentCustomer) => void;
 }
 
-export const Delinquent CustomersTable: React.FC<DelinquentCustomersTableProps> = ({
+export const DelinquentCustomersTable: React.FC<DelinquentCustomersTableProps> = ({
   filters,
   onSelectCustomers,
   onViewDetails,

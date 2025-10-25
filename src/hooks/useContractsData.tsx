@@ -291,10 +291,23 @@ export const useContractsData = (filters: any = {}) => {
       // Search filter
       if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.toLowerCase().trim();
+        
+        // Build customer name from contract.customers data
+        let customerName = '';
+        if (contract.customers) {
+          const customer = contract.customers;
+          if (customer.customer_type === 'individual' || !customer.company_name) {
+            customerName = `${customer.first_name || ''} ${customer.last_name || ''} ${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
+          } else {
+            customerName = `${customer.company_name || ''} ${customer.company_name_ar || ''}`.trim();
+          }
+        }
+        
         const searchableText = [
           contract.contract_number || '',
           contract.description || '',
           contract.terms || '',
+          customerName,
           contract.vehicle?.plate_number || contract.license_plate || '',
           contract.vehicle?.make || contract.make || '',
           contract.vehicle?.model || contract.model || ''
