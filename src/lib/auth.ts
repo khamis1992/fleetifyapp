@@ -154,6 +154,16 @@ export const authService = {
 
       console.log('📝 [AUTH] Parallel queries completed in', Date.now() - startTime, 'ms');
 
+      // DEBUG: Log what we got from the queries
+      console.log('📝 [AUTH] Query results:', {
+        hasProfile: !!profile,
+        profileCompanyId: profile?.company_id,
+        profileCompanies: profile?.companies,
+        hasEmployeeCompany: !!employeeCompany,
+        employeeCompanyId: employeeCompany?.company_id,
+        rolesCount: roles?.length || 0
+      });
+
       // Get company info - prioritize from profiles, fallback to employees
       let companyInfo = profile?.companies;
       let companyId = profile?.company_id;
@@ -167,7 +177,22 @@ export const authService = {
 
       // If still no profile, log warning but continue (don't block login)
       if (profileError) {
-        console.warn('📝 [AUTH] Profile fetch error (continuing anyway):', profileError.code);
+        console.warn('📝 [AUTH] Profile fetch error (continuing anyway):', {
+          code: profileError.code,
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint
+        });
+      }
+
+      // Log warning if no company found
+      if (!companyId) {
+        console.error('🚨 [AUTH] WARNING: User has no company association!', {
+          userId: user.id,
+          email: user.email,
+          hasProfile: !!profile,
+          hasEmployeeRecord: !!employeeCompany
+        });
       }
 
       const authUser: AuthUser = {
