@@ -14,15 +14,15 @@ export const MobileTabsNavigation: React.FC<MobileTabsNavigationProps> = ({
   showAllTabs = false
 }) => {
   const tabs = [
-    { value: "all", label: "الكل", shortLabel: "الكل" },
-    { value: "draft", label: "المسودات", shortLabel: "مسودة" },
-    { value: "under_review", label: "قيد المراجعة", shortLabel: "مراجعة" },
-    { value: "active", label: "النشطة", shortLabel: "نشطة" },
-    { value: "suspended", label: "المعلقة", shortLabel: "معلقة" },
+    { value: "all", label: "جميع العقود", shortLabel: "جميع العقود" },
+    { value: "active", label: "النشطة", shortLabel: "النشطة" },
+    { value: "under_review", label: "المراجعة", shortLabel: "المراجعة" },
+    { value: "cancelled", label: "الملغاة", shortLabel: "الملغاة" },
     ...(showAllTabs ? [
-      { value: "expired", label: "المنتهية", shortLabel: "منتهية" },
-      { value: "cancelled", label: "الملغية", shortLabel: "ملغية" },
-      { value: "renewed", label: "المجددة", shortLabel: "مجددة" },
+      { value: "draft", label: "المسودات", shortLabel: "المسودات" },
+      { value: "suspended", label: "المعلقة", shortLabel: "المعلقة" },
+      { value: "expired", label: "المنتهية", shortLabel: "المنتهية" },
+      { value: "renewed", label: "المجددة", shortLabel: "المجددة" },
       { value: "alerts", label: "التنبيهات", shortLabel: "تنبيهات" }
     ] : [])
   ];

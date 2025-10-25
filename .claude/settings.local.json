@@ -82,7 +82,11 @@
       "WebSearch",
       "Bash(claude mcp add:*)",
       "Bash(git pull:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(node scripts/split-migration.js:*)",
+      "Bash(node scripts/split-migration.cjs:*)",
+      "mcp__playwright__playwright_navigate",
+      "Bash(npx playwright install chromium)"
     ],
     "deny": [],
     "ask": []
