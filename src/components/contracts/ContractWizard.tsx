@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Save, ChevronLeft, ChevronRight, Send, Clock, TestTube, FileText, CheckCircle } from 'lucide-react'
+import { Save, ChevronLeft, ChevronRight, Send, Clock, TestTube, FileText, CheckCircle, Scan } from 'lucide-react'
 import { ContractWizardProvider, useContractWizard } from './ContractWizardProvider'
 import { 
   BasicInfoStep, 
@@ -15,6 +15,8 @@ import {
   ReviewStep 
 } from './ContractWizardSteps'
 import { LateFinesStep } from './LateFinesStep'
+import { ContractScannerDialog } from './ContractScannerDialog'
+import { useState } from 'react'
 
 
 const stepComponents = [
@@ -43,6 +45,8 @@ interface ContractWizardProps {
 }
 
 const ContractWizardContent: React.FC = () => {
+  const [showScanner, setShowScanner] = useState(false);
+  
   const {
     currentStep,
     totalSteps,
@@ -53,7 +57,8 @@ const ContractWizardContent: React.FC = () => {
     saveDraft,
     isAutoSaving,
     data,
-    fillTestData
+    fillTestData,
+    updateData
   } = useContractWizard()
 
   const progress = ((currentStep + 1) / totalSteps) * 100
@@ -68,12 +73,56 @@ const ContractWizardContent: React.FC = () => {
     }
   }
 
+  const handleScanDataExtracted = (extractedData: any) => {
+    console.log('📄 [CONTRACT_WIZARD] OCR data extracted:', extractedData);
+    
+    // Map extracted data to contract form fields
+    const mappedData: any = {};
+    
+    // Basic info
+    if (extractedData.contract_number) mappedData.contract_number = extractedData.contract_number;
+    if (extractedData.contract_date) mappedData.contract_date = extractedData.contract_date;
+    if (extractedData.agreement_type) mappedData.contract_type = extractedData.agreement_type;
+    
+    // Dates
+    if (extractedData.start_date) mappedData.start_date = extractedData.start_date;
+    if (extractedData.end_date) mappedData.end_date = extractedData.end_date;
+    if (extractedData.contract_duration_months) mappedData.duration_months = extractedData.contract_duration_months;
+    
+    // Financial
+    if (extractedData.monthly_rent) mappedData.monthly_amount = extractedData.monthly_rent;
+    if (extractedData.guarantee_amount) mappedData.guarantee_amount = extractedData.guarantee_amount;
+    
+    // Store scanned customer/vehicle data for manual matching
+    if (extractedData.customer_name) mappedData.scanned_customer_name = extractedData.customer_name;
+    if (extractedData.customer_civil_id) mappedData.scanned_customer_id = extractedData.customer_civil_id;
+    if (extractedData.customer_phone) mappedData.scanned_customer_phone = extractedData.customer_phone;
+    if (extractedData.vehicle_make) mappedData.scanned_vehicle_make = extractedData.vehicle_make;
+    if (extractedData.vehicle_model) mappedData.scanned_vehicle_model = extractedData.vehicle_model;
+    if (extractedData.vehicle_plate) mappedData.scanned_vehicle_plate = extractedData.vehicle_plate;
+    
+    // Update wizard data
+    updateData(mappedData);
+    
+    // Close scanner
+    setShowScanner(false);
+  };
+
   return (
     <>
       <DialogHeader className="space-y-4">
         <DialogTitle className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span>انشاء عقد جديد</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowScanner(true)}
+              className="text-xs flex items-center gap-1"
+            >
+              <Scan className="h-3 w-3" />
+              مسح عقد
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -168,6 +217,13 @@ const ContractWizardContent: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Contract Scanner Dialog */}
+      <ContractScannerDialog
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        onDataExtracted={handleScanDataExtracted}
+      />
     </>
   )
 }
