@@ -591,6 +591,28 @@ All colors MUST be HSL.
     -webkit-backdrop-filter: none !important;
   }
   
+  /* Also simplify backgrounds during load */
+  body.loading [class*="bg-card/"],
+  body.loading [class*="bg-background/"] {
+    opacity: 1 !important;
+  }
+  
+  body.loading .bg-card\/50,
+  body.loading .bg-card\/60,
+  body.loading .bg-card\/70,
+  body.loading .bg-card\/80,
+  body.loading .bg-card\/90 {
+    background-color: hsl(var(--card)) !important;
+  }
+  
+  body.loading .bg-background\/50,
+  body.loading .bg-background\/60,
+  body.loading .bg-background\/70,
+  body.loading .bg-background\/80,
+  body.loading .bg-background\/90 {
+    background-color: hsl(var(--background)) !important;
+  }
+  
   /* Re-enable blur after load */
   body.loaded .backdrop-blur {
     backdrop-filter: blur(16px);
