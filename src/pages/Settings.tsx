@@ -4,23 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Settings as SettingsIcon, 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
+import {
+  Settings as SettingsIcon,
+  User,
+  Bell,
+  Shield,
+  Palette,
   Globe,
   Lock,
   ChevronRight,
   Crown,
   CreditCard,
-  FileSignature
+  FileSignature,
+  GraduationCap
 } from 'lucide-react';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { toast } from 'sonner';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { restart: restartOnboardingTour } = useOnboarding();
 
   const settingsOptions = [
     {
@@ -42,6 +46,19 @@ const Settings: React.FC = () => {
       description: "إعدادات كلمة المرور والأمان",
       icon: Shield,
       action: () => navigate('/profile#password-section'),
+      available: true
+    },
+    {
+      title: "إعادة جولة التعريف",
+      description: "ابدأ جولة تعريفية سريعة بميزات التطبيق",
+      icon: GraduationCap,
+      action: () => {
+        restartOnboardingTour();
+        toast.success('تم بدء جولة التعريف', {
+          description: 'سيتم توجيهك خلال الميزات الرئيسية للتطبيق'
+        });
+        navigate('/dashboard');
+      },
       available: true
     },
     {

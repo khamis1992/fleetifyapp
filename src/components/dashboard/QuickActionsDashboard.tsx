@@ -220,10 +220,11 @@ const QuickActionsDashboard: React.FC = () => {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Card 
+      <Card
         className={`cursor-pointer transition-smooth bg-gradient-card shadow-card hover:shadow-elevated ${action.color} border group`}
         onClick={() => handleActionClick(action)}
         title={`انقر للانتقال إلى ${action.title}`}
+        data-tour={action.id}
       >
         <CardContent className={variant === 'compact' ? 'p-4' : 'p-6'}>
           <div className="flex items-start gap-4">

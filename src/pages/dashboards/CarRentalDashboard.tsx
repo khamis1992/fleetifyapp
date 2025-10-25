@@ -13,6 +13,7 @@ import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
 
 
 const CarRentalDashboard: React.FC = () => {
@@ -116,15 +117,19 @@ const CarRentalDashboard: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
             className="space-y-6"
+            data-tour="dashboard-metrics"
           >
-            <SmartMetricsPanel 
-              financialData={smartMetricsData} 
-              loading={financialLoading} 
+            <SmartMetricsPanel
+              financialData={smartMetricsData}
+              loading={financialLoading}
             />
           </motion.div>
         </div>
 
       </div>
+
+      {/* Welcome Tour for New Users (K1 Fix #004) */}
+      <WelcomeTour />
     </>
   );
 };
