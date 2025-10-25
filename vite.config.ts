@@ -103,10 +103,13 @@ export default defineConfig(({ mode }) => ({
             '@supabase/supabase-js',
             '@tanstack/react-query'
           ],
-          // Charts and visualization
+          // Charts and visualization (lazy loaded)
           'charts-vendor': ['recharts'],
-          // Icons
+          // Icons - tree-shakeable bundle
           'icons-vendor': ['lucide-react'],
+          // Heavy export libraries (lazy loaded)
+          'pdf-vendor': ['html2canvas', 'jspdf', 'jspdf-autotable'],
+          'excel-vendor': ['xlsx'],
           // Utils
           'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge']
         },
