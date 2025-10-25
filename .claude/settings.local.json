@@ -86,7 +86,8 @@
       "Bash(node scripts/split-migration.js:*)",
       "Bash(node scripts/split-migration.cjs:*)",
       "mcp__playwright__playwright_navigate",
-      "Bash(npx playwright install chromium)"
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright install)"
     ],
     "deny": [],
     "ask": []

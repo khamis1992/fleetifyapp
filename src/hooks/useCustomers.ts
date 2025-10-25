@@ -152,7 +152,15 @@ export const useCustomers = (filters?: CustomerFilters) => {
 
         const { count, error: countError } = await countQuery;
         if (countError) {
-          console.error('❌ [CUSTOMERS] Error fetching count:', countError);
+          console.error('❌ [CUSTOMERS] Error fetching count:', {
+            message: countError.message,
+            details: countError.details,
+            hint: countError.hint,
+            code: countError.code,
+            fullError: countError
+          });
+          // Don't throw, just use 0 as fallback
+          totalCount = 0;
         } else {
           totalCount = count || 0;
         }
@@ -169,8 +177,14 @@ export const useCustomers = (filters?: CustomerFilters) => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ [CUSTOMERS] Error fetching customers:', error);
-        throw error;
+        console.error('❌ [CUSTOMERS] Error fetching customers:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error
+        });
+        throw new Error(`Failed to fetch customers: ${error.message || 'Unknown error'}`);
       }
 
       const result = {

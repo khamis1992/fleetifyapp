@@ -65,7 +65,36 @@ interface ContractWithVehicle extends Record<string, any> {
 export const useContractsData = (filters: any = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
-  // Fetch contracts with customer data
+  // Fetch statistics separately (all contracts for accurate counts)
+  const { data: allContractsForStats } = useQuery({
+    queryKey: [...queryKeys.contracts.lists(), 'all-for-stats', filter?.company_id],
+    queryFn: async () => {
+      const companyId = filter?.company_id || null;
+      console.log('📊 [CONTRACTS_STATS] Fetching all contracts for statistics', { companyId });
+
+      let query = supabase
+        .from('contracts')
+        .select('id, status, contract_amount, monthly_amount');
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ [CONTRACTS_STATS] Error fetching stats:', error);
+        return [];
+      }
+
+      console.log('✅ [CONTRACTS_STATS] Fetched contracts for stats:', data?.length || 0);
+      return data || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+  });
+
+  // Fetch contracts with customer data (paginated)
   const { data: contractsResponse, isLoading, refetch } = useQuery({
     queryKey: queryKeys.contracts.list({
       page: filters?.page,
@@ -223,9 +252,11 @@ export const useContractsData = (filters: any = {}) => {
     return undefined;
   }, [contractsResponse]);
 
-  // Contract statistics
+  // Contract statistics - Use allContractsForStats for accurate counts
   const statistics = useMemo(() => {
-    if (!contracts) return {
+    const statsContracts = allContractsForStats || [];
+    
+    if (!statsContracts || statsContracts.length === 0) return {
       activeContracts: [],
       draftContracts: [],
       underReviewContracts: [],
@@ -247,15 +278,26 @@ export const useContractsData = (filters: any = {}) => {
     };
 
     // Active contracts should not be filtered by zero amounts
-    const activeContracts = contracts.filter((c: any) => c.status === 'active');
-    const underReviewContracts = contracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
-    const draftContracts = contracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
-    const expiredContracts = contracts.filter((c: any) => c.status === 'expired');
-    const suspendedContracts = contracts.filter((c: any) => c.status === 'suspended');
-    const cancelledContracts = contracts.filter((c: any) => c.status === 'cancelled');
+    const activeContracts = statsContracts.filter((c: any) => c.status === 'active');
+    const underReviewContracts = statsContracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
+    const draftContracts = statsContracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
+    const expiredContracts = statsContracts.filter((c: any) => c.status === 'expired');
+    const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
+    const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
     
     // Include both active and under_review contracts in revenue calculation
     const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract: any) => sum + (contract.contract_amount || 0), 0);
+
+    console.log('📊 [CONTRACTS_STATS] Statistics calculated:', {
+      total: statsContracts.length,
+      active: activeContracts.length,
+      underReview: underReviewContracts.length,
+      draft: draftContracts.length,
+      cancelled: cancelledContracts.length,
+      expired: expiredContracts.length,
+      suspended: suspendedContracts.length,
+      totalRevenue
+    });
 
     return {
       activeContracts,
@@ -266,7 +308,7 @@ export const useContractsData = (filters: any = {}) => {
       cancelledContracts,
       totalRevenue
     };
-  }, [contracts]);
+  }, [allContractsForStats]);
 
   // Apply filters to contracts
   const filteredContracts = useMemo(() => {
