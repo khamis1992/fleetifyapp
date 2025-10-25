@@ -78,7 +78,11 @@
       "Bash(node scripts/processAgreementsFromExcel.cjs:*)",
       "Bash(cat:*)",
       "Bash(node -e:*)",
-      "Bash(node scripts/generateAgreementSQL.cjs:*)"
+      "Bash(node scripts/generateAgreementSQL.cjs:*)",
+      "WebSearch",
+      "Bash(claude mcp add:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

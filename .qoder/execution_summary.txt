@@ -1,0 +1,164 @@
+MIGRATION EXECUTION SUMMARY
+======================================================================
+Started at: 2025-10-25 21:25:43
+
+Batch 001: Contracts 1-10 (10 contracts)
+   File: compact_batch_001.sql
+   Status: PENDING
+
+Batch 002: Contracts 11-20 (10 contracts)
+   File: compact_batch_002.sql
+   Status: PENDING
+
+Batch 003: Contracts 21-30 (10 contracts)
+   File: compact_batch_003.sql
+   Status: PENDING
+
+Batch 004: Contracts 31-40 (10 contracts)
+   File: compact_batch_004.sql
+   Status: PENDING
+
+Batch 005: Contracts 41-50 (10 contracts)
+   File: compact_batch_005.sql
+   Status: PENDING
+
+Batch 006: Contracts 51-60 (10 contracts)
+   File: compact_batch_006.sql
+   Status: PENDING
+
+Batch 007: Contracts 61-70 (10 contracts)
+   File: compact_batch_007.sql
+   Status: PENDING
+
+Batch 008: Contracts 71-80 (10 contracts)
+   File: compact_batch_008.sql
+   Status: PENDING
+
+Batch 009: Contracts 81-90 (10 contracts)
+   File: compact_batch_009.sql
+   Status: PENDING
+
+Batch 010: Contracts 91-100 (10 contracts)
+   File: compact_batch_010.sql
+   Status: PENDING
+
+Batch 011: Contracts 101-110 (10 contracts)
+   File: compact_batch_011.sql
+   Status: PENDING
+
+Batch 012: Contracts 111-120 (10 contracts)
+   File: compact_batch_012.sql
+   Status: PENDING
+
+Batch 013: Contracts 121-130 (10 contracts)
+   File: compact_batch_013.sql
+   Status: PENDING
+
+Batch 014: Contracts 131-140 (10 contracts)
+   File: compact_batch_014.sql
+   Status: PENDING
+
+Batch 015: Contracts 141-150 (10 contracts)
+   File: compact_batch_015.sql
+   Status: PENDING
+
+Batch 016: Contracts 151-160 (10 contracts)
+   File: compact_batch_016.sql
+   Status: PENDING
+
+Batch 017: Contracts 161-170 (10 contracts)
+   File: compact_batch_017.sql
+   Status: PENDING
+
+Batch 018: Contracts 171-180 (10 contracts)
+   File: compact_batch_018.sql
+   Status: PENDING
+
+Batch 019: Contracts 181-190 (10 contracts)
+   File: compact_batch_019.sql
+   Status: PENDING
+
+Batch 020: Contracts 191-200 (10 contracts)
+   File: compact_batch_020.sql
+   Status: PENDING
+
+Batch 021: Contracts 201-210 (10 contracts)
+   File: compact_batch_021.sql
+   Status: PENDING
+
+Batch 022: Contracts 211-220 (10 contracts)
+   File: compact_batch_022.sql
+   Status: PENDING
+
+Batch 023: Contracts 221-230 (10 contracts)
+   File: compact_batch_023.sql
+   Status: PENDING
+
+Batch 024: Contracts 231-240 (10 contracts)
+   File: compact_batch_024.sql
+   Status: PENDING
+
+Batch 025: Contracts 241-250 (10 contracts)
+   File: compact_batch_025.sql
+   Status: PENDING
+
+Batch 026: Contracts 251-260 (10 contracts)
+   File: compact_batch_026.sql
+   Status: PENDING
+
+Batch 027: Contracts 261-270 (10 contracts)
+   File: compact_batch_027.sql
+   Status: PENDING
+
+Batch 028: Contracts 271-280 (10 contracts)
+   File: compact_batch_028.sql
+   Status: PENDING
+
+Batch 029: Contracts 281-290 (10 contracts)
+   File: compact_batch_029.sql
+   Status: PENDING
+
+Batch 030: Contracts 291-300 (10 contracts)
+   File: compact_batch_030.sql
+   Status: PENDING
+
+Batch 031: Contracts 301-310 (10 contracts)
+   File: compact_batch_031.sql
+   Status: PENDING
+
+Batch 032: Contracts 311-320 (10 contracts)
+   File: compact_batch_032.sql
+   Status: PENDING
+
+Batch 033: Contracts 321-330 (10 contracts)
+   File: compact_batch_033.sql
+   Status: PENDING
+
+Batch 034: Contracts 331-340 (10 contracts)
+   File: compact_batch_034.sql
+   Status: PENDING
+
+Batch 035: Contracts 341-350 (10 contracts)
+   File: compact_batch_035.sql
+   Status: PENDING
+
+Batch 036: Contracts 351-360 (10 contracts)
+   File: compact_batch_036.sql
+   Status: PENDING
+
+Batch 037: Contracts 361-370 (10 contracts)
+   File: compact_batch_037.sql
+   Status: PENDING
+
+Batch 038: Contracts 371-380 (10 contracts)
+   File: compact_batch_038.sql
+   Status: PENDING
+
+Batch 039: Contracts 381-390 (10 contracts)
+   File: compact_batch_039.sql
+   Status: PENDING
+
+Batch 040: Contracts 391-392 (2 contracts)
+   File: compact_batch_040.sql
+   Status: PENDING
+
