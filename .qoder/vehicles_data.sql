@@ -1,0 +1,85 @@
+CREATE TABLE vehicles_data (
+    vehicle_number INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    phone_number VARCHAR(20),
+    contract_start_date DATE,
+    monthly_payment DECIMAL(10,2)
+);
+
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2766', 'محمد محمد احمد', '70007983', '2025-05-02', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2767', 'عبد الغفور دوار', '77122519', '2025-09-02', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2768', 'عبد العزيز محمد', '70342655', '2025-01-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2769', 'وضاح عبد الله', '71953163', '2024-12-21', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2770', 'خديرب رضا السحامي', '70220390', '2025-01-08', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2772', 'إسماعيل احمد عبد الله', '30400511', '2024-07-14', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2773', 'مجدي يحيث', '50246458', '2025-01-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2774', 'ابراهيم رطوب', '30882244', '2025-02-01', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2775', 'انور جيتوبر', '51476442', '2025-01-02', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2776', 'هيثم خليفة يعلي', '50529648', '2025-04-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2778', 'بلال البوقري', '70400898', '2025-07-15', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2780', 'كمال ياسين سرحان', '71002048', '2023-12-29', 2100);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2783', 'صدام مصطفى سعد', '77068310', '2025-01-07', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('2784', 'عثمان عويريزة', '30770117', '2024-01-08', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5889', 'ايمن خليفة جلاب', '30303088', '2023-11-20', 2100);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5890', 'عبد العزيز جرلان', '33767961', '2024-01-12', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5893', 'ايمن محمد شوشان', '50131342', '2024-09-16', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5896', 'مختار الامين', '50129848', '2025-01-09', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5898', 'محمد سراج الدين', '31184659', '2024-05-08', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('5901', 'حسام سلمي الطاهري', '31115657', '2023-12-23', 2100);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7034', 'محمد احمد عمر متعافي', '50225055', '2025-10-07', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7036', 'عصام ابراهيم عبد الله', '30777645', '2024-12-12', 1550);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7039', 'عبد الله عمر برهان', '30945601', '2025-01-04', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7041', 'الصحبي البشير اليماني', '33173763', '2025-01-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7043', 'حمزة البشير يحيى', '55260218', '2024-08-21', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7053', 'مهدي اسامة حامد', '30138501', '2024-07-30', 1800);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7054', 'محمود جاسم الصالح', '66684460', '2025-01-16', 1650);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7056', 'مجدي محمد عيس', '33557425', '2025-01-05', 1650);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7058', 'محمد فؤاد شوشان', '55146873', '2024-09-25', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7059', 'عمر مرابحي', '31299557', '2025-01-15', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7061', 'في عبد الحنان الحجز', '55222976', '2025-03-16', 2100);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7062', 'محمد المختار بشاشة', '30788438', '2025-10-05', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7063', 'مهند حمودة الظاهر', '30623322', '2025-01-12', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7069', 'عصام الدزوقي', '74700503', '2024-08-26', 1800);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7072', 'يوسف العويدي لخليل', '72119703', '2024-07-28', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7074', 'محمود جاسم الصالح', '30531131', '2024-11-14', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7075', 'مطلوب الابراهيم', '50446192', '2024-05-02', 1800);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('7077', 'ادم صالح جبريل', '50066411', '2023-12-22', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('185 513', 'الصادق دياب', '70075544', '2024-01-03', 1800);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('185 573', 'ايهاب عبد الله', '3100 966', '2025-01-04', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('603 353', '5892مصطفى بالقايد', '31245752', '2025-01-07', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('599 720', '7055 انور الدهبي', '50234083', '2025-01-05', 1800);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('153 974', '7065زهري حكيم', '55578515', '2025-01-01', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('21849', 'فادي السعيد', '66043445', '2025-08-02', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('21860', 'محمد العريشي', '66816813', '2025-02-16', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('381247', 'قصعادي عقبة', '50409220', '2025-01-07', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('556199', 'محمد جمعة', '66816813', '2025-01-08', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('706150', 'مروان باكير', '51024665', '2025-11-07', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('856715', 'دانور الجيتوني (حمزة)', '66934949', '2025-01-04', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('856718', 'حسان بو علاقي', '66553638', '2025-02-14', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('856878', 'محمد مسلم', '55001662', '2025-01-08', 2100);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('856925', 'عاطف منصور', '74446588', '2024-05-08', 1850);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('857045', 'عميرة الخروبي', '30122896', '2024-02-01', 2000);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('893406', 'سيف الدين محمد صالح', '70692947', '2025-01-04', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('893409', 'عبد الصمد بن عزوز', '33478097', '2025-01-03', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('893410', 'عمار عبد العزيز الغزي', '30403800', '2024-04-09', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('9255', 'علام الدين حسين', '77456423', '2023-06-21', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10172', 'انور محمد ابراهيم', '70561365', '2025-04-15', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10197', 'احمد الشاعر الصديق', '50118063', '2024-10-08', 1250);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('11473', 'عمد العواري', '66071051', '2025-09-19', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('721894', 'شرف الدين الموجود', '71101506', '2025-03-06', 1000);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('862169', 'عبد الرحيم شاكر', '31310330', '2025-01-07', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('862165', 'مهدي الشريف', '33670129', '2025-01-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10665', 'احمد الطاهر الريس', '77013644', '2024-08-14', 1750);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10666', 'جاسم محمد الصالح', '30047797', '2025-01-07', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10667', 'وليد شراس اجار عادي', '31308631', '2025-09-07', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10668', 'عبد المنعم حمدي', '70184904', '2025-01-03', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('10669', 'اجار ورداد مسعودي عادي', '50818558', '2025-02-09', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('4015', 'ابراهيم خضر', '33750040', '2025-09-01', 1000);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('4016', 'سلمى عبد الله', '30534902', '2025-01-19', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('4018', 'عبد الرحيم شاكر', '31310330', '2024-08-02', 1700);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8203', 'محمد عماد النعماني', '51230549', '2025-04-10', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8206', 'محمد صالح فرج حامد', '55449463', '2025-10-07', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8207', 'حسن الفكي', '51060253', '2025-04-15', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8208', 'عصام احمد عيد الدابر', '66276263', '2025-02-02', 1500);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8211', 'محمد سالم', '30757703', '2025-01-07', 1600);
+INSERT INTO vehicles_data (vehicle_number, customer_name, phone_number, contract_start_date, monthly_payment) VALUES ('8213', 'يحي هلال الصغري', '504P47989', '2025-01-06', 1700);

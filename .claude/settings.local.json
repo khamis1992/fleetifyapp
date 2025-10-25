@@ -64,7 +64,21 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(java:*)",
-      "Bash(node scripts/extract-lucide-icons.js:*)"
+      "Bash(node scripts/extract-lucide-icons.js:*)",
+      "Bash(Get-Date -Format \"HHmmss\")",
+      "Bash(Get-Date -Format \"yyyyMMddHHmmss\")",
+      "Bash(git push:*)",
+      "Bash(psql:*)",
+      "Bash(npx supabase:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase db pull:*)",
+      "Bash(supabase db execute:*)",
+      "Read(//c/Users/khamis/Desktop/**)",
+      "Bash(node scripts/processAgreementsFromExcel.js:*)",
+      "Bash(node scripts/processAgreementsFromExcel.cjs:*)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(node scripts/generateAgreementSQL.cjs:*)"
     ],
     "deny": [],
     "ask": []
