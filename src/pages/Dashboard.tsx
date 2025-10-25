@@ -5,6 +5,7 @@ import CarRentalDashboard from './dashboards/CarRentalDashboard';
 import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoadingProgress, useLoadingSteps } from '@/components/ui/LoadingProgress';
 
 const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
@@ -13,6 +14,14 @@ const DashboardInner: React.FC = () => {
   const [timeoutReached, setTimeoutReached] = useState(false);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCompanyIdRef = useRef<string>();
+
+  // Progressive loading steps (K1 Fix #003)
+  const loadingSteps = useLoadingSteps([
+    'جاري تحميل بيانات الشركة...',
+    'جاري تحميل السيارات والعقود...',
+    'جاري تحميل البيانات المالية...',
+    'جاري تحميل التحليلات والتقارير...'
+  ]);
 
   // Extract values from hook result
   const companyId = currentCompanyId || company?.id;
@@ -24,6 +33,22 @@ const DashboardInner: React.FC = () => {
       console.error('🚨 [DASHBOARD] No business type found:', { company, moduleContext });
     }
   }, [moduleLoading, company, moduleContext]);
+
+  // Progress through loading steps automatically (K1 Fix #003)
+  useEffect(() => {
+    if (moduleLoading || isRefreshing) {
+      loadingSteps.reset();
+
+      // Auto-progress through steps every 2 seconds
+      const stepInterval = setInterval(() => {
+        if (!loadingSteps.isComplete) {
+          loadingSteps.nextStep();
+        }
+      }, 2000);
+
+      return () => clearInterval(stepInterval);
+    }
+  }, [moduleLoading, isRefreshing]);
 
   // Watchdog timer to prevent infinite loading
   useEffect(() => {
@@ -38,7 +63,7 @@ const DashboardInner: React.FC = () => {
       }
       setTimeoutReached(false);
     }
-    
+
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -73,19 +98,12 @@ const DashboardInner: React.FC = () => {
   if ((moduleLoading || isRefreshing) && !timeoutReached) {
     console.log('🏢 [DASHBOARD] Loading modules or refreshing...', { moduleLoading, isRefreshing });
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {isBrowsingMode ? 'جاري تحميل بيانات الشركة...' : 'جاري تحميل لوحة التحكم...'}
-          </p>
-          {isBrowsingMode && browsedCompany?.name && (
-            <p className="text-xs text-muted-foreground">
-              {browsedCompany.name}
-            </p>
-          )}
-        </div>
-      </div>
+      <LoadingProgress
+        step={loadingSteps.currentStep}
+        totalSteps={loadingSteps.totalSteps}
+        message={loadingSteps.message}
+        showEstimate={true}
+      />
     );
   }
 
