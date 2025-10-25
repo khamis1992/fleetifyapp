@@ -29,17 +29,18 @@ export const MobileTabsNavigation: React.FC<MobileTabsNavigationProps> = ({
 
   return (
     <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-      <TabsList className={`grid h-12 w-full min-w-max gap-1 p-1 bg-muted/50 rounded-xl`} style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+      <TabsList className={`grid h-14 w-full min-w-max gap-1 p-1 bg-muted/50 rounded-xl`} style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
             onClick={() => onTabChange(tab.value)}
             className={cn(
-              "h-10 px-6 text-sm font-medium rounded-lg transition-all duration-200",
+              "h-11 px-6 text-sm font-medium rounded-lg transition-all duration-200",
               "data-[state=active]:bg-background data-[state=active]:shadow-sm",
               "data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground",
-              "hover:text-foreground whitespace-nowrap min-w-0"
+              "hover:text-foreground whitespace-nowrap min-w-0 min-h-touch",
+              "active:scale-[0.98] touch-manipulation"
             )}
           >
             <span className="truncate">{tab.shortLabel}</span>

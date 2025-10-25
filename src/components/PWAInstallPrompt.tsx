@@ -11,6 +11,10 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+const PWA_DISMISSED_KEY = 'pwa-install-dismissed';
+const PWA_DISMISSED_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const SHOW_PROMPT_DELAY = 30000; // 30 seconds - less aggressive
+
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = React.useState(false);
@@ -20,21 +24,27 @@ export const PWAInstallPrompt: React.FC = () => {
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
-    
+
     if (isStandalone || isInWebAppiOS) {
       setIsInstalled(true);
       return;
+    }
+
+    // Check if user dismissed prompt recently
+    const dismissedUntil = localStorage.getItem(PWA_DISMISSED_KEY);
+    if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
+      return; // Don't show if still within dismissed period
     }
 
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      // Show install prompt after a delay
+
+      // Show install prompt after user has explored app (30 seconds)
       setTimeout(() => {
         setShowInstallPrompt(true);
-      }, 3000);
+      }, SHOW_PROMPT_DELAY);
     };
 
     // Listen for app installed event
@@ -72,17 +82,13 @@ export const PWAInstallPrompt: React.FC = () => {
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
-    // Don't show again for this session
-    sessionStorage.setItem('pwa-install-dismissed', 'true');
+    // Don't show again for 7 days
+    const dismissedUntil = Date.now() + PWA_DISMISSED_EXPIRY;
+    localStorage.setItem(PWA_DISMISSED_KEY, dismissedUntil.toString());
   };
 
   // Don't show if already installed or dismissed
   if (isInstalled || !showInstallPrompt || !deferredPrompt) {
-    return null;
-  }
-
-  // Check if user already dismissed in this session
-  if (sessionStorage.getItem('pwa-install-dismissed')) {
     return null;
   }
 

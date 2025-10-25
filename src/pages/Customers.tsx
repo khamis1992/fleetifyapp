@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCustomers } from '@/hooks/useEnhancedCustomers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,19 +20,21 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Users, 
-  Building2, 
-  Phone, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Users,
+  Building2,
+  Phone,
   Mail,
   Eye,
   Edit,
   Trash2,
   MoreHorizontal,
-  Upload
+  Upload,
+  Car,
+  FileText
 } from 'lucide-react';
 import {
   Table,
@@ -58,10 +61,12 @@ import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialo
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
+import { TypeAheadSearch } from '@/components/ui/type-ahead-search';
 import { toast } from 'sonner';
 
 const Customers = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { isMobile } = useSimpleBreakpoint();
   const { hasFullCompanyControl } = useUnifiedCompanyAccess();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -174,6 +179,31 @@ const Customers = () => {
   const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowEditDialog(true);
+  };
+
+  const handleQuickRent = (customer: Customer) => {
+    // Navigate to contracts page with customer pre-selected
+    navigate('/contracts', {
+      state: {
+        selectedCustomerId: customer.id,
+        autoOpen: true
+      }
+    });
+    toast.success(`جاري إنشاء عقد للعميل: ${customer.customer_type === 'individual'
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+      : customer.company_name || ''}`);
+  };
+
+  const handleTypeAheadSelect = (result: { id: string; name: string }) => {
+    // Find the customer and open details
+    const customer = customers.find(c => c.id === result.id);
+    if (customer) {
+      handleViewCustomer(customer);
+    } else {
+      // If not in current page, refetch with the customer
+      setSearchTerm(result.name);
+      toast.info(`جاري البحث عن: ${result.name}`);
+    }
   };
 
   // Delete & Blacklist state
@@ -501,13 +531,10 @@ const Customers = () => {
 
       {/* Search and Filters */}
       <div className="flex gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="البحث عن العملاء..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
+        <div className="flex-1 max-w-md">
+          <TypeAheadSearch
+            placeholder="ابحث عن عميل... (اكتب اسم، رقم هاتف، أو بريد إلكتروني)"
+            onSelect={handleTypeAheadSelect}
           />
         </div>
         
@@ -677,12 +704,22 @@ const Customers = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleQuickRent(customer)}
+                                title="إنشاء عقد إيجار"
+                                className="text-primary hover:text-primary hover:bg-primary/10"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleViewCustomer(customer)}
                                 title="عرض التفاصيل"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              
+
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -691,7 +728,7 @@ const Customers = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              
+
                               <Button
                                 variant="ghost"
                                 size="sm"

@@ -23,10 +23,12 @@ const buttonVariants = cva(
         warning: "bg-warning text-warning-foreground hover:bg-warning/90",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-11 px-4 py-2", // 44px - WCAG touch target minimum
+        sm: "h-10 rounded-md px-3", // 40px - acceptable for secondary actions
+        lg: "h-12 rounded-md px-8", // 48px - enhanced touch target
+        icon: "h-11 w-11", // 44px × 44px - WCAG compliant
+        touch: "h-touch w-full", // Use design token (44px)
+        "touch-lg": "h-touch-lg w-full", // 48px for primary actions
       },
     },
     defaultVariants: {

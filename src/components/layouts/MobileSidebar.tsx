@@ -283,7 +283,7 @@ export function MobileSidebar() {
       </div>
 
       {/* Navigation Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Main Navigation */}
         <div className="mb-6">
           <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">

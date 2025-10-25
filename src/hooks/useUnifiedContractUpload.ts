@@ -71,123 +71,133 @@ export function useUnifiedContractUpload() {
     try {
       console.log('🤖 AI Enhancement: Processing', contractData.length, 'contracts');
       
-      const enhancedData = await Promise.all(
-        contractData.map(async (contract, index) => {
-          setProgress((index / contractData.length) * 50); // نصف التقدم للـ AI
-          
-          const enhanced = { ...contract };
-          const issues: string[] = [];
-          
-          // تكميل البيانات المالية بذكاء
-          const originalMonthly = Number(enhanced.monthly_amount) || 0;
-          const originalTotal = Number(enhanced.contract_amount) || 0;
-          
-          // تعيين الإيجار الشهري الافتراضي
-          if (!enhanced.monthly_amount || enhanced.monthly_amount === '' || originalMonthly === 0) {
-            enhanced.monthly_amount = SMART_DEFAULTS.monthly_amount;
-            issues.push(`تم تعيين الإيجار الشهري الافتراضي: ${SMART_DEFAULTS.monthly_amount} ريال`);
-          }
-          
-          // حساب عدد الأشهر من التواريخ أو استخدام القيمة الافتراضية
-          let rentalMonths = Number(enhanced.rental_months) || 0;
-          if (rentalMonths === 0 && enhanced.start_date && enhanced.end_date) {
-            const startDate = new Date(enhanced.start_date);
-            const endDate = new Date(enhanced.end_date);
-            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-              const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-              rentalMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)); // تقريبي
-              enhanced.rental_months = rentalMonths;
-              issues.push(`تم حساب عدد الأشهر من التواريخ: ${rentalMonths} شهر`);
-            }
-          }
-          
-          if (rentalMonths === 0) {
-            rentalMonths = SMART_DEFAULTS.rental_months;
+      const enhancedData = [];
+      
+      for (let index = 0; index < contractData.length; index++) {
+        const contract = contractData[index];
+        setProgress((index / contractData.length) * 30); // تحديث التقدم بشكل تدريجي
+        
+        const enhanced = { ...contract };
+        const issues: string[] = [];
+        
+        // تكميل البيانات المالية بذكاء
+        const originalMonthly = Number(enhanced.monthly_amount) || 0;
+        const originalTotal = Number(enhanced.contract_amount) || 0;
+        
+        // تعيين الإيجار الشهري الافتراضي
+        if (!enhanced.monthly_amount || enhanced.monthly_amount === '' || originalMonthly === 0) {
+          enhanced.monthly_amount = SMART_DEFAULTS.monthly_amount;
+          issues.push(`تم تعيين الإيجار الشهري الافتراضي: ${SMART_DEFAULTS.monthly_amount} ريال`);
+        }
+        
+        // حساب عدد الأشهر من التواريخ أو استخدام القيمة الافتراضية
+        let rentalMonths = Number(enhanced.rental_months) || 0;
+        if (rentalMonths === 0 && enhanced.start_date && enhanced.end_date) {
+          const startDate = new Date(enhanced.start_date);
+          const endDate = new Date(enhanced.end_date);
+          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+            rentalMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)); // تقريبي
             enhanced.rental_months = rentalMonths;
-            issues.push(`تم تعيين عدد الأشهر الافتراضي: ${rentalMonths} شهر`);
+            issues.push(`تم حساب عدد الأشهر من التواريخ: ${rentalMonths} شهر`);
           }
-          
-          // حساب القيمة الإجمالية
-          const monthlyAmount = Number(enhanced.monthly_amount) || SMART_DEFAULTS.monthly_amount;
-          
-          if (!enhanced.contract_amount || enhanced.contract_amount === '' || originalTotal === 0) {
-            enhanced.contract_amount = monthlyAmount * rentalMonths;
-            issues.push(`تم حساب القيمة الإجمالية: ${enhanced.contract_amount} ريال (${monthlyAmount} × ${rentalMonths} شهر)`);
-          } else if (originalTotal !== monthlyAmount * rentalMonths) {
-            // تحذير في حالة عدم تطابق الحسابات
-            issues.push(`تحذير: القيمة الإجمالية (${originalTotal}) لا تتطابق مع الحصل المتوقع (${monthlyAmount * rentalMonths})`);
-          }
-          
-          // تعيين نوع العقد
-          if (!enhanced.contract_type || enhanced.contract_type === '') {
-            enhanced.contract_type = SMART_DEFAULTS.contract_type;
-            issues.push('تم تعيين نوع العقد: إيجار');
-          }
-          
-          // تعيين تاريخ العقد
-          if (!enhanced.contract_date || enhanced.contract_date === '') {
-            enhanced.contract_date = SMART_DEFAULTS.contract_date;
-            issues.push('تم تعيين تاريخ اليوم كتاريخ العقد');
-          }
-          
-          // إنشاء رقم عقد تلقائي
-          if (!enhanced.contract_number || enhanced.contract_number === '') {
-            const timestamp = Date.now().toString().slice(-6);
-            enhanced.contract_number = `AUTO-${timestamp}-${String(index + 1).padStart(3, '0')}`;
-            issues.push(`تم إنشاء رقم عقد تلقائي: ${enhanced.contract_number}`);
-          }
-          
-          // تحسين بيانات العميل باستخدام AI
-          if (enhanced.customer_name && (!enhanced.customer_phone || !enhanced.customer_email)) {
-            try {
-              const aiResponse = await supabase.functions.invoke('openai-chat', {
-                body: {
-                  messages: [
-                    {
-                      role: 'system',
-                      content: `أنت مساعد ذكي لتحسين بيانات العقود. قم بتحليل اسم العميل واقتراح بيانات معقولة.`
-                    },
-                    {
-                      role: 'user',
-                      content: `اسم العميل: ${enhanced.customer_name}. اقترح رقم هاتف وإيميل معقولين للاختبار (استخدم أرقام وهمية).`
-                    }
-                  ],
-                  model: 'gpt-4o-mini',
-                  temperature: 0.3
-                }
-              });
-              
-              if (aiResponse.data?.choices?.[0]?.message?.content) {
-                // استخراج الاقتراحات من الرد
-                const suggestions = aiResponse.data.choices[0].message.content;
-                if (!enhanced.customer_phone && suggestions.includes('05')) {
-                  const phoneMatch = suggestions.match(/05\d{8}/);
-                  if (phoneMatch) {
-                    enhanced.customer_phone = phoneMatch[0];
-                    issues.push(`تم اقتراح رقم هاتف: ${enhanced.customer_phone}`);
+        }
+        
+        if (rentalMonths === 0) {
+          rentalMonths = SMART_DEFAULTS.rental_months;
+          enhanced.rental_months = rentalMonths;
+          issues.push(`تم تعيين عدد الأشهر الافتراضي: ${rentalMonths} شهر`);
+        }
+        
+        // حساب القيمة الإجمالية
+        const monthlyAmount = Number(enhanced.monthly_amount) || SMART_DEFAULTS.monthly_amount;
+        
+        if (!enhanced.contract_amount || enhanced.contract_amount === '' || originalTotal === 0) {
+          enhanced.contract_amount = monthlyAmount * rentalMonths;
+          issues.push(`تم حساب القيمة الإجمالية: ${enhanced.contract_amount} ريال (${monthlyAmount} × ${rentalMonths} شهر)`);
+        } else if (originalTotal !== monthlyAmount * rentalMonths) {
+          // تحذير في حالة عدم تطابق الحسابات
+          issues.push(`تحذير: القيمة الإجمالية (${originalTotal}) لا تتطابق مع الحساب المتوقع (${monthlyAmount * rentalMonths})`);
+        }
+        
+        // تعيين نوع العقد
+        if (!enhanced.contract_type || enhanced.contract_type === '') {
+          enhanced.contract_type = SMART_DEFAULTS.contract_type;
+          issues.push('تم تعيين نوع العقد: إيجار');
+        }
+        
+        // تعيين تاريخ العقد
+        if (!enhanced.contract_date || enhanced.contract_date === '') {
+          enhanced.contract_date = SMART_DEFAULTS.contract_date;
+          issues.push('تم تعيين تاريخ اليوم كتاريخ العقد');
+        }
+        
+        // إنشاء رقم عقد تلقائي
+        if (!enhanced.contract_number || enhanced.contract_number === '') {
+          const timestamp = Date.now().toString().slice(-6);
+          enhanced.contract_number = `AUTO-${timestamp}-${String(index + 1).padStart(3, '0')}`;
+          issues.push(`تم إنشاء رقم عقد تلقائي: ${enhanced.contract_number}`);
+        }
+        
+        // تحسين بيانات العميل - مع معالجة الأخطاء والوقت المحدد
+        if (enhanced.customer_name && (!enhanced.customer_phone || !enhanced.customer_email)) {
+          try {
+            // تعيين مهلة زمنية 5 ثواني للطلب
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const aiResponse = await supabase.functions.invoke('openai-chat', {
+              body: {
+                messages: [
+                  {
+                    role: 'system',
+                    content: `أنت مساعد ذكي لتحسين بيانات العقود. قم بتحليل اسم العميل واقتراح بيانات معقولة.`
+                  },
+                  {
+                    role: 'user',
+                    content: `اسم العميل: ${enhanced.customer_name}. اقترح رقم هاتف وإيميل معقولين للاختبار (استخدم أرقام وهمية).`
                   }
+                ],
+                model: 'gpt-4o-mini',
+                temperature: 0.3
+              }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (aiResponse.data?.choices?.[0]?.message?.content) {
+              // استخراج الاقتراحات من الرد
+              const suggestions = aiResponse.data.choices[0].message.content;
+              if (!enhanced.customer_phone && suggestions.includes('05')) {
+                const phoneMatch = suggestions.match(/05\d{8}/);
+                if (phoneMatch) {
+                  enhanced.customer_phone = phoneMatch[0];
+                  issues.push(`تم اقتراح رقم هاتف: ${enhanced.customer_phone}`);
                 }
               }
-            } catch (aiError) {
-              console.warn('AI enhancement failed for customer:', aiError);
             }
+          } catch (aiError) {
+            console.warn('AI enhancement skipped for customer (timeout or error):', enhanced.customer_name);
+            // لا نوقف العملية بسبب فشل AI - نستمر بدون التحسين
           }
-          
-          // إضافة الملاحظات
-          if (issues.length > 0) {
-            enhanced.ai_notes = issues.join(' | ');
-            enhanced.requires_review = true;
-          }
-          
-          return enhanced;
-        })
-      );
+        }
+        
+        // إضافة الملاحظات
+        if (issues.length > 0) {
+          enhanced.ai_notes = issues.join(' | ');
+          enhanced.requires_review = true;
+        }
+        
+        enhancedData.push(enhanced);
+      }
       
       console.log('🤖 AI Enhancement: Completed');
+      setProgress(30); // ضمان الوصول إلى 30% بعد AI Enhancement
       return enhancedData;
     } catch (error) {
       console.error('AI Enhancement error:', error);
-      toast.error('فشل في تحسين البيانات بالذكاء الاصطناعي');
+      toast.warning('تم تخطي التحسين بالذكاء الاصطناعي - سيتم الاستمرار بالبيانات الأساسية');
+      setProgress(30); // ضمان التقدم حتى لو فشل AI
       return contractData;
     }
   };
@@ -294,7 +304,7 @@ export function useUnifiedContractUpload() {
 
       for (let i = 0; i < enhancedData.length; i++) {
         const contract = enhancedData[i];
-        setProgress(50 + (i / enhancedData.length) * 50); // النصف الثاني للرفع
+        setProgress(30 + (i / enhancedData.length) * 70); // من 30% إلى 100% للرفع
         
         // التحقق من صحة البيانات قبل المعالجة
         const validation = validateContractData(contract as TempContractData, i);
