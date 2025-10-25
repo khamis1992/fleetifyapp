@@ -98,47 +98,59 @@ export const authService = {
       console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
       // OPTIMIZATION: Execute profile, employee, and roles queries IN PARALLEL
-      const [profileResult, employeeResult, rolesResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select(`
-            *,
-            companies:company_id (
-              id,
-              name,
-              name_ar,
-              business_type,
-              active_modules
-            )
-          `)
-          .eq('user_id', user.id)
-          .single(),
-        
-        supabase
-          .from('employees')
-          .select(`
-            company_id,
-            companies (
-              id,
-              name,
-              name_ar,
-              business_type,
-              active_modules
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle(), // Use maybeSingle to avoid error if not found
-        
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-      ]);
+      // Wrap in try-catch to handle timeout gracefully
+      let profile = null;
+      let employeeCompany = null;
+      let roles = null;
+      let profileError = null;
 
-      const { data: profile, error: profileError } = profileResult;
-      const { data: employeeCompany } = employeeResult;
-      const { data: roles } = rolesResult;
+      try {
+        const [profileResult, employeeResult, rolesResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select(`
+              *,
+              companies:company_id (
+                id,
+                name,
+                name_ar,
+                business_type,
+                active_modules
+              )
+            `)
+            .eq('user_id', user.id)
+            .single(),
+          
+          supabase
+            .from('employees')
+            .select(`
+              company_id,
+              companies (
+                id,
+                name,
+                name_ar,
+                business_type,
+                active_modules
+              )
+            `)
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle(),
+          
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+        ]);
+
+        profile = profileResult.data;
+        profileError = profileResult.error;
+        employeeCompany = employeeResult.data;
+        roles = rolesResult.data;
+      } catch (error) {
+        console.warn('📝 [AUTH] Error fetching profile data:', error);
+        // Continue with null values
+      }
 
       console.log('📝 [AUTH] Parallel queries completed in', Date.now() - startTime, 'ms');
 
@@ -160,9 +172,25 @@ export const authService = {
 
       const authUser: AuthUser = {
         ...user,
-        profile: profile ? { ...profile, company_id: companyId } : undefined,
-        company: companyInfo || undefined,
-        roles: roles?.map(r => r.role) || []
+        profile: profile ? { 
+          id: profile.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          company_id: companyId ?? undefined,
+          first_name_ar: profile.first_name_ar ?? undefined,
+          last_name_ar: profile.last_name_ar ?? undefined,
+          position: profile.position ?? undefined,
+          avatar_url: profile.avatar_url ?? undefined,
+          language_preference: profile.language_preference ?? undefined
+        } : undefined,
+        company: companyInfo ? {
+          id: companyInfo.id,
+          name: companyInfo.name,
+          name_ar: companyInfo.name_ar ?? undefined,
+          business_type: companyInfo.business_type ?? undefined,
+          active_modules: companyInfo.active_modules ?? undefined
+        } : undefined,
+        roles: roles?.map((r: any) => r.role) || []
       };
 
       console.log('📝 [AUTH] User loaded in', Date.now() - startTime, 'ms:', {
@@ -170,7 +198,7 @@ export const authService = {
         email: authUser.email,
         company_id: companyId,
         hasCompany: !!companyInfo,
-        rolesCount: authUser.roles.length
+        rolesCount: authUser.roles?.length || 0
       });
 
       return authUser;

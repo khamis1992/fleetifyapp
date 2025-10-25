@@ -39,8 +39,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isInitialized.current = true;
 
     try {
-      // Check for existing session FIRST (faster than setting up listener)
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // Add timeout to getSession call to prevent hanging
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Session timeout')), 3000)
+      );
+      
+      const { data: { session }, error } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]).catch((err) => {
+        console.warn('📝 [AUTH_CONTEXT] Session check timeout:', err);
+        return { data: { session: null }, error: null };
+      });
       
       if (error) {
         console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
@@ -55,23 +66,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (session?.user) {
         if (mountedRef.current) {
           setSession(session);
+          // Set basic user immediately to unblock UI
+          setUser(session.user as AuthUser);
+          setLoading(false);
         }
         
+        // Load full profile in background
         try {
           const authUser = await authService.getCurrentUser();
-          if (mountedRef.current) {
+          if (mountedRef.current && authUser) {
             setUser(authUser);
             setSessionError(null);
           }
         } catch (error) {
-          console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-          // Fallback to basic user object if profile fetch fails
-          if (mountedRef.current) {
-            setUser(session.user as AuthUser);
-            setSessionError('خطأ في تحميل بيانات المستخدم');
-          }
+          console.error('📝 [AUTH_CONTEXT] Error fetching user profile (background):', error);
+          // Don't show error - we already have basic user loaded
         }
-      } else {
       }
       
       // Only set up listener if not already set
@@ -135,7 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Safety timeout to prevent infinite loading (reduced to 4 seconds since we optimized)
+  // Safety timeout to prevent infinite loading (reduced to 2 seconds since we load basic user immediately)
   React.useEffect(() => {
     mountedRef.current = true;
     
@@ -143,13 +153,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!isInitialized.current) {
       initializeAuth();
       
-      // Safety timeout - if still loading after 4 seconds, force loading to false
+      // Safety timeout - if still loading after 2 seconds, force loading to false
       initTimeoutRef.current = setTimeout(() => {
-        if (mountedRef.current) {
+        if (mountedRef.current && loading) {
           console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
           setLoading(false);
         }
-      }, 4000);
+      }, 2000);
     }
 
     return () => {
