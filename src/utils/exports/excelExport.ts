@@ -12,9 +12,11 @@
  * - Filter dropdowns on headers
  * - Number formatting
  * - RTL support for Arabic content
+ *
+ * Performance: Lazy loads xlsx library (404KB) on-demand
  */
 
-import * as XLSX from 'xlsx';
+// Lazy load xlsx (404KB) - only when exporting/importing
 
 export interface ExcelExportOptions {
   sheetName?: string;
@@ -58,19 +60,23 @@ const DEFAULT_OPTIONS: ExcelExportOptions = {
 
 /**
  * Convert data to worksheet with formatting
+ * Lazy loads xlsx library on-demand
  */
-function createWorksheet(
+async function createWorksheet(
   data: Record<string, any>[],
   columns?: { header: string; key: string; width?: number }[],
   options: ExcelExportOptions = {}
-): XLSX.WorkSheet {
+): Promise<any> {
+  // Dynamically import xlsx only when needed (saves 404KB from initial bundle)
+  const XLSX = await import('xlsx');
+
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   if (data.length === 0) {
     throw new Error('لا توجد بيانات للتصدير');
   }
 
-  let ws: XLSX.WorkSheet;
+  let ws: any;
   let headers: string[];
   let keys: string[];
 
@@ -92,7 +98,7 @@ function createWorksheet(
   }
 
   // Apply column widths
-  const colWidths: XLSX.ColInfo[] = [];
+  const colWidths: any[] = [];
 
   if (columns && columns.some(col => col.width)) {
     // Use provided widths
@@ -168,18 +174,22 @@ function createWorksheet(
 
 /**
  * Export single table to Excel
+ * Lazy loads xlsx library on first use
  */
-export function exportTableToExcel(
+export async function exportTableToExcel(
   data: Record<string, any>[],
   columns?: { header: string; key: string; width?: number }[],
   filename?: string,
   options: ExcelExportOptions = {}
-): void {
+): Promise<void> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   try {
+    // Dynamically import xlsx only when needed
+    const XLSX = await import('xlsx');
+
     // Create worksheet
-    const ws = createWorksheet(data, columns, opts);
+    const ws = await createWorksheet(data, columns, opts);
 
     // Create workbook
     const wb = XLSX.utils.book_new();
@@ -198,30 +208,34 @@ export function exportTableToExcel(
 
 /**
  * Export multiple sheets to Excel workbook
+ * Lazy loads xlsx library on first use
  */
-export function exportMultiSheetExcel(
+export async function exportMultiSheetExcel(
   sheets: ExcelSheetData[],
   filename?: string
-): void {
+): Promise<void> {
   if (sheets.length === 0) {
     throw new Error('لا توجد أوراق للتصدير');
   }
 
   try {
+    // Dynamically import xlsx only when needed
+    const XLSX = await import('xlsx');
+
     // Create workbook
     const wb = XLSX.utils.book_new();
 
     // Add each sheet
-    sheets.forEach((sheetData, index) => {
-      const ws = createWorksheet(
+    for (const sheetData of sheets) {
+      const ws = await createWorksheet(
         sheetData.data,
         sheetData.columns,
         sheetData.options
       );
 
-      const sheetName = sheetData.sheetName || `ورقة ${index + 1}`;
+      const sheetName = sheetData.sheetName || `ورقة ${sheets.indexOf(sheetData) + 1}`;
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    });
+    }
 
     // Generate filename
     const fileName = filename || generateFilename('تقرير_متعدد', 'xlsx');
@@ -236,12 +250,13 @@ export function exportMultiSheetExcel(
 
 /**
  * Export chart data to Excel (data behind the chart)
+ * Lazy loads xlsx library on first use
  */
-export function exportChartDataToExcel(
+export async function exportChartDataToExcel(
   chartData: { labels: string[]; datasets: { label: string; data: number[] }[] },
   filename?: string,
   options: ExcelExportOptions = {}
-): void {
+): Promise<void> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   try {
@@ -267,7 +282,7 @@ export function exportChartDataToExcel(
     ];
 
     // Export
-    exportTableToExcel(data, columns, filename, opts);
+    await exportTableToExcel(data, columns, filename, opts);
   } catch (error) {
     console.error('Error exporting chart data to Excel:', error);
     throw new Error('فشل تصدير بيانات الرسم البياني إلى Excel');
@@ -276,15 +291,16 @@ export function exportChartDataToExcel(
 
 /**
  * Export dashboard summary to Excel
+ * Lazy loads xlsx library on first use
  */
-export function exportDashboardToExcel(
+export async function exportDashboardToExcel(
   dashboardData: {
     summary?: Record<string, any>;
     charts?: { title: string; data: any[] }[];
     tables?: { title: string; data: any[]; columns?: any[] }[];
   },
   filename?: string
-): void {
+): Promise<void> {
   try {
     const sheets: ExcelSheetData[] = [];
 
@@ -327,7 +343,7 @@ export function exportDashboardToExcel(
     }
 
     // Export multi-sheet workbook
-    exportMultiSheetExcel(sheets, filename);
+    await exportMultiSheetExcel(sheets, filename);
   } catch (error) {
     console.error('Error exporting dashboard to Excel:', error);
     throw new Error('فشل تصدير لوحة المعلومات إلى Excel');
@@ -336,12 +352,14 @@ export function exportDashboardToExcel(
 
 /**
  * Apply number formatting to cells
+ * Note: This function requires the worksheet object from xlsx
  */
-export function formatCells(
-  ws: XLSX.WorkSheet,
+export async function formatCells(
+  ws: any,
   range: string,
   format: string
-): void {
+): Promise<void> {
+  const XLSX = await import('xlsx');
   const decodedRange = XLSX.utils.decode_range(range);
 
   for (let row = decodedRange.s.r; row <= decodedRange.e.r; row++) {
@@ -375,10 +393,14 @@ export function generateFilename(
 
 /**
  * Read Excel file (for import functionality)
+ * Lazy loads xlsx library on first use
  */
 export async function readExcelFile(
   file: File
 ): Promise<{ sheetNames: string[]; data: Record<string, any>[][] }> {
+  // Dynamically import xlsx only when needed
+  const XLSX = await import('xlsx');
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

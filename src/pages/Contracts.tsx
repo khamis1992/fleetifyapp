@@ -16,7 +16,7 @@ import { ResponsiveTable } from "@/components/ui/responsive-table"
 import { ResponsiveModal } from "@/components/ui/responsive-modal"
 import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-components"
 import { cn } from "@/lib/utils"
-import { RefreshCw, Filter, Search, Plus } from "lucide-react"
+import { RefreshCw, Filter, Search, Plus, FileEdit, Clock, Trash2 } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 
@@ -49,6 +49,7 @@ import { useContractsData } from "@/hooks/useContractsData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAutoRenewContracts } from "@/hooks/useContractRenewal"
 import { useContractCreation } from "@/hooks/useContractCreation"
+import { useContractDrafts } from "@/hooks/useContractDrafts"
 import { useToast } from "@/hooks/use-toast-mock"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -81,6 +82,7 @@ function Contracts() {
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined)
+  const [draftIdToLoad, setDraftIdToLoad] = useState<string | undefined>(undefined)
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
@@ -105,6 +107,7 @@ function Contracts() {
   const queryClient = useQueryClient()
   const autoRenewContracts = useAutoRenewContracts()
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation()
+  const contractDrafts = useContractDrafts()
 
   // Data fetching with pagination
   const filtersWithPagination = useMemo(() => ({
@@ -247,6 +250,35 @@ function Contracts() {
     setShowBulkDelete(true)
   }
 
+  const handleLoadDraft = useCallback((draftId: string) => {
+    setDraftIdToLoad(draftId)
+    setShowContractWizard(true)
+  }, [])
+
+  const handleDeleteDraft = useCallback(async (draftId: string) => {
+    try {
+      await new Promise((resolve, reject) => {
+        contractDrafts.deleteDraft.mutate(draftId, {
+          onSuccess: () => {
+            toast({
+              title: "تم حذف المسودة",
+              description: "تم حذف المسودة بنجاح",
+            })
+            resolve(null)
+          },
+          onError: reject
+        })
+      })
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+      toast({
+        title: "خطأ",
+        description: "فشل حذف المسودة",
+        variant: "destructive"
+      })
+    }
+  }, [contractDrafts, toast])
+
   const handleClearFilters = () => {
     setFilters({})
   }
@@ -309,6 +341,68 @@ function Contracts() {
             totalRevenue={statistics.totalRevenue}
           />
         </div>
+
+        {/* Resume Draft Section */}
+        {contractDrafts.loadDrafts.data && contractDrafts.loadDrafts.data.length > 0 && (
+          <ResponsiveCard>
+            <ResponsiveCardHeader>
+              <ResponsiveCardTitle className="flex items-center gap-2">
+                <FileEdit className="h-5 w-5" />
+                استئناف المسودات ({contractDrafts.loadDrafts.data.length})
+              </ResponsiveCardTitle>
+            </ResponsiveCardHeader>
+            <ResponsiveCardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {contractDrafts.loadDrafts.data.map((draft) => (
+                  <Card key={draft.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">
+                              {draft.draft_name || 'مسودة بدون اسم'}
+                            </h4>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                آخر تحديث: {new Date(draft.updated_at).toLocaleDateString('ar-SA', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteDraft(draft.id)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleLoadDraft(draft.id)}
+                        >
+                          <FileEdit className="h-4 w-4 ml-2" />
+                          استئناف التحرير
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ResponsiveCardContent>
+          </ResponsiveCard>
+        )}
 
         {/* Search and Filters - Collapsible on Mobile */}
         <ResponsiveCard 
@@ -443,6 +537,7 @@ function Contracts() {
           onOpenChange={setShowContractWizard}
           onSubmit={handleContractSubmit}
           preselectedCustomerId={preselectedCustomerId}
+          draftIdToLoad={draftIdToLoad}
         />
         
         {/* Contract Creation Progress Dialog - Responsive */}

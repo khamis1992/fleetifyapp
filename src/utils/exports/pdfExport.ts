@@ -15,7 +15,7 @@
  */
 
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// Lazy load html2canvas (566KB) - only when exporting
 import autoTable from 'jspdf-autotable';
 
 export interface PDFExportOptions {
@@ -158,12 +158,16 @@ export function addBrandedFooter(
 
 /**
  * Capture HTML element as high-quality image
+ * Lazy loads html2canvas library (566KB) on-demand
  */
 async function captureElement(
   element: HTMLElement,
   scale: number = 2
 ): Promise<string> {
   try {
+    // Dynamically import html2canvas only when needed (saves 566KB from initial bundle)
+    const html2canvas = (await import('html2canvas')).default;
+
     const canvas = await html2canvas(element, {
       scale,
       useCORS: true,

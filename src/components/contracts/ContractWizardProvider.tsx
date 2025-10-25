@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@/hooks/useContractTemplates'
 import { useSignatureSettings } from '@/hooks/useSignatureSettings'
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
+import { useContractDrafts } from '@/hooks/useContractDrafts'
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
 
 interface ContractWizardData {
@@ -111,21 +112,25 @@ interface ContractWizardProviderProps {
   children: ReactNode
   onSubmit?: (data: ContractWizardData) => Promise<any>
   preselectedCustomerId?: string
+  draftIdToLoad?: string
 }
 
 export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   children,
   onSubmit,
-  preselectedCustomerId
+  preselectedCustomerId,
+  draftIdToLoad
 }) => {
   const { user } = useAuth()
   const currentCompanyId = useCurrentCompanyId()
+  const contractDrafts = useContractDrafts()
   const [data, setData] = useState<ContractWizardData>(defaultData)
   const [currentStep, setCurrentStep] = useState(0)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
   const [hasDuplicates, setHasDuplicates] = useState(false)
   const [forceCreate, setForceCreate] = useState(false)
+  const [currentDraftId, setCurrentDraftId] = useState<string | undefined>(undefined)
   const totalSteps = 6 // Basic Info, Dates, Customer/Vehicle, Financial, Late Fines, Review
 
   const template = useTemplateByType(data.contract_type || '')
@@ -149,6 +154,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       updateData({ customer_id: preselectedCustomerId })
     }
   }, [preselectedCustomerId])
+
+  // Load draft when draftIdToLoad is provided
+  useEffect(() => {
+    if (draftIdToLoad) {
+      loadDraft(draftIdToLoad)
+    }
+  }, [draftIdToLoad])
 
   // Auto-calculate duration and end date when contract type changes
   useEffect(() => {
@@ -238,43 +250,40 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
     setIsAutoSaving(true)
     try {
-      const draftData = {
-        company_id: currentCompanyId || user.user_metadata?.company_id || '',
-        created_by: user.id,
-        current_step: currentStep,
-        data: {
+      // Prepare draft data using the new structure
+      const draftInput = {
+        id: currentDraftId,
+        draft_data: {
           ...data,
+          current_step: currentStep,
           // Ensure no empty string UUIDs are sent
           customer_id: data.customer_id || null,
-          vehicle_id: data.vehicle_id === '' ? null : data.vehicle_id,
+          vehicle_id: data.vehicle_id === '' || data.vehicle_id === 'none' ? null : data.vehicle_id,
           account_id: data.account_id || null,
           cost_center_id: data.cost_center_id || null
-        } as any,
-        last_saved_at: new Date().toISOString()
+        },
+        customer_id: data.customer_id || null,
+        vehicle_id: data.vehicle_id === '' || data.vehicle_id === 'none' ? null : data.vehicle_id,
+        draft_name: data.contract_number || `مسودة ${new Date().toLocaleDateString('ar-SA')}`
       }
 
-      if (data.draft_id) {
-        // Update existing draft
-        const { error } = await supabase
-          .from('contract_drafts')
-          .update(draftData)
-          .eq('id', data.draft_id)
-          .eq('created_by', user.id)
+      // Use the new useContractDrafts hook
+      const result = await new Promise((resolve, reject) => {
+        contractDrafts.saveDraft.mutate(draftInput, {
+          onSuccess: (savedDraft) => {
+            // Update current draft ID if this was a new draft
+            if (!currentDraftId && savedDraft?.id) {
+              setCurrentDraftId(savedDraft.id)
+            }
+            resolve(savedDraft)
+          },
+          onError: reject
+        })
+      })
 
-        if (error) throw error
-      } else {
-        // Create new draft
-        const { data: newDraft, error } = await supabase
-          .from('contract_drafts')
-          .insert(draftData)
-          .select()
-          .single()
-
-        if (error) throw error
-        updateData({ draft_id: newDraft.id })
-      }
-
-      toast.success('تم حفظ المسودة تلقائياً')
+      // Suppress the toast from the hook and show auto-save specific message
+      toast.dismiss()
+      toast.success('تم حفظ المسودة تلقائياً', { duration: 2000 })
     } catch (error) {
       console.error('Error saving draft:', error)
       toast.error('فشل في حفظ المسودة')
@@ -285,6 +294,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const loadDraft = async (draftId: string) => {
     try {
+      // Use the new useContractDrafts hook to load draft
       const { data: draft, error } = await supabase
         .from('contract_drafts')
         .select('*')
@@ -294,17 +304,27 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       if (error) throw error
 
       if (draft) {
+        // Extract the draft data from the new JSONB structure
+        const draftData = draft.draft_data as any
+
         // Convert draft data back to ContractWizardData
         const processedDraft = {
           ...defaultData,
-          ...(draft.data as any),
-          is_draft: true,
-          draft_id: draft.id,
-          last_saved_at: draft.last_saved_at
+          ...draftData,
+          is_draft: true
         }
 
+        // Set the wizard state
         setData(processedDraft as ContractWizardData)
-        setCurrentStep(0)
+        setCurrentDraftId(draft.id)
+
+        // Restore the step if saved
+        if (draftData.current_step !== undefined) {
+          setCurrentStep(draftData.current_step)
+        } else {
+          setCurrentStep(0)
+        }
+
         toast.success('تم تحميل المسودة بنجاح')
       }
     } catch (error) {
@@ -315,17 +335,22 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const deleteDraft = async () => {
     try {
-      if (data.draft_id) {
-        const { error } = await supabase
-          .from('contract_drafts')
-          .delete()
-          .eq('id', data.draft_id)
-
-        if (error) throw error
+      if (currentDraftId) {
+        // Use the new useContractDrafts hook to delete draft
+        await new Promise((resolve, reject) => {
+          contractDrafts.deleteDraft.mutate(currentDraftId, {
+            onSuccess: resolve,
+            onError: reject
+          })
+        })
 
         // Reset to default data
         setData(defaultData)
         setCurrentStep(0)
+        setCurrentDraftId(undefined)
+
+        // Suppress the toast from the hook and show our own
+        toast.dismiss()
         toast.success('تم حذف المسودة')
       }
     } catch (error) {

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Upload, Download, CheckCircle, FileText, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
+// Lazy load xlsx (404KB) - only when importing Excel files
 import { CSVAutoFix, CSVRowFix } from "@/utils/csvAutoFix";
 import { CSVFixPreview } from "./CSVFixPreview";
 import { CSVTableEditor } from "./CSVTableEditor";
@@ -155,6 +155,9 @@ export function SmartCSVUpload({
       let headers: string[] = [];
 
       if (isExcel) {
+        // Dynamically import xlsx only when reading Excel files (saves 404KB from initial bundle)
+        const XLSX = await import('xlsx');
+
         const ab = await file.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
