@@ -45,7 +45,8 @@ import {
   ShoppingCart,
   Boxes,
   ArrowUpDown,
-  Tags
+  Tags,
+  LayoutDashboard
 } from 'lucide-react';
 import {
   Sidebar,
@@ -317,6 +318,30 @@ const inventorySubItems = [
   }
 ];
 
+// Dashboard sub-items (Phase 7C - K1 Fix)
+const dashboardSubItems = [
+  {
+    name: 'لوحة تأجير السيارات',
+    href: '/dashboards/car-rental',
+    icon: Car
+  },
+  {
+    name: 'لوحة العقارات',
+    href: '/dashboards/real-estate',
+    icon: Building2
+  },
+  {
+    name: 'لوحة البيع بالتجزئة',
+    href: '/dashboards/retail',
+    icon: ShoppingCart
+  },
+  {
+    name: 'لوحة التكامل',
+    href: '/dashboards/integration',
+    icon: Activity
+  }
+];
+
 export function AppSidebar() {
   const { signOut } = useAuth();
   const { state, isMobile } = useSidebar();
@@ -334,6 +359,8 @@ export function AppSidebar() {
   const isSalesActive = location.pathname.startsWith('/sales');
   // Check if inventory section should be open
   const isInventoryActive = location.pathname.startsWith('/inventory');
+  // Check if dashboards section should be open
+  const isDashboardsActive = location.pathname.startsWith('/dashboards');
 
   const handleSignOut = async () => {
     await signOut();
@@ -380,7 +407,38 @@ export function AppSidebar() {
                    </SidebarMenuItem>
                 );
               })}
-               
+
+               {/* Dashboards Section with Submenu (Phase 7C - K1 Fix #301) */}
+               <SidebarMenuItem>
+                 <Collapsible defaultOpen={isDashboardsActive}>
+                   <CollapsibleTrigger asChild>
+                     <SidebarMenuButton className="h-10">
+                       <LayoutDashboard className="h-4 w-4" />
+                        {(!collapsed || isMobile) && (
+                          <>
+                            <span className="font-medium">لوحات التحكم</span>
+                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </>
+                        )}
+                     </SidebarMenuButton>
+                   </CollapsibleTrigger>
+                   <CollapsibleContent>
+                     <SidebarMenuSub>
+                       {dashboardSubItems.map((subItem) => (
+                         <SidebarMenuSubItem key={subItem.href}>
+                           <SidebarMenuSubButton asChild>
+                             <NavLink to={subItem.href} className={getNavClassName}>
+                               <subItem.icon className="h-4 w-4" />
+                                {(!collapsed || isMobile) && <span>{subItem.name}</span>}
+                             </NavLink>
+                           </SidebarMenuSubButton>
+                         </SidebarMenuSubItem>
+                       ))}
+                     </SidebarMenuSub>
+                   </CollapsibleContent>
+                 </Collapsible>
+               </SidebarMenuItem>
+
                {/* Fleet Section with Submenu */}
                <SidebarMenuItem>
                  <Collapsible defaultOpen={isFleetActive}>
