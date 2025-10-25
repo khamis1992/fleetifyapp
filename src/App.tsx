@@ -39,6 +39,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const Fleet = lazy(() => import("./pages/Fleet"));
 const Reports = lazy(() => import("./pages/Reports"));
+const ReportsHub = lazy(() => import("./pages/reports/ReportsHub"));
 const ReportView = lazy(() => import("./pages/ReportView"));
 const Quotations = lazy(() => import("./pages/Quotations"));
 const Search = lazy(() => import("./pages/Search"));
@@ -602,6 +603,11 @@ const AppRoutes = () => {
         <Route path="reports" element={
           <Suspense fallback={<PageSkeletonFallback />}>
             <Reports />
+          </Suspense>
+        } />
+        <Route path="reports/hub" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <ReportsHub />
           </Suspense>
         } />
         <Route path="report/:moduleType/:reportId" element={

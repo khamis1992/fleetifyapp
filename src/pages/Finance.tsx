@@ -14,6 +14,7 @@ const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
 const Invoices = lazyWithRetry(() => import("./finance/Invoices"), "Invoices");
 const Payments = lazyWithRetry(() => import("./finance/Payments"), "Payments");
+const PaymentsDashboard = lazyWithRetry(() => import("./finance/PaymentsDashboard"), "PaymentsDashboard");
 const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
 const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
@@ -125,17 +126,27 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="payments" 
+      <Route
+        path="payments"
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Payments />
             </Suspense>
           </ProtectedFinanceRoute>
-        } 
+        }
       />
-      <Route 
+      <Route
+        path="payments-dashboard"
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <PaymentsDashboard />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        }
+      />
+      <Route
         path="journal-entries" 
         element={
           <ProtectedFinanceRoute permission="finance.ledger.view">

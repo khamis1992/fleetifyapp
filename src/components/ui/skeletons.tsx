@@ -75,4 +75,7 @@ export const WidgetSkeleton: React.FC<WidgetSkeletonProps> = ({
   );
 };
 
+// Re-export Skeleton for convenience
+export { Skeleton } from '@/components/ui/skeleton';
+
 export default WidgetSkeleton;
