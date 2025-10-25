@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, Building, Phone, Mail, MapPin, FileText, CreditCard, 
+import {
+  Users, Building, Phone, Mail, MapPin, FileText, CreditCard,
   TrendingUp, Clock, Plus, AlertTriangle, DollarSign, Calendar,
   User, Shield, MessageSquare, Edit, Save, X
 } from "lucide-react";
@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
+import { DriverLicenseManager } from "./DriverLicenseManager";
 
 // Lazy load heavy components that aren't immediately visible
 const CustomerInvoicesTab = lazy(() => import("./CustomerInvoicesTab").then(m => ({ default: m.CustomerInvoicesTab })));
@@ -198,13 +199,14 @@ export function CustomerDetailsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="financial">المالية</TabsTrigger>
             <TabsTrigger value="contracts">العقود</TabsTrigger>
             <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+            <TabsTrigger value="licenses">رخص القيادة</TabsTrigger>
             <TabsTrigger value="notes">الملاحظات</TabsTrigger>
-            <TabsTrigger value="accounting">الحسابات المحاسبية</TabsTrigger>
+            <TabsTrigger value="accounting">الحسابات</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -623,14 +625,18 @@ export function CustomerDetailsDialog({
             </div>
           </TabsContent>
 
+          <TabsContent value="licenses" className="space-y-4">
+            <DriverLicenseManager customerId={customerId} />
+          </TabsContent>
+
           <TabsContent value="accounting" className="space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>الحسابات المحاسبية</CardTitle>
                   {!isEditingAccounts ? (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setIsEditingAccounts(true)}
                     >
                       <Edit className="h-4 w-4 mr-2" />
@@ -638,8 +644,8 @@ export function CustomerDetailsDialog({
                     </Button>
                   ) : (
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setIsEditingAccounts(false);
                           toast.success("تم حفظ التغييرات");
@@ -648,8 +654,8 @@ export function CustomerDetailsDialog({
                         <Save className="h-4 w-4 mr-2" />
                         حفظ
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => setIsEditingAccounts(false)}
                       >
                         <X className="h-4 w-4 mr-2" />
@@ -666,7 +672,7 @@ export function CustomerDetailsDialog({
                     <span className="mr-2 text-sm text-muted-foreground">جاري تحميل الحسابات...</span>
                   </div>
                 }>
-                  <CustomerAccountSelector 
+                  <CustomerAccountSelector
                     customerId={customerId}
                     customerName={customerName || ''}
                     mode={isEditingAccounts ? "edit" : "view"}

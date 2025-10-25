@@ -18,6 +18,7 @@ export { CustomerDetailsDialog } from './CustomerDetailsDialog';
 export { CustomerDiagnostics } from './CustomerDiagnostics';
 export { CustomerCSVUpload } from './CustomerCSVUpload';
 export { BulkDeleteCustomersDialog } from './BulkDeleteCustomersDialog';
+export { DriverLicenseManager } from './DriverLicenseManager';
 
 // مكونات مساعدة
 export { CustomerDisplayName } from './CustomerDisplayName';

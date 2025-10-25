@@ -1,6 +1,7 @@
 /**
  * Contract-related TypeScript interfaces
  * Phase 2 UX Improvements - Contract Drafts
+ * Phase 4 UX Improvements - Vehicle Inspections
  */
 
 export interface ContractDraft {
@@ -28,4 +29,47 @@ export interface ContractDraftUpdateInput {
   customer_id?: string | null;
   vehicle_id?: string | null;
   draft_name?: string | null;
+}
+
+/**
+ * Vehicle Inspection Interfaces
+ * Task 4.2: Vehicle Check-In/Check-Out Workflow
+ */
+
+export interface VehicleInspection {
+  id: string;
+  company_id: string;
+  contract_id: string;
+  vehicle_id: string;
+  inspection_type: 'check_in' | 'check_out';
+  inspected_by: string | null;
+  inspection_date: string;
+  fuel_level: number | null;
+  odometer_reading: number | null;
+  cleanliness_rating: number | null;
+  exterior_condition: DamageRecord[];
+  interior_condition: DamageRecord[];
+  photo_urls: string[];
+  notes: string | null;
+  customer_signature: string | null;
+  created_at: string;
+}
+
+export interface DamageRecord {
+  location: string;
+  severity: 'minor' | 'moderate' | 'severe';
+  description: string;
+  photo_url?: string;
+}
+
+export interface InspectionComparison {
+  checkIn: VehicleInspection;
+  checkOut: VehicleInspection;
+  differences: {
+    fuel: number;
+    odometer: number;
+    cleanliness: number;
+  };
+  newDamages: DamageRecord[];
+  hasNewDamages: boolean;
 }

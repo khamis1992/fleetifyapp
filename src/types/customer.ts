@@ -94,3 +94,52 @@ export interface CustomerAccountTransaction {
   transaction_id: string;
   source_table: string;
 }
+
+/**
+ * Driver License interface for customer license tracking
+ */
+export interface DriverLicense {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  license_number: string;
+  issue_date?: string;
+  expiry_date: string;
+  issuing_country: string;
+  front_image_url?: string;
+  back_image_url?: string;
+  verification_status: 'pending' | 'verified' | 'rejected' | 'expired';
+  verified_by?: string;
+  verified_at?: string;
+  verification_notes?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+/**
+ * Form data for creating/updating driver licenses
+ */
+export interface DriverLicenseFormData {
+  license_number: string;
+  issue_date?: string;
+  expiry_date: string;
+  issuing_country: string;
+  notes?: string;
+  front_image?: File;
+  back_image?: File;
+}
+
+/**
+ * Expiring license notification
+ */
+export interface ExpiringLicense {
+  license_id: string;
+  customer_id: string;
+  customer_name: string;
+  license_number: string;
+  expiry_date: string;
+  days_until_expiry: number;
+  company_id: string;
+}
