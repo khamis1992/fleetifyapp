@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -35,8 +36,10 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
+import DelinquentCustomersTab from '@/components/legal/DelinquentCustomersTab';
 
 export const LegalCasesTracking: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('cases');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -105,6 +108,13 @@ export const LegalCasesTracking: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="cases">قضايا قانونية</TabsTrigger>
+          <TabsTrigger value="delinquent">عملاء متأخرين</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="cases" className="space-y-6">
       {/* Page Header */}
       <Card className="bg-gradient-to-br from-primary/5 via-primary/3 to-background border-primary/20">
         <CardHeader>
@@ -278,6 +288,12 @@ export const LegalCasesTracking: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="delinquent">
+          <DelinquentCustomersTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
