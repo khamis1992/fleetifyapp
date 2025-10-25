@@ -16,6 +16,17 @@ export interface CompanyScopeContext {
  * Get the company scope context for the current user
  */
 export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeContext => {
+  // Early return for null user (auth loading)
+  if (!user) {
+    return {
+      user: null,
+      userRoles: [],
+      companyId: undefined,
+      isSystemLevel: false,
+      isCompanyScoped: false
+    };
+  }
+
   // Normalize roles: trim, lowercase, remove falsy and duplicates
   const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
   const normalizedRoles = Array.from(
@@ -29,7 +40,7 @@ export const getCompanyScopeContext = (user: AuthUser | null): CompanyScopeConte
   // Extract company_id consistently with useUnifiedCompanyAccess
   const companyId = user?.company?.id || (user as any)?.company_id || user?.profile?.company_id;
   
-  // Debug logging (only when explicitly enabled)
+  // Debug logging
   logger.debug('🔧 [getCompanyScopeContext] Processing user context:', {
     userId: user?.id,
     companyId,
@@ -91,22 +102,30 @@ export const hasFullCompanyControl = (
  * Get the appropriate WHERE clause for filtering data by company
  */
 export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: boolean = false, allowGlobalView: boolean = false): { company_id?: string } => {
-  // Removed verbose logging - only log in development if needed
-  // console.log('📊 [getCompanyFilter] Input parameters:', {...});
-
-  // تطبيق فلترة صارمة: افتراضياً جميع المستخدمين (بما في ذلك super_admin) محدودون بشركتهم
-  // Super admin يحتاج إلى طلب صريح للوصول العالمي
+  // Super admin with explicit global view permission
   if (context.isSystemLevel && !forceOwnCompany && allowGlobalView) {
+    logger.debug('🌍 [getCompanyFilter] Super admin with global view enabled');
     return {};
   }
   
+  // Normal case: filter by company_id
   if (context.companyId) {
-    // السلوك الافتراضي: جميع المستخدمين محدودون بشركتهم النشطة
     return { company_id: context.companyId };
   }
   
-  // احتياطي أمني: عدم الوصول إذا لم توجد شركة مرتبطة
-  logger.error('🚨 [getCompanyFilter] SECURITY: No company association - blocking access');
+  // SECURITY FIX: During auth initialization, user might not have company loaded yet
+  // Instead of blocking completely, log warning and return empty (which will show no data)
+  // This prevents the app from being stuck in error state during auth load
+  if (!context.user) {
+    logger.warn('⚠️ [getCompanyFilter] No user context - auth may still be loading');
+    return { company_id: '__loading__' }; // Will match nothing, but won't block UI
+  }
+  
+  // Final security fallback: user exists but no company association
+  logger.error('🚨 [getCompanyFilter] SECURITY: User has no company association - blocking access', {
+    userId: context.user?.id,
+    email: context.user?.email
+  });
   return { company_id: 'no-access-security-block' };
 };
 
