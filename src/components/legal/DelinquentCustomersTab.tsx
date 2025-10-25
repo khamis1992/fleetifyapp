@@ -12,9 +12,12 @@ import {
 import { Search, FileText, AlertTriangle, Download, Users } from 'lucide-react';
 import DelinquentSummaryCards from './DelinquentSummaryCards';
 import DelinquentCustomersTable from './DelinquentCustomersTable';
+import LegalWarningDialog from './LegalWarningDialog';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
+import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
 import { toast } from 'sonner';
 import type { DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
+import type { GeneratedWarning } from '@/hooks/useGenerateLegalWarning';
 
 export const DelinquentCustomersTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,8 +25,12 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [overduePeriodFilter, setOverduePeriodFilter] = useState<string>('all');
   const [violationsFilter, setViolationsFilter] = useState<string>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
+  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [currentWarning, setCurrentWarning] = useState<GeneratedWarning | null>(null);
+  const [currentCustomer, setCurrentCustomer] = useState<DelinquentCustomer | null>(null);
 
   const convertToCase = useConvertToLegalCase();
+  const generateWarning = useGenerateLegalWarning();
 
   // Build filters object
   const filters = {
@@ -54,12 +61,26 @@ export const DelinquentCustomersTab: React.FC = () => {
     // TODO: Implement navigation to customer details
   };
 
-  // Handle send warning
-  const handleSendWarning = (customer: DelinquentCustomer) => {
-    toast.info('إرسال إنذار', {
-      description: `سيتم إرسال إنذار للعميل: ${customer.customer_name}`,
-    });
-    // TODO: Implement warning generation
+  // Handle send warning - Now integrated with Legal AI!
+  const handleSendWarning = async (customer: DelinquentCustomer) => {
+    setCurrentCustomer(customer);
+    setWarningDialogOpen(true);
+    setCurrentWarning(null);
+
+    try {
+      // Generate warning using Legal AI
+      const warning = await generateWarning.mutateAsync({
+        delinquentCustomer: customer,
+        warningType: 'formal',
+        deadlineDays: 7,
+        includeBlacklistThreat: customer.risk_score >= 70,
+      });
+
+      setCurrentWarning(warning);
+    } catch (error) {
+      console.error('Error generating warning:', error);
+      setWarningDialogOpen(false);
+    }
   };
 
   // Handle bulk create cases
@@ -81,6 +102,35 @@ export const DelinquentCustomersTab: React.FC = () => {
         console.error(`Failed to create case for ${customer.customer_name}:`, error);
       }
     }
+  };
+
+  // Handle bulk send warnings
+  const handleBulkSendWarnings = async () => {
+    if (selectedCustomers.length === 0) {
+      toast.error('لم يتم تحديد أي عملاء');
+      return;
+    }
+
+    toast.info(`جاري إنشاء ${selectedCustomers.length} إنذار قانوني...`);
+    
+    let successCount = 0;
+    for (const customer of selectedCustomers) {
+      try {
+        await generateWarning.mutateAsync({
+          delinquentCustomer: customer,
+          warningType: 'formal',
+          deadlineDays: 7,
+          includeBlacklistThreat: customer.risk_score >= 70,
+        });
+        successCount++;
+        // Add delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error(`Failed to generate warning for ${customer.customer_name}:`, error);
+      }
+    }
+
+    toast.success(`تم إنشاء ${successCount} إنذار قانوني بنجاح`);
   };
 
   // Handle export
@@ -192,10 +242,15 @@ export const DelinquentCustomersTab: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={selectedCustomers.length === 0}
+                onClick={handleBulkSendWarnings}
+                disabled={selectedCustomers.length === 0 || generateWarning.isPending}
                 className="gap-2"
               >
-                <AlertTriangle className="h-4 w-4" />
+                {generateWarning.isPending ? (
+                  <AlertTriangle className="h-4 w-4 animate-pulse" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
                 إرسال إنذارات ({selectedCustomers.length})
               </Button>
 
@@ -225,6 +280,25 @@ export const DelinquentCustomersTab: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Legal Warning Dialog */}
+      <LegalWarningDialog
+        open={warningDialogOpen}
+        onOpenChange={setWarningDialogOpen}
+        warning={currentWarning}
+        customer={currentCustomer}
+        isGenerating={generateWarning.isPending}
+        onSendEmail={(warning) => {
+          toast.info('إرسال عبر البريد الإلكتروني', {
+            description: 'سيتم تطبيق هذه الميزة قريباً'
+          });
+        }}
+        onSendSMS={(warning) => {
+          toast.info('إرسال عبر رسالة نصية', {
+            description: 'سيتم تطبيق هذه الميزة قريباً'
+          });
+        }}
+      />
     </div>
   );
 };
