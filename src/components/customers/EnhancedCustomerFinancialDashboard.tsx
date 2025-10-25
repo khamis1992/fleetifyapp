@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useEnhancedCustomerFinancials';
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useCustomerFinancialSummary } from '@/hooks/useCustomerFinancialSummary';
 
 interface EnhancedCustomerFinancialDashboardProps {
   customerId: string;
@@ -37,15 +38,20 @@ export const EnhancedCustomerFinancialDashboard: React.FC<EnhancedCustomerFinanc
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last_month' | 'last_quarter'>('current');
   
+  // Use the new real data hook
+  const { data: financialSummary, isLoading: summaryLoading, refetch } = useCustomerFinancialSummary(customerId);
+  
+  // Keep old hooks for additional features
   const { data: balanceData, isLoading: balanceLoading } = useCustomerOutstandingBalance(customerId);
   const { data: agingData } = useCustomerAgingAnalysis(customerId);
   const { data: creditStatus } = useCustomerCreditStatus(customerId);
   const { data: statementData } = useCustomerStatementData(customerId);
   const { data: linkedAccounts } = useCustomerLinkedAccounts(customerId);
-const updateAgingMutation = useUpdateCustomerAging();
+  const updateAgingMutation = useUpdateCustomerAging();
   const { formatCurrency } = useCurrencyFormatter();
 
   const handleRefreshAging = () => {
+    refetch(); // Refresh the real data
     updateAgingMutation.mutate({ customerId });
   };
 
@@ -64,7 +70,7 @@ const updateAgingMutation = useUpdateCustomerAging();
     return 'hsl(var(--destructive))';
   };
 
-  if (balanceLoading) {
+  if (summaryLoading || balanceLoading) {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -100,35 +106,57 @@ const updateAgingMutation = useUpdateCustomerAging();
         </Button>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards - Using Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
+                <p className="text-sm text-muted-foreground">إجمالي الفواتير</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(balanceData?.current_balance || 0)}
+                  {formatCurrency(financialSummary?.totalInvoices || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {financialSummary?.invoiceCount || 0} فاتورة
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-primary" />
+              <FileText className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className={`border-l-4 ${balanceData?.overdue_amount ? 'border-l-destructive' : 'border-l-success'}`}>
+        <Card className="border-l-4 border-l-emerald-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">المبلغ المتأخر</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(balanceData?.overdue_amount || 0)}
+                <p className="text-sm text-muted-foreground">المدفوع</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(financialSummary?.totalPaid || 0)}
                 </p>
-                {balanceData?.days_overdue && balanceData.days_overdue > 0 && (
-                  <p className="text-xs text-destructive">متأخر {balanceData.days_overdue} يوم</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {financialSummary?.paymentCount || 0} دفعة
+                </p>
+              </div>
+              <DollarSign className="h-8 w-8 text-emerald-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border-l-4 ${(financialSummary?.overdueAmount || 0) > 0 ? 'border-l-destructive' : 'border-l-orange-500'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">الرصيد المستحق</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(financialSummary?.totalOutstanding || 0)}
+                </p>
+                {(financialSummary?.overdueAmount || 0) > 0 && (
+                  <p className="text-xs text-destructive mt-1">
+                    متأخر: {formatCurrency(financialSummary?.overdueAmount || 0)}
+                  </p>
                 )}
               </div>
-              <AlertTriangle className={`h-8 w-8 ${balanceData?.overdue_amount ? 'text-destructive' : 'text-success'}`} />
+              <AlertTriangle className={`h-8 w-8 ${(financialSummary?.overdueAmount || 0) > 0 ? 'text-destructive' : 'text-orange-500'}`} />
             </div>
           </CardContent>
         </Card>
@@ -139,41 +167,30 @@ const updateAgingMutation = useUpdateCustomerAging();
               <div>
                 <p className="text-sm text-muted-foreground">الائتمان المتاح</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(balanceData?.credit_available || 0)}
+                  {formatCurrency(financialSummary?.creditAvailable || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  من {formatCurrency(financialSummary?.creditLimit || 0)}
                 </p>
               </div>
               <CreditCard className="h-8 w-8 text-secondary" />
             </div>
           </CardContent>
         </Card>
-
-        <Card className="border-l-4 border-l-accent">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">النقاط الائتمانية</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {creditStatus?.credit_score || 0}/100
-                </p>
-                {creditStatus && (
-                  <Badge variant={getRiskBadgeVariant(creditStatus.risk_level)}>
-                    {creditStatus.risk_level === 'low' ? 'مخاطر منخفضة' : 
-                     creditStatus.risk_level === 'medium' ? 'مخاطر متوسطة' : 'مخاطر عالية'}
-                  </Badge>
-                )}
-              </div>
-              <TrendingUp className="h-8 w-8 text-accent" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Credit Status Alert */}
-      {creditStatus && !creditStatus.can_extend_credit && (
+      {/* Overdue Alert */}
+      {(financialSummary?.overdueAmount || 0) > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            تحذير: لا يُنصح بمنح ائتمان إضافي لهذا العميل بسبب المخاطر العالية أو وجود مبالغ متأخرة
+            تحذير: يوجد مبلغ متأخر {formatCurrency(financialSummary?.overdueAmount || 0)} منذ {financialSummary?.daysOverdue || 0} يوم
+            {financialSummary?.lastPaymentDate && (
+              <span className="block mt-1 text-xs">
+                آخر دفعة: {new Date(financialSummary.lastPaymentDate).toLocaleDateString('ar-QA')} - 
+                {formatCurrency(financialSummary.lastPaymentAmount)}
+              </span>
+            )}
           </AlertDescription>
         </Alert>
       )}
