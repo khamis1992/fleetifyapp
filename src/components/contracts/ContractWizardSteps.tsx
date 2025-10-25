@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
-import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit, AlertCircle, Asterisk } from 'lucide-react'
+import { FileText, Users, Car, Calendar, DollarSign, CheckCircle, AlertTriangle, Clock, Edit, AlertCircle, Asterisk, Lightbulb, TrendingUp, TrendingDown, Plus, Minus } from 'lucide-react'
 import { useContractFormValidation } from '@/hooks/useContractFormValidation'
 import { FormErrorSummary } from './FormErrorSummary'
 import { useContractWizard } from './ContractWizardProvider'
@@ -36,6 +36,7 @@ import { useCostCenters } from '@/hooks/useCostCenters'
 import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
+import { usePricingSuggestions } from '@/hooks/usePricingSuggestions'
 import { TenantSelector } from './TenantSelector'
 import { useCustomer } from '@/hooks/useCustomers'
 import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
@@ -814,6 +815,14 @@ export const FinancialStep: React.FC = () => {
   const totalRentalDays = (data.rental_months * 30) + (data.rental_days || 0)
   const calculations = useContractCalculations(selectedVehicle, data.contract_type, totalRentalDays, isCustomAmount ? data.contract_amount : undefined)
 
+  // Smart pricing suggestions
+  const pricingSuggestions = usePricingSuggestions({
+    contractType: data.contract_type || '',
+    rentalDays: totalRentalDays,
+    vehicleId: data.vehicle_id,
+    enabled: !!data.contract_type && totalRentalDays > 0
+  })
+
   // Auto-update financial calculations with proper tracking
   React.useEffect(() => {
     // Only auto-update if custom amount is not enabled
@@ -1001,6 +1010,125 @@ export const FinancialStep: React.FC = () => {
               خيار التعديل اليدوي للمبلغ متاح فقط للمدير والمحاسب. سيتم حساب المبلغ تلقائياً بناءً على بيانات المركبة والفترة المحددة.
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Smart Pricing Suggestions */}
+        {pricingSuggestions.data && (
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                <span>اقتراح السعر الذكي</span>
+                <Badge
+                  variant={
+                    pricingSuggestions.data.confidence === 'high' ? 'default' :
+                    pricingSuggestions.data.confidence === 'medium' ? 'secondary' :
+                    'outline'
+                  }
+                  className="text-xs"
+                >
+                  {pricingSuggestions.data.confidence === 'high' && 'ثقة عالية'}
+                  {pricingSuggestions.data.confidence === 'medium' && 'ثقة متوسطة'}
+                  {pricingSuggestions.data.confidence === 'low' && 'ثقة منخفضة'}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-xs">
+                بناءً على تحليل {pricingSuggestions.data.sampleSize} عقد مشابه من آخر 6 أشهر
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Suggested Price Display */}
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-primary/20">
+                <div>
+                  <p className="text-sm text-muted-foreground">السعر المقترح</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(pricingSuggestions.data.suggestedPrice, {
+                      minimumFractionDigits: 3,
+                      maximumFractionDigits: 3
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const adjusted = Math.round(pricingSuggestions.data.suggestedPrice * 0.95);
+                      updateData({ contract_amount: adjusted });
+                    }}
+                    className="h-8"
+                  >
+                    <Minus className="h-3 w-3 ml-1" />
+                    -5%
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      updateData({
+                        contract_amount: pricingSuggestions.data.suggestedPrice,
+                        monthly_amount: pricingSuggestions.data.suggestedPrice
+                      });
+                    }}
+                    className="h-8"
+                  >
+                    تطبيق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const adjusted = Math.round(pricingSuggestions.data.suggestedPrice * 1.05);
+                      updateData({ contract_amount: adjusted });
+                    }}
+                    className="h-8"
+                  >
+                    <Plus className="h-3 w-3 ml-1" />
+                    +5%
+                  </Button>
+                </div>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">تفاصيل التسعير:</p>
+                <div className="space-y-1.5">
+                  {pricingSuggestions.data.breakdown.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between text-xs p-2 rounded bg-white/50"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {item.type === 'adjustment' && <TrendingUp className="h-3 w-3 text-orange-500" />}
+                        {item.type === 'discount' && <TrendingDown className="h-3 w-3 text-green-500" />}
+                        {item.label}
+                      </span>
+                      <span className={cn(
+                        "font-medium",
+                        item.type === 'adjustment' && "text-orange-600",
+                        item.type === 'discount' && "text-green-600"
+                      )}>
+                        {item.value > 0 ? '+' : ''}{formatCurrency(item.value, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Confidence Info */}
+              {pricingSuggestions.data.confidence === 'low' && (
+                <Alert className="py-2">
+                  <AlertCircle className="h-3 w-3" />
+                  <AlertDescription className="text-xs">
+                    عدد العقود المشابهة قليل. قد لا يكون السعر المقترح دقيقاً بشكل كامل.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

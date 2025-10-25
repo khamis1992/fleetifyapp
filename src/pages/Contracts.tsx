@@ -16,7 +16,7 @@ import { ResponsiveTable } from "@/components/ui/responsive-table"
 import { ResponsiveModal } from "@/components/ui/responsive-modal"
 import { SwipeableCard, PullToRefresh } from "@/components/ui/swipeable-components"
 import { cn } from "@/lib/utils"
-import { RefreshCw, Filter, Search, Plus, FileEdit, Clock, Trash2 } from "lucide-react"
+import { RefreshCw, Filter, Search, Plus, FileEdit, Clock, Trash2, ChevronDown, Calendar } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 
@@ -43,6 +43,8 @@ import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialo
 import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpload"
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog"
+import { VehicleAvailabilityCalendar } from "@/components/vehicles/VehicleAvailabilityCalendar"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 // Hook imports
 import { useContractsData } from "@/hooks/useContractsData"
@@ -97,6 +99,7 @@ function Contracts() {
   const [activeTab, setActiveTab] = useState("all")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(100) // Increased from 50 to 100 to show more contracts
 
@@ -403,6 +406,28 @@ function Contracts() {
             </ResponsiveCardContent>
           </ResponsiveCard>
         )}
+
+        {/* Vehicle Availability Calendar */}
+        <Collapsible open={showCalendar} onOpenChange={setShowCalendar}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                تقويم توفر المركبات
+              </span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", showCalendar && "rotate-180")} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">
+            <VehicleAvailabilityCalendar
+              onDateVehicleSelect={(vehicleId, date) => {
+                // Open contract wizard with pre-filled data
+                setShowContractWizard(true)
+                // TODO: Pass vehicle and date to wizard
+              }}
+            />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Search and Filters - Collapsible on Mobile */}
         <ResponsiveCard 
