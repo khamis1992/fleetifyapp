@@ -1,15 +1,10 @@
-# Redirects for SPA routing
-/*    /index.html   200
+# Serve static assets directly
+/assets/*  /assets/:splat  200
+/chunks/*  /chunks/:splat  200
+/pages/*   /pages/:splat   200
+/components/*  /components/:splat  200
+/images/*  /images/:splat  200
+/fonts/*   /fonts/:splat   200
 
-# API routes (if any)
-/api/*  /api/:splat  200
-
-# Static assets with caching
-/assets/*  /assets/:splat  200  Cache-Control: public, max-age=31536000, immutable
-
-# Security headers
-/*
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  X-XSS-Protection: 1; mode=block
-  Strict-Transport-Security: max-age=31536000; includeSubDomains
+# Fallback to index.html for client-side routing
+/*  /index.html  200
