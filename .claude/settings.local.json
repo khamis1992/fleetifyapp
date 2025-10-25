@@ -62,7 +62,9 @@
       "Bash(awk:*)",
       "Bash(./gradlew assembleRelease:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(java:*)",
+      "Bash(node scripts/extract-lucide-icons.js:*)"
     ],
     "deny": [],
     "ask": []
