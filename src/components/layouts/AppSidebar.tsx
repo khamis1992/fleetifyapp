@@ -696,6 +696,22 @@ export function AppSidebar() {
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/legal/late-fees" className={getNavClassName}>
+                              <AlertTriangle className="h-4 w-4" />
+                              {(!collapsed || isMobile) && <span>إدارة غرامات التأخير</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/legal/whatsapp-reminders" className={getNavClassName}>
+                              <DollarSign className="h-4 w-4" />
+                              {(!collapsed || isMobile) && <span>تذكيرات الدفع (واتساب)</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </Collapsible>
