@@ -25,7 +25,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
   
   return useQuery({
     queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => { // ✅ Extract signal from query context
       if (!companyId) return []
       
       let query = supabase
@@ -43,7 +43,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         query = query.limit(limit)
       }
 
-      const { data, error } = await query
+      const { data, error } = await query.abortSignal(signal) // ✅ Enable request cancellation
 
       if (error) {
         console.error("Error fetching vehicles:", error)
@@ -62,7 +62,7 @@ export const useAvailableVehicles = () => {
   
   return useQuery({
     queryKey: queryKeys.vehicles.available(companyId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => { // ✅ Extract signal from query context
       if (!companyId) return []
       
       const { data, error } = await supabase
@@ -72,6 +72,7 @@ export const useAvailableVehicles = () => {
         .eq("is_active", true)
         .eq("status", "available")
         .order("plate_number")
+        .abortSignal(signal) // ✅ Enable request cancellation
 
       if (error) {
         console.error("Error fetching available vehicles:", error)

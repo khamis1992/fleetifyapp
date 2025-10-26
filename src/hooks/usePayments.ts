@@ -71,7 +71,7 @@ export const usePayments = (filters?: {
   
   return useQuery({
     queryKey: ["payments", effectiveCompanyId, filters],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => { // ✅ Extract signal from query context
       logger.debug("🔍 [usePayments] بدء تحميل المدفوعات");
       
       if (!effectiveCompanyId) {
@@ -131,7 +131,7 @@ export const usePayments = (filters?: {
       }
       
       logger.debug("🔍 [usePayments] تنفيذ الاستعلام...");
-      const { data, error } = await query;
+      const { data, error } = await query.abortSignal(signal); // ✅ Enable request cancellation
       
       if (error) {
         logger.error("❌ [usePayments] خطأ في الاستعلام:", error);
