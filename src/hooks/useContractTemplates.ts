@@ -342,3 +342,50 @@ export const isTemplateApplicable = (
   
   return true;
 };
+
+
+/**
+ * Hook to get template by contract type
+ */
+export const useTemplateByType = (contractType: string) => {
+  const { data: templates } = useContractTemplates();
+  
+  if (!templates || !contractType) return null;
+  
+  // Find template matching the contract type
+  const template = templates.find(t => t.contract_type === contractType);
+  
+  return template || null;
+};
+
+/**
+ * Hook to apply template to contract data
+ */
+export const useApplyTemplate = () => {
+  return {
+    applyTemplate: (template: ContractTemplate, baseData: Partial<any> = {}) => {
+      return applyTemplateToContract(template, baseData);
+    }
+  };
+};
+
+/**
+ * Utility: Get default duration by contract type
+ */
+export const getDefaultDurationByType = (contractType: string): number => {
+  switch (contractType) {
+    case 'daily_rental':
+      return 1;
+    case 'weekly_rental':
+      return 7;
+    case 'monthly_rental':
+      return 30;
+    case 'yearly_rental':
+      return 365;
+    case 'rent_to_own':
+      return 365;
+    default:
+      return 1;
+  }
+};
+
