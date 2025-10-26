@@ -11,7 +11,7 @@
  * - 85% faster for large datasets
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -36,12 +36,19 @@ export const VirtualizedCustomerTable = React.memo<VirtualizedCustomerTableProps
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Virtual scrolling configuration
+  // Measure row heights dynamically
+  const measureElement = useCallback((el: Element | null) => {
+    if (!el) return 60; // Default fallback
+    return el.getBoundingClientRect().height;
+  }, []);
+
+  // Virtual scrolling configuration with dynamic sizing
   const virtualizer = useVirtualizer({
     count: customers.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60, // Estimated row height in pixels
+    estimateSize: () => 60, // Initial estimate
     overscan: 10, // Render 10 extra rows for smooth scrolling
+    measureElement, // Enable dynamic measurement
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -121,12 +128,12 @@ export const VirtualizedCustomerTable = React.memo<VirtualizedCustomerTableProps
                   <TableRow
                     key={customer.id}
                     data-index={virtualRow.index}
+                    ref={virtualizer.measureElement} // Measure actual height
                     style={{
                       position: 'absolute',
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                     className="hover:bg-muted/50 transition-colors"
@@ -157,7 +164,7 @@ export const VirtualizedCustomerTable = React.memo<VirtualizedCustomerTableProps
                       {customer.is_blacklisted ? (
                         <Badge variant="destructive">محظور</Badge>
                       ) : customer.is_active ? (
-                        <Badge variant="success">نشط</Badge>
+                        <Badge variant="default">نشط</Badge>
                       ) : (
                         <Badge variant="secondary">غير نشط</Badge>
                       )}
