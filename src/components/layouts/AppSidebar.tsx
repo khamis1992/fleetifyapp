@@ -32,6 +32,7 @@ import {
   Calendar,
   Wrench,
   AlertTriangle,
+  AlertCircle,
   Link,
   Crown,
   Activity,
@@ -693,6 +694,14 @@ export function AppSidebar() {
                             <NavLink to="/legal/cases" className={getNavClassName}>
                               <FileText className="h-4 w-4" />
                               {(!collapsed || isMobile) && <span>تتبع القضايا</span>}
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/legal/invoice-disputes" className={getNavClassName}>
+                              <AlertCircle className="h-4 w-4" />
+                              {(!collapsed || isMobile) && <span>نزاعات الفواتير</span>}
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
