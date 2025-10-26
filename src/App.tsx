@@ -169,7 +169,11 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  console.log('🚀 [APP] App component rendering');
+  
   React.useEffect(() => {
+    console.log('🚀 [APP] App component mounted');
+    
     // تهيئة مراقب الأداء
     performanceMonitor.logReport();
     
@@ -184,6 +188,8 @@ const App = () => {
 
     // Initialize PWA features
     initializePWA();
+    
+    console.log('🚀 [APP] Initialization complete');
   }, []);
 
   return (
@@ -218,8 +224,11 @@ const AppRoutes = () => {
   const location = useLocation();
   const { isNavigating, visitCount } = useStableNavigation();
 
+  console.log('🧭 [ROUTES] Current path:', location.pathname);
+
   // Preload related routes when location changes
   React.useEffect(() => {
+    console.log('🧭 [ROUTES] Location changed to:', location.pathname);
     preloadRelatedRoutes(location.pathname);
   }, [location.pathname]);
 

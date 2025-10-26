@@ -63,18 +63,27 @@ window.addEventListener('unhandledrejection', (event) => {
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
+  console.error('❌ [MAIN] Root element not found!');
   throw new Error('Root element not found');
 }
 
+console.log('✅ [MAIN] Root element found, creating React root');
+
 const root = createRoot(rootElement);
+
+console.log('✅ [MAIN] React root created, rendering app...');
 
 // تمكين React StrictMode في بيئة التطوير
 if (import.meta.env.DEV) {
+  console.log('✅ [MAIN] Rendering in development mode with StrictMode');
   root.render(
     <React.StrictMode>
       <App />
     </React.StrictMode>
   );
 } else {
+  console.log('✅ [MAIN] Rendering in production mode');
   root.render(<App />);
 }
+
+console.log('✅ [MAIN] App render called');

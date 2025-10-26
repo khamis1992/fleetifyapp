@@ -33,23 +33,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeAuth = async () => {
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
+      console.log('📝 [AUTH_CONTEXT] Already initialized, skipping...');
       return;
     }
 
+    const initStartTime = Date.now();
+    console.log('📝 [AUTH_CONTEXT] Starting initialization...');
     isInitialized.current = true;
 
     try {
-      // Add timeout to getSession call to prevent hanging
+      // Add timeout to getSession call to prevent hanging (5s for slow networks)
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Session timeout')), 3000)
+        setTimeout(() => reject(new Error('Session timeout')), 5000)
       );
       
       const { data: { session }, error } = await Promise.race([
         sessionPromise,
         timeoutPromise
       ]).catch((err) => {
-        console.warn('📝 [AUTH_CONTEXT] Session check timeout:', err);
+        console.warn('📝 [AUTH_CONTEXT] Session check timeout (5s), continuing without session');
         return { data: { session: null }, error: null };
       });
       
@@ -61,6 +64,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return;
       }
+      
+      const sessionCheckTime = Date.now() - initStartTime;
+      console.log(`📝 [AUTH_CONTEXT] Session check complete in ${sessionCheckTime}ms:`, session ? 'Session found' : 'No session');
 
       // If we have a session, load user profile immediately
       if (session?.user) {
@@ -69,18 +75,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Set basic user immediately to unblock UI
           setUser(session.user as AuthUser);
           setLoading(false);
+          console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with basic user`);
         }
         
-        // Load full profile in background
+        // Load full profile in background with timeout
+        const profilePromise = authService.getCurrentUser();
+        const profileTimeout = new Promise<null>((resolve) => 
+          setTimeout(() => {
+            console.warn('⚠️ [AUTH_CONTEXT] Profile fetch timeout (5s) - using basic user');
+            resolve(null);
+          }, 5000)
+        );
+        
         try {
-          const authUser = await authService.getCurrentUser();
+          const authUser = await Promise.race([profilePromise, profileTimeout]);
           if (mountedRef.current && authUser) {
             setUser(authUser);
             setSessionError(null);
+            console.log(`📝 [AUTH_CONTEXT] Full profile loaded at ${Date.now() - initStartTime}ms`);
           }
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile (background):', error);
           // Don't show error - we already have basic user loaded
+        }
+      } else {
+        // No session - user is not logged in
+        if (mountedRef.current) {
+          setLoading(false);
+          console.log(`📝 [AUTH_CONTEXT] No session - completed in ${Date.now() - initStartTime}ms`);
         }
       }
       
@@ -141,6 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       if (mountedRef.current) {
         setLoading(false);
+        console.log(`📝 [AUTH_CONTEXT] Auth initialization complete in ${Date.now() - initStartTime}ms`);
       }
     }
   };
@@ -149,17 +172,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   React.useEffect(() => {
     mountedRef.current = true;
     
+    console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');
+    
     // Only initialize if not already done (prevents HMR issues)
     if (!isInitialized.current) {
       initializeAuth();
       
-      // Safety timeout - if still loading after 2 seconds, force loading to false
+      // Safety timeout - if still loading after 6 seconds, force loading to false
+      // This should rarely trigger since we unblock UI immediately with basic user
       initTimeoutRef.current = setTimeout(() => {
         if (mountedRef.current && loading) {
-          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout - forcing loading to false');
+          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout (6s) - forcing loading to false');
+          console.warn('⚠️ This timeout should rarely occur. If you see this often, check network connectivity.');
           setLoading(false);
         }
-      }, 2000);
+      }, 6000);
+    } else {
+      console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
+      // If already initialized but still loading, force it to false
+      if (loading) {
+        console.warn('⚠️ [AUTH_CONTEXT] Already initialized but still loading - forcing to false');
+        setLoading(false);
+      }
     }
 
     return () => {

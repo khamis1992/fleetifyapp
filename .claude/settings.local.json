@@ -98,7 +98,13 @@
       "Bash(claude mcp get:*)",
       "Bash(npx playwright:*)",
       "Bash(npm install:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(mkdir:*)",
+      "mcp__playwright__browser_snapshot"
     ],
     "deny": [],
     "ask": []

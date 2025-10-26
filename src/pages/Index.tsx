@@ -13,7 +13,10 @@ import { ParallaxSection } from '@/components/landing/ParallaxSection';
 const Index = () => {
   const { user, loading } = useAuth();
 
+  console.log('🏠 [INDEX] Rendering Index page', { user: !!user, loading });
+
   if (loading) {
+    console.log('🏠 [INDEX] Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
@@ -22,8 +25,11 @@ const Index = () => {
   }
 
   if (user) {
+    console.log('🏠 [INDEX] User authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
+
+  console.log('🏠 [INDEX] Rendering landing page');
 
   return (
     <div className="min-h-screen bg-background">

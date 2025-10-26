@@ -27,7 +27,8 @@ export const DemoTrialBanner: React.FC = () => {
           setRemainingDays(days);
         }
       } catch (error) {
-        console.error('Error loading demo info:', error);
+        // Silently handle - demo session tracking is optional
+        // Banner won't show if session info unavailable
       }
     };
 

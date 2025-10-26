@@ -430,15 +430,18 @@ export const getDemoSessionInfo = async (userId: string) => {
       .single();
 
     if (error) {
-      if (error.message.includes('does not exist')) {
-        return null; // Table doesn't exist yet
+      // Silently return null if table doesn't exist (migration not yet applied)
+      if (error.message.includes('does not exist') || error.code === 'PGRST116') {
+        return null;
       }
-      throw error;
+      // Only log unexpected errors
+      console.warn('Demo session query failed (non-critical):', error.message);
+      return null;
     }
 
     return data as any;
   } catch (error) {
-    console.error('Error fetching demo session:', error);
+    // Silently handle - demo sessions are optional
     return null;
   }
 };
