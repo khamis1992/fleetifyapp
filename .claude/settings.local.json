@@ -90,7 +90,8 @@
       "Bash(npx playwright install)",
       "mcp__supabase__execute_sql",
       "mcp__supabase__list_tables",
-      "Bash(claude mcp reconnect:*)"
+      "Bash(claude mcp reconnect:*)",
+      "Bash(node scripts/check-cancelled-contracts.js:*)"
     ],
     "deny": [],
     "ask": []

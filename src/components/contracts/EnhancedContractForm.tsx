@@ -21,6 +21,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { logger } from '@/lib/logger'
+import { ContractTemplateSelector } from './ContractTemplateSelector'
 
 interface EnhancedContractFormProps {
   open: boolean
@@ -57,6 +58,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [isValidating, setIsValidating] = useState(false)
   const [approvalInfo, setApprovalInfo] = useState<any>(null)
+  const [showTemplates, setShowTemplates] = useState(false)
 
   // Get user profile with company ID
   const { data: profile } = useQuery({
@@ -290,6 +292,31 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
             )}
           </DialogTitle>
         </DialogHeader>
+
+        {/* Template Selector */}
+        <div className="flex justify-end">
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={() => setShowTemplates(true)}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            اختر من القوالب
+            <Badge variant="secondary" className="ml-1">وفّر 5 دقائق</Badge>
+          </Button>
+        </div>
+
+        <ContractTemplateSelector
+          open={showTemplates}
+          onOpenChange={setShowTemplates}
+          onApplyTemplate={(templateData) => {
+            setContractData({ ...contractData, ...templateData });
+            toast.success('تم تطبيق القالب بنجاح');
+          }}
+          currentContractData={contractData}
+          selectedVehicle={selectedVehicle}
+        />
 
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
