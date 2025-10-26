@@ -43,6 +43,7 @@ interface ContractWizardProps {
   onSubmit?: (contractData: any) => Promise<any>
   preselectedCustomerId?: string
   draftIdToLoad?: string
+  contractToEdit?: any
 }
 
 const ContractWizardContent: React.FC = () => {
@@ -234,7 +235,8 @@ export const ContractWizard: React.FC<ContractWizardProps> = ({
   onOpenChange,
   onSubmit,
   preselectedCustomerId,
-  draftIdToLoad
+  draftIdToLoad,
+  contractToEdit
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -243,6 +245,7 @@ export const ContractWizard: React.FC<ContractWizardProps> = ({
           onSubmit={onSubmit}
           preselectedCustomerId={preselectedCustomerId}
           draftIdToLoad={draftIdToLoad}
+          contractToEdit={contractToEdit}
         >
           <ContractWizardContent />
         </ContractWizardProvider>

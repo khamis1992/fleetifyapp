@@ -113,13 +113,15 @@ interface ContractWizardProviderProps {
   onSubmit?: (data: ContractWizardData) => Promise<any>
   preselectedCustomerId?: string
   draftIdToLoad?: string
+  contractToEdit?: any
 }
 
 export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   children,
   onSubmit,
   preselectedCustomerId,
-  draftIdToLoad
+  draftIdToLoad,
+  contractToEdit
 }) => {
   const { user } = useAuth()
   const currentCompanyId = useCurrentCompanyId()
@@ -161,6 +163,42 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       loadDraft(draftIdToLoad)
     }
   }, [draftIdToLoad])
+
+  // Load contract data when editing
+  useEffect(() => {
+    if (contractToEdit) {
+      console.log('📝 [CONTRACT_EDIT] Loading contract data for editing:', contractToEdit)
+      setData({
+        ...contractToEdit,
+        is_draft: false,
+        // Ensure all required fields have values
+        contract_number: contractToEdit.contract_number || '',
+        contract_date: contractToEdit.contract_date || new Date().toISOString().slice(0, 10),
+        contract_type: contractToEdit.contract_type || 'rental',
+        description: contractToEdit.description || '',
+        terms: contractToEdit.terms || '',
+        customer_id: contractToEdit.customer_id || '',
+        vehicle_id: contractToEdit.vehicle_id || '',
+        start_date: contractToEdit.start_date || new Date().toISOString().slice(0, 10),
+        end_date: contractToEdit.end_date || '',
+        rental_days: contractToEdit.rental_days || 1,
+        rental_months: contractToEdit.rental_months || 0,
+        contract_amount: contractToEdit.contract_amount || 0,
+        monthly_amount: contractToEdit.monthly_amount || 0,
+        account_id: contractToEdit.account_id || '',
+        cost_center_id: contractToEdit.cost_center_id || '',
+        late_fines_enabled: contractToEdit.late_fines_enabled,
+        late_fine_type: contractToEdit.late_fine_type,
+        late_fine_rate: contractToEdit.late_fine_rate,
+        late_fine_grace_period: contractToEdit.late_fine_grace_period,
+        late_fine_max_amount: contractToEdit.late_fine_max_amount,
+        customer_signature: contractToEdit.customer_signature,
+        company_signature: contractToEdit.company_signature,
+        signature_enabled: contractToEdit.signature_enabled
+      })
+      toast.success('تم تحميل بيانات العقد بنجاح')
+    }
+  }, [contractToEdit])
 
   // Auto-calculate duration and end date when contract type changes
   useEffect(() => {

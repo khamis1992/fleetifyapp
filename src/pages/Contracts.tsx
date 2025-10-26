@@ -85,6 +85,7 @@ function Contracts() {
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined)
   const [draftIdToLoad, setDraftIdToLoad] = useState<string | undefined>(undefined)
+  const [contractToEdit, setContractToEdit] = useState<any>(undefined)
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
@@ -538,7 +539,10 @@ function Contracts() {
           open={showDetailsDialog}
           onOpenChange={setShowDetailsDialog}
           contract={selectedContract}
-          onEdit={(contract) => { setSelectedContract(contract); refetch(); }}
+          onEdit={(contract) => { 
+            setContractToEdit(contract); 
+            setShowContractWizard(true); 
+          }}
           onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
         />
         
@@ -560,6 +564,7 @@ function Contracts() {
           onSubmit={handleContractSubmit}
           preselectedCustomerId={preselectedCustomerId}
           draftIdToLoad={draftIdToLoad}
+          contractToEdit={contractToEdit}
         />
         
         {/* Contract Creation Progress Dialog - Responsive */}
