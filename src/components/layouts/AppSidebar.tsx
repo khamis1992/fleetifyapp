@@ -128,6 +128,11 @@ const financeSubItems = [
     icon: CreditCard
   },
   {
+    name: 'الذمم المدينة',
+    href: '/finance/ar-aging',
+    icon: TrendingDown
+  },
+  {
     name: 'الموازنات',
     href: '/finance/budgets',
     icon: Target

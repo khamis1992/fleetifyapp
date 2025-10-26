@@ -106,6 +106,7 @@ const IntegrationDashboard = lazy(() => import("./pages/dashboards/IntegrationDa
 
 // Finance sub-pages
 const VendorCategories = lazy(() => import("./pages/finance/VendorCategories"));
+const ARAgingReport = lazy(() => import("./pages/finance/ARAgingReport"));
 
 // Sales/CRM Management pages
 const SalesPipeline = lazyWithRetry(() => import("./pages/sales/SalesPipeline"), "SalesPipeline");
@@ -821,6 +822,13 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <VendorCategories />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="finance/ar-aging" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ARAgingReport />
             </Suspense>
           </AdminRoute>
         } />
