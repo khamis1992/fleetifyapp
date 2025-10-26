@@ -50,40 +50,54 @@ export function VehicleAvailabilityCalendar() {
     isDragging: boolean
   }>({ startDate: null, endDate: null, isDragging: false })
 
-  // Fetch vehicles
+  // Fetch vehicles (mock implementation - database table structure may vary)
   const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles', user?.profile?.company_id],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id
+      if (!companyId) return []
+      
       const { data, error } = await supabase
         .from('vehicles')
         .select('id, plate_number, make, model, daily_rate, status')
-        .eq('company_id', user?.profile?.company_id)
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .in('status', ['available', 'reserved'])
 
       if (error) throw error
-      return data as Vehicle[]
+      return (data || []) as Vehicle[]
     },
     enabled: !!user?.profile?.company_id,
   })
 
-  // Fetch bookings
+  // Fetch bookings (mock implementation - using contracts table with customer data)
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['bookings', user?.profile?.company_id, format(currentDate, 'yyyy-MM')],
     queryFn: async () => {
       const monthStart = startOfMonth(currentDate)
       const monthEnd = endOfMonth(currentDate)
+      const companyId = user?.profile?.company_id
+      if (!companyId) return []
 
       const { data, error } = await supabase
         .from('contracts')
-        .select('id, vehicle_id, start_date, end_date, customer_name, status')
-        .eq('company_id', user?.profile?.company_id)
+        .select('id, vehicle_id, start_date, end_date, status, customers(name)')
+        .eq('company_id', companyId)
         .gte('end_date', format(monthStart, 'yyyy-MM-dd'))
         .lte('start_date', format(monthEnd, 'yyyy-MM-dd'))
         .in('status', ['draft', 'active'])
 
       if (error) throw error
-      return data as Booking[]
+      
+      // Transform data to match Booking interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        vehicle_id: item.vehicle_id,
+        start_date: item.start_date,
+        end_date: item.end_date,
+        customer_name: item.customers?.name || 'Unknown',
+        status: item.status,
+      })) as Booking[]
     },
     enabled: !!user?.profile?.company_id,
   })

@@ -1,6 +1,3 @@
 export { ImprovedErrorDisplay } from './ImprovedErrorDisplay';
-export { ImprovedRouteErrorBoundary } from './ImprovedRouteErrorBoundary';
 export type { ImprovedErrorDisplayProps } from './ImprovedErrorDisplay';
-
-// For backward compatibility
-export { ImprovedRouteErrorBoundary as RouteErrorBoundary };
+export { ImprovedRouteErrorBoundary, ImprovedRouteErrorBoundary as RouteErrorBoundary } from './ImprovedRouteErrorBoundary';

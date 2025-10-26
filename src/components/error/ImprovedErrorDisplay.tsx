@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils';
 import type { ErrorMessage } from '@/lib/errorHandler';
 
-interface ImprovedErrorDisplayProps {
+export interface ImprovedErrorDisplayProps {
   error: Error | string | null;
   errorMessage: ErrorMessage;
   onRetry?: () => void | Promise<void>;
