@@ -15,6 +15,18 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/chunks/(.*)",
+      "dest": "/chunks/$1"
+    },
+    {
+      "src": "/pages/(.*)",
+      "dest": "/pages/$1"
+    },
+    {
+      "src": "/components/(.*)",
+      "dest": "/components/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

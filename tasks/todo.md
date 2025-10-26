@@ -1290,3 +1290,83 @@ npm install jspdf jspdf-autotable html2canvas xlsx react-datepicker cmdk
 **Date:** 2025-10-19
 **Updated:** 2025-10-20 (Phase 7D Complete, Phase 8 Planned)
 **Version:** 1.4 (✅ Phase 7D Complete - 100% | Phase 8 Ready)
+
+---
+
+## 🔥 URGENT: Production Blank Page Fix
+
+**Date Added:** 2025-10-26
+**Priority:** 🔴 CRITICAL
+**Status:** ⏳ PENDING APPROVAL
+
+### Task: Fix Blank Page - Vercel Routing for Chunks
+
+#### Objective
+Fix the production blank page issue by adding proper routing for `/chunks/*` directory in Vercel configuration.
+
+**Business Impact:** Site is completely non-functional in production. Users see only a blank page.
+
+#### Root Cause Analysis
+1. **Missing Routing in vercel.json**: Requests to `/chunks/*.js` fall through to catch-all route which serves `index.html`
+2. **MIME Type Mismatch**: Browser receives HTML (text/html) instead of JavaScript (application/javascript)
+3. **Browser Rejection**: Strict MIME checking blocks HTML from loading as ES modules
+
+#### Acceptance Criteria
+- [ ] Vercel routes `/chunks/*` requests to actual chunk files, not index.html
+- [ ] Vercel routes `/pages/*` requests to actual page files
+- [ ] Vercel routes `/components/*` requests to actual component files
+- [ ] Browser console shows no "Failed to load module script" errors
+- [ ] Application renders correctly on https://fleetifyapp.vercel.app/
+- [ ] All JavaScript chunks load with correct MIME type
+
+#### Scope & Impact Radius
+**Files to modify:**
+- `vercel.json` - Add 3 routing rules
+
+**Risk level:** LOW (routing configuration only, no code changes)
+
+#### Proposed Solution
+
+```diff
+// vercel.json
+{
+  "version": 2,
+  "builds": [...],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
++   {
++     "src": "/chunks/(.*)",
++     "dest": "/chunks/$1"
++   },
++   {
++     "src": "/pages/(.*)",
++     "dest": "/pages/$1"
++   },
++   {
++     "src": "/components/(.*)",
++     "dest": "/components/$1"
++   },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
+```
+
+#### Steps
+- [ ] Pre-flight: typecheck/lint/build green on main
+- [ ] Create branch: `fix/vercel-chunks-routing`
+- [ ] Update vercel.json with new routes
+- [ ] Commit and push
+- [ ] Verify Vercel auto-deployment
+- [ ] Test production URL
+- [ ] Merge to main
+
+#### Rollback Plan
+- Revert commit via git
+- Or: Rollback deployment via Vercel dashboard
+
