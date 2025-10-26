@@ -92,7 +92,13 @@
       "mcp__supabase__list_tables",
       "Bash(claude mcp reconnect:*)",
       "Bash(node scripts/check-cancelled-contracts.js:*)",
-      "Bash(node scripts/check-cancelled-contracts.cjs:*)"
+      "Bash(node scripts/check-cancelled-contracts.cjs:*)",
+      "Bash(claude mcp remove:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(claude mcp get:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm install:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []
