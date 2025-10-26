@@ -1,285 +1,303 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-} from '@/components/ui/breadcrumb';
-import { 
-  Home, 
-  ChevronLeft, 
-  DollarSign, 
-  Users, 
-  FileText, 
-  TrendingUp, 
-  Settings, 
-  Building, 
-  Car, 
-  BarChart3,
-  CreditCard,
-  BookOpen,
-  Package,
-  Calculator,
-  PieChart,
-  Wallet,
-  Target,
-  FolderOpen,
-  ShoppingCart,
-  Receipt,
-  Briefcase,
-  UserCircle,
-  Shield,
-  MapPin,
-  Calendar,
-  Scale,
-  FileCheck
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import React, { useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-interface BreadcrumbItem {
+/**
+ * Breadcrumb item definition
+ */
+export interface BreadcrumbItem {
   label: string;
   path?: string;
-  icon?: React.ComponentType<any>;
+  isActive?: boolean;
 }
 
-interface RouteConfig {
-  label: string;
-  icon?: React.ComponentType<any>;
-}
+/**
+ * Breadcrumb route mapping
+ */
+const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
+  // Dashboard
+  '/dashboard': [
+    { label: 'لوحة التحكم', path: '/dashboard', isActive: true },
+  ],
 
-const routeConfig: Record<string, RouteConfig> = {
-  // Main sections
-  '/dashboard': { label: 'لوحة التحكم', icon: Home },
-  '/profile': { label: 'الملف الشخصي', icon: UserCircle },
-  '/settings': { label: 'الإعدادات', icon: Settings },
-  '/subscription': { label: 'الاشتراك', icon: CreditCard },
-  '/performance': { label: 'الأداء', icon: TrendingUp },
-  '/backup': { label: 'النسخ الاحتياطي', icon: FolderOpen },
-  '/audit': { label: 'سجل التدقيق', icon: FileCheck },
-  '/reports': { label: 'التقارير', icon: BarChart3 },
-  '/legal': { label: 'الشؤون القانونية', icon: Scale },
-  
-  // Finance Module
-  '/finance': { label: 'المالية', icon: DollarSign },
-  '/finance/accounts': { label: 'الحسابات', icon: Wallet },
-  '/finance/budgets': { label: 'الميزانيات', icon: PieChart },
-  '/finance/chart-of-accounts': { label: 'دليل الحسابات', icon: BookOpen },
-  '/finance/cost-centers': { label: 'مراكز التكلفة', icon: Target },
-  '/finance/financial-analysis': { label: 'التحليل المالي', icon: TrendingUp },
-  '/finance/fixed-assets': { label: 'الأصول الثابتة', icon: Building },
-  '/finance/general-ledger': { label: 'دفتر الأستاذ العام', icon: BookOpen },
-  '/finance/invoice-reports': { label: 'تقارير الفواتير', icon: BarChart3 },
-  '/finance/invoices': { label: 'الفواتير', icon: Receipt },
-  '/finance/ledger': { label: 'دفتر الأستاذ', icon: BookOpen },
-  '/finance/payments': { label: 'المدفوعات', icon: CreditCard },
-  '/finance/reports': { label: 'التقارير المالية', icon: BarChart3 },
-  '/finance/treasury': { label: 'الخزينة', icon: Wallet },
-  '/finance/vendors': { label: 'الموردون', icon: ShoppingCart },
-  '/finance/account-mappings': { label: 'ربط الحسابات', icon: Settings },
-  '/finance/purchase-orders': { label: 'أوامر الشراء', icon: ShoppingCart },
-  '/finance/deposits': { label: 'الودائع', icon: Wallet },
-  '/finance/calculator': { label: 'الآلة الحاسبة', icon: Calculator },
-  '/finance/unified-financial-dashboard': { label: 'لوحة التحكم المالية', icon: BarChart3 },
-  
-  // Finance Settings
-  '/finance/settings': { label: 'الإعدادات', icon: Settings },
-  '/finance/settings/accounts': { label: 'إعدادات الحسابات', icon: Settings },
-  '/finance/settings/automatic-accounts': { label: 'الحسابات التلقائية', icon: Settings },
-  '/finance/settings/cost-centers': { label: 'إعدادات مراكز التكلفة', icon: Settings },
-  '/finance/settings/customer-accounts': { label: 'حسابات العملاء', icon: Settings },
-  '/finance/settings/journal-entries': { label: 'إعدادات القيود', icon: Settings },
-  '/finance/settings/account-recovery': { label: 'استرجاع الحسابات', icon: Settings },
-  '/finance/settings/financial-system-analysis': { label: 'تحليل النظام المالي', icon: TrendingUp },
-  
-  // Fleet Management
-  '/fleet': { label: 'إدارة الأسطول', icon: Car },
-  '/fleet/maintenance': { label: 'الصيانة', icon: Settings },
-  '/fleet/traffic-violations': { label: 'المخالفات المرورية', icon: FileText },
-  '/fleet/traffic-violation-payments': { label: 'مدفوعات المخالفات', icon: CreditCard },
-  '/fleet/reports': { label: 'تقارير الأسطول', icon: BarChart3 },
-  '/fleet/dispatch-permits': { label: 'تصاريح التشغيل', icon: FileText },
-  '/fleet/vehicle-condition-check': { label: 'فحص حالة المركبة', icon: FileCheck },
-  '/fleet/financial-analysis': { label: 'التحليل المالي', icon: TrendingUp },
-  '/fleet/vehicle-installments': { label: 'أقساط المركبات', icon: CreditCard },
-  
-  // Contracts & Customers
-  '/contracts': { label: 'العقود', icon: FileText },
-  '/customers': { label: 'العملاء', icon: Users },
-  '/tenants': { label: 'المستأجرين', icon: Users },
-  '/quotations': { label: 'عروض الأسعار', icon: Receipt },
-  
-  // HR Module
-  '/hr': { label: 'الموارد البشرية', icon: Users },
-  '/hr/employees': { label: 'الموظفون', icon: Users },
-  '/hr/user-management': { label: 'إدارة المستخدمين', icon: Shield },
-  '/hr/attendance': { label: 'الحضور والانصراف', icon: Calendar },
-  '/hr/leave-management': { label: 'إدارة الإجازات', icon: Calendar },
-  '/hr/location-settings': { label: 'إعدادات الموقع', icon: MapPin },
-  '/hr/payroll': { label: 'الرواتب', icon: Wallet },
-  '/hr/reports': { label: 'تقارير الموارد البشرية', icon: BarChart3 },
-  '/hr/settings': { label: 'إعدادات الموارد البشرية', icon: Settings },
-  
-  // Properties
-  '/properties': { label: 'العقارات', icon: Building },
-  '/properties/add': { label: 'إضافة عقار', icon: Building },
-  '/properties/owners': { label: 'ملاك العقارات', icon: Users },
-  '/properties/map': { label: 'خريطة العقارات', icon: MapPin },
-  '/properties/maintenance': { label: 'صيانة العقارات', icon: Settings },
-  '/properties/contracts': { label: 'عقود العقارات', icon: FileText },
+  // Finance
+  '/finance': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance', isActive: true },
+  ],
+  '/finance/chart-of-accounts': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'دليل الحسابات', path: '/finance/chart-of-accounts', isActive: true },
+  ],
+  '/finance/ledger': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'دفتر الأستاذ', path: '/finance/ledger', isActive: true },
+  ],
+  '/finance/invoices': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'الفواتير', path: '/finance/invoices', isActive: true },
+  ],
+  '/finance/payments': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'المدفوعات', path: '/finance/payments', isActive: true },
+  ],
+  '/finance/treasury': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'الخزينة والبنوك', path: '/finance/treasury', isActive: true },
+  ],
+  '/finance/ar-aging': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'الذمم المدينة', path: '/finance/ar-aging', isActive: true },
+  ],
+  '/finance/ap-aging': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المالية', path: '/finance' },
+    { label: 'الذمم الدائنة', path: '/finance/ap-aging', isActive: true },
+  ],
+
+  // Fleet
+  '/fleet': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet', isActive: true },
+  ],
+  '/fleet/maintenance': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'الصيانة', path: '/fleet/maintenance', isActive: true },
+  ],
+  '/fleet/traffic-violations': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'المخالفات المرورية', path: '/fleet/traffic-violations', isActive: true },
+  ],
+  '/fleet/dispatch-permits': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'تصاريح الحركة', path: '/fleet/dispatch-permits', isActive: true },
+  ],
+  '/fleet/reports': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'التقارير', path: '/fleet/reports', isActive: true },
+  ],
+
+  // Customers
+  '/customers': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'العملاء', path: '/customers', isActive: true },
+  ],
+
+  // Contracts
+  '/contracts': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'العقود', path: '/contracts', isActive: true },
+  ],
+
+  // Sales
+  '/sales/pipeline': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/pipeline', isActive: true },
+  ],
+  '/sales/leads': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/leads', isActive: true },
+  ],
+  '/sales/opportunities': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/opportunities', isActive: true },
+  ],
+  '/sales/quotes': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/quotes', isActive: true },
+  ],
+  '/sales/orders': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/orders', isActive: true },
+  ],
+  '/sales/analytics': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المبيعات', path: '/sales/analytics', isActive: true },
+  ],
+
+  // HR
+  '/hr/employees': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الموارد البشرية', path: '/hr/employees', isActive: true },
+  ],
+  '/hr/attendance': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الموارد البشرية', path: '/hr/attendance', isActive: true },
+  ],
+  '/hr/leave': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الموارد البشرية', path: '/hr/leave', isActive: true },
+  ],
+  '/hr/payroll': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الموارد البشرية', path: '/hr/payroll', isActive: true },
+  ],
+
+  // Inventory
+  '/inventory': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'المخزون', path: '/inventory', isActive: true },
+  ],
+
+  // Reports
+  '/reports': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'التقارير', path: '/reports', isActive: true },
+  ],
+
+  // Legal
+  '/legal/advisor': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الشؤون القانونية', path: '/legal/cases' },
+    { label: 'المستشار القانوني', path: '/legal/advisor', isActive: true },
+  ],
+  '/legal/cases': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الشؤون القانونية', path: '/legal/cases', isActive: true },
+  ],
+  '/legal/invoice-disputes': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الشؤون القانونية', path: '/legal/cases' },
+    { label: 'نزاعات الفواتير', path: '/legal/invoice-disputes', isActive: true },
+  ],
+  '/legal/late-fees': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الشؤون القانونية', path: '/legal/cases' },
+    { label: 'إدارة غرامات التأخير', path: '/legal/late-fees', isActive: true },
+  ],
+
+  // Settings
+  '/settings': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الإعدادات', path: '/settings', isActive: true },
+  ],
+  '/profile': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الملف الشخصي', path: '/profile', isActive: true },
+  ],
+
+  // Quotations
+  '/quotations': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'عروض الأسعار', path: '/quotations', isActive: true },
+  ],
+
+  // Support
+  '/support': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'الدعم الفني', path: '/support', isActive: true },
+  ],
 };
 
+/**
+ * Breadcrumbs Component
+ * Displays navigation breadcrumbs at the top of content area
+ * Shows current page and clickable links to parent pages
+ */
 export const Breadcrumbs: React.FC = () => {
   const location = useLocation();
-  const pathnames = location.pathname.split('/').filter((x) => x);
+  const navigate = useNavigate();
 
-  const generateBreadcrumbs = (): BreadcrumbItem[] => {
-    const breadcrumbs: BreadcrumbItem[] = [
-      {
-        label: 'الرئيسية',
-        path: '/dashboard',
-        icon: Home
+  // Get breadcrumbs for current route
+  const breadcrumbs = useMemo(() => {
+    // Check for exact match first
+    let items = BREADCRUMB_ROUTES[location.pathname];
+
+    // If no exact match, try to find a partial match
+    if (!items) {
+      const pathname = location.pathname;
+      for (const [route, routeBreadcrumbs] of Object.entries(BREADCRUMB_ROUTES)) {
+        if (pathname.startsWith(route) && route !== '/') {
+          items = routeBreadcrumbs;
+          break;
+        }
       }
-    ];
+    }
 
-    let currentPath = '';
-    pathnames.forEach((pathname, index) => {
-      currentPath += `/${pathname}`;
-      
-      // Skip dashboard as it's already added as home
-      if (currentPath === '/dashboard') {
-        return;
-      }
+    // Default to dashboard breadcrumb if no match found
+    if (!items) {
+      items = [
+        { label: 'لوحة التحكم', path: '/dashboard', isActive: true },
+      ];
+    }
 
-      const config = routeConfig[currentPath];
-      const label = config?.label || pathname;
-      const icon = config?.icon;
-      const isLast = index === pathnames.length - 1;
+    return items;
+  }, [location.pathname]);
 
-      breadcrumbs.push({
-        label,
-        path: isLast ? undefined : currentPath,
-        icon
-      });
-    });
-
-    return breadcrumbs;
-  };
-
-  const breadcrumbs = generateBreadcrumbs();
-
-  // Don't show breadcrumbs on dashboard page
-  if (location.pathname === '/dashboard' || breadcrumbs.length <= 1) {
+  // Don't show breadcrumbs on login/auth pages
+  if (location.pathname.includes('/auth') || location.pathname === '/') {
     return null;
   }
 
-  // For deep hierarchies (>4 levels), collapse middle items
-  const renderBreadcrumbs = () => {
-    if (breadcrumbs.length <= 4) {
-      // Show all breadcrumbs normally
-      return breadcrumbs.map((breadcrumb, index) => (
-        <React.Fragment key={index}>
-          <BreadcrumbItem>
-            {breadcrumb.path ? (
-              <BreadcrumbLink asChild>
-                <Link 
-                  to={breadcrumb.path}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
-                >
-                  {breadcrumb.icon && <breadcrumb.icon className="h-4 w-4" />}
-                  {breadcrumb.label}
-                </Link>
-              </BreadcrumbLink>
-            ) : (
-              <BreadcrumbPage className="flex items-center gap-2 font-medium">
-                {breadcrumb.icon && <breadcrumb.icon className="h-4 w-4" />}
-                {breadcrumb.label}
-              </BreadcrumbPage>
-            )}
-          </BreadcrumbItem>
-          {index < breadcrumbs.length - 1 && (
-            <BreadcrumbSeparator>
-              <ChevronLeft className="h-4 w-4" />
-            </BreadcrumbSeparator>
-          )}
-        </React.Fragment>
-      ));
-    }
-
-    // Collapse middle items for deep hierarchies
-    const first = breadcrumbs[0];
-    const last = breadcrumbs[breadcrumbs.length - 1];
-    const middle = breadcrumbs.slice(1, -1);
-
-    return (
-      <>
-        {/* First breadcrumb (Home) */}
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link 
-              to={first.path!}
-              className="flex items-center gap-2 hover:text-primary transition-colors"
-            >
-              {first.icon && <first.icon className="h-4 w-4" />}
-              {first.label}
-            </Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator>
-          <ChevronLeft className="h-4 w-4" />
-        </BreadcrumbSeparator>
-
-        {/* Collapsed middle items with dropdown */}
-        <BreadcrumbItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 hover:text-primary transition-colors">
-              <BreadcrumbEllipsis className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {middle.map((breadcrumb, index) => (
-                <DropdownMenuItem key={index} asChild>
-                  <Link 
-                    to={breadcrumb.path!}
-                    className="flex items-center gap-2 w-full"
-                  >
-                    {breadcrumb.icon && <breadcrumb.icon className="h-4 w-4" />}
-                    {breadcrumb.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator>
-          <ChevronLeft className="h-4 w-4" />
-        </BreadcrumbSeparator>
-
-        {/* Last breadcrumb (current page) */}
-        <BreadcrumbItem>
-          <BreadcrumbPage className="flex items-center gap-2 font-medium">
-            {last.icon && <last.icon className="h-4 w-4" />}
-            {last.label}
-          </BreadcrumbPage>
-        </BreadcrumbItem>
-      </>
-    );
-  };
-
   return (
-    <div className="mb-6" dir="rtl">
-      <Breadcrumb>
-        <BreadcrumbList>
-          {renderBreadcrumbs()}
-        </BreadcrumbList>
-      </Breadcrumb>
-    </div>
+    <nav
+      className="flex items-center gap-1 px-6 py-3 bg-card/30 border-b border-border/50"
+      aria-label="Breadcrumb Navigation"
+    >
+      {/* Home Icon */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/dashboard')}
+        className="h-8 w-8 p-0 hover:bg-accent/50 transition-colors"
+        title="Go to Dashboard"
+      >
+        <Home className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+      </Button>
+
+      {/* Breadcrumb Items */}
+      {breadcrumbs.map((item, index) => {
+        const isLast = index === breadcrumbs.length - 1;
+
+        return (
+          <React.Fragment key={item.path || index}>
+            {/* Chevron Separator */}
+            <ChevronLeft className="h-4 w-4 text-muted-foreground/60 mx-1 flex-shrink-0" />
+
+            {/* Breadcrumb Item */}
+            {isLast ? (
+              // Current Page (Not Clickable)
+              <span
+                className={cn(
+                  'text-sm font-medium px-2 py-1 rounded transition-colors',
+                  'text-foreground bg-primary/10 border border-primary/20'
+                )}
+                aria-current="page"
+              >
+                {item.label}
+              </span>
+            ) : (
+              // Clickable Link
+              <button
+                onClick={() => item.path && navigate(item.path)}
+                className={cn(
+                  'text-sm px-2 py-1 rounded transition-colors',
+                  'text-muted-foreground hover:text-foreground',
+                  'hover:bg-accent/50',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                )}
+                type="button"
+              >
+                {item.label}
+              </button>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
   );
 };
+
+export default Breadcrumbs;

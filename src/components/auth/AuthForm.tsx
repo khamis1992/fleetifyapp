@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent, type FC } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,9 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
+import { signInToDemo, isDemoModeEnabled } from '@/lib/demo';
 
 export const AuthForm: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -78,6 +80,35 @@ export const AuthForm: FC = () => {
       toast({ title: 'تم الإرسال', description: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك' });
     } catch (error) {
       toast({ title: 'خطأ', description: 'تعذر إرسال رابط إعادة التعيين', variant: 'destructive' });
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true);
+    try {
+      const { data, error } = await signInToDemo();
+      
+      if (error) {
+        toast({
+          title: "خطأ",
+          description: "تعذر الدخول إلى الحساب التجريبي. يرجى المحاولة لاحقاً.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "مرحباً بك في النسخة التجريبية!",
+          description: "لديك 7 أيام لتجربة جميع ميزات النظام مجاناً",
+        });
+      }
+    } catch (error) {
+      console.error('Demo login error:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -221,10 +252,47 @@ export const AuthForm: FC = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-primary hover:opacity-90 shadow-accent"
-                disabled={isLoading}
+                disabled={isLoading || isDemoLoading}
               >
                 {isLoading ? <LoadingSpinner size="sm" /> : 'تسجيل الدخول'}
               </Button>
+
+              {/* Demo Mode Button */}
+              {isDemoModeEnabled() && (
+                <>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">
+                        أو
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full border-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
+                    onClick={handleDemoLogin}
+                    disabled={isLoading || isDemoLoading}
+                  >
+                    {isDemoLoading ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <>
+                        <Rocket className="h-4 w-4 ml-2" />
+                        تجربة النظام (7 أيام مجاناً)
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    لا يتطلب بريد إلكتروني • بيانات تجريبية جاهزة
+                  </p>
+                </>
+              )}
             </form>
 
           </CardContent>

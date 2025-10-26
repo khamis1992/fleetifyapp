@@ -6,6 +6,7 @@ import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoadingProgress, useLoadingSteps } from '@/components/ui/LoadingProgress';
+import { DemoTrialBanner } from '@/components/demo';
 
 const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
@@ -163,13 +164,28 @@ const DashboardInner: React.FC = () => {
   switch (businessType) {
     case 'car_rental':
       console.log('🏢 [DASHBOARD] Rendering Car Rental Dashboard');
-      return <CarRentalDashboard key={`car-rental-${companyId}`} />;
+      return (
+        <>
+          <DemoTrialBanner />
+          <CarRentalDashboard key={`car-rental-${companyId}`} />
+        </>
+      );
     case 'real_estate':
       console.log('🏢 [DASHBOARD] Rendering Real Estate Dashboard');
-      return <RealEstateDashboard key={`real-estate-${companyId}`} />;
+      return (
+        <>
+          <DemoTrialBanner />
+          <RealEstateDashboard key={`real-estate-${companyId}`} />
+        </>
+      );
     case 'retail':
       console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
-      return <RetailDashboard key={`retail-${companyId}`} />;
+      return (
+        <>
+          <DemoTrialBanner />
+          <RetailDashboard key={`retail-${companyId}`} />
+        </>
+      );
     default:
       console.error('🏢 [DASHBOARD] Unknown business type:', businessType, 'for company ID:', company?.id);
       return (

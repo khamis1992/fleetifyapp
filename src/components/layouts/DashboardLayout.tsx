@@ -16,6 +16,7 @@ import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { LazyImage } from '@/components/common/LazyImage';
 import { QuickActionBar } from '@/components/quick-actions/QuickActionBar';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
@@ -111,6 +112,9 @@ export const DashboardLayout: React.FC = () => {
             </DropdownMenu>
             </div>
           </header>
+
+          {/* Breadcrumbs */}
+          <Breadcrumbs />
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto p-6">

@@ -4,52 +4,15 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
-import { usePermissions } from '@/hooks/usePermissions';
+
+import { PRIMARY_NAVIGATION, SETTINGS_ITEMS } from '@/navigation/navigationConfig';
 import {
-  Car,
-  FileText,
-  Users,
   DollarSign,
-  Settings,
   LogOut,
-  Home,
-  Shield,
-  BarChart3,
-  Building2,
-  Calculator,
-  Receipt,
-  CreditCard,
-  Building,
-  Target,
-  PieChart,
   ChevronDown,
-  BookOpen,
-  Landmark,
-  MapPin,
-  Clock,
-  UserCheck,
   UserCog,
-  Calendar,
-  Wrench,
-  AlertTriangle,
-  AlertCircle,
-  Link,
-  Crown,
-  Activity,
-  Database,
-  CheckSquare,
+  Shield,
   Headphones,
-  TrendingUp,
-  TrendingDown,
-  Zap,
-  Timeline,
-  UserPlus,
-  Package,
-  ShoppingCart,
-  Boxes,
-  ArrowUpDown,
-  Tags,
-  LayoutDashboard
 } from 'lucide-react';
 import {
   Sidebar,
@@ -71,289 +34,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/common/LazyImage';
 
-const navigationItems = [
-  { 
-    name: 'لوحة التحكم', 
-    name_en: 'Dashboard',
-    href: '/dashboard', 
-    icon: Home 
-  },
-];
-
-const adminItems = [
-  {
-    name: 'نظام الموافقات',
-    href: '/approvals',
-    icon: CheckSquare
-  },
-  {
-    name: 'النسخ الاحتياطية',
-    href: '/backup',
-    icon: Database
-  },
-  {
-    name: 'سجل العمليات',
-    href: '/audit',
-    icon: FileText
-  }
-];
-
-const financeSubItems = [
-  {
-    name: 'دليل الحسابات',
-    href: '/finance/chart-of-accounts',
-    icon: BookOpen
-  },
-  {
-    name: 'ربط الحسابات',
-    href: '/finance/account-mappings',
-    icon: Link
-  },
-  {
-    name: 'دفتر الأستاذ',
-    href: '/finance/ledger',
-    icon: Calculator
-  },
-  {
-    name: 'الخزينة والبنوك',
-    href: '/finance/treasury',
-    icon: Landmark
-  },
-  {
-    name: 'الفواتير',
-    href: '/finance/invoices',
-    icon: Receipt
-  },
-  {
-    name: 'المدفوعات',
-    href: '/finance/payments',
-    icon: CreditCard
-  },
-  {
-    name: 'الذمم المدينة',
-    href: '/finance/ar-aging',
-    icon: TrendingDown
-  },
-  {
-    name: 'تتبع الدفعات',
-    href: '/finance/payment-tracking',
-    icon: Timeline
-  },
-  {
-    name: 'الموازنات',
-    href: '/finance/budgets',
-    icon: Target
-  },
-  {
-    name: 'مراكز التكلفة',
-    href: '/finance/cost-centers',
-    icon: MapPin
-  },
-  {
-    name: 'الأصول الثابتة',
-    href: '/finance/assets',
-    icon: Building
-  },
-  {
-    name: 'الموردين',
-    href: '/finance/vendors',
-    icon: Building
-  },
-  {
-    name: 'تصنيفات الموردين',
-    href: '/finance/vendor-categories',
-    icon: Tags
-  },
-  {
-    name: 'أوامر الشراء',
-    href: '/finance/purchase-orders',
-    icon: ShoppingCart
-  },
-  {
-    name: 'التحليل المالي',
-    href: '/finance/analysis',
-    icon: PieChart
-  },
-  {
-    name: 'التقارير المالية',
-    href: '/finance/reports',
-    icon: FileText
-  },
-]
-
-// Finance Settings for Admin and Super Admin
-const financeSettingsItems = [
-  {
-    name: 'معالج النظام المحاسبي',
-    href: '/finance/accounting-wizard',
-    icon: Zap
-  },
-  {
-    name: 'تحليل النظام المالي الذكي',
-    href: '/finance/settings/financial-system-analysis',
-    icon: Activity
-  }
-];
-
-// Fleet sub-items with Arabic names
-const fleetSubItems = [
-  {
-    name: 'إدارة المركبات',
-    href: '/fleet',
-    icon: Car
-  },
-  {
-    name: 'تصاريح الحركة',
-    href: '/fleet/dispatch-permits',
-    icon: FileText
-  },
-  {
-    name: 'الصيانة',
-    href: '/fleet/maintenance',
-    icon: Wrench
-  },
-  {
-    name: 'المخالفات المرورية',
-    href: '/fleet/traffic-violations',
-    icon: AlertTriangle
-  },
-  {
-    name: 'مدفوعات المخالفات',
-    href: '/fleet/traffic-violation-payments',
-    icon: CreditCard
-  },
-  {
-    name: 'التقارير والتحليلات',
-    href: '/fleet/reports',
-    icon: BarChart3
-  },
-  {
-    name: 'أقساط المركبات',
-    href: '/fleet/vehicle-installments',
-    icon: TrendingUp
-  }
-];
-
-// HR sub-items with Arabic names
-const hrSubItems = [
-  {
-    name: 'إدارة الموظفين',
-    href: '/hr/employees',
-    icon: Users
-  },
-  {
-    name: 'الحضور والانصراف',
-    href: '/hr/attendance',
-    icon: Clock
-  },
-  {
-    name: 'إدارة الإجازات',
-    href: '/hr/leave-management',
-    icon: Calendar
-  },
-  {
-    name: 'الرواتب',
-    href: '/hr/payroll',
-    icon: DollarSign
-  },
-  {
-    name: 'تقارير الموارد البشرية',
-    href: '/hr/reports',
-    icon: BarChart3
-  },
-  {
-    name: 'إعدادات الموقع',
-    href: '/hr/location-settings',
-    icon: MapPin
-  },
-  {
-    name: 'إعدادات الموارد البشرية',
-    href: '/hr/settings',
-    icon: Settings
-  }
-];
-
-// Sales sub-items (Phase 7B)
-const salesSubItems = [
-  {
-    name: 'مسار المبيعات',
-    href: '/sales/pipeline',
-    icon: TrendingUp
-  },
-  {
-    name: 'العملاء المحتملين',
-    href: '/sales/leads',
-    icon: UserPlus
-  },
-  {
-    name: 'عروض الأسعار',
-    href: '/sales/quotes',
-    icon: FileText
-  },
-  {
-    name: 'الطلبات',
-    href: '/sales/orders',
-    icon: ShoppingCart
-  },
-  {
-    name: 'تحليلات المبيعات',
-    href: '/sales/analytics',
-    icon: BarChart3
-  }
-];
-
-// Inventory sub-items (Phase 7B)
-const inventorySubItems = [
-  {
-    name: 'الأصناف',
-    href: '/inventory',
-    icon: Package
-  },
-  {
-    name: 'التصنيفات',
-    href: '/inventory/categories',
-    icon: Tags
-  },
-  {
-    name: 'المستودعات',
-    href: '/inventory/warehouses',
-    icon: Boxes
-  },
-  {
-    name: 'حركات المخزون',
-    href: '/inventory/movements',
-    icon: ArrowUpDown
-  },
-  {
-    name: 'التقارير',
-    href: '/inventory/reports',
-    icon: BarChart3
-  }
-];
-
-// Dashboard sub-items (Phase 7C - K1 Fix)
-const dashboardSubItems = [
-  {
-    name: 'لوحة تأجير السيارات',
-    href: '/dashboards/car-rental',
-    icon: Car
-  },
-  {
-    name: 'لوحة العقارات',
-    href: '/dashboards/real-estate',
-    icon: Building2
-  },
-  {
-    name: 'لوحة البيع بالتجزئة',
-    href: '/dashboards/retail',
-    icon: ShoppingCart
-  },
-  {
-    name: 'لوحة التكامل',
-    href: '/dashboards/integration',
-    icon: Activity
-  }
-];
+// Navigation items are now loaded from centralized config
+// This ensures consistency across the entire application
 
 export function AppSidebar() {
   const { signOut } = useAuth();
@@ -361,27 +43,75 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
-  
-  // Check if finance section should be open
-  const isFinanceActive = location.pathname.startsWith('/finance');
-  // Check if HR section should be open
-  const isHRActive = location.pathname.startsWith('/hr');
-  // Check if fleet section should be open
-  const isFleetActive = location.pathname.startsWith('/fleet');
-  // Check if sales section should be open
-  const isSalesActive = location.pathname.startsWith('/sales');
-  // Check if inventory section should be open
-  const isInventoryActive = location.pathname.startsWith('/inventory');
-  // Check if dashboards section should be open
-  const isDashboardsActive = location.pathname.startsWith('/dashboards');
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const isActive = (href: string) => location.pathname.startsWith(href);
   const getNavClassName = ({ isActive: active }: { isActive: boolean }) => 
     active ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/60";
+
+  const renderNavItem = (section: typeof PRIMARY_NAVIGATION[0]) => {
+    // Check permissions
+    if (section.requiresSuperAdmin && !hasGlobalAccess) return null;
+    if (section.requiresAdmin && !hasCompanyAdminAccess && !hasGlobalAccess) return null;
+
+    const isSectionActive = section.href ? location.pathname.startsWith(section.href) : false;
+    const hasSubmenu = section.submenu && section.submenu.length > 0;
+
+    if (!hasSubmenu && section.href) {
+      // Simple menu item without submenu
+      return (
+        <SidebarMenuItem key={section.id}>
+          <SidebarMenuButton asChild className="h-10">
+            <NavLink 
+              to={section.href} 
+              className={getNavClassName}
+            >
+              <section.icon className="h-4 w-4" />
+              {(!collapsed || isMobile) && <span className="font-medium">{section.name}</span>}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
+    // Menu item with submenu
+    return (
+      <SidebarMenuItem key={section.id}>
+        <Collapsible defaultOpen={isSectionActive}>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton className="h-10">
+              <section.icon className="h-4 w-4" />
+              {(!collapsed || isMobile) && (
+                <>
+                  <span className="font-medium">{section.name}</span>
+                  <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </>
+              )}
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarMenuSub>
+              {section.submenu!.map((subItem) => (
+                <SidebarMenuSubItem key={subItem.id}>
+                  <SidebarMenuSubButton asChild>
+                    <NavLink 
+                      to={subItem.href} 
+                      className={getNavClassName}
+                    >
+                      <subItem.icon className="h-4 w-4" />
+                      {(!collapsed || isMobile) && <span>{subItem.name}</span>}
+                    </NavLink>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        </Collapsible>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
@@ -407,266 +137,42 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => {
-                console.log('Navigation item:', item.name, item.href);
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild className="h-10">
-                      <NavLink to={item.href} className={getNavClassName}>
-                        <item.icon className="h-4 w-4" />
-                        {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                   </SidebarMenuItem>
-                );
-              })}
+              {PRIMARY_NAVIGATION.map((section) => renderNavItem(section))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-               {/* Dashboards Section with Submenu (Phase 7C - K1 Fix #301) */}
-               <SidebarMenuItem>
-                 <Collapsible defaultOpen={isDashboardsActive}>
-                   <CollapsibleTrigger asChild>
-                     <SidebarMenuButton className="h-10">
-                       <LayoutDashboard className="h-4 w-4" />
-                        {(!collapsed || isMobile) && (
-                          <>
-                            <span className="font-medium">لوحات التحكم</span>
-                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                          </>
-                        )}
-                     </SidebarMenuButton>
-                   </CollapsibleTrigger>
-                   <CollapsibleContent>
-                     <SidebarMenuSub>
-                       {dashboardSubItems.map((subItem) => (
-                         <SidebarMenuSubItem key={subItem.href}>
-                           <SidebarMenuSubButton asChild>
-                             <NavLink to={subItem.href} className={getNavClassName}>
-                               <subItem.icon className="h-4 w-4" />
-                                {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                             </NavLink>
-                           </SidebarMenuSubButton>
-                         </SidebarMenuSubItem>
-                       ))}
-                     </SidebarMenuSub>
-                   </CollapsibleContent>
-                 </Collapsible>
-               </SidebarMenuItem>
-
-               {/* Fleet Section with Submenu */}
-               <SidebarMenuItem>
-                 <Collapsible defaultOpen={isFleetActive}>
-                   <CollapsibleTrigger asChild>
-                     <SidebarMenuButton className="h-10">
-                       <Car className="h-4 w-4" />
-                        {(!collapsed || isMobile) && (
-                          <>
-                            <span className="font-medium">الأسطول</span>
-                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                          </>
-                        )}
-                     </SidebarMenuButton>
-                   </CollapsibleTrigger>
-                   <CollapsibleContent>
-                     <SidebarMenuSub>
-                       {fleetSubItems.map((subItem) => (
-                         <SidebarMenuSubItem key={subItem.href}>
-                           <SidebarMenuSubButton asChild>
-                             <NavLink to={subItem.href} className={getNavClassName}>
-                               <subItem.icon className="h-4 w-4" />
-                                {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                             </NavLink>
-                           </SidebarMenuSubButton>
-                         </SidebarMenuSubItem>
-                       ))}
-                     </SidebarMenuSub>
-                   </CollapsibleContent>
-                 </Collapsible>
-               </SidebarMenuItem>
-
-               {/* Quotations */}
-               <SidebarMenuItem>
-                 <SidebarMenuButton asChild className="h-10">
-                   <NavLink to="/quotations" className={getNavClassName}>
-                     <FileText className="h-4 w-4" />
-                     {(!collapsed || isMobile) && <span className="font-medium">عروض الأسعار</span>}
-                   </NavLink>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
-
-               {/* Contracts */}
-               <SidebarMenuItem>
-                 <SidebarMenuButton asChild className="h-10">
-                   <NavLink to="/contracts" className={getNavClassName}>
-                     <FileText className="h-4 w-4" />
-                     {(!collapsed || isMobile) && <span className="font-medium">العقود</span>}
-                   </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Sales Section with Submenu (Phase 7B) */}
-                <SidebarMenuItem>
-                  <Collapsible defaultOpen={isSalesActive}>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="h-10">
-                        <TrendingUp className="h-4 w-4" />
-                         {(!collapsed || isMobile) && (
-                           <>
-                             <span className="font-medium">المبيعات</span>
-                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                           </>
-                         )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {salesSubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.href}>
-                            <SidebarMenuSubButton asChild>
-                              <NavLink to={subItem.href} className={getNavClassName}>
-                                <subItem.icon className="h-4 w-4" />
-                                 {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
-
-                {/* Inventory Section with Submenu (Phase 7B) */}
-                <SidebarMenuItem>
-                  <Collapsible defaultOpen={isInventoryActive}>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="h-10">
-                        <Boxes className="h-4 w-4" />
-                         {(!collapsed || isMobile) && (
-                           <>
-                             <span className="font-medium">المخزون</span>
-                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                           </>
-                         )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {inventorySubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.href}>
-                            <SidebarMenuSubButton asChild>
-                              <NavLink to={subItem.href} className={getNavClassName}>
-                                <subItem.icon className="h-4 w-4" />
-                                 {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
-
-                {/* Payments Section */}
-                <AdminOnly hideIfNoAccess>
+        {/* Settings Section */}
+        {(hasCompanyAdminAccess || hasGlobalAccess) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
+              الإعدادات والإدارة
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {/* Finance Settings */}
+                {SETTINGS_ITEMS.finance && SETTINGS_ITEMS.finance.length > 0 && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="h-10">
-                      <NavLink to="/finance/payments" className={getNavClassName}>
-                        <CreditCard className="h-4 w-4" />
-                        {(!collapsed || isMobile) && <span className="font-medium">المدفوعات</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </AdminOnly>
-                
-               
-                {/* Finance Section with Submenu */}
-                <AdminOnly hideIfNoAccess>
-                  <SidebarMenuItem>
-                    <Collapsible defaultOpen={isFinanceActive}>
+                    <Collapsible>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="h-10">
                           <DollarSign className="h-4 w-4" />
-                           {(!collapsed || isMobile) && (
-                             <>
-                               <span className="font-medium">المالية</span>
-                               <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                             </>
-                           )}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                       <CollapsibleContent>
-                         <SidebarMenuSub>
-                           {financeSubItems.map((subItem) => (
-                             <SidebarMenuSubItem key={subItem.href}>
-                               <SidebarMenuSubButton asChild>
-                                 <NavLink to={subItem.href} className={getNavClassName}>
-                                   <subItem.icon className="h-4 w-4" />
-                                    {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                                 </NavLink>
-                               </SidebarMenuSubButton>
-                             </SidebarMenuSubItem>
-                           ))}
-                           
-                            {/* Finance Settings - Admin and Super Admin */}
-                            <AdminOnly hideIfNoAccess>
-                             <SidebarMenuSubItem>
-                               <Collapsible>
-                                 <CollapsibleTrigger asChild>
-                                   <SidebarMenuSubButton>
-                                     <Settings className="h-4 w-4" />
-                                      {(!collapsed || isMobile) && (
-                                        <>
-                                          <span>إعدادات المالية</span>
-                                          <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                                        </>
-                                      )}
-                                   </SidebarMenuSubButton>
-                                 </CollapsibleTrigger>
-                                 <CollapsibleContent>
-                                   <SidebarMenuSub>
-                                     {financeSettingsItems.map((settingItem) => (
-                                       <SidebarMenuSubItem key={settingItem.href}>
-                                         <SidebarMenuSubButton asChild>
-                                           <NavLink to={settingItem.href} className={getNavClassName}>
-                                             <settingItem.icon className="h-3 w-3" />
-                                             {(!collapsed || isMobile) && <span className="text-xs">{settingItem.name}</span>}
-                                           </NavLink>
-                                         </SidebarMenuSubButton>
-                                       </SidebarMenuSubItem>
-                                     ))}
-                                   </SidebarMenuSub>
-                                 </CollapsibleContent>
-                               </Collapsible>
-                             </SidebarMenuSubItem>
-                            </AdminOnly>
-                         </SidebarMenuSub>
-                       </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                </AdminOnly>
-
-               {/* HR Section with Submenu */}
-                <AdminOnly hideIfNoAccess>
-                  <SidebarMenuItem>
-                    <Collapsible defaultOpen={isHRActive}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="h-10">
-                          <UserCheck className="h-4 w-4" />
-                           {(!collapsed || isMobile) && (
-                             <>
-                               <span className="font-medium">الموارد البشرية</span>
-                               <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                             </>
-                           )}
+                          {(!collapsed || isMobile) && (
+                            <>
+                              <span className="font-medium">إعدادات المالية</span>
+                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </>
+                          )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {hrSubItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.href}>
+                          {(SETTINGS_ITEMS.finance as any[])?.map((item: any) => (
+                            <SidebarMenuSubItem key={item.id}>
                               <SidebarMenuSubButton asChild>
-                                <NavLink to={subItem.href} className={getNavClassName}>
-                                  <subItem.icon className="h-4 w-4" />
-                                  {(!collapsed || isMobile) && <span>{subItem.name}</span>}
+                                <NavLink to={item.href as string} className={getNavClassName}>
+                                  <item.icon className="h-4 w-4" />
+                                  {(!collapsed || isMobile) && <span>{item.name}</span>}
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -675,133 +181,93 @@ export function AppSidebar() {
                       </CollapsibleContent>
                     </Collapsible>
                   </SidebarMenuItem>
-                </AdminOnly>
+                )}
 
-                {/* Legal Section with Submenu */}
-                <SidebarMenuItem>
-                  <Collapsible defaultOpen={location.pathname.startsWith('/legal')}>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="h-10">
-                        <Shield className="h-4 w-4" />
-                         {(!collapsed || isMobile) && (
-                           <>
-                             <span className="font-medium">الشؤون القانونية</span>
-                             <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                           </>
-                         )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to="/legal/advisor" className={getNavClassName}>
-                              <UserCog className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>المستشار القانوني</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to="/legal/cases" className={getNavClassName}>
-                              <FileText className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>تتبع القضايا</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to="/legal/invoice-disputes" className={getNavClassName}>
-                              <AlertCircle className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>نزاعات الفواتير</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to="/legal/late-fees" className={getNavClassName}>
-                              <AlertTriangle className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>إدارة غرامات التأخير</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to="/legal/whatsapp-reminders" className={getNavClassName}>
-                              <DollarSign className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>تذكيرات الدفع (واتساب)</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
+                {/* HR Settings */}
+                {SETTINGS_ITEMS.hr && SETTINGS_ITEMS.hr.length > 0 && (
+                  <SidebarMenuItem>
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="h-10">
+                          <UserCog className="h-4 w-4" />
+                          {(!collapsed || isMobile) && (
+                            <>
+                              <span className="font-medium">إعدادات الموارد البشرية</span>
+                              <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {(SETTINGS_ITEMS.hr as any[])?.map((item: any) => (
+                            <SidebarMenuSubItem key={item.id}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink to={item.href as string} className={getNavClassName}>
+                                  <item.icon className="h-4 w-4" />
+                                  {(!collapsed || isMobile) && <span>{item.name}</span>}
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SidebarMenuItem>
+                )}
 
-               {/* Reports */}
-               <SidebarMenuItem>
-                 <SidebarMenuButton asChild className="h-10">
-                   <NavLink to="/reports" className={getNavClassName}>
-                     <BarChart3 className="h-4 w-4" />
-                     {(!collapsed || isMobile) && <span className="font-medium">التقارير</span>}
-                   </NavLink>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
-
-               {/* Support */}
-               <SidebarMenuItem>
-                 <SidebarMenuButton asChild className="h-10">
-                   <NavLink to="/support" className={getNavClassName}>
-                     <Headphones className="h-4 w-4" />
-                     {(!collapsed || isMobile) && <span className="font-medium">الدعم الفني</span>}
-                   </NavLink>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Admin Section */}
-        <AdminOnly hideIfNoAccess>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
-              الإدارة
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => {
-                  // Filter admin items based on permissions
-                  if (item.href === '/backup') {
-                    return (
-                      <SuperAdminOnly key={item.href} hideIfNoAccess>
-                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild className="h-10">
-                            <NavLink to={item.href} className={getNavClassName}>
-                              <item.icon className="h-4 w-4" />
-                               {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
-                            </NavLink>
+                {/* Admin Settings */}
+                <SuperAdminOnly hideIfNoAccess>
+                  {SETTINGS_ITEMS.admin && SETTINGS_ITEMS.admin.length > 0 && (
+                    <SidebarMenuItem>
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="h-10">
+                            <Shield className="h-4 w-4" />
+                            {(!collapsed || isMobile) && (
+                              <>
+                                <span className="font-medium">إعدادات النظام</span>
+                                <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                              </>
+                            )}
                           </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      </SuperAdminOnly>
-                    );
-                  }
-                  
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild className="h-10">
-                        <NavLink to={item.href} className={getNavClassName}>
-                          <item.icon className="h-4 w-4" />
-                          {(!collapsed || isMobile) && <span className="font-medium">{item.name}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {(SETTINGS_ITEMS.admin as any[])?.map((item: any) => (
+                              <SidebarMenuSubItem key={item.id}>
+                                <SidebarMenuSubButton asChild>
+                                  <NavLink to={item.href as string} className={getNavClassName}>
+                                    <item.icon className="h-4 w-4" />
+                                    {(!collapsed || isMobile) && <span>{item.name}</span>}
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </SidebarMenuItem>
-                  );
-                })}
+                  )}
+                </SuperAdminOnly>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        </AdminOnly>
+        )}
       </SidebarContent>
+
+      {/* Footer */}
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          تسجيل الخروج
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
 }

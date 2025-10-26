@@ -1,12 +1,14 @@
 import * as React from 'react';
 import type { DuplicateContract } from '@/hooks/useContractDuplicateCheck';
 import { useContractDuplicateCheck, ContractData } from '@/hooks/useContractDuplicateCheck';
+import { useImprovedContractDuplicateCheck } from '@/hooks/useImprovedContractDuplicateCheck';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, FileText, User, Calendar } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { InlineDuplicateSuggestion } from './InlineDuplicateSuggestion';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -16,6 +18,12 @@ interface ContractFormWithDuplicateCheckProps {
   onProceedWithDuplicates?: () => void;
   children: React.ReactNode;
   enableRealTimeCheck?: boolean;
+  /** Use improved inline suggestions instead of modal (default: true) */
+  useInlineSuggestions?: boolean;
+  /** Show link action to navigate to existing contract */
+  showLinkAction?: boolean;
+  /** Callback when user decides to link to existing contract */
+  onLinkToExisting?: (duplicate: DuplicateContract) => void;
 }
 
 export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateCheckProps> = ({
@@ -23,44 +31,32 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   onDuplicateDetected,
   onProceedWithDuplicates,
   children,
-  enableRealTimeCheck = true
+  enableRealTimeCheck = true,
+  useInlineSuggestions = true,
+  showLinkAction = false,
+  onLinkToExisting
 }) => {
   const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
   const [showInlineWarning, setShowInlineWarning] = React.useState(false);
   const [forceProceed, setForceProceed] = React.useState(false);
+  const [dismissedExactMatch, setDismissedExactMatch] = React.useState(false);
 
   // Debounce the contract data to avoid too many API calls
   const debouncedContractData = useDebounce(contractData, 500);
 
-  const { data: duplicateCheck, isLoading } = useContractDuplicateCheck(
+  // Use improved duplicate check for better suggestions
+  const { data: improvedCheck, isLoading: improvedLoading } = useImprovedContractDuplicateCheck(
     debouncedContractData,
-    enableRealTimeCheck
+    enableRealTimeCheck && useInlineSuggestions
   );
 
-  React.useEffect(() => {
-    console.log('🔄 [CONTRACT_DUPLICATE_CHECK_UI] Duplicate check result changed:', {
-      duplicateCheck,
-      hasDuplicates: duplicateCheck?.has_duplicates,
-      count: duplicateCheck?.count,
-      contractData: debouncedContractData
-    });
-    
-    if (duplicateCheck) {
-      const hasValidDuplicates = duplicateCheck.has_duplicates && !forceProceed;
-      
-      console.log('🔄 [CONTRACT_DUPLICATE_CHECK_UI] Filtered duplicates:', {
-        originalCount: duplicateCheck.duplicates?.length || 0,
-        hasValidDuplicates,
-        forceProceed
-      });
-      
-      setShowInlineWarning(hasValidDuplicates);
-      if (onDuplicateDetected) {
-        onDuplicateDetected(hasValidDuplicates);
-      }
-    }
-  }, [duplicateCheck, onDuplicateDetected, debouncedContractData, forceProceed]);
+  // Fall back to old check for compatibility
+  const { data: duplicateCheck, isLoading: oldCheckLoading } = useContractDuplicateCheck(
+    debouncedContractData,
+    enableRealTimeCheck && !useInlineSuggestions
+  );
 
+  // Handler functions
   const handleViewDuplicates = () => {
     setShowDuplicateDialog(true);
   };
@@ -73,12 +69,83 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
     }
   };
 
+  const handleDismissSuggestion = () => {
+    // For exact matches, user is dismissing the visual suggestion but it's still logged
+    if (improvedCheck?.isExactMatch) {
+      setDismissedExactMatch(true);
+    }
+    setShowInlineWarning(false);
+  };
+
+  const handleSelectDuplicate = (duplicate: DuplicateContract) => {
+    // User clicked on a suggested contract
+    console.log('Selected duplicate:', duplicate);
+  };
+
+  // Handle improved duplicate check (inline suggestions)
+  React.useEffect(() => {
+    if (useInlineSuggestions && improvedCheck) {
+      console.log('🔄 [CONTRACT_DUPLICATE_CHECK_INLINE] Results:', {
+        improvedCheck,
+        isExactMatch: improvedCheck.isExactMatch,
+        dismissedExactMatch,
+        forceProceed
+      });
+
+      // Only show warning if:
+      // 1. User hasn't dismissed it
+      // 2. There are duplicates
+      // 3. User hasn't forced proceed
+      const hasValidDuplicates =
+        improvedCheck.hasDuplicates &&
+        !forceProceed &&
+        !(improvedCheck.isExactMatch && dismissedExactMatch);
+
+      setShowInlineWarning(hasValidDuplicates);
+      if (onDuplicateDetected) {
+        // For exact matches, mark as detected (blocking) even if dismissed visually
+        const isBlocking = improvedCheck.isExactMatch && !dismissedExactMatch;
+        onDuplicateDetected(isBlocking || hasValidDuplicates);
+      }
+    }
+  }, [improvedCheck, onDuplicateDetected, forceProceed, dismissedExactMatch, useInlineSuggestions]);
+
+  // Handle old duplicate check for backward compatibility
+  React.useEffect(() => {
+    if (!useInlineSuggestions && duplicateCheck) {
+      console.log('🔄 [CONTRACT_DUPLICATE_CHECK_MODAL] Duplicate check result changed:', {
+        duplicateCheck,
+        hasDuplicates: duplicateCheck?.has_duplicates,
+        count: duplicateCheck?.count
+      });
+
+      if (duplicateCheck) {
+        const hasValidDuplicates = duplicateCheck.has_duplicates && !forceProceed;
+
+        console.log('🔄 [CONTRACT_DUPLICATE_CHECK_MODAL] Filtered duplicates:', {
+          originalCount: duplicateCheck.duplicates?.length || 0,
+          hasValidDuplicates,
+          forceProceed
+        });
+
+        setShowInlineWarning(hasValidDuplicates);
+        if (onDuplicateDetected) {
+          onDuplicateDetected(hasValidDuplicates);
+        }
+      }
+    }
+  }, [duplicateCheck, onDuplicateDetected, forceProceed, useInlineSuggestions]);
+
   // Reset forceProceed when contract data changes
   React.useEffect(() => {
     setForceProceed(false);
+    setDismissedExactMatch(false);
   }, [debouncedContractData]);
 
-  if (isLoading) {
+  // Determine loading state based on active check
+  const currentLoading = useInlineSuggestions ? improvedLoading : oldCheckLoading;
+
+  if (currentLoading) {
     return (
       <div className="space-y-4">
         <div className="text-sm text-muted-foreground">جاري التحقق من التكرار...</div>
@@ -89,7 +156,21 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
 
   return (
     <div className="space-y-4">
-      {showInlineWarning && duplicateCheck?.has_duplicates && (
+      {/* Improved Inline Suggestions (New UX) */}
+      {useInlineSuggestions && showInlineWarning && improvedCheck?.hasDuplicates && (
+        <InlineDuplicateSuggestion
+          duplicates={improvedCheck.isExactMatch ? improvedCheck.exactMatches : improvedCheck.similarMatches}
+          isExactMatch={improvedCheck.isExactMatch}
+          onViewDetails={handleViewDuplicates}
+          onDismiss={handleDismissSuggestion}
+          onSelectDuplicate={handleSelectDuplicate}
+          showLinkAction={showLinkAction}
+          onLinkToExisting={onLinkToExisting}
+        />
+      )}
+
+      {/* Legacy Warning Alert (Old UX) */}
+      {!useInlineSuggestions && showInlineWarning && duplicateCheck?.has_duplicates && (
         <Alert className="border-warning bg-warning/10">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="text-foreground">
@@ -125,12 +206,24 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
 
       {children}
 
-      {duplicateCheck?.has_duplicates && (
+      {/* Details Modal (for both old and new UX) */}
+      {useInlineSuggestions && improvedCheck?.hasDuplicates && (
+        <DuplicateContractDialog
+          open={showDuplicateDialog}
+          onOpenChange={setShowDuplicateDialog}
+          duplicates={improvedCheck.allMatches}
+          onProceedAnyway={handleProceedAnyway}
+          isExactMatch={improvedCheck.isExactMatch}
+        />
+      )}
+
+      {!useInlineSuggestions && duplicateCheck?.has_duplicates && (
         <DuplicateContractDialog
           open={showDuplicateDialog}
           onOpenChange={setShowDuplicateDialog}
           duplicates={duplicateCheck.duplicates || []}
           onProceedAnyway={handleProceedAnyway}
+          isExactMatch={false}
         />
       )}
     </div>
@@ -142,13 +235,15 @@ interface DuplicateContractDialogProps {
   onOpenChange: (open: boolean) => void;
   duplicates: DuplicateContract[];
   onProceedAnyway?: () => void;
+  isExactMatch?: boolean;
 }
 
 const DuplicateContractDialog: React.FC<DuplicateContractDialogProps> = ({
   open,
   onOpenChange,
   duplicates,
-  onProceedAnyway
+  onProceedAnyway,
+  isExactMatch = false
 }) => {
   const handleProceed = () => {
     if (onProceedAnyway) {
@@ -181,13 +276,15 @@ const DuplicateContractDialog: React.FC<DuplicateContractDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-warning">
             <AlertTriangle className="h-5 w-5" />
-            تم العثور على عقود مشابهة
+            {isExactMatch ? 'العقد موجود بالفعل' : 'تم العثور على عقود مشابهة'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="text-muted-foreground">
-            تم العثور على {duplicates.length} عقد(عقود) مشابه(ة) في النظام. يرجى مراجعة البيانات قبل المتابعة.
+            {isExactMatch
+              ? 'العقد برقم نفس الرقم موجود بالفعل في النظام. يرجى مراجعة البيانات قبل المتابعة.'
+              : `تم العثور على ${duplicates.length} عقد(عقود) مشابه(ة) في النظام. يرجى مراجعة البيانات قبل المتابعة.`}
           </div>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -235,7 +332,9 @@ const DuplicateContractDialog: React.FC<DuplicateContractDialogProps> = ({
               تحذير
             </div>
             <div className="text-sm text-muted-foreground">
-              يمكنك المتابعة مع إنشاء العقد على الرغم من وجود بيانات مشابهة، لكن ننصح بمراجعة العقود الموجودة أولاً.
+              {isExactMatch
+                ? 'نفس رقم العقد موجود بالفعل. تأكد من أنك تريد إنشاء عقد جديد برقم مكرر.'
+                : 'يمكنك المتابعة مع إنشاء العقد على الرغم من وجود بيانات مشابهة، لكن ننصح بمراجعة العقود الموجودة أولاً.'}
             </div>
           </div>
         </div>
@@ -244,15 +343,15 @@ const DuplicateContractDialog: React.FC<DuplicateContractDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             إلغاء
           </Button>
-          
-          <Button 
-            variant="destructive" 
+
+          <Button
+            variant="destructive"
             onClick={handleProceed}
             className="bg-warning hover:bg-warning/90"
           >
             متابعة على أي حال
           </Button>
-          
+
           <Button variant="default" onClick={() => onOpenChange(false)}>
             مراجعة العقود الموجودة
           </Button>
