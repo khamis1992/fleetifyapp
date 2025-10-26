@@ -40,7 +40,9 @@ import {
   CheckSquare,
   Headphones,
   TrendingUp,
+  TrendingDown,
   Zap,
+  Timeline,
   UserPlus,
   Package,
   ShoppingCart,
@@ -131,6 +133,11 @@ const financeSubItems = [
     name: 'الذمم المدينة',
     href: '/finance/ar-aging',
     icon: TrendingDown
+  },
+  {
+    name: 'تتبع الدفعات',
+    href: '/finance/payment-tracking',
+    icon: Timeline
   },
   {
     name: 'الموازنات',
