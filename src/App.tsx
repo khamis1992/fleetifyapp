@@ -129,6 +129,8 @@ const PerformanceDashboard = lazy(() => import("./pages/PerformanceDashboard"));
 const LegalCasesTracking = lazy(() => import("./pages/legal/LegalCasesTracking"));
 const DefaultersList = lazy(() => import("./pages/legal/DefaultersList"));
 const LegalReports = lazy(() => import("./pages/legal/LegalReports"));
+const LateFees = lazy(() => import("./pages/legal/LateFees"));
+const WhatsAppReminders = lazy(() => import("./pages/legal/WhatsAppReminders"));
 const DuplicateContractsManager = lazy(() => import("./components/contracts/DuplicateContractsManager"));
 const DuplicateContractsDiagnostic = lazy(() => import("./components/contracts/DuplicateContractsDiagnostic"));
 const PerformanceMonitor = lazy(() => import("@/components/performance").then(m => ({ default: m.PerformanceMonitor })));
@@ -662,6 +664,20 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <LegalReports />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="legal/late-fees" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <LateFees />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="legal/whatsapp-reminders" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <WhatsAppReminders />
             </Suspense>
           </AdminRoute>
         } />
