@@ -1,0 +1,29 @@
+[
+  {
+    "id": "69d7c183-55e0-4af8-afe5-a6ce33a6eba9",
+    "contract_number": "LTO2024125",
+    "license_plate": "10172",
+    "start_date": "2024-04-15",
+    "monthly_amount": "1300",
+    "customer_id": "4dded2b5-5426-4563-b6a1-816630923369",
+    "vehicle_id": "fdde02c2-dd06-404b-b6bd-e0129d063b57"
+  },
+  {
+    "id": "8da67bb6-48fd-4aa8-bde2-c94d279c2852",
+    "contract_number": "LTO202494",
+    "license_plate": "10197",
+    "start_date": "2024-04-15",
+    "monthly_amount": "1500",
+    "customer_id": "44452a84-f015-473f-a0d2-f46fecf0b819",
+    "vehicle_id": "1ba7716a-ff1d-404b-97b4-338d4415d958"
+  },
+  {
+    "id": "70dffc27-bcd9-4530-910e-26dbc981424d",
+    "contract_number": "LTO2024270",
+    "license_plate": "10197",
+    "start_date": "2024-08-10",
+    "monthly_amount": "1500",
+    "customer_id": "a7a87a71-11a9-4228-9e50-e4f286c555ce",
+    "vehicle_id": "1ba7716a-ff1d-404b-97b4-338d4415d958"
+  }
+]

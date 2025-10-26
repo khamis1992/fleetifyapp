@@ -1,0 +1,622 @@
+{
+  "vehicleNumbers": [
+    "2766",
+    "2767",
+    "2768",
+    "2769",
+    "2770",
+    "2772",
+    "2773",
+    "2774",
+    "2775",
+    "2776",
+    "2778",
+    "2780",
+    "2783",
+    "2784",
+    "5889",
+    "5890",
+    "5893",
+    "5896",
+    "5898",
+    "5901",
+    "7034",
+    "7036",
+    "7039",
+    "7041",
+    "7043",
+    "7053",
+    "7054",
+    "7056",
+    "7058",
+    "7059",
+    "7061",
+    "7062",
+    "7063",
+    "7069",
+    "7072",
+    "7074",
+    "7075",
+    "7077",
+    "185 513",
+    "185 573",
+    "603 353",
+    "599 720",
+    "153 974",
+    "21849",
+    "21860",
+    "381247",
+    "556199",
+    "706150",
+    "856715",
+    "856718",
+    "856878",
+    "856925",
+    "857045",
+    "893406",
+    "893409",
+    "893410",
+    "9255",
+    "10172",
+    "10197",
+    "11473",
+    "721894",
+    "862169",
+    "862165",
+    "10665",
+    "10666",
+    "10667",
+    "10668",
+    "10669",
+    "4015",
+    "4016",
+    "4018",
+    "8203",
+    "8206",
+    "8207",
+    "8208",
+    "8211",
+    "8213"
+  ],
+  "vehicleMap": {
+    "2766": {
+      "vehicle_number": "2766",
+      "customer_name": "محمد محمد احمد",
+      "phone_number": "70007983",
+      "contract_start_date": "2025-05-02",
+      "monthly_payment": 1600
+    },
+    "2767": {
+      "vehicle_number": "2767",
+      "customer_name": "عبد الغفور دوار",
+      "phone_number": "77122519",
+      "contract_start_date": "2025-09-02",
+      "monthly_payment": 1500
+    },
+    "2768": {
+      "vehicle_number": "2768",
+      "customer_name": "عبد العزيز محمد",
+      "phone_number": "70342655",
+      "contract_start_date": "2025-01-09",
+      "monthly_payment": 1500
+    },
+    "2769": {
+      "vehicle_number": "2769",
+      "customer_name": "وضاح عبد الله",
+      "phone_number": "71953163",
+      "contract_start_date": "2024-12-21",
+      "monthly_payment": 1500
+    },
+    "2770": {
+      "vehicle_number": "2770",
+      "customer_name": "خديرب رضا السحامي",
+      "phone_number": "70220390",
+      "contract_start_date": "2025-01-08",
+      "monthly_payment": 1600
+    },
+    "2772": {
+      "vehicle_number": "2772",
+      "customer_name": "إسماعيل احمد عبد الله",
+      "phone_number": "30400511",
+      "contract_start_date": "2024-07-14",
+      "monthly_payment": 1750
+    },
+    "2773": {
+      "vehicle_number": "2773",
+      "customer_name": "مجدي يحيث",
+      "phone_number": "50246458",
+      "contract_start_date": "2025-01-09",
+      "monthly_payment": 1500
+    },
+    "2774": {
+      "vehicle_number": "2774",
+      "customer_name": "ابراهيم رطوب",
+      "phone_number": "30882244",
+      "contract_start_date": "2025-02-01",
+      "monthly_payment": 1600
+    },
+    "2775": {
+      "vehicle_number": "2775",
+      "customer_name": "انور جيتوبر",
+      "phone_number": "51476442",
+      "contract_start_date": "2025-01-02",
+      "monthly_payment": 1600
+    },
+    "2776": {
+      "vehicle_number": "2776",
+      "customer_name": "هيثم خليفة يعلي",
+      "phone_number": "50529648",
+      "contract_start_date": "2025-04-09",
+      "monthly_payment": 1500
+    },
+    "2778": {
+      "vehicle_number": "2778",
+      "customer_name": "بلال البوقري",
+      "phone_number": "70400898",
+      "contract_start_date": "2025-07-15",
+      "monthly_payment": 1500
+    },
+    "2780": {
+      "vehicle_number": "2780",
+      "customer_name": "كمال ياسين سرحان",
+      "phone_number": "71002048",
+      "contract_start_date": "2023-12-29",
+      "monthly_payment": 2100
+    },
+    "2783": {
+      "vehicle_number": "2783",
+      "customer_name": "صدام مصطفى سعد",
+      "phone_number": "77068310",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1600
+    },
+    "2784": {
+      "vehicle_number": "2784",
+      "customer_name": "عثمان عويريزة",
+      "phone_number": "30770117",
+      "contract_start_date": "2024-01-08",
+      "monthly_payment": 1600
+    },
+    "4015": {
+      "vehicle_number": "4015",
+      "customer_name": "ابراهيم خضر",
+      "phone_number": "33750040",
+      "contract_start_date": "2025-09-01",
+      "monthly_payment": 1000
+    },
+    "4016": {
+      "vehicle_number": "4016",
+      "customer_name": "سلمى عبد الله",
+      "phone_number": "30534902",
+      "contract_start_date": "2025-01-19",
+      "monthly_payment": 1600
+    },
+    "4018": {
+      "vehicle_number": "4018",
+      "customer_name": "عبد الرحيم شاكر",
+      "phone_number": "31310330",
+      "contract_start_date": "2024-08-02",
+      "monthly_payment": 1700
+    },
+    "5889": {
+      "vehicle_number": "5889",
+      "customer_name": "ايمن خليفة جلاب",
+      "phone_number": "30303088",
+      "contract_start_date": "2023-11-20",
+      "monthly_payment": 2100
+    },
+    "5890": {
+      "vehicle_number": "5890",
+      "customer_name": "عبد العزيز جرلان",
+      "phone_number": "33767961",
+      "contract_start_date": "2024-01-12",
+      "monthly_payment": 1500
+    },
+    "5893": {
+      "vehicle_number": "5893",
+      "customer_name": "ايمن محمد شوشان",
+      "phone_number": "50131342",
+      "contract_start_date": "2024-09-16",
+      "monthly_payment": 1750
+    },
+    "5896": {
+      "vehicle_number": "5896",
+      "customer_name": "مختار الامين",
+      "phone_number": "50129848",
+      "contract_start_date": "2025-01-09",
+      "monthly_payment": 1600
+    },
+    "5898": {
+      "vehicle_number": "5898",
+      "customer_name": "محمد سراج الدين",
+      "phone_number": "31184659",
+      "contract_start_date": "2024-05-08",
+      "monthly_payment": 1700
+    },
+    "5901": {
+      "vehicle_number": "5901",
+      "customer_name": "حسام سلمي الطاهري",
+      "phone_number": "31115657",
+      "contract_start_date": "2023-12-23",
+      "monthly_payment": 2100
+    },
+    "7034": {
+      "vehicle_number": "7034",
+      "customer_name": "محمد احمد عمر متعافي",
+      "phone_number": "50225055",
+      "contract_start_date": "2025-10-07",
+      "monthly_payment": 1600
+    },
+    "7036": {
+      "vehicle_number": "7036",
+      "customer_name": "عصام ابراهيم عبد الله",
+      "phone_number": "30777645",
+      "contract_start_date": "2024-12-12",
+      "monthly_payment": 1550
+    },
+    "7039": {
+      "vehicle_number": "7039",
+      "customer_name": "عبد الله عمر برهان",
+      "phone_number": "30945601",
+      "contract_start_date": "2025-01-04",
+      "monthly_payment": 1500
+    },
+    "7041": {
+      "vehicle_number": "7041",
+      "customer_name": "الصحبي البشير اليماني",
+      "phone_number": "33173763",
+      "contract_start_date": "2025-01-09",
+      "monthly_payment": 1500
+    },
+    "7043": {
+      "vehicle_number": "7043",
+      "customer_name": "حمزة البشير يحيى",
+      "phone_number": "55260218",
+      "contract_start_date": "2024-08-21",
+      "monthly_payment": 1750
+    },
+    "7053": {
+      "vehicle_number": "7053",
+      "customer_name": "مهدي اسامة حامد",
+      "phone_number": "30138501",
+      "contract_start_date": "2024-07-30",
+      "monthly_payment": 1800
+    },
+    "7054": {
+      "vehicle_number": "7054",
+      "customer_name": "محمود جاسم الصالح",
+      "phone_number": "66684460",
+      "contract_start_date": "2025-01-16",
+      "monthly_payment": 1650
+    },
+    "7056": {
+      "vehicle_number": "7056",
+      "customer_name": "مجدي محمد عيس",
+      "phone_number": "33557425",
+      "contract_start_date": "2025-01-05",
+      "monthly_payment": 1650
+    },
+    "7058": {
+      "vehicle_number": "7058",
+      "customer_name": "محمد فؤاد شوشان",
+      "phone_number": "55146873",
+      "contract_start_date": "2024-09-25",
+      "monthly_payment": 1600
+    },
+    "7059": {
+      "vehicle_number": "7059",
+      "customer_name": "عمر مرابحي",
+      "phone_number": "31299557",
+      "contract_start_date": "2025-01-15",
+      "monthly_payment": 1500
+    },
+    "7061": {
+      "vehicle_number": "7061",
+      "customer_name": "في عبد الحنان الحجز",
+      "phone_number": "55222976",
+      "contract_start_date": "2025-03-16",
+      "monthly_payment": 2100
+    },
+    "7062": {
+      "vehicle_number": "7062",
+      "customer_name": "محمد المختار بشاشة",
+      "phone_number": "30788438",
+      "contract_start_date": "2025-10-05",
+      "monthly_payment": 1700
+    },
+    "7063": {
+      "vehicle_number": "7063",
+      "customer_name": "مهند حمودة الظاهر",
+      "phone_number": "30623322",
+      "contract_start_date": "2025-01-12",
+      "monthly_payment": 1600
+    },
+    "7069": {
+      "vehicle_number": "7069",
+      "customer_name": "عصام الدزوقي",
+      "phone_number": "74700503",
+      "contract_start_date": "2024-08-26",
+      "monthly_payment": 1800
+    },
+    "7072": {
+      "vehicle_number": "7072",
+      "customer_name": "يوسف العويدي لخليل",
+      "phone_number": "72119703",
+      "contract_start_date": "2024-07-28",
+      "monthly_payment": 1750
+    },
+    "7074": {
+      "vehicle_number": "7074",
+      "customer_name": "محمود جاسم الصالح",
+      "phone_number": "30531131",
+      "contract_start_date": "2024-11-14",
+      "monthly_payment": 1600
+    },
+    "7075": {
+      "vehicle_number": "7075",
+      "customer_name": "مطلوب الابراهيم",
+      "phone_number": "50446192",
+      "contract_start_date": "2024-05-02",
+      "monthly_payment": 1800
+    },
+    "7077": {
+      "vehicle_number": "7077",
+      "customer_name": "ادم صالح جبريل",
+      "phone_number": "50066411",
+      "contract_start_date": "2023-12-22",
+      "monthly_payment": 1500
+    },
+    "8203": {
+      "vehicle_number": "8203",
+      "customer_name": "محمد عماد النعماني",
+      "phone_number": "51230549",
+      "contract_start_date": "2025-04-10",
+      "monthly_payment": 1600
+    },
+    "8206": {
+      "vehicle_number": "8206",
+      "customer_name": "محمد صالح فرج حامد",
+      "phone_number": "55449463",
+      "contract_start_date": "2025-10-07",
+      "monthly_payment": 1600
+    },
+    "8207": {
+      "vehicle_number": "8207",
+      "customer_name": "حسن الفكي",
+      "phone_number": "51060253",
+      "contract_start_date": "2025-04-15",
+      "monthly_payment": 1600
+    },
+    "8208": {
+      "vehicle_number": "8208",
+      "customer_name": "عصام احمد عيد الدابر",
+      "phone_number": "66276263",
+      "contract_start_date": "2025-02-02",
+      "monthly_payment": 1500
+    },
+    "8211": {
+      "vehicle_number": "8211",
+      "customer_name": "محمد سالم",
+      "phone_number": "30757703",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1600
+    },
+    "8213": {
+      "vehicle_number": "8213",
+      "customer_name": "يحي هلال الصغري",
+      "phone_number": "504P47989",
+      "contract_start_date": "2025-01-06",
+      "monthly_payment": 1700
+    },
+    "9255": {
+      "vehicle_number": "9255",
+      "customer_name": "علام الدين حسين",
+      "phone_number": "77456423",
+      "contract_start_date": "2023-06-21",
+      "monthly_payment": 1500
+    },
+    "10172": {
+      "vehicle_number": "10172",
+      "customer_name": "انور محمد ابراهيم",
+      "phone_number": "70561365",
+      "contract_start_date": "2025-04-15",
+      "monthly_payment": 1500
+    },
+    "10197": {
+      "vehicle_number": "10197",
+      "customer_name": "احمد الشاعر الصديق",
+      "phone_number": "50118063",
+      "contract_start_date": "2024-10-08",
+      "monthly_payment": 1250
+    },
+    "10665": {
+      "vehicle_number": "10665",
+      "customer_name": "احمد الطاهر الريس",
+      "phone_number": "77013644",
+      "contract_start_date": "2024-08-14",
+      "monthly_payment": 1750
+    },
+    "10666": {
+      "vehicle_number": "10666",
+      "customer_name": "جاسم محمد الصالح",
+      "phone_number": "30047797",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1500
+    },
+    "10667": {
+      "vehicle_number": "10667",
+      "customer_name": "وليد شراس اجار عادي",
+      "phone_number": "31308631",
+      "contract_start_date": "2025-09-07",
+      "monthly_payment": 1500
+    },
+    "10668": {
+      "vehicle_number": "10668",
+      "customer_name": "عبد المنعم حمدي",
+      "phone_number": "70184904",
+      "contract_start_date": "2025-01-03",
+      "monthly_payment": 1500
+    },
+    "10669": {
+      "vehicle_number": "10669",
+      "customer_name": "اجار ورداد مسعودي عادي",
+      "phone_number": "50818558",
+      "contract_start_date": "2025-02-09",
+      "monthly_payment": 1500
+    },
+    "11473": {
+      "vehicle_number": "11473",
+      "customer_name": "عمد العواري",
+      "phone_number": "66071051",
+      "contract_start_date": "2025-09-19",
+      "monthly_payment": 1500
+    },
+    "21849": {
+      "vehicle_number": "21849",
+      "customer_name": "فادي السعيد",
+      "phone_number": "66043445",
+      "contract_start_date": "2025-08-02",
+      "monthly_payment": 1750
+    },
+    "21860": {
+      "vehicle_number": "21860",
+      "customer_name": "محمد العريشي",
+      "phone_number": "66816813",
+      "contract_start_date": "2025-02-16",
+      "monthly_payment": 1700
+    },
+    "381247": {
+      "vehicle_number": "381247",
+      "customer_name": "قصعادي عقبة",
+      "phone_number": "50409220",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1500
+    },
+    "556199": {
+      "vehicle_number": "556199",
+      "customer_name": "محمد جمعة",
+      "phone_number": "66816813",
+      "contract_start_date": "2025-01-08",
+      "monthly_payment": 1600
+    },
+    "706150": {
+      "vehicle_number": "706150",
+      "customer_name": "مروان باكير",
+      "phone_number": "51024665",
+      "contract_start_date": "2025-11-07",
+      "monthly_payment": 1600
+    },
+    "721894": {
+      "vehicle_number": "721894",
+      "customer_name": "شرف الدين الموجود",
+      "phone_number": "71101506",
+      "contract_start_date": "2025-03-06",
+      "monthly_payment": 1000
+    },
+    "856715": {
+      "vehicle_number": "856715",
+      "customer_name": "دانور الجيتوني (حمزة)",
+      "phone_number": "66934949",
+      "contract_start_date": "2025-01-04",
+      "monthly_payment": 1600
+    },
+    "856718": {
+      "vehicle_number": "856718",
+      "customer_name": "حسان بو علاقي",
+      "phone_number": "66553638",
+      "contract_start_date": "2025-02-14",
+      "monthly_payment": 1700
+    },
+    "856878": {
+      "vehicle_number": "856878",
+      "customer_name": "محمد مسلم",
+      "phone_number": "55001662",
+      "contract_start_date": "2025-01-08",
+      "monthly_payment": 2100
+    },
+    "856925": {
+      "vehicle_number": "856925",
+      "customer_name": "عاطف منصور",
+      "phone_number": "74446588",
+      "contract_start_date": "2024-05-08",
+      "monthly_payment": 1850
+    },
+    "857045": {
+      "vehicle_number": "857045",
+      "customer_name": "عميرة الخروبي",
+      "phone_number": "30122896",
+      "contract_start_date": "2024-02-01",
+      "monthly_payment": 2000
+    },
+    "862165": {
+      "vehicle_number": "862165",
+      "customer_name": "مهدي الشريف",
+      "phone_number": "33670129",
+      "contract_start_date": "2025-01-09",
+      "monthly_payment": 1500
+    },
+    "862169": {
+      "vehicle_number": "862169",
+      "customer_name": "عبد الرحيم شاكر",
+      "phone_number": "31310330",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1500
+    },
+    "893406": {
+      "vehicle_number": "893406",
+      "customer_name": "سيف الدين محمد صالح",
+      "phone_number": "70692947",
+      "contract_start_date": "2025-01-04",
+      "monthly_payment": 1700
+    },
+    "893409": {
+      "vehicle_number": "893409",
+      "customer_name": "عبد الصمد بن عزوز",
+      "phone_number": "33478097",
+      "contract_start_date": "2025-01-03",
+      "monthly_payment": 1600
+    },
+    "893410": {
+      "vehicle_number": "893410",
+      "customer_name": "عمار عبد العزيز الغزي",
+      "phone_number": "30403800",
+      "contract_start_date": "2024-04-09",
+      "monthly_payment": 1750
+    },
+    "185 513": {
+      "vehicle_number": "185 513",
+      "customer_name": "الصادق دياب",
+      "phone_number": "70075544",
+      "contract_start_date": "2024-01-03",
+      "monthly_payment": 1800
+    },
+    "185 573": {
+      "vehicle_number": "185 573",
+      "customer_name": "ايهاب عبد الله",
+      "phone_number": "3100 966",
+      "contract_start_date": "2025-01-04",
+      "monthly_payment": 1500
+    },
+    "603 353": {
+      "vehicle_number": "603 353",
+      "customer_name": "5892مصطفى بالقايد",
+      "phone_number": "31245752",
+      "contract_start_date": "2025-01-07",
+      "monthly_payment": 1700
+    },
+    "599 720": {
+      "vehicle_number": "599 720",
+      "customer_name": "7055 انور الدهبي",
+      "phone_number": "50234083",
+      "contract_start_date": "2025-01-05",
+      "monthly_payment": 1800
+    },
+    "153 974": {
+      "vehicle_number": "153 974",
+      "customer_name": "7065زهري حكيم",
+      "phone_number": "55578515",
+      "contract_start_date": "2025-01-01",
+      "monthly_payment": 1500
+    }
+  }
+}
