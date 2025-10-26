@@ -39,13 +39,13 @@ export const useContractAmendments = (contractId?: string) => {
       if (!contractId) return [];
 
       const { data, error } = await supabase
-        .from('contract_amendments')
+        .from('contract_amendments' as any)
         .select('*')
         .eq('contract_id', contractId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as ContractAmendment[];
+      return (data || []) as unknown as ContractAmendment[];
     },
     enabled: !!contractId
   });
@@ -54,7 +54,7 @@ export const useContractAmendments = (contractId?: string) => {
   const fetchAmendmentWithChanges = async (amendmentId: string): Promise<AmendmentWithChanges> => {
     // Fetch amendment
     const { data: amendment, error: amendmentError } = await supabase
-      .from('contract_amendments')
+      .from('contract_amendments' as any)
       .select('*')
       .eq('id', amendmentId)
       .single();
@@ -63,7 +63,7 @@ export const useContractAmendments = (contractId?: string) => {
 
     // Fetch change logs
     const { data: changeLogs, error: logsError } = await supabase
-      .from('amendment_change_log')
+      .from('amendment_change_log' as any)
       .select('*')
       .eq('amendment_id', amendmentId)
       .order('created_at', { ascending: true });
@@ -71,8 +71,8 @@ export const useContractAmendments = (contractId?: string) => {
     if (logsError) throw logsError;
 
     return {
-      ...amendment,
-      change_logs: changeLogs as AmendmentChangeLog[]
+      ...(amendment as any),
+      change_logs: (changeLogs || []) as unknown as AmendmentChangeLog[]
     } as AmendmentWithChanges;
   };
 
@@ -101,7 +101,7 @@ export const useContractAmendments = (contractId?: string) => {
 
       // Generate amendment number
       const { data: amendmentNumber, error: numberError } = await supabase
-        .rpc('generate_amendment_number', {
+        .rpc('generate_amendment_number' as any, {
           p_company_id: profile.company_id,
           p_contract_id: data.contract_id
         });
@@ -119,7 +119,7 @@ export const useContractAmendments = (contractId?: string) => {
 
       // Create amendment
       const { data: newAmendment, error: createError } = await supabase
-        .from('contract_amendments')
+        .from('contract_amendments' as any)
         .insert({
           company_id: profile.company_id,
           contract_id: data.contract_id,
@@ -140,7 +140,7 @@ export const useContractAmendments = (contractId?: string) => {
 
       if (createError) throw createError;
 
-      return newAmendment as ContractAmendment;
+      return newAmendment as unknown as ContractAmendment;
     },
     onSuccess: (data) => {
       toast({
@@ -179,14 +179,14 @@ export const useContractAmendments = (contractId?: string) => {
       }
 
       const { data, error } = await supabase
-        .from('contract_amendments')
+        .from('contract_amendments' as any)
         .update(updateData)
         .eq('id', amendment_id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as ContractAmendment;
+      return data as unknown as ContractAmendment;
     },
     onSuccess: (data, variables) => {
       toast({
@@ -208,14 +208,15 @@ export const useContractAmendments = (contractId?: string) => {
   const applyAmendmentMutation = useMutation({
     mutationFn: async (amendmentId: string) => {
       const { data, error } = await supabase
-        .rpc('apply_contract_amendment', {
+        .rpc('apply_contract_amendment' as any, {
           p_amendment_id: amendmentId
         });
 
       if (error) throw error;
       
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to apply amendment');
+      const result = data as any;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to apply amendment');
       }
 
       return data;
@@ -254,14 +255,14 @@ export const useContractAmendments = (contractId?: string) => {
       }
 
       const { data, error } = await supabase
-        .from('contract_amendments')
+        .from('contract_amendments' as any)
         .update(updateData)
         .eq('id', amendment_id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as ContractAmendment;
+      return data as unknown as ContractAmendment;
     },
     onSuccess: (data, variables) => {
       toast({
@@ -283,7 +284,7 @@ export const useContractAmendments = (contractId?: string) => {
   const cancelAmendmentMutation = useMutation({
     mutationFn: async (amendmentId: string) => {
       const { data, error } = await supabase
-        .from('contract_amendments')
+        .from('contract_amendments' as any)
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString()
@@ -293,7 +294,7 @@ export const useContractAmendments = (contractId?: string) => {
         .single();
 
       if (error) throw error;
-      return data as ContractAmendment;
+      return data as unknown as ContractAmendment;
     },
     onSuccess: (data) => {
       toast({

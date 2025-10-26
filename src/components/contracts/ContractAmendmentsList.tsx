@@ -360,7 +360,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
               <div>
                 <h4 className="font-medium mb-3">التغييرات المطبقة:</h4>
                 <div className="space-y-2">
-                  {selectedAmendment.change_logs?.map((log) => (
+                  {selectedAmendment.change_logs?.map((log: any) => (
                     <Card key={log.id}>
                       <CardContent className="pt-4">
                         <div className="grid grid-cols-3 gap-4">
