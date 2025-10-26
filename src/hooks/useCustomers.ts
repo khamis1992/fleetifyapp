@@ -8,6 +8,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 import { useMemo } from 'react';
 import { queryKeys } from "@/utils/queryKeys";
+import { useOptimisticUpdate, createOptimisticAdd, createOptimisticUpdate } from "@/hooks/useOptimisticUpdates";
 
 // Re-export types for compatibility
 export type { Customer, CustomerFormData, CustomerFilters };
