@@ -6,9 +6,7 @@ import { ContractsEmptyState } from './ContractsEmptyState';
 
 interface ContractsTabsContentProps {
   activeContracts: any[];
-  suspendedContracts: any[];
-  underReviewContracts: any[];
-  expiredContracts: any[];
+  cancelledContracts: any[];
   onRenewContract: (contract: any) => void;
   onManageStatus: (contract: any) => void;
   onViewContract: (contract: any) => void;
@@ -18,9 +16,7 @@ interface ContractsTabsContentProps {
 
 export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
   activeContracts,
-  suspendedContracts,
-  underReviewContracts,
-  expiredContracts,
+  cancelledContracts,
   onRenewContract,
   onManageStatus,
   onViewContract,
@@ -55,42 +51,20 @@ export const ContractsTabsContent: React.FC<ContractsTabsContentProps> = ({
         </div>
       </TabsContent>
 
-      <TabsContent value="under_review">
+      <TabsContent value="cancelled">
         <div className="grid gap-4">
-          {underReviewContracts.map((contract) => (
+          {cancelledContracts.map((contract) => (
             <ContractCard
               key={contract.id}
               contract={contract}
-              onManageStatus={onManageStatus}
               onViewDetails={onViewContract}
               onDeleteContract={onDeleteContract}
-              showManageButton={true}
               showDeleteButton={true}
             />
           ))}
           
-          {underReviewContracts.length === 0 && (
-            <ContractsEmptyState type="no-under-review" />
-          )}
-        </div>
-      </TabsContent>
-
-      <TabsContent value="expired">
-        <div className="grid gap-4">
-          {expiredContracts.map((contract) => (
-            <ContractCard
-              key={contract.id}
-              contract={contract}
-              onRenew={onRenewContract}
-              onViewDetails={onViewContract}
-              onDeleteContract={onDeleteContract}
-              showRenewButton={true}
-              showDeleteButton={true}
-            />
-          ))}
-          
-          {expiredContracts.length === 0 && (
-            <ContractsEmptyState type="no-expired" />
+          {cancelledContracts.length === 0 && (
+            <ContractsEmptyState type="no-cancelled" />
           )}
         </div>
       </TabsContent>

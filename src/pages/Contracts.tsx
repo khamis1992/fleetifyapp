@@ -458,11 +458,10 @@ function Contracts() {
               />
             ) : (
               <div className="overflow-x-auto">
-                <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+                <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
                   <TabsTrigger value="all">جميع العقود</TabsTrigger>
                   <TabsTrigger value="active">النشطة</TabsTrigger>
-                  <TabsTrigger value="under_review">تحت الإجراء</TabsTrigger>
-                  <TabsTrigger value="expired">المنتهية</TabsTrigger>
+                  <TabsTrigger value="cancelled">ملغي</TabsTrigger>
                   <TabsTrigger value="alerts">تنبيهات الانتهاء</TabsTrigger>
                   <TabsTrigger value="late-fines">إعدادات الغرامات</TabsTrigger>
                 </TabsList>
@@ -508,9 +507,7 @@ function Contracts() {
 
             <ContractsTabsContent
               activeContracts={statistics.activeContracts}
-              suspendedContracts={statistics.suspendedContracts}
-              underReviewContracts={statistics.underReviewContracts}
-              expiredContracts={statistics.expiredContracts}
+              cancelledContracts={statistics.cancelledContracts}
               onRenewContract={handleRenewContract}
               onManageStatus={handleManageStatus}
               onViewContract={handleViewDetails}
