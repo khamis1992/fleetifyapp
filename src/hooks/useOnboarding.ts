@@ -63,13 +63,18 @@ export function useOnboarding(steps: OnboardingStep[] = defaultOnboardingSteps) 
     setIsCompleted(completed);
     setIsSkipped(skipped);
 
+    // ⚠️ TEMPORARILY DISABLED: Auto-start tour
+    // The tour was blocking users from accessing the dashboard
+    // TODO: Re-enable with a manual trigger button in the header
+    // Users can still access the tour from Settings > "إعادة الجولة"
+    
     // Auto-start tour for new users (not completed and not skipped)
-    if (!completed && !skipped) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        setIsActive(true);
-      }, 1000);
-    }
+    // if (!completed && !skipped) {
+    //   // Small delay to ensure DOM is ready
+    //   setTimeout(() => {
+    //     setIsActive(true);
+    //   }, 1000);
+    // }
   }, []);
 
   const start = useCallback(() => {
