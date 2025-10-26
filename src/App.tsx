@@ -21,6 +21,8 @@ import { CompanyBrowserLayout } from "@/components/layouts/CompanyBrowserLayout"
 import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common/ProtectedRoute";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 import { LazyLoadErrorBoundary } from "@/components/common/LazyLoadErrorBoundary";
+import { RouteErrorBoundary } from "@/components/common/RouteErrorBoundary";
+import { RouteWrapper } from "@/components/common/RouteWrapper";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
@@ -287,9 +289,11 @@ const AppRoutes = () => {
       </Route>
       <Route path="/*" element={<ResponsiveDashboardLayout />}>
         <Route path="dashboard" element={
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <Dashboard />
-          </Suspense>
+          <RouteWrapper routeName="Dashboard" fallbackPath="/">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Dashboard />
+            </Suspense>
+          </RouteWrapper>
         } />
         <Route path="dashboards/integration" element={
           <Suspense fallback={<PageSkeletonFallback />}>
@@ -402,9 +406,11 @@ const AppRoutes = () => {
           </AdminRoute>
         } />
         <Route path="contracts" element={
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <Contracts />
-          </Suspense>
+          <RouteWrapper routeName="Contracts" fallbackPath="/dashboard">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Contracts />
+            </Suspense>
+          </RouteWrapper>
         } />
         <Route path="contracts/duplicates" element={
           <AdminRoute>
@@ -421,9 +427,11 @@ const AppRoutes = () => {
           </AdminRoute>
         } />
         <Route path="customers" element={
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <Customers />
-          </Suspense>
+          <RouteWrapper routeName="Customers" fallbackPath="/dashboard">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Customers />
+            </Suspense>
+          </RouteWrapper>
         } />
         <Route path="tenants" element={
           <Suspense fallback={<PageSkeletonFallback />}>
@@ -482,13 +490,15 @@ const AppRoutes = () => {
         <Route path="invoices" element={<Navigate to="/finance/invoices" replace />} />
         <Route path="reports" element={<Navigate to="/finance/reports" replace />} />
         
-        <Route path="finance/*" element={(
-          <LazyLoadErrorBoundary>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Finance />
-            </Suspense>
-          </LazyLoadErrorBoundary>
-        )} />
+        <Route path="finance/*" element={
+          <RouteWrapper routeName="Finance" fallbackPath="/dashboard">
+            <LazyLoadErrorBoundary>
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <Finance />
+              </Suspense>
+            </LazyLoadErrorBoundary>
+          </RouteWrapper>
+        } />
         <Route path="finance/vendor-categories" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>

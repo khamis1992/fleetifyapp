@@ -89,7 +89,8 @@
       "Bash(npx playwright install chromium)",
       "Bash(npx playwright install)",
       "mcp__supabase__execute_sql",
-      "mcp__supabase__list_tables"
+      "mcp__supabase__list_tables",
+      "Bash(claude mcp reconnect:*)"
     ],
     "deny": [],
     "ask": []
