@@ -5,6 +5,7 @@ export { EnhancedCustomerForm, EnhancedCustomerDialog } from './EnhancedCustomer
 export { CreateCustomerDialog } from './CreateCustomerDialog';
 export { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
 export { DuplicateCustomerDialog } from './DuplicateCustomerDialog';
+export { QuickCustomerForm } from './QuickCustomerForm';
 
 // مكونات إدارة الحسابات
 export { CustomerAccountSelector } from './CustomerAccountSelector';
