@@ -614,25 +614,25 @@ All colors MUST be HSL.
   }
   
   /* Re-enable blur after load */
-  body.loaded .backdrop-blur {
+  body:not(.loading) .backdrop-blur {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     transition: backdrop-filter 0.3s ease;
   }
   
-  body.loaded .backdrop-blur-sm {
+  body:not(.loading) .backdrop-blur-sm {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     transition: backdrop-filter 0.3s ease;
   }
   
-  body.loaded .backdrop-blur-md {
+  body:not(.loading) .backdrop-blur-md {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: backdrop-filter 0.3s ease;
   }
   
-  body.loaded .backdrop-blur-lg {
+  body:not(.loading) .backdrop-blur-lg {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     transition: backdrop-filter 0.3s ease;

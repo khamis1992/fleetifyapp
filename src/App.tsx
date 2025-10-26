@@ -30,6 +30,7 @@ import { CommandPalette } from "@/components/ui/CommandPalette";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
+import PremiumLanding from "./pages/PremiumLanding";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -262,6 +263,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/premium-landing" element={<PremiumLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/quotation-approval" element={
