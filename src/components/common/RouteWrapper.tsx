@@ -9,7 +9,7 @@ import React, { Suspense, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { RouteErrorBoundary } from './RouteErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
-import { PageSkeletonFallback } from '@/components/common/PageSkeletonFallback';
+import { PageSkeletonFallback } from './LazyPageWrapper';
 
 interface ProtectedRouteWithErrorBoundaryProps {
   children: ReactNode;
