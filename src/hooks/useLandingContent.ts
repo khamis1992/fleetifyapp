@@ -11,7 +11,7 @@ export interface LandingContent {
   is_active: boolean | null;
   link_url: string | null;
   media_url: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, unknown> | null;
   section_id: string | null;
   sort_order: number | null;
   updated_at: string | null;
@@ -28,10 +28,15 @@ export const useLandingContent = () => {
         .select('*')
         .order('sort_order');
       
-      if (error) throw error;
-      setContent(data || []);
+      if (error) {
+        console.warn('Landing content table not available, using defaults:', error);
+        setContent([]);
+      } else {
+        setContent((data || []) as LandingContent[]);
+      }
     } catch (error) {
-      console.error('Error fetching landing content:', error);
+      console.warn('Error fetching landing content, using defaults:', error);
+      setContent([]);
     } finally {
       setLoading(false);
     }
@@ -45,7 +50,7 @@ export const useLandingContent = () => {
       .single();
     
     if (error) throw error;
-    setContent(prev => [...prev, data]);
+    setContent(prev => [...prev, data as LandingContent]);
     return data;
   };
 
@@ -58,7 +63,7 @@ export const useLandingContent = () => {
       .single();
     
     if (error) throw error;
-    setContent(prev => prev.map(c => c.id === id ? data : c));
+    setContent(prev => prev.map(c => c.id === id ? data as LandingContent : c));
     return data;
   };
 

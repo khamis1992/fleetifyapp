@@ -4,18 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { AnimatedBackground } from '@/components/landing/AnimatedBackground';
 import { HeroSection } from '@/components/landing/HeroSection';
-
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { BusinessTypesSection } from '@/components/landing/BusinessTypesSection';
 import { DashboardPreview } from '@/components/landing/DashboardPreview';
-
 import { CallToActionSection } from '@/components/landing/CallToActionSection';
 import { ParallaxSection } from '@/components/landing/ParallaxSection';
-import { useDynamicLandingContent } from '@/hooks/useDynamicLandingContent';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const { content: dynamicContent, loading: contentLoading } = useDynamicLandingContent('ar');
 
   if (loading) {
     return (
@@ -35,7 +31,6 @@ const Index = () => {
       
       <HeroSection />
       
-      
       <ParallaxSection offset={50}>
         <FeatureShowcase />
       </ParallaxSection>
@@ -47,7 +42,6 @@ const Index = () => {
       <ParallaxSection offset={-30}>
         <DashboardPreview />
       </ParallaxSection>
-      
       
       <CallToActionSection />
 
