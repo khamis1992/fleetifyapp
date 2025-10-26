@@ -174,6 +174,22 @@ const App = () => {
   React.useEffect(() => {
     console.log('🚀 [APP] App component mounted');
     
+    // Ensure loading class is removed when app is fully mounted
+    // This prevents blur from staying on screen
+    const ensureLoadingRemoved = () => {
+      if (document.body.classList.contains('loading')) {
+        console.log('⚠️ [APP] Removing loading class from body (was still present)');
+        document.body.classList.remove('loading');
+        document.body.classList.add('loaded');
+      }
+    };
+    
+    // Run immediately
+    ensureLoadingRemoved();
+    
+    // Also run after a short delay as safety backup
+    const timeoutId = setTimeout(ensureLoadingRemoved, 100);
+    
     // تهيئة مراقب الأداء
     performanceMonitor.logReport();
     
@@ -190,6 +206,10 @@ const App = () => {
     initializePWA();
     
     console.log('🚀 [APP] Initialization complete');
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   return (

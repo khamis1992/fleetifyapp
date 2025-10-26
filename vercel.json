@@ -14,7 +14,8 @@
       "src": "/sw.js",
       "headers": {
         "Content-Type": "application/javascript; charset=utf-8",
-        "Service-Worker-Allowed": "/"
+        "Service-Worker-Allowed": "/",
+        "Cache-Control": "public, max-age=0, must-revalidate"
       },
       "dest": "/sw.js"
     },

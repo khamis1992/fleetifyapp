@@ -8,10 +8,20 @@ import './index.css'
 document.body.classList.add('loading');
 
 // Remove loading class after app mounts to enable blur effects
-setTimeout(() => {
-  document.body.classList.remove('loading');
-  document.body.classList.add('loaded');
-}, 1000);
+// Use requestAnimationFrame to ensure DOM is ready
+const removeLoadingClass = () => {
+  // Wait for React to finish initial render
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.body.classList.remove('loading');
+      document.body.classList.add('loaded');
+      console.log('✅ [MAIN] Loading class removed, blur effects enabled');
+    });
+  });
+};
+
+// Remove loading after short delay to ensure content is rendered
+setTimeout(removeLoadingClass, 500);
 
 // Global error handler for dynamic import failures
 window.addEventListener('error', (event) => {

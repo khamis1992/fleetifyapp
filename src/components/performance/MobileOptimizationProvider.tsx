@@ -167,11 +167,21 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
 
     const registerSW = async () => {
       try {
-        // Check if service worker file exists before registering
-        const swCheck = await fetch('/sw.js', { method: 'HEAD' }).catch(() => null);
+        // First, verify sw.js is actually a JavaScript file, not HTML
+        const swCheck = await fetch('/sw.js', { 
+          method: 'HEAD',
+          cache: 'no-cache' // Force fresh check, not cached response
+        }).catch(() => null);
         
         if (!swCheck || !swCheck.ok) {
           console.log('🔧 Service Worker file not available, skipping registration');
+          return;
+        }
+        
+        // Check Content-Type header to ensure it's JavaScript
+        const contentType = swCheck.headers.get('content-type');
+        if (contentType && !contentType.includes('javascript')) {
+          console.log('🔧 Service Worker has incorrect MIME type, skipping registration. This will be fixed on next deployment.');
           return;
         }
         
