@@ -167,6 +167,14 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
 
     const registerSW = async () => {
       try {
+        // Check if service worker file exists before registering
+        const swCheck = await fetch('/sw.js', { method: 'HEAD' }).catch(() => null);
+        
+        if (!swCheck || !swCheck.ok) {
+          console.log('🔧 Service Worker file not available, skipping registration');
+          return;
+        }
+        
         registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
           updateViaCache: 'none'
@@ -177,8 +185,14 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         // Listen for updates
         registration.addEventListener('updatefound', handleUpdateFound);
 
-      } catch (error) {
-        console.error('🔧 Service Worker registration failed:', error);
+      } catch (error: any) {
+        // Silently handle service worker registration failures
+        // Service worker is optional and non-critical for app functionality
+        if (error?.name === 'SecurityError' || error?.message?.includes('MIME type')) {
+          console.log('🔧 Service Worker registration skipped (unsupported MIME type or security policy)');
+        } else {
+          console.log('🔧 Service Worker not available:', error?.message || 'Unknown error');
+        }
       }
     };
 
