@@ -1,12 +1,12 @@
 /**
  * Reminder Templates & Automation Service
  * 
- * Manages reminder templates, variable substitution, and automated sending
+ * Manages reminder templates, variable substitution, and automated sending.
+ * NOTE: This is a utility-only module. Database operations will be added
+ * once the Payment Collections migration is deployed.
  */
 
-import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, isWeekend, parseISO } from 'date-fns';
-import { determineReminderStage, shouldSendReminder, type ReminderStage } from './paymentCollections';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -15,6 +15,7 @@ import { determineReminderStage, shouldSendReminder, type ReminderStage } from '
 export type ReminderChannel = 'email' | 'sms' | 'whatsapp' | 'phone' | 'letter';
 export type TemplateTone = 'friendly' | 'professional' | 'firm' | 'urgent';
 export type TemplateStatus = 'active' | 'draft' | 'archived';
+export type ReminderStage = 'initial' | 'first_reminder' | 'second_reminder' | 'final_notice' | 'legal_notice';
 
 export interface ReminderTemplate {
   id: string;
@@ -26,22 +27,15 @@ export interface ReminderTemplate {
   body: string;
   tone: TemplateTone;
   status: TemplateStatus;
-  
-  // A/B Testing
   variant: 'A' | 'B' | null;
-  
-  // Statistics
   sent_count: number;
   opened_count: number;
   clicked_count: number;
   response_count: number;
-  conversion_rate: number; // percentage
-  
-  // Settings
-  send_time_preference: string; // "09:00", "14:00", etc.
+  conversion_rate: number;
+  send_time_preference: string;
   avoid_weekends: boolean;
   avoid_holidays: boolean;
-  
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -60,14 +54,11 @@ export interface ReminderSchedule {
   customer_id: string;
   invoice_id: string;
   template_id: string;
-  
   scheduled_date: string;
   scheduled_time: string;
   status: 'pending' | 'sent' | 'failed' | 'cancelled';
-  
   sent_at: string | null;
   error_message: string | null;
-  
   created_at: string;
 }
 
@@ -77,21 +68,16 @@ export interface ReminderHistory {
   customer_id: string;
   invoice_id: string;
   template_id: string;
-  
   stage: ReminderStage;
   channel: ReminderChannel;
   subject: string;
   message_body: string;
-  
   sent_date: string;
   sent_method: string;
-  
-  // Engagement tracking
   opened_at: string | null;
   clicked_at: string | null;
   responded_at: string | null;
   response_type: 'paid' | 'promised' | 'disputed' | 'ignored' | null;
-  
   sent_by: string;
   created_at: string;
 }
@@ -100,39 +86,30 @@ export interface ReminderHistory {
 // TEMPLATE VARIABLES SYSTEM
 // ============================================================================
 
-/**
- * Available template variables for dynamic content
- */
 export const TEMPLATE_VARIABLES: TemplateVariable[] = [
-  // Customer variables
   { key: 'customer.name', label: 'Customer Name', example: 'John Smith', category: 'customer' },
   { key: 'customer.email', label: 'Customer Email', example: 'john@example.com', category: 'customer' },
   { key: 'customer.phone', label: 'Customer Phone', example: '+1234567890', category: 'customer' },
   { key: 'customer.company', label: 'Customer Company', example: 'ACME Corp', category: 'customer' },
-  
-  // Invoice variables
   { key: 'invoice.number', label: 'Invoice Number', example: 'INV-001', category: 'invoice' },
   { key: 'invoice.amount', label: 'Invoice Amount', example: '$1,250.00', category: 'invoice' },
   { key: 'invoice.due_date', label: 'Due Date', example: 'Jan 15, 2025', category: 'invoice' },
   { key: 'invoice.days_overdue', label: 'Days Overdue', example: '5', category: 'invoice' },
   { key: 'invoice.amount_due', label: 'Amount Due', example: '$1,250.00', category: 'invoice' },
   { key: 'invoice.amount_paid', label: 'Amount Paid', example: '$0.00', category: 'invoice' },
-  
-  // Payment variables
   { key: 'payment.due_date', label: 'Payment Due Date', example: 'Jan 15, 2025', category: 'payment' },
   { key: 'payment.link', label: 'Payment Link', example: 'https://pay.example.com/...', category: 'payment' },
   { key: 'payment.methods', label: 'Payment Methods', example: 'Bank Transfer, Card', category: 'payment' },
-  
-  // Company variables
   { key: 'company.name', label: 'Company Name', example: 'My Company Ltd', category: 'company' },
   { key: 'company.email', label: 'Company Email', example: 'billing@company.com', category: 'company' },
   { key: 'company.phone', label: 'Company Phone', example: '+1234567890', category: 'company' },
   { key: 'company.website', label: 'Company Website', example: 'www.company.com', category: 'company' },
 ];
 
-/**
- * Replace template variables with actual values
- */
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
 export function replaceTemplateVariables(
   template: string,
   data: {
@@ -143,32 +120,28 @@ export function replaceTemplateVariables(
   }
 ): string {
   let result = template;
-  
-  // Customer variables
+
   result = result.replace(/\{customer\.name\}/g, data.customer?.name || '[Customer Name]');
   result = result.replace(/\{customer\.email\}/g, data.customer?.email || '[Customer Email]');
   result = result.replace(/\{customer\.phone\}/g, data.customer?.phone || '[Customer Phone]');
   result = result.replace(/\{customer\.company\}/g, data.customer?.company_name || '[Customer Company]');
-  
-  // Invoice variables
+
   result = result.replace(/\{invoice\.number\}/g, data.invoice?.invoice_number || '[Invoice Number]');
   result = result.replace(/\{invoice\.amount\}/g, formatCurrency(data.invoice?.total_amount || 0));
   result = result.replace(/\{invoice\.due_date\}/g, data.invoice?.due_date ? format(parseISO(data.invoice.due_date), 'MMM d, yyyy') : '[Due Date]');
   result = result.replace(/\{invoice\.days_overdue\}/g, calculateDaysOverdue(data.invoice?.due_date).toString());
   result = result.replace(/\{invoice\.amount_due\}/g, formatCurrency((data.invoice?.total_amount || 0) - (data.invoice?.paid_amount || 0)));
   result = result.replace(/\{invoice\.amount_paid\}/g, formatCurrency(data.invoice?.paid_amount || 0));
-  
-  // Payment variables
+
   result = result.replace(/\{payment\.due_date\}/g, data.invoice?.due_date ? format(parseISO(data.invoice.due_date), 'MMMM d, yyyy') : '[Due Date]');
   result = result.replace(/\{payment\.link\}/g, data.paymentLink || '[Payment Link]');
   result = result.replace(/\{payment\.methods\}/g, 'Bank Transfer, Credit Card, Cash');
-  
-  // Company variables
+
   result = result.replace(/\{company\.name\}/g, data.company?.name || '[Company Name]');
   result = result.replace(/\{company\.email\}/g, data.company?.email || '[Company Email]');
   result = result.replace(/\{company\.phone\}/g, data.company?.phone || '[Company Phone]');
   result = result.replace(/\{company\.website\}/g, data.company?.website || '[Company Website]');
-  
+
   return result;
 }
 
@@ -188,111 +161,42 @@ function calculateDaysOverdue(dueDate: string | null): number {
 }
 
 // ============================================================================
-// TEMPLATE MANAGEMENT
+// REMINDER STAGE DETERMINATION
 // ============================================================================
 
-/**
- * Get all reminder templates for a company
- */
-export async function getReminderTemplates(
-  companyId: string,
-  filters?: {
-    stage?: ReminderStage;
-    channel?: ReminderChannel;
-    status?: TemplateStatus;
-  }
-): Promise<ReminderTemplate[]> {
-  let query = supabase
-    .from('reminder_templates')
-    .select('*')
-    .eq('company_id', companyId)
-    .order('stage', { ascending: true })
-    .order('created_at', { ascending: false });
-  
-  if (filters?.stage) {
-    query = query.eq('stage', filters.stage);
-  }
-  
-  if (filters?.channel) {
-    query = query.eq('channel', filters.channel);
-  }
-  
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  } else {
-    // Default: only active templates
-    query = query.eq('status', 'active');
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data as ReminderTemplate[];
+export function determineReminderStage(daysOverdue: number): ReminderStage | null {
+  if (daysOverdue === 0) return 'initial';
+  if (daysOverdue <= 7) return 'first_reminder';
+  if (daysOverdue <= 14) return 'second_reminder';
+  if (daysOverdue <= 30) return 'final_notice';
+  return 'legal_notice';
 }
 
-/**
- * Create a new reminder template
- */
-export async function createReminderTemplate(
-  template: Omit<ReminderTemplate, 'id' | 'created_at' | 'updated_at' | 'sent_count' | 'opened_count' | 'clicked_count' | 'response_count' | 'conversion_rate'>
-): Promise<ReminderTemplate> {
-  const { data, error } = await supabase
-    .from('reminder_templates')
-    .insert({
-      ...template,
-      sent_count: 0,
-      opened_count: 0,
-      clicked_count: 0,
-      response_count: 0,
-      conversion_rate: 0,
-    })
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as ReminderTemplate;
-}
-
-/**
- * Update an existing reminder template
- */
-export async function updateReminderTemplate(
-  templateId: string,
-  updates: Partial<ReminderTemplate>
-): Promise<ReminderTemplate> {
-  const { data, error } = await supabase
-    .from('reminder_templates')
-    .update(updates)
-    .eq('id', templateId)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as ReminderTemplate;
-}
-
-/**
- * Delete a reminder template (soft delete - archive)
- */
-export async function archiveReminderTemplate(templateId: string): Promise<void> {
-  const { error } = await supabase
-    .from('reminder_templates')
-    .update({ status: 'archived' })
-    .eq('id', templateId);
-  
-  if (error) throw error;
+export function shouldSendReminder(date: Date, options?: { doNotDisturb?: boolean }): boolean {
+  if (options?.doNotDisturb) return false;
+  return true;
 }
 
 // ============================================================================
 // DEFAULT TEMPLATES
 // ============================================================================
 
-/**
- * Get default reminder templates for each stage
- */
-export function getDefaultTemplates(companyName: string): Omit<ReminderTemplate, 'id' | 'company_id' | 'created_at' | 'updated_at' | 'created_by' | 'sent_count' | 'opened_count' | 'clicked_count' | 'response_count' | 'conversion_rate'>[] {
+export interface DefaultTemplateInput {
+  name: string;
+  stage: ReminderStage;
+  channel: ReminderChannel;
+  tone: TemplateTone;
+  status: TemplateStatus;
+  variant: 'A' | 'B' | null;
+  subject: string;
+  body: string;
+  send_time_preference: string;
+  avoid_weekends: boolean;
+  avoid_holidays: boolean;
+}
+
+export function getDefaultTemplates(companyName: string): DefaultTemplateInput[] {
   return [
-    // Initial Reminder
     {
       name: 'Initial Payment Reminder',
       stage: 'initial',
@@ -325,8 +229,6 @@ Best regards,
       avoid_weekends: true,
       avoid_holidays: true,
     },
-    
-    // First Reminder
     {
       name: 'First Overdue Reminder',
       stage: 'first_reminder',
@@ -358,8 +260,6 @@ Kind regards,
       avoid_weekends: true,
       avoid_holidays: true,
     },
-    
-    // Second Reminder
     {
       name: 'Second Overdue Notice',
       stage: 'second_reminder',
@@ -393,8 +293,6 @@ This is your final notice before escalation.
       avoid_weekends: true,
       avoid_holidays: false,
     },
-    
-    // Final Notice
     {
       name: 'Final Notice Before Legal Action',
       stage: 'final_notice',
@@ -435,8 +333,6 @@ Collections Department`,
       avoid_weekends: false,
       avoid_holidays: false,
     },
-    
-    // Legal Notice
     {
       name: 'Legal Notice',
       stage: 'legal_notice',
@@ -490,120 +386,57 @@ Legal Department
 }
 
 // ============================================================================
-// REMINDER SCHEDULING
+// DATABASE OPERATIONS (STUBS - IMPLEMENT AFTER MIGRATION)
 // ============================================================================
 
-/**
- * Schedule reminders for overdue invoices
- */
-export async function scheduleAutomatedReminders(
-  companyId: string
-): Promise<{ scheduled: number; skipped: number; }> {
-  let scheduled = 0;
-  let skipped = 0;
-  
-  try {
-    // Get all overdue invoices that need reminders
-    const { data: invoices } = await supabase
-      .from('invoices')
-      .select('*, customers(*)')
-      .eq('company_id', companyId)
-      .lt('due_date', format(new Date(), 'yyyy-MM-dd'))
-      .neq('status', 'paid')
-      .neq('status', 'cancelled');
-    
-    if (!invoices) return { scheduled: 0, skipped: 0 };
-    
-    for (const invoice of invoices) {
-      const daysOverdue = calculateDaysOverdue(invoice.due_date);
-      const stage = determineReminderStage(daysOverdue);
-      
-      if (!stage) {
-        skipped++;
-        continue;
-      }
-      
-      // Check if reminder already sent today for this stage
-      const { data: existingReminder } = await supabase
-        .from('payment_reminders')
-        .select('id')
-        .eq('invoice_id', invoice.id)
-        .eq('reminder_stage', stage)
-        .gte('sent_date', format(new Date(), 'yyyy-MM-dd'))
-        .single();
-      
-      if (existingReminder) {
-        skipped++;
-        continue;
-      }
-      
-      // Get template for this stage
-      const { data: template } = await supabase
-        .from('reminder_templates')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('stage', stage)
-        .eq('status', 'active')
-        .limit(1)
-        .single();
-      
-      if (!template) {
-        skipped++;
-        continue;
-      }
-      
-      // Calculate send time
-      const sendDate = new Date();
-      const [hours, minutes] = template.send_time_preference.split(':');
-      sendDate.setHours(parseInt(hours), parseInt(minutes), 0);
-      
-      // Check if should send (weekend/holiday logic)
-      if (!shouldSendReminder(sendDate, {
-        doNotDisturb: false,
-      })) {
-        // Schedule for next business day
-        const nextBusinessDay = getNextBusinessDay(sendDate);
-        sendDate.setTime(nextBusinessDay.getTime());
-      }
-      
-      // Create schedule entry
-      await supabase
-        .from('reminder_schedules')
-        .insert({
-          company_id: companyId,
-          customer_id: invoice.customer_id,
-          invoice_id: invoice.id,
-          template_id: template.id,
-          scheduled_date: format(sendDate, 'yyyy-MM-dd'),
-          scheduled_time: format(sendDate, 'HH:mm'),
-          status: 'pending',
-        });
-      
-      scheduled++;
-    }
-    
-    return { scheduled, skipped };
-  } catch (error) {
-    console.error('Error scheduling reminders:', error);
-    throw error;
+export async function getReminderTemplates(
+  companyId: string,
+  filters?: {
+    stage?: ReminderStage;
+    channel?: ReminderChannel;
+    status?: TemplateStatus;
   }
+): Promise<ReminderTemplate[]> {
+  console.warn('getReminderTemplates: Database not yet implemented. Migration needed.');
+  return [];
 }
 
-function getNextBusinessDay(date: Date): Date {
-  let nextDay = addDays(date, 1);
-  while (isWeekend(nextDay)) {
-    nextDay = addDays(nextDay, 1);
-  }
-  return nextDay;
+export interface CreateReminderTemplateInput {
+  company_id: string;
+  name: string;
+  stage: ReminderStage;
+  channel: ReminderChannel;
+  subject: string;
+  body: string;
+  tone: TemplateTone;
+  status: TemplateStatus;
+  variant: 'A' | 'B' | null;
+  send_time_preference: string;
+  avoid_weekends: boolean;
+  avoid_holidays: boolean;
+  created_by: string;
 }
 
-// ============================================================================
-// REMINDER HISTORY & ANALYTICS
-// ============================================================================
+export async function createReminderTemplate(template: CreateReminderTemplateInput): Promise<ReminderTemplate> {
+  throw new Error('createReminderTemplate: Database operation not yet implemented');
+}
 
-/**
- * Get reminder history with filters
- */
+export async function updateReminderTemplate(
+  templateId: string,
+  updates: Partial<ReminderTemplate>
+): Promise<ReminderTemplate> {
+  throw new Error('updateReminderTemplate: Database operation not yet implemented');
+}
+
+export async function archiveReminderTemplate(templateId: string): Promise<void> {
+  throw new Error('archiveReminderTemplate: Database operation not yet implemented');
+}
+
+export async function scheduleAutomatedReminders(companyId: string): Promise<{ scheduled: number; skipped: number }> {
+  console.warn('scheduleAutomatedReminders: Database not yet implemented. Migration needed.');
+  return { scheduled: 0, skipped: 0 };
+}
+
 export async function getReminderHistory(
   companyId: string,
   filters?: {
@@ -615,45 +448,10 @@ export async function getReminderHistory(
     endDate?: string;
   }
 ): Promise<ReminderHistory[]> {
-  let query = supabase
-    .from('payment_reminders')
-    .select('*')
-    .eq('company_id', companyId)
-    .order('sent_date', { ascending: false });
-  
-  if (filters?.customerId) {
-    query = query.eq('customer_id', filters.customerId);
-  }
-  
-  if (filters?.invoiceId) {
-    query = query.eq('invoice_id', filters.invoiceId);
-  }
-  
-  if (filters?.stage) {
-    query = query.eq('reminder_stage', filters.stage);
-  }
-  
-  if (filters?.channel) {
-    query = query.eq('send_method', filters.channel);
-  }
-  
-  if (filters?.startDate) {
-    query = query.gte('sent_date', filters.startDate);
-  }
-  
-  if (filters?.endDate) {
-    query = query.lte('sent_date', filters.endDate);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data as ReminderHistory[];
+  console.warn('getReminderHistory: Database not yet implemented. Migration needed.');
+  return [];
 }
 
-/**
- * Get template effectiveness analytics
- */
 export async function getTemplateAnalytics(
   companyId: string,
   templateId?: string
@@ -665,60 +463,10 @@ export async function getTemplateAnalytics(
   clickRate: number;
   responseRate: number;
   conversionRate: number;
-  averageResponseTime: number; // hours
+  averageResponseTime: number;
 }[]> {
-  const { data: templates } = await supabase
-    .from('reminder_templates')
-    .select('*')
-    .eq('company_id', companyId)
-    .eq('status', 'active');
-  
-  if (!templates) return [];
-  
-  const analytics = [];
-  
-  for (const template of templates) {
-    if (templateId && template.id !== templateId) continue;
-    
-    const { data: reminders } = await supabase
-      .from('payment_reminders')
-      .select('*')
-      .eq('template_id', template.id);
-    
-    if (!reminders || reminders.length === 0) continue;
-    
-    const totalSent = reminders.length;
-    const opened = reminders.filter(r => r.opened_at).length;
-    const clicked = reminders.filter(r => r.clicked_at).length;
-    const responded = reminders.filter(r => r.responded_at).length;
-    const converted = reminders.filter(r => r.response_type === 'paid').length;
-    
-    // Calculate average response time
-    const responseTimes = reminders
-      .filter(r => r.sent_date && r.responded_at)
-      .map(r => {
-        const sent = new Date(r.sent_date);
-        const responded = new Date(r.responded_at!);
-        return (responded.getTime() - sent.getTime()) / (1000 * 60 * 60); // hours
-      });
-    
-    const averageResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-      : 0;
-    
-    analytics.push({
-      templateId: template.id,
-      templateName: template.name,
-      totalSent,
-      openRate: (opened / totalSent) * 100,
-      clickRate: (clicked / totalSent) * 100,
-      responseRate: (responded / totalSent) * 100,
-      conversionRate: (converted / totalSent) * 100,
-      averageResponseTime: Math.round(averageResponseTime),
-    });
-  }
-  
-  return analytics;
+  console.warn('getTemplateAnalytics: Database not yet implemented. Migration needed.');
+  return [];
 }
 
 export default {
@@ -732,4 +480,6 @@ export default {
   scheduleAutomatedReminders,
   getReminderHistory,
   getTemplateAnalytics,
+  determineReminderStage,
+  shouldSendReminder,
 };

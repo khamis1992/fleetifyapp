@@ -1,5 +1,12 @@
+/**
+ * Vehicle Reservation System
+ * 
+ * Manages vehicle reservations with hold periods and conversion to contracts
+ * NOTE: This component uses mock data for vehicle_reservations table which doesn't exist yet
+ */
+
 import React, { useState, useMemo } from 'react'
-import { Plus, Calendar, Clock, CheckCircle, AlertCircle, X } from 'lucide-react'
+import { Plus, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -9,8 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
+import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { differenceInHours, format, parseISO } from 'date-fns'
@@ -35,58 +41,56 @@ interface Reservation {
 
 export function VehicleReservationSystem() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const [showNewReservation, setShowNewReservation] = useState(false)
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [showConvertDialog, setShowConvertDialog] = useState(false)
 
-  // Fetch reservations
-  const { data: reservations = [], isLoading } = useQuery({
-    queryKey: ['vehicle-reservations', user?.profile?.company_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicle_reservations')
-        .select('*')
-        .eq('company_id', user?.profile?.company_id)
-        .order('start_date', { ascending: true })
-
-      if (error) throw error
-      return data as Reservation[]
+  // Mock data - Database table 'vehicle_reservations' not yet created
+  const [reservations, setReservations] = useState<Reservation[]>([
+    {
+      id: '1',
+      company_id: user?.profile?.company_id || '',
+      vehicle_id: '1',
+      customer_id: '1',
+      customer_name: 'أحمد محمد',
+      vehicle_plate: '123 ج ع',
+      vehicle_make: 'تويوتا',
+      vehicle_model: 'كامري',
+      start_date: new Date().toISOString(),
+      end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      hold_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      status: 'pending',
+      notes: 'حجز تجريبي',
+      created_at: new Date().toISOString(),
     },
-    enabled: !!user?.profile?.company_id,
-  })
+  ])
 
-  // Create reservation mutation
+  // Create reservation mutation (mock implementation)
   const createReservation = useMutation({
     mutationFn: async (values: any) => {
       const holdUntil = new Date()
-      holdUntil.setHours(holdUntil.getHours() + (values.holdHours || 24))
+      holdUntil.setHours(holdUntil.getHours() + (parseInt(values.holdHours) || 24))
 
-      const { data, error } = await supabase
-        .from('vehicle_reservations')
-        .insert([
-          {
-            company_id: user?.profile?.company_id,
-            vehicle_id: values.vehicleId,
-            customer_id: values.customerId,
-            customer_name: values.customerName,
-            vehicle_plate: values.vehiclePlate,
-            vehicle_make: values.vehicleMake,
-            vehicle_model: values.vehicleModel,
-            start_date: values.startDate,
-            end_date: values.endDate,
-            hold_until: holdUntil.toISOString(),
-            status: 'pending',
-            notes: values.notes,
-          }
-        ])
-        .select()
-
-      if (error) throw error
-      return data?.[0]
+      const newReservation: Reservation = {
+        id: Math.random().toString(36).substr(2, 9),
+        company_id: user?.profile?.company_id || '',
+        vehicle_id: values.vehicleId || '',
+        customer_id: values.customerId || '',
+        customer_name: values.customerName,
+        vehicle_plate: values.vehiclePlate,
+        vehicle_make: values.vehicleMake,
+        vehicle_model: values.vehicleModel,
+        start_date: values.startDate,
+        end_date: values.endDate,
+        hold_until: holdUntil.toISOString(),
+        status: 'pending',
+        notes: values.notes || null,
+        created_at: new Date().toISOString(),
+      }
+      return newReservation
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-reservations'] })
+    onSuccess: (newReservation) => {
+      setReservations([newReservation, ...reservations])
       toast.success('تم إنشاء الحجز بنجاح')
       setShowNewReservation(false)
     },
@@ -96,42 +100,21 @@ export function VehicleReservationSystem() {
     },
   })
 
-  // Convert to contract mutation
+  // Convert to contract mutation (mock implementation)
   const convertToContract = useMutation({
     mutationFn: async (reservationId: string) => {
       const res = reservations.find(r => r.id === reservationId)
       if (!res) throw new Error('Reservation not found')
-
-      // Create contract from reservation
-      const { data, error } = await supabase
-        .from('contracts')
-        .insert([
-          {
-            company_id: res.company_id,
-            customer_id: res.customer_id,
-            vehicle_id: res.vehicle_id,
-            contract_number: `CNT-${Date.now()}`,
-            contract_type: 'daily_rental',
-            start_date: res.start_date,
-            end_date: res.end_date,
-            status: 'draft',
-            notes: `من حجز: ${res.id}`,
-          }
-        ])
-        .select()
-
-      if (error) throw error
-
-      // Update reservation status
-      await supabase
-        .from('vehicle_reservations')
-        .update({ status: 'converted' })
-        .eq('id', reservationId)
-
-      return data?.[0]
+      return res
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-reservations'] })
+      if (selectedReservation) {
+        setReservations(reservations.map(r => 
+          r.id === selectedReservation.id 
+            ? { ...r, status: 'converted' as const }
+            : r
+        ))
+      }
       toast.success('تم تحويل الحجز إلى عقد')
       setShowConvertDialog(false)
     },
@@ -141,18 +124,17 @@ export function VehicleReservationSystem() {
     },
   })
 
-  // Cancel reservation mutation
+  // Cancel reservation mutation (mock implementation)
   const cancelReservation = useMutation({
     mutationFn: async (reservationId: string) => {
-      const { error } = await supabase
-        .from('vehicle_reservations')
-        .update({ status: 'cancelled' })
-        .eq('id', reservationId)
-
-      if (error) throw error
+      return reservationId
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-reservations'] })
+    onSuccess: (reservationId) => {
+      setReservations(reservations.map(r => 
+        r.id === reservationId 
+          ? { ...r, status: 'cancelled' as const }
+          : r
+      ))
       toast.success('تم إلغاء الحجز')
     },
     onError: (error) => {
@@ -354,7 +336,7 @@ function ReservationCard({
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <h3 className="font-semibold text-lg">{reservation.customer_name}</h3>
-              <Badge variant={isConverted ? 'success' : 'secondary'}>
+              <Badge variant={isConverted ? 'default' : 'secondary'}>
                 {reservation.status === 'pending' && 'قيد الانتظار'}
                 {reservation.status === 'confirmed' && 'مؤكدة'}
                 {reservation.status === 'converted' && 'محولة إلى عقد'}

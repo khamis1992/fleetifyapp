@@ -1,20 +1,16 @@
 import React, { useState } from 'react'
-import { Plus, Trash2, Edit2, DollarSign, Calendar, User, MapPin } from 'lucide-react'
+import { Plus, Edit2, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
-import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
-import { format, parseISO, differenceInDays } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ar } from 'date-fns/locale'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Driver {
   id: string
@@ -46,71 +42,51 @@ interface DriverAssignment {
 
 export function DriverAssignmentModule() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const [showNewDriver, setShowNewDriver] = useState(false)
   const [showNewAssignment, setShowNewAssignment] = useState(false)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null)
 
-  // Fetch drivers
-  const { data: drivers = [], isLoading: driversLoading } = useQuery({
-    queryKey: ['drivers', user?.profile?.company_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('company_id', user?.profile?.company_id)
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return data as Driver[]
+  // Mock data - Database tables 'drivers' and 'driver_assignments' not yet created
+  const [drivers, setDrivers] = useState<Driver[]>([
+    {
+      id: '1',
+      company_id: user?.profile?.company_id || '',
+      full_name: 'أحمد محمد',
+      phone_number: '+966501234567',
+      email: 'ahmad@example.com',
+      license_number: 'DL-001',
+      license_expiry: '2026-12-31',
+      status: 'active',
+      commission_rate: 10,
+      total_earnings: 5000,
+      total_trips: 45,
+      rating: 4.8,
     },
-    enabled: !!user?.profile?.company_id,
-  })
+  ])
+  const [assignments] = useState<DriverAssignment[]>([])
+  const driversLoading = false
 
-  // Fetch driver assignments
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['driver-assignments', user?.profile?.company_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('driver_assignments')
-        .select('*')
-        .eq('company_id', user?.profile?.company_id)
-        .order('start_date', { ascending: false })
-      if (error) throw error
-      return data as DriverAssignment[]
-    },
-    enabled: !!user?.profile?.company_id,
-  })
-
-  // Create driver mutation
-  const createDriver = useMutation({
-    mutationFn: async (values: any) => {
-      const { data, error } = await supabase
-        .from('drivers')
-        .insert([{
-          company_id: user?.profile?.company_id,
-          full_name: values.fullName,
-          phone_number: values.phoneNumber,
-          email: values.email,
-          license_number: values.licenseNumber,
-          license_expiry: values.licenseExpiry,
-          status: 'active',
-          commission_rate: parseFloat(values.commissionRate),
-          total_earnings: 0,
-          total_trips: 0,
-          rating: 5.0,
-        }])
-        .select()
-      if (error) throw error
-      return data?.[0]
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['drivers'] })
-      toast.success('تم إضافة السائق')
-      setShowNewDriver(false)
-    },
-    onError: () => toast.error('فشل في إضافة السائق'),
-  })
+  // Mock create driver handler
+  const handleCreateDriver = (values: any) => {
+    const newDriver: Driver = {
+      id: Math.random().toString(),
+      company_id: user?.profile?.company_id || '',
+      full_name: values.fullName,
+      phone_number: values.phoneNumber,
+      email: values.email,
+      license_number: values.licenseNumber,
+      license_expiry: values.licenseExpiry,
+      status: 'active',
+      commission_rate: parseFloat(values.commissionRate),
+      total_earnings: 0,
+      total_trips: 0,
+      rating: 5.0,
+    }
+    setDrivers([newDriver, ...drivers])
+    toast.success('تم إضافة السائق')
+    setShowNewDriver(false)
+  }
 
   const stats = {
     totalDrivers: drivers.length,
@@ -197,9 +173,17 @@ export function DriverAssignmentModule() {
             <Plus className="h-4 w-4 ml-2" />
             تعيين جديد
           </Button>
-          {assignments.map((assignment) => (
-            <AssignmentCard key={assignment.id} assignment={assignment} drivers={drivers} />
-          ))}
+          {assignments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground">لا توجد تعيينات</p>
+              </CardContent>
+            </Card>
+          ) : (
+            assignments.map((assignment) => (
+              <AssignmentCard key={assignment.id} assignment={assignment} drivers={drivers} />
+            ))
+          )}
         </TabsContent>
       </Tabs>
 
@@ -207,8 +191,8 @@ export function DriverAssignmentModule() {
       <DriverFormDialog
         open={showNewDriver}
         onOpenChange={setShowNewDriver}
-        onSubmit={(values) => createDriver.mutate(values)}
-        isLoading={createDriver.isPending}
+        onSubmit={handleCreateDriver}
+        isLoading={false}
       />
 
       {editingDriver && (
@@ -216,7 +200,7 @@ export function DriverAssignmentModule() {
           open={!!editingDriver}
           onOpenChange={() => setEditingDriver(null)}
           driver={editingDriver}
-          onSubmit={(values) => {}}
+          onSubmit={() => {}}
           isLoading={false}
         />
       )}

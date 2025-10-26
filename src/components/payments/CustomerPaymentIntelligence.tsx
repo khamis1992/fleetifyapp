@@ -2,6 +2,7 @@
  * Customer Payment Intelligence Component
  * 
  * Comprehensive customer payment analysis with timeline, patterns, and risk indicators
+ * NOTE: This component uses stub data for payment_promises as that table doesn't exist yet
  */
 
 import React, { useState, useMemo } from 'react';
@@ -37,13 +38,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Calendar,
   Target,
-  Activity,
-  Flag,
-  XCircle,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculatePaymentScore, type PaymentScore } from '@/lib/paymentCollections';
@@ -62,12 +57,16 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name')
+        .select('id, first_name, last_name')
         .eq('company_id', companyId)
-        .order('name');
+        .order('first_name');
       
       if (error) throw error;
-      return data;
+      // Map to include full name
+      return data?.map(c => ({
+        id: c.id,
+        name: `${c.first_name || ''} ${c.last_name || ''}`.trim(),
+      })) || [];
     },
   });
 
@@ -98,44 +97,23 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
     enabled: !!selectedCustomerId,
   });
 
-  // Fetch payment promises
-  const { data: promises } = useQuery({
-    queryKey: ['customer-promises', selectedCustomerId, companyId],
-    queryFn: async () => {
-      if (!selectedCustomerId) return null;
-      
-      const { data, error } = await supabase
-        .from('payment_promises')
-        .select('*, invoices(invoice_number)')
-        .eq('company_id', companyId)
-        .eq('customer_id', selectedCustomerId)
-        .order('promise_date', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedCustomerId,
-  });
-
   // Calculate payment patterns
   const paymentPatterns = useMemo(() => {
     if (!paymentHistory) return null;
 
     const paid = paymentHistory.filter(inv => inv.status === 'paid');
-    const overdue = paymentHistory.filter(inv => 
-      inv.status === 'overdue' || 
-      (inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'paid')
-    );
+    const overdue = paymentHistory.filter(inv => {
+      const dueDate = inv.due_date ? new Date(inv.due_date) : null;
+      return inv.status === 'overdue' || (dueDate && dueDate < new Date() && inv.status !== 'paid');
+    });
 
     // Calculate average days to pay
     const daysToPayList = paid
       .filter(inv => inv.payments && inv.payments.length > 0)
       .map(inv => {
         const firstPayment = inv.payments[0];
-        return differenceInDays(
-          new Date(firstPayment.payment_date),
-          new Date(inv.due_date)
-        );
+        const dueDate = inv.due_date ? new Date(inv.due_date) : new Date();
+        return differenceInDays(new Date(firstPayment.payment_date), dueDate);
       });
 
     const avgDaysToPay = daysToPayList.length > 0
@@ -177,7 +155,8 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
       avgDaysToPay: Math.round(avgDaysToPay),
       onTimePaymentRate: paid.length > 0 ? (paid.filter(inv => {
         const payment = inv.payments?.[0];
-        return payment && new Date(payment.payment_date) <= new Date(inv.due_date);
+        const dueDate = inv.due_date ? new Date(inv.due_date) : null;
+        return payment && dueDate && new Date(payment.payment_date) <= dueDate;
       }).length / paid.length) * 100 : 0,
       monthlyInvoices,
       preferredMethod: preferredMethod ? preferredMethod[0] : 'None',
@@ -188,7 +167,7 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
 
   // Calculate risk indicators
   const riskIndicators = useMemo(() => {
-    if (!paymentHistory || !promises || !paymentScore) return [];
+    if (!paymentHistory || !paymentScore) return [];
 
     const indicators: Array<{
       type: 'critical' | 'warning' | 'info';
@@ -196,17 +175,6 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
       description: string;
       icon: React.ReactNode;
     }> = [];
-
-    // Critical: Multiple broken promises
-    const brokenPromises = promises.filter(p => p.status === 'broken');
-    if (brokenPromises.length >= 3) {
-      indicators.push({
-        type: 'critical',
-        title: 'Multiple Broken Promises',
-        description: `${brokenPromises.length} payment promises broken in last 90 days`,
-        icon: <XCircle className="h-4 w-4" />,
-      });
-    }
 
     // Critical: Very low payment score
     if (paymentScore.score < 30) {
@@ -249,7 +217,7 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
     }
 
     return indicators;
-  }, [paymentHistory, promises, paymentScore, paymentPatterns]);
+  }, [paymentHistory, paymentScore, paymentPatterns]);
 
   return (
     <div className="space-y-6">
@@ -287,17 +255,17 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
       {/* Show analysis if customer selected */}
       {selectedCustomerId && paymentScore && paymentPatterns && (
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="patterns">Patterns</TabsTrigger>
-            <TabsTrigger value="risks">Risk Indicators</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <PaymentScoreCard score={paymentScore} />
             <PaymentPatternsOverview patterns={paymentPatterns} />
+            <RiskIndicatorsPanel indicators={riskIndicators} score={paymentScore} />
           </TabsContent>
 
           {/* Timeline Tab */}
@@ -308,11 +276,6 @@ export const CustomerPaymentIntelligence: React.FC<CustomerPaymentIntelligencePr
           {/* Patterns Tab */}
           <TabsContent value="patterns" className="space-y-6">
             <PaymentPatternsAnalysis patterns={paymentPatterns} />
-          </TabsContent>
-
-          {/* Risks Tab */}
-          <TabsContent value="risks" className="space-y-6">
-            <RiskIndicatorsPanel indicators={riskIndicators} score={paymentScore} />
           </TabsContent>
         </Tabs>
       )}
@@ -353,14 +316,14 @@ const PaymentScoreCard: React.FC<PaymentScoreCardProps> = ({ score }) => {
   };
 
   const getCategoryBadge = (category: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       excellent: 'bg-green-600',
       good: 'bg-blue-600',
       fair: 'bg-yellow-600',
       poor: 'bg-orange-600',
       very_poor: 'bg-red-600',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-600';
+    return colors[category] || 'bg-gray-600';
   };
 
   const getTrendIcon = (trend: string) => {
@@ -398,46 +361,44 @@ const PaymentScoreCard: React.FC<PaymentScoreCardProps> = ({ score }) => {
 
           {/* Breakdown */}
           <div className="space-y-4">
-            <div>
-              <div className="text-sm font-semibold mb-2">Score Breakdown</div>
-              <div className="space-y-2">
-                {score.breakdown.latePayments > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Late Payments</span>
-                    <span className="text-red-600">-{score.breakdown.latePayments}</span>
-                  </div>
-                )}
-                {score.breakdown.brokenPromises > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Broken Promises</span>
-                    <span className="text-red-600">-{score.breakdown.brokenPromises}</span>
-                  </div>
-                )}
-                {score.breakdown.disputes > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Disputed Invoices</span>
-                    <span className="text-red-600">-{score.breakdown.disputes}</span>
-                  </div>
-                )}
-                {score.breakdown.failedPayments > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Failed Payments</span>
-                    <span className="text-red-600">-{score.breakdown.failedPayments}</span>
-                  </div>
-                )}
-                {score.breakdown.earlyPayments > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Early Payments</span>
-                    <span className="text-green-600">+{score.breakdown.earlyPayments}</span>
-                  </div>
-                )}
-                {score.breakdown.bonuses > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Bonuses</span>
-                    <span className="text-green-600">+{score.breakdown.bonuses}</span>
-                  </div>
-                )}
-              </div>
+            <div className="text-sm font-semibold">Score Breakdown</div>
+            <div className="space-y-2">
+              {score.breakdown.latePayments > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Late Payments</span>
+                  <span className="text-red-600">-{score.breakdown.latePayments}</span>
+                </div>
+              )}
+              {score.breakdown.brokenPromises > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Broken Promises</span>
+                  <span className="text-red-600">-{score.breakdown.brokenPromises}</span>
+                </div>
+              )}
+              {score.breakdown.disputes > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Disputed Invoices</span>
+                  <span className="text-red-600">-{score.breakdown.disputes}</span>
+                </div>
+              )}
+              {score.breakdown.failedPayments > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Failed Payments</span>
+                  <span className="text-red-600">-{score.breakdown.failedPayments}</span>
+                </div>
+              )}
+              {score.breakdown.earlyPayments > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Early Payments</span>
+                  <span className="text-green-600">+{score.breakdown.earlyPayments}</span>
+                </div>
+              )}
+              {score.breakdown.bonuses > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bonuses</span>
+                  <span className="text-green-600">+{score.breakdown.bonuses}</span>
+                </div>
+              )}
             </div>
             <div className="text-xs text-muted-foreground pt-2 border-t">
               Last updated: {format(parseISO(score.lastUpdated), 'MMM d, yyyy h:mm a')}
@@ -607,7 +568,7 @@ const PaymentPatternsAnalysis: React.FC<PaymentPatternsAnalysisProps> = ({ patte
                   <span>{month.month}</span>
                   <span className="font-semibold">{month.count} invoices</span>
                 </div>
-                <Progress value={(month.count / Math.max(...patterns.monthlyInvoices.map((m: any) => m.count))) * 100} />
+                <Progress value={(month.count / Math.max(...patterns.monthlyInvoices.map((m: any) => m.count), 1)) * 100} />
               </div>
             ))}
           </div>

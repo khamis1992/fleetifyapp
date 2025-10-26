@@ -2,10 +2,11 @@
  * Payment Plans & Promises Manager Component
  * 
  * Manage payment promises, installment plans, and follow-up automation
+ * NOTE: This component uses mock data as payment_promises and payment_plans tables don't exist yet
  */
 
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -56,72 +57,107 @@ import {
   TrendingUp,
   Flag,
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format, parseISO, addDays, differenceInDays, isBefore, isAfter } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface PaymentPromise {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  customer_name: string;
+  invoice_id: string;
+  invoice_number: string;
+  promised_amount: number;
+  promise_date: string;
+  contact_method: string;
+  status: 'pending' | 'kept' | 'broken';
+  created_at: string;
+}
+
+interface PaymentPlan {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  customer_name: string;
+  invoice_id: string;
+  invoice_number: string;
+  total_amount: number;
+  paid_amount: number;
+  installment_amount: number;
+  number_of_installments: number;
+  status: 'active' | 'completed' | 'defaulted';
+  created_at: string;
+}
 
 interface PaymentPlansManagerProps {
   companyId: string;
 }
 
 export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ companyId }) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'promises' | 'plans'>('promises');
   const [showPromiseDialog, setShowPromiseDialog] = useState(false);
   const [showPlanDialog, setShowPlanDialog] = useState(false);
-  const [selectedPromise, setSelectedPromise] = useState<any>(null);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPromise, setSelectedPromise] = useState<PaymentPromise | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
 
-  // Fetch payment promises
-  const { data: promises } = useQuery({
-    queryKey: ['payment-promises', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_promises')
-        .select(`
-          *,
-          customers(id, name, email, phone),
-          invoices(invoice_number, total_amount, paid_amount)
-        `)
-        .eq('company_id', companyId)
-        .order('promise_date', { ascending: true });
-      
-      if (error) throw error;
-      return data;
+  // Mock data - Database tables 'payment_promises' and 'payment_plans' not yet created
+  const [promises, setPromises] = useState<PaymentPromise[]>([
+    {
+      id: '1',
+      company_id: companyId,
+      customer_id: '1',
+      customer_name: 'أحمد محمد',
+      invoice_id: '1',
+      invoice_number: 'INV-001',
+      promised_amount: 5000,
+      promise_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      contact_method: 'phone',
+      status: 'pending',
+      created_at: new Date().toISOString(),
     },
-  });
+  ]);
 
-  // Fetch payment plans
-  const { data: plans } = useQuery({
-    queryKey: ['payment-plans', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_plans')
-        .select(`
-          *,
-          customers(id, name, email, phone),
-          invoices(invoice_number, total_amount),
-          payment_installments(*)
-        `)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
+  const [plans, setPlans] = useState<PaymentPlan[]>([
+    {
+      id: '1',
+      company_id: companyId,
+      customer_id: '2',
+      customer_name: 'سارة علي',
+      invoice_id: '2',
+      invoice_number: 'INV-002',
+      total_amount: 10000,
+      paid_amount: 6000,
+      installment_amount: 2000,
+      number_of_installments: 5,
+      status: 'active',
+      created_at: new Date().toISOString(),
+    },
+  ]);
+
+  // Update promise status mutation (mock)
+  const updatePromiseMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      return id;
+    },
+    onSuccess: (id, variables) => {
+      setPromises(promises.map(p =>
+        p.id === id
+          ? { ...p, status: variables.status as 'pending' | 'kept' | 'broken' }
+          : p
+      ));
+      toast.success('Promise Updated');
     },
   });
 
   // Promise statistics
-  const promiseStats = React.useMemo(() => {
-    if (!promises) return { total: 0, kept: 0, broken: 0, pending: 0, keptRate: 0 };
-    
+  const promiseStats = useMemo(() => {
     const total = promises.length;
     const kept = promises.filter(p => p.status === 'kept').length;
     const broken = promises.filter(p => p.status === 'broken').length;
     const pending = promises.filter(p => p.status === 'pending').length;
-    
+
     return {
       total,
       kept,
@@ -132,17 +168,15 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
   }, [promises]);
 
   // Plan statistics
-  const planStats = React.useMemo(() => {
-    if (!plans) return { total: 0, active: 0, completed: 0, defaulted: 0, totalAmount: 0, paidAmount: 0 };
-    
+  const planStats = useMemo(() => {
     const total = plans.length;
     const active = plans.filter(p => p.status === 'active').length;
     const completed = plans.filter(p => p.status === 'completed').length;
     const defaulted = plans.filter(p => p.status === 'defaulted').length;
-    
+
     const totalAmount = plans.reduce((sum, p) => sum + (p.total_amount || 0), 0);
     const paidAmount = plans.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-    
+
     return {
       total,
       active,
@@ -153,22 +187,6 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
       completionRate: totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0,
     };
   }, [plans]);
-
-  // Update promise status mutation
-  const updatePromiseMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase
-        .from('payment_promises')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payment-promises'] });
-      toast({ title: "Promise Updated" });
-    },
-  });
 
   return (
     <div className="space-y-6">
@@ -246,7 +264,7 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
 
           {/* Promises List */}
           <PromisesList
-            promises={promises || []}
+            promises={promises}
             onUpdateStatus={(id, status) => updatePromiseMutation.mutate({ id, status })}
             onView={(promise) => setSelectedPromise(promise)}
           />
@@ -295,10 +313,7 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
           </div>
 
           {/* Plans List */}
-          <PlansList
-            plans={plans || []}
-            onView={(plan) => setSelectedPlan(plan)}
-          />
+          <PlansList plans={plans} onView={(plan) => setSelectedPlan(plan)} />
         </TabsContent>
       </Tabs>
 
@@ -308,22 +323,12 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
         onClose={() => setShowPromiseDialog(false)}
         companyId={companyId}
       />
-      
-      <PlanDialog
-        open={showPlanDialog}
-        onClose={() => setShowPlanDialog(false)}
-        companyId={companyId}
-      />
 
-      <PromiseDetailDialog
-        promise={selectedPromise}
-        onClose={() => setSelectedPromise(null)}
-      />
+      <PlanDialog open={showPlanDialog} onClose={() => setShowPlanDialog(false)} companyId={companyId} />
 
-      <PlanDetailDialog
-        plan={selectedPlan}
-        onClose={() => setSelectedPlan(null)}
-      />
+      <PromiseDetailDialog promise={selectedPromise} onClose={() => setSelectedPromise(null)} />
+
+      <PlanDetailDialog plan={selectedPlan} onClose={() => setSelectedPlan(null)} />
     </div>
   );
 };
@@ -333,13 +338,12 @@ export const PaymentPlansManager: React.FC<PaymentPlansManagerProps> = ({ compan
 // ============================================================================
 
 interface PromisesListProps {
-  promises: any[];
+  promises: PaymentPromise[];
   onUpdateStatus: (id: string, status: string) => void;
-  onView: (promise: any) => void;
+  onView: (promise: PaymentPromise) => void;
 }
 
 const PromisesList: React.FC<PromisesListProps> = ({ promises, onUpdateStatus, onView }) => {
-  // Categorize promises
   const overdue = promises.filter(p => p.status === 'pending' && isBefore(new Date(p.promise_date), new Date()));
   const upcoming = promises.filter(p => p.status === 'pending' && isAfter(new Date(p.promise_date), new Date()));
   const recent = promises.filter(p => p.status !== 'pending').slice(0, 10);
@@ -418,9 +422,7 @@ const PromisesList: React.FC<PromisesListProps> = ({ promises, onUpdateStatus, o
             <div className="text-center py-12">
               <Flag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-semibold mb-2">No Payment Promises</p>
-              <p className="text-muted-foreground">
-                Start tracking customer payment commitments
-              </p>
+              <p className="text-muted-foreground">Start tracking customer payment commitments</p>
             </div>
           </CardContent>
         </Card>
@@ -430,9 +432,9 @@ const PromisesList: React.FC<PromisesListProps> = ({ promises, onUpdateStatus, o
 };
 
 const PromiseCard: React.FC<{
-  promise: any;
+  promise: PaymentPromise;
   onUpdateStatus: (id: string, status: string) => void;
-  onView: (promise: any) => void;
+  onView: (promise: PaymentPromise) => void;
 }> = ({ promise, onUpdateStatus, onView }) => {
   const isOverdue = promise.status === 'pending' && isBefore(new Date(promise.promise_date), new Date());
   const daysUntil = differenceInDays(new Date(promise.promise_date), new Date());
@@ -447,20 +449,26 @@ const PromiseCard: React.FC<{
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-2">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold">{promise.customers?.name}</span>
-          <Badge variant={
-            promise.status === 'kept' ? 'default' :
-            promise.status === 'broken' ? 'destructive' :
-            isOverdue ? 'destructive' : 'secondary'
-          }>
+          <span className="font-semibold">{promise.customer_name}</span>
+          <Badge
+            variant={
+              promise.status === 'kept'
+                ? 'default'
+                : promise.status === 'broken'
+                  ? 'destructive'
+                  : isOverdue
+                    ? 'destructive'
+                    : 'secondary'
+            }
+          >
             {promise.status}
           </Badge>
         </div>
-        
+
         <div className="text-sm text-muted-foreground space-y-1">
           <div className="flex items-center gap-4">
-            <span>Invoice: {promise.invoices?.invoice_number}</span>
-            <span className="font-semibold">${promise.promised_amount?.toFixed(2)}</span>
+            <span>Invoice: {promise.invoice_number}</span>
+            <span className="font-semibold">${promise.promised_amount.toFixed(2)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-3 w-3" />
@@ -471,9 +479,7 @@ const PromiseCard: React.FC<{
               </span>
             )}
           </div>
-          {promise.contact_method && (
-            <div>Method: {promise.contact_method}</div>
-          )}
+          {promise.contact_method && <div>Method: {promise.contact_method}</div>}
         </div>
       </div>
 
@@ -506,8 +512,8 @@ const PromiseCard: React.FC<{
 };
 
 interface PlansListProps {
-  plans: any[];
-  onView: (plan: any) => void;
+  plans: PaymentPlan[];
+  onView: (plan: PaymentPlan) => void;
 }
 
 const PlansList: React.FC<PlansListProps> = ({ plans, onView }) => {
@@ -554,9 +560,7 @@ const PlansList: React.FC<PlansListProps> = ({ plans, onView }) => {
             <div className="text-center py-12">
               <CreditCard className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-semibold mb-2">No Payment Plans</p>
-              <p className="text-muted-foreground">
-                Create installment plans for customers
-              </p>
+              <p className="text-muted-foreground">Create installment plans for customers</p>
             </div>
           </CardContent>
         </Card>
@@ -566,10 +570,10 @@ const PlansList: React.FC<PlansListProps> = ({ plans, onView }) => {
 };
 
 const PlanCard: React.FC<{
-  plan: any;
-  onView: (plan: any) => void;
+  plan: PaymentPlan;
+  onView: (plan: PaymentPlan) => void;
 }> = ({ plan, onView }) => {
-  const paidInstallments = plan.payment_installments?.filter((i: any) => i.status === 'paid').length || 0;
+  const paidInstallments = Math.floor(plan.paid_amount / plan.installment_amount);
   const totalInstallments = plan.number_of_installments || 0;
   const progress = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0;
 
@@ -581,24 +585,20 @@ const PlanCard: React.FC<{
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-2">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold">{plan.customers?.name}</span>
-          <Badge variant={
-            plan.status === 'completed' ? 'default' :
-            plan.status === 'defaulted' ? 'destructive' : 'secondary'
-          }>
+          <span className="font-semibold">{plan.customer_name}</span>
+          <Badge variant={plan.status === 'completed' ? 'default' : plan.status === 'defaulted' ? 'destructive' : 'secondary'}>
             {plan.status}
           </Badge>
         </div>
-        
+
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground">
             <div className="flex items-center gap-4">
-              <span>Invoice: {plan.invoices?.invoice_number}</span>
-              <span className="font-semibold">${plan.total_amount?.toFixed(2)}</span>
+              <span>Invoice: {plan.invoice_number}</span>
+              <span className="font-semibold">${plan.total_amount.toFixed(2)}</span>
             </div>
             <div>
-              {paidInstallments} of {totalInstallments} installments paid
-              (${plan.installment_amount?.toFixed(2)} each)
+              {paidInstallments} of {totalInstallments} installments paid (${plan.installment_amount.toFixed(2)} each)
             </div>
           </div>
           <Progress value={progress} />
@@ -606,8 +606,8 @@ const PlanCard: React.FC<{
       </div>
 
       <div className="text-right ml-4">
-        <div className="text-sm font-semibold">${plan.paid_amount?.toFixed(2)}</div>
-        <div className="text-xs text-muted-foreground">of ${plan.total_amount?.toFixed(2)}</div>
+        <div className="text-sm font-semibold">${plan.paid_amount.toFixed(2)}</div>
+        <div className="text-xs text-muted-foreground">of ${plan.total_amount.toFixed(2)}</div>
       </div>
     </div>
   );
@@ -616,7 +616,7 @@ const PlanCard: React.FC<{
 // Dialog placeholders (implement full dialogs similarly to templates)
 const PromiseDialog: React.FC<{ open: boolean; onClose: () => void; companyId: string }> = () => null;
 const PlanDialog: React.FC<{ open: boolean; onClose: () => void; companyId: string }> = () => null;
-const PromiseDetailDialog: React.FC<{ promise: any; onClose: () => void }> = () => null;
-const PlanDetailDialog: React.FC<{ plan: any; onClose: () => void }> = () => null;
+const PromiseDetailDialog: React.FC<{ promise: PaymentPromise | null; onClose: () => void }> = () => null;
+const PlanDetailDialog: React.FC<{ plan: PaymentPlan | null; onClose: () => void }> = () => null;
 
 export default PaymentPlansManager;

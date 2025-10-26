@@ -7,23 +7,42 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 const Auth: React.FC = () => {
   const { user, loading } = useAuth();
   const hasRedirected = useRef(false);
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
 
   // Prevent redirect loop in development
   useEffect(() => {
     if (user && !hasRedirected.current) {
       hasRedirected.current = true;
+      console.log('✅ [AUTH] User authenticated, redirecting to dashboard');
     }
   }, [user]);
 
-  if (loading) {
+  // Safety timeout for loading state
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ [AUTH] Loading timeout reached');
+        setLoadingTimeout(true);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
+
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-soft">
-        <LoadingSpinner size="lg" />
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-sm text-muted-foreground">جاري التحقق من الجلسة...</p>
+        </div>
       </div>
     );
   }
 
   if (user && hasRedirected.current) {
+    console.log('✅ [AUTH] Redirecting authenticated user to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
