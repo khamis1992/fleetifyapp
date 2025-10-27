@@ -219,34 +219,6 @@ const hrSubItems = [
   }
 ];
 
-const bookingsSubItems = [
-  {
-    name: 'الحجوزات',
-    href: '/bookings',
-    icon: Calendar
-  },
-  {
-    name: 'التقويم',
-    href: '/bookings/calendar',
-    icon: Calendar
-  },
-  {
-    name: 'العملاء',
-    href: '/bookings/customers',
-    icon: Users
-  },
-  {
-    name: 'الخدمات',
-    href: '/bookings/services',
-    icon: Package
-  },
-  {
-    name: 'التقارير',
-    href: '/bookings/reports',
-    icon: BarChart3
-  }
-];
-
 export function CarRentalSidebar() {
   const { signOut } = useAuth();
   const { state, isMobile } = useSidebar();
@@ -327,35 +299,14 @@ export function CarRentalSidebar() {
                         </SidebarMenuSubItem>
                       ))}
 
-                      {/* Booking System Subsection */}
+                      {/* Booking System */}
                       <SidebarMenuSubItem>
-                        <Collapsible defaultOpen={location.pathname.startsWith('/bookings')}>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuSubButton>
-                              <Calendar className="h-4 w-4" />
-                              {(!collapsed || isMobile) && (
-                                <>
-                                  <span>نظام الحجوزات</span>
-                                  <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                                </>
-                              )}
-                            </SidebarMenuSubButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {bookingsSubItems.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.href}>
-                                  <SidebarMenuSubButton asChild>
-                                    <NavLink to={subItem.href} className={getNavClassName}>
-                                      <subItem.icon className="h-3 w-3" />
-                                      {(!collapsed || isMobile) && <span className="text-xs">{subItem.name}</span>}
-                                    </NavLink>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
+                        <SidebarMenuSubButton asChild>
+                          <NavLink to="/bookings" className={getNavClassName}>
+                            <Calendar className="h-4 w-4" />
+                            {(!collapsed || isMobile) && <span>نظام الحجوزات</span>}
+                          </NavLink>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
