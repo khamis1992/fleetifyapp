@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MobileDatePicker, MobileInput } from '@/components/mobile';
 import {
   Select,
   SelectContent,
@@ -360,22 +361,31 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
                     <Calendar className="h-3 w-3 inline mr-1" />
                     تاريخ البداية
                   </Label>
-                  <Input
-                    id="start_date"
-                    type="date"
+                  <MobileDatePicker
                     value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    onChange={(date) => {
+                      if (date) {
+                        setFormData({ ...formData, start_date: date.toISOString().slice(0, 10) });
+                      }
+                    }}
+                    placeholder="اختر تاريخ البداية"
+                    name="start_date"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="rental_days">عدد الأيام</Label>
-                  <Input
+                  <MobileInput
                     id="rental_days"
-                    type="number"
-                    min="1"
-                    value={formData.rental_days}
+                    fieldType="number"
+                    value={formData.rental_days.toString()}
                     onChange={(e) => setFormData({ ...formData, rental_days: parseInt(e.target.value) || 1 })}
+                    customConfig={{
+                      type: 'numeric',
+                      inputMode: 'numeric',
+                      pattern: '[0-9]*',
+                      autoCapitalize: 'none'
+                    }}
                   />
                 </div>
               </div>

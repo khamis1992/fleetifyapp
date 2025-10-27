@@ -13,6 +13,7 @@ import { useCreateConditionReport } from '@/hooks/useVehicleCondition';
 import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
 import { UnifiedOdometerInput } from '@/components/fleet/UnifiedOdometerInput';
 import { Printer, Calendar, Clock, Eraser, Undo, X } from 'lucide-react';
+import { VoiceInput } from '@/components/mobile';
 
 interface InteractiveVehicleInspectionFormProps {
   vehicleId: string;
@@ -495,12 +496,19 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
             <CardHeader>
               <CardTitle className="text-lg">ملاحظات إضافية</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
               <Textarea
                 placeholder="أدخل أي ملاحظات إضافية حول حالة المركبة..."
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
                 className="min-h-24"
+              />
+              <VoiceInput
+                value={additionalNotes}
+                onTranscript={(transcript) => setAdditionalNotes(transcript)}
+                language="ar-SA"
+                compact
+                className="flex justify-end"
               />
             </CardContent>
           </Card>

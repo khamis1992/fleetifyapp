@@ -14,6 +14,7 @@ import { initializePWA } from "@/utils/pwaConfig";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
+import { FABProvider } from "@/contexts/FABContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { ResponsiveDashboardLayout } from "@/components/layouts/ResponsiveDashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
@@ -27,6 +28,7 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { FloatingActionButton } from "@/components/mobile";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -236,12 +238,15 @@ const App = () => {
             <TooltipProvider>
               <AuthProvider>
                 <CompanyContextProvider>
-                  <MobileOptimizationProvider>
-                    <PWAInstallPrompt />
-                    <CommandPalette />
-                    <SimpleToaster />
-                    <AppRoutes />
-                  </MobileOptimizationProvider>
+                  <FABProvider>
+                    <MobileOptimizationProvider>
+                      <PWAInstallPrompt />
+                      <CommandPalette />
+                      <SimpleToaster />
+                      <FloatingActionButton />
+                      <AppRoutes />
+                    </MobileOptimizationProvider>
+                  </FABProvider>
                 </CompanyContextProvider>
               </AuthProvider>
             </TooltipProvider>

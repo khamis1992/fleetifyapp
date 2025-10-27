@@ -111,7 +111,10 @@
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_evaluate",
       "Bash(timeout 5 echo:*)",
-      "mcp__playwright__browser_close"
+      "mcp__playwright__browser_close",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

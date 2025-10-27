@@ -45,6 +45,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useCreateLegalCase } from '@/hooks/useLegalCases';
 import { formatCurrency } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LegalCaseWizardProps {
   open: boolean;
@@ -150,19 +151,19 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         legal_fees: 0,
         court_fees: 0,
         other_expenses: 0,
-        total_costs: 0,
         billing_status: 'pending',
         is_confidential: false,
-        metadata: {
-          expected_outcome: formData.expected_outcome,
-          national_id: formData.national_id,
-          address: formData.address,
-          emergency_contact: formData.emergency_contact,
-          employer_info: formData.employer_info,
-          selected_invoices: formData.selected_invoices,
-          selected_contracts: formData.selected_contracts,
-          evidence_count: formData.evidence_files.length,
-        },
+        legal_team: [],
+        tags: [],
+        notes: `Customer ID: ${formData.customer_id}
+National ID: ${formData.national_id}
+Address: ${formData.address}
+Emergency Contact: ${formData.emergency_contact}
+Employer: ${formData.employer_info}
+Selected Invoices: ${formData.selected_invoices.length}
+Selected Contracts: ${formData.selected_contracts.length}
+Evidence Files: ${formData.evidence_files.length}
+Expected Outcome: ${formData.expected_outcome}`,
       });
 
       toast.success('Legal case created successfully');
@@ -496,20 +497,233 @@ const InvoicesSelectionStep: React.FC<InvoicesSelectionStepProps> = ({
 // STEP 3: Customer Information
 // ============================================================================
 
+interface Customer {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  company_name?: string | null;
+  email?: string | null;
+  phone?: string;
+  address?: string | null;
+  national_id?: string | null;
+  emergency_contact_name?: string | null;
+}
+
+// Helper to get full customer name
+const getCustomerName = (customer: Customer): string => {
+  if (customer.company_name) return customer.company_name;
+  if (customer.first_name && customer.last_name) 
+    return `${customer.first_name} ${customer.last_name}`;
+  if (customer.first_name) return customer.first_name;
+  return 'Unknown';
+};
+
 interface CustomerInfoStepProps {
   formData: CaseFormData;
   setFormData: (data: CaseFormData) => void;
 }
 
 const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormData }) => {
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [customerCases, setCustomerCases] = React.useState<any[]>([]);
+  const [loadingCases, setLoadingCases] = React.useState(false);
+
+  // Fetch customers from database
+  React.useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name, company_name, email, phone, address, national_id, emergency_contact_name')
+          .eq('is_active', true)
+          .order('company_name, first_name');
+
+        if (error) throw error;
+        setCustomers((data as any) || []);
+        setFilteredCustomers((data as any) || []);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        toast.error('Failed to load customers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
+  // Auto-extract customer from selected invoices
+  React.useEffect(() => {
+    const extractCustomerFromInvoices = async () => {
+      if (formData.selected_invoices.length > 0 && !formData.customer_id) {
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('customer_id')
+            .in('id', formData.selected_invoices)
+            .limit(1);
+
+          if (error) throw error;
+          if (data && data.length > 0 && data[0].customer_id) {
+            const matchedCustomer = customers.find(c => c.id === data[0].customer_id);
+            if (matchedCustomer) {
+              handleSelectCustomer(matchedCustomer.id);
+              toast.success('Customer extracted from invoice');
+            }
+          }
+        } catch (error) {
+          console.error('Error extracting customer from invoice:', error);
+        }
+      }
+    };
+
+    extractCustomerFromInvoices();
+  }, [formData.selected_invoices]);
+
+  // Fetch customer's previous cases
+  const fetchCustomerCases = async (customerId: string) => {
+    try {
+      setLoadingCases(true);
+      const { data, error } = await supabase
+        .from('legal_cases')
+        .select('id, case_title, case_type, case_status, case_value, created_at')
+        .eq('client_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setCustomerCases((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching customer cases:', error);
+    } finally {
+      setLoadingCases(false);
+    }
+  };
+
+  // Filter customers based on search term
+  React.useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredCustomers(customers);
+      return;
+    }
+
+    const search = searchTerm.toLowerCase();
+    const filtered = customers.filter(customer => {
+      const fullName = getCustomerName(customer);
+      return (
+        fullName.toLowerCase().includes(search) ||
+        (customer.phone && customer.phone.includes(search)) ||
+        (customer.email && customer.email.toLowerCase().includes(search)) ||
+        (customer.national_id && customer.national_id.includes(search))
+      );
+    });
+
+    setFilteredCustomers(filtered);
+  }, [searchTerm, customers]);
+
+  // Handle customer selection
+  const handleSelectCustomer = (customerId: string) => {
+    const selected = customers.find((c) => c.id === customerId);
+    if (selected) {
+      const fullName = getCustomerName(selected);
+      setFormData({
+        ...formData,
+        customer_id: selected.id,
+        customer_name: fullName,
+        national_id: selected.national_id || '',
+        email: selected.email || '',
+        phone: selected.phone || '',
+        address: selected.address || '',
+        emergency_contact: selected.emergency_contact_name || '',
+      });
+      // Fetch previous cases for this customer
+      fetchCustomerCases(selected.id);
+      toast.success(`${fullName} selected`);
+      setSearchTerm('');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          All customer information will be auto-populated from the selected invoices. You can edit the details below.
+          Select an existing customer or manually enter customer information. Details can be edited below.
         </AlertDescription>
       </Alert>
+
+      {/* Customer Search & Selection */}
+      <div className="space-y-3">
+        <Label htmlFor="customer_search" className="text-base font-semibold mb-2 block">
+          Search & Select Customer
+        </Label>
+        
+        {/* Search Input */}
+        <Input
+          id="customer_search"
+          placeholder="Search by name, phone, email, or ID..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          disabled={loading}
+          className="bg-white"
+        />
+        
+        {/* Search Results */}
+        {searchTerm && (
+          <Card className="bg-muted/50">
+            <CardContent className="pt-4">
+              {filteredCustomers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No customers match your search</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {filteredCustomers.map((customer) => (
+                    <Button
+                      key={customer.id}
+                      variant="ghost"
+                      className="w-full justify-start font-normal text-left h-auto py-2"
+                      onClick={() => handleSelectCustomer(customer.id)}
+                    >
+                      <div className="flex flex-col gap-1 flex-1">
+                        <div className="font-medium text-sm">{getCustomerName(customer)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {customer.phone && <span>{customer.phone}</span>}
+                          {customer.email && <span> • {customer.email}</span>}
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Quick Select - Recent Customers */}
+        {!searchTerm && filteredCustomers.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Quick select:</p>
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {filteredCustomers.slice(0, 10).map((customer) => (
+                <Button
+                  key={customer.id}
+                  variant="outline"
+                  className="w-full justify-start font-normal text-left h-auto py-2"
+                  onClick={() => handleSelectCustomer(customer.id)}
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{getCustomerName(customer)}</div>
+                    {customer.phone && <div className="text-xs text-muted-foreground">{customer.phone}</div>}
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div>
         <Label htmlFor="customer_name" className="text-base font-semibold mb-2 block">
@@ -519,6 +733,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
           id="customer_name"
           value={formData.customer_name}
           onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+          placeholder="Enter or select customer name"
         />
       </div>
 
@@ -591,6 +806,51 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
           onChange={(e) => setFormData({ ...formData, employer_info: e.target.value })}
         />
       </div>
+
+      {/* Customer's Previous Cases */}
+      {formData.customer_id && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="text-sm">Customer's Previous Cases</CardTitle>
+            <CardDescription>
+              {loadingCases ? 'Loading case history...' : `${customerCases.length} case(s) found`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingCases ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : customerCases.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No previous cases for this customer</div>
+            ) : (
+              <div className="space-y-2">
+                {customerCases.map((caseItem) => (
+                  <div
+                    key={caseItem.id}
+                    className="p-2 border rounded-md bg-white text-sm"
+                  >
+                    <div className="font-medium">{caseItem.case_title}</div>
+                    <div className="text-xs text-muted-foreground flex justify-between items-center mt-1">
+                      <span>
+                        {caseItem.case_type.replace(/_/g, ' ').toUpperCase()} • {caseItem.case_status}
+                      </span>
+                      {caseItem.case_value && (
+                        <span className="font-semibold text-primary">
+                          {formatCurrency(caseItem.case_value)}
+                        </span>
+                      )}
+                    </div>
+                    {caseItem.created_at && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(caseItem.created_at).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

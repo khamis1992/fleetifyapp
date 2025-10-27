@@ -42,6 +42,7 @@ import { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck
 import { AccountingSettings } from './AccountingSettings';
 import { AccountLinking } from './AccountLinking';
 import { AccountingSummary } from './AccountingSummary';
+import { VoiceInput } from '@/components/mobile';
 
 // Unified customer schema
 const customerSchema = createCustomerSchema;
@@ -674,7 +675,16 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                   <FormItem>
                     <FormLabel>ملاحظات</FormLabel>
                     <FormControl>
-                      <Textarea {...field} placeholder="أدخل أي ملاحظات إضافية" rows={3} />
+                      <div className="space-y-2">
+                        <Textarea {...field} placeholder="أدخل أي ملاحظات إضافية" rows={3} />
+                        <VoiceInput
+                          value={field.value || ''}
+                          onTranscript={(transcript) => field.onChange(transcript)}
+                          language="ar-SA"
+                          compact
+                          className="flex justify-end"
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

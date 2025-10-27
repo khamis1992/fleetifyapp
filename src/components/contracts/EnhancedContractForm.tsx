@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { logger } from '@/lib/logger'
 import { ContractTemplateSelector } from './ContractTemplateSelector'
+import { VoiceInput } from '@/components/mobile'
 
 interface EnhancedContractFormProps {
   open: boolean
@@ -556,8 +557,15 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
                   placeholder="وصف مختصر للعقد..."
                   rows={3}
                 />
+                <VoiceInput
+                  value={contractData.description}
+                  onTranscript={(transcript) => setContractData({...contractData, description: transcript})}
+                  language="ar-SA"
+                  compact
+                  className="flex justify-end"
+                />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="terms">شروط العقد</Label>
                 <Textarea
@@ -566,6 +574,13 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
                   onChange={(e) => setContractData({...contractData, terms: e.target.value})}
                   placeholder="شروط وأحكام العقد..."
                   rows={4}
+                />
+                <VoiceInput
+                  value={contractData.terms}
+                  onTranscript={(transcript) => setContractData({...contractData, terms: transcript})}
+                  language="ar-SA"
+                  compact
+                  className="flex justify-end"
                 />
               </div>
             </CardContent>

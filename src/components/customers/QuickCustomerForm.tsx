@@ -11,10 +11,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { MobileInput } from '@/components/mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Zap, User, Phone, AlertCircle, Check } from 'lucide-react';
@@ -179,18 +179,17 @@ export const QuickCustomerForm: React.FC<QuickCustomerFormProps> = ({
               <User className="h-4 w-4" />
               الاسم *
             </Label>
-            <Input
+            <MobileInput
               id="quick-name"
+              fieldType="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               onKeyPress={handleKeyPress}
               placeholder="مثال: أحمد محمد"
-              className={errors.name ? 'border-red-500' : ''}
+              showValidation
+              validationError={errors.name}
               autoFocus
             />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
           </div>
 
           {/* Phone Field */}
@@ -199,18 +198,17 @@ export const QuickCustomerForm: React.FC<QuickCustomerFormProps> = ({
               <Phone className="h-4 w-4" />
               رقم الهاتف *
             </Label>
-            <Input
+            <MobileInput
               id="quick-phone"
+              fieldType="mobile"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               onKeyPress={handleKeyPress}
               placeholder="مثال: 50123456"
-              className={errors.phone ? 'border-red-500' : ''}
+              showValidation
+              validationError={errors.phone}
               dir="ltr"
             />
-            {errors.phone && (
-              <p className="text-sm text-red-500">{errors.phone}</p>
-            )}
           </div>
 
           {/* Info Alert */}

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { FileText, Printer, Save } from 'lucide-react';
+import { VoiceInput } from '@/components/mobile';
 
 interface VehicleHandoverFormData {
   // بيانات العقد
@@ -467,6 +468,13 @@ export const VehicleHandoverForm: React.FC = () => {
                 onChange={(e) => handleInputChange('driver_side', e.target.value)}
                 rows={4}
               />
+              <VoiceInput
+                value={formData.driver_side}
+                onTranscript={(transcript) => handleInputChange('driver_side', transcript)}
+                language="ar-SA"
+                compact
+                className="flex justify-end"
+              />
             </div>
             <div className="space-y-2">
               <Label>جانب الراكب (Passenger Side)</Label>
@@ -474,6 +482,13 @@ export const VehicleHandoverForm: React.FC = () => {
                 value={formData.passenger_side}
                 onChange={(e) => handleInputChange('passenger_side', e.target.value)}
                 rows={4}
+              />
+              <VoiceInput
+                value={formData.passenger_side}
+                onTranscript={(transcript) => handleInputChange('passenger_side', transcript)}
+                language="ar-SA"
+                compact
+                className="flex justify-end"
               />
             </div>
           </div>
@@ -483,6 +498,13 @@ export const VehicleHandoverForm: React.FC = () => {
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
               rows={3}
+            />
+            <VoiceInput
+              value={formData.notes}
+              onTranscript={(transcript) => handleInputChange('notes', transcript)}
+              language="ar-SA"
+              compact
+              className="flex justify-end"
             />
           </div>
         </CardContent>
