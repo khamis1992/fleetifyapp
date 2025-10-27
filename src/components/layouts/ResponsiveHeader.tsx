@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
+import { cn } from '@/lib/utils';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -46,18 +47,24 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   };
 
   return (
-    <header className="h-14 md:h-16 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm px-3 md:px-4 lg:px-6">
+    <header className={cn(
+      "h-16 md:h-16 flex items-center justify-between px-4 md:px-4 lg:px-6",
+      isMobile 
+        ? "native-mobile-header" 
+        : "border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30"
+    )}>
       {/* Left Section */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-3 md:gap-3">
         {/* Mobile Menu Button */}
         {showMenuButton && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuToggle}
-            className="lg:hidden"
+            className="lg:hidden h-11 w-11"
+            aria-label="فتح القائمة"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6" />
           </Button>
         )}
 
@@ -68,7 +75,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
         <LazyImage 
           src="/lovable-uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
           alt="Fleetify Logo" 
-          className={`w-auto ${isMobile ? 'h-8' : 'h-10 md:h-12'}`}
+          className={`w-auto ${isMobile ? 'h-10' : 'h-10 md:h-12'}`}
         />
       </div>
 
@@ -88,7 +95,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
         {isMobile && (
           <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="بحث">
                 <Search className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -109,7 +116,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
           /* Mobile: Simple dropdown */
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="القائمة">
                 <MoreVertical className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>

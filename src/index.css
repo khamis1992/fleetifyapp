@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Native Mobile App Styles */
+@import './styles/native-mobile.css';
+
 /* Shimmer animation for skeleton loaders */
 @keyframes shimmer {
   0% {

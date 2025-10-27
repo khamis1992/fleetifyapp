@@ -317,8 +317,8 @@ export const MobileNavigation: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border">
-        <div className="grid grid-cols-5 h-mobile-bottom-nav">
+      <nav className="native-bottom-nav">
+        <div className="grid grid-cols-5">
           {navigationItems.map((item) => {
             const active = isActive(item.href);
             const badge = badges?.[item.badgeKey];
@@ -334,17 +334,15 @@ export const MobileNavigation: React.FC = () => {
                 onTouchEnd={handlePressEnd}
                 onTouchCancel={handlePressEnd}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 px-1 transition-colors relative",
-                  "hover:bg-accent/50 active:bg-accent",
-                  active
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground"
+                  "native-bottom-nav-item",
+                  active && "active"
                 )}
+                aria-label={item.name}
               >
                 <div className="relative">
                   <item.icon
                     className={cn(
-                      "h-5 w-5 transition-all",
+                      "h-6 w-6 transition-all",
                       active && "scale-110"
                     )}
                   />
@@ -357,19 +355,13 @@ export const MobileNavigation: React.FC = () => {
                     />
                   )}
                 </div>
-                <span className="text-xs font-medium leading-none">
+                <span className="text-xs font-semibold leading-none truncate max-w-full">
                   {item.name}
                 </span>
-                {active && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-                )}
               </NavLink>
             );
           })}
         </div>
-
-        {/* Safe area spacing for devices with home indicators */}
-        <div className="h-mobile-safe-bottom bg-card" />
       </nav>
 
       {/* Quick Actions Menu */}
