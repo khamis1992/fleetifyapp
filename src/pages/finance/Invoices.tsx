@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { PageCustomizer } from "@/components/PageCustomizer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
@@ -21,7 +22,7 @@ import { useInvoices } from "@/hooks/finance/useInvoices"
 import { useFixedAssets } from "@/hooks/useFinance"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera } from "lucide-react"
+import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera, CheckCircle, AlertTriangle, MessageSquare, AlertCircle, TrendingDown, Clock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
@@ -31,6 +32,7 @@ import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog"
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog"
 import { EnhancedInvoiceActions } from "@/components/finance/EnhancedInvoiceActions"
 import { DepartmentIntegrationSummary } from "@/components/finance/DepartmentIntegrationSummary"
+import { InvoiceApprovalWorkflow } from "@/components/invoices/InvoiceApprovalWorkflow"
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
@@ -53,6 +55,7 @@ const Invoices = () => {
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
+  const [showApprovalWorkflow, setShowApprovalWorkflow] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
 
@@ -247,7 +250,12 @@ const Invoices = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <PageCustomizer
+      pageId="invoices-page"
+      title="Invoices"
+      titleAr="الفواتير"
+    >
+      <div className="space-y-6">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -283,6 +291,56 @@ const Invoices = () => {
           >
             <Camera className="h-4 w-4" />
             مسح فاتورة قديمة
+          </Button>
+          {selectedInvoice && selectedInvoice.total_amount > 1000 && (
+            <Button 
+              onClick={() => setShowApprovalWorkflow(true)}
+              variant="outline"
+              className="border-blue-500 text-blue-700 hover:bg-blue-50 gap-2"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              اعتماد الفاتورة
+            </Button>
+          )}
+          <Button 
+            onClick={() => navigate('/collections')}
+            variant="outline"
+            className="border-purple-500 text-purple-700 hover:bg-purple-50 gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            التذكيرات
+          </Button>
+          <Button 
+            onClick={() => navigate('/collections?tab=late-fees')}
+            variant="outline"
+            className="border-red-500 text-red-700 hover:bg-red-50 gap-2"
+          >
+            <AlertCircle className="h-4 w-4" />
+            الغرامات
+          </Button>
+          <Button 
+            onClick={() => navigate('/collections?tab=disputes')}
+            variant="outline"
+            className="border-orange-500 text-orange-700 hover:bg-orange-50 gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            نزاع
+          </Button>
+          <Button 
+            onClick={() => navigate('/collections?tab=ar-aging')}
+            variant="outline"
+            className="border-green-500 text-green-700 hover:bg-green-50 gap-2"
+          >
+            <TrendingDown className="h-4 w-4" />
+            أعمار الذمم
+          </Button>
+          <Button 
+            onClick={() => navigate('/collections?tab=payment-tracking')}
+            variant="outline"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 gap-2"
+          >
+            <Clock className="h-4 w-4" />
+            تتبع الدفعات
           </Button>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
@@ -560,6 +618,23 @@ const Invoices = () => {
         invoice={selectedInvoice}
       />
 
+      {/* Invoice Approval Workflow Dialog */}
+      <InvoiceApprovalWorkflow
+        invoice={selectedInvoice}
+        open={showApprovalWorkflow}
+        onOpenChange={setShowApprovalWorkflow}
+        onApproved={(invoiceId) => {
+          queryClient.invalidateQueries({ queryKey: ['invoices', companyId] })
+          toast.success('تم اعتماد الفاتورة بنجاح')
+          setShowApprovalWorkflow(false)
+        }}
+        onRejected={(invoiceId) => {
+          queryClient.invalidateQueries({ queryKey: ['invoices', companyId] })
+          toast.success('تم رفض الفاتورة')
+          setShowApprovalWorkflow(false)
+        }}
+      />
+
       {/* Invoice Edit Dialog */}
       <InvoiceEditDialog
         open={!!editingInvoice}
@@ -611,6 +686,7 @@ const Invoices = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </PageCustomizer>
   )
 }
 

@@ -40,6 +40,7 @@ import { useContractTemplates } from '@/hooks/useContractTemplates';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import type { ContractTemplate } from '@/hooks/useContractTemplates';
 
 interface ExpressContractFormProps {
   open: boolean;
@@ -65,7 +66,14 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
     rental_days: 30,
   });
 
-  const [calculatedData, setCalculatedData] = useState({
+  const [calculatedData, setCalculatedData] = useState<{
+    end_date: string;
+    contract_amount: number;
+    monthly_amount: number;
+    contract_type: string;
+    description: string;
+    terms: string;
+  }>({
     end_date: '',
     contract_amount: 0,
     monthly_amount: 0,
@@ -95,14 +103,19 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
   });
 
   // Fetch available vehicles
-  const { data: vehicles } = useAvailableVehiclesForContracts(companyId);
+  const { data: vehicles } = useAvailableVehiclesForContracts(companyId || undefined);
 
   // Fetch templates for quick apply
-  const { data: templates } = useContractTemplates();
-
-  // Get selected vehicle details
+  const { data: allTemplates } = useContractTemplates();
+  
+  // Filter preset templates (runtime filter with any type for simplicity)
+  const presetTemplates = (allTemplates || []).filter((t: any) => 
+    'template_type' in t && t.template_type === 'preset'
+  );
+  
+  // Get selected vehicle and template details
   const selectedVehicle = vehicles?.find(v => v.id === formData.vehicle_id);
-  const selectedTemplate = templates?.find(t => t.id === formData.template_id);
+  const selectedTemplate: any = allTemplates?.find(t => t.id === formData.template_id);
 
   // Auto-calculate everything when inputs change
   useEffect(() => {
@@ -140,16 +153,21 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
       }
 
       // Apply template if selected
-      if (selectedTemplate) {
+      if (selectedTemplate && 'template_type' in selectedTemplate) {
         contractType = selectedTemplate.contract_type;
-        description = selectedTemplate.description || '';
-        terms = selectedTemplate.terms || '';
+        
+        // Only preset templates have description, terms, and preset_config
+        if (selectedTemplate.template_type === 'preset' && 'description' in selectedTemplate) {
+          description = selectedTemplate.description || '';
+          terms = selectedTemplate.terms || '';
 
-        // Apply discount if preset template
-        if (selectedTemplate.preset_config?.discountPercentage) {
-          const discount = contractAmount * (selectedTemplate.preset_config.discountPercentage / 100);
-          contractAmount = contractAmount - discount;
-          monthlyAmount = monthlyAmount - (monthlyAmount * (selectedTemplate.preset_config.discountPercentage / 100));
+          // Apply discount if available
+          const discountPct = selectedTemplate.preset_config?.discountPercentage;
+          if (discountPct) {
+            const discount = contractAmount * (discountPct / 100);
+            contractAmount = contractAmount - discount;
+            monthlyAmount = monthlyAmount - (monthlyAmount * (discountPct / 100));
+          }
         }
       }
     }
@@ -162,7 +180,7 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
       description,
       terms,
     });
-  }, [formData.start_date, formData.rental_days, formData.vehicle_id, formData.template_id, selectedVehicle, selectedTemplate]);
+  }, [formData.start_date, formData.rental_days, formData.vehicle_id, formData.template_id, selectedVehicle, selectedTemplate, allTemplates]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -216,8 +234,7 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
     }
   };
 
-  // Quick template buttons
-  const presetTemplates = templates?.filter(t => t.template_type === 'preset') || [];
+  // Quick template buttons - only preset templates
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -253,7 +270,7 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-2">
-                  {presetTemplates.map((template) => (
+                  {presetTemplates.map((template: any) => (
                     <Button
                       key={template.id}
                       type="button"
@@ -262,13 +279,13 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
                         setFormData({ 
                           ...formData, 
                           template_id: template.id,
-                          rental_days: template.rental_days 
+                          rental_days: template.rental_days || 30
                         });
                       }}
                       className="h-auto flex flex-col items-start p-3"
                     >
                       <span className="font-semibold text-sm">{template.template_name}</span>
-                      <span className="text-xs opacity-70">{template.rental_days} يوم</span>
+                      <span className="text-xs opacity-70">{template.rental_days || 30} يوم</span>
                       {template.preset_config?.discountPercentage && (
                         <Badge variant="secondary" className="mt-1 text-xs">
                           خصم {template.preset_config.discountPercentage}%
@@ -383,6 +400,7 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
                       {calculatedData.contract_type === 'daily_rental' && 'إيجار يومي'}
                       {calculatedData.contract_type === 'monthly_rental' && 'إيجار شهري'}
                       {calculatedData.contract_type === 'yearly_rental' && 'إيجار سنوي'}
+                      {!['daily_rental', 'monthly_rental', 'yearly_rental'].includes(calculatedData.contract_type) && calculatedData.contract_type}
                     </p>
                   </div>
 
@@ -413,7 +431,9 @@ export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
                 </div>
 
                 {/* Discount Badge if Applied */}
-                {selectedTemplate?.preset_config?.discountPercentage && (
+                {selectedTemplate && 'template_type' in selectedTemplate && 
+                 selectedTemplate.template_type === 'preset' && 
+                 selectedTemplate.preset_config?.discountPercentage && (
                   <Alert className="border-yellow-200 bg-yellow-50">
                     <Sparkles className="h-4 w-4 text-yellow-600" />
                     <AlertDescription className="text-yellow-800">

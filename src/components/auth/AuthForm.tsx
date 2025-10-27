@@ -291,6 +291,11 @@ export const AuthForm: FC = () => {
                   <p className="text-xs text-muted-foreground text-center mt-2">
                     لا يتطلب بريد إلكتروني • بيانات تجريبية جاهزة
                   </p>
+                  <p className="text-xs text-center mt-4">
+                    <a href="/demo-trial" className="text-primary hover:underline font-semibold">
+                      تعرف على المزيد عن التجربة المجانية
+                    </a>
+                  </p>
                 </>
               )}
             </form>

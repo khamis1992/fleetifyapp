@@ -104,7 +104,14 @@
       "mcp__playwright__browser_network_requests",
       "mcp__playwright__browser_take_screenshot",
       "Bash(mkdir:*)",
-      "mcp__playwright__browser_snapshot"
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_evaluate",
+      "Bash(timeout 5 echo:*)",
+      "mcp__playwright__browser_close"
     ],
     "deny": [],
     "ask": []

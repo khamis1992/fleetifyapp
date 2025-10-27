@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload, BookOpen, Calendar, Users } from "lucide-react"
+import { PageCustomizer } from "@/components/PageCustomizer"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload, BookOpen } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -86,6 +87,11 @@ export default function Fleet() {
   }
 
   return (
+    <PageCustomizer
+      pageId="fleet-page"
+      title="Fleet Management"
+      titleAr="إدارة الأسطول"
+    >
     <ResponsiveContainer className="space-y-4 md:space-y-6">
       {/* Header */}
       <ResponsivePageActions
@@ -100,23 +106,9 @@ export default function Fleet() {
         secondaryActions={[
           {
             id: 'reservations',
-            label: 'الحجوزات',
+            label: 'نظام الحجوزات',
             icon: <BookOpen className="h-4 w-4 mr-2" />,
-            onClick: () => window.location.href = '/fleet/reservations',
-            type: 'outline'
-          },
-          {
-            id: 'availability',
-            label: 'تقويم التوفرية',
-            icon: <Calendar className="h-4 w-4 mr-2" />,
-            onClick: () => window.location.href = '/fleet/availability-calendar',
-            type: 'outline'
-          },
-          {
-            id: 'drivers',
-            label: 'إدارة السائقين',
-            icon: <Users className="h-4 w-4 mr-2" />,
-            onClick: () => window.location.href = '/fleet/drivers',
+            onClick: () => window.location.href = '/fleet/reservation-system',
             type: 'outline'
           },
           {
@@ -263,5 +255,6 @@ export default function Fleet() {
         }}
       />
     </ResponsiveContainer>
+    </PageCustomizer>
   )
 }

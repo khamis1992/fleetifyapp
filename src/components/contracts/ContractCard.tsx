@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car } from 'lucide-react';
+import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car, FileEdit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,10 +15,12 @@ interface ContractCardProps {
   onViewDetails?: (contract: any) => void;
   onCancelContract?: (contract: any) => void;
   onDeleteContract?: (contract: any) => void;
+  onAmendContract?: (contract: any) => void;
   showRenewButton?: boolean;
   showManageButton?: boolean;
   showCancelButton?: boolean;
   showDeleteButton?: boolean;
+  showAmendButton?: boolean;
 }
 
 export const ContractCard: React.FC<ContractCardProps> = ({
@@ -28,10 +30,12 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onViewDetails,
   onCancelContract,
   onDeleteContract,
+  onAmendContract,
   showRenewButton = false,
   showManageButton = false,
   showCancelButton = false,
-  showDeleteButton = false
+  showDeleteButton = false,
+  showAmendButton = true
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
   const { formatCurrency } = useCurrencyFormatter();
@@ -140,7 +144,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2 justify-end pt-2 border-t">
+          <div className="flex gap-2 justify-end pt-2 border-t flex-wrap">
             <Button 
               variant="outline" 
               size="sm" 
@@ -148,6 +152,17 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             >
               عرض
             </Button>
+            {showAmendButton && contract.status === 'active' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onAmendContract?.(contract)}
+                className="border-blue-500 text-blue-700 hover:bg-blue-50"
+              >
+                <FileEdit className="h-4 w-4 mr-2" />
+                تعديل
+              </Button>
+            )}
             {showRenewButton && contract.status === 'active' && (
               <Button 
                 variant="outline" 

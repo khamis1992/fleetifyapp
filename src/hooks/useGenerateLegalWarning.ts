@@ -2,7 +2,31 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DelinquentCustomer } from "./useDelinquentCustomers";
+
+// Currency configurations for different countries
+const CURRENCY_NAMES: Record<string, { ar: string; en: string }> = {
+  'KWD': { ar: 'دينار كويتي', en: 'Kuwaiti Dinar' },
+  'QAR': { ar: 'ريال قطري', en: 'Qatari Riyal' },
+  'SAR': { ar: 'ريال سعودي', en: 'Saudi Riyal' },
+  'AED': { ar: 'درهم إماراتي', en: 'UAE Dirham' },
+  'OMR': { ar: 'ريال عماني', en: 'Omani Rial' },
+  'BHD': { ar: 'دينار بحريني', en: 'Bahraini Dinar' },
+  'USD': { ar: 'دولار أمريكي', en: 'US Dollar' },
+  'EUR': { ar: 'يورو', en: 'Euro' },
+};
+
+const CURRENCY_LOCALES: Record<string, string> = {
+  'KWD': 'ar-KW',
+  'QAR': 'ar-QA',
+  'SAR': 'ar-SA',
+  'AED': 'ar-AE',
+  'OMR': 'ar-OM',
+  'BHD': 'ar-BH',
+  'USD': 'en-US',
+  'EUR': 'de-DE',
+};
 
 export interface GenerateWarningParams {
   delinquentCustomer: DelinquentCustomer;
@@ -51,12 +75,17 @@ export const useGenerateLegalWarning = () => {
 
       if (!profile?.company_id) throw new Error('Company not found');
 
-      // Get company information
+      // Get company information including currency
       const { data: company } = await supabase
         .from('companies')
-        .select('name_ar, name_en, phone, email, address, commercial_registration')
+        .select('name_ar, name_en, phone, email, address, commercial_registration, currency')
         .eq('id', profile.company_id)
         .single();
+      
+      // Get company currency with fallback to KWD
+      const companyCurrency = (company?.currency || 'KWD').toUpperCase();
+      const currencyName = CURRENCY_NAMES[companyCurrency] || CURRENCY_NAMES['KWD'];
+      const currencyLocale = CURRENCY_LOCALES[companyCurrency] || CURRENCY_LOCALES['KWD'];
 
       // Generate document number
       const docNumberPrefix = 'WRN';
@@ -78,9 +107,9 @@ export const useGenerateLegalWarning = () => {
         urgencyText = 'تنبيه أولي';
       }
 
-      // Build AI prompt for generating the legal warning
+      // Build AI prompt for generating the legal warning with company currency
       const aiPrompt = `
-أنت مستشار قانوني متخصص في القانون الكويتي. أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
+أنت مستشار قانوني متخصص في القانون. أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
 
 معلومات الشركة:
 - اسم الشركة: ${company?.name_ar || 'شركة فليتفاي'}
@@ -88,6 +117,7 @@ export const useGenerateLegalWarning = () => {
 - الهاتف: ${company?.phone || ''}
 - البريد: ${company?.email || ''}
 - العنوان: ${company?.address || ''}
+- العملة المستخدمة: ${companyCurrency}
 
 معلومات العميل المتعثر:
 - الاسم: ${delinquentCustomer.customer_name}
@@ -99,16 +129,16 @@ export const useGenerateLegalWarning = () => {
 
 تفاصيل المديونية:
 - عدد الأشهر المتأخرة: ${delinquentCustomer.months_unpaid} شهر
-- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString('ar-KW')} دينار كويتي
-- غرامات التأخير (0.1% يومياً): ${delinquentCustomer.late_penalty.toLocaleString('ar-KW')} دينار كويتي
-- مخالفات مرورية غير مسددة: ${delinquentCustomer.violations_amount.toLocaleString('ar-KW')} دينار كويتي (${delinquentCustomer.violations_count} مخالفة)
-- **الإجمالي الكلي المستحق: ${delinquentCustomer.total_debt.toLocaleString('ar-KW')} دينار كويتي**
+- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
+- غرامات التأخير (0.1% يومياً): ${delinquentCustomer.late_penalty.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
+- مخالفات مرورية غير مسددة: ${delinquentCustomer.violations_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar}) (${delinquentCustomer.violations_count} مخالفة)
+- **الإجمالي الكلي المستحق: ${delinquentCustomer.total_debt.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})**
 
 معلومات التأخير:
 - عدد الأيام المتأخرة: ${delinquentCustomer.days_overdue} يوم
 - درجة المخاطر: ${delinquentCustomer.risk_score}/100 (${delinquentCustomer.risk_level})
-- تاريخ آخر دفعة: ${delinquentCustomer.last_payment_date ? new Date(delinquentCustomer.last_payment_date).toLocaleDateString('ar-KW') : 'لا يوجد'}
-- مبلغ آخر دفعة: ${delinquentCustomer.last_payment_amount.toLocaleString('ar-KW')} دينار كويتي
+- تاريخ آخر دفعة: ${delinquentCustomer.last_payment_date ? new Date(delinquentCustomer.last_payment_date).toLocaleDateString('ar') : 'لا يوجد'}
+- مبلغ آخر دفعة: ${delinquentCustomer.last_payment_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
 
 السجل القانوني:
 - قضايا قانونية سابقة: ${delinquentCustomer.has_previous_legal_cases ? `نعم (${delinquentCustomer.previous_legal_cases_count} قضية)` : 'لا'}

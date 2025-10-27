@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { PageCustomizer } from "@/components/PageCustomizer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Download, Calendar, TrendingUp, DollarSign, PieChart, Eye, BarChart3 } from "lucide-react"
@@ -196,6 +197,11 @@ const Reports = () => {
   ]
 
   return (
+    <PageCustomizer
+      pageId="reports-page"
+      title="Financial Reports"
+      titleAr="التقارير المالية"
+    >
     <div className="space-y-6">
       {/* Breadcrumb */}
       <Breadcrumb>
@@ -463,6 +469,7 @@ const Reports = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </PageCustomizer>
   )
 }
 

@@ -1,12 +1,15 @@
 // @ts-nocheck
 import React, { useEffect, useState, useRef } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
+import { PageCustomizer } from '@/components/PageCustomizer';
 import CarRentalDashboard from './dashboards/CarRentalDashboard';
 import RealEstateDashboard from './dashboards/RealEstateDashboard';
 import RetailDashboard from './dashboards/RetailDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoadingProgress, useLoadingSteps } from '@/components/ui/LoadingProgress';
 import { DemoTrialBanner } from '@/components/demo';
+import { WhatsNewModal } from '@/components/features';
+import { useWhatsNew } from '@/hooks/useWhatsNew';
 
 const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
@@ -15,6 +18,26 @@ const DashboardInner: React.FC = () => {
   const [timeoutReached, setTimeoutReached] = useState(false);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCompanyIdRef = useRef<string>();
+
+  // What's New feature
+  const { isModalOpen, openModal, closeModal, changelog, unreadCount, markAsViewed, hasNewUpdates } = useWhatsNew();
+
+  // Show What's New modal on first mount if there are updates
+  useEffect(() => {  
+    if (hasNewUpdates && !isModalOpen) {
+      const showWhatsNewTimeout = setTimeout(() => {
+        openModal();
+      }, 2000); // Show after 2 seconds
+      return () => clearTimeout(showWhatsNewTimeout);
+    }
+  }, []);
+
+  // Mark as viewed when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      markAsViewed();
+    }
+  }, [isModalOpen, markAsViewed]);
 
   // Progressive loading steps (K1 Fix #003)
   const loadingSteps = useLoadingSteps([
@@ -161,46 +184,64 @@ const DashboardInner: React.FC = () => {
     );
   }
 
-  switch (businessType) {
-    case 'car_rental':
-      console.log('🏢 [DASHBOARD] Rendering Car Rental Dashboard');
-      return (
-        <>
-          <DemoTrialBanner />
-          <CarRentalDashboard key={`car-rental-${companyId}`} />
-        </>
-      );
-    case 'real_estate':
-      console.log('🏢 [DASHBOARD] Rendering Real Estate Dashboard');
-      return (
-        <>
-          <DemoTrialBanner />
-          <RealEstateDashboard key={`real-estate-${companyId}`} />
-        </>
-      );
-    case 'retail':
-      console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
-      return (
-        <>
-          <DemoTrialBanner />
-          <RetailDashboard key={`retail-${companyId}`} />
-        </>
-      );
-    default:
-      console.error('🏢 [DASHBOARD] Unknown business type:', businessType, 'for company ID:', company?.id);
-      return (
-        <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-          <div className="text-center space-y-2">
-            <p className="text-sm text-destructive">
-              نوع النشاط غير مدعوم: {businessType}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              يرجى التواصل مع الدعم التقني
-            </p>
+  const renderDashboardContent = () => {
+    switch (businessType) {
+      case 'car_rental':
+        console.log('🏢 [DASHBOARD] Rendering Car Rental Dashboard');
+        return (
+          <>
+            <DemoTrialBanner />
+            <CarRentalDashboard key={`car-rental-${companyId}`} />
+          </>
+        );
+      case 'real_estate':
+        console.log('🏢 [DASHBOARD] Rendering Real Estate Dashboard');
+        return (
+          <>
+            <DemoTrialBanner />
+            <RealEstateDashboard key={`real-estate-${companyId}`} />
+          </>
+        );
+      case 'retail':
+        console.log('🏢 [DASHBOARD] Rendering Retail Dashboard');
+        return (
+          <>
+            <DemoTrialBanner />
+            <RetailDashboard key={`retail-${companyId}`} />
+          </>
+        );
+      default:
+        console.error('🏢 [DASHBOARD] Unknown business type:', businessType, 'for company ID:', company?.id);
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-destructive">
+                نوع النشاط غير مدعوم: {businessType}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                يرجى التواصل مع الدعم التقني
+              </p>
+            </div>
           </div>
-        </div>
-      );
-  }
+        );
+    }
+  };
+
+  return (
+    <PageCustomizer
+      pageId="main-dashboard"
+      title="Dashboard"
+      titleAr="لوحة التحكم"
+    >
+      {renderDashboardContent()}
+      <WhatsNewModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        changelog={changelog}
+        unreadCount={unreadCount}
+      />
+    </PageCustomizer>
+  );
 };
 
 const Dashboard: React.FC = () => {

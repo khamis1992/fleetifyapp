@@ -1,10 +1,12 @@
 import React from 'react';
-import { Plus, Settings, FileText, Upload, Trash2 } from 'lucide-react';
+import { Plus, Settings, FileText, Upload, Trash2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface ContractsHeaderProps {
   onCreateContract: () => void;
+  onCreateExpressContract?: () => void;
   onShowTemplates: () => void;
   onShowExport: () => void;
   onShowCSVUpload: () => void;
@@ -13,6 +15,7 @@ interface ContractsHeaderProps {
 
 export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
   onCreateContract,
+  onCreateExpressContract,
   onShowTemplates,
   onShowExport,
   onShowCSVUpload,
@@ -45,6 +48,19 @@ export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
           <Trash2 className="h-4 w-4 mr-2" />
           حذف جميع العقود
         </Button>
+        {onCreateExpressContract && (
+          <Button 
+            variant="outline" 
+            onClick={onCreateExpressContract}
+            className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            الوضع السريع
+            <Badge variant="secondary" className="mr-2 bg-green-100 text-green-800 text-xs">
+              70% أسرع
+            </Badge>
+          </Button>
+        )}
         <Button onClick={onCreateContract}>
           <Plus className="h-4 w-4 mr-2" />
           إنشاء عقد جديد

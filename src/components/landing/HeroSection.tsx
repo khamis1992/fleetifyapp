@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, Sparkles } from 'lucide-react';
+import { ArrowRight, Play, Sparkles, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InteractiveCard } from './InteractiveCard';
 import { useNavigate } from 'react-router-dom';
@@ -84,6 +84,15 @@ export function HeroSection() {
               >
                 تسجيل الدخول
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => navigate('/demo-trial')}
+                className="arabic-body px-8 py-6 group transition-all duration-300 hover:scale-105 border-2 border-primary/30 hover:bg-primary/5"
+              >
+                <Rocket className="h-5 w-5 ml-2" />
+                تجربة مجانية
               </Button>
             </motion.div>
 

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دليل نظام Fleetify الشامل - الصفحة الرئيسية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .intro-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            border-right: 5px solid #667eea;
+        }
+
+        .intro-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+
+        .intro-section p {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .module-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .module-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .module-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .module-card h3 {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .module-card p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .module-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+
+        .quick-links {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+        }
+
+        .quick-links h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .quick-links ul {
+            list-style: none;
+        }
+
+        .quick-links li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0e5c5;
+        }
+
+        .quick-links li:last-child {
+            border-bottom: none;
+        }
+
+        .quick-links a {
+            color: #856404;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .quick-links a:hover {
+            color: #533500;
+            text-decoration: underline;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .module-card {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 دليل نظام Fleetify الشامل</h1>
+            <p>نظام متكامل لإدارة الأسطول، العقود، والعملاء</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">آخر تحديث: أكتوبر 2025</p>
+        </div>
+
+        <div class="main-content">
+            <div class="intro-section">
+                <h2>مرحباً بك في نظام Fleetify</h2>
+                <p>
+                    <strong>Fleetify</strong> هو نظام إدارة متكامل وشامل تم تصميمه خصيصاً لإدارة الأعمال بكفاءة عالية.
+                    يوفر النظام حلولاً متقدمة لإدارة العقود، العملاء، الأسطول، المالية، الموارد البشرية، والمزيد.
+                </p>
+                <p>
+                    يتميز النظام بواجهة مستخدم حديثة وسهلة الاستخدام، مع دعم كامل للغة العربية والإنجليزية،
+                    وإمكانية الوصول من أي جهاز (كمبيوتر، تابلت، موبايل).
+                </p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">13+</span>
+                    <span class="stat-label">وحدة رئيسية</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">50+</span>
+                    <span class="stat-label">ميزة متقدمة</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">متوافق مع الموبايل</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">متاح دائماً</span>
+                </div>
+            </div>
+
+            <h2 style="color: #667eea; margin: 40px 0 20px; font-size: 2em; text-align: center;">
+                📚 الوحدات الرئيسية
+            </h2>
+
+            <div class="modules-grid">
+                <!-- Dashboard -->
+                <a href="dashboard.html" class="module-card">
+                    <div class="module-icon">📊</div>
+                    <h3>لوحة التحكم الرئيسية</h3>
+                    <p>
+                        نظرة شاملة على جميع العمليات، إحصائيات فورية، وتحليلات ذكية
+                        لاتخاذ القرارات الصحيحة في الوقت المناسب.
+                    </p>
+                    <span class="module-badge">أساسي</span>
+                </a>
+
+                <!-- Contracts -->
+                <a href="contracts.html" class="module-card">
+                    <div class="module-icon">📋</div>
+                    <h3>إدارة العقود</h3>
+                    <p>
+                        نظام متكامل لإدارة عقود الإيجار مع الوضع السريع (70% أسرع)،
+                        نظام التعديلات، والمتابعة التلقائية.
+                    </p>
+                    <span class="module-badge">⚡ سريع</span>
+                    <span class="module-badge">متقدم</span>
+                </a>
+
+                <!-- Customers -->
+                <a href="customers.html" class="module-card">
+                    <div class="module-icon">👥</div>
+                    <h3>إدارة العملاء</h3>
+                    <p>
+                        قاعدة بيانات شاملة للعملاء مع الإضافة السريعة (15 ثانية)،
+                        سجل المعاملات، والتقارير التفصيلية.
+                    </p>
+                    <span class="module-badge">⚡ سريع</span>
+                </a>
+
+                <!-- Finance -->
+                <a href="finance.html" class="module-card">
+                    <div class="module-icon">💰</div>
+                    <h3>النظام المالي</h3>
+                    <p>
+                        نظام محاسبي متكامل: الفواتير، المدفوعات، دفتر الأستاذ،
+                        القيود اليومية، والتقارير المالية.
+                    </p>
+                    <span class="module-badge">شامل</span>
+                </a>
+
+                <!-- Collections -->
+                <a href="collections.html" class="module-card">
+                    <div class="module-icon">📱</div>
+                    <h3>نظام التحصيل</h3>
+                    <p>
+                        تحصيل ذكي مع تذكيرات واتساب تلقائية، 4 مراحل للتذكير،
+                        وزيادة 40% في سرعة التحصيل.
+                    </p>
+                    <span class="module-badge">💬 واتساب</span>
+                    <span class="module-badge">آلي</span>
+                </a>
+
+                <!-- Fleet Management -->
+                <a href="fleet.html" class="module-card">
+                    <div class="module-icon">🚗</div>
+                    <h3>إدارة الأسطول</h3>
+                    <p>
+                        متابعة كاملة للمركبات، الصيانة، المخالفات المرورية،
+                        تصاريح التشغيل، والتحليل المالي للأسطول.
+                    </p>
+                    <span class="module-badge">متقدم</span>
+                </a>
+
+                <!-- HR Management -->
+                <a href="hr.html" class="module-card">
+                    <div class="module-icon">👔</div>
+                    <h3>إدارة الموارد البشرية</h3>
+                    <p>
+                        نظام متكامل للموظفين: الحضور، الإجازات، الرواتب،
+                        إدارة المستخدمين، والتقارير.
+                    </p>
+                    <span class="module-badge">شامل</span>
+                </a>
+
+                <!-- Properties -->
+                <a href="properties.html" class="module-card">
+                    <div class="module-icon">🏢</div>
+                    <h3>إدارة العقارات</h3>
+                    <p>
+                        إدارة العقارات، عقود الإيجار، المستأجرين، الملاك،
+                        والصيانة مع خرائط تفاعلية.
+                    </p>
+                    <span class="module-badge">عقاري</span>
+                </a>
+
+                <!-- Inventory -->
+                <a href="inventory.html" class="module-card">
+                    <div class="module-icon">📦</div>
+                    <h3>إدارة المخزون</h3>
+                    <p>
+                        تتبع المخزون، حركة المواد، المستودعات، الفئات،
+                        والتقارير التفصيلية.
+                    </p>
+                    <span class="module-badge">جديد</span>
+                </a>
+
+                <!-- Sales & CRM -->
+                <a href="sales.html" class="module-card">
+                    <div class="module-icon">📈</div>
+                    <h3>المبيعات و CRM</h3>
+                    <p>
+                        إدارة المبيعات الكاملة: العملاء المحتملون، الفرص،
+                        عروض الأسعار، والطلبات.
+                    </p>
+                    <span class="module-badge">جديد</span>
+                </a>
+
+                <!-- Legal System -->
+                <a href="legal.html" class="module-card">
+                    <div class="module-icon">⚖️</div>
+                    <h3>النظام القانوني</h3>
+                    <p>
+                        متابعة القضايا، المتعثرين، الغرامات التأخيرية،
+                        النزاعات، والإنذارات القانونية.
+                    </p>
+                    <span class="module-badge">قانوني</span>
+                </a>
+
+                <!-- Reports -->
+                <a href="reports.html" class="module-card">
+                    <div class="module-icon">📊</div>
+                    <h3>التقارير والتحليلات</h3>
+                    <p>
+                        تقارير شاملة لجميع الوحدات مع إمكانية التصدير،
+                        الطباعة، والمشاركة.
+                    </p>
+                    <span class="module-badge">تحليلي</span>
+                </a>
+
+                <!-- Settings -->
+                <a href="settings.html" class="module-card">
+                    <div class="module-icon">⚙️</div>
+                    <h3>الإعدادات والضبط</h3>
+                    <p>
+                        إعدادات النظام، الصلاحيات، التخصيص، الأمان،
+                        والنسخ الاحتياطي.
+                    </p>
+                    <span class="module-badge">إدارة</span>
+                </a>
+            </div>
+
+            <div class="quick-links">
+                <h3>🔗 روابط سريعة</h3>
+                <ul>
+                    <li>
+                        <a href="user-guide.html">📖 دليل المستخدم الكامل</a>
+                        - دليل شامل لاستخدام جميع ميزات النظام
+                    </li>
+                    <li>
+                        <a href="setup.html">🔧 دليل الإعداد والتثبيت</a>
+                        - خطوات إعداد النظام والبدء في الاستخدام
+                    </li>
+                    <li>
+                        <a href="features.html">✨ الميزات المتقدمة</a>
+                        - شرح تفصيلي للميزات الخاصة والمتقدمة
+                    </li>
+                    <li>
+                        <a href="workflows.html">🔄 سير العمل والعمليات</a>
+                        - أمثلة عملية لسير العمل اليومي
+                    </li>
+                    <li>
+                        <a href="troubleshooting.html">🔍 حل المشاكل الشائعة</a>
+                        - حلول للمشاكل والأسئلة المتكررة
+                    </li>
+                    <li>
+                        <a href="api-reference.html">🔌 مرجع API</a>
+                        - للمطورين: وثائق API والتكامل
+                    </li>
+                </ul>
+            </div>
+
+            <div style="background: #d1ecf1; border: 2px solid #bee5eb; border-radius: 15px; padding: 25px; margin-top: 30px;">
+                <h3 style="color: #0c5460; margin-bottom: 15px; font-size: 1.5em;">
+                    💡 نصيحة للبدء
+                </h3>
+                <p style="color: #0c5460; line-height: 1.8;">
+                    إذا كنت مستخدماً جديداً، نوصي بالبدء من
+                    <a href="user-guide.html" style="color: #0c5460; font-weight: bold;">دليل المستخدم</a>
+                    للتعرف على أساسيات النظام، ثم الانتقال إلى الوحدات المختلفة حسب احتياجك.
+                    <br><br>
+                    للمسؤولين والمدراء، راجع
+                    <a href="setup.html" style="color: #0c5460; font-weight: bold;">دليل الإعداد</a>
+                    لضبط النظام بشكل صحيح قبل البدء.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>نظام Fleetify</strong> - نظام إدارة متكامل</p>
+            <p>© 2025 جميع الحقوق محفوظة</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                <a href="mailto:support@fleetify.com" style="color: white;">support@fleetify.com</a> |
+                <a href="tel:+96599999999" style="color: white;">+965 9999 9999</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

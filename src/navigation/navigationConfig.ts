@@ -36,6 +36,10 @@ import {
   ShoppingCart,
   TrendingDown,
   LayoutDashboard,
+  BookOpen as BookOpenIcon,
+  HelpCircle,
+  PlayCircle,
+  MessageSquare,
   LucideIcon,
 } from 'lucide-react'
 
@@ -360,6 +364,70 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     name_en: 'Support',
     href: '/support',
     icon: Headphones,
+  },
+
+  // Help & Documentation
+  {
+    id: 'help',
+    name: 'المساعدة والتوثيق',
+    name_en: 'Help & Documentation',
+    icon: BookOpenIcon,
+    submenu: [
+      {
+        id: 'help-hub',
+        name: 'مركز المساعدة',
+        href: '/help',
+        icon: BookOpenIcon,
+      },
+      {
+        id: 'help-user-guide',
+        name: 'دليل المستخدم',
+        href: '/help/user-guide',
+        icon: PlayCircle,
+      },
+      {
+        id: 'help-dashboard',
+        name: 'دليل لوحة التحكم',
+        href: '/help/dashboard',
+        icon: Home,
+      },
+      {
+        id: 'help-contracts',
+        name: 'دليل العقود',
+        href: '/help/contracts',
+        icon: FileText,
+      },
+      {
+        id: 'help-customers',
+        name: 'دليل العملاء',
+        href: '/help/customers',
+        icon: Users,
+      },
+      {
+        id: 'help-finance',
+        name: 'دليل المالية',
+        href: '/help/finance',
+        icon: DollarSign,
+      },
+      {
+        id: 'help-collections',
+        name: 'دليل التحصيل',
+        href: '/help/collections',
+        icon: MessageSquare,
+      },
+      {
+        id: 'help-fleet',
+        name: 'دليل الأسطول',
+        href: '/help/fleet',
+        icon: Car,
+      },
+      {
+        id: 'help-faq',
+        name: 'الأسئلة الشائعة',
+        href: '/help/faq',
+        icon: HelpCircle,
+      },
+    ],
   },
 ]
 

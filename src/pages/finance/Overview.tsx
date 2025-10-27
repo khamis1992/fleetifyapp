@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageCustomizer } from "@/components/PageCustomizer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -171,7 +172,12 @@ const Overview = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <PageCustomizer
+      pageId="finance-page"
+      title="Finance Management"
+      titleAr="إدارة المالية"
+    >
+      <div className="space-y-6">
       <div className="bg-gradient-primary p-8 rounded-2xl text-primary-foreground shadow-elevated">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-white/20 rounded-xl">
@@ -283,7 +289,8 @@ const Overview = () => {
 
       {/* Payroll Integration Section */}
       <PayrollIntegrationCard />
-    </div>
+      </div>
+    </PageCustomizer>
   );
 };
 

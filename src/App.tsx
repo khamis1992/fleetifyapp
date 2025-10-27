@@ -33,6 +33,7 @@ import Index from "./pages/Index";
 import PremiumLanding from "./pages/PremiumLanding";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import DemoTrial from "./pages/DemoTrial";
 import NotFound from "./pages/NotFound";
 
 // Heavy pages - lazy loaded with retry for better reliability
@@ -87,6 +88,7 @@ const FleetReports = lazy(() => import("./pages/fleet/FleetReports"));
 const DispatchPermits = lazy(() => import("./pages/fleet/DispatchPermits"));
 const VehicleConditionCheck = lazy(() => import("./pages/fleet/VehicleConditionCheck").then(m => ({ default: m.VehicleConditionCheck })));
 const FleetFinancialAnalysis = lazy(() => import("./pages/fleet/FleetFinancialAnalysis"));
+const ReservationSystem = lazy(() => import("./pages/fleet/ReservationSystem"));
 const VehicleInstallments = lazy(() => import("./pages/VehicleInstallments"));
 
 // HR Management pages
@@ -141,6 +143,16 @@ const PerformanceMonitor = lazy(() => import("@/components/performance").then(m 
 
 // Fix pages
 const FixVehicleData = lazy(() => import("./pages/FixVehicleData"));
+
+// Help & Documentation pages
+const HelpHub = lazy(() => import("./pages/help/HelpHub"));
+const UserGuide = lazy(() => import("./pages/help/UserGuide"));
+const ContractsHelp = lazy(() => import("./pages/help/ContractsHelp"));
+const DashboardHelp = lazy(() => import("./pages/help/DashboardHelp"));
+const CustomersHelp = lazy(() => import("./pages/help/CustomersHelp"));
+const FinanceHelp = lazy(() => import("./pages/help/FinanceHelp"));
+const CollectionsHelp = lazy(() => import("./pages/help/CollectionsHelp"));
+const FleetHelp = lazy(() => import("./pages/help/FleetHelp"));
 
 // Create a stable QueryClient instance to persist across navigation
 const queryClient = new QueryClient({
@@ -265,6 +277,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/premium-landing" element={<PremiumLanding />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/demo-trial" element={<DemoTrial />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/quotation-approval" element={
         <Suspense fallback={<PageSkeletonFallback />}>
@@ -438,6 +451,13 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <VehicleInstallments />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="fleet/reservation-system" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ReservationSystem />
             </Suspense>
           </AdminRoute>
         } />
@@ -722,7 +742,49 @@ const AppRoutes = () => {
             </Suspense>
           </AdminRoute>
         } />
-        
+
+        {/* Help & Documentation Routes */}
+        <Route path="help" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <HelpHub />
+          </Suspense>
+        } />
+        <Route path="help/user-guide" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <UserGuide />
+          </Suspense>
+        } />
+        <Route path="help/contracts" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <ContractsHelp />
+          </Suspense>
+        } />
+        <Route path="help/dashboard" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <DashboardHelp />
+          </Suspense>
+        } />
+        <Route path="help/customers" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <CustomersHelp />
+          </Suspense>
+        } />
+        <Route path="help/finance" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <FinanceHelp />
+          </Suspense>
+        } />
+        <Route path="help/collections" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <CollectionsHelp />
+          </Suspense>
+        } />
+        <Route path="help/fleet" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <FleetHelp />
+          </Suspense>
+        } />
+
         <Route path="performance" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>

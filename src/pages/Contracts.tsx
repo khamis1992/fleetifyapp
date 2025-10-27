@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "react-router-dom"
+import { PageCustomizer } from "@/components/PageCustomizer"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -44,6 +45,8 @@ import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpl
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings"
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog"
 import { VehicleAvailabilityCalendar } from "@/components/vehicles/VehicleAvailabilityCalendar"
+import { ExpressContractForm } from "@/components/contracts"
+import { ContractAmendmentForm } from "@/components/contracts"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 // Hook imports
@@ -81,6 +84,8 @@ function Contracts() {
 
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false)
+  const [showExpressMode, setShowExpressMode] = useState(false)
+  const [showAmendmentForm, setShowAmendmentForm] = useState(false)
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined)
@@ -162,7 +167,7 @@ function Contracts() {
   }, [refetch, isMobile])
 
   // Event handlers
-  const handleContractSubmit = useCallback(async (contractData: any) => {
+  const handleContractSubmit = useCallback(async (contractData: any): Promise<void> => {
     try {
       console.log('📋 [CONTRACT_SUBMIT] Starting new contract creation process with progress tracking')
       
@@ -177,7 +182,6 @@ function Contracts() {
       }
       
       createContract(finalData)
-      return null
     } catch (error) {
       console.error('❌ [CONTRACT_SUBMIT] Error in contract creation:', error)
       setShowCreationProgress(false)
@@ -221,6 +225,11 @@ function Contracts() {
     setShowDeleteDialog(true)
   }, [])
 
+  const handleAmendContract = useCallback((contract: any) => {
+    setSelectedContract(contract)
+    setShowAmendmentForm(true)
+  }, [])
+
   const handleManagePayments = (contract: any) => {
     setSelectedContract(contract)
     setShowDetailsDialog(true)
@@ -236,6 +245,10 @@ function Contracts() {
   const handleCreateContract = () => {
     setPreselectedCustomerId(undefined)
     setShowContractWizard(true)
+  }
+
+  const handleCreateExpressContract = () => {
+    setShowExpressMode(true)
   }
 
   const handleShowTemplates = () => {
@@ -300,13 +313,19 @@ function Contracts() {
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} isRefreshing={isRefreshing}>
-      <ResponsiveContainer className={cn("space-y-4 md:space-y-6", animationStyle)}>
+    <PageCustomizer
+      pageId="contracts-page"
+      title="Contracts"
+      titleAr="العقود"
+    >
+      <PullToRefresh onRefresh={handleRefresh} isRefreshing={isRefreshing}>
+        <ResponsiveContainer className={cn("space-y-4 md:space-y-6", animationStyle)}>
         {/* Enhanced Header - Mobile vs Desktop */}
         <div className="flex flex-col space-y-4">
           {isMobile ? (
             <MobileContractsHeader
               onCreateContract={handleCreateContract}
+              onCreateExpressContract={handleCreateExpressContract}
               onShowTemplates={handleShowTemplates}
               onShowExport={handleShowExport}
               onShowCSVUpload={handleShowCSVUpload}
@@ -319,6 +338,7 @@ function Contracts() {
             <div className="flex flex-col gap-4">
               <ContractsHeader
                 onCreateContract={handleCreateContract}
+                onCreateExpressContract={handleCreateExpressContract}
                 onShowTemplates={handleShowTemplates}
                 onShowExport={handleShowExport}
                 onShowCSVUpload={handleShowCSVUpload}
@@ -478,6 +498,7 @@ function Contracts() {
                   onViewDetails={handleViewDetails}
                   onCancelContract={handleCancelContract}
                   onDeleteContract={handleDeleteContract}
+                  onAmendContract={handleAmendContract}
                   onCreateContract={handleCreateContract}
                   onClearFilters={handleClearFilters}
                   hasFilters={Object.keys(filters).length > 0}
@@ -544,6 +565,7 @@ function Contracts() {
             setShowContractWizard(true); 
           }}
           onCreateInvoice={(contract) => { setSelectedContract(contract); setShowInvoiceDialog(true); }}
+          onAmendContract={handleAmendContract}
         />
         
         <ContractInvoiceDialog
@@ -566,6 +588,26 @@ function Contracts() {
           draftIdToLoad={draftIdToLoad}
           contractToEdit={contractToEdit}
         />
+        
+        {/* Express Mode Dialog */}
+        <ExpressContractForm
+          open={showExpressMode}
+          onOpenChange={setShowExpressMode}
+          onSubmit={handleContractSubmit}
+        />
+        
+        {/* Contract Amendment Dialog */}
+        {selectedContract && (
+          <ContractAmendmentForm
+            open={showAmendmentForm}
+            onOpenChange={setShowAmendmentForm}
+            contract={selectedContract}
+            onSuccess={() => {
+              refetch();
+              setShowAmendmentForm(false);
+            }}
+          />
+        )}
         
         {/* Contract Creation Progress Dialog - Responsive */}
         <ResponsiveModal
@@ -641,8 +683,9 @@ function Contracts() {
         {isMobile && (
           <FloatingCreateButton onCreateContract={handleCreateContract} />
         )}
-      </ResponsiveContainer>
-    </PullToRefresh>
+        </ResponsiveContainer>
+      </PullToRefresh>
+    </PageCustomizer>
   )
 }
 

@@ -18,6 +18,7 @@ export { CustomerAccountStatement } from './CustomerAccountStatement';
 export { CustomerDetailsDialog } from './CustomerDetailsDialog';
 export { CustomerDiagnostics } from './CustomerDiagnostics';
 export { CustomerCSVUpload } from './CustomerCSVUpload';
+export { CustomerImportWizard } from './CustomerImportWizard';
 export { BulkDeleteCustomersDialog } from './BulkDeleteCustomersDialog';
 export { DriverLicenseManager } from './DriverLicenseManager';
 

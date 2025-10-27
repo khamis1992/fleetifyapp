@@ -145,6 +145,19 @@ export function replaceTemplateVariables(
   return result;
 }
 
+// Dynamic currency formatting based on locale
+export function formatCurrencyByLocale(amount: number, locale: string = 'en-US', currency: string = 'USD'): string {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  } catch (error) {
+    // Fallback if invalid locale/currency
+    return `${amount.toLocaleString()} ${currency}`;
+  }
+}
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

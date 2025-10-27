@@ -23,7 +23,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Trash2
+  Trash2,
+  FileEdit
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +58,7 @@ interface ContractDetailsDialogProps {
   };
   onEdit?: (contract: Contract) => void;
   onCreateInvoice?: (contract: Contract) => void;
+  onAmendContract?: (contract: Contract) => void;
 }
 
 export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
@@ -64,7 +66,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onOpenChange,
   contract,
   onEdit,
-  onCreateInvoice
+  onCreateInvoice,
+  onAmendContract
 }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editData, setEditData] = React.useState<Partial<Contract>>({});
@@ -376,6 +379,17 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
               تفاصيل العقد رقم <NumberDisplay value={contract.contract_number} className="inline" />
             </DialogTitle>
             <div className="flex gap-2">
+              {contract.status === 'active' && onAmendContract && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onAmendContract(contract)}
+                  className="border-blue-500 text-blue-700 hover:bg-blue-50"
+                >
+                  <FileEdit className="h-4 w-4 mr-2" />
+                  تعديل العقد
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
                 طباعة

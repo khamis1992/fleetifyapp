@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PageCustomizer } from '@/components/PageCustomizer';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCustomers } from '@/hooks/useEnhancedCustomers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,7 +35,8 @@ import {
   MoreHorizontal,
   Upload,
   Car,
-  FileText
+  FileText,
+  Zap
 } from 'lucide-react';
 import {
   Table,
@@ -57,7 +59,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload } from '@/components/customers';
+import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload, CustomerImportWizard } from '@/components/customers';
+import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
@@ -76,11 +79,13 @@ const Customers = () => {
   const [customerType, setCustomerType] = useState<'all' | 'individual' | 'corporate'>('all');
   const [includeInactive, setIncludeInactive] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showQuickCreateDialog, setShowQuickCreateDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [showImportWizard, setShowImportWizard] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(100); // Increased from 50 to 100
 
@@ -161,6 +166,10 @@ const Customers = () => {
   // Event handlers
   const handleCreateCustomer = () => {
     setShowCreateDialog(true);
+  };
+
+  const handleQuickCreateCustomer = () => {
+    setShowQuickCreateDialog(true);
   };
 
   const handleBulkDelete = () => {
@@ -327,7 +336,7 @@ const Customers = () => {
   if (isMobile) {
     return (
       <div className="space-y-6 p-4">
-        {/* Header */}
+        {/* Mobile Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">العملاء</h1>
           <div className="flex gap-2">
@@ -338,6 +347,15 @@ const Customers = () => {
             >
               <Upload className="h-4 w-4 ml-2" />
               استيراد CSV
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleQuickCreateCustomer}
+              className="border-green-500 text-green-700 hover:bg-green-50"
+            >
+              <Zap className="h-4 w-4 ml-2" />
+              سريع
             </Button>
             <Button onClick={handleCreateCustomer}>
               <Plus className="h-4 w-4 ml-2" />
@@ -504,12 +522,26 @@ const Customers = () => {
             toast.success('تم رفع ملف العملاء بنجاح');
           }}
         />
+        
+        <QuickCustomerForm
+          open={showQuickCreateDialog}
+          onOpenChange={setShowQuickCreateDialog}
+          onSuccess={(customerId, customerData) => {
+            refetch();
+            toast.success('تم إنشاء العميل السريع بنجاح');
+          }}
+        />
       </div>
     );
   }
 
   // Desktop view with virtual scrolling
   return (
+    <PageCustomizer
+      pageId="customers-page"
+      title="Customers"
+      titleAr="العملاء"
+    >
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -521,6 +553,17 @@ const Customers = () => {
           >
             <Upload className="h-4 w-4 ml-2" />
             استيراد CSV
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleQuickCreateCustomer}
+            className="border-green-500 text-green-700 hover:bg-green-50"
+          >
+            <Zap className="h-4 w-4 ml-2" />
+            إضافة سريعة
+            <Badge variant="secondary" className="mr-2 bg-green-100 text-green-800 text-xs">
+              15 ثانية ⚡
+            </Badge>
           </Button>
           <Button onClick={handleCreateCustomer}>
             <Plus className="h-4 w-4 ml-2" />
@@ -909,6 +952,7 @@ const Customers = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </PageCustomizer>
   );
 };
 
