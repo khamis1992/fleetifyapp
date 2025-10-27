@@ -2,11 +2,13 @@ import React from 'react';
 import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car, FileEdit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { NativeCard, NativeCardContent } from '@/components/ui/native';
 import { Badge } from '@/components/ui/badge';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { NumberDisplay } from '@/components/ui/NumberDisplay';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 
 interface ContractCardProps {
   contract: any;
@@ -39,10 +41,17 @@ export const ContractCard: React.FC<ContractCardProps> = ({
 }) => {
   const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
   const { formatCurrency } = useCurrencyFormatter();
+  const { isMobile } = useSimpleBreakpoint();
+
+  const CardWrapper = isMobile ? NativeCard : Card;
+  const ContentWrapper = isMobile ? NativeCardContent : CardContent;
 
   return (
-    <Card className="hover:shadow-md transition-shadow font-cairo w-full">
-      <CardContent className="p-4 md:p-6">
+    <CardWrapper 
+      className={isMobile ? undefined : "hover:shadow-md transition-shadow font-cairo w-full"}
+      {...(isMobile ? { pressable: true, ripple: true, variant: "elevated" as const } : {})}
+    >
+      <ContentWrapper className="p-4 md:p-6">
         <div className="space-y-4">
           {/* Contract header */}
           <div className="flex items-center justify-between mb-4">
@@ -205,7 +214,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </ContentWrapper>
+    </CardWrapper>
   );
 };

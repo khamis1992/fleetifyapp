@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
+import { NativeCard, NativeCardContent } from '@/components/ui/native';
 import { Users, TrendingUp, Package, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSalesOpportunities } from '@/hooks/useSalesOpportunities';
 import { useLowStockItems } from '@/hooks/useInventoryItems';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 
 interface QuickStat {
   label: string;
@@ -20,6 +22,7 @@ interface QuickStat {
 export const QuickStatsRow: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isMobile } = useSimpleBreakpoint();
 
   // Fetch sales leads count
   const { data: leadsCount } = useQuery({
@@ -98,30 +101,53 @@ export const QuickStatsRow: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat, index) => (
-        <motion.div
-          key={stat.label}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
-          whileHover={{ y: -2 }}
-        >
-          <Card
-            className="p-4 cursor-pointer bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
-            onClick={() => navigate(stat.href)}
+      {stats.map((stat, index) => {
+        const StatCard = isMobile ? NativeCard : Card;
+        
+        return (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            whileHover={{ y: -2 }}
           >
-            <div className="flex items-center justify-between">
-              <div className="space-y-1 flex-1">
-                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              </div>
-              <div className={`p-3 rounded-lg bg-muted/30 ${stat.color}`}>
-                <stat.icon size={20} />
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      ))}
+            {isMobile ? (
+              <NativeCard
+                pressable
+                ripple
+                variant="elevated"
+                onClick={() => navigate(stat.href)}
+              >
+                <NativeCardContent className="flex items-center justify-between py-4">
+                  <div className="space-y-1 flex-1">
+                    <p className="native-caption">{stat.label}</p>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-lg bg-muted/30 ${stat.color}`}>
+                    <stat.icon size={20} />
+                  </div>
+                </NativeCardContent>
+              </NativeCard>
+            ) : (
+              <Card
+                className="p-4 cursor-pointer bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                onClick={() => navigate(stat.href)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1 flex-1">
+                    <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-lg bg-muted/30 ${stat.color}`}>
+                    <stat.icon size={20} />
+                  </div>
+                </div>
+              </Card>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 };

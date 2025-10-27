@@ -25,7 +25,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { BulkInvoiceGenerationDialog } from "@/components/contracts/BulkInvoiceGenerationDialog"
 import { ContractsHeader } from "@/components/contracts/ContractsHeader"
 import { MobileContractsHeader } from "@/components/contracts/MobileContractsHeader"
-import { MobileActionButtons, FloatingCreateButton } from "@/components/contracts/MobileActionButtons"
+import { MobileActionButtons } from "@/components/contracts/MobileActionButtons"
 import { MobileTabsNavigation } from "@/components/contracts/MobileTabsNavigation"
 import { ContractsStatistics } from "@/components/contracts/ContractsStatistics"
 import { ContractsList } from "@/components/contracts/ContractsList"
@@ -679,10 +679,6 @@ function Contracts() {
           </div>
         )}
 
-        {/* Floating Action Button for Mobile */}
-        {isMobile && (
-          <FloatingCreateButton onCreateContract={handleCreateContract} />
-        )}
         </ResponsiveContainer>
       </PullToRefresh>
     </PageCustomizer>
