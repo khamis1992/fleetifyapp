@@ -256,7 +256,6 @@ export function CarRentalSidebar() {
   const isFinanceActive = location.pathname.startsWith('/finance');
   const isHRActive = location.pathname.startsWith('/hr');
   const isFleetActive = location.pathname.startsWith('/fleet');
-  const isBookingsActive = location.pathname.startsWith('/bookings');
 
   const handleSignOut = async () => {
     await signOut();
@@ -327,6 +326,37 @@ export function CarRentalSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
+
+                      {/* Booking System Subsection */}
+                      <SidebarMenuSubItem>
+                        <Collapsible defaultOpen={location.pathname.startsWith('/bookings')}>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton>
+                              <Calendar className="h-4 w-4" />
+                              {(!collapsed || isMobile) && (
+                                <>
+                                  <span>نظام الحجوزات</span>
+                                  <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                                </>
+                              )}
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {bookingsSubItems.map((subItem) => (
+                                <SidebarMenuSubItem key={subItem.href}>
+                                  <SidebarMenuSubButton asChild>
+                                    <NavLink to={subItem.href} className={getNavClassName}>
+                                      <subItem.icon className="h-3 w-3" />
+                                      {(!collapsed || isMobile) && <span className="text-xs">{subItem.name}</span>}
+                                    </NavLink>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </Collapsible>
@@ -499,35 +529,7 @@ export function CarRentalSidebar() {
               </SidebarMenuItem>
 
               {/* Booking System Section with Submenu */}
-              <SidebarMenuItem>
-                <Collapsible defaultOpen={location.pathname.startsWith('/bookings')}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="h-10">
-                      <Calendar className="h-4 w-4" />
-                      {(!collapsed || isMobile) && (
-                        <>
-                          <span className="font-medium">نظام الحجوزات</span>
-                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {bookingsSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.href}>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to={subItem.href} className={getNavClassName}>
-                              <subItem.icon className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
+              {/* REMOVED - Booking System is now under Fleet Management */}
 
               {/* Reports */}
               <SidebarMenuItem>

@@ -139,6 +139,36 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         href: '/fleet/vehicle-installments',
         icon: TrendingUp,
       },
+      {
+        id: 'bookings-list',
+        name: 'الحجوزات',
+        href: '/bookings',
+        icon: Calendar,
+      },
+      {
+        id: 'bookings-calendar',
+        name: 'التقويم',
+        href: '/bookings/calendar',
+        icon: Calendar,
+      },
+      {
+        id: 'bookings-customers',
+        name: 'العملاء',
+        href: '/bookings/customers',
+        icon: Users,
+      },
+      {
+        id: 'bookings-services',
+        name: 'الخدمات',
+        href: '/bookings/services',
+        icon: Package,
+      },
+      {
+        id: 'bookings-reports',
+        name: 'التقارير',
+        href: '/bookings/reports',
+        icon: BarChart3,
+      },
     ],
   },
 
@@ -344,46 +374,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         name: 'غرامات التأخير والتذكيرات',
         href: '/legal/late-fees',
         icon: AlertTriangle,
-      },
-    ],
-  },
-
-  // Booking System
-  {
-    id: 'bookings',
-    name: 'نظام الحجوزات',
-    name_en: 'Booking System',
-    icon: Calendar,
-    submenu: [
-      {
-        id: 'bookings-list',
-        name: 'الحجوزات',
-        href: '/bookings',
-        icon: Calendar,
-      },
-      {
-        id: 'bookings-calendar',
-        name: 'التقويم',
-        href: '/bookings/calendar',
-        icon: Calendar,
-      },
-      {
-        id: 'bookings-customers',
-        name: 'العملاء',
-        href: '/bookings/customers',
-        icon: Users,
-      },
-      {
-        id: 'bookings-services',
-        name: 'الخدمات',
-        href: '/bookings/services',
-        icon: Package,
-      },
-      {
-        id: 'bookings-reports',
-        name: 'التقارير',
-        href: '/bookings/reports',
-        icon: BarChart3,
       },
     ],
   },
