@@ -318,8 +318,8 @@ export const MobileNavigation: React.FC = () => {
   return (
     <>
       <nav className="native-bottom-nav">
-        <div className="grid grid-cols-5">
-          {navigationItems.map((item) => {
+        <div className="grid grid-cols-4 w-full h-full items-center justify-items-center">
+          {navigationItems.slice(0, 4).map((item) => {
             const active = isActive(item.href);
             const badge = badges?.[item.badgeKey];
 
@@ -334,8 +334,10 @@ export const MobileNavigation: React.FC = () => {
                 onTouchEnd={handlePressEnd}
                 onTouchCancel={handlePressEnd}
                 className={cn(
-                  "native-bottom-nav-item",
-                  active && "active"
+                  "flex flex-col items-center justify-center gap-1.5 w-full h-full py-2 transition-colors relative",
+                  active
+                    ? "text-primary"
+                    : "text-muted-foreground"
                 )}
                 aria-label={item.name}
               >
@@ -343,7 +345,7 @@ export const MobileNavigation: React.FC = () => {
                   <item.icon
                     className={cn(
                       "h-6 w-6 transition-all",
-                      active && "scale-110"
+                      active && "scale-110 text-primary"
                     )}
                   />
                   {/* Badge on icon */}
@@ -355,9 +357,13 @@ export const MobileNavigation: React.FC = () => {
                     />
                   )}
                 </div>
-                <span className="text-xs font-semibold leading-none truncate max-w-full">
+                <span className="text-xs font-medium leading-tight text-center px-1">
                   {item.name}
                 </span>
+                {/* Active indicator */}
+                {active && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-full" />
+                )}
               </NavLink>
             );
           })}

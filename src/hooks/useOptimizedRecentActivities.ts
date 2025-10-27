@@ -69,8 +69,11 @@ export const useOptimizedRecentActivities = () => {
       return enhancedActivities;
     },
     enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // Increased from 2 to 5 minutes for better caching
-    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - تخزين مؤقت لمدة أطول
+    gcTime: 30 * 60 * 1000, // 30 minutes - الاحتفاظ بالذاكرة المؤقتة
+    refetchOnMount: false, // لا تحمل مرة أخرى عند التحميل
+    refetchOnWindowFocus: false, // لا تحمل عند العودة للنافذة
+    placeholderData: [], // عرض فوري للبيانات القديمة
   });
 };
 

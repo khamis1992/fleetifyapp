@@ -38,6 +38,10 @@ import ResetPassword from "./pages/ResetPassword";
 import DemoTrial from "./pages/DemoTrial";
 import NotFound from "./pages/NotFound";
 
+// Demo pages - lazy loaded
+const HeroDemo = lazy(() => import("./pages/HeroDemo"));
+const NativeMobileDemo = lazy(() => import("./pages/NativeMobileDemo"));
+
 // Heavy pages - lazy loaded with retry for better reliability
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
@@ -283,6 +287,16 @@ const AppRoutes = () => {
       <Route path="/premium-landing" element={<PremiumLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/demo-trial" element={<DemoTrial />} />
+      <Route path="/hero-demo" element={
+        <Suspense fallback={<PageSkeletonFallback />}>
+          <HeroDemo />
+        </Suspense>
+      } />
+      <Route path="/native-demo" element={
+        <Suspense fallback={<PageSkeletonFallback />}>
+          <NativeMobileDemo />
+        </Suspense>
+      } />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/quotation-approval" element={
         <Suspense fallback={<PageSkeletonFallback />}>

@@ -24,7 +24,7 @@ interface SmartMetricsPanelProps {
   loading?: boolean;
 }
 
-const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
+const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = React.memo(({
   financialData,
   loading = false
 }) => {
@@ -42,11 +42,11 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-4 bg-muted rounded animate-pulse" />
-                <div className="h-8 bg-muted rounded animate-pulse" />
+          <div className="space-y-3">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="space-y-1">
+                <div className="h-3 bg-muted rounded animate-pulse w-1/3" />
+                <div className="h-6 bg-muted rounded animate-pulse w-1/2" />
               </div>
             ))}
           </div>
@@ -189,6 +189,8 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+SmartMetricsPanel.displayName = 'SmartMetricsPanel';
 
 export default SmartMetricsPanel;

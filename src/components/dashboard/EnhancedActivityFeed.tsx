@@ -43,7 +43,7 @@ interface EnhancedActivityFeedProps {
   showFilters?: boolean;
 }
 
-const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = ({
+const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = React.memo(({
   activities = [],
   loading = false,
   title = 'النشاطات الأخيرة',
@@ -92,6 +92,9 @@ const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = ({
     await onRefresh?.();
     setTimeout(() => setIsRefreshing(false), 1000);
   };
+
+  // عرض 5 عناصر فقط بدلاً من كل النشاطات
+  const displayedActivities = filteredActivities.slice(0, 5);
 
   const ActivitySkeleton = () => (
     <div className="space-y-4">
@@ -189,7 +192,7 @@ const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = ({
                   </motion.div>
                 ) : (
                   <div className="space-y-3">
-                    {filteredActivities.map((activity, index) => {
+                    {displayedActivities.map((activity, index) => {
                       const ActivityIcon = getActivityIcon(activity.type);
                       
                       return (
@@ -259,6 +262,8 @@ const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = ({
       </Card>
     </motion.div>
   );
-};
+});
+
+EnhancedActivityFeed.displayName = 'EnhancedActivityFeed';
 
 export default EnhancedActivityFeed;

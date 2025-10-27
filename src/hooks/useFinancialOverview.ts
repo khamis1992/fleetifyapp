@@ -144,8 +144,11 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
       };
     },
     enabled: !!companyId,
-    staleTime: 15 * 60 * 1000, // Increased from 10 to 15 minutes for better caching
-    cacheTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes - تخزين مؤقت لمدة أطول
+    gcTime: 60 * 60 * 1000, // 60 minutes - الاحتفاظ بالذاكرة المؤقتة
+    refetchOnMount: false, // لا تحمل مرة أخرى عند التحميل
+    refetchOnWindowFocus: false, // لا تحمل عند العودة للنافذة
+    placeholderData: (prev) => prev || getEmptyFinancialOverview(), // عرض فوري للبيانات القديمة
   });
 };
 

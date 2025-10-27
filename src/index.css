@@ -15,6 +15,16 @@
   }
 }
 
+/* Border Beam Animation */
+@keyframes border-beam {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
 /* KW Rent Flow ERP - Professional Design System 
 Inspired by Kuwait business environment with premium colors and gradients.
 All colors MUST be HSL.
