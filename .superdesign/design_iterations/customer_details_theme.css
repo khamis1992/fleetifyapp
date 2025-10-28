@@ -1,0 +1,139 @@
+/* FleetifyApp Customer Details Theme - Modern Professional Style */
+
+:root {
+  /* Colors - Modern Professional Palette */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.15 0 0);
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.15 0 0);
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0 0);
+  
+  /* Primary - Professional Teal/Cyan for business trust */
+  --primary: oklch(0.55 0.15 200);
+  --primary-foreground: oklch(0.99 0 0);
+  
+  /* Secondary - Warm gray for secondary actions */
+  --secondary: oklch(0.45 0.02 260);
+  --secondary-foreground: oklch(0.99 0 0);
+  
+  /* Muted - Light backgrounds */
+  --muted: oklch(0.97 0.005 260);
+  --muted-foreground: oklch(0.50 0.01 260);
+  
+  /* Accent - Energetic orange for highlights */
+  --accent: oklch(0.65 0.18 45);
+  --accent-foreground: oklch(0.99 0 0);
+  
+  /* Destructive - Clear red for warnings */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  
+  /* Success - Green for positive states */
+  --success: oklch(0.60 0.16 145);
+  --success-foreground: oklch(0.99 0 0);
+  
+  /* Warning - Amber for alerts */
+  --warning: oklch(0.70 0.15 75);
+  --warning-foreground: oklch(0.15 0 0);
+  
+  /* UI Elements */
+  --border: oklch(0.90 0.005 260);
+  --input: oklch(0.90 0.005 260);
+  --ring: oklch(0.55 0.15 200);
+  
+  /* Charts */
+  --chart-1: oklch(0.55 0.15 200);
+  --chart-2: oklch(0.65 0.18 45);
+  --chart-3: oklch(0.60 0.16 145);
+  --chart-4: oklch(0.50 0.20 280);
+  --chart-5: oklch(0.65 0.15 330);
+  
+  /* Typography - Clean, Professional Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Border Radius - Subtle rounded corners */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 0.125rem);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 0.125rem);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  
+  /* Shadows - Soft, layered depth */
+  --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.03);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.06);
+  --shadow-sm: 0 2px 4px -1px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.03);
+  --shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.04);
+  --shadow-md: 0 6px 12px -2px hsl(0 0% 0% / 0.10), 0 3px 6px -2px hsl(0 0% 0% / 0.05);
+  --shadow-lg: 0 10px 20px -3px hsl(0 0% 0% / 0.12), 0 4px 8px -2px hsl(0 0% 0% / 0.06);
+  --shadow-xl: 0 20px 30px -5px hsl(0 0% 0% / 0.15), 0 8px 12px -4px hsl(0 0% 0% / 0.08);
+  --shadow-2xl: 0 25px 40px -10px hsl(0 0% 0% / 0.20);
+  
+  /* Spacing */
+  --spacing: 0.25rem;
+  
+  /* Letter Spacing */
+  --tracking-normal: 0em;
+  --tracking-tight: -0.01em;
+  --tracking-wide: 0.02em;
+}
+
+/* Dark Mode Support */
+.dark {
+  --background: oklch(0.12 0.01 260);
+  --foreground: oklch(0.95 0.01 260);
+  --card: oklch(0.15 0.01 260);
+  --card-foreground: oklch(0.95 0.01 260);
+  --popover: oklch(0.15 0.01 260);
+  --popover-foreground: oklch(0.95 0.01 260);
+  
+  --primary: oklch(0.60 0.15 200);
+  --primary-foreground: oklch(0.12 0.01 260);
+  
+  --secondary: oklch(0.25 0.02 260);
+  --secondary-foreground: oklch(0.95 0.01 260);
+  
+  --muted: oklch(0.20 0.01 260);
+  --muted-foreground: oklch(0.65 0.01 260);
+  
+  --accent: oklch(0.70 0.18 45);
+  --accent-foreground: oklch(0.12 0.01 260);
+  
+  --border: oklch(0.25 0.01 260);
+  --input: oklch(0.25 0.01 260);
+  --ring: oklch(0.60 0.15 200);
+}
+
+/* Custom utility classes */
+.bg-primary { background-color: var(--primary) !important; }
+.text-primary { color: var(--primary) !important; }
+.border-primary { border-color: var(--primary) !important; }
+
+.bg-success { background-color: var(--success) !important; }
+.text-success { color: var(--success) !important; }
+
+.bg-warning { background-color: var(--warning) !important; }
+.text-warning { color: var(--warning) !important; }
+
+.bg-destructive { background-color: var(--destructive) !important; }
+.text-destructive { color: var(--destructive) !important; }
+
+/* Typography styles */
+body {
+  font-family: var(--font-sans) !important;
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600 !important;
+  letter-spacing: var(--tracking-tight) !important;
+  color: var(--foreground) !important;
+}
+
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+

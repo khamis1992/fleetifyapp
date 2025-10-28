@@ -37,3 +37,6 @@ export { CustomerInvoicesTab } from './CustomerInvoicesTab';
 // أدوات الإصلاح والصيانة
 export { FixCustomerAccounts } from './FixCustomerAccounts';
 export { CreateAccountsForExistingCustomers } from './CreateAccountsForExistingCustomers';
+
+// صفحة تفاصيل العميل الشاملة
+export { default as CustomerDetailsPage } from './CustomerDetailsPage';
