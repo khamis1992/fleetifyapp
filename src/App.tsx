@@ -46,6 +46,7 @@ const NativeMobileDemo = lazy(() => import("./pages/NativeMobileDemo"));
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
 const Customers = lazy(() => import("./pages/Customers"));
+const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage").then(module => ({ default: module.default })));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const Fleet = lazy(() => import("./pages/Fleet"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -505,6 +506,13 @@ const AppRoutes = () => {
           <RouteWrapper routeName="Customers" fallbackPath="/dashboard">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Customers />
+            </Suspense>
+          </RouteWrapper>
+        } />
+        <Route path="customers/:customerId" element={
+          <RouteWrapper routeName="Customer Details" fallbackPath="/customers">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <CustomerDetailsPage />
             </Suspense>
           </RouteWrapper>
         } />

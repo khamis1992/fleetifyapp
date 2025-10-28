@@ -181,8 +181,8 @@ const Customers = () => {
   };
 
   const handleViewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowDetailsDialog(true);
+    // Navigate to the new customer details page
+    navigate(`/customers/${customer.id}`);
   };
 
   const handleEditCustomer = (customer: Customer) => {
