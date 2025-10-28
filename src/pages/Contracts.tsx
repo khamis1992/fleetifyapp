@@ -178,7 +178,7 @@ function Contracts() {
         ...contractData,
         created_by: user?.id,
         contract_date: contractData.contract_date || new Date().toISOString().split('T')[0],
-        contract_number: contractData.contract_number || `CON-${Date.now()}`
+        contract_number: contractData.contract_number || generateShortContractNumber()
       }
       
       createContract(finalData)

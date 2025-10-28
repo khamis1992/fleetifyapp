@@ -904,7 +904,7 @@ export function useContractCSVUpload() {
 
         try {
           // Generate contract number if not provided
-          const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
+          const contractNumber = contractData.contract_number || `CNT-${new Date().getFullYear().toString().slice(-2)}-${String(i + 1).padStart(4, '0')}`;
           console.log(`📝 [Contract CSV] Inserting contract row ${contractData.rowNumber} for company ${companyId}`);
 
           const contractPayload: ContractPayload = {
@@ -1098,7 +1098,7 @@ export function useContractCSVUpload() {
             throw new Error(validation.errors.join(' | '));
           }
 
-          const contractNumber = contractData.contract_number || `CON-${Date.now()}-${i + 1}`;
+          const contractNumber = contractData.contract_number || `CNT-${new Date().getFullYear().toString().slice(-2)}-${String(i + 1).padStart(4, '0')}`;
 
           const contractPayload: ContractPayload = {
             company_id: targetCompanyId,

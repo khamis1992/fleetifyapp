@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
+import { generateShortContractNumber } from "@/utils/contractNumberGenerator"
 
 interface QuotationFormData {
   customer_id: string
@@ -190,7 +191,7 @@ export default function Quotations() {
       if (!quotation) throw new Error('Quotation not found')
 
       // Generate contract number
-      const contractNumber = `CT-${Date.now()}`
+      const contractNumber = generateShortContractNumber()
       
       // Calculate start and end dates
       const startDate = new Date()

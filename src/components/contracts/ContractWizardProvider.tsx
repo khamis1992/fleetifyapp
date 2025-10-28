@@ -6,7 +6,8 @@ import { useTemplateByType, useApplyTemplate, getDefaultDurationByType } from '@
 import { useSignatureSettings } from '@/hooks/useSignatureSettings'
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess'
 import { useContractDrafts } from '@/hooks/useContractDrafts'
-import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
+import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck'
+import { generateShortContractNumber } from '@/utils/contractNumberGenerator';
 
 interface ContractWizardData {
   // Basic Info
@@ -549,7 +550,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
 
   const fillTestData = () => {
     const testData: Partial<ContractWizardData> = {
-      contract_number: `CONTRACT-${Date.now()}`,
+      contract_number: generateShortContractNumber(),
       contract_type: 'weekly_rental',
       description: 'عقد إيجار تجريبي لسيارة سيدان متوسطة الحجم',
       terms: 'شروط وأحكام عقد الإيجار الأسبوعي\n\n1. مدة الإيجار: سبعة أيام من تاريخ بداية العقد\n2. الدفع: يمكن الدفع مقدماً أو بالتقسيط الأسبوعي\n3. المسؤولية: المستأجر مسؤول عن أي أضرار تلحق بالمركبة',

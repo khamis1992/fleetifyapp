@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, isBefore } from 'date-fns';
+import { generateShortContractNumber } from '@/utils/contractNumberGenerator';
 
 export interface DemoSession {
   id: string;
@@ -394,7 +395,7 @@ const seedSampleContracts = async (companyId: string) => {
       company_id: companyId,
       vehicle_id: vehicles[0].id,
       customer_id: customers[0].id,
-      contract_number: `DEMO-${Date.now()}`,
+      contract_number: generateShortContractNumber(),
       contract_date: new Date().toISOString().split('T')[0],
       start_date: new Date().toISOString().split('T')[0],
       end_date: addDays(new Date(), 7).toISOString().split('T')[0],

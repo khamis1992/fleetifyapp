@@ -1744,7 +1744,9 @@ const FinancialTrackingInner: React.FC = () => {
     
     console.log('Manual creation - Step 2: Creating contract for customer:', customerData.id);
     
-    const contractNumber = `CNT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+    // Generate short contract number using utility
+    const { generateShortContractNumber } = await import('@/utils/contractNumberGenerator');
+    const contractNumber = generateShortContractNumber();
     const startDate = new Date().toISOString().split('T')[0];
     const endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
     
