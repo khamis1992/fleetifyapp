@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload, BookOpen } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -104,13 +104,6 @@ export default function Fleet() {
           onClick: () => setShowVehicleForm(true)
         }}
         secondaryActions={[
-          {
-            id: 'reservations',
-            label: 'نظام الحجوزات',
-            icon: <BookOpen className="h-4 w-4 mr-2" />,
-            onClick: () => window.location.href = '/fleet/reservation-system',
-            type: 'outline'
-          },
           {
             id: 'financial-analysis',
             label: 'التحليل المالي',

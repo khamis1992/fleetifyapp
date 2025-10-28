@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, Settings, FileText, Upload, Trash2, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -21,8 +20,6 @@ export const ContractsHeader: React.FC<ContractsHeaderProps> = ({
   onShowCSVUpload,
   onShowBulkDelete
 }) => {
-  const navigate = useNavigate();
-
   return (
     <div className="flex items-center justify-between">
       <div>

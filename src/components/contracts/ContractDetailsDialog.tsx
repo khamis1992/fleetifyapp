@@ -34,6 +34,7 @@ import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog'
 import { LateFinesTab } from './LateFinesTab';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
+import { OfficialContractView } from './OfficialContractView';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Contract } from '@/types/contracts';
@@ -407,8 +408,12 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7" dir="rtl">
+          <TabsList className="grid w-full grid-cols-8" dir="rtl">
             <TabsTrigger value="details">التفاصيل</TabsTrigger>
+            <TabsTrigger value="official-contract" className="gap-1">
+              <FileText className="h-4 w-4" />
+              العقد الرسمي
+            </TabsTrigger>
             <TabsTrigger value="invoices">الفواتير</TabsTrigger>
             <TabsTrigger value="check-in" className="relative">
               استلام المركبة
@@ -1115,6 +1120,15 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
           <TabsContent value="documents" className="space-y-4">
             <ContractDocuments contractId={contract.id} />
+          </TabsContent>
+
+          {/* Official Contract Tab */}
+          <TabsContent value="official-contract" className="space-y-4">
+            <OfficialContractView
+              contract={contract}
+              customer={customer}
+              vehicle={vehicle}
+            />
           </TabsContent>
         </Tabs>
 

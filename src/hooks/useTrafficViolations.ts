@@ -61,50 +61,72 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
   return useQuery({
     queryKey: ['traffic-violations', limit, offset],
     queryFn: async () => {
-      // الحصول على company_id من المستخدم الحالي
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.user.id)
-        .single();
-      
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+      try {
+        // الحصول على company_id من المستخدم الحالي
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('user_id', user.user.id)
+          .single();
+        
+        if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
 
-      const { data, error } = await supabase
-        .from('penalties')
-        .select(`
-          id,
-          penalty_number,
-          violation_type,
-          penalty_date,
-          amount,
-          location,
-          vehicle_plate,
-          reason,
-          status,
-          payment_status,
-          created_at,
-          customers (
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
-        `)
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-        .range(offset, offset + limit - 1);
+        const { data, error } = await supabase
+          .from('penalties')
+          .select(`
+            id,
+            penalty_number,
+            violation_type,
+            penalty_date,
+            amount,
+            location,
+            vehicle_plate,
+            reason,
+            notes,
+            status,
+            payment_status,
+            customer_id,
+            contract_id,
+            created_at,
+            updated_at
+          `)
+          .eq('company_id', profile.company_id)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+          .range(offset, offset + limit - 1);
 
-      if (error) {
-        console.error('Error fetching traffic violations:', error);
+        if (error) {
+          console.error('Error fetching traffic violations:', error);
+          throw error;
+        }
+
+        // Fetch customer data separately if needed
+        const violationsWithCustomers = await Promise.all(
+          (data || []).map(async (violation) => {
+            if (violation.customer_id) {
+              const { data: customer } = await supabase
+                .from('customers')
+                .select('first_name, last_name, company_name, phone')
+                .eq('id', violation.customer_id)
+                .single();
+              
+              return {
+                ...violation,
+                customers: customer
+              };
+            }
+            return violation;
+          })
+        );
+
+        return violationsWithCustomers as any[];
+      } catch (error) {
+        console.error('Error in useTrafficViolations:', error);
         throw error;
       }
-
-      return data as any[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes cache
     gcTime: 5 * 60 * 1000, // 5 minutes in memory

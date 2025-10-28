@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,12 @@ import {
 } from "@/hooks/useFleetFinancialAnalytics";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { supabase } from "@/integrations/supabase/client";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 const FleetFinancialAnalysis = () => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
 
@@ -42,6 +47,29 @@ const FleetFinancialAnalysis = () => {
   const processDepreciation = useProcessVehicleDepreciation();
   const updateVehicleCosts = useUpdateVehicleCosts();
   const { formatCurrency } = useCurrencyFormatter();
+
+  // Calculate all vehicle costs mutation
+  const calculateAllCostsMutation = useMutation({
+    mutationFn: async () => {
+      if (!companyId) throw new Error('Company ID not found');
+      
+      const { data, error } = await supabase.rpc('calculate_all_vehicle_costs', {
+        company_id_param: companyId
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      const successCount = data?.filter((r: any) => r.status === 'success').length || 0;
+      toast.success(`تم حساب التكاليف لـ ${successCount} مركبة بنجاح`);
+      queryClient.invalidateQueries({ queryKey: ['fleet-financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-financial-summary'] });
+    },
+    onError: (error: any) => {
+      toast.error(`فشل في حساب التكاليف: ${error.message}`);
+    }
+  });
 
   const handleProcessDepreciation = async () => {
     try {
@@ -91,6 +119,19 @@ const FleetFinancialAnalysis = () => {
             فحص البيانات
           </Button>
           <Button
+            onClick={() => calculateAllCostsMutation.mutate()}
+            disabled={calculateAllCostsMutation.isPending}
+            variant="default"
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {calculateAllCostsMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Calculator className="w-4 h-4 mr-2" />
+            )}
+            {calculateAllCostsMutation.isPending ? "جاري الحساب..." : "حساب جميع التكاليف"}
+          </Button>
+          <Button
             onClick={handleProcessDepreciation}
             disabled={processDepreciation.isPending || !validationData?.hasActiveVehicles}
             variant="outline"
@@ -98,12 +139,31 @@ const FleetFinancialAnalysis = () => {
             {processDepreciation.isPending ? (
               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Calculator className="w-4 h-4 mr-2" />
+              <Calculator className="w-4 w-4 mr-2" />
             )}
             {processDepreciation.isPending ? "جاري المعالجة..." : "معالجة الاستهلاك"}
           </Button>
         </div>
       </div>
+
+      {/* Alert if all numbers are zero */}
+      {summary && 
+       summary.totalMaintenanceCost === 0 && 
+       summary.totalOperatingCost === 0 && 
+       summary.totalBookValue === 0 && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <div className="space-y-2">
+              <p className="font-medium">📊 البيانات المالية غير محسوبة بعد</p>
+              <p className="text-sm">
+                لعرض الأرقام الصحيحة، انقر على زر <strong>"حساب جميع التكاليف"</strong> أعلاه.
+                سيتم حساب التكاليف من سجلات الصيانة والعقود والتأمين.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Diagnostics Section */}
       {showDiagnostics && validationData && (

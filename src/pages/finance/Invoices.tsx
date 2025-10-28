@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, lazy, Suspense } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
@@ -22,7 +23,7 @@ import { useInvoices } from "@/hooks/finance/useInvoices"
 import { useFixedAssets } from "@/hooks/useFinance"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera, CheckCircle, AlertTriangle, MessageSquare, AlertCircle, TrendingDown, Clock } from "lucide-react"
+import { Receipt, Plus, Search, Filter, Eye, Edit, Trash2, Building2, Package, BarChart3, Camera, CheckCircle, AlertTriangle, MessageSquare, AlertCircle, TrendingDown, Clock, Zap, Calendar, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { InvoiceForm } from "@/components/finance/InvoiceForm"
@@ -38,6 +39,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
+
+// Auto Invoice Generation Tab
+const AutoInvoiceGenerationTab = lazy(() => import("@/components/finance/AutoInvoiceGenerationTab"))
 
 const Invoices = () => {
   const navigate = useNavigate()
@@ -58,6 +62,7 @@ const Invoices = () => {
   const [showApprovalWorkflow, setShowApprovalWorkflow] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
+  const [activeTab, setActiveTab] = useState("invoices")
 
   // Build filters with pagination
   const filters = useMemo(() => ({
@@ -352,6 +357,21 @@ const Invoices = () => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="invoices" className="gap-2">
+            <Receipt className="h-4 w-4" />
+            قائمة الفواتير
+          </TabsTrigger>
+          <TabsTrigger value="auto-generation" className="gap-2">
+            <Zap className="h-4 w-4" />
+            التوليد التلقائي
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Invoices List */}
+        <TabsContent value="invoices" className="space-y-6">
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Revenue */}
@@ -685,6 +705,24 @@ const Invoices = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </TabsContent>
+
+        {/* Tab 2: Auto Generation */}
+        <TabsContent value="auto-generation" className="space-y-6">
+          <Suspense fallback={
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="text-muted-foreground">جاري التحميل...</span>
+                </div>
+              </CardContent>
+            </Card>
+          }>
+            <AutoInvoiceGenerationTab />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
     </PageCustomizer>
   )
