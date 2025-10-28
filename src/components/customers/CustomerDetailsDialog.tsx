@@ -270,22 +270,33 @@ export function CustomerDetailsDialog({
                       <span>{customer.email}</span>
                     </div>
                   )}
-                  {customer.national_id && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>هوية: {customer.national_id}</span>
+                  
+                  {/* الرقم الوطني - يظهر دائماً */}
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <span className="text-sm text-muted-foreground">الرقم الوطني: </span>
+                      <span className={customer.national_id ? "font-medium" : "text-muted-foreground italic"}>
+                        {customer.national_id || 'غير محدد'}
+                      </span>
                     </div>
-                  )}
+                  </div>
+                  
+                  {/* رقم رخصة القيادة - يظهر دائماً */}
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <span className="text-sm text-muted-foreground">رقم الرخصة: </span>
+                      <span className={customer.license_number ? "font-medium" : "text-muted-foreground italic"}>
+                        {customer.license_number || 'غير محدد'}
+                      </span>
+                    </div>
+                  </div>
+                  
                   {customer.passport_number && (
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span>جواز: {customer.passport_number}</span>
-                    </div>
-                  )}
-                  {customer.license_number && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>رخصة: {customer.license_number}</span>
                     </div>
                   )}
                 </CardContent>
