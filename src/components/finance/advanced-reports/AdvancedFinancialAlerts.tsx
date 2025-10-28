@@ -37,7 +37,7 @@ interface AlertConfig {
   is_active: boolean;
 }
 
-const formatCurrency = (amount: number) => `${amount.toFixed(3)} د.ك`;
+const formatCurrency = (amount: number) => `${amount.toFixed(2)} ر.ق`;
 
 export const AdvancedFinancialAlerts: React.FC<AdvancedFinancialAlertsProps> = ({
   alerts,

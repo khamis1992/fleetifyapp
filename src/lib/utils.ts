@@ -37,5 +37,5 @@ export function normalizeDigits(input: string): string {
  * تنسيق العملة
  */
 export function formatCurrency(amount: number): string {
-  return amount.toFixed(3) + ' د.ك'
+  return amount.toFixed(2) + ' ر.ق'
 }

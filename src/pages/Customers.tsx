@@ -919,6 +919,16 @@ const Customers = () => {
         }}
       />
 
+      {/* Quick Customer Form */}
+      <QuickCustomerForm
+        open={showQuickCreateDialog}
+        onOpenChange={setShowQuickCreateDialog}
+        onSuccess={(customerId, customerData) => {
+          refetch();
+          toast.success('تم إنشاء العميل السريع بنجاح');
+        }}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

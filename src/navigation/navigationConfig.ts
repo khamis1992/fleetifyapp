@@ -139,6 +139,12 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         href: '/fleet/vehicle-installments',
         icon: TrendingUp,
       },
+      {
+        id: 'fleet-reservation-system',
+        name: 'نظام الحجوزات',
+        href: '/fleet/reservation-system',
+        icon: Calendar,
+      },
     ],
   },
 

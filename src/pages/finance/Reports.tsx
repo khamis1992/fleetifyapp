@@ -317,13 +317,13 @@ const Reports = () => {
                         {balanceSheetData?.assets?.map((account: any) => (
                           <TableRow key={account.id}>
                             <TableCell className="font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
+                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="border-t-2 font-bold">
                           <TableCell>إجمالي الأصول</TableCell>
                           <TableCell className="text-right">
-                            {balanceSheetData?.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(3) || '0.000'} د.ك
+                            {balanceSheetData?.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -341,7 +341,7 @@ const Reports = () => {
                         {balanceSheetData?.liabilities?.map((account: any) => (
                           <TableRow key={account.id}>
                             <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
+                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/50">
@@ -350,7 +350,7 @@ const Reports = () => {
                         {balanceSheetData?.equity?.map((account: any) => (
                           <TableRow key={account.id}>
                             <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
+                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="border-t-2 font-bold">
@@ -359,7 +359,7 @@ const Reports = () => {
                             {(
                               (balanceSheetData?.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
                               (balanceSheetData?.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                            ).toFixed(3)} د.ك
+                            ).toFixed(2)} ر.ق
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -405,13 +405,13 @@ const Reports = () => {
                       {incomeStatementData?.revenue?.map((account: any) => (
                         <TableRow key={account.id}>
                           <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-right text-green-600">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
+                          <TableCell className="text-right text-green-600">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="border-b-2">
                         <TableCell className="font-bold">إجمالي الإيرادات</TableCell>
                         <TableCell className="text-right font-bold text-green-600">
-                          {incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(3) || '0.000'} د.ك
+                          {incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
                         </TableCell>
                       </TableRow>
 
@@ -421,13 +421,13 @@ const Reports = () => {
                       {incomeStatementData?.expenses?.map((account: any) => (
                         <TableRow key={account.id}>
                           <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-right text-red-600">{Number(account.current_balance).toFixed(3)} د.ك</TableCell>
+                          <TableCell className="text-right text-red-600">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="border-b-2">
                         <TableCell className="font-bold">إجمالي المصروفات</TableCell>
                         <TableCell className="text-right font-bold text-red-600">
-                          {incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(3) || '0.000'} د.ك
+                          {incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
                         </TableCell>
                       </TableRow>
 
@@ -437,7 +437,7 @@ const Reports = () => {
                           {(
                             (incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) -
                             (incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                          ).toFixed(3)} د.ك
+                          ).toFixed(2)} ر.ق
                         </TableCell>
                       </TableRow>
                     </TableBody>

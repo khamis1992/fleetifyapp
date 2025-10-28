@@ -16,7 +16,7 @@ interface FinancialTrendsReportProps {
   periodType: 'monthly' | 'quarterly' | 'yearly';
 }
 
-const formatCurrency = (amount: number) => `${amount.toFixed(3)} د.ك`;
+const formatCurrency = (amount: number) => `${amount.toFixed(2)} ر.ق`;
 
 export const FinancialTrendsReport: React.FC<FinancialTrendsReportProps> = ({
   trends,

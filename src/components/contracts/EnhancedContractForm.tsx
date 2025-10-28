@@ -498,7 +498,7 @@ export const EnhancedContractForm: React.FC<EnhancedContractFormProps> = ({
                     {availableVehicles?.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                        {vehicle.daily_rate && ` (${vehicle.daily_rate} د.ك/يوم)`}
+                        {vehicle.daily_rate && ` (${vehicle.daily_rate} ر.ق/يوم)`}
                       </SelectItem>
                     ))}
                   </SelectContent>

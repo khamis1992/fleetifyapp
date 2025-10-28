@@ -230,7 +230,7 @@ const Overview = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {financialSummary?.totalRevenue?.toFixed(3) || '0.000'} د.ك
+                  {financialSummary?.totalRevenue?.toFixed(2) || '0.00'} ر.ق
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
@@ -242,7 +242,7 @@ const Overview = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {financialSummary?.totalExpenses?.toFixed(3) || '0.000'} د.ك
+                  {financialSummary?.totalExpenses?.toFixed(2) || '0.00'} ر.ق
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
@@ -256,7 +256,7 @@ const Overview = () => {
                 <div className={`text-2xl font-bold ${
                   (financialSummary?.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {financialSummary?.netIncome?.toFixed(3) || '0.000'} د.ك
+                  {financialSummary?.netIncome?.toFixed(2) || '0.00'} ر.ق
                 </div>
                 <p className="text-xs text-muted-foreground">هذا الشهر</p>
               </CardContent>
