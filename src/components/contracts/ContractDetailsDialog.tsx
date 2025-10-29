@@ -408,9 +408,9 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8" dir="rtl">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1" dir="rtl">
             <TabsTrigger value="details">التفاصيل</TabsTrigger>
-            <TabsTrigger value="official-contract" className="gap-1">
+            <TabsTrigger value="official-contract" className="gap-1 bg-primary/10 border border-primary/20">
               <FileText className="h-4 w-4" />
               العقد الرسمي
             </TabsTrigger>
