@@ -41,12 +41,13 @@ export interface DelinquencyStats {
 }
 
 export const useDelinquencyStats = () => {
-  const { data: delinquentCustomers, isLoading } = useDelinquentCustomers();
+  const { data: delinquentCustomers, isLoading, error } = useDelinquentCustomers();
 
   return useQuery({
     queryKey: ['delinquency-stats', delinquentCustomers],
     queryFn: (): DelinquencyStats => {
-      if (!delinquentCustomers || delinquentCustomers.length === 0) {
+      // If there's an error or no data, return empty stats
+      if (error || !delinquentCustomers || delinquentCustomers.length === 0) {
         return {
           totalDelinquent: 0,
           totalAmountAtRisk: 0,
@@ -117,6 +118,7 @@ export const useDelinquencyStats = () => {
 
       return stats;
     },
-    enabled: !isLoading && !!delinquentCustomers,
+    enabled: !isLoading && !error && !!delinquentCustomers,
+    retry: false, // Don't retry if there's an error
   });
 };

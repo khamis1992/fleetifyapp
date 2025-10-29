@@ -77,16 +77,27 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
     queryFn: async (): Promise<DelinquentCustomer[]> => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Get user's profile to access company_id
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
+      // Get company_id from companyFilter or profile
+      let companyId: string | undefined;
+      
+      if (companyFilter?.company_id) {
+        companyId = companyFilter.company_id;
+      } else {
+        // Fallback: Get user's profile to access company_id
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .single();
 
-      if (!profile?.company_id) throw new Error('Company not found');
+        if (!profile?.company_id) throw new Error('Company not found');
+        companyId = profile.company_id;
+      }
+
+      if (!companyId) throw new Error('Company not found');
 
       // Step 1: Get all active contracts with customer and vehicle info
+      // Use left join for vehicles to handle cases where vehicle might be null
       let contractsQuery = supabase
         .from('contracts')
         .select(`
@@ -113,58 +124,107 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
             plate_number
           )
         `)
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .eq('status', 'active')
         .order('start_date', { ascending: true });
 
       const { data: contracts, error: contractsError } = await contractsQuery;
 
-      if (contractsError) throw contractsError;
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError);
+        // Return empty array instead of throwing to prevent UI crash
+        if (contractsError.code === 'PGRST116' || contractsError.message?.includes('relation') || contractsError.message?.includes('does not exist')) {
+          console.warn('Database relation not found, returning empty array');
+          return [];
+        }
+        throw contractsError;
+      }
+      
       if (!contracts || contracts.length === 0) return [];
 
       // Step 2: Get all payments for these contracts
-      const customerIds = contracts.map(c => c.customer_id);
+      const customerIds = contracts.map(c => c.customer_id).filter(Boolean);
+      
+      if (customerIds.length === 0) return [];
 
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('customer_id, amount, payment_date, payment_status')
-        .eq('company_id', profile.company_id)
-        .in('customer_id', customerIds)
-        .in('payment_status', ['completed', 'paid', 'approved'])
-        .order('payment_date', { ascending: false });
+      let payments: any[] = [];
+      let violations: any[] = [];
+      let legalCases: any[] = [];
 
-      // Step 3: Get traffic violations for these customers
-      const { data: violations } = await supabase
-        .from('traffic_violations')
-        .select('customer_id, fine_amount, status')
-        .eq('company_id', profile.company_id)
-        .in('customer_id', customerIds)
-        .neq('status', 'paid');
+      // Get payments (handle errors gracefully)
+      try {
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('payments')
+          .select('customer_id, amount, payment_date, payment_status')
+          .eq('company_id', companyId)
+          .in('customer_id', customerIds)
+          .in('payment_status', ['completed', 'paid', 'approved'])
+          .order('payment_date', { ascending: false });
+        
+        if (!paymentsError && paymentsData) {
+          payments = paymentsData;
+        }
+      } catch (error) {
+        console.warn('Error fetching payments:', error);
+        // Continue without payments data
+      }
 
-      // Step 4: Get legal cases history for these customers
-      const { data: legalCases } = await supabase
-        .from('legal_cases')
-        .select('client_id, case_status')
-        .eq('company_id', profile.company_id)
-        .in('client_id', customerIds);
+      // Step 3: Get traffic violations for these customers (handle errors gracefully)
+      try {
+        const { data: violationsData, error: violationsError } = await supabase
+          .from('traffic_violations')
+          .select('customer_id, fine_amount, status')
+          .eq('company_id', companyId)
+          .in('customer_id', customerIds)
+          .neq('status', 'paid');
+        
+        if (!violationsError && violationsData) {
+          violations = violationsData;
+        }
+      } catch (error) {
+        console.warn('Error fetching violations:', error);
+        // Continue without violations data
+      }
+
+      // Step 4: Get legal cases history for these customers (handle errors gracefully)
+      try {
+        const { data: legalCasesData, error: legalCasesError } = await supabase
+          .from('legal_cases')
+          .select('client_id, case_status')
+          .eq('company_id', companyId)
+          .in('client_id', customerIds);
+        
+        if (!legalCasesError && legalCasesData) {
+          legalCases = legalCasesData;
+        }
+      } catch (error) {
+        console.warn('Error fetching legal cases:', error);
+        // Continue without legal cases data
+      }
 
       // Step 5: Process each contract to identify delinquent customers
       const today = new Date();
       const delinquentCustomers: DelinquentCustomer[] = [];
 
       for (const contract of contracts) {
-        const customer = contract.customers;
-        if (!customer) continue;
+        try {
+          const customer = contract.customers;
+          if (!customer || !contract.customer_id) continue;
 
-        // Calculate expected payments
-        const contractStartDate = new Date(contract.start_date);
-        const monthsSinceStart = Math.floor(
-          (today.getTime() - contractStartDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-        );
-        const expectedPayments = Math.max(0, monthsSinceStart);
+          // Validate contract data
+          if (!contract.start_date) continue;
+
+          // Calculate expected payments
+          const contractStartDate = new Date(contract.start_date);
+          if (isNaN(contractStartDate.getTime())) continue; // Invalid date
+          
+          const monthsSinceStart = Math.floor(
+            (today.getTime() - contractStartDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+          );
+          const expectedPayments = Math.max(0, monthsSinceStart);
 
         // Get actual payments for this customer
-        const customerPayments = payments?.filter(p => p.customer_id === contract.customer_id) || [];
+        const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
         const actualPayments = customerPayments.length;
 
         // Calculate months unpaid
@@ -188,12 +248,12 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
         const latePenalty = calculatePenalty(overdueAmount, daysOverdue);
 
         // Get violations for this customer
-        const customerViolations = violations?.filter(v => v.customer_id === contract.customer_id) || [];
+        const customerViolations = (violations || []).filter(v => v && v.customer_id === contract.customer_id);
         const violationsCount = customerViolations.length;
-        const violationsAmount = customerViolations.reduce((sum, v) => sum + (v.fine_amount || 0), 0);
+        const violationsAmount = customerViolations.reduce((sum, v) => sum + (v?.fine_amount || 0), 0);
 
         // Get legal history
-        const customerLegalCases = legalCases?.filter(lc => lc.client_id === contract.customer_id) || [];
+        const customerLegalCases = (legalCases || []).filter(lc => lc && lc.client_id === contract.customer_id);
         const hasPreviousLegalCases = customerLegalCases.length > 0;
         const previousLegalCasesCount = customerLegalCases.length;
 
@@ -265,7 +325,12 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
           previous_legal_cases_count: previousLegalCasesCount,
         };
 
-        delinquentCustomers.push(delinquentCustomer);
+          delinquentCustomers.push(delinquentCustomer);
+        } catch (error) {
+          console.warn(`Error processing contract ${contract.id}:`, error);
+          // Continue with next contract
+          continue;
+        }
       }
 
       // Apply filters

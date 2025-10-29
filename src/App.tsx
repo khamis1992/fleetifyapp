@@ -943,7 +943,16 @@ const AppRoutes = () => {
           </AdminRoute>
         } />
         <Route path="contracts" element={<Contracts />} />
-        <Route path="customers" element={<Customers />} />
+        <Route path="customers" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <Customers />
+          </Suspense>
+        } />
+        <Route path="customers-old" element={
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <CustomersOld />
+          </Suspense>
+        } />
         <Route path="tenants" element={<Tenants />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/add" element={<AddProperty />} />

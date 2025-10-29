@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, DollarSign, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCurrency } from '@/lib/utils';
 
 export const DelinquentSummaryCards: React.FC = () => {
-  const { data: stats, isLoading } = useDelinquencyStats();
+  const { data: stats, isLoading, error } = useDelinquencyStats();
 
   if (isLoading) {
     return (
@@ -18,6 +19,21 @@ export const DelinquentSummaryCards: React.FC = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="col-span-full">
+          <CardContent className="pt-6">
+            <div className="text-center text-muted-foreground">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+              <p>حدث خطأ أثناء تحميل الإحصائيات</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
