@@ -48,6 +48,7 @@ const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
 const Customers = lazy(() => import("./pages/Customers"));
 const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage").then(module => ({ default: module.default })));
 const Contracts = lazy(() => import("./pages/Contracts"));
+const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage").then(module => ({ default: module.default })));
 const Fleet = lazy(() => import("./pages/Fleet"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ReportsHub = lazy(() => import("./pages/reports/ReportsHub"));
@@ -485,6 +486,13 @@ const AppRoutes = () => {
           <RouteWrapper routeName="Contracts" fallbackPath="/dashboard">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Contracts />
+            </Suspense>
+          </RouteWrapper>
+        } />
+        <Route path="contracts/:contractId" element={
+          <RouteWrapper routeName="Contract Details" fallbackPath="/contracts">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ContractDetailsPage />
             </Suspense>
           </RouteWrapper>
         } />

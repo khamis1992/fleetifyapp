@@ -7,6 +7,12 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { format, differenceInDays } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import {
   ArrowRight,
   Bell,
@@ -94,114 +100,178 @@ const CustomerDetailsPage = () => {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const companyId = useCurrentCompanyId();
 
   // الحالة المحلية
   const [activeTab, setActiveTab] = useState('contracts');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // بيانات وهمية للعرض التجريبي (سيتم استبدالها بـ API call)
-  const customerData: CustomerInfo = useMemo(
-    () => ({
-      id: customerId || 'CUS-12345',
-      name: 'أحمد محمد السعيد',
-      email: 'ahmed.alsaeed@email.com',
-      phone: '+966 50 123 4567',
-      address: 'الرياض، حي النخيل، المملكة العربية السعودية',
-      birthDate: '1990-05-20',
-      nationalId: '1234567890',
-      customerType: 'عميل مميز - مستوى ذهبي',
-      status: 'active',
-      registrationDate: '2024-01-15',
-      lastActivity: 'منذ 3 ساعات',
-    }),
-    [customerId]
-  );
+  // جلب بيانات العميل من قاعدة البيانات
+  const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
+    queryKey: ['customer-details', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) {
+        throw new Error('معرف العميل أو الشركة مفقود');
+      }
 
-  const stats: CustomerStats = useMemo(
-    () => ({
-      activeContracts: 3,
-      outstandingAmount: 5000,
-      commitmentRate: 95,
-      totalPayments: 125000,
-    }),
-    []
-  );
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .single();
 
-  const contracts: Contract[] = useMemo(
-    () => [
-      {
-        id: '1',
-        vehicleName: 'تويوتا كامري 2024',
-        contractNumber: 'CNT-001',
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        monthlyAmount: 5000,
-        status: 'active',
-        paymentStatus: 'paid',
-        daysRemaining: 30,
-      },
-      {
-        id: '2',
-        vehicleName: 'BMW X5 2023',
-        contractNumber: 'CNT-002',
-        startDate: '2024-02-15',
-        endDate: '2025-01-15',
-        monthlyAmount: 8500,
-        status: 'active',
-        paymentStatus: 'paid',
-        daysRemaining: 90,
-      },
-      {
-        id: '3',
-        vehicleName: 'مرسيدس E-Class 2024',
-        contractNumber: 'CNT-003',
-        startDate: '2024-03-01',
-        endDate: '2025-03-01',
-        monthlyAmount: 12000,
-        status: 'pending',
-        paymentStatus: 'pending',
-        daysRemaining: 120,
-      },
-    ],
-    []
-  );
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!customerId && !!companyId,
+  });
 
-  const payments: Payment[] = useMemo(
-    () => [
-      {
-        id: '1',
-        paymentNumber: 'PAY-1245',
-        date: '2024-01-01',
-        contractNumber: 'CNT-001',
-        amount: 5000,
-        paymentMethod: 'تحويل بنكي',
-        status: 'paid',
-      },
-      {
-        id: '2',
-        paymentNumber: 'PAY-1244',
-        date: '2024-01-01',
-        contractNumber: 'CNT-002',
-        amount: 8500,
-        paymentMethod: 'بطاقة ائتمان',
-        status: 'paid',
-      },
-      {
-        id: '3',
-        paymentNumber: 'PAY-1243',
-        date: '2023-12-01',
-        contractNumber: 'CNT-001',
-        amount: 5000,
-        paymentMethod: 'تحويل بنكي',
-        status: 'paid',
-      },
-    ],
-    []
-  );
+  // جلب عقود العميل
+  const { data: contracts = [], isLoading: loadingContracts } = useQuery({
+    queryKey: ['customer-contracts', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`
+          *,
+          vehicle:vehicles!vehicle_id(
+            id,
+            make,
+            model,
+            year,
+            plate_number
+          )
+        `)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  // جلب مدفوعات العميل
+  const { data: payments = [], isLoading: loadingPayments } = useQuery({
+    queryKey: ['customer-payments', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('payment_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  // حساب الإحصائيات من البيانات الحقيقية
+  const stats: CustomerStats = useMemo(() => {
+    const activeContracts = contracts.filter(c => c.status === 'active').length;
+    const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    // حساب المبلغ المستحق
+    const totalContractAmount = contracts
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => sum + (c.contract_amount || 0), 0);
+    const totalPaid = contracts
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => sum + (c.total_paid || 0), 0);
+    const outstandingAmount = totalContractAmount - totalPaid;
+
+    // حساب نسبة الالتزام (عدد الدفعات في الوقت ÷ إجمالي الدفعات)
+    const paidOnTime = payments.filter(p => p.payment_status === 'completed').length;
+    const commitmentRate = payments.length > 0 ? Math.round((paidOnTime / payments.length) * 100) : 100;
+
+    return {
+      activeContracts,
+      outstandingAmount,
+      commitmentRate,
+      totalPayments,
+    };
+  }, [contracts, payments]);
+
+  // تنسيق اسم العميل
+  const customerName = useMemo(() => {
+    if (!customer) return '';
+    if (customer.customer_type === 'corporate') {
+      return customer.company_name_ar || customer.company_name || '';
+    }
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
+    return `${firstName} ${lastName}`.trim();
+  }, [customer]);
+
+  // تنسيق بيانات العقود للعرض
+  const formattedContracts = useMemo(() => {
+    return contracts.map(contract => {
+      const vehicleName = contract.vehicle
+        ? `${contract.vehicle.make} ${contract.vehicle.model} ${contract.vehicle.year || ''}`
+        : 'غير محدد';
+      
+      const endDate = contract.end_date ? new Date(contract.end_date) : null;
+      const daysRemaining = endDate ? differenceInDays(endDate, new Date()) : 0;
+
+      return {
+        id: contract.id,
+        vehicleName,
+        contractNumber: contract.contract_number,
+        startDate: contract.start_date,
+        endDate: contract.end_date,
+        monthlyAmount: contract.monthly_amount || 0,
+        status: contract.status as 'active' | 'pending' | 'expired',
+        paymentStatus: (contract.total_paid || 0) >= (contract.contract_amount || 0) ? 'paid' : 'pending' as 'paid' | 'pending' | 'overdue',
+        daysRemaining,
+      };
+    });
+  }, [contracts]);
+
+  // تنسيق بيانات المدفوعات للعرض
+  const formattedPayments = useMemo(() => {
+    return payments.map(payment => ({
+      id: payment.id,
+      paymentNumber: payment.payment_number || payment.id.substring(0, 8),
+      date: payment.payment_date || payment.created_at,
+      contractNumber: payment.contract_id || '-',
+      amount: payment.amount || 0,
+      paymentMethod: payment.payment_method || 'غير محدد',
+      status: payment.payment_status === 'completed' ? 'paid' : payment.payment_status === 'pending' ? 'pending' : 'failed' as 'paid' | 'pending' | 'failed',
+    }));
+  }, [payments]);
+
+  // معالجة حالات التحميل والأخطاء
+  const isLoading = loadingCustomer || loadingContracts || loadingPayments;
+
+  if (isLoading) {
+    return <PageSkeletonFallback />;
+  }
+
+  if (customerError || !customer) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">العميل غير موجود</h3>
+            <p className="text-gray-600 mb-4">لم يتم العثور على هذا العميل</p>
+            <Button onClick={() => navigate('/customers')}>
+              العودة لصفحة العملاء
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // معالجات الأحداث
   const handleBack = useCallback(() => {
-    navigate(-1);
+    navigate('/customers');
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
@@ -317,45 +387,44 @@ const CustomerDetailsPage = () => {
               <div className="flex items-start gap-4">
                 {/* الصورة الرمزية */}
                 <Avatar className="w-16 h-16 flex-shrink-0">
-                  {customerData.avatar ? (
-                    <AvatarImage src={customerData.avatar} alt={customerData.name} />
-                  ) : (
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-2xl font-bold">
-                      {getInitials(customerData.name)}
-                    </AvatarFallback>
-                  )}
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-2xl font-bold">
+                    {getInitials(customerName)}
+                  </AvatarFallback>
                 </Avatar>
 
                 {/* معلومات العميل */}
                 <div>
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h2 className="text-2xl font-bold text-gray-900">
-                      {customerData.name}
+                      {customerName}
                     </h2>
                     <Badge
                       className={cn(
                         'flex items-center gap-1',
-                        getStatusColor(customerData.status)
+                        getStatusColor(customer.is_active ? 'active' : 'inactive')
                       )}
                     >
                       <CheckCircle className="w-4 h-4" />
-                      نشط
+                      {customer.is_active ? 'نشط' : 'غير نشط'}
                     </Badge>
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                      {customerData.customerType}
-                    </Badge>
+                    {customer.is_vip && (
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                        عميل مميز
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
                     <span className="flex items-center gap-1 font-mono">
-                      <Hash className="w-4 h-4" />#{customerData.id}
+                      <Hash className="w-4 h-4" />
+                      {customer.customer_code || customer.id.substring(0, 8)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      تاريخ التسجيل: {customerData.registrationDate}
+                      تاريخ التسجيل: {customer.created_at ? format(new Date(customer.created_at), 'dd/MM/yyyy') : '-'}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      آخر نشاط: {customerData.lastActivity}
+                      آخر نشاط: {customer.updated_at ? format(new Date(customer.updated_at), 'dd/MM/yyyy') : '-'}
                     </span>
                   </div>
                 </div>
@@ -467,38 +536,38 @@ const CustomerDetailsPage = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <InfoItem
-                      icon={<Mail className="w-5 h-5 text-blue-600" />}
-                      label="البريد الإلكتروني"
-                      value={customerData.email}
-                      bgColor="bg-blue-50"
-                    />
-                    <InfoItem
-                      icon={<Phone className="w-5 h-5 text-green-600" />}
-                      label="رقم الجوال"
-                      value={customerData.phone}
-                      bgColor="bg-green-50"
-                      dir="ltr"
-                    />
-                    <InfoItem
-                      icon={<MapPin className="w-5 h-5 text-purple-600" />}
-                      label="العنوان"
-                      value={customerData.address}
-                      bgColor="bg-purple-50"
-                    />
+                  <InfoItem
+                    icon={<Mail className="w-5 h-5 text-blue-600" />}
+                    label="البريد الإلكتروني"
+                    value={customer.email || '-'}
+                    bgColor="bg-blue-50"
+                  />
+                  <InfoItem
+                    icon={<Phone className="w-5 h-5 text-green-600" />}
+                    label="رقم الجوال"
+                    value={customer.phone || '-'}
+                    bgColor="bg-green-50"
+                    dir="ltr"
+                  />
+                  <InfoItem
+                    icon={<MapPin className="w-5 h-5 text-purple-600" />}
+                    label="العنوان"
+                    value={customer.address || '-'}
+                    bgColor="bg-purple-50"
+                  />
                   </div>
 
                   <div className="space-y-4">
                     <InfoItem
                       icon={<Cake className="w-5 h-5 text-orange-600" />}
                       label="تاريخ الميلاد"
-                      value={`${customerData.birthDate} (34 سنة)`}
+                      value={customer.date_of_birth || '-'}
                       bgColor="bg-orange-50"
                     />
                     <InfoItem
                       icon={<CreditCard className="w-5 h-5 text-red-600" />}
                       label="رقم الهوية الوطنية"
-                      value={customerData.nationalId}
+                      value={customer.national_id || '-'}
                       bgColor="bg-red-50"
                       mono
                       dir="ltr"
@@ -506,7 +575,7 @@ const CustomerDetailsPage = () => {
                     <InfoItem
                       icon={<Briefcase className="w-5 h-5 text-cyan-600" />}
                       label="نوع العميل"
-                      value={customerData.customerType}
+                      value={customer.customer_type === 'individual' ? 'فرد' : customer.customer_type === 'corporate' ? 'شركة' : '-'}
                       bgColor="bg-cyan-50"
                     />
                   </div>
@@ -571,9 +640,17 @@ const CustomerDetailsPage = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {contracts.map((contract, index) => (
-                    <ContractCard key={contract.id} contract={contract} index={index} />
-                  ))}
+                  {formattedContracts.length > 0 ? (
+                    formattedContracts.map((contract, index) => (
+                      <ContractCard key={contract.id} contract={contract} index={index} />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-8 text-center text-gray-500">
+                        لا توجد عقود لهذا العميل
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </TabsContent>
 
@@ -589,7 +666,7 @@ const CustomerDetailsPage = () => {
                   </Button>
                 </div>
 
-                <PaymentsTable payments={payments} />
+                <PaymentsTable payments={formattedPayments} />
               </TabsContent>
 
               {/* تبويبات أخرى */}
@@ -723,7 +800,7 @@ const ContractCard = ({ contract, index }: ContractCardProps) => {
                 {contract.vehicleName}
               </h4>
               <p className="text-sm text-gray-600">
-                عقد #{contract.contractNumber} • بدأ في {contract.startDate}
+                عقد #{contract.contractNumber} • بدأ في {contract.startDate ? format(new Date(contract.startDate), 'dd/MM/yyyy') : '-'}
               </p>
             </div>
           </div>
@@ -742,7 +819,7 @@ const ContractCard = ({ contract, index }: ContractCardProps) => {
           <div>
             <div className="text-xs text-gray-500 mb-1">تاريخ الانتهاء</div>
             <div className="text-sm font-semibold text-gray-900">
-              {contract.endDate}
+              {contract.endDate ? format(new Date(contract.endDate), 'dd/MM/yyyy') : '-'}
             </div>
           </div>
           <div>
@@ -833,9 +910,11 @@ const PaymentsTable = ({ payments }: PaymentsTableProps) => {
               <td className="px-4 py-4 text-sm font-mono text-gray-900">
                 #{payment.paymentNumber}
               </td>
-              <td className="px-4 py-4 text-sm text-gray-900">{payment.date}</td>
               <td className="px-4 py-4 text-sm text-gray-900">
-                عقد #{payment.contractNumber}
+                {payment.date ? format(new Date(payment.date), 'dd/MM/yyyy') : '-'}
+              </td>
+              <td className="px-4 py-4 text-sm text-gray-900">
+                عقد #{payment.contractNumber.substring(0, 8)}
               </td>
               <td className="px-4 py-4 text-sm font-semibold text-gray-900">
                 {payment.amount.toLocaleString('ar-SA')} ر.س

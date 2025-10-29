@@ -1,0 +1,329 @@
+/* Legal Contract Theme - Professional Legal Document Style */
+
+:root {
+  /* Colors - Professional Legal Palette */
+  --background: oklch(1.0 0 0);           /* Pure white for printing */
+  --foreground: oklch(0.10 0 0);          /* Very dark for readability */
+  --border: oklch(0.20 0 0);              /* Dark borders */
+  
+  /* Accent colors */
+  --primary: oklch(0.52 0.19 25);         /* Deep red for highlights */
+  --success: oklch(0.56 0.13 152);        /* Green for approvals */
+  --warning: oklch(0.68 0.15 55);         /* Orange for warnings */
+  --destructive: oklch(0.58 0.17 25);     /* Red for penalties */
+  
+  /* Typography - Legal Fonts */
+  --font-serif: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif;
+  --font-sans: 'Noto Kufi Arabic', 'Arial', sans-serif;
+  --font-mono: 'Courier New', monospace;
+  
+  /* Spacing for legal documents */
+  --spacing-tight: 0.5rem;
+  --spacing-normal: 1rem;
+  --spacing-relaxed: 1.5rem;
+  --spacing-loose: 2rem;
+  
+  /* Line heights for readability */
+  --line-height-tight: 1.4;
+  --line-height-normal: 1.8;
+  --line-height-relaxed: 2.0;
+  --line-height-loose: 2.2;
+  
+  /* Legal document margins */
+  --margin-page: 2.5cm;
+  --margin-header: 1.5cm;
+  
+  /* Border styles */
+  --border-thin: 1px solid oklch(0.80 0 0);
+  --border-medium: 2px solid oklch(0.20 0 0);
+  --border-thick: 3px double oklch(0.20 0 0);
+}
+
+/* Print-optimized styles */
+@media print {
+  :root {
+    --background: white;
+    --foreground: black;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .page-break {
+    page-break-after: always;
+  }
+  
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* Typography styles for legal documents */
+body {
+  font-family: var(--font-serif) !important;
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+  line-height: var(--line-height-normal) !important;
+  font-size: 14pt !important;
+}
+
+h1 {
+  font-family: var(--font-serif) !important;
+  font-size: 24pt !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  margin: var(--spacing-loose) 0 !important;
+  line-height: var(--line-height-tight) !important;
+  color: var(--foreground) !important;
+}
+
+h2 {
+  font-family: var(--font-serif) !important;
+  font-size: 18pt !important;
+  font-weight: 700 !important;
+  margin: var(--spacing-relaxed) 0 var(--spacing-normal) 0 !important;
+  line-height: var(--line-height-normal) !important;
+  color: var(--foreground) !important;
+  border-bottom: var(--border-medium);
+  padding-bottom: 0.5rem !important;
+}
+
+h3 {
+  font-family: var(--font-serif) !important;
+  font-size: 16pt !important;
+  font-weight: 700 !important;
+  margin: var(--spacing-normal) 0 var(--spacing-tight) 0 !important;
+  line-height: var(--line-height-normal) !important;
+  color: var(--foreground) !important;
+}
+
+p, li {
+  font-family: var(--font-serif) !important;
+  font-size: 14pt !important;
+  line-height: var(--line-height-relaxed) !important;
+  margin-bottom: var(--spacing-normal) !important;
+  text-align: justify !important;
+}
+
+/* Legal article numbering */
+.article {
+  margin: var(--spacing-relaxed) 0 !important;
+  padding: var(--spacing-normal) !important;
+  border-right: 4px solid var(--primary) !important;
+  background: oklch(0.98 0 0) !important;
+}
+
+.article-title {
+  font-weight: 700 !important;
+  font-size: 15pt !important;
+  margin-bottom: var(--spacing-tight) !important;
+  color: var(--primary) !important;
+}
+
+.article-content {
+  padding-right: var(--spacing-normal) !important;
+}
+
+/* Penalty and fine highlights */
+.penalty {
+  background-color: oklch(0.95 0.05 25) !important;
+  border: 2px solid var(--destructive) !important;
+  padding: var(--spacing-normal) !important;
+  border-radius: 0.25rem !important;
+  margin: var(--spacing-tight) 0 !important;
+}
+
+.fine-amount {
+  color: var(--destructive) !important;
+  font-weight: 700 !important;
+  font-size: 15pt !important;
+}
+
+/* Breach cases */
+.breach-case {
+  background: oklch(0.97 0 0) !important;
+  border-right: 3px solid var(--warning) !important;
+  padding: var(--spacing-tight) var(--spacing-normal) !important;
+  margin: var(--spacing-tight) 0 !important;
+}
+
+/* Declarations/Acknowledgments */
+.declaration {
+  background: oklch(0.96 0.05 152) !important;
+  border: 2px solid var(--success) !important;
+  padding: var(--spacing-normal) !important;
+  margin: var(--spacing-tight) 0 !important;
+  border-radius: 0.25rem !important;
+}
+
+.declaration-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: var(--spacing-tight) !important;
+  margin: var(--spacing-tight) 0 !important;
+}
+
+/* Signature section */
+.signature-section {
+  margin-top: var(--spacing-loose) !important;
+  padding-top: var(--spacing-loose) !important;
+  border-top: var(--border-thick);
+}
+
+.signature-box {
+  border: var(--border-medium);
+  padding: var(--spacing-relaxed) !important;
+  min-height: 150px !important;
+  text-align: center !important;
+  background: oklch(0.99 0 0) !important;
+}
+
+.signature-line {
+  border-top: 2px solid var(--foreground) !important;
+  margin: var(--spacing-normal) auto !important;
+  width: 80% !important;
+  padding-top: var(--spacing-tight) !important;
+}
+
+/* Company header */
+.company-header {
+  text-align: center !important;
+  padding: var(--spacing-relaxed) !important;
+  border-bottom: var(--border-thick);
+  margin-bottom: var(--spacing-loose) !important;
+  background: oklch(0.98 0 0) !important;
+}
+
+.company-logo {
+  font-size: 20pt !important;
+  font-weight: 700 !important;
+  color: var(--primary) !important;
+  margin-bottom: var(--spacing-tight) !important;
+}
+
+/* Party information boxes */
+.party-box {
+  border: var(--border-medium);
+  padding: var(--spacing-normal) !important;
+  background: oklch(0.98 0 0) !important;
+  margin: var(--spacing-normal) 0 !important;
+}
+
+.party-title {
+  font-weight: 700 !important;
+  font-size: 16pt !important;
+  border-bottom: var(--border-thin);
+  padding-bottom: var(--spacing-tight) !important;
+  margin-bottom: var(--spacing-tight) !important;
+}
+
+/* Contract number and date */
+.contract-ref {
+  text-align: center !important;
+  font-family: var(--font-mono) !important;
+  font-size: 13pt !important;
+  padding: var(--spacing-normal) !important;
+  background: oklch(0.95 0 0) !important;
+  border: var(--border-thin);
+  margin: var(--spacing-normal) 0 !important;
+}
+
+/* Important notices */
+.important-notice {
+  background: oklch(0.95 0.08 55) !important;
+  border: 3px solid var(--warning) !important;
+  padding: var(--spacing-normal) !important;
+  margin: var(--spacing-normal) 0 !important;
+  font-weight: 600 !important;
+}
+
+/* Legal reference */
+.legal-ref {
+  font-style: italic !important;
+  color: oklch(0.40 0 0) !important;
+  font-size: 12pt !important;
+  margin-right: var(--spacing-normal) !important;
+}
+
+/* Numbered lists for legal clauses */
+.legal-list {
+  counter-reset: legal-counter !important;
+  list-style: none !important;
+  padding-right: 0 !important;
+}
+
+.legal-list li {
+  counter-increment: legal-counter !important;
+  margin-bottom: var(--spacing-normal) !important;
+  padding-right: var(--spacing-relaxed) !important;
+  position: relative !important;
+}
+
+.legal-list li::before {
+  content: counter(legal-counter) "- " !important;
+  position: absolute !important;
+  right: 0 !important;
+  font-weight: 700 !important;
+  color: var(--primary) !important;
+}
+
+/* Table for financial details */
+.financial-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: var(--spacing-normal) 0 !important;
+}
+
+.financial-table th,
+.financial-table td {
+  border: var(--border-thin);
+  padding: var(--spacing-tight) !important;
+  text-align: right !important;
+}
+
+.financial-table th {
+  background: oklch(0.92 0 0) !important;
+  font-weight: 700 !important;
+}
+
+.financial-table .total-row {
+  background: oklch(0.95 0 0) !important;
+  font-weight: 700 !important;
+  border-top: var(--border-medium);
+}
+
+/* Input fields for filling */
+.fillable-field {
+  border-bottom: 1px solid oklch(0.60 0 0) !important;
+  min-width: 150px !important;
+  display: inline-block !important;
+  padding: 0 0.5rem !important;
+  font-family: var(--font-sans) !important;
+}
+
+/* Checkbox styling */
+.checkbox-legal {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid var(--foreground) !important;
+  flex-shrink: 0 !important;
+  margin-top: 2px !important;
+}
+
+/* Footer note */
+.contract-footer {
+  margin-top: var(--spacing-loose) !important;
+  padding-top: var(--spacing-normal) !important;
+  border-top: var(--border-thin);
+  font-size: 11pt !important;
+  text-align: center !important;
+  color: oklch(0.50 0 0) !important;
+}
+
+

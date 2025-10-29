@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عقد إيجار سيارة - شركة العراف</title>
+    
+    <!-- Google Fonts - Arabic Legal Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Legal Contract Theme -->
+    <link rel="stylesheet" href="legal_contract_theme.css">
+    
+    <style>
+        /* Page setup */
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        
+        body {
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 2cm;
+            background: white;
+            color: #1a1a1a;
+            font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif;
+            font-size: 14pt;
+            line-height: 1.8;
+        }
+        
+        .container {
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 2cm;
+        }
+        
+        /* Header */
+        .company-header {
+            text-align: center;
+            padding: 1.5rem;
+            border-bottom: 3px double #1a1a1a;
+            margin-bottom: 2rem;
+            background: #fafafa;
+        }
+        
+        .company-logo {
+            font-size: 22pt;
+            font-weight: 700;
+            color: #b91c1c;
+            margin-bottom: 0.5rem;
+        }
+        
+        .company-details {
+            font-size: 12pt;
+            color: #4a4a4a;
+            line-height: 1.6;
+        }
+        
+        /* Contract title */
+        h1 {
+            font-size: 24pt;
+            font-weight: 700;
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1rem;
+            border-top: 3px double #1a1a1a;
+            border-bottom: 3px double #1a1a1a;
+        }
+        
+        .contract-ref {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 13pt;
+            padding: 1rem;
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            margin: 1rem 0;
+        }
+        
+        /* Parties */
+        .party-box {
+            border: 2px solid #1a1a1a;
+            padding: 1.5rem;
+            background: #fafafa;
+            margin: 1.5rem 0;
+            page-break-inside: avoid;
+        }
+        
+        .party-title {
+            font-weight: 700;
+            font-size: 16pt;
+            border-bottom: 1px solid #808080;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .party-info {
+            line-height: 2.0;
+            padding-right: 1rem;
+        }
+        
+        .party-info strong {
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+        
+        /* Preamble */
+        .preamble {
+            text-align: center;
+            font-style: italic;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f9f9f9;
+            border: 1px solid #d0d0d0;
+        }
+        
+        /* Articles */
+        .article {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border-right: 4px solid #b91c1c;
+            background: #fafafa;
+            page-break-inside: avoid;
+        }
+        
+        .article-number {
+            font-weight: 700;
+            font-size: 15pt;
+            color: #b91c1c;
+            margin-bottom: 0.75rem;
+        }
+        
+        .article-content {
+            padding-right: 1rem;
+            line-height: 2.0;
+        }
+        
+        /* Sub-articles */
+        .sub-article {
+            margin: 0.75rem 0;
+            padding-right: 2rem;
+        }
+        
+        .sub-article-number {
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        
+        /* Penalty boxes */
+        .penalty-box {
+            background-color: #fef2f2;
+            border: 2px solid #dc2626;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 0.25rem;
+        }
+        
+        .fine-amount {
+            color: #dc2626;
+            font-weight: 700;
+            font-size: 15pt;
+        }
+        
+        /* Breach cases */
+        .breach-case {
+            background: #fffbeb;
+            border-right: 3px solid #ea580c;
+            padding: 1rem;
+            margin: 0.75rem 0;
+        }
+        
+        .breach-code {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: #ea580c;
+        }
+        
+        /* Legal references */
+        .legal-ref {
+            font-style: italic;
+            color: #666;
+            font-size: 12pt;
+            margin-right: 1rem;
+        }
+        
+        /* Important notice */
+        .important-notice {
+            background: #fff7ed;
+            border: 3px solid #ea580c;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        /* Declarations */
+        .declaration {
+            background: #f0fdf4;
+            border: 2px solid #16a34a;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0.25rem;
+        }
+        
+        .declaration-title {
+            font-weight: 700;
+            font-size: 16pt;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #16a34a;
+        }
+        
+        .declaration-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin: 0.75rem 0;
+            line-height: 2.0;
+        }
+        
+        .checkbox-legal {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #1a1a1a;
+            flex-shrink: 0;
+            margin-top: 6px;
+            background: white;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 3px double #1a1a1a;
+        }
+        
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .signature-box {
+            border: 2px solid #1a1a1a;
+            padding: 2rem;
+            min-height: 180px;
+            text-align: center;
+            background: #fafafa;
+        }
+        
+        .signature-title {
+            font-weight: 700;
+            font-size: 15pt;
+            margin-bottom: 1rem;
+            text-decoration: underline;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #1a1a1a;
+            margin: 2rem auto 0.5rem;
+            width: 80%;
+            padding-top: 0.5rem;
+        }
+        
+        .signature-name {
+            font-size: 13pt;
+            margin: 0.5rem 0;
+        }
+        
+        .signature-role {
+            font-size: 12pt;
+            color: #666;
+        }
+        
+        /* Financial table */
+        .financial-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .financial-table th,
+        .financial-table td {
+            border: 1px solid #808080;
+            padding: 0.75rem;
+            text-align: right;
+        }
+        
+        .financial-table th {
+            background: #e5e5e5;
+            font-weight: 700;
+        }
+        
+        .financial-table .total-row {
+            background: #f5f5f5;
+            font-weight: 700;
+            border-top: 2px solid #1a1a1a;
+        }
+        
+        /* Fillable fields */
+        .fillable-field {
+            border-bottom: 1px solid #666;
+            min-width: 150px;
+            display: inline-block;
+            padding: 0 0.5rem;
+            font-family: 'Noto Kufi Arabic', Arial, sans-serif;
+        }
+        
+        /* Footer */
+        .contract-footer {
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid #d0d0d0;
+            font-size: 11pt;
+            text-align: center;
+            color: #666;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                box-shadow: none;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-break {
+                page-break-after: always;
+            }
+        }
+        
+        /* Utility classes */
+        .text-center { text-align: center !important; }
+        .font-bold { font-weight: 700 !important; }
+        .text-primary { color: #b91c1c !important; }
+        .text-success { color: #16a34a !important; }
+        .text-warning { color: #ea580c !important; }
+        .text-danger { color: #dc2626 !important; }
+        .mb-1 { margin-bottom: 0.5rem !important; }
+        .mb-2 { margin-bottom: 1rem !important; }
+        .mb-3 { margin-bottom: 1.5rem !important; }
+        .mt-2 { margin-top: 1rem !important; }
+        .mt-3 { margin-top: 1.5rem !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Company Header -->
+        <div class="company-header">
+            <div class="company-logo">🏢</div>
+            <h1 class="company-logo" style="margin: 0;">شركة العراف لتأجير السيارات ذ.م.م</h1>
+            <div class="company-details">
+                السجل التجاري: 179973 • دولة قطر<br>
+                المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2
+            </div>
+        </div>
+
+        <!-- Contract Title -->
+        <h1>عقــد إيجــار سيــارة</h1>
+
+        <!-- Contract Reference -->
+        <div class="contract-ref">
+            رقم العقد: <span class="fillable-field">_______________</span><br>
+            التاريخ الهجري: <span class="fillable-field">___/___/______ هـ</span><br>
+            التاريخ الميلادي: <span class="fillable-field">___/___/______ م</span>
+        </div>
+
+        <!-- Preamble -->
+        <div class="preamble">
+            <strong>إنه في يوم <span class="fillable-field">____________</span> 
+            الموافق <span class="fillable-field">___/___/______</span> هـ</strong><br>
+            تم الاتفاق بين كل من:
+        </div>
+
+        <!-- First Party -->
+        <div class="party-box">
+            <div class="party-title">أولاً: الطرف الأول (المؤجـــر)</div>
+            <div class="party-info">
+                <strong>الاسم التجاري:</strong> شركة العراف لتأجير السيارات ذ.م.م<br>
+                <strong>السجل التجاري:</strong> 179973<br>
+                <strong>الدولة:</strong> دولة قطر<br>
+                <strong>المقر:</strong> أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2<br>
+                <strong>يمثلها:</strong> خميس هاشم الجابر<br>
+                <strong>بصفته:</strong> المدير العام المفوض بالتوقيع
+            </div>
+        </div>
+
+        <!-- Second Party -->
+        <div class="party-box">
+            <div class="party-title">ثانياً: الطرف الثاني (المستأجــر)</div>
+            <div class="party-info">
+                <strong>الاسم الكامل:</strong> <span class="fillable-field" style="min-width: 300px;">________________________________</span><br>
+                <strong>رقم الهوية/الإقامة:</strong> <span class="fillable-field" style="min-width: 200px;">_______________________</span><br>
+                <strong>الجنسية:</strong> <span class="fillable-field" style="min-width: 150px;">____________________</span><br>
+                <strong>العنوان:</strong> <span class="fillable-field" style="min-width: 350px;">______________________________________</span><br>
+                <strong>رقم الجوال:</strong> <span class="fillable-field" style="min-width: 150px;">____________________</span><br>
+                <strong>رقم رخصة القيادة:</strong> <span class="fillable-field" style="min-width: 200px;">_______________________</span>
+            </div>
+        </div>
+
+        <!-- Preamble/Recitals -->
+        <div style="margin: 2rem 0; line-height: 2.0;">
+            <h3 class="font-bold text-center" style="text-decoration: underline;">تمهيــــد</h3>
+            <p style="text-align: justify;">
+                <strong>حيث إن</strong> الطرف الأول يملك ويدير أسطولاً من المركبات المعدة للتأجير،<br>
+                <strong>وحيث إن</strong> الطرف الثاني يرغب في استئجار إحدى هذه المركبات للاستخدام الشخصي،<br>
+                <strong>وحيث إن</strong> الطرفين قد اتفقا على الشروط والأحكام الواردة أدناه،<br><br>
+                <strong class="text-center" style="display: block; font-size: 15pt;">فقد اتفق الطرفان على ما يلي:</strong>
+            </p>
+        </div>
+
+        <!-- Article 1: Subject Matter -->
+        <div class="article">
+            <div class="article-number">المادة (1): موضوع العقد</div>
+            <div class="article-content">
+                <p>يقر الطرف الأول بتأجير المركبة التالية للطرف الثاني وفقاً للشروط والأحكام الواردة في هذا العقد:</p>
+                
+                <table class="financial-table">
+                    <tr>
+                        <th style="width: 40%;">البيــان</th>
+                        <th style="width: 60%;">التفاصيــل</th>
+                    </tr>
+                    <tr>
+                        <td><strong>النوع/الماركة</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>الموديل/الطراز</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>رقم اللوحة</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>رقم الهيكل (VIN)</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>سنة الصنع</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>اللون</strong></td>
+                        <td><span class="fillable-field" style="min-width: 250px;">_____________________________</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>الحالة عند التسليم</strong></td>
+                        <td><strong>جيدة</strong> (حسب تقرير الفحص الفني المرفق - ملحق 1)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Article 2: Duration -->
+        <div class="article">
+            <div class="article-number">المادة (2): مدة العقد</div>
+            <div class="article-content">
+                <p>يسري هذا العقد لمدة قدرها:</p>
+                <div style="padding-right: 2rem; line-height: 2.2;">
+                    • <strong>المدة:</strong> <span class="fillable-field">_____</span> شهر/شهور<br>
+                    • <strong>تاريخ البداية:</strong> <span class="fillable-field">___/___/______</span><br>
+                    • <strong>تاريخ النهاية المتوقع:</strong> <span class="fillable-field">___/___/______</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 3: Financial Terms -->
+        <div class="article">
+            <div class="article-number">المادة (3): القيمة الإيجارية وطريقة الدفع</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <span class="sub-article-number">3-1</span> قيمة الإيجار الشهري: 
+                    <span class="fillable-field">_____________</span> ريال قطري
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">3-2</span> إجمالي قيمة العقد: 
+                    <span class="fillable-field">_____________</span> ريال قطري
+                    <span class="legal-ref">(تُحسب بضرب مدة العقد × قيمة الإيجار الشهري)</span>
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">3-3</span> مبلغ التأمين: 
+                    <strong class="fine-amount">8,000</strong> ريال قطري
+                    <span class="legal-ref">(تأمين نقدي وليس وديعة، لضمان الوفاء بالالتزامات)</span>
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">3-4</span> <strong>طريقة الدفع:</strong> يُدفع الإيجار مقدماً في بداية كل شهر عن طريق التحويل البنكي إلى حساب الطرف الأول.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">3-5</span> <strong class="text-danger">يُحظر</strong> على الطرف الثاني خصم أي مبلغ من القيمة الإيجارية لقاء أي رسوم أو ضرائب أو مصروفات أو غير ذلك.
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 4: Penalties and Fines -->
+        <div class="article" style="border-right-color: #dc2626;">
+            <div class="article-number" style="color: #dc2626;">المادة (4): الغرامات والعقوبات ⚠️</div>
+            <div class="article-content">
+                
+                <div class="penalty-box">
+                    <div class="sub-article-number">4-1</div>
+                    <strong>غرامة التأخير في سداد الأجرة:</strong><br>
+                    • المبلغ: <span class="fine-amount">120 ريال قطري</span> عن كل يوم تأخير<br>
+                    • رسوم إدارية ثابتة: <span class="fine-amount">250 ريال قطري</span><br>
+                    • الحد الأقصى: 30 يوماً<br>
+                    • بداية الاحتساب: اليوم التالي لتاريخ الاستحقاق<br>
+                    <span class="legal-ref">يقر المستأجر بأن الغرامة تقدير عادل ومعقول للضرر</span>
+                </div>
+
+                <div class="penalty-box">
+                    <div class="sub-article-number">4-2</div>
+                    <strong>غرامة التأخير في إرجاع المركبة:</strong><br>
+                    • المبلغ: <span class="fine-amount">200 ريال قطري</span> عن كل يوم تأخير بعد انتهاء العقد
+                </div>
+
+                <div class="penalty-box">
+                    <div class="sub-article-number">4-3</div>
+                    <strong>غرامة الامتناع عن تسليم المركبة:</strong><br>
+                    • المبلغ: <span class="fine-amount">5,000 ريال قطري</span><br>
+                    • العقوبة الإضافية: <strong class="text-danger">مساءلة جنائية</strong>
+                </div>
+
+                <div class="penalty-box">
+                    <div class="sub-article-number">4-4</div>
+                    <strong>غرامة الاستخدام غير المصرح به:</strong><br>
+                    • المبلغ: <span class="fine-amount">5,000 ريال قطري</span><br>
+                    • العقوبة الإضافية: <strong class="text-danger">فسخ فوري للعقد</strong>
+                </div>
+
+                <div class="penalty-box">
+                    <div class="sub-article-number">4-5</div>
+                    <strong>غرامة حجز المركبة من قبل السلطات:</strong><br>
+                    • المبلغ: <span class="fine-amount">100 ريال قطري</span> عن كل يوم حجز<br>
+                    • بسبب مخالفات تعود للمستأجر<br>
+                    • بالإضافة إلى: جميع تكاليف ورسوم الإفراج عن المركبة
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Article 5: Penalty Clause -->
+        <div class="article">
+            <div class="article-number">المادة (5): الشرط الجزائي</div>
+            <div class="article-content">
+                <p>اتفق الطرفان على أنه في حالة إخلال الطرف الثاني بأي من التزاماته الواردة في هذا العقد، يلتزم بدفع شرط جزائي قدره:</p>
+                
+                <div class="important-notice">
+                    <span class="fine-amount" style="font-size: 18pt;">10,000 ريال قطري</span>
+                </div>
+                
+                <p><strong>حالات التطبيق:</strong></p>
+                <ul class="legal-list">
+                    <li>الإخلال بأي من الالتزامات التعاقدية</li>
+                    <li>التأخر عن السداد</li>
+                    <li>الامتناع عن إعادة المركبة في الموعد المحدد</li>
+                    <li>استخدام المركبة في أغراض غير مصرح بها</li>
+                </ul>
+                
+                <p class="legal-ref"><strong>الأساس القانوني:</strong> المادة 265 من القانون المدني القطري</p>
+                
+                <p><strong>إقرار المستأجر:</strong> يقر الطرف الثاني بأن قيمة الشرط الجزائي محددة باعتبار أن الأضرار التي قد تلحق بالمؤجر يصعب تقديرها بدقة، وأن هذا التقدير يمثل تعويضاً عادلاً ومسبقاً.</p>
+                
+                <div class="important-notice" style="background: #fef2f2;">
+                    ⚠️ <strong>تنويه هام:</strong> لا يخل الاتفاق على الشرط الجزائي بحق المؤجر في المطالبة بتعويضات إضافية إذا جاوز الضرر الفعلي قيمة الشرط الجزائي، وفقاً لنص المادة 267 من القانون المدني القطري.
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 6: Breach Cases -->
+        <div class="article">
+            <div class="article-number">المادة (6): حالات الإخلال بالعقد</div>
+            <div class="article-content">
+                <p>يعتبر الطرف الثاني مخلاً بالعقد في الحالات التالية:</p>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_001]</strong> 
+                    <strong>الإخفاق في الدفع:</strong><br>
+                    إخفاق الطرف الثاني في سداد أي من الدفعات الإيجارية أو أي مبلغ مستحق بموجب هذا العقد في مواعيد استحقاقها.<br>
+                    <strong>العواقب:</strong> غرامة تأخير + رسوم إدارية + حق فسخ العقد بعد 30 يوم
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_002]</strong> 
+                    <strong>خرق العقد:</strong><br>
+                    خرق الطرف الثاني لأي من التزاماته الأخرى (غير المالية) المفروضة بموجب هذا العقد.<br>
+                    <strong>العواقب:</strong> فسخ فوري + استرداد المركبة + تعويضات
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_003]</strong> 
+                    <strong>الإفلاس أو الإعسار:</strong><br>
+                    إفلاس أو إعسار الطرف الثاني.<br>
+                    <strong>العواقب:</strong> فسخ فوري + استرداد المركبة
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_004]</strong> 
+                    <strong>هجر أو ترك المركبة:</strong><br>
+                    <strong>العواقب:</strong> فسخ فوري + استرداد المركبة + مساءلة جنائية
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_005]</strong> 
+                    <strong>مغادرة البلاد نهائياً:</strong><br>
+                    ترحيل أو مغادرة الطرف الثاني من البلاد بصورة نهائية.<br>
+                    <strong>العواقب:</strong> فسخ فوري + استرداد المركبة + مساءلة جنائية + منع سفر
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_006]</strong> 
+                    <strong>عدم دفع المخالفات المرورية:</strong><br>
+                    عدم التزام المستأجر بدفع كل مخالفة مرورية مرتكبة أثناء حيازته للسيارة في غضون 30 يوم من تاريخ ارتكابها.<br>
+                    <strong>العواقب:</strong> فسخ العقد + تحميل قيمة المخالفات
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_007]</strong> 
+                    <strong>الاستخدام غير المشروع:</strong><br>
+                    استخدام المركبة في أغراض غير مشروعة.<br>
+                    <strong>العواقب:</strong> فسخ فوري + غرامة 5,000 ريال + مساءلة جنائية
+                </div>
+
+                <div class="breach-case">
+                    <strong class="breach-code">[BREACH_008]</strong> 
+                    <strong>تأجير المركبة للغير:</strong><br>
+                    تأجير المستأجر للمركبة للغير بدون إذن خطي من المؤجر.<br>
+                    <strong>العواقب:</strong> فسخ فوري + غرامة 5,000 ريال قطري
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 7: Consequences of Breach -->
+        <div class="article">
+            <div class="article-number">المادة (7): عواقب الإخلال بالعقد</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <div class="sub-article-number">7-1</div>
+                    <strong>فسخ العقد وسحب المركبة:</strong><br>
+                    يحق للطرف الأول فسخ العقد فوراً وسحب السيارة بواسطة أحد موظفيه، ويكون الطرف الثاني ملزماً بـ:
+                    <ul class="legal-list">
+                        <li>دفع القيمة الإيجارية المستحقة حتى تاريخ الفسخ</li>
+                        <li>تعويض الطرف الأول بغرامة قدرها 5,000 ريال قطري</li>
+                        <li>لا يحق للطرف الثاني المطالبة بأي مبالغ مدفوعة قبل إنهاء العقد</li>
+                    </ul>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">7-2</div>
+                    <strong>سحب المركبة:</strong><br>
+                    يحق للطرف الأول سحب المركبة بواسطة موظفيه عن طريق نسخة المفتاح الموجودة لدى الشركة.
+                    <div class="important-notice">
+                        <strong>إقرار هام:</strong> يقر الطرف الثاني ويوافق بعدم مسؤولية الطرف الأول عن أي أغراض أو مبالغ داخل السيارة عند سحبها، ويتنازل المستأجر عن أي مطالبات قانونية تتعلق بالأغراض الشخصية المتبقية في السيارة. لا تعد الشركة مسؤولة مدنياً أو جنائياً.
+                    </div>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">7-3</div>
+                    <strong>الالتزامات المالية عند الفسخ:</strong>
+                    <ul class="legal-list">
+                        <li>سداد جميع الأقساط الإيجارية المستحقة حتى تاريخ الإنهاء</li>
+                        <li>سداد جميع الغرامات والمخالفات المترتبة</li>
+                        <li>تعويض الطرف الأول عن الفترة المتبقية من العقد بمبلغ يعادل قيمة قسطين إيجاريين شهريين</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 8: Insurance -->
+        <div class="article">
+            <div class="article-number">المادة (8): التأمين على المركبة</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <span class="sub-article-number">8-1</span> يلتزم الطرف الأول بالتأمين الشامل على المركبة طوال فترة العقد.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">8-2</span> يتحمل الطرف الثاني القيمة التحملية عند وقوع أي حادث.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">8-3</span> <strong class="text-danger">في حال الفقدان الكلي أو الهلاك الكلي</strong> بسبب إهمال المستأجر، يلتزم الطرف الثاني بدفع القيمة السوقية للمركبة وقت وقوع الحادث.
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Article 9: Lessee Obligations -->
+        <div class="article">
+            <div class="article-number">المادة (9): التزامات المستأجر</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <div class="sub-article-number">9-1</div>
+                    <strong>الاستخدام الشخصي:</strong><br>
+                    يتعهد الطرف الثاني بأنه سيقود المركبة بنفسه ولمنفعته الشخصية فقط، ولن يسمح لأي شخص آخر بقيادتها أو استعمالها طوال مدة العقد، إلا بموافقة خطية مسبقة من الطرف الأول.
+                    
+                    <div class="important-notice">
+                        <strong>محظورات صارمة:</strong><br>
+                        • تأجير المركبة من الباطن<br>
+                        • استخدامها لأغراض تجارية (مثل التاكسي أو التوصيل)<br>
+                        • نقلها خارج حدود دولة قطر دون موافقة خطية مسبقة<br>
+                        • رهنها أو التصرف فيها بأي شكل
+                    </div>
+                    
+                    <p class="text-danger"><strong>العقوبة:</strong> في حالة مخالفة أي من البنود أعلاه، يحق للطرف الأول إنهاء العقد فوراً دون إنذار أو تعويض، واتخاذ الإجراءات الجنائية اللازمة.</p>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">9-2</div>
+                    <strong>المخالفات المرورية:</strong><br>
+                    يلتزم الطرف الثاني بدفع جميع المخالفات المرورية المرتكبة أثناء حيازته للمركبة خلال مدة أقصاها 30 يوماً من تاريخ وقوع المخالفة.<br>
+                    <strong class="text-danger">عدم الالتزام يحق للطرف الأول إنهاء العقد وتحميله قيمة المخالفات.</strong>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">9-3</div>
+                    <strong>الصيانة والإصلاحات:</strong><br>
+                    يلتزم الطرف الثاني بـ:
+                    <ul class="legal-list">
+                        <li>جميع أعمال الصيانة الدورية وغير الدورية</li>
+                        <li>الإصلاحات اللازمة</li>
+                        <li>الفحص الفني في مواعيده المحددة</li>
+                        <li>الالتزام بكافة متطلبات الفحص الفني</li>
+                        <li>ضمان اجتياز المركبة للفحص الفني طوال مدة العقد</li>
+                    </ul>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">9-4</div>
+                    <strong>المسؤولية عن الهلاك:</strong><br>
+                    يقر الطرف الثاني بأنه وحده المسؤول عن هلاك المركبة، سواء كان هلاكاً كلياً أو جزئياً، والناتج عن إهماله أو تقصيره أو حتى بسبب الغير. وبالتالي فإن الطرف الثاني يتعهد بدفع تكلفة هذا الهلاك.
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">9-5</div>
+                    <strong>تجديد استمرارية المركبة:</strong><br>
+                    يلتزم الطرف الثاني بتجديد استمرارية المركبة طوال فترة العقد.
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 10: Early Termination -->
+        <div class="article">
+            <div class="article-number">المادة (10): الإنهاء المبكر من قبل المستأجر</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <div class="sub-article-number">10-1</div>
+                    <strong>الشروط:</strong>
+                    <ul class="legal-list">
+                        <li>إخطار كتابي مسبق بمدة 30 يوماً</li>
+                        <li>تسليم المركبة بحالة جيدة</li>
+                        <li>سداد جميع المستحقات المالية (أقساط، غرامات، مخالفات)</li>
+                    </ul>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">10-2</div>
+                    <strong>التعويض الجزائي:</strong> يلتزم الطرف الثاني بدفع تعويض جزائي قدره 
+                    <span class="fine-amount">3,000 ريال قطري</span> (يعادل قسطين إيجاريين شهريين).
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">10-3</div>
+                    <strong>استرداد التأمين:</strong> يُخصم من مبلغ التأمين أي مستحقات أخرى أو تكاليف إصلاح أضرار بالمركبة، ويُسترد الباقي للطرف الثاني.
+                </div>
+
+                <div class="important-notice">
+                    ⚠️ <strong>تنويه هام:</strong> لا يحق للطرف الثاني إنهاء العقد من جانب واحد دون موافقة الطرف الأول، وإلا اعتبر ذلك إخلالاً جوهرياً.<br><br>
+                    <strong>منع السداد المبكر:</strong> لا يجوز للطرف الثاني سداد قيمة العقد كاملةً قبل انتهاء العقد إلا بموافقة خطية من الطرف الأول، ويجب إخطار الطرف الأول قبل شهر إذا أراد ذلك.
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 11: Direct Execution -->
+        <div class="article">
+            <div class="article-number">المادة (11): التنفيذ المباشر</div>
+            <div class="article-content">
+                <p><strong>اتفق الطرفان صراحة على أن هذا العقد، متى تم توثيقه لدى كاتب العدل بوزارة العدل في دولة قطر، يعد سنداً تنفيذياً</strong> بالمعنى الوارد في قانون المرافعات المدنية والتجارية القطري.</p>
+                
+                <div class="important-notice">
+                    يحق للطرف الأول (المؤجر) في حالة إخلال الطرف الثاني (المستأجر) بأي من التزاماته الناشئة عن هذا العقد، أن يباشر التنفيذ المباشر لدى إدارة التنفيذ بالمحاكم القطرية، <strong>دون حاجة لرفع دعوى موضوعية.</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Article 12: Legal Procedures -->
+        <div class="article">
+            <div class="article-number">المادة (12): الإجراءات القانونية</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <div class="sub-article-number">12-1</div>
+                    <strong class="text-danger">الإجراءات الجنائية:</strong>
+                    
+                    <div class="penalty-box">
+                        <strong>نوع الجريمة:</strong> خيانة الأمانة<br>
+                        <strong>المادة القانونية:</strong> المادة 362 من قانون العقوبات القطري رقم 11 لسنة 2004<br>
+                        <strong>العقوبة:</strong> الحبس مدة لا تجاوز ثلاث سنوات والغرامة التي لا تزيد على عشرة آلاف ريال<br><br>
+                        
+                        <strong>الإجراءات المتاحة للمؤجر:</strong>
+                        <ul class="legal-list">
+                            <li>تقديم بلاغ جنائي ضد الطرف الثاني لدى الجهات المختصة (الشرطة/النيابة العامة) بتهمة خيانة الأمانة</li>
+                            <li>طلب منع الطرف الثاني من السفر حتى استرداد المركبة وتسوية جميع المستحقات</li>
+                            <li>طلب الحجز الاحتياطي على الطرف الثاني إذا لزم الأمر</li>
+                            <li>المطالبة بتطبيق العقوبة الجنائية (الحبس والغرامة)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="sub-article">
+                    <div class="sub-article-number">12-2</div>
+                    <strong>الإجراءات المدنية:</strong>
+                    <ul class="legal-list">
+                        <li>رفع دعوى مدنية للمطالبة بالتعويضات المالية</li>
+                        <li>طلب الحجز التحفظي على أموال الطرف الثاني</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 13: General Provisions -->
+        <div class="article">
+            <div class="article-number">المادة (13): الأحكام العامة</div>
+            <div class="article-content">
+                <div class="sub-article">
+                    <span class="sub-article-number">13-1</span> <strong>القانون الحاكم:</strong> يخضع هذا العقد ويُفسَّر وفقاً لقوانين دولة قطر.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-2</span> <strong>الاختصاص القضائي:</strong> تختص محاكم دولة قطر دون غيرها بالفصل في أي نزاع ينشأ عن هذا العقد، ويكون هذا الاختصاص <strong>إلزامياً وليس اختيارياً.</strong>
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-3</span> <strong>الاتصالات والإخطارات:</strong> يجوز أن تكون جميع الاتصالات أو الإخطارات أو المراسلات المقدمة بموجب هذا العقد عبر الواتساب أو البريد الإلكتروني أو الرسائل النصية.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-4</span> <strong>عدم جواز التنازل:</strong> لا يجوز التنازل عن العقد أو الحقوق الممنوحة بموجبه أو نقلها أو بيعها كلياً أو جزئياً بواسطة الطرف الثاني دون موافقة خطية مسبقة من الطرف الأول.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-5</span> <strong>قابلية الفصل:</strong> إذا تم اعتبار أي حكم أو بند من هذا العقد غير قابل للتنفيذ، فسيتم اعتبار العقد معدلاً بالقدر اللازم لجعل الحكم قابلاً للتنفيذ، وتبقى بقية بنود العقد قابلة للتنفيذ.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-6</span> <strong>الاتفاق بمجمله:</strong> يشكل هذا العقد الاتفاق الكامل بين الطرفين ويحل محل أي تفاهمات أو اتفاقات معاصرة أو سابقة، سواء مكتوبة أو شفهية.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-7</span> <strong>التنفيذ الفوري:</strong> يجوز للمؤجر تنفيذ حقوقه فوراً دون حاجة إلى إنذار أو حكم قضائي، ويلتزم المستأجر بالتعاون الفوري وإلا عُد ممتنعاً عن تنفيذ التزام قانوني.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-8</span> <strong>التعديلات:</strong> لا يجوز تعديل أي بند من بنود هذا العقد إلا بموافقة خطية من الطرفين.
+                </div>
+                <div class="sub-article">
+                    <span class="sub-article-number">13-9</span> <strong>التفسير:</strong> في حال وجود تعارض أو غموض في تفسير أي من البنود، يُفسر العقد بما يحقق مصلحة المؤجر.
+                </div>
+            </div>
+        </div>
+
+        <!-- Article 14: Security Deposit Hold -->
+        <div class="article">
+            <div class="article-number">المادة (14): حجز مبلغ التأمين</div>
+            <div class="article-content">
+                <p><strong>يحق للمؤجر حجز مبلغ التأمين كاملاً دون حاجة لإثبات</strong> في الحالات التالية:</p>
+                <ul class="legal-list">
+                    <li>تأخر المستأجر عن السداد</li>
+                    <li>لحوق أضرار بالمركبة أياً كان سببها</li>
+                    <li>إخلال المستأجر بأي شرط من شروط العقد</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Required Documents -->
+        <div class="article">
+            <div class="article-number">المادة (15): المستندات المطلوبة</div>
+            <div class="article-content">
+                <p>يلتزم الطرف الثاني بتقديم المستندات التالية قبل استلام المركبة:</p>
+                <ul class="legal-list">
+                    <li>نسخة من الهوية القطرية أو الإقامة سارية المفعول</li>
+                    <li>نسخة من رخصة القيادة سارية المفعول</li>
+                    <li>نسخة من جواز السفر</li>
+                    <li>أي مستندات أخرى يطلبها الطرف الأول</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Annexes -->
+        <div class="article">
+            <div class="article-number">المادة (16): الملاحق</div>
+            <div class="article-content">
+                <p>تعتبر الملاحق التالية جزءاً لا يتجزأ من هذا العقد:</p>
+                <div class="sub-article">
+                    <strong>ملحق (أ):</strong> جدول الدفعات الشهرية - يحتوي على تفاصيل الدفعات الشهرية وتواريخ استحقاقها
+                </div>
+                <div class="sub-article">
+                    <strong>ملحق (1):</strong> تقرير الفحص الفني والصور المرفقة - يعد جزءاً أساسياً من العقد
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Final Declarations -->
+        <div class="declaration">
+            <div class="declaration-title">الإقـــرارات والموافقـــات النهائيـــة</div>
+            
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>إقرار بقراءة العقد:</strong> 
+                    أقر أنا الطرف الثاني بأنني قرأت هذا العقد بالكامل وفهمت جميع بنوده وشروطه فهماً تاماً، ولم يبق لدي أي استفسار أو غموض.
+                </div>
+            </div>
+
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>إقرار بالأمانة:</strong> 
+                    أدرك تماماً أن المركبة المؤجرة هي أمانة في يدي بموجب المادة 362 من قانون العقوبات القطري، وأن أي اختلاس أو تبديد لها يعد جريمة جنائية.
+                </div>
+            </div>
+
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>إقرار بالعقوبة الجنائية:</strong> 
+                    أعلم يقيناً أن أي اختلاس أو تبديد أو امتناع عن إرجاع المركبة يشكل جريمة جنائية يعاقب عليها بالحبس مدة لا تجاوز ثلاث سنوات والغرامة التي لا تزيد على عشرة آلاف ريال.
+                </div>
+            </div>
+
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>موافقة على الإجراءات الجنائية:</strong> 
+                    أوافق صراحةً على حق الطرف الأول في اتخاذ الإجراءات الجنائية ضدي (بما في ذلك البلاغ الجنائي، ومنع السفر، والحجز الاحتياطي) في حالة إخلالي بأي من التزاماتي الواردة في هذا العقد، وأتنازل عن أي اعتراض على ذلك.
+                </div>
+            </div>
+
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>إقرار صريح بالموافقة:</strong> 
+                    أوافق صراحةً وبشكل قاطع على جميع الشروط والأحكام والغرامات والعقوبات والإجراءات القانونية الواردة في هذا العقد، ولا يحق لي الاعتراض عليها مستقبلاً.
+                </div>
+            </div>
+
+            <div class="declaration-item">
+                <div class="checkbox-legal">☑</div>
+                <div>
+                    <strong>إقرار بالتوقيع الحر:</strong> 
+                    وقعت على هذا العقد بكامل إرادتي وحريتي ورضاي، دون أي إكراه أو ضغط أو تضليل، وأنا على علم تام بجميع الحقوق والالتزامات المترتبة عليه.
+                </div>
+            </div>
+        </div>
+
+        <!-- Concluding Statement -->
+        <div style="text-align: center; margin: 2rem 0; font-weight: 700; line-height: 2.0;">
+            وبعد قراءة هذا العقد وفهم جميع بنوده،<br>
+            وافق عليه الطرفان ووقعا عليه من نسختين،<br>
+            لكل طرف نسخة للعمل بموجبها.
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <div class="signature-grid">
+                <!-- First Party Signature -->
+                <div class="signature-box">
+                    <div class="signature-title">الطرف الأول (المؤجــر)</div>
+                    <div class="signature-name font-bold">شركة العراف لتأجير السيارات ذ.م.م</div>
+                    <div class="signature-line"></div>
+                    <div class="signature-name">خميس هاشم الجابر</div>
+                    <div class="signature-role">المدير العام المفوض بالتوقيع</div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #d0d0d0;">
+                        <strong>ختم الشركة</strong><br>
+                        <div style="width: 100px; height: 100px; border: 2px dashed #666; margin: 0.5rem auto;"></div>
+                    </div>
+                </div>
+
+                <!-- Second Party Signature -->
+                <div class="signature-box">
+                    <div class="signature-title">الطرف الثاني (المستأجــر)</div>
+                    <div class="signature-name">
+                        الاسم: <span class="fillable-field" style="min-width: 200px;">________________________</span>
+                    </div>
+                    <div class="signature-line">التوقيع</div>
+                    <div class="signature-name">
+                        التاريخ: <span class="fillable-field">___/___/______</span>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #d0d0d0;">
+                        <strong>البصمة</strong><br>
+                        <div style="width: 100px; height: 100px; border: 2px dashed #666; margin: 0.5rem auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Legal Notes -->
+        <div class="important-notice" style="margin-top: 2rem;">
+            <strong>⚖️ ملاحظات قانونية هامة:</strong><br><br>
+            • المركبة تعتبر أمانة في يد المستأجر بموجب المادة 362 من قانون العقوبات القطري<br>
+            • أي اختلاس أو تبديد أو امتناع عن إرجاع المركبة يشكل جريمة خيانة أمانة<br>
+            • يحق للمؤجر طلب منع المستأجر من السفر في حالة الإخلال<br>
+            • العقد قابل للتنفيذ المباشر بعد التوثيق لدى كاتب العدل<br>
+            • طبيعة العقد: عقد إيجار محض - لا ينطوي على أي وعد بنقل الملكية
+        </div>
+
+        <!-- Contract Footer -->
+        <div class="contract-footer">
+            هذا العقد محرر باللغة العربية ويخضع لأحكام القانون القطري<br>
+            للتوثيق الرسمي: وزارة العدل - إدارة كاتب العدل - دولة قطر<br>
+            ─────────────<br>
+            شركة العراف لتأجير السيارات ذ.م.م © 2024
+        </div>
+    </div>
+</body>
+</html>
+
+

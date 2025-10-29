@@ -211,9 +211,9 @@ function Contracts() {
   }, [])
 
   const handleViewDetails = useCallback((contract: any) => {
-    setSelectedContract(contract)
-    setShowDetailsDialog(true)
-  }, [])
+    // Navigate to the new contract details page
+    navigate(`/contracts/${contract.id}`)
+  }, [navigate])
 
   const handleCancelContract = useCallback((contract: any) => {
     setSelectedContract(contract)
