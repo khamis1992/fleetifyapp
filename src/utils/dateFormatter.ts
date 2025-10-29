@@ -3,11 +3,16 @@ import { getNumberPreferences, convertToArabicDigits } from "./numberFormatter";
 /**
  * تنسيق التاريخ بالتقويم الميلادي باللغة العربية
  */
-export const formatDateInGregorian = (date: Date | string): string => {
+export const formatDateInGregorian = (date: Date | string | null | undefined): string => {
+  // التحقق من وجود التاريخ أولاً
+  if (!date) {
+    return 'غير محدد';
+  }
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   // التأكد من صحة التاريخ
-  if (isNaN(dateObj.getTime())) {
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return 'تاريخ غير صحيح';
   }
 
@@ -36,10 +41,15 @@ export const formatDateInGregorian = (date: Date | string): string => {
 /**
  * تنسيق التاريخ بالأرقام الإنجليزية للطباعة والمستندات
  */
-export const formatDateForDocument = (date: Date | string): string => {
+export const formatDateForDocument = (date: Date | string | null | undefined): string => {
+  // التحقق من وجود التاريخ أولاً
+  if (!date) {
+    return 'Not specified';
+  }
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  if (isNaN(dateObj.getTime())) {
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return 'Invalid Date';
   }
 
@@ -57,10 +67,15 @@ export const formatDateForDocument = (date: Date | string): string => {
 /**
  * تنسيق التاريخ الكامل بالعربية للعقود
  */
-export const formatDateForContract = (date: Date | string): string => {
+export const formatDateForContract = (date: Date | string | null | undefined): string => {
+  // التحقق من وجود التاريخ أولاً
+  if (!date) {
+    return 'غير محدد';
+  }
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  if (isNaN(dateObj.getTime())) {
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return 'تاريخ غير صحيح';
   }
 
