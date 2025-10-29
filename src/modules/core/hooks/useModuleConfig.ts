@@ -130,10 +130,10 @@ export const useModuleConfig = () => {
 
   // Use useMemo to prevent recreating moduleContext on every render - this was causing infinite re-renders (React error #310)
   const moduleContext: ModuleContext = useMemo(() => ({
-    businessType: company?.business_type as BusinessType,
-    activeModules: enabledModules,
-    moduleSettings: moduleSettingsMap as Record<ModuleName, ModuleSettings>,
-    availableModules
+    businessType: (company?.business_type as BusinessType) || 'car_rental',
+    activeModules: enabledModules || [],
+    moduleSettings: moduleSettingsMap as Record<ModuleName, ModuleSettings> || {},
+    availableModules: availableModules || []
   }), [company?.business_type, enabledModules, moduleSettingsMap, availableModules]);
 
   // تحسين منطق التحميل - نعتبر البيانات محملة فقط عندما تكون بيانات الشركة موجودة ومعرفة

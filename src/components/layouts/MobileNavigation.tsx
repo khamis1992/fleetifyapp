@@ -53,7 +53,7 @@ export const MobileNavigation: React.FC = () => {
 
   // Generate navigation items based on enabled modules
   const navigationItems = React.useMemo(() => {
-    if (isLoading || !moduleContext) return [];
+    if (isLoading || !moduleContext || !moduleContext.activeModules || !Array.isArray(moduleContext.activeModules)) return [];
 
     const items = [
       {

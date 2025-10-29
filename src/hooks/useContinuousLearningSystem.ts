@@ -576,7 +576,7 @@ export const useContinuousLearningSystem = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // حساب التحسينات
-      const positiveRatings = batch.data.filter(item => item.userFeedback.rating >= 4).length;
+      const positiveRatings = (batch.data || []).filter(item => item?.userFeedback?.rating >= 4).length;
       const accuracyGain = (positiveRatings / batch.size) * 0.01; // تحسن 1% كحد أقصى
       
       batch.improvements = {

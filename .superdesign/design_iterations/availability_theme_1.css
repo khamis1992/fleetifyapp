@@ -1,0 +1,418 @@
+/**
+ * تقويم التوفرية - نظام الألوان والتصميم
+ * مستوحى من تصميم FleetifyApp الرئيسي
+ * جميع الألوان بصيغة HSL للتوافق مع النظام
+ */
+
+:root {
+  /* ========================================
+     الألوان الأساسية - Primary Colors
+     ======================================== */
+  
+  /* اللون الأساسي - أحمر غامق احترافي */
+  --primary: 0 70% 45%;
+  --primary-foreground: 0 0% 100%;
+  --primary-dark: 0 70% 35%;
+  --primary-light: 0 70% 55%;
+  --primary-glow: 0 70% 45% / 0.2;
+  
+  /* اللون المميز - برتقالي احترافي */
+  --accent: 25 90% 92%;
+  --accent-foreground: 0 0% 15%;
+  --accent-light: 25 90% 95%;
+  --accent-muted: 25 90% 85%;
+  
+  /* الألوان الثانوية */
+  --secondary: 0 0% 85%;
+  --secondary-foreground: 0 0% 15%;
+  --secondary-dark: 0 0% 80%;
+  
+  /* ========================================
+     الخلفيات والبطاقات
+     ======================================== */
+  
+  --background: 0 0% 96%;
+  --background-soft: 0 0% 94%;
+  --foreground: 0 0% 15%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 15%;
+  --card-hover: 0 0% 98%;
+  --card-glass: 0 0% 100% / 0.9;
+  
+  /* ========================================
+     ألوان الحالات - Status Colors
+     ======================================== */
+  
+  /* متاح - أخضر */
+  --available: 142 56% 42%;
+  --available-light: 142 56% 95%;
+  --available-border: 142 56% 52%;
+  
+  /* محجوز - أحمر */
+  --booked: 0 65% 51%;
+  --booked-light: 0 65% 95%;
+  --booked-border: 0 65% 61%;
+  
+  /* اليوم - أزرق */
+  --today: 217 91% 60%;
+  --today-light: 217 91% 95%;
+  --today-border: 217 91% 70%;
+  
+  /* خارج الشهر - رمادي */
+  --outside: 0 0% 92%;
+  --outside-foreground: 0 0% 65%;
+  --outside-border: 0 0% 85%;
+  
+  /* ========================================
+     ألوان الإحصائيات - Stats Colors
+     ======================================== */
+  
+  /* بطاقة المركبات - أزرق */
+  --stat-vehicles: 217 91% 60%;
+  --stat-vehicles-bg: 217 91% 95%;
+  
+  /* بطاقة الحجوزات النشطة - أخضر */
+  --stat-active: 142 56% 42%;
+  --stat-active-bg: 142 56% 95%;
+  
+  /* بطاقة الحجوزات القادمة - برتقالي */
+  --stat-upcoming: 25 85% 55%;
+  --stat-upcoming-bg: 25 85% 95%;
+  
+  /* بطاقة معدل الاستخدام - بنفسجي */
+  --stat-utilization: 271 81% 56%;
+  --stat-utilization-bg: 271 81% 95%;
+  
+  /* ========================================
+     ألوان التنبيهات - Alert Colors
+     ======================================== */
+  
+  --success: 142 56% 42%;
+  --success-bg: 142 56% 95%;
+  --success-foreground: 142 56% 15%;
+  
+  --warning: 25 85% 55%;
+  --warning-bg: 25 85% 95%;
+  --warning-foreground: 25 85% 15%;
+  
+  --info: 217 91% 60%;
+  --info-bg: 217 91% 95%;
+  --info-foreground: 217 91% 15%;
+  
+  --destructive: 0 65% 51%;
+  --destructive-bg: 0 65% 95%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* ========================================
+     الحدود والمدخلات - Borders & Inputs
+     ======================================== */
+  
+  --border: 0 0% 85%;
+  --input: 0 0% 98%;
+  --input-border: 0 0% 80%;
+  --input-focus: 0 70% 45%;
+  --ring: 0 70% 45%;
+  
+  /* العناصر الباهتة */
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 45%;
+  
+  /* ========================================
+     التدرجات - Gradients
+     ======================================== */
+  
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
+  --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+  --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 50%, hsl(var(--accent-light)) 100%);
+  --gradient-available: linear-gradient(135deg, hsl(var(--available-light)) 0%, hsl(142 56% 92%) 100%);
+  --gradient-booked: linear-gradient(135deg, hsl(var(--booked-light)) 0%, hsl(0 65% 92%) 100%);
+  
+  /* ========================================
+     الظلال - Shadows
+     ======================================== */
+  
+  --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+  --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+  --shadow-hover: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+  --shadow-stat: 0 2px 8px hsl(0 0% 15% / 0.06);
+  
+  /* ========================================
+     الانتقالات - Transitions
+     ======================================== */
+  
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-fast: all 0.15s ease-in-out;
+  
+  /* ========================================
+     الخطوط - Typography
+     ======================================== */
+  
+  --font-sans: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: 'Poppins', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* ========================================
+     المسافات - Spacing
+     ======================================== */
+  
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-2xl: 3rem;      /* 48px */
+  --spacing-3xl: 4rem;      /* 64px */
+  
+  /* ========================================
+     الزوايا الدائرية - Border Radius
+     ======================================== */
+  
+  --radius: 0.5rem;         /* 8px */
+  --radius-sm: 0.375rem;    /* 6px */
+  --radius-md: 0.5rem;      /* 8px */
+  --radius-lg: 0.75rem;     /* 12px */
+  --radius-xl: 1rem;        /* 16px */
+  --radius-full: 9999px;
+  
+  /* ========================================
+     مخطط الإشغال - Utilization Chart
+     ======================================== */
+  
+  --utilization-high: 142 56% 42%;      /* أخضر - إشغال ممتاز 80%+ */
+  --utilization-medium: 25 85% 55%;     /* أصفر - إشغال متوسط 50-80% */
+  --utilization-low: 0 65% 51%;         /* أحمر - إشغال منخفض <50% */
+  
+  /* ========================================
+     حالات العرض - View Modes
+     ======================================== */
+  
+  --view-month-active: 0 70% 45%;
+  --view-month-inactive: 0 0% 65%;
+  --view-week-active: 0 70% 45%;
+  --view-week-inactive: 0 0% 65%;
+}
+
+/* ========================================
+   الوضع الداكن - Dark Mode
+   (اختياري - يمكن إضافته لاحقاً)
+   ======================================== */
+
+.dark {
+  --background: 220 25% 8%;
+  --background-soft: 220 25% 10%;
+  --foreground: 220 15% 95%;
+  
+  --card: 220 25% 10%;
+  --card-foreground: 220 15% 95%;
+  --card-hover: 220 25% 12%;
+  
+  --primary: 0 70% 55%;
+  --primary-light: 0 70% 65%;
+  
+  --border: 220 15% 20%;
+  --muted: 220 15% 15%;
+  --muted-foreground: 220 15% 65%;
+}
+
+/* ========================================
+   أنماط مخصصة للتقويم
+   ======================================== */
+
+.calendar-day {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  transition: var(--transition-smooth);
+}
+
+.calendar-day:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-hover);
+}
+
+.stat-card {
+  background: hsl(var(--card));
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-stat);
+  transition: var(--transition-smooth);
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.utilization-bar {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: hsl(var(--muted));
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+
+.utilization-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.alert-box {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: start;
+  gap: var(--spacing-sm);
+  transition: var(--transition-smooth);
+}
+
+.alert-box:hover {
+  transform: translateX(4px);
+}
+
+/* ========================================
+   تأثيرات الحركة - Animation Effects
+   ======================================== */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ========================================
+   للطباعة - Print Styles
+   ======================================== */
+
+@media print {
+  :root {
+    --shadow-card: none;
+    --shadow-hover: none;
+    --shadow-stat: none;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .stat-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .calendar-day {
+    border: 1px solid hsl(var(--border)) !important;
+  }
+}
+
+/* ========================================
+   للأجهزة المحمولة - Mobile Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+  :root {
+    --font-size-2xl: 1.25rem;   /* تصغير العناوين */
+    --spacing-lg: 1rem;          /* تقليل المسافات */
+    --spacing-xl: 1.5rem;
+  }
+  
+  .stat-card {
+    padding: var(--spacing-md);
+  }
+  
+  .calendar-day {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ========================================
+   حالات التفاعل - Interactive States
+   ======================================== */
+
+.clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.clickable:active {
+  transform: scale(0.98);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ========================================
+   نهاية ملف السمة
+   ======================================== */
+

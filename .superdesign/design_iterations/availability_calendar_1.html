@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقويم التوفرية - FleetifyApp</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <style>
+        /* ========================================
+           تقويم التوفرية - نظام التصميم الكامل
+           FleetifyApp - Vehicle Availability Calendar
+           ======================================== */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* الألوان الأساسية */
+            --primary: hsl(0, 70%, 45%);
+            --primary-dark: hsl(0, 70%, 35%);
+            --primary-light: hsl(0, 70%, 55%);
+            --accent: hsl(25, 90%, 92%);
+            --accent-dark: hsl(25, 90%, 85%);
+            
+            /* الخلفيات */
+            --background: hsl(0, 0%, 96%);
+            --background-soft: hsl(0, 0%, 94%);
+            --card: hsl(0, 0%, 100%);
+            --foreground: hsl(0, 0%, 15%);
+            
+            /* ألوان الحالات */
+            --available: hsl(142, 56%, 42%);
+            --available-bg: hsl(142, 56%, 95%);
+            --booked: hsl(0, 65%, 51%);
+            --booked-bg: hsl(0, 65%, 95%);
+            --today: hsl(217, 91%, 60%);
+            --today-bg: hsl(217, 91%, 95%);
+            
+            /* ألوان الإحصائيات */
+            --stat-vehicles: hsl(217, 91%, 60%);
+            --stat-vehicles-bg: hsl(217, 91%, 95%);
+            --stat-active: hsl(142, 56%, 42%);
+            --stat-active-bg: hsl(142, 56%, 95%);
+            --stat-upcoming: hsl(25, 85%, 55%);
+            --stat-upcoming-bg: hsl(25, 85%, 95%);
+            --stat-utilization: hsl(271, 81%, 56%);
+            --stat-utilization-bg: hsl(271, 81%, 95%);
+            
+            /* التنبيهات */
+            --success: hsl(142, 56%, 42%);
+            --success-bg: hsl(142, 56%, 95%);
+            --warning: hsl(25, 85%, 55%);
+            --warning-bg: hsl(25, 85%, 95%);
+            --info: hsl(217, 91%, 60%);
+            --info-bg: hsl(217, 91%, 95%);
+            
+            /* الحدود والظلال */
+            --border: hsl(0, 0%, 85%);
+            --shadow-sm: 0 2px 8px hsla(0, 0%, 0%, 0.06);
+            --shadow-md: 0 4px 12px hsla(0, 0%, 0%, 0.08);
+            --shadow-lg: 0 10px 25px hsla(0, 0%, 0%, 0.1);
+            
+            /* الخطوط */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-heading: 'Poppins', 'Inter', sans-serif;
+            
+            /* المسافات */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            
+            /* الزوايا */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            padding: var(--spacing-lg);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* ========================================
+           شريط الأدوات
+           ======================================== */
+        
+        .toolbar {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            animation: slideInTop 400ms ease-out;
+        }
+        
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .toolbar-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--foreground);
+        }
+        
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+        
+        /* الأزرار */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 150ms ease-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-sans);
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--foreground);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-outline:hover {
+            background: var(--background);
+            border-color: var(--primary);
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-input {
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            width: 200px;
+            font-family: var(--font-sans);
+            transition: all 200ms ease-out;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px hsla(0, 70%, 45%, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: hsl(0, 0%, 60%);
+        }
+        
+        /* ========================================
+           بطاقات الإحصائيات
+           ======================================== */
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            transition: all 300ms ease-out;
+            animation: fadeIn 300ms ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0ms; border-left: 4px solid var(--stat-vehicles); }
+        .stat-card:nth-child(2) { animation-delay: 100ms; border-left: 4px solid var(--stat-active); }
+        .stat-card:nth-child(3) { animation-delay: 200ms; border-left: 4px solid var(--stat-upcoming); }
+        .stat-card:nth-child(4) { animation-delay: 300ms; border-left: 4px solid var(--stat-utilization); }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .stat-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: hsl(0, 0%, 45%);
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-card:nth-child(1) .stat-icon { background: var(--stat-vehicles-bg); color: var(--stat-vehicles); }
+        .stat-card:nth-child(2) .stat-icon { background: var(--stat-active-bg); color: var(--stat-active); }
+        .stat-card:nth-child(3) .stat-icon { background: var(--stat-upcoming-bg); color: var(--stat-upcoming); }
+        .stat-card:nth-child(4) .stat-icon { background: var(--stat-utilization-bg); color: var(--stat-utilization); }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--foreground);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: hsl(0, 0%, 60%);
+        }
+        
+        /* ========================================
+           مخطط الإشغال
+           ======================================== */
+        
+        .utilization-card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            animation: slideInLeft 500ms ease-out 400ms both;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            font-family: var(--font-heading);
+        }
+        
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .utilization-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        .utilization-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        
+        .utilization-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+        }
+        
+        .vehicle-name {
+            font-weight: 600;
+        }
+        
+        .utilization-stats {
+            color: hsl(0, 0%, 60%);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: hsl(0, 0%, 92%);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .progress-fill.high { background: var(--success); }
+        .progress-fill.medium { background: var(--warning); }
+        .progress-fill.low { background: var(--booked); }
+        
+        /* ========================================
+           التنبيهات
+           ======================================== */
+        
+        .alerts-card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--warning);
+            animation: slideInRight 500ms ease-out 500ms both;
+        }
+        
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        
+        .alert-box {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: start;
+            gap: var(--spacing-sm);
+            transition: transform 200ms ease-out;
+        }
+        
+        .alert-box:hover {
+            transform: translateX(4px);
+        }
+        
+        .alert-box.info { background: var(--info-bg); }
+        .alert-box.warning { background: var(--warning-bg); }
+        .alert-box.success { background: var(--success-bg); }
+        
+        .alert-icon { flex-shrink: 0; margin-top: 2px; }
+        .alert-box.info .alert-icon { color: var(--info); }
+        .alert-box.warning .alert-icon { color: var(--warning); }
+        .alert-box.success .alert-icon { color: var(--success); }
+        
+        .alert-content { flex: 1; }
+        .alert-title { font-weight: 600; margin-bottom: var(--spacing-xs); }
+        .alert-message { font-size: 0.875rem; color: hsl(0, 0%, 40%); }
+        
+        /* ========================================
+           التقويم
+           ======================================== */
+        
+        .calendar-controls {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .month-display {
+            min-width: 180px;
+            text-align: center;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            background: var(--background);
+            border-radius: var(--radius-md);
+        }
+        
+        .legend {
+            display: flex;
+            gap: var(--spacing-lg);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: var(--radius-sm);
+            border: 2px solid;
+        }
+        
+        .legend-box.available {
+            background: var(--available-bg);
+            border-color: var(--available);
+        }
+        
+        .legend-box.booked {
+            background: var(--booked-bg);
+            border-color: var(--booked);
+        }
+        
+        .legend-box.today {
+            background: var(--today-bg);
+            border-color: var(--today);
+            box-shadow: 0 0 0 2px var(--today-bg);
+        }
+        
+        /* ========================================
+           صفوف التقويم
+           ======================================== */
+        
+        .calendar-grid {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            animation: fadeIn 400ms ease-out 600ms both;
+        }
+        
+        .vehicle-row {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            transition: all 300ms ease-out;
+        }
+        
+        .vehicle-row:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .vehicle-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .vehicle-plate {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+        
+        .vehicle-details {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .booking-badge {
+            padding: 0.25rem 0.75rem;
+            background: var(--background);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.375rem;
+        }
+        
+        .day-header {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: hsl(0, 0%, 60%);
+            padding: var(--spacing-sm);
+        }
+        
+        .day-cell {
+            aspect-ratio: 1;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 150ms ease-out;
+            border: 2px solid;
+            position: relative;
+        }
+        
+        .day-cell:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .day-cell:active {
+            transform: scale(0.95);
+        }
+        
+        .day-cell.available {
+            background: var(--available-bg);
+            border-color: var(--available);
+            color: hsl(142, 56%, 20%);
+        }
+        
+        .day-cell.booked {
+            background: var(--booked-bg);
+            border-color: var(--booked);
+            color: hsl(0, 65%, 20%);
+        }
+        
+        .day-cell.today {
+            box-shadow: 0 0 0 3px var(--today);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .day-cell.outside {
+            background: hsl(0, 0%, 96%);
+            border-color: hsl(0, 0%, 90%);
+            color: hsl(0, 0%, 70%);
+        }
+        
+        .booking-dot {
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            background: var(--booked);
+            border-radius: 50%;
+        }
+        
+        .vehicle-bookings {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--border);
+        }
+        
+        .bookings-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: hsl(0, 0%, 60%);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+        
+        .booking-item {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 50%);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        /* ========================================
+           الحجوزات القادمة
+           ======================================== */
+        
+        .upcoming-card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .upcoming-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        
+        .upcoming-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: hsl(0, 0%, 98%);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            transition: all 200ms ease-out;
+            cursor: pointer;
+        }
+        
+        .upcoming-item:hover {
+            background: white;
+            border-color: var(--primary);
+            transform: translateX(-2px);
+        }
+        
+        .upcoming-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .upcoming-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .upcoming-details {
+            flex: 1;
+        }
+        
+        .upcoming-vehicle {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .upcoming-customer {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+        }
+        
+        .upcoming-meta {
+            text-align: left;
+        }
+        
+        .upcoming-date {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge.urgent {
+            background: var(--booked-bg);
+            color: var(--booked);
+        }
+        
+        .badge.soon {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+        
+        /* ========================================
+           الحركات والتأثيرات
+           ======================================== */
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInTop {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px var(--today);
+            }
+            50% {
+                box-shadow: 0 0 0 6px var(--today-bg);
+            }
+        }
+        
+        /* ========================================
+           التجاوب مع الشاشات الصغيرة
+           ======================================== */
+        
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-sm);
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .day-cell {
+                font-size: 0.75rem;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+        }
+        
+        /* ========================================
+           للطباعة
+           ======================================== */
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .toolbar,
+            .btn {
+                display: none !important;
+            }
+            
+            .stat-card,
+            .vehicle-row {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- شريط الأدوات -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <h1 class="toolbar-title">تقويم التوفرية</h1>
+                <button class="btn btn-primary">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                    حجز جديد
+                </button>
+                <button class="btn btn-outline">
+                    <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i>
+                    إحصائيات
+                </button>
+            </div>
+            
+            <div class="toolbar-right">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+                    <input type="text" class="search-input" placeholder="بحث عن مركبة...">
+                </div>
+                
+                <button class="btn btn-outline">
+                    <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                    تصدير
+                </button>
+                
+                <button class="btn btn-outline">
+                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
+                    طباعة
+                </button>
+                
+                <button class="btn btn-outline">
+                    <i data-lucide="refresh-ccw" style="width: 16px; height: 16px;"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- بطاقات الإحصائيات -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <p class="stat-title">إجمالي المركبات</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i data-lucide="car" style="width: 24px; height: 24px;"></i>
+                    </div>
+                </div>
+                <h2 class="stat-value">12</h2>
+                <p class="stat-label">مركبة نشطة</p>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <p class="stat-title">الحجوزات النشطة</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i data-lucide="check" style="width: 24px; height: 24px;"></i>
+                    </div>
+                </div>
+                <h2 class="stat-value">8</h2>
+                <p class="stat-label">حجز نشط</p>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <p class="stat-title">الحجوزات القادمة</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i data-lucide="calendar" style="width: 24px; height: 24px;"></i>
+                    </div>
+                </div>
+                <h2 class="stat-value">3</h2>
+                <p class="stat-label">حجز قادم</p>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <p class="stat-title">معدل الاستخدام</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i data-lucide="trending-up" style="width: 24px; height: 24px;"></i>
+                    </div>
+                </div>
+                <h2 class="stat-value">78.5%</h2>
+                <p class="stat-label">من إجمالي الأيام</p>
+            </div>
+        </div>
+        
+        <!-- مخطط الإشغال -->
+        <div class="utilization-card">
+            <div class="card-header">
+                <i data-lucide="bar-chart-3" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                <div>
+                    <h3 class="card-title">معدل إشغال الأسطول</h3>
+                    <p class="card-subtitle">توزيع الحجوزات عبر المركبات</p>
+                </div>
+            </div>
+            
+            <div class="utilization-list">
+                <div class="utilization-item">
+                    <div class="utilization-header">
+                        <span class="vehicle-name">ABC-123</span>
+                        <span class="utilization-stats">24 من 30 يوم (80%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill high" style="width: 80%"></div>
+                    </div>
+                </div>
+                
+                <div class="utilization-item">
+                    <div class="utilization-header">
+                        <span class="vehicle-name">XYZ-789</span>
+                        <span class="utilization-stats">12 من 30 يوم (40%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill low" style="width: 40%"></div>
+                    </div>
+                </div>
+                
+                <div class="utilization-item">
+                    <div class="utilization-header">
+                        <span class="vehicle-name">DEF-456</span>
+                        <span class="utilization-stats">18 من 30 يوم (60%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill medium" style="width: 60%"></div>
+                    </div>
+                </div>
+                
+                <div class="utilization-item">
+                    <div class="utilization-header">
+                        <span class="vehicle-name">GHI-789</span>
+                        <span class="utilization-stats">27 من 30 يوم (90%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill high" style="width: 90%"></div>
+                    </div>
+                </div>
+                
+                <div class="utilization-item">
+                    <div class="utilization-header">
+                        <span class="vehicle-name">JKL-012</span>
+                        <span class="utilization-stats">9 من 30 يوم (30%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill low" style="width: 30%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <p style="text-align: center; font-size: 0.75rem; color: hsl(0, 0%, 60%); margin-top: var(--spacing-md);">
+                عرض أول 5 مركبات • إجمالي 12 مركبة
+            </p>
+        </div>
+        
+        <!-- التنبيهات -->
+        <div class="alerts-card">
+            <div class="card-header">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning);"></i>
+                <div>
+                    <h3 class="card-title" style="color: var(--warning);">تنبيهات وملاحظات</h3>
+                    <p class="card-subtitle">معلومات مهمة لتحسين الإشغال</p>
+                </div>
+            </div>
+            
+            <div class="alerts-list">
+                <div class="alert-box warning">
+                    <i data-lucide="info" class="alert-icon" style="width: 20px; height: 20px;"></i>
+                    <div class="alert-content">
+                        <div class="alert-title">3 مركبات غير محجوزة هذا الشهر</div>
+                        <div class="alert-message">JKL-012، MNO-345، PQR-678</div>
+                    </div>
+                </div>
+                
+                <div class="alert-box success">
+                    <i data-lucide="check" class="alert-icon" style="width: 20px; height: 20px;"></i>
+                    <div class="alert-content">
+                        <div class="alert-title">أداء ممتاز!</div>
+                        <div class="alert-message">معدل استخدام مرتفع 78.5% - استمر بهذا الأداء الرائع</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- أدوات التقويم -->
+        <div class="calendar-controls">
+            <div class="controls-row">
+                <select class="search-input" style="width: auto;">
+                    <option>جميع المركبات</option>
+                    <option>ABC-123 - تويوتا كامري</option>
+                    <option>XYZ-789 - هوندا أكورد</option>
+                    <option>DEF-456 - نيسان التيما</option>
+                </select>
+                
+                <div class="month-nav">
+                    <button class="btn btn-outline">
+                        <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                    </button>
+                    
+                    <div class="month-display">أكتوبر 2025</div>
+                    
+                    <button class="btn btn-outline">
+                        <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                    </button>
+                    
+                    <button class="btn btn-outline">اليوم</button>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary">شهري</button>
+                    <button class="btn btn-outline">أسبوعي</button>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-box available"></div>
+                    <span>متاح</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box booked"></div>
+                    <span>محجوز</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box today"></div>
+                    <span>اليوم</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- شبكة التقويم -->
+        <div class="calendar-grid">
+            <!-- المركبة 1 -->
+            <div class="vehicle-row">
+                <div class="vehicle-header">
+                    <div class="vehicle-info">
+                        <i data-lucide="car" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                        <div>
+                            <div class="vehicle-plate">ABC-123</div>
+                            <div class="vehicle-details">تويوتا كامري • 25 ر.ع/اليوم</div>
+                        </div>
+                    </div>
+                    <span class="booking-badge">2 حجوزات</span>
+                </div>
+                
+                <div class="days-grid">
+                    <div class="day-header">س</div>
+                    <div class="day-header">ح</div>
+                    <div class="day-header">ن</div>
+                    <div class="day-header">ث</div>
+                    <div class="day-header">ر</div>
+                    <div class="day-header">خ</div>
+                    <div class="day-header">ج</div>
+                    
+                    <div class="day-cell available">1</div>
+                    <div class="day-cell available">2</div>
+                    <div class="day-cell booked">3<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">4<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">5<span class="booking-dot"></span></div>
+                    <div class="day-cell available">6</div>
+                    <div class="day-cell available">7</div>
+                    
+                    <div class="day-cell available">8</div>
+                    <div class="day-cell available">9</div>
+                    <div class="day-cell available">10</div>
+                    <div class="day-cell available today">11</div>
+                    <div class="day-cell available">12</div>
+                    <div class="day-cell available">13</div>
+                    <div class="day-cell available">14</div>
+                    
+                    <div class="day-cell booked">15<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">16<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">17<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">18<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">19<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">20<span class="booking-dot"></span></div>
+                    <div class="day-cell available">21</div>
+                    
+                    <div class="day-cell available">22</div>
+                    <div class="day-cell available">23</div>
+                    <div class="day-cell available">24</div>
+                    <div class="day-cell available">25</div>
+                    <div class="day-cell available">26</div>
+                    <div class="day-cell available">27</div>
+                    <div class="day-cell available">28</div>
+                    
+                    <div class="day-cell available">29</div>
+                    <div class="day-cell available">30</div>
+                    <div class="day-cell available">31</div>
+                    <div class="day-cell outside">1</div>
+                    <div class="day-cell outside">2</div>
+                    <div class="day-cell outside">3</div>
+                    <div class="day-cell outside">4</div>
+                </div>
+                
+                <div class="vehicle-bookings">
+                    <p class="bookings-title">
+                        <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+                        الحجوزات في هذا الشهر
+                    </p>
+                    <div class="booking-item">• محمد أحمد: 3 أكتوبر - 5 أكتوبر (3 أيام) [نشط]</div>
+                    <div class="booking-item">• علي سالم: 15 أكتوبر - 20 أكتوبر (6 أيام) [نشط]</div>
+                </div>
+            </div>
+            
+            <!-- المركبة 2 -->
+            <div class="vehicle-row">
+                <div class="vehicle-header">
+                    <div class="vehicle-info">
+                        <i data-lucide="car" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                        <div>
+                            <div class="vehicle-plate">XYZ-789</div>
+                            <div class="vehicle-details">هوندا أكورد • 30 ر.ع/اليوم</div>
+                        </div>
+                    </div>
+                    <span class="booking-badge">1 حجز</span>
+                </div>
+                
+                <div class="days-grid">
+                    <div class="day-header">س</div>
+                    <div class="day-header">ح</div>
+                    <div class="day-header">ن</div>
+                    <div class="day-header">ث</div>
+                    <div class="day-header">ر</div>
+                    <div class="day-header">خ</div>
+                    <div class="day-header">ج</div>
+                    
+                    <div class="day-cell available">1</div>
+                    <div class="day-cell available">2</div>
+                    <div class="day-cell available">3</div>
+                    <div class="day-cell available">4</div>
+                    <div class="day-cell available">5</div>
+                    <div class="day-cell available">6</div>
+                    <div class="day-cell available">7</div>
+                    
+                    <div class="day-cell booked">8<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">9<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">10<span class="booking-dot"></span></div>
+                    <div class="day-cell booked today">11<span class="booking-dot"></span></div>
+                    <div class="day-cell booked">12<span class="booking-dot"></span></div>
+                    <div class="day-cell available">13</div>
+                    <div class="day-cell available">14</div>
+                    
+                    <div class="day-cell available">15</div>
+                    <div class="day-cell available">16</div>
+                    <div class="day-cell available">17</div>
+                    <div class="day-cell available">18</div>
+                    <div class="day-cell available">19</div>
+                    <div class="day-cell available">20</div>
+                    <div class="day-cell available">21</div>
+                    
+                    <div class="day-cell available">22</div>
+                    <div class="day-cell available">23</div>
+                    <div class="day-cell available">24</div>
+                    <div class="day-cell available">25</div>
+                    <div class="day-cell available">26</div>
+                    <div class="day-cell available">27</div>
+                    <div class="day-cell available">28</div>
+                    
+                    <div class="day-cell available">29</div>
+                    <div class="day-cell available">30</div>
+                    <div class="day-cell available">31</div>
+                    <div class="day-cell outside">1</div>
+                    <div class="day-cell outside">2</div>
+                    <div class="day-cell outside">3</div>
+                    <div class="day-cell outside">4</div>
+                </div>
+                
+                <div class="vehicle-bookings">
+                    <p class="bookings-title">
+                        <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+                        الحجوزات في هذا الشهر
+                    </p>
+                    <div class="booking-item">• سارة خالد: 8 أكتوبر - 12 أكتوبر (5 أيام) [نشط]</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- الحجوزات القادمة -->
+        <div class="upcoming-card">
+            <div class="card-header">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning);"></i>
+                <div>
+                    <h3 class="card-title">الحجوزات القادمة</h3>
+                    <p class="card-subtitle">الحجوزات المقررة في الأيام القادمة</p>
+                </div>
+            </div>
+            
+            <div class="upcoming-list">
+                <div class="upcoming-item">
+                    <div class="upcoming-info">
+                        <div class="upcoming-icon">
+                            <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="upcoming-details">
+                            <div class="upcoming-vehicle">ABC-123</div>
+                            <div class="upcoming-customer">محمد أحمد</div>
+                        </div>
+                    </div>
+                    <div class="upcoming-meta">
+                        <div class="upcoming-date">12 نوفمبر - 15 نوفمبر</div>
+                        <span class="badge urgent">بعد 2 أيام</span>
+                    </div>
+                </div>
+                
+                <div class="upcoming-item">
+                    <div class="upcoming-info">
+                        <div class="upcoming-icon">
+                            <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="upcoming-details">
+                            <div class="upcoming-vehicle">DEF-456</div>
+                            <div class="upcoming-customer">سارة خالد</div>
+                        </div>
+                    </div>
+                    <div class="upcoming-meta">
+                        <div class="upcoming-date">18 نوفمبر - 22 نوفمبر</div>
+                        <span class="badge soon">بعد 8 أيام</span>
+                    </div>
+                </div>
+                
+                <div class="upcoming-item">
+                    <div class="upcoming-info">
+                        <div class="upcoming-icon">
+                            <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="upcoming-details">
+                            <div class="upcoming-vehicle">GHI-789</div>
+                            <div class="upcoming-customer">أحمد علي</div>
+                        </div>
+                    </div>
+                    <div class="upcoming-meta">
+                        <div class="upcoming-date">25 نوفمبر - 30 نوفمبر</div>
+                        <span class="badge soon">بعد 15 يوم</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // تفعيل أيقونات Lucide
+        lucide.createIcons();
+        
+        // تأثير تحميل تدريجي للأشرطة
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            
+            setTimeout(() => {
+                progressBars.forEach((bar, index) => {
+                    setTimeout(() => {
+                        const width = bar.style.width;
+                        bar.style.width = '0%';
+                        setTimeout(() => {
+                            bar.style.width = width;
+                        }, 50);
+                    }, index * 100);
+                });
+            }, 500);
+        });
+        
+        // تفاعل مع الأيام
+        document.querySelectorAll('.day-cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                if (!this.classList.contains('outside')) {
+                    const day = this.textContent.trim();
+                    console.log('تم النقر على اليوم:', day);
+                    // يمكن إضافة نافذة منبثقة هنا
+                }
+            });
+        });
+        
+        // تفاعل مع زر البحث
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('input', function(e) {
+            console.log('البحث عن:', e.target.value);
+            // يمكن إضافة منطق البحث هنا
+        });
+        
+        // تفاعل مع الحجوزات القادمة
+        document.querySelectorAll('.upcoming-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const vehicle = this.querySelector('.upcoming-vehicle').textContent;
+                const customer = this.querySelector('.upcoming-customer').textContent;
+                console.log('عرض تفاصيل الحجز:', vehicle, customer);
+                // يمكن إضافة نافذة تفاصيل هنا
+            });
+        });
+        
+        console.log('✅ تم تحميل تقويم التوفرية بنجاح!');
+    </script>
+</body>
+</html>
+

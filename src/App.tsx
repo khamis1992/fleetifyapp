@@ -28,7 +28,6 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
 import { CommandPalette } from "@/components/ui/CommandPalette";
-import { FloatingActionButton } from "@/components/mobile";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -45,7 +44,8 @@ const NativeMobileDemo = lazy(() => import("./pages/NativeMobileDemo"));
 // Heavy pages - lazy loaded with retry for better reliability
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
-const Customers = lazy(() => import("./pages/Customers"));
+const Customers = lazy(() => import("./pages/CustomersNew"));
+const CustomersOld = lazy(() => import("./pages/Customers"));
 const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage").then(module => ({ default: module.default })));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage").then(module => ({ default: module.default })));
@@ -250,7 +250,6 @@ const App = () => {
                       <PWAInstallPrompt />
                       <CommandPalette />
                       <SimpleToaster />
-                      <FloatingActionButton />
                       <AppRoutes />
                     </MobileOptimizationProvider>
                   </FABProvider>
@@ -524,6 +523,13 @@ const AppRoutes = () => {
           <RouteWrapper routeName="Customers" fallbackPath="/dashboard">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Customers />
+            </Suspense>
+          </RouteWrapper>
+        } />
+        <Route path="customers-old" element={
+          <RouteWrapper routeName="Customers (Old)" fallbackPath="/dashboard">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <CustomersOld />
             </Suspense>
           </RouteWrapper>
         } />

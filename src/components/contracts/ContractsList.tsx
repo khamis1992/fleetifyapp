@@ -32,10 +32,13 @@ export const ContractsList: React.FC<ContractsListProps> = ({
 }) => {
   const { isMobile } = useSimpleBreakpoint();
 
-  if (contracts.length > 0) {
+  // Ensure contracts is an array
+  const safeContracts = Array.isArray(contracts) ? contracts : [];
+
+  if (safeContracts.length > 0) {
     return (
       <div className="w-full space-y-4">
-        {contracts.map((contract, index) => (
+        {safeContracts.map((contract, index) => (
           <ContractCard
             key={contract.id || `contract-${index}`}
             contract={contract}

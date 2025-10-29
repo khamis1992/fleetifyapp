@@ -256,6 +256,8 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
       if (!companyId) throw new Error('معرف الشركة مطلوب')
       
       try {
+        console.log(`🔍 [ACCOUNT_BALANCES] Fetching for company: ${companyId}, filter.company_id: ${filter.company_id}`)
+        
         let query = supabase
           .from("chart_of_accounts")
           .select(`
@@ -288,8 +290,10 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
           throw error
         }
         
+        console.log(`📋 [ACCOUNT_BALANCES] Found ${accounts?.length || 0} accounts`)
+        
         // Get journal entry lines to calculate actual balances
-        const { data: journalLines, error: linesError } = await supabase
+        let journalQuery = supabase
           .from("journal_entry_lines")
           .select(`
             account_id,
@@ -302,30 +306,48 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
           `)
           .eq("journal_entry.status", "posted")
         
+        // Apply company filter in the query itself
+        if (filter.company_id) {
+          journalQuery = journalQuery.eq("journal_entry.company_id", filter.company_id)
+          console.log(`🔍 [ACCOUNT_BALANCES] Filtering journal entries by company_id: ${filter.company_id}`)
+        }
+        
+        const { data: journalLines, error: linesError } = await journalQuery
+        
         if (linesError) {
           console.error("Journal lines query error:", linesError)
+          // Continue with empty array if query fails
+        } else {
+          console.log(`📊 [ACCOUNT_BALANCES] Found ${journalLines?.length || 0} journal entry lines`)
         }
         
         // Calculate totals per account
         const accountTotals = new Map<string, { debits: number; credits: number }>()
         
-        journalLines?.forEach(line => {
-          // Apply company filter
-          if (filter.company_id && line.journal_entry?.company_id !== filter.company_id) {
+        // Process journal lines to calculate totals
+        journalLines?.forEach((line: any) => {
+          // Ensure journal_entry exists and account_id is valid
+          if (!line.journal_entry || !line.account_id) {
+            console.warn("⚠️ [ACCOUNT_BALANCES] Skipping line with missing data:", line)
             return
           }
           
+          const debitAmount = Number(line.debit_amount) || 0
+          const creditAmount = Number(line.credit_amount) || 0
+          
           const current = accountTotals.get(line.account_id) || { debits: 0, credits: 0 }
           accountTotals.set(line.account_id, {
-            debits: current.debits + (line.debit_amount || 0),
-            credits: current.credits + (line.credit_amount || 0)
+            debits: current.debits + debitAmount,
+            credits: current.credits + creditAmount
           })
         })
+        
+        console.log(`📊 [ACCOUNT_BALANCES] Processed ${journalLines?.length || 0} journal lines for ${accountTotals.size} accounts`)
         
         // Build account balances with calculated totals
         const accountBalances: AccountBalance[] = (accounts || []).map(account => {
           const totals = accountTotals.get(account.id) || { debits: 0, credits: 0 }
-          const opening = account.current_balance || 0
+          const opening = Number(account.current_balance) || 0
           
           // Calculate closing balance based on account type
           let closing = opening
@@ -333,6 +355,17 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
             closing = opening + totals.debits - totals.credits
           } else {
             closing = opening + totals.credits - totals.debits
+          }
+          
+          // Debug log for accounts with activity
+          if (totals.debits > 0 || totals.credits > 0) {
+            console.log(`💰 [ACCOUNT_BALANCE] ${account.account_code} (${account.account_name}):`, {
+              opening,
+              debits: totals.debits,
+              credits: totals.credits,
+              closing,
+              balance_type: account.balance_type
+            })
           }
           
           return {
@@ -348,6 +381,8 @@ export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: 
             closing_balance: closing
           }
         })
+        
+        console.log(`✅ [ACCOUNT_BALANCES] Calculated balances for ${accountBalances.length} accounts`)
         
         return accountBalances
         
@@ -539,6 +574,14 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
           journalQuery = journalQuery.eq("journal_entry.company_id", filter.company_id)
         }
         
+        // Apply date filters if provided
+        if (filters?.dateFrom) {
+          journalQuery = journalQuery.gte("journal_entry.entry_date", filters.dateFrom)
+        }
+        if (filters?.dateTo) {
+          journalQuery = journalQuery.lte("journal_entry.entry_date", filters.dateTo)
+        }
+        
         const { data: journalLines, error: linesError } = await journalQuery
         
         if (linesError) {
@@ -561,8 +604,15 @@ export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: stri
           }
           
           const accountId = line.account_id
+          if (!accountId) {
+            console.warn('⚠️ [FINANCIAL_SUMMARY] Line has no account_id:', line.id)
+            return
+          }
+          
           const currentBalance = accountBalances.get(accountId) || 0
-          const movement = (line.debit_amount || 0) - (line.credit_amount || 0)
+          const debitAmount = Number(line.debit_amount) || 0
+          const creditAmount = Number(line.credit_amount) || 0
+          const movement = debitAmount - creditAmount
           accountBalances.set(accountId, currentBalance + movement)
         })
         

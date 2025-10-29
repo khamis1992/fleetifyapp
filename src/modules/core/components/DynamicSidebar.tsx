@@ -39,8 +39,13 @@ const groupRoutesByModule = (moduleContext: any) => {
     routes: Array<{ path: string; label: string; label_ar: string; icon: string; }> 
   }> = {};
 
-  moduleContext.availableModules.forEach((module: any) => {
-    if (moduleContext.activeModules.includes(module.name) && module.routes.length > 0) {
+  // Safety check for moduleContext and availableModules
+  if (!moduleContext || !moduleContext.availableModules || !Array.isArray(moduleContext.availableModules)) {
+    return groupedModules;
+  }
+
+  (moduleContext.availableModules || []).forEach((module: any) => {
+    if (module && moduleContext.activeModules?.includes(module.name) && module.routes?.length > 0) {
       // If module has multiple routes, group them
       if (module.routes.length > 1) {
         groupedModules[module.name] = {
@@ -86,7 +91,7 @@ export function DynamicSidebar() {
     await signOut();
   };
 
-  if (isLoading) {
+  if (isLoading || !moduleContext) {
     return (
       <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
         <SidebarContent>

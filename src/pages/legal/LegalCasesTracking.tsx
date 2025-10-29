@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useLegalCases, useLegalCaseStats } from '@/hooks/useLegalCases';
+import { useLegalCases, useLegalCaseStats, useLegalCase } from '@/hooks/useLegalCases';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
@@ -81,6 +82,8 @@ export const LegalCasesTracking: React.FC = () => {
   });
 
   const { data: stats } = useLegalCaseStats();
+  const { data: selectedCaseData } = useLegalCase(selectedCaseId || '');
+  const { companyId } = useUnifiedCompanyAccess();
 
   const getCaseStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -379,8 +382,8 @@ export const LegalCasesTracking: React.FC = () => {
                 <div className="lg:col-span-1">
                   <CaseStatusManager
                     caseId={selectedCaseId}
-                    currentStatus="pending_review"
-                    caseName="Case #001"
+                    currentStatus={selectedCaseData?.case_status || 'pending_review'}
+                    caseName={selectedCaseData?.case_number || `Case #${selectedCaseId?.slice(0, 8)}`}
                     onStatusChange={async (status, notes) => {
                       // Add status change to timeline
                       const newEntry: TimelineEntry = {
@@ -413,7 +416,7 @@ export const LegalCasesTracking: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground mb-4">يرجا اختيار قضية من القائمة</p>
+                  <p className="text-muted-foreground mb-4">يرجى اختيار قضية من القائمة</p>
                   <Button
                     variant="outline"
                     onClick={() => setActiveTab('cases')}
@@ -426,10 +429,11 @@ export const LegalCasesTracking: React.FC = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="notice-generator">
+        <TabsContent value="notice-generator" className="space-y-6">
           <EnhancedLegalNoticeGenerator
-            companyId="current-company-id"
+            companyId={companyId || ''}
             onDocumentGenerated={(document) => {
+              toast.success('تم إنشاء المستند بنجاح');
               console.log('Document generated:', document);
             }}
           />
@@ -455,16 +459,24 @@ export const LegalCasesTracking: React.FC = () => {
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              {selectedCaseId && (
+              {selectedCaseId && selectedCaseData ? (
                 <SettlementProposal
                   caseId={selectedCaseId}
-                  caseNumber={cases?.find((c) => c.id === selectedCaseId)?.case_number || ''}
-                  clientName={cases?.find((c) => c.id === selectedCaseId)?.client_name || ''}
-                  totalClaim={cases?.find((c) => c.id === selectedCaseId)?.total_costs || 0}
+                  caseNumber={selectedCaseData.case_number || ''}
+                  clientName={selectedCaseData.client_name || ''}
+                  totalClaim={selectedCaseData.total_costs || 0}
                   onProposalCreated={(proposal) => {
                     toast.success('تم إنشاء العرض بنجاح');
                   }}
                 />
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8 text-muted-foreground">
+                      يرجى اختيار قضية من القائمة
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
             <div className="lg:col-span-2">

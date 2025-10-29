@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { PermissionGuard } from './PermissionGuard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LazyLoadErrorBoundary } from './LazyLoadErrorBoundary';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -66,7 +67,9 @@ export const AdminRoute: React.FC<{ children: React.ReactNode; redirectTo?: stri
   redirectTo = '/dashboard' 
 }) => (
   <ProtectedRoute requireCompanyAdmin redirectTo={redirectTo}>
-    {children}
+    <LazyLoadErrorBoundary>
+      {children}
+    </LazyLoadErrorBoundary>
   </ProtectedRoute>
 );
 
@@ -75,7 +78,9 @@ export const SuperAdminRoute: React.FC<{ children: React.ReactNode; redirectTo?:
   redirectTo = '/dashboard' 
 }) => (
   <ProtectedRoute requireGlobalAccess redirectTo={redirectTo}>
-    {children}
+    <LazyLoadErrorBoundary>
+      {children}
+    </LazyLoadErrorBoundary>
   </ProtectedRoute>
 );
 

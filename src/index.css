@@ -26,6 +26,17 @@
   }
 }
 
+/* Success Light Animation Variable */
+@layer base {
+  :root {
+    --success-light: 142 56% 95%;
+    --warning-light: 25 85% 95%;
+    --primary-dark: 0 70% 35%;
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+    --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  }
+}
+
 /* KW Rent Flow ERP - Professional Design System 
 Inspired by Kuwait business environment with premium colors and gradients.
 All colors MUST be HSL.

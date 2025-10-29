@@ -1,0 +1,258 @@
+/* FleetifyApp - Customers List Theme */
+/* Professional ERP System Design - Matching FleetifyApp Colors */
+/* Created: October 29, 2025 */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ========== FleetifyApp Official Colors ========== */
+  /* Light Grey Professional Base */
+  --background: 0 0% 96%;
+  --background-soft: 0 0% 94%;
+  --foreground: 0 0% 15%;
+  
+  /* Clean Card System */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 15%;
+  --card-hover: 0 0% 98%;
+  --card-glass: 0 0% 100% / 0.9;
+  
+  /* Deep Red Primary - FleetifyApp Brand Color */
+  --primary: 0 70% 45%;
+  --primary-foreground: 0 0% 100%;
+  --primary-dark: 0 70% 35%;
+  --primary-light: 0 70% 55%;
+  --primary-glow: 0 70% 45% / 0.2;
+  
+  /* Professional Orange Accent System */
+  --accent: 25 90% 92%;
+  --accent-foreground: 0 0% 15%;
+  --accent-light: 25 90% 95%;
+  --accent-muted: 25 90% 85%;
+  
+  /* Neutral Secondary */
+  --secondary: 0 0% 85%;
+  --secondary-foreground: 0 0% 15%;
+  --secondary-dark: 0 0% 80%;
+  
+  /* Interactive Elements */
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 15%;
+  
+  /* Muted Elements */
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 45%;
+  
+  /* Status Colors */
+  --success: 142 56% 42%;
+  --success-foreground: 0 0% 100%;
+  --success-light: 142 56% 95%;
+  
+  --warning: 25 85% 55%;
+  --warning-foreground: 0 0% 100%;
+  --warning-light: 25 85% 95%;
+  
+  --destructive: 0 65% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-light: 0 65% 95%;
+  
+  /* Clean Borders and Inputs */
+  --border: 0 0% 85%;
+  --input: 0 0% 98%;
+  --input-border: 0 0% 80%;
+  --input-focus: 0 70% 45%;
+  --ring: 0 70% 45%;
+  
+  /* Elegant Gradients - FleetifyApp Style */
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
+  --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+  --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 50%, hsl(var(--accent-light)) 100%);
+  --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
+  --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
+  
+  /* Clean Shadows - FleetifyApp Style */
+  --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+  --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+  --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+  --shadow-glass: 0 8px 32px hsl(0 0% 15% / 0.06);
+  
+  /* Charcoal Sidebar - FleetifyApp Style */
+  --sidebar-background: 0 0% 20%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 0 70% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 25%;
+  --sidebar-accent-foreground: 0 0% 85%;
+  --sidebar-border: 0 0% 30%;
+  --sidebar-ring: 0 70% 45%;
+  
+  /* ========== Typography - FleetifyApp Fonts ========== */
+  --font-sans: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-serif: 'Amiri', ui-serif, Georgia, Cambria, serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-accent: 'Reem Kufi', sans-serif;
+  
+  /* ========== Border Radius - FleetifyApp ========== */
+  --radius: 0.75rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-full: 9999px;
+  
+  /* ========== Smooth Professional Transitions ========== */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-micro: all 0.15s ease-out;
+}
+
+/* ========== Dark Mode Theme - FleetifyApp Style ========== */
+.dark {
+  /* Dark mode adjustments */
+  --background: 220 25% 8%;
+  --background-soft: 220 25% 10%;
+  --foreground: 220 15% 95%;
+  
+  --card: 220 25% 10%;
+  --card-foreground: 220 15% 95%;
+  --card-hover: 220 25% 12%;
+  
+  --popover: 220 25% 10%;
+  --popover-foreground: 220 15% 95%;
+  
+  --primary: 0 70% 50%;
+  --primary-foreground: 0 0% 98%;
+  --primary-light: 0 70% 60%;
+  --primary-glow: 0 70% 50%;
+  
+  --secondary: 220 15% 15%;
+  --secondary-foreground: 220 15% 95%;
+  --secondary-dark: 220 15% 12%;
+  
+  --muted: 220 15% 15%;
+  --muted-foreground: 220 15% 65%;
+  
+  --accent: 25 85% 60%;
+  --accent-foreground: 220 25% 8%;
+  --accent-light: 25 85% 70%;
+  --accent-muted: 25 85% 15%;
+  
+  --border: 220 15% 20%;
+  --input: 220 15% 20%;
+  --ring: 0 70% 50%;
+  
+  /* Update gradients for dark mode */
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+  --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
+  --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--accent)) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+  
+  /* Dark mode sidebar */
+  --sidebar-background: 240 5.9% 10%;
+  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar-primary: 0 70% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 240 4.8% 95.9%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 0 70% 50%;
+}
+
+/* ========== Global Resets ========== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans) !important;
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  line-height: 1.6 !important;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  direction: rtl;
+  text-align: right;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== Typography Styles ========== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: var(--tracking-tight) !important;
+}
+
+h1 {
+  font-size: 2.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+h2 {
+  font-size: 2rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+h3 {
+  font-size: 1.75rem !important;
+  margin-bottom: 1rem !important;
+}
+
+h4 {
+  font-size: 1.5rem !important;
+  margin-bottom: 0.875rem !important;
+}
+
+h5 {
+  font-size: 1.25rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+h6 {
+  font-size: 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+p {
+  margin-bottom: 1rem !important;
+  line-height: 1.7 !important;
+}
+
+/* ========== Utility Classes ========== */
+.text-primary {
+  color: oklch(var(--primary)) !important;
+}
+
+.text-success {
+  color: oklch(var(--success)) !important;
+}
+
+.text-warning {
+  color: oklch(var(--warning)) !important;
+}
+
+.text-danger {
+  color: oklch(var(--destructive)) !important;
+}
+
+.bg-primary {
+  background-color: oklch(var(--primary)) !important;
+}
+
+.bg-success {
+  background-color: oklch(var(--success)) !important;
+}
+
+.bg-warning {
+  background-color: oklch(var(--warning)) !important;
+}
+
+.bg-danger {
+  background-color: oklch(var(--destructive)) !important;
+}
+

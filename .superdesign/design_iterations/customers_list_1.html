@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة العملاء - FleetifyApp</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="customers_theme.css">
+    
+    <style>
+        /* Custom Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .animate-fadeInUp {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+        
+        .animate-fadeInRight {
+            animation: fadeInRight 0.3s ease-out forwards;
+        }
+        
+        .animate-fadeInLeft {
+            animation: fadeInLeft 0.35s ease-out forwards;
+        }
+        
+        .animate-scaleIn {
+            animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent, hsl(0 70% 45% / 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        
+        .row-stagger-1 { animation-delay: 0.06s; }
+        .row-stagger-2 { animation-delay: 0.12s; }
+        .row-stagger-3 { animation-delay: 0.18s; }
+        .row-stagger-4 { animation-delay: 0.24s; }
+        
+        /* Custom Styles */
+        .stat-card {
+            background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+            box-shadow: var(--shadow-card);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: var(--shadow-elevated);
+        }
+        
+        .table-row {
+            transition: all 0.2s ease-out;
+        }
+        
+        .table-row:hover {
+            background-color: hsl(var(--accent-light));
+            transform: translateX(4px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
+            transition: all 0.2s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-primary:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .input-field {
+            transition: all 0.2s ease-out;
+        }
+        
+        .input-field:focus {
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary-glow));
+            transform: scale(1.02);
+        }
+        
+        .status-badge {
+            transition: all 0.3s ease-out;
+        }
+        
+        .status-active {
+            background-color: hsl(var(--success-light));
+            color: hsl(var(--success));
+            animation: pulse-glow 1.5s infinite;
+        }
+        
+        .status-inactive {
+            background-color: hsl(0 0% 90%);
+            color: hsl(0 0% 50%);
+        }
+        
+        .dropdown-menu {
+            animation: fadeInUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .modal-backdrop {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-container {
+            animation: scaleIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: hsl(var(--background));
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: hsl(var(--border));
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--primary));
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    
+    <!-- Main Container -->
+    <div class="min-h-screen p-6 md:p-8">
+        
+        <!-- Header Section -->
+        <div class="mb-8 opacity-0 animate-fadeInUp">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2" style="color: hsl(var(--foreground));">
+                        إدارة العملاء
+                    </h1>
+                    <p class="text-muted-foreground">
+                        إدارة شاملة لجميع عملاء النظام
+                    </p>
+                </div>
+                
+                <button class="btn-primary text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    <span>إضافة عميل جديد</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Customers -->
+            <div class="stat-card p-6 rounded-2xl border border-border opacity-0 animate-scaleIn stagger-1">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-muted-foreground text-sm mb-1">إجمالي العملاء</p>
+                        <h3 class="text-4xl font-bold" style="color: hsl(var(--foreground));">1,234</h3>
+                        <p class="text-success text-sm mt-2 flex items-center gap-1">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>+12% من الشهر الماضي</span>
+                        </p>
+                    </div>
+                    <div class="p-3 rounded-xl" style="background: hsl(var(--primary-glow));">
+                        <i data-lucide="users" class="w-6 h-6" style="color: hsl(var(--primary));"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active Customers -->
+            <div class="stat-card p-6 rounded-2xl border border-border opacity-0 animate-scaleIn stagger-2">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-muted-foreground text-sm mb-1">العملاء النشطون</p>
+                        <h3 class="text-4xl font-bold" style="color: hsl(var(--success));">1,180</h3>
+                        <p class="text-success text-sm mt-2 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>95.6% نسبة النشاط</span>
+                        </p>
+                    </div>
+                    <div class="p-3 rounded-xl" style="background: hsl(var(--success-light));">
+                        <i data-lucide="user-check" class="w-6 h-6" style="color: hsl(var(--success));"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Customers -->
+            <div class="stat-card p-6 rounded-2xl border border-border opacity-0 animate-scaleIn stagger-3">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-muted-foreground text-sm mb-1">العملاء المعلقون</p>
+                        <h3 class="text-4xl font-bold" style="color: hsl(var(--warning));">54</h3>
+                        <p class="text-warning text-sm mt-2 flex items-center gap-1">
+                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                            <span>يحتاج متابعة</span>
+                        </p>
+                    </div>
+                    <div class="p-3 rounded-xl" style="background: hsl(var(--warning-light));">
+                        <i data-lucide="user-x" class="w-6 h-6" style="color: hsl(var(--warning));"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search and Filters Section -->
+        <div class="mb-6 opacity-0 animate-fadeInLeft" style="animation-delay: 0.2s;">
+            <div class="bg-card p-4 rounded-2xl border border-border shadow-card">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <!-- Search Input -->
+                    <div class="flex-1 relative">
+                        <i data-lucide="search" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+                        <input 
+                            type="text" 
+                            placeholder="بحث عن عميل..." 
+                            class="input-field w-full pr-12 pl-4 py-3 rounded-xl border border-input bg-input outline-none"
+                        >
+                    </div>
+                    
+                    <!-- Customer Type Filter -->
+                    <div class="relative">
+                        <select class="input-field px-4 py-3 pr-10 rounded-xl border border-input bg-input outline-none appearance-none cursor-pointer min-w-[150px]">
+                            <option value="">نوع العميل</option>
+                            <option value="individual">فرد</option>
+                            <option value="company">شركة</option>
+                            <option value="organization">مؤسسة</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></i>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="relative">
+                        <select class="input-field px-4 py-3 pr-10 rounded-xl border border-input bg-input outline-none appearance-none cursor-pointer min-w-[150px]">
+                            <option value="">الحالة</option>
+                            <option value="active">نشط</option>
+                            <option value="inactive">معلق</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></i>
+                    </div>
+                    
+                    <!-- Date Filter -->
+                    <button class="px-4 py-3 rounded-xl border border-input bg-input hover:bg-accent transition-all flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>التاريخ</span>
+                    </button>
+                    
+                    <!-- Export Button -->
+                    <button class="px-4 py-3 rounded-xl border border-input bg-input hover:bg-accent transition-all flex items-center gap-2">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        <span>تصدير</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customers Table -->
+        <div class="bg-card rounded-2xl border border-border shadow-card overflow-hidden opacity-0 animate-fadeInUp" style="animation-delay: 0.3s;">
+            
+            <!-- Table Header -->
+            <div class="p-6 border-b border-border">
+                <h2 class="text-xl font-semibold">قائمة العملاء</h2>
+            </div>
+            
+            <!-- Table Content -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-accent border-b border-border">
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" class="w-4 h-4 rounded border-border">
+                                </div>
+                            </th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العميل</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">رقم الهاتف</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">البريد الإلكتروني</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">نوع العميل</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الحالة</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العقود</th>
+                            <th class="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        
+                        <!-- Customer Row 1 -->
+                        <tr class="table-row opacity-0 animate-fadeInRight row-stagger-1">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" class="w-4 h-4 rounded border-border">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style="background: hsl(var(--primary));">
+                                        أ
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">أحمد محمد علي</p>
+                                        <p class="text-sm text-muted-foreground">1234567890</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-muted-foreground">0512345678</td>
+                            <td class="px-6 py-4 text-muted-foreground">ahmed.mohammed@email.com</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 rounded-full text-sm" style="background: hsl(var(--accent)); color: hsl(var(--accent-foreground));">
+                                    فرد
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge status-active px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                    <span class="w-2 h-2 rounded-full" style="background: hsl(var(--success));"></span>
+                                    نشط
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-semibold" style="color: hsl(var(--primary));">5 عقود</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="relative inline-block">
+                                    <button class="p-2 hover:bg-accent rounded-lg transition-all">
+                                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Customer Row 2 -->
+                        <tr class="table-row opacity-0 animate-fadeInRight row-stagger-2">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" class="w-4 h-4 rounded border-border">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style="background: hsl(var(--success));">
+                                        ش
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">شركة النجاح للتجارة</p>
+                                        <p class="text-sm text-muted-foreground">1098765432</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-muted-foreground">0598765432</td>
+                            <td class="px-6 py-4 text-muted-foreground">success@company.com</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 rounded-full text-sm" style="background: hsl(var(--primary-glow)); color: hsl(var(--primary));">
+                                    شركة
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge status-active px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                    <span class="w-2 h-2 rounded-full" style="background: hsl(var(--success));"></span>
+                                    نشط
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-semibold" style="color: hsl(var(--primary));">12 عقد</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="relative inline-block">
+                                    <button class="p-2 hover:bg-accent rounded-lg transition-all">
+                                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Customer Row 3 -->
+                        <tr class="table-row opacity-0 animate-fadeInRight row-stagger-3">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" class="w-4 h-4 rounded border-border">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style="background: hsl(var(--warning));">
+                                        ف
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">فاطمة علي حسن</p>
+                                        <p class="text-sm text-muted-foreground">5566778899</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-muted-foreground">0555667788</td>
+                            <td class="px-6 py-4 text-muted-foreground">fatima.ali@email.com</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 rounded-full text-sm" style="background: hsl(var(--accent)); color: hsl(var(--accent-foreground));">
+                                    فرد
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge status-inactive px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                                    معلق
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-semibold" style="color: hsl(var(--primary));">2 عقد</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="relative inline-block">
+                                    <button class="p-2 hover:bg-accent rounded-lg transition-all">
+                                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Customer Row 4 -->
+                        <tr class="table-row opacity-0 animate-fadeInRight row-stagger-4">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" class="w-4 h-4 rounded border-border">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style="background: hsl(210 100% 50%);">
+                                        م
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">مؤسسة التطوير العقاري</p>
+                                        <p class="text-sm text-muted-foreground">7788990011</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-muted-foreground">0577889900</td>
+                            <td class="px-6 py-4 text-muted-foreground">develop@foundation.com</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 rounded-full text-sm" style="background: hsl(210 100% 95%); color: hsl(210 100% 40%);">
+                                    مؤسسة
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge status-active px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                    <span class="w-2 h-2 rounded-full" style="background: hsl(var(--success));"></span>
+                                    نشط
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-semibold" style="color: hsl(var(--primary));">8 عقود</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="relative inline-block">
+                                    <button class="p-2 hover:bg-accent rounded-lg transition-all">
+                                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="p-6 border-t border-border">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-muted-foreground">
+                        عرض <span class="font-semibold">1-10</span> من <span class="font-semibold">1,234</span> عميل
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-2 rounded-lg border border-border hover:bg-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                        
+                        <button class="px-4 py-2 rounded-lg font-semibold" style="background: hsl(var(--primary)); color: white;">
+                            1
+                        </button>
+                        <button class="px-4 py-2 rounded-lg border border-border hover:bg-accent transition-all">
+                            2
+                        </button>
+                        <button class="px-4 py-2 rounded-lg border border-border hover:bg-accent transition-all">
+                            3
+                        </button>
+                        <span class="px-2">...</span>
+                        <button class="px-4 py-2 rounded-lg border border-border hover:bg-accent transition-all">
+                            124
+                        </button>
+                        
+                        <button class="px-3 py-2 rounded-lg border border-border hover:bg-accent transition-all">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-muted-foreground">عدد الصفوف:</span>
+                        <select class="px-3 py-2 rounded-lg border border-border bg-input outline-none cursor-pointer">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+        
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        // Number animation for stats
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value.toLocaleString('ar-SA');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // Animate stats on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const statElements = document.querySelectorAll('.stat-card h3');
+                const statValues = [1234, 1180, 54];
+                statElements.forEach((el, index) => {
+                    animateValue(el, 0, statValues[index], 1000);
+                });
+            }, 500);
+        });
+        
+        // Add ripple effect to buttons
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const rect = this.getBoundingClientRect();
+                const ripple = document.createElement('span');
+                ripple.style.cssText = `
+                    position: absolute;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.5);
+                    width: 100px;
+                    height: 100px;
+                    left: ${e.clientX - rect.left - 50}px;
+                    top: ${e.clientY - rect.top - 50}px;
+                    animation: ripple 0.6s ease-out;
+                    pointer-events: none;
+                `;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+        
+        // Add click handlers for action buttons
+        document.querySelectorAll('[data-lucide="more-vertical"]').forEach(button => {
+            button.parentElement.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Here you would show the dropdown menu
+                console.log('Show actions menu');
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            // Here you would filter the table rows
+            console.log('Searching for:', searchTerm);
+        });
+        
+        // Filter change handlers
+        document.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', function(e) {
+                console.log('Filter changed:', this.value);
+                // Here you would filter the table based on the selection
+            });
+        });
+    </script>
+    
+</body>
+</html>

@@ -582,7 +582,12 @@ export function useContractCSVUpload() {
     try {
       const iso = parseISO(s);
       if (isValidDate(iso)) d = iso;
-    } catch {}
+    } catch (error) {
+      // Invalid ISO date format, will try alternative parsing below
+      if (import.meta.env.DEV) {
+        console.debug('Date parsing - ISO format failed, trying alternative:', s);
+      }
+    }
     if (!d) {
       const tmp = new Date(s);
       if (!isNaN(tmp.getTime())) d = tmp;

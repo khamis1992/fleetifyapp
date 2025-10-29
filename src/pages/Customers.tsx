@@ -59,7 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload, CustomerImportWizard } from '@/components/customers';
+import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload, CustomerImportWizard, CustomerCreationOptionsDialog } from '@/components/customers';
 import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
@@ -78,6 +78,7 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customerType, setCustomerType] = useState<'all' | 'individual' | 'corporate'>('all');
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [showCreationOptionsDialog, setShowCreationOptionsDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showQuickCreateDialog, setShowQuickCreateDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -165,10 +166,14 @@ const Customers = () => {
 
   // Event handlers
   const handleCreateCustomer = () => {
+    setShowCreationOptionsDialog(true);
+  };
+
+  const handleSelectFullForm = () => {
     setShowCreateDialog(true);
   };
 
-  const handleQuickCreateCustomer = () => {
+  const handleSelectQuickAdd = () => {
     setShowQuickCreateDialog(true);
   };
 
@@ -348,15 +353,6 @@ const Customers = () => {
               <Upload className="h-4 w-4 ml-2" />
               استيراد CSV
             </Button>
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={handleQuickCreateCustomer}
-              className="border-green-500 text-green-700 hover:bg-green-50"
-            >
-              <Zap className="h-4 w-4 ml-2" />
-              سريع
-            </Button>
             <Button onClick={handleCreateCustomer}>
               <Plus className="h-4 w-4 ml-2" />
               عميل جديد
@@ -484,6 +480,13 @@ const Customers = () => {
         )}
 
         {/* Dialogs */}
+        <CustomerCreationOptionsDialog
+          open={showCreationOptionsDialog}
+          onOpenChange={setShowCreationOptionsDialog}
+          onSelectFullForm={handleSelectFullForm}
+          onSelectQuickAdd={handleSelectQuickAdd}
+        />
+        
         <EnhancedCustomerDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
@@ -553,17 +556,6 @@ const Customers = () => {
           >
             <Upload className="h-4 w-4 ml-2" />
             استيراد CSV
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleQuickCreateCustomer}
-            className="border-green-500 text-green-700 hover:bg-green-50"
-          >
-            <Zap className="h-4 w-4 ml-2" />
-            إضافة سريعة
-            <Badge variant="secondary" className="mr-2 bg-green-100 text-green-800 text-xs">
-              15 ثانية ⚡
-            </Badge>
           </Button>
           <Button onClick={handleCreateCustomer}>
             <Plus className="h-4 w-4 ml-2" />
@@ -880,6 +872,13 @@ const Customers = () => {
       )}
 
       {/* Dialogs */}
+      <CustomerCreationOptionsDialog
+        open={showCreationOptionsDialog}
+        onOpenChange={setShowCreationOptionsDialog}
+        onSelectFullForm={handleSelectFullForm}
+        onSelectQuickAdd={handleSelectQuickAdd}
+      />
+      
       <EnhancedCustomerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}

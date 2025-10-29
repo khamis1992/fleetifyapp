@@ -124,7 +124,7 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
 
             {/* Data list */}
             <div className="max-h-96 overflow-y-auto space-y-2">
-              {currentData.data.map((item, index) => (
+              {(currentData.data || []).map((item, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 10 }}

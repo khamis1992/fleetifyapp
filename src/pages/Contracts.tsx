@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { PageCustomizer } from "@/components/PageCustomizer"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -111,6 +111,7 @@ function Contracts() {
 
   // Hooks
   const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -126,6 +127,17 @@ function Contracts() {
   }), [filters, page, pageSize])
 
   const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination)
+
+  // Ensure contracts and filteredContracts are arrays
+  const safeContracts = useMemo(() => Array.isArray(contracts) ? contracts : [], [contracts])
+  const safeFilteredContracts = useMemo(() => Array.isArray(filteredContracts) ? filteredContracts : [], [filteredContracts])
+  const safeStatistics = useMemo(() => statistics || {
+    activeContracts: [],
+    draftContracts: [],
+    underReviewContracts: [],
+    cancelledContracts: [],
+    totalRevenue: 0
+  }, [statistics])
 
   // Swipe gestures for mobile
   const handleSwipe = useCallback((result: any) => {
@@ -211,6 +223,10 @@ function Contracts() {
   }, [])
 
   const handleViewDetails = useCallback((contract: any) => {
+    if (!contract?.id) {
+      console.error('Contract ID is missing:', contract)
+      return
+    }
     // Navigate to the new contract details page
     navigate(`/contracts/${contract.id}`)
   }, [navigate])
@@ -358,11 +374,11 @@ function Contracts() {
         {/* Statistics Cards */}
         <div className="w-full">
           <ContractsStatistics
-            activeCount={statistics.activeContracts.length}
-            draftCount={statistics.draftContracts.length}
-            underReviewCount={statistics.underReviewContracts.length}
-            cancelledCount={statistics.cancelledContracts.length}
-            totalRevenue={statistics.totalRevenue}
+            activeCount={safeStatistics.activeContracts?.length || 0}
+            draftCount={safeStatistics.draftContracts?.length || 0}
+            underReviewCount={safeStatistics.underReviewContracts?.length || 0}
+            cancelledCount={safeStatistics.cancelledContracts?.length || 0}
+            totalRevenue={safeStatistics.totalRevenue || 0}
           />
         </div>
 
@@ -377,7 +393,7 @@ function Contracts() {
             </ResponsiveCardHeader>
             <ResponsiveCardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {contractDrafts.loadDrafts.data.map((draft) => (
+                {(contractDrafts.loadDrafts.data || []).map((draft) => (
                   <Card key={draft.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex flex-col gap-3">
@@ -492,7 +508,7 @@ function Contracts() {
             <TabsContent value="all" className="animate-fade-in">
               <div className="min-h-[400px]">
                 <ContractsList
-                  contracts={filteredContracts}
+                  contracts={safeFilteredContracts}
                   onRenewContract={handleRenewContract}
                   onManageStatus={handleManageStatus}
                   onViewDetails={handleViewDetails}
@@ -501,8 +517,8 @@ function Contracts() {
                   onAmendContract={handleAmendContract}
                   onCreateContract={handleCreateContract}
                   onClearFilters={handleClearFilters}
-                  hasFilters={Object.keys(filters).length > 0}
-                  hasContracts={!!contracts && contracts.length > 0}
+                  hasFilters={Object.keys(filters || {}).length > 0}
+                  hasContracts={safeContracts.length > 0}
                 />
 
                 {/* Pagination Controls */}
@@ -528,8 +544,8 @@ function Contracts() {
             </TabsContent>
 
             <ContractsTabsContent
-              activeContracts={statistics.activeContracts}
-              cancelledContracts={statistics.cancelledContracts}
+              activeContracts={safeStatistics.activeContracts || []}
+              cancelledContracts={safeStatistics.cancelledContracts || []}
               onRenewContract={handleRenewContract}
               onManageStatus={handleManageStatus}
               onViewContract={handleViewDetails}
