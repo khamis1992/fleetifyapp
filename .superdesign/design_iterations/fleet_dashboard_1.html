@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - لوحة تحكم تأجير السيارات</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Recharts -->
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.js"></script>
+    
+    <!-- Chart.js (Alternative for charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="fleet_dashboard_theme.css">
+    
+    <style>
+        /* Additional Custom Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans) !important;
+            background: var(--background) !important;
+            color: var(--foreground) !important;
+        }
+        
+        /* Page Load Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+        
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .animate-fade-in-down {
+            animation: fadeInDown 0.4s ease-out forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+        
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .animate-bounce {
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+        
+        /* Stagger delays for cards */
+        .kpi-card:nth-child(1) { animation-delay: 0ms; }
+        .kpi-card:nth-child(2) { animation-delay: 60ms; }
+        .kpi-card:nth-child(3) { animation-delay: 120ms; }
+        .kpi-card:nth-child(4) { animation-delay: 180ms; }
+        .kpi-card:nth-child(5) { animation-delay: 240ms; }
+        .kpi-card:nth-child(6) { animation-delay: 300ms; }
+        .kpi-card:nth-child(7) { animation-delay: 360ms; }
+        .kpi-card:nth-child(8) { animation-delay: 420ms; }
+        
+        /* Hover effects */
+        .kpi-card {
+            transition: all 0.2s ease-out;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .activity-item {
+            transition: all 0.15s ease-out;
+        }
+        
+        .activity-item:hover {
+            background: var(--muted);
+            border-color: var(--primary);
+        }
+        
+        .table-row {
+            transition: all 0.15s ease-out;
+        }
+        
+        .table-row:hover {
+            background: var(--muted);
+        }
+        
+        /* Number counter animation */
+        .counter {
+            font-family: var(--font-mono);
+            font-weight: 700;
+        }
+        
+        /* Progress bar animation */
+        @keyframes progressGrow {
+            from {
+                width: 0;
+            }
+        }
+        
+        .progress-bar {
+            animation: progressGrow 0.8s ease-out forwards;
+        }
+        
+        /* Gradient background for cards */
+        .gradient-bg {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,250,251,0.9) 100%);
+        }
+        
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+        
+        /* Status badge pulse */
+        .status-active::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -8px;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--status-active);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Responsive grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--muted);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 animate-fade-in-down">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="flex items-center justify-center w-10 h-10 bg-gray-900 rounded-lg">
+                        <i data-lucide="car" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900" style="font-family: var(--font-display);">
+                            لوحة تحكم تأجير السيارات
+                        </h1>
+                        <p class="text-sm text-gray-500">FleetifyApp</p>
+                    </div>
+                </div>
+                
+                <!-- Date & Actions -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="text-sm text-gray-600 flex items-center space-x-2 space-x-reverse">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>الأربعاء، 29 أكتوبر 2025</span>
+                    </div>
+                    
+                    <button class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all flex items-center space-x-2 space-x-reverse">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>عقد جديد</span>
+                    </button>
+                    
+                    <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all flex items-center space-x-2 space-x-reverse">
+                        <i data-lucide="car" class="w-4 h-4"></i>
+                        <span>مركبة جديدة</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- KPI Cards -->
+        <section class="mb-8">
+            <div class="kpi-grid">
+                <!-- Card 1: Total Vehicles -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
+                            <i data-lucide="car" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center space-x-1 space-x-reverse">
+                            <i data-lucide="trending-up" class="w-3 h-3"></i>
+                            <span>+12</span>
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">إجمالي المركبات</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">567</p>
+                        <p class="text-xs text-gray-500 mt-1">+12 هذا الشهر</p>
+                    </div>
+                </div>
+                
+                <!-- Card 2: Rented Vehicles -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg">
+                            <i data-lucide="key" class="w-6 h-6 text-indigo-600"></i>
+                        </div>
+                        <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">60.3%</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">مركبات مؤجرة</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">342</p>
+                        <p class="text-xs text-gray-500 mt-1">معدل الإشغال</p>
+                    </div>
+                </div>
+                
+                <!-- Card 3: Available Vehicles -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">39.7%</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">مركبات متاحة</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">225</p>
+                        <p class="text-xs text-gray-500 mt-1">معدل التوفر</p>
+                    </div>
+                </div>
+                
+                <!-- Card 4: Monthly Revenue -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-lg">
+                            <i data-lucide="dollar-sign" class="w-6 h-6 text-emerald-600"></i>
+                        </div>
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center space-x-1 space-x-reverse">
+                            <i data-lucide="trending-up" class="w-3 h-3"></i>
+                            <span>+18.5%</span>
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">الإيرادات الشهرية</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">125,450</p>
+                        <p class="text-xs text-gray-500 mt-1">ريال سعودي</p>
+                    </div>
+                </div>
+                
+                <!-- Card 5: Active Contracts -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg">
+                            <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">+8 اليوم</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">عقود نشطة</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">234</p>
+                        <p class="text-xs text-gray-500 mt-1">عقود جارية</p>
+                    </div>
+                </div>
+                
+                <!-- Card 6: Maintenance Due -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg">
+                            <i data-lucide="wrench" class="w-6 h-6 text-orange-600"></i>
+                        </div>
+                        <span class="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full animate-pulse">15 عاجل</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">صيانة مستحقة</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">45</p>
+                        <p class="text-xs text-gray-500 mt-1">مركبة تحتاج صيانة</p>
+                    </div>
+                </div>
+                
+                <!-- Card 7: Important Alerts -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-red-100 rounded-lg">
+                            <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
+                        </div>
+                        <span class="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full animate-bounce">جديد</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">تنبيهات مهمة</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">12</p>
+                        <p class="text-xs text-gray-500 mt-1">يجب المتابعة</p>
+                    </div>
+                </div>
+                
+                <!-- Card 8: Average Rating -->
+                <div class="kpi-card gradient-bg animate-scale-in">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg">
+                            <i data-lucide="star" class="w-6 h-6 text-yellow-600"></i>
+                        </div>
+                        <div class="flex items-center space-x-0.5">
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">متوسط التقييم</p>
+                        <p class="text-3xl font-bold text-gray-900 counter">4.8<span class="text-xl text-gray-500">/5.0</span></p>
+                        <p class="text-xs text-gray-500 mt-1">892 تقييم هذا الشهر</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts & Analytics -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Monthly Revenue Chart -->
+                <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 300ms;">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">الإيرادات الشهرية</h3>
+                            <p class="text-sm text-gray-500">آخر 6 أشهر</p>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <button class="px-3 py-1 text-sm bg-gray-900 text-white rounded-lg">شهري</button>
+                            <button class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">أسبوعي</button>
+                            <button class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">يومي</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Fleet Status -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 400ms;">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">حالة الأسطول</h3>
+                        <p class="text-sm text-gray-500">توزيع المركبات</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
+                                <span class="text-sm text-gray-700">مؤجرة</span>
+                            </div>
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <span class="text-sm font-semibold text-gray-900">342</span>
+                                <span class="text-xs text-gray-500">(60.3%)</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 60.3%;"></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mt-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <div class="w-3 h-3 bg-green-600 rounded-full"></div>
+                                <span class="text-sm text-gray-700">متاحة</span>
+                            </div>
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <span class="text-sm font-semibold text-gray-900">225</span>
+                                <span class="text-xs text-gray-500">(39.7%)</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full progress-bar" style="width: 39.7%; animation-delay: 200ms;"></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mt-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <div class="w-3 h-3 bg-orange-600 rounded-full"></div>
+                                <span class="text-sm text-gray-700">صيانة</span>
+                            </div>
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <span class="text-sm font-semibold text-gray-900">45</span>
+                                <span class="text-xs text-gray-500">(7.9%)</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-orange-600 h-2 rounded-full progress-bar" style="width: 7.9%; animation-delay: 400ms;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-gray-900">567</p>
+                            <p class="text-sm text-gray-500">إجمالي المركبات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance by Category -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Fleet Performance -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 500ms;">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">أداء الأسطول حسب الفئة</h3>
+                        <p class="text-sm text-gray-500">معدل الإشغال لكل فئة</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-700">سيدان</span>
+                                <span class="text-sm font-semibold text-gray-900">85%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-blue-600 h-3 rounded-full progress-bar" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-700">SUV</span>
+                                <span class="text-sm font-semibold text-gray-900">72%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-indigo-600 h-3 rounded-full progress-bar" style="width: 72%; animation-delay: 100ms;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-700">فان</span>
+                                <span class="text-sm font-semibold text-gray-900">68%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-purple-600 h-3 rounded-full progress-bar" style="width: 68%; animation-delay: 200ms;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-700">رياضية</span>
+                                <span class="text-sm font-semibold text-gray-900">55%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-pink-600 h-3 rounded-full progress-bar" style="width: 55%; animation-delay: 300ms;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-700">فاخرة</span>
+                                <span class="text-sm font-semibold text-gray-900">45%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-amber-600 h-3 rounded-full progress-bar" style="width: 45%; animation-delay: 400ms;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button class="w-full py-2 text-sm text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-lg transition-all">
+                            عرض التفاصيل الكاملة
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Weekly Occupancy -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 600ms;">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">معدل الإشغال الأسبوعي</h3>
+                        <p class="text-sm text-gray-500">آخر 7 أيام</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities & Alerts -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Recent Activities -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 animate-slide-in-right" style="animation-delay: 700ms;">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">آخر العمليات</h3>
+                            <p class="text-sm text-gray-500">النشاطات الأخيرة</p>
+                        </div>
+                        <button class="text-sm text-blue-600 hover:text-blue-700">عرض الكل</button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="activity-item flex items-start space-x-3 space-x-reverse">
+                            <div class="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg flex-shrink-0">
+                                <i data-lucide="file-plus" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">عقد جديد - #C-2025-1234</p>
+                                <p class="text-sm text-gray-600">تويوتا كامري 2024</p>
+                                <p class="text-xs text-gray-500 mt-1">قبل 5 دقائق</p>
+                            </div>
+                            <button class="text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap">عرض التفاصيل</button>
+                        </div>
+                        
+                        <div class="activity-item flex items-start space-x-3 space-x-reverse">
+                            <div class="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg flex-shrink-0">
+                                <i data-lucide="dollar-sign" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">دفعة مستلمة - 4,500 ر.س</p>
+                                <p class="text-sm text-gray-600">العقد #C-2025-0987</p>
+                                <p class="text-xs text-gray-500 mt-1">قبل 15 دقيقة</p>
+                            </div>
+                            <button class="text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap">عرض الإيصال</button>
+                        </div>
+                        
+                        <div class="activity-item flex items-start space-x-3 space-x-reverse">
+                            <div class="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg flex-shrink-0">
+                                <i data-lucide="rotate-ccw" class="w-5 h-5 text-purple-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">إرجاع مركبة</p>
+                                <p class="text-sm text-gray-600">هونداي توسان (#V-1234)</p>
+                                <p class="text-xs text-gray-500 mt-1">قبل ساعة</p>
+                            </div>
+                            <button class="text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap">فحص الحالة</button>
+                        </div>
+                        
+                        <div class="activity-item flex items-start space-x-3 space-x-reverse">
+                            <div class="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg flex-shrink-0">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">صيانة مكتملة</p>
+                                <p class="text-sm text-gray-600">BMW X5 (#V-7890)</p>
+                                <p class="text-xs text-gray-500 mt-1">قبل ساعتين</p>
+                            </div>
+                            <button class="text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap">عرض التقرير</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Important Alerts -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 animate-slide-in-right" style="animation-delay: 800ms;">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">التنبيهات الهامة</h3>
+                            <p class="text-sm text-gray-500">يجب اتخاذ إجراء</p>
+                        </div>
+                        <button class="text-sm text-blue-600 hover:text-blue-700">عرض الكل</button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="alert alert-error">
+                            <div class="flex items-start space-x-3 space-x-reverse">
+                                <div class="flex items-center justify-center w-10 h-10 bg-red-100 rounded-lg flex-shrink-0">
+                                    <i data-lucide="alert-octagon" class="w-5 h-5 text-red-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">صيانة طارئة</p>
+                                    <p class="text-sm text-gray-600">مرسيدس S500 (#V-4567)</p>
+                                    <p class="text-xs text-gray-500 mt-1">يجب الصيانة فوراً</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 whitespace-nowrap">
+                                    اتخاذ إجراء
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <div class="flex items-start space-x-3 space-x-reverse">
+                                <div class="flex items-center justify-center w-10 h-10 bg-yellow-100 rounded-lg flex-shrink-0">
+                                    <i data-lucide="clock" class="w-5 h-5 text-yellow-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">انتهاء عقد قريب</p>
+                                    <p class="text-sm text-gray-600">العقد #C-2024-9876</p>
+                                    <p class="text-xs text-gray-500 mt-1">ينتهي خلال 3 أيام</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 whitespace-nowrap">
+                                    تجديد
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <div class="flex items-start space-x-3 space-x-reverse">
+                                <div class="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-lg flex-shrink-0">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">تأخير في السداد</p>
+                                    <p class="text-sm text-gray-600">العقد #C-2025-5432</p>
+                                    <p class="text-xs text-gray-500 mt-1">3,200 ر.س متأخر</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 whitespace-nowrap">
+                                    إرسال تذكير
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <div class="flex items-start space-x-3 space-x-reverse">
+                                <div class="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg flex-shrink-0">
+                                    <i data-lucide="info" class="w-5 h-5 text-blue-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">مركبة جديدة جاهزة</p>
+                                    <p class="text-sm text-gray-600">تويوتا RAV4 2025</p>
+                                    <p class="text-xs text-gray-500 mt-1">جاهزة للتأجير</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap">
+                                    إضافة للأسطول
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Active Contracts Table -->
+        <section class="mb-8">
+            <div class="bg-white rounded-lg border border-gray-200 animate-fade-in-up" style="animation-delay: 900ms;">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">العقود النشطة</h3>
+                            <p class="text-sm text-gray-500">أحدث 10 عقود</p>
+                        </div>
+                        <button class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all flex items-center space-x-2 space-x-reverse">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>تصدير Excel</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <div class="flex-1">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                <input type="text" placeholder="بحث..." class="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>الكل</option>
+                            <option>نشط</option>
+                            <option>قريب الانتهاء</option>
+                            <option>متأخر</option>
+                        </select>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>الأحدث</option>
+                            <option>الأقدم</option>
+                            <option>الأعلى قيمة</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العقد</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المركبة</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المدة المتبقية</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr class="table-row hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">#C-1234</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">أحمد محمد</div>
+                                    <div class="text-sm text-gray-500">0501234567</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">تويوتا كامري 2024</div>
+                                    <div class="text-sm text-gray-500">(#V-01)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">25 يوم</div>
+                                    <div class="text-sm text-gray-500">من 30 يوم</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">4,500 ر.س</div>
+                                    <div class="text-sm text-gray-500">شهرياً</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">نشط</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button class="text-blue-600 hover:text-blue-900">تفاصيل</button>
+                                </td>
+                            </tr>
+                            
+                            <tr class="table-row hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">#C-5678</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">فاطمة علي</div>
+                                    <div class="text-sm text-gray-500">0559876543</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">هونداي توسان 2023</div>
+                                    <div class="text-sm text-gray-500">(#V-15)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">3 أيام</div>
+                                    <div class="text-sm text-gray-500">من 15 يوم</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">6,200 ر.س</div>
+                                    <div class="text-sm text-gray-500">شهرياً</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">تنبيه متأخر</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button class="text-blue-600 hover:text-blue-900">تفاصيل</button>
+                                </td>
+                            </tr>
+                            
+                            <tr class="table-row hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">#C-9012</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">محمد حسن</div>
+                                    <div class="text-sm text-gray-500">0505555555</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">BMW X5 2024</div>
+                                    <div class="text-sm text-gray-500">(#V-42)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">45 يوم</div>
+                                    <div class="text-sm text-gray-500">من 60 يوم</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">12,000 ر.س</div>
+                                    <div class="text-sm text-gray-500">شهرياً</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">نشط</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button class="text-blue-600 hover:text-blue-900">تفاصيل</button>
+                                </td>
+                            </tr>
+                            
+                            <tr class="table-row hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">#C-3456</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">سارة أحمد</div>
+                                    <div class="text-sm text-gray-500">0551112222</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">مرسيدس C200 2025</div>
+                                    <div class="text-sm text-gray-500">(#V-28)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">3 أيام</div>
+                                    <div class="text-sm text-gray-500">من 7 أيام</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">8,500 ر.س</div>
+                                    <div class="text-sm text-gray-500">شهرياً</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">قريب انتهاء</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button class="text-blue-600 hover:text-blue-900">تجديد</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="p-6 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <button class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+                            السابق
+                        </button>
+                        <span class="text-sm text-gray-600">صفحة 1 من 24</span>
+                        <button class="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all">
+                            التالي
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Links -->
+        <section class="mb-8">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 1000ms;">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">روابط سريعة</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="file-plus" class="w-4 h-4"></i>
+                        <span class="text-sm">عقد جديد</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="car" class="w-4 h-4"></i>
+                        <span class="text-sm">إضافة مركبة</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                        <span class="text-sm">تسجيل دفعة</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="bar-chart" class="w-4 h-4"></i>
+                        <span class="text-sm">تقرير شامل</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                        <span class="text-sm">جدولة صيانة</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span class="text-sm">إدارة العملاء</span>
+                    </button>
+                    <button class="flex items-center justify-center space-x-2 space-x-reverse px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        <span class="text-sm">تحليلات متقدمة</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        
+        // Counter Animation
+        function animateCounter(element) {
+            const target = parseInt(element.textContent.replace(/,/g, ''));
+            const duration = 800;
+            const steps = 60;
+            const increment = target / steps;
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target.toLocaleString('ar-SA');
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString('ar-SA');
+                }
+            }, duration / steps);
+        }
+        
+        // Animate all counters on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.querySelectorAll('.counter').forEach(counter => {
+                    if (!counter.textContent.includes('/')) {
+                        animateCounter(counter);
+                    }
+                });
+            }, 500);
+        });
+        
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                datasets: [{
+                    label: 'الإيرادات (ألف ريال)',
+                    data: [65, 78, 90, 105, 118, 125],
+                    borderColor: 'rgb(37, 99, 235)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgb(37, 99, 235)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            family: 'Inter'
+                        },
+                        bodyFont: {
+                            size: 13,
+                            family: 'JetBrains Mono'
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' ألف ريال';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                family: 'JetBrains Mono',
+                                size: 11
+                            },
+                            callback: function(value) {
+                                return value + 'K';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Inter',
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Weekly Occupancy Chart
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        const weeklyChart = new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+                datasets: [{
+                    label: 'معدل الإشغال %',
+                    data: [58, 65, 72, 68, 75, 82, 78],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(168, 85, 247, 0.8)',
+                        'rgba(192, 132, 252, 0.8)',
+                        'rgba(217, 70, 239, 0.8)',
+                        'rgba(232, 121, 249, 0.8)'
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            family: 'Inter'
+                        },
+                        bodyFont: {
+                            size: 13,
+                            family: 'JetBrains Mono'
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                family: 'JetBrains Mono',
+                                size: 11
+                            },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Inter',
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -168,7 +168,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // CRITICAL FIX: Use cache but allow fresh data on page navigation
-      refetchOnMount: true,         // Refetch on mount to ensure fresh data
+      refetchOnMount: false,         // Refetch on mount to ensure fresh data
       refetchOnWindowFocus: false,  // Don't refetch when switching browser tabs
       refetchOnReconnect: true,     // Only refetch when internet reconnects
       
