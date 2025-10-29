@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل المركبة - FleetifyApp</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="vehicle_details_theme.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        .card-hover {
+            transition: all 0.22s ease-out;
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -3px rgba(0,0,0,0.12);
+        }
+        
+        .btn-hover {
+            transition: all 0.18s ease-out;
+        }
+        .btn-hover:hover {
+            transform: scale(1.04);
+        }
+        
+        .tab-btn {
+            transition: all 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-4">
+                    <button class="btn-hover p-2 rounded-lg hover:bg-gray-100">
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-semibold text-gray-900">تفاصيل المركبة</h1>
+                        <p class="text-xs text-gray-500">إدارة ومتابعة بيانات المركبة</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button class="btn-hover px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2 hover:bg-red-700">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        تعديل
+                    </button>
+                    <button class="btn-hover px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                        صيانة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <!-- Vehicle Header Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- صورة المركبة -->
+                <div class="lg:w-1/3">
+                    <div class="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        <img src="https://placehold.co/600x400/e5e7eb/64748b?text=Toyota+Camry+2024" 
+                             alt="صورة المركبة" 
+                             class="w-full h-full object-cover">
+                    </div>
+                </div>
+                
+                <!-- معلومات المركبة -->
+                <div class="flex-1">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">تويوتا كامري 2024</h2>
+                            <p class="text-lg text-gray-600">رقم اللوحة: <span class="font-mono font-semibold">أ ب ج 1234</span></p>
+                        </div>
+                        <span class="status-available px-4 py-2 rounded-full text-sm font-medium">متاحة</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">رقم الهيكل:</span>
+                            <p class="font-mono font-semibold">VIN123456789</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">اللون:</span>
+                            <p class="font-semibold">أبيض لؤلؤي</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">ناقل الحركة:</span>
+                            <p class="font-semibold">أوتوماتيك</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">نوع الوقود:</span>
+                            <p class="font-semibold">بنزين</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- الحالة -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-500">الحالة</span>
+                </div>
+                <div class="text-2xl font-bold text-green-600 mb-1">متاحة</div>
+                <div class="text-sm text-gray-600">للإيجار الفوري</div>
+            </div>
+            
+            <!-- العقود -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-500">العقود</span>
+                </div>
+                <div class="text-2xl font-bold text-red-600 mb-1">2</div>
+                <div class="text-sm text-gray-600">عقد نشط</div>
+            </div>
+            
+            <!-- الإيرادات -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-orange-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-500">الإيرادات</span>
+                </div>
+                <div class="text-2xl font-bold text-orange-600 mb-1">120,000 ر.س</div>
+                <div class="text-sm text-gray-600">سنوياً</div>
+            </div>
+            
+            <!-- العداد -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <i data-lucide="gauge" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <span class="text-xs text-gray-500">العداد</span>
+                </div>
+                <div class="text-2xl font-bold text-blue-600 mb-1">45,000</div>
+                <div class="text-sm text-gray-600">كم</div>
+            </div>
+        </div>
+
+        <!-- Tabs Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <!-- Tabs Navigation -->
+            <div class="border-b border-gray-200 overflow-x-auto">
+                <div class="flex p-2 gap-1">
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-red-600 bg-red-50 border-b-2 border-red-600 rounded-t-lg whitespace-nowrap" data-tab="overview">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-2"></i>
+                        نظرة عامة
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="technical">
+                        <i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>
+                        تقنية
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="financial">
+                        <i data-lucide="dollar-sign" class="w-4 h-4 inline mr-2"></i>
+                        مالية
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="pricing">
+                        <i data-lucide="tag" class="w-4 h-4 inline mr-2"></i>
+                        التسعير
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="contracts">
+                        <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>
+                        العقود
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="maintenance">
+                        <i data-lucide="wrench" class="w-4 h-4 inline mr-2"></i>
+                        الصيانة
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="violations">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 inline mr-2"></i>
+                        المخالفات
+                    </button>
+                    <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg whitespace-nowrap" data-tab="documents">
+                        <i data-lucide="folder" class="w-4 h-4 inline mr-2"></i>
+                        الوثائق
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabs Content -->
+            <div class="p-6">
+                <!-- نظرة عامة Tab -->
+                <div id="overview-tab" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- المعلومات الأساسية -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="car" class="w-5 h-5 text-red-600"></i>
+                                المعلومات الأساسية
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">الشركة المصنعة</span>
+                                    <span class="font-semibold">تويوتا</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">الطراز</span>
+                                    <span class="font-semibold">كامري</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">السنة</span>
+                                    <span class="font-semibold">2024</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">اللون</span>
+                                    <span class="font-semibold">أبيض لؤلؤي</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">عدد المقاعد</span>
+                                    <span class="font-semibold">5 مقاعد</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- المواصفات التقنية -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="settings" class="w-5 h-5 text-blue-600"></i>
+                                المواصفات التقنية
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">رقم الهيكل</span>
+                                    <span class="font-semibold font-mono text-sm">VIN123456789</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">رقم المحرك</span>
+                                    <span class="font-semibold font-mono text-sm">ENG987654</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">ناقل الحركة</span>
+                                    <span class="font-semibold">أوتوماتيك</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">نوع الوقود</span>
+                                    <span class="font-semibold">بنزين</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">المسافة المقطوعة</span>
+                                    <span class="font-semibold">45,000 كم</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- التسعير -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="tag" class="w-5 h-5 text-orange-600"></i>
+                                التسعير
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">يومي</span>
+                                    <span class="font-semibold">200 ر.س</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">أسبوعي</span>
+                                    <span class="font-semibold">1,200 ر.س</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">شهري</span>
+                                    <span class="font-semibold">4,500 ر.س</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تقنية Tab -->
+                <div id="technical-tab" class="tab-content hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- المواصفات التقنية -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">المواصفات التقنية التفصيلية</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">سعة الخزان</span>
+                                    <span class="font-semibold">60 لتر</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">نوع الدفع</span>
+                                    <span class="font-semibold">دفع أمامي</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">حالة المركبة</span>
+                                    <span class="font-semibold">ممتازة</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- التواريخ المهمة -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">التواريخ المهمة</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">تاريخ التسجيل</span>
+                                    <span class="font-semibold">2024-01-15</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">انتهاء التسجيل</span>
+                                    <span class="font-semibold">2025-01-15</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">الصيانة القادمة</span>
+                                    <span class="font-semibold text-orange-600">2024-12-01</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">الموقع الحالي</span>
+                                    <span class="font-semibold">الفرع الرئيسي</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- مالية Tab -->
+                <div id="financial-tab" class="tab-content hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- معلومات الشراء -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات الشراء</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">تاريخ الشراء</span>
+                                    <span class="font-semibold">2023-12-01</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">تكلفة الشراء</span>
+                                    <span class="font-semibold">95,000 ر.س</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">القيمة الحالية</span>
+                                    <span class="font-semibold">85,000 ر.س</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">الإهلاك</span>
+                                    <span class="font-semibold text-red-600">10,000 ر.س</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات التأمين -->
+                        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات التأمين</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">شركة التأمين</span>
+                                    <span class="font-semibold">شركة التأمين الوطنية</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">رقم البوليصة</span>
+                                    <span class="font-semibold font-mono">POL123456</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">تاريخ الانتهاء</span>
+                                    <span class="font-semibold">2025-06-30</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">قيمة التأمين</span>
+                                    <span class="font-semibold">5,000 ر.س</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- التسعير Tab -->
+                <div id="pricing-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">إدارة التسعير</h3>
+                    <p class="text-gray-600 mb-4">يمكنك إدارة أسعار الإيجار المختلفة للمركبة</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="border-2 border-gray-200 rounded-lg p-6 hover:border-red-300 transition-colors">
+                            <div class="text-sm text-gray-600 mb-2">الإيجار اليومي</div>
+                            <div class="text-3xl font-bold text-red-600 mb-2">200 ر.س</div>
+                            <button class="text-sm text-red-600 hover:text-red-700 font-medium">تعديل السعر</button>
+                        </div>
+                        <div class="border-2 border-gray-200 rounded-lg p-6 hover:border-red-300 transition-colors">
+                            <div class="text-sm text-gray-600 mb-2">الإيجار الأسبوعي</div>
+                            <div class="text-3xl font-bold text-red-600 mb-2">1,200 ر.س</div>
+                            <button class="text-sm text-red-600 hover:text-red-700 font-medium">تعديل السعر</button>
+                        </div>
+                        <div class="border-2 border-gray-200 rounded-lg p-6 hover:border-red-300 transition-colors">
+                            <div class="text-sm text-gray-600 mb-2">الإيجار الشهري</div>
+                            <div class="text-3xl font-bold text-red-600 mb-2">4,500 ر.س</div>
+                            <button class="text-sm text-red-600 hover:text-red-700 font-medium">تعديل السعر</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- العقود Tab -->
+                <div id="contracts-tab" class="tab-content hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">العقود المرتبطة بالمركبة</h3>
+                        <button class="btn-hover px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            عقد جديد
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- عقد 1 -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:border-red-300 hover:shadow-md transition-all">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-1">عقد #CNT-001</h4>
+                                    <p class="text-sm text-gray-600">العميل: أحمد محمد السعيد</p>
+                                </div>
+                                <span class="status-available px-3 py-1 rounded-full text-xs font-medium">نشط</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <div class="text-gray-500">البداية</div>
+                                    <div class="font-semibold">2024-01-01</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">النهاية</div>
+                                    <div class="font-semibold">2024-12-31</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">الإيجار الشهري</div>
+                                    <div class="font-semibold">5,000 ر.س</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">المتبقي</div>
+                                    <div class="font-semibold text-orange-600">30 يوم</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الصيانة Tab -->
+                <div id="maintenance-tab" class="tab-content hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">سجل الصيانة والإصلاحات</h3>
+                        <button class="btn-hover px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            تسجيل صيانة
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- سجل صيانة 1 -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">صيانة دورية - تغيير زيت</h4>
+                                    <p class="text-sm text-gray-600 mb-2">تاريخ: 2024-10-15 • الورشة: ورشة الخليج</p>
+                                    <p class="text-sm text-gray-600 mb-2">التكلفة: 350 ر.س • المسافة: 43,000 كم</p>
+                                    <p class="text-sm text-gray-500">تغيير الزيت والفلتر • فحص الفرامل • فحص عام</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المخالفات Tab -->
+                <div id="violations-tab" class="tab-content hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">المخالفات المرورية</h3>
+                        <button class="btn-hover px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            تسجيل مخالفة
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- مخالفة 1 -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-1">تجاوز السرعة</h4>
+                                    <p class="text-sm text-gray-600">رقم المخالفة: #VIO-2024-123</p>
+                                </div>
+                                <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">معلقة</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <div class="text-gray-500">التاريخ</div>
+                                    <div class="font-semibold">2024-09-20</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">المبلغ</div>
+                                    <div class="font-semibold text-red-600">500 ر.س</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">الحالة</div>
+                                    <div class="font-semibold">غير مدفوعة</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">المسؤول</div>
+                                    <div class="font-semibold">العميل</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الوثائق Tab -->
+                <div id="documents-tab" class="tab-content hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">وثائق وصور المركبة</h3>
+                        <button class="btn-hover px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            رفع ملف
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-red-300 hover:shadow-md transition-all cursor-pointer">
+                            <div class="aspect-square bg-red-50 rounded-lg flex items-center justify-center mb-3">
+                                <i data-lucide="file-text" class="w-12 h-12 text-red-600"></i>
+                            </div>
+                            <h4 class="font-semibold text-sm mb-1">رخصة السير</h4>
+                            <p class="text-xs text-gray-500 mb-3">PDF • 1.2 MB</p>
+                            <div class="flex gap-2">
+                                <button class="flex-1 text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100">معاينة</button>
+                                <button class="flex-1 text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">تحميل</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+                
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('text-red-600', 'bg-red-50', 'border-red-600');
+                    btn.classList.add('text-gray-600');
+                });
+                button.classList.remove('text-gray-600');
+                button.classList.add('text-red-600', 'bg-red-50', 'border-red-600');
+                
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(targetTab + '-tab').classList.remove('hidden');
+                
+                lucide.createIcons();
+            });
+        });
+    </script>
+</body>
+</html>
+

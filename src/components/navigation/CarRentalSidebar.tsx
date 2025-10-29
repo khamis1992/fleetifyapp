@@ -302,7 +302,7 @@ export function CarRentalSidebar() {
                       {/* Booking System */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton asChild>
-                          <NavLink to="/bookings" className={getNavClassName}>
+                          <NavLink to="/fleet/reservation-system" className={getNavClassName}>
                             <Calendar className="h-4 w-4" />
                             {(!collapsed || isMobile) && <span>نظام الحجوزات</span>}
                           </NavLink>

@@ -44,7 +44,7 @@ import {
   CalendarCheck,
   CalendarX,
   Check,
-  FileInvoice,
+  FileText,
   FilePlus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -626,7 +626,7 @@ const ContractDetailsPage = () => {
                   value="invoices"
                   className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
                 >
-                  <FileInvoice className="w-4 h-4" />
+                  <FileText className="w-4 h-4" />
                   الفواتير
                 </TabsTrigger>
                 <TabsTrigger

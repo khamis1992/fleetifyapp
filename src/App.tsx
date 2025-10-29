@@ -50,6 +50,7 @@ const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDe
 const Contracts = lazy(() => import("./pages/Contracts"));
 const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage").then(module => ({ default: module.default })));
 const Fleet = lazy(() => import("./pages/Fleet"));
+const VehicleDetailsPage = lazy(() => import("./components/fleet/VehicleDetailsPage").then(module => ({ default: module.default })));
 const Reports = lazy(() => import("./pages/Reports"));
 const ReportsHub = lazy(() => import("./pages/reports/ReportsHub"));
 const ReportView = lazy(() => import("./pages/ReportView"));
@@ -417,6 +418,15 @@ const AppRoutes = () => {
             <Suspense fallback={<PageSkeletonFallback />}>
               <Fleet />
             </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="fleet/vehicles/:vehicleId" element={
+          <AdminRoute>
+            <RouteWrapper routeName="Vehicle Details" fallbackPath="/fleet">
+              <Suspense fallback={<PageSkeletonFallback />}>
+                <VehicleDetailsPage />
+              </Suspense>
+            </RouteWrapper>
           </AdminRoute>
         } />
         <Route path="fleet/dispatch-permits" element={

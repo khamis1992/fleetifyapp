@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تبويبة القيود المحاسبية - FleetifyApp</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
+  <!-- Custom Theme -->
+  <link rel="stylesheet" href="journal_entries_theme.css">
+  
+  <style>
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+    
+    body {
+      background: oklch(0.99 0 0);
+      color: oklch(0.15 0 0);
+    }
+    
+    /* تخصيص Tailwind */
+    .card {
+      background: white;
+      border: 1px solid oklch(0.90 0.01 60);
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 4px 6px 0px hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.08);
+    }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      border: 1px solid;
+    }
+    
+    .badge-posted {
+      background: oklch(0.95 0.08 142);
+      color: oklch(0.40 0.18 142);
+      border-color: oklch(0.75 0.12 142);
+    }
+    
+    .badge-draft {
+      background: oklch(0.95 0.08 85);
+      color: oklch(0.45 0.15 85);
+      border-color: oklch(0.75 0.12 85);
+    }
+    
+    .badge-cancelled {
+      background: oklch(0.95 0.08 25);
+      color: oklch(0.50 0.18 25);
+      border-color: oklch(0.75 0.12 25);
+    }
+    
+    .badge-unbalanced {
+      background: oklch(0.95 0.08 25);
+      color: oklch(0.50 0.18 25);
+      border-color: oklch(0.75 0.12 25);
+    }
+    
+    .text-debit {
+      color: oklch(0.55 0.18 142) !important;
+    }
+    
+    .text-credit {
+      color: oklch(0.58 0.20 25) !important;
+    }
+    
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .btn-primary {
+      background: oklch(0.35 0.02 60);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: oklch(0.30 0.02 60);
+      transform: translateY(-1px);
+    }
+    
+    .btn-outline {
+      border: 1px solid oklch(0.90 0.01 60);
+      background: white;
+    }
+    
+    .btn-outline:hover {
+      background: oklch(0.96 0.01 60);
+    }
+    
+    .input {
+      width: 100%;
+      padding: 0.5rem 0.875rem;
+      border: 1px solid oklch(0.90 0.01 60);
+      border-radius: 0.5rem;
+      transition: all 0.15s ease;
+    }
+    
+    .input:focus {
+      outline: none;
+      border-color: oklch(0.35 0.02 60);
+      box-shadow: 0 0 0 3px oklch(0.35 0.02 60 / 0.1);
+    }
+    
+    /* الحركات */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fadeInUp {
+      animation: fadeInUp 0.3s ease-out;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .details-table th {
+      background: oklch(0.96 0.01 60);
+      padding: 0.75rem 1rem;
+      text-align: right;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: oklch(0.50 0 0);
+    }
+    
+    .details-table td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid oklch(0.90 0.01 60);
+    }
+    
+    .details-table tr:hover {
+      background: oklch(0.98 0.01 60);
+    }
+    
+    .stat-card {
+      background: white;
+      border: 1px solid oklch(0.90 0.01 60);
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .stat-card:hover {
+      box-shadow: 0 4px 6px 0px hsl(0 0% 0% / 0.08);
+      transform: translateY(-2px);
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- العنوان الرئيسي -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">تبويبة القيود المحاسبية</h1>
+      <p class="text-gray-600">تصميم محسّن بنفس نمط FleetifyApp</p>
+    </div>
+    
+    <!-- بطاقات الإحصائيات -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fadeInUp">
+      <!-- إجمالي القيود -->
+      <div class="stat-card">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-gray-600">إجمالي القيود</span>
+          <i data-lucide="calculator" class="w-4 h-4 text-gray-400"></i>
+        </div>
+        <div class="text-2xl font-bold">245</div>
+      </div>
+      
+      <!-- مرحلة -->
+      <div class="stat-card">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-gray-600">مرحلة</span>
+          <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+        </div>
+        <div class="text-2xl font-bold text-green-600">198</div>
+      </div>
+      
+      <!-- مسودات -->
+      <div class="stat-card">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-gray-600">مسودات</span>
+          <i data-lucide="file-text" class="w-4 h-4 text-yellow-600"></i>
+        </div>
+        <div class="text-2xl font-bold text-yellow-600">32</div>
+      </div>
+      
+      <!-- ملغية -->
+      <div class="stat-card">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-gray-600">ملغية</span>
+          <i data-lucide="x-circle" class="w-4 h-4 text-red-600"></i>
+        </div>
+        <div class="text-2xl font-bold text-red-600">15</div>
+      </div>
+    </div>
+    
+    <!-- لوحة البحث والفلتر -->
+    <div class="card p-6 animate-fadeInUp" style="animation-delay: 0.1s;">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="filter" class="w-5 h-5"></i>
+        <h2 class="text-lg font-semibold">البحث والفلتر</h2>
+      </div>
+      
+      <!-- الفلاتر الأساسية -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <!-- البحث -->
+        <div class="md:col-span-2 relative">
+          <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" style="right: auto; left: 0.75rem;"></i>
+          <input type="text" class="input pr-10" placeholder="البحث في القيود..." style="padding-right: 2.5rem;">
+        </div>
+        
+        <!-- من تاريخ -->
+        <input type="date" class="input" placeholder="من تاريخ">
+        
+        <!-- إلى تاريخ -->
+        <input type="date" class="input" placeholder="إلى تاريخ">
+      </div>
+      
+      <!-- أزرار الإجراءات -->
+      <div class="flex items-center justify-between">
+        <button class="btn btn-outline flex items-center gap-2 text-sm" onclick="toggleAdvancedFilters()">
+          <i data-lucide="filter" class="w-4 h-4"></i>
+          فلتر متقدم
+          <i data-lucide="chevron-down" class="w-4 h-4" id="advancedFilterIcon"></i>
+        </button>
+        
+        <button class="btn btn-outline flex items-center gap-2 text-sm">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          تصدير
+        </button>
+      </div>
+      
+      <!-- الفلاتر المتقدمة -->
+      <div id="advancedFilters" class="hidden mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+        <select class="input">
+          <option>جميع الحالات</option>
+          <option>مرحل</option>
+          <option>مسودة</option>
+          <option>معكوس</option>
+          <option>ملغي</option>
+        </select>
+        
+        <select class="input">
+          <option>جميع الأنواع</option>
+          <option>فاتورة</option>
+          <option>دفعة</option>
+          <option>عقد</option>
+          <option>يدوي</option>
+        </select>
+        
+        <select class="input">
+          <option>جميع الحسابات</option>
+        </select>
+      </div>
+      
+      <!-- تحذير القيود غير المتوازنة -->
+      <div class="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg mt-4">
+        <i data-lucide="alert-circle" class="w-5 h-5 text-orange-600"></i>
+        <span class="text-sm text-orange-800 font-medium">
+          يوجد 2 قيد غير متوازن. يرجى مراجعتها وتصحيحها.
+        </span>
+      </div>
+    </div>
+    
+    <!-- قائمة القيود -->
+    <div class="space-y-4">
+      
+      <!-- بطاقة قيد مرحل -->
+      <div class="card animate-fadeInUp" style="animation-delay: 0.2s;">
+        <!-- رأس البطاقة -->
+        <div class="p-5 border-b">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-3 flex-1">
+              <i data-lucide="file-text" class="w-5 h-5 text-gray-400 mt-1"></i>
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-lg font-semibold">قيد رقم JE-2025-001</h3>
+                  <span class="badge badge-posted flex items-center gap-1">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>
+                    مرحل
+                  </span>
+                </div>
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <div class="flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    15 يناير 2025
+                  </div>
+                  <span class="text-xs bg-gray-100 px-2 py-0.5 rounded">فاتورة</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-outline p-2">
+              <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- محتوى البطاقة -->
+        <div class="p-5 space-y-3">
+          <!-- البيان -->
+          <div class="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+            إيداع نقدية في البنك من الصندوق
+          </div>
+          
+          <!-- المجاميع -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي المدين</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i>
+                <span class="text-lg font-semibold text-debit font-mono">5,000.000 KWD</span>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي الدائن</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-down" class="w-4 h-4 text-red-600"></i>
+                <span class="text-lg font-semibold text-credit font-mono">5,000.000 KWD</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- زر التوسيع -->
+          <button class="btn btn-outline w-full flex items-center justify-center gap-2" onclick="toggleDetails('entry1')">
+            <span class="text-sm">عرض التفاصيل</span>
+            <i data-lucide="chevron-down" class="w-4 h-4" id="entry1Icon"></i>
+          </button>
+          
+          <!-- جدول التفاصيل -->
+          <div id="entry1Details" class="hidden mt-4 border rounded-lg overflow-hidden">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>رمز الحساب</th>
+                  <th>اسم الحساب</th>
+                  <th>البيان</th>
+                  <th>مدين</th>
+                  <th>دائن</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-mono text-sm">1102</td>
+                  <td>
+                    <div class="font-medium">البنك</div>
+                    <div class="text-xs text-gray-500">Bank Account</div>
+                  </td>
+                  <td class="text-sm text-gray-600">إيداع نقدية</td>
+                  <td class="font-mono font-semibold text-debit">5,000.000 KWD</td>
+                  <td class="font-mono">-</td>
+                </tr>
+                <tr>
+                  <td class="font-mono text-sm">1101</td>
+                  <td>
+                    <div class="font-medium">الصندوق</div>
+                    <div class="text-xs text-gray-500">Cash Box</div>
+                  </td>
+                  <td class="text-sm text-gray-600">سحب نقدية</td>
+                  <td class="font-mono">-</td>
+                  <td class="font-mono font-semibold text-credit">5,000.000 KWD</td>
+                </tr>
+                <tr class="bg-gray-50 font-semibold">
+                  <td colspan="3" class="text-right">المجموع</td>
+                  <td class="font-mono text-debit">5,000.000 KWD</td>
+                  <td class="font-mono text-credit">5,000.000 KWD</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- بطاقة قيد مسودة -->
+      <div class="card animate-fadeInUp" style="animation-delay: 0.3s;">
+        <div class="p-5 border-b">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-3 flex-1">
+              <i data-lucide="file-text" class="w-5 h-5 text-gray-400 mt-1"></i>
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-lg font-semibold">قيد رقم JE-2025-002</h3>
+                  <span class="badge badge-draft flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3 h-3"></i>
+                    مسودة
+                  </span>
+                </div>
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <div class="flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    16 يناير 2025
+                  </div>
+                  <span class="text-xs bg-gray-100 px-2 py-0.5 rounded">يدوي</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-outline p-2">
+              <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-5 space-y-3">
+          <div class="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+            مصروف كهرباء شهر ديسمبر 2024
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي المدين</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i>
+                <span class="text-lg font-semibold text-debit font-mono">2,500.000 KWD</span>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي الدائن</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-down" class="w-4 h-4 text-red-600"></i>
+                <span class="text-lg font-semibold text-credit font-mono">2,500.000 KWD</span>
+              </div>
+            </div>
+          </div>
+          
+          <button class="btn btn-outline w-full flex items-center justify-center gap-2">
+            <span class="text-sm">عرض التفاصيل</span>
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- بطاقة قيد غير متوازن -->
+      <div class="card animate-fadeInUp" style="animation-delay: 0.4s;">
+        <div class="p-5 border-b">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-3 flex-1">
+              <i data-lucide="file-text" class="w-5 h-5 text-gray-400 mt-1"></i>
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-lg font-semibold">قيد رقم JE-2025-003</h3>
+                  <span class="badge badge-draft flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3 h-3"></i>
+                    مسودة
+                  </span>
+                  <span class="badge badge-unbalanced flex items-center gap-1">
+                    <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                    غير متوازن
+                  </span>
+                </div>
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <div class="flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    17 يناير 2025
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-outline p-2">
+              <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-5 space-y-3">
+          <div class="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+            رواتب الموظفين
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي المدين</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i>
+                <span class="text-lg font-semibold text-debit font-mono">10,000.000 KWD</span>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-xs text-gray-500">إجمالي الدائن</div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-down" class="w-4 h-4 text-red-600"></i>
+                <span class="text-lg font-semibold text-credit font-mono">9,500.000 KWD</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- تحذير عدم التوازن -->
+          <div class="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-red-600"></i>
+            <span class="text-sm text-red-800">
+              القيد غير متوازن. الفرق: <span class="font-mono font-semibold">500.000 KWD</span>
+            </span>
+          </div>
+          
+          <button class="btn btn-outline w-full flex items-center justify-center gap-2">
+            <span class="text-sm">عرض التفاصيل</span>
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <script>
+    // تهيئة الأيقونات
+    lucide.createIcons();
+    
+    // وظائف التفاعل
+    function toggleDetails(entryId) {
+      const details = document.getElementById(entryId + 'Details');
+      const icon = document.getElementById(entryId + 'Icon');
+      
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        details.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+    
+    function toggleAdvancedFilters() {
+      const filters = document.getElementById('advancedFilters');
+      const icon = document.getElementById('advancedFilterIcon');
+      
+      if (filters.classList.contains('hidden')) {
+        filters.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        filters.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+  </script>
+</body>
+</html>
+

@@ -2,15 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountMovementsDialog } from "@/components/finance/AccountMovementsDialog";
-import { DetailedJournalEntryView } from "@/components/finance/DetailedJournalEntryView";
-import { RedesignedJournalEntryCard } from "@/components/finance/RedesignedJournalEntryCard";
-import { BookOpen, Search, Filter, Download, Eye, FileText, TrendingUp, TrendingDown, Plus, Calculator, BarChart3, Target, Users, Calendar, AlertCircle } from "lucide-react";
+import { EnhancedJournalEntriesTab } from "@/components/finance/EnhancedJournalEntriesTab";
+import { TrendingUp, TrendingDown, Plus, Calculator, AlertCircle } from "lucide-react";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { 
@@ -29,14 +26,9 @@ import { useChartOfAccounts } from "@/hooks/useFinance";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { JournalEntryForm } from "@/components/finance/JournalEntryForm";
-import { JournalVoucherDisplay } from "@/components/finance/JournalVoucherDisplay";
-import { ChartOfAccountsErrorBoundary } from "@/components/finance/ChartOfAccountsErrorBoundary";
 import { AuthChecker } from "@/components/auth/AuthChecker";
 import { SessionValidator } from "@/components/auth/SessionValidator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { HelpIcon } from "@/components/help/HelpIcon";
-import { financialHelpContent } from "@/data/helpContent";
 
 export default function Ledger() {
   const { isMobile } = useSimpleBreakpoint();
@@ -48,7 +40,6 @@ export default function Ledger() {
   const [filters, setFilters] = useState<LedgerFilters>({
     status: 'all'
   });
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("entries");
   const [selectedAccount, setSelectedAccount] = useState<{
@@ -76,24 +67,6 @@ export default function Ledger() {
 
   const updateFilters = (newFilters: Partial<LedgerFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  const getStatusColor = (status: string): "default" | "destructive" | "outline" | "secondary" => {
-    switch (status) {
-      case 'posted': return 'default';
-      case 'draft': return 'secondary';
-      case 'reversed': return 'destructive';
-      default: return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'posted': return 'مرحل';
-      case 'draft': return 'مسودة';
-      case 'reversed': return 'ملغي';
-      default: return status;
-    }
   };
 
   const handlePostEntry = async (entryId: string) => {
@@ -253,65 +226,16 @@ export default function Ledger() {
 
         {/* Journal Entries Tab */}
         <TabsContent value="entries">
-          {/* Control Panel - Search and Filter */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-right">
-                <Filter className="h-5 w-5" />
-                البحث والفلتر
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative md:col-span-2">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="البحث في القيود..."
-                    value={filters.searchTerm || ''}
-                    onChange={(e) => updateFilters({ searchTerm: e.target.value })}
-                    className="pr-10 text-right"
-                  />
-                </div>
-                
-                <Input
-                  type="date"
-                  placeholder="من تاريخ"
-                  value={filters.dateFrom || ''}
-                  onChange={(e) => updateFilters({ dateFrom: e.target.value })}
-                  className="text-right"
-                />
-                
-                <Input
-                  type="date"
-                  placeholder="إلى تاريخ"
-                  value={filters.dateTo || ''}
-                  onChange={(e) => updateFilters({ dateTo: e.target.value })}
-                  className="text-right"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Journal Entries List */}
-          <Card className="mt-6">
-            <CardContent>
-              <ChartOfAccountsErrorBoundary
-                error={entriesError}
-                isLoading={entriesLoading}
-                onRetry={() => refetchEntries()}
-              >
-                {entriesLoading ? (
-                  <LoadingSpinner />
-                ) : (
-                <div className="space-y-4">
-                  {journalEntries?.map((entry) => (
-                    <RedesignedJournalEntryCard key={entry.id} entry={entry as any} />
-                  ))}
-                </div>
-                )}
-              </ChartOfAccountsErrorBoundary>
-            </CardContent>
-          </Card>
+          <EnhancedJournalEntriesTab
+            entries={journalEntries || []}
+            filters={filters}
+            isLoading={entriesLoading}
+            onFiltersChange={updateFilters}
+            onPostEntry={handlePostEntry}
+            onReverseEntry={handleReverseEntry}
+            onDeleteEntry={handleDeleteEntry}
+            onExport={(format) => handleExport(format)}
+          />
         </TabsContent>
 
         {/* Account Balances Tab */}
@@ -560,35 +484,6 @@ export default function Ledger() {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Entry Details Dialog */}
-      {selectedEntryId && (
-        <Dialog open={!!selectedEntryId} onOpenChange={() => setSelectedEntryId(null)}>
-          <DialogContent className="max-w-6xl">
-            <DialogHeader>
-              <DialogTitle>تفاصيل القيد المحاسبي</DialogTitle>
-              <DialogDescription>
-                عرض تفاصيل بنود القيد المحاسبي المحدد بالتفصيل
-              </DialogDescription>
-            </DialogHeader>
-            {journalEntries?.find(e => e.id === selectedEntryId) && (
-              <DetailedJournalEntryView 
-                entry={{
-                  id: journalEntries.find(e => e.id === selectedEntryId)!.id,
-                  entry_number: journalEntries.find(e => e.id === selectedEntryId)!.entry_number,
-                  entry_date: journalEntries.find(e => e.id === selectedEntryId)!.entry_date,
-                  description: journalEntries.find(e => e.id === selectedEntryId)!.description,
-                  status: journalEntries.find(e => e.id === selectedEntryId)!.status,
-                  reference_type: journalEntries.find(e => e.id === selectedEntryId)!.reference_type || undefined,
-                  total_debit: journalEntries.find(e => e.id === selectedEntryId)!.total_debit,
-                  total_credit: journalEntries.find(e => e.id === selectedEntryId)!.total_credit,
-                }}
-                showAsCard={false}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Journal Entry Form with built-in dialog */}
       <JournalEntryForm 
