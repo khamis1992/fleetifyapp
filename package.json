@@ -14,6 +14,8 @@
     "sync:agreements": "tsx src/scripts/sync-agreement-numbers.ts",
     "import:violations": "tsx src/scripts/import-traffic-violations.ts",
     "import:violations:pdf": "tsx src/scripts/import-traffic-violations-from-pdf.ts",
+    "delete:violations:no-vehicles": "tsx src/scripts/delete-violations-without-vehicles.ts",
+    "delete:violations:duplicates": "tsx src/scripts/delete-duplicate-violations.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

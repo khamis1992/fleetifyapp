@@ -1,0 +1,428 @@
+/**
+ * FleetifyApp - Traffic Violations Theme
+ * نظام ألوان احترافي لصفحة المخالفات المرورية
+ * مستوحى من أنظمة Linear و Vercel مع لمسة عربية حديثة
+ */
+
+:root {
+  /* ===== الألوان الأساسية ===== */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.15 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0 0);
+  
+  /* ===== الألوان الرئيسية ===== */
+  --primary: oklch(0.45 0.15 250);        /* أزرق احترافي للأزرار الرئيسية */
+  --primary-foreground: oklch(0.98 0 0);
+  --primary-hover: oklch(0.40 0.18 250);
+  
+  /* ===== الألوان الثانوية ===== */
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.25 0 0);
+  
+  /* ===== ألوان الحالات - Status Colors ===== */
+  /* حالة في الانتظار - Pending */
+  --status-pending: oklch(0.85 0.12 85);         /* أصفر دافئ */
+  --status-pending-fg: oklch(0.35 0.08 80);
+  --status-pending-border: oklch(0.75 0.10 85);
+  
+  /* حالة مؤكدة - Confirmed */
+  --status-confirmed: oklch(0.88 0.12 145);      /* أخضر منعش */
+  --status-confirmed-fg: oklch(0.30 0.10 145);
+  --status-confirmed-border: oklch(0.78 0.10 145);
+  
+  /* حالة ملغاة - Cancelled */
+  --status-cancelled: oklch(0.92 0.08 15);       /* رمادي محايد */
+  --status-cancelled-fg: oklch(0.40 0.05 15);
+  --status-cancelled-border: oklch(0.82 0.06 15);
+  
+  /* ===== ألوان الدفع - Payment Colors ===== */
+  /* مدفوع - Paid */
+  --payment-paid: oklch(0.88 0.12 145);          /* أخضر نجاح */
+  --payment-paid-fg: oklch(0.30 0.10 145);
+  --payment-paid-border: oklch(0.78 0.10 145);
+  
+  /* غير مدفوع - Unpaid */
+  --payment-unpaid: oklch(0.90 0.15 25);         /* أحمر تحذير */
+  --payment-unpaid-fg: oklch(0.35 0.12 25);
+  --payment-unpaid-border: oklch(0.80 0.13 25);
+  
+  /* مدفوع جزئياً - Partially Paid */
+  --payment-partial: oklch(0.87 0.12 65);        /* برتقالي */
+  --payment-partial-fg: oklch(0.35 0.10 65);
+  --payment-partial-border: oklch(0.77 0.10 65);
+  
+  /* ===== الألوان الوظيفية ===== */
+  --muted: oklch(0.96 0.01 250);
+  --muted-foreground: oklch(0.55 0.02 250);
+  --accent: oklch(0.96 0.01 250);
+  --accent-foreground: oklch(0.25 0 0);
+  
+  /* تدمير/حذف */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* ===== الحدود والإدخالات ===== */
+  --border: oklch(0.90 0.01 250);
+  --input: oklch(0.90 0.01 250);
+  --ring: oklch(0.45 0.15 250);
+  
+  /* ===== ألوان الرسوم البيانية ===== */
+  --chart-1: oklch(0.45 0.15 250);   /* أزرق */
+  --chart-2: oklch(0.55 0.18 145);   /* أخضر */
+  --chart-3: oklch(0.65 0.15 65);    /* برتقالي */
+  --chart-4: oklch(0.55 0.20 330);   /* وردي */
+  --chart-5: oklch(0.50 0.18 280);   /* بنفسجي */
+  
+  /* ===== الخطوط ===== */
+  --font-sans: 'Inter', 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-arabic: 'Tajawal', 'Cairo', sans-serif;
+  
+  /* ===== الزوايا والحواف ===== */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 0.125rem);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 0.125rem);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  
+  /* ===== الظلال ===== */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.1), 0 8px 10px -6px oklch(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px oklch(0 0 0 / 0.25);
+  
+  /* ظل ملون للبطاقات المهمة */
+  --shadow-colored: 0 8px 16px -4px oklch(0.45 0.15 250 / 0.12);
+  
+  /* ===== التباعد ===== */
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-2xl: 3rem;      /* 48px */
+  
+  /* ===== أحجام الخطوط ===== */
+  --text-xs: 0.75rem;       /* 12px */
+  --text-sm: 0.875rem;      /* 14px */
+  --text-base: 1rem;        /* 16px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.25rem;       /* 20px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+  
+  /* ===== الارتفاعات (z-index) ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ===== الوضع الداكن - Dark Mode ===== */
+.dark {
+  --background: oklch(0.12 0.01 250);
+  --foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.15 0.01 250);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.15 0.01 250);
+  --popover-foreground: oklch(0.95 0.01 250);
+  
+  --primary: oklch(0.55 0.18 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --primary-hover: oklch(0.60 0.20 250);
+  
+  --secondary: oklch(0.20 0.02 250);
+  --secondary-foreground: oklch(0.85 0.01 250);
+  
+  /* حالات في الوضع الداكن */
+  --status-pending: oklch(0.25 0.10 85);
+  --status-pending-fg: oklch(0.85 0.12 85);
+  --status-pending-border: oklch(0.35 0.10 85);
+  
+  --status-confirmed: oklch(0.25 0.10 145);
+  --status-confirmed-fg: oklch(0.85 0.12 145);
+  --status-confirmed-border: oklch(0.35 0.10 145);
+  
+  --status-cancelled: oklch(0.25 0.05 15);
+  --status-cancelled-fg: oklch(0.75 0.05 15);
+  --status-cancelled-border: oklch(0.35 0.05 15);
+  
+  --payment-paid: oklch(0.25 0.10 145);
+  --payment-paid-fg: oklch(0.85 0.12 145);
+  --payment-paid-border: oklch(0.35 0.10 145);
+  
+  --payment-unpaid: oklch(0.30 0.13 25);
+  --payment-unpaid-fg: oklch(0.85 0.15 25);
+  --payment-unpaid-border: oklch(0.40 0.13 25);
+  
+  --payment-partial: oklch(0.28 0.10 65);
+  --payment-partial-fg: oklch(0.85 0.12 65);
+  --payment-partial-border: oklch(0.38 0.10 65);
+  
+  --muted: oklch(0.20 0.02 250);
+  --muted-foreground: oklch(0.65 0.02 250);
+  --accent: oklch(0.20 0.02 250);
+  --accent-foreground: oklch(0.85 0.01 250);
+  
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.25 0.02 250);
+  --input: oklch(0.25 0.02 250);
+  --ring: oklch(0.55 0.18 250);
+  
+  /* ظلال في الوضع الداكن */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.4), 0 1px 2px -1px oklch(0 0 0 / 0.4);
+  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.4), 0 1px 2px -1px oklch(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.4), 0 2px 4px -2px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.4), 0 4px 6px -4px oklch(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.4), 0 8px 10px -6px oklch(0 0 0 / 0.4);
+  --shadow-2xl: 0 25px 50px -12px oklch(0 0 0 / 0.5);
+  --shadow-colored: 0 8px 16px -4px oklch(0.55 0.18 250 / 0.25);
+}
+
+/* ===== أنماط عامة ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  line-height: 1.6 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* دعم النصوص العربية */
+[dir="rtl"] {
+  font-family: var(--font-arabic) !important;
+}
+
+/* ===== فئات الأدوات - Utility Classes ===== */
+
+/* حالات المخالفات */
+.status-pending {
+  background-color: var(--status-pending) !important;
+  color: var(--status-pending-fg) !important;
+  border: 1px solid var(--status-pending-border) !important;
+}
+
+.status-confirmed {
+  background-color: var(--status-confirmed) !important;
+  color: var(--status-confirmed-fg) !important;
+  border: 1px solid var(--status-confirmed-border) !important;
+}
+
+.status-cancelled {
+  background-color: var(--status-cancelled) !important;
+  color: var(--status-cancelled-fg) !important;
+  border: 1px solid var(--status-cancelled-border) !important;
+}
+
+/* حالات الدفع */
+.payment-paid {
+  background-color: var(--payment-paid) !important;
+  color: var(--payment-paid-fg) !important;
+  border: 1px solid var(--payment-paid-border) !important;
+}
+
+.payment-unpaid {
+  background-color: var(--payment-unpaid) !important;
+  color: var(--payment-unpaid-fg) !important;
+  border: 1px solid var(--payment-unpaid-border) !important;
+}
+
+.payment-partial {
+  background-color: var(--payment-partial) !important;
+  color: var(--payment-partial-fg) !important;
+  border: 1px solid var(--payment-partial-border) !important;
+}
+
+/* بطاقات الإحصائيات */
+.stat-card {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--spacing-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px) !important;
+  border-color: var(--primary) !important;
+}
+
+.stat-card-value {
+  font-size: var(--text-3xl) !important;
+  font-weight: 700 !important;
+  color: var(--foreground) !important;
+  margin-bottom: var(--spacing-xs) !important;
+}
+
+.stat-card-label {
+  font-size: var(--text-sm) !important;
+  color: var(--muted-foreground) !important;
+  font-weight: 500 !important;
+}
+
+.stat-card-description {
+  font-size: var(--text-xs) !important;
+  color: var(--muted-foreground) !important;
+  margin-top: var(--spacing-xs) !important;
+}
+
+/* جدول محسن */
+.enhanced-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.enhanced-table thead {
+  background: var(--muted) !important;
+  border-bottom: 2px solid var(--border) !important;
+}
+
+.enhanced-table th {
+  padding: var(--spacing-md) !important;
+  text-align: right !important;
+  font-weight: 600 !important;
+  font-size: var(--text-sm) !important;
+  color: var(--foreground) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.enhanced-table tbody tr {
+  border-bottom: 1px solid var(--border) !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.enhanced-table tbody tr:hover {
+  background-color: var(--accent) !important;
+}
+
+.enhanced-table td {
+  padding: var(--spacing-md) !important;
+  font-size: var(--text-sm) !important;
+  color: var(--foreground) !important;
+}
+
+/* أزرار محسنة */
+.btn-primary {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  border-radius: var(--radius) !important;
+  font-weight: 500 !important;
+  font-size: var(--text-sm) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: var(--shadow-xs) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-secondary {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+  border: 1px solid var(--border) !important;
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  border-radius: var(--radius) !important;
+  font-weight: 500 !important;
+  font-size: var(--text-sm) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--accent) !important;
+  border-color: var(--primary) !important;
+}
+
+/* حقول الإدخال */
+.input-field {
+  width: 100% !important;
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  border: 1px solid var(--input) !important;
+  border-radius: var(--radius) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-size: var(--text-sm) !important;
+  transition: all 0.2s ease !important;
+}
+
+.input-field:focus {
+  outline: none !important;
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 3px oklch(0.45 0.15 250 / 0.1) !important;
+}
+
+/* شارات - Badges */
+.badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--spacing-xs) !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: var(--text-xs) !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+
+/* لوحة جانبية */
+.side-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: -400px !important;
+  width: 400px !important;
+  height: 100vh !important;
+  background: var(--card) !important;
+  box-shadow: var(--shadow-2xl) !important;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  z-index: var(--z-modal) !important;
+  overflow-y: auto !important;
+  padding: var(--spacing-xl) !important;
+}
+
+.side-panel.open {
+  right: 0 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .side-panel {
+    width: 100% !important;
+    right: -100% !important;
+  }
+  
+  .stat-card-value {
+    font-size: var(--text-2xl) !important;
+  }
+}
+

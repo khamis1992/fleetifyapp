@@ -318,30 +318,33 @@ export default function TrafficViolations() {
               </div>
             )}
 
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">رقم المخالفة</TableHead>
                     <TableHead className="text-right">تاريخ المخالفة</TableHead>
+                    <TableHead className="text-right">رقم اللوحة</TableHead>
                     <TableHead className="text-right">نوع المخالفة</TableHead>
+                    <TableHead className="text-right">الموقع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">حالة المخالفة</TableHead>
                     <TableHead className="text-right">حالة الدفع</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         <LoadingSpinner size="sm" />
                         <p className="mt-2 text-muted-foreground">جاري تحميل المخالفات...</p>
                       </TableCell>
                     </TableRow>
                   ) : paginatedViolations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         لا توجد مخالفات مطابقة للبحث
                       </TableCell>
                     </TableRow>
@@ -352,10 +355,33 @@ export default function TrafficViolations() {
                       <TableCell>
                         {violation.penalty_date && format(new Date(violation.penalty_date), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
-                      <TableCell>{violation.violation_type || violation.reason}</TableCell>
+                      <TableCell>
+                        {violation.vehicle_plate ? (
+                          <Badge variant="outline">{violation.vehicle_plate}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{violation.violation_type || violation.reason || '-'}</TableCell>
+                      <TableCell>
+                        {violation.location ? (
+                          <span className="text-sm">{violation.location}</span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-bold">{formatCurrency(violation.amount || 0)}</TableCell>
                       <TableCell>{getStatusBadge(violation.status)}</TableCell>
                       <TableCell>{getPaymentStatusBadge(violation.payment_status || 'unpaid')}</TableCell>
+                      <TableCell>
+                        {violation.notes ? (
+                          <span className="text-sm text-muted-foreground" title={violation.notes}>
+                            {violation.notes.length > 30 ? `${violation.notes.substring(0, 30)}...` : violation.notes}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button 
