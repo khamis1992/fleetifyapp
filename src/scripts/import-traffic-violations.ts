@@ -326,4 +326,120 @@ async function main() {
     } catch (e) {
       // Only log first 10 exceptions to avoid spam
       if (errorCount < 10) {
-        console.error(`An unexpected error occurred
+        console.error(`An unexpected error occurred for violation ${violation.violation_number}:`, e);
+      }
+      errorCount++;
+    }
+  }
+  
+  // Insert remaining batches
+  if (violationsToInsert.length > 0) {
+    const { error: insertError } = await supabase
+      .from('penalties')
+      .insert(violationsToInsert);
+    
+    if (insertError) {
+      for (const v of violationsToInsert) {
+        const { error: singleError } = await supabase
+          .from('penalties')
+          .insert(v);
+        
+        if (singleError) {
+          if (singleError.code === '23505') {
+            skippedCount++;
+          } else {
+            errorCount++;
+          }
+        } else {
+          successCount++;
+          insertedWithVehicle++;
+        }
+      }
+    } else {
+      successCount += violationsToInsert.length;
+      insertedWithVehicle += violationsToInsert.length;
+    }
+  }
+  
+  if (violationsWithoutVehicle.length > 0) {
+    const { error: insertErrorWithoutVehicle } = await supabase
+      .from('penalties')
+      .insert(violationsWithoutVehicle);
+    
+    if (insertErrorWithoutVehicle) {
+      for (const v of violationsWithoutVehicle) {
+        const { error: singleError } = await supabase
+          .from('penalties')
+          .insert(v);
+        
+        if (singleError) {
+          if (singleError.code === '23505') {
+            skippedCount++;
+          } else {
+            errorCount++;
+            skippedCount++;
+          }
+        } else {
+          successCount++;
+          insertedWithoutVehicle++;
+        }
+      }
+    } else {
+      successCount += violationsWithoutVehicle.length;
+      insertedWithoutVehicle += violationsWithoutVehicle.length;
+    }
+  }
+  
+  if (violationsWithoutPlate.length > 0) {
+    const { error: insertErrorNoPlate } = await supabase
+      .from('penalties')
+      .insert(violationsWithoutPlate);
+    
+    if (insertErrorNoPlate) {
+      for (const v of violationsWithoutPlate) {
+        const { error: singleError } = await supabase
+          .from('penalties')
+          .insert(v);
+        
+        if (singleError) {
+          if (singleError.code === '23505') {
+            skippedCount++;
+          } else {
+            errorCount++;
+            skippedCount++;
+          }
+        } else {
+          successCount++;
+          insertedWithoutPlate++;
+        }
+      }
+    } else {
+      successCount += violationsWithoutPlate.length;
+      insertedWithoutPlate += violationsWithoutPlate.length;
+    }
+  }
+
+  console.log('\n----------------------------------');
+  console.log('Import process finished.');
+  console.log(`Total processed: ${violations.length}`);
+  console.log(`Successfully inserted: ${successCount} violations.`);
+  console.log(`  - With vehicle link: ${insertedWithVehicle}`);
+  console.log(`  - Without vehicle link (plate found but vehicle not in DB): ${insertedWithoutVehicle}`);
+  console.log(`  - Without plate number: ${insertedWithoutPlate}`);
+  console.log(`Skipped: ${skippedCount} violations (duplicates or errors).`);
+  console.log(`Errors: ${errorCount} violations.`);
+  
+  if (notFoundPlates.size > 0) {
+    console.log(`\nUnique plate numbers not found in database: ${notFoundPlates.size}`);
+    // Show first 10 examples
+    const examples = Array.from(notFoundPlates).slice(0, 10);
+    console.log(`Examples: ${examples.join(', ')}`);
+    if (notFoundPlates.size > 10) {
+      console.log(`... and ${notFoundPlates.size - 10} more`);
+    }
+  }
+  
+  console.log('----------------------------------');
+}
+
+main();

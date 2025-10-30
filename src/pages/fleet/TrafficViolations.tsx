@@ -1,5 +1,5 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
-import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard, Upload } from 'lucide-react';
+import { Plus, Search, Filter, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle, Clock, CreditCard, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,8 +32,11 @@ export default function TrafficViolations() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
   const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100); // عدد العناصر في الصفحة
 
-  const { data: violations = [], isLoading } = useTrafficViolations();
+  // جلب جميع المخالفات بدون حد (أو بحد كبير جداً)
+  const { data: violations = [], isLoading } = useTrafficViolations({ limit: 10000, offset: 0 });
   const { formatCurrency } = useCurrencyFormatter();
 
   // Memoized statistics for better performance
@@ -60,6 +63,19 @@ export default function TrafficViolations() {
       return matchesSearch && matchesStatus && matchesPaymentStatus;
     });
   }, [violations, searchTerm, statusFilter, paymentStatusFilter]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredViolations.length / pageSize);
+  const paginatedViolations = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredViolations.slice(startIndex, endIndex);
+  }, [filteredViolations, currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, paymentStatusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -250,39 +266,87 @@ export default function TrafficViolations() {
         <CardHeader>
           <CardTitle>قائمة المخالفات المرورية</CardTitle>
           <CardDescription>
-            عرض جميع المخالفات المرورية المسجلة في النظام
+            عرض جميع المخالفات المرورية المسجلة في النظام ({filteredViolations.length} مخالفة)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">رقم المخالفة</TableHead>
-                  <TableHead className="text-right">تاريخ المخالفة</TableHead>
-                  <TableHead className="text-right">نوع المخالفة</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">حالة المخالفة</TableHead>
-                  <TableHead className="text-right">حالة الدفع</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+          <div className="space-y-4">
+            {/* Pagination Controls at Top */}
+            {filteredViolations.length > pageSize && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    عرض
+                  </span>
+                  <Select value={pageSize.toString()} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                      <SelectItem value="1000">1000</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">
+                    من {filteredViolations.length} مخالفة
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm">
+                    صفحة {currentPage} من {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <LoadingSpinner size="sm" />
-                      <p className="mt-2 text-muted-foreground">جاري تحميل المخالفات...</p>
-                    </TableCell>
+                    <TableHead className="text-right">رقم المخالفة</TableHead>
+                    <TableHead className="text-right">تاريخ المخالفة</TableHead>
+                    <TableHead className="text-right">نوع المخالفة</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">حالة المخالفة</TableHead>
+                    <TableHead className="text-right">حالة الدفع</TableHead>
+                    <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
-                ) : filteredViolations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      لا توجد مخالفات مطابقة للبحث
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredViolations.map((violation) => (
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <LoadingSpinner size="sm" />
+                        <p className="mt-2 text-muted-foreground">جاري تحميل المخالفات...</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : paginatedViolations.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        لا توجد مخالفات مطابقة للبحث
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedViolations.map((violation) => (
                     <TableRow key={violation.id}>
                       <TableCell className="font-medium">{violation.penalty_number}</TableCell>
                       <TableCell>
@@ -321,6 +385,50 @@ export default function TrafficViolations() {
                 )}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Pagination Controls at Bottom */}
+            {filteredViolations.length > pageSize && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  الأولى
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                  السابقة
+                </Button>
+                <span className="text-sm px-4">
+                  صفحة {currentPage} من {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  التالية
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  الأخيرة
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
