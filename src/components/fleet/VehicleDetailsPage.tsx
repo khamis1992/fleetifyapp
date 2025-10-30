@@ -935,3 +935,5 @@ const ViolationsTab = ({ violations, formatCurrency }: ViolationsTabProps) => (
 export default VehicleDetailsPage;
 
 
+
+

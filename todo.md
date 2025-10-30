@@ -1,10 +1,29 @@
-# Todo
+# Task: Sync Agreement Numbers with SQL File
 
-- [x] Modify React Query config to prevent aggressive refetching on every page navigation.
-- [x] Review the changes and their impact on performance.
-- [x] Add a review section to summarize the changes.
+## Objective
+Update the `agreement_number` for existing records in the `agreements` table to match the data provided in the `.qoder/agreements_with_details.sql` file. This will unify the contract numbers between the application's database and the provided SQL data dump.
 
-## Review
-The primary issue causing slow page transitions was the React Query configuration, which was set to refetch data on every component mount (`refetchOnMount: true`). This meant that every navigation triggered a network request, blocking rendering and making the app feel sluggish.
+## Acceptance Criteria
+- [ ] A script is created that can parse the `.qoder/agreements_with_details.sql` file.
+- [ ] The script correctly extracts the `id` and `agreement_number` from each `INSERT` statement.
+- [ ] The script updates the `agreement_number` in the Supabase `agreements` table for each corresponding `id`.
+- [ ] The script includes logging to track progress and report any errors.
+- [ ] All contract numbers in the database match the ones in the SQL file after the script is successfully executed.
 
-The solution involved changing this setting to `refetchOnMount: false`. This change leverages the caching mechanism of React Query more effectively. Now, when a user navigates to a page they have recently visited, the cached data is displayed instantly, and a background refetch is triggered only if the data is stale (older than the configured `staleTime`). This significantly improves the perceived performance and user experience of navigation.
+## Scope & Impact Radius
+- **Files to be created:** `src/scripts/sync-agreement-numbers.ts`
+- **Files to be modified:** `package.json` (to add a script command).
+- **Database tables affected:** `agreements` (UPDATE operations only).
+
+## Risks & Mitigations
+- **Risk:** Incorrectly updating records or corrupting data.
+  - **Mitigation:** The script will match records using the unique primary key (`id`). A backup of the `agreements` table is highly recommended before running the script.
+- **Risk:** Script failure during execution.
+  - **Mitigation:** The script will be designed to be runnable multiple times (idempotent) and will log errors for any failed updates.
+
+## Steps
+- [ ] Create a new script file at `src/scripts/sync-agreement-numbers.ts`.
+- [ ] Implement the logic to parse the `.sql` file and extract `id` and `agreement_number` pairs.
+- [ ] Implement the logic to connect to Supabase and perform batch updates.
+- [ ] Add the script command to `package.json` for easy execution.
+- [ ] Await user confirmation before providing instructions to run the script.

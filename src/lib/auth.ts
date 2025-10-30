@@ -169,7 +169,7 @@ export const authService = {
       let companyId = profile?.company_id;
       
       // If no company from profiles, try from employees table
-      if (!companyInfo && employeeCompany) {
+      if (!companyId && employeeCompany) {
         companyInfo = employeeCompany.companies;
         companyId = employeeCompany.company_id;
         console.log('📝 [AUTH] Using company info from employees table');

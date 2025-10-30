@@ -57,6 +57,7 @@ import { useContractCreation } from "@/hooks/useContractCreation"
 import { useContractDrafts } from "@/hooks/useContractDrafts"
 import { useToast } from "@/hooks/use-toast-mock"
 import { useQueryClient } from "@tanstack/react-query"
+import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 
 function Contracts() {
   // Responsive hooks
