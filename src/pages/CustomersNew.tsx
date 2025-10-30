@@ -78,6 +78,18 @@ const CustomersNew = () => {
 
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
   
+  // Log errors for debugging
+  React.useEffect(() => {
+    if (error) {
+      console.error('❌ [CustomersNew] Error fetching customers:', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        filters,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [error, filters]);
+  
   // Fetch counts for stats
   const { data: totalCountResult } = useCustomers({
     includeInactive: false,
@@ -388,6 +400,28 @@ const CustomersNew = () => {
                     </td>
                   </tr>
                 ))
+              ) : error ? (
+                // Error state
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <AlertCircle className="w-16 h-16 text-destructive" />
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-destructive">حدث خطأ في تحميل البيانات</p>
+                        <p className="text-sm text-muted-foreground">
+                          {error instanceof Error ? error.message : 'خطأ غير معروف'}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => refetch()}
+                          className="mt-4"
+                        >
+                          إعادة المحاولة
+                        </Button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               ) : customers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">

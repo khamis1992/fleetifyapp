@@ -101,6 +101,19 @@ const Customers = () => {
 
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
   
+  // Log errors for debugging
+  React.useEffect(() => {
+    if (error) {
+      console.error('❌ [Customers] Error fetching customers:', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        filters,
+        timestamp: new Date().toISOString()
+      });
+      toast.error(`خطأ في تحميل بيانات العملاء: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    }
+  }, [error, filters]);
+  
   // Fetch counts for all customer types (without pagination - get total counts)
   const { data: individualCountResult } = useCustomers({
     customer_type: 'individual',
@@ -659,6 +672,27 @@ const Customers = () => {
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-14 bg-muted/50 rounded animate-pulse" />
               ))}
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="text-destructive mb-4">
+                <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="space-y-2 text-center">
+                <p className="text-lg font-semibold text-destructive">حدث خطأ في تحميل البيانات</p>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : 'خطأ غير معروف'}
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => refetch()}
+                  className="mt-4"
+                >
+                  إعادة المحاولة
+                </Button>
+              </div>
             </div>
           ) : customers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">

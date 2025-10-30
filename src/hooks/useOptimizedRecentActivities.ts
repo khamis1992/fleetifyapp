@@ -21,52 +21,72 @@ export const useOptimizedRecentActivities = () => {
   return useQuery({
     queryKey: getQueryKey(['optimized-recent-activities']),
     queryFn: async (): Promise<OptimizedActivity[]> => {
-      // التسجيل التشخيصي لتتبع المشكلة
-      console.log('🔍 [ACTIVITIES] Fetching activities with context:', {
-        companyId,
-        isSystemLevel,
-        isBrowsingMode,
-        timestamp: new Date().toISOString()
-      });
+      try {
+        // التسجيل التشخيصي لتتبع المشكلة
+        console.log('🔍 [ACTIVITIES] Fetching activities with context:', {
+          companyId,
+          isSystemLevel,
+          isBrowsingMode,
+          timestamp: new Date().toISOString()
+        });
 
-      if (!companyId) {
-        console.warn('⚠️ [ACTIVITIES] No company ID available - returning empty array');
+        if (!companyId) {
+          console.warn('⚠️ [ACTIVITIES] No company ID available - returning empty array');
+          return [];
+        }
+
+        // Optimized query - fetch only last 10 activities, no complex joins
+        const { data: activities, error } = await supabase
+          .from('system_logs')
+          .select('id, category, action, message, level, created_at')
+          .eq('company_id', companyId)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(10); // Reduced from 15 to 10 for faster loading
+
+        if (error) {
+          console.error('❌ [ACTIVITIES] Error fetching activities:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            companyId,
+            timestamp: new Date().toISOString(),
+            fullError: error
+          });
+          return [];
+        }
+
+        // Simple filtering without fetching additional data
+        const filteredActivities = activities?.filter(activity => 
+          !isUnimportantActivity(activity)
+        ) || [];
+
+        // Convert to display format without async operations
+        const enhancedActivities = filteredActivities.map((activity) => ({
+          id: activity.id,
+          type: getCategoryDisplayName(activity.category),
+          description: cleanTechnicalMessage(activity.message || getActivityDescription(activity)),
+          time: getRelativeTime(activity.created_at),
+          icon: getCategoryIcon(activity.category),
+          color: getCategoryColor(activity.category, activity.level),
+          priority: getPriorityFromLevel(activity.level),
+          created_at: activity.created_at,
+          status: activity.action
+        }));
+
+        return enhancedActivities;
+      } catch (err) {
+        // Catch any unexpected errors during processing
+        console.error('❌ [ACTIVITIES] Unexpected error in queryFn:', {
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined,
+          companyId,
+          timestamp: new Date().toISOString()
+        });
         return [];
       }
-
-      // Optimized query - fetch only last 10 activities, no complex joins
-      const { data: activities, error } = await supabase
-        .from('system_logs')
-        .select('id, category, action, message, level, created_at')
-        .eq('company_id', companyId)
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(10); // Reduced from 15 to 10 for faster loading
-
-      if (error) {
-        console.error('❌ [ACTIVITIES] Error fetching activities:', error);
-        return [];
-      }
-
-      // Simple filtering without fetching additional data
-      const filteredActivities = activities?.filter(activity => 
-        !isUnimportantActivity(activity)
-      ) || [];
-
-      // Convert to display format without async operations
-      const enhancedActivities = filteredActivities.map((activity) => ({
-        id: activity.id,
-        type: getCategoryDisplayName(activity.category),
-        description: cleanTechnicalMessage(activity.message || getActivityDescription(activity)),
-        time: getRelativeTime(activity.created_at),
-        icon: getCategoryIcon(activity.category),
-        color: getCategoryColor(activity.category, activity.level),
-        priority: getPriorityFromLevel(activity.level),
-        created_at: activity.created_at,
-        status: activity.action
-      }));
-
-      return enhancedActivities;
     },
     enabled: !!companyId,
     staleTime: 10 * 60 * 1000, // 10 minutes - تخزين مؤقت لمدة أطول

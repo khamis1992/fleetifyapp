@@ -51,6 +51,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
@@ -156,6 +157,33 @@ const ContractDetailsPage = () => {
       return data as Invoice[];
     },
     enabled: !!contractId,
+  });
+
+  // جلب المدفوعات المرتبطة بالعقد
+  const { data: contractPayments = [] } = useQuery({
+    queryKey: ['contract-payments', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          customers (
+            first_name,
+            last_name,
+            company_name,
+            customer_type
+          )
+        `)
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .order('payment_date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contractId && !!companyId,
   });
 
   // جلب فحوصات المركبة
@@ -720,6 +748,7 @@ const ContractDetailsPage = () => {
                 <PaymentScheduleTab
                   contract={contract}
                   formatCurrency={formatCurrency}
+                  payments={contractPayments}
                 />
               </TabsContent>
 
@@ -1080,9 +1109,10 @@ const getPaymentStatusText = (status: string): string => {
 interface PaymentScheduleTabProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
+  payments?: any[];
 }
 
-const PaymentScheduleTab = ({ contract, formatCurrency }: PaymentScheduleTabProps) => {
+const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: PaymentScheduleTabProps) => {
   // حساب جدول الدفعات المستحق
   const paymentSchedule = useMemo(() => {
     if (!contract.start_date || !contract.monthly_amount) return [];
@@ -1113,9 +1143,43 @@ const PaymentScheduleTab = ({ contract, formatCurrency }: PaymentScheduleTabProp
   const totalAmount = contract.contract_amount || 0;
   const balanceDue = totalAmount - totalPaid;
 
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      cash: 'نقداً',
+      bank_transfer: 'تحويل بنكي',
+      check: 'شيك',
+      credit_card: 'بطاقة ائتمان',
+      debit_card: 'بطاقة مدين',
+      online: 'دفع إلكتروني'
+    };
+    return labels[method] || method;
+  };
+
+  const getPaymentStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      completed: 'مكتمل',
+      pending: 'معلق',
+      cancelled: 'ملغي',
+      failed: 'فاشل'
+    };
+    return labels[status] || status;
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      completed: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      cancelled: 'bg-red-100 text-red-800',
+      failed: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
   return (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">جدول الدفعات المستحقة</h3>
+    <div className="space-y-8">
+      {/* جدول الدفعات المستحقة */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">جدول الدفعات المستحقة</h3>
 
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -1200,6 +1264,85 @@ const PaymentScheduleTab = ({ contract, formatCurrency }: PaymentScheduleTabProp
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      {/* جدول المدفوعات الفعلية */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">المدفوعات الفعلية</h3>
+        {payments.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-muted-foreground">لا توجد مدفوعات مسجلة لهذا العقد</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">رقم الدفع</TableHead>
+                  <TableHead className="text-right">تاريخ الدفع</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
+                  <TableHead className="text-right">طريقة الدفع</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">المرجع</TableHead>
+                  <TableHead className="text-right">الملاحظات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment: any) => (
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-medium">{payment.payment_number}</TableCell>
+                    <TableCell>
+                      {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
+                    </TableCell>
+                    <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getPaymentMethodLabel(payment.payment_method)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getPaymentStatusColor(payment.payment_status)}>
+                        {getPaymentStatusLabel(payment.payment_status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {payment.reference_number || '-'}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {payment.notes || '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* ملخص المدفوعات الفعلية */}
+        {payments.length > 0 && (
+          <Card className="mt-6 bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-sm text-gray-600">عدد المدفوعات</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {payments.length}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">إجمالي المدفوعات</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

@@ -325,6 +325,7 @@ export default function TrafficViolations() {
                     <TableHead className="text-right">رقم المخالفة</TableHead>
                     <TableHead className="text-right">تاريخ المخالفة</TableHead>
                     <TableHead className="text-right">رقم اللوحة</TableHead>
+                    <TableHead className="text-right">رقم العقد</TableHead>
                     <TableHead className="text-right">نوع المخالفة</TableHead>
                     <TableHead className="text-right">الموقع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
@@ -337,14 +338,14 @@ export default function TrafficViolations() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={11} className="text-center py-8">
                         <LoadingSpinner size="sm" />
                         <p className="mt-2 text-muted-foreground">جاري تحميل المخالفات...</p>
                       </TableCell>
                     </TableRow>
                   ) : paginatedViolations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                         لا توجد مخالفات مطابقة للبحث
                       </TableCell>
                     </TableRow>
@@ -356,8 +357,34 @@ export default function TrafficViolations() {
                         {violation.penalty_date && format(new Date(violation.penalty_date), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
                       <TableCell>
-                        {violation.vehicle_plate ? (
+                        {violation.vehicles ? (
+                          <div className="flex flex-col">
+                            <Badge variant="outline" className="w-fit">{violation.vehicles.plate_number}</Badge>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {violation.vehicles.make} {violation.vehicles.model}
+                              {violation.vehicles.year && ` (${violation.vehicles.year})`}
+                            </span>
+                          </div>
+                        ) : violation.vehicle_plate ? (
                           <Badge variant="outline">{violation.vehicle_plate}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {violation.contracts ? (
+                          <div className="flex flex-col">
+                            <Badge variant="outline" className="w-fit">
+                              {violation.contracts.contract_number}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {violation.contracts.status === 'active' ? 'نشط' : 
+                               violation.contracts.status === 'completed' ? 'مكتمل' :
+                               violation.contracts.status === 'cancelled' ? 'ملغي' : violation.contracts.status}
+                            </span>
+                          </div>
+                        ) : violation.contract_id ? (
+                          <span className="text-muted-foreground text-sm">-</span>
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}

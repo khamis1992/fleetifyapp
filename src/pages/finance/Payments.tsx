@@ -57,7 +57,8 @@ const Payments = () => {
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+                         payment.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ((payment as any).contracts?.contract_number || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !filterStatus || filterStatus === "all" || payment.payment_status === filterStatus;
     const matchesMethod = !filterMethod || filterMethod === "all" || payment.payment_method === filterMethod;
     
@@ -234,7 +235,7 @@ const Payments = () => {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
-                      placeholder="البحث برقم الدفع أو المرجع..."
+                      placeholder="البحث برقم الدفع أو المرجع أو رقم العقد..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -376,8 +377,24 @@ const Payments = () => {
                               <TableCell className="text-muted-foreground">
                                 {payment.reference_number || '-'}
                               </TableCell>
-                              <TableCell className="font-mono">
-                                {(payment as any).contracts?.contract_number || (payment as any).agreement_number || '-'}
+                              <TableCell>
+                                {(payment as any).contracts ? (
+                                  <div className="flex flex-col">
+                                    <Badge variant="outline" className="w-fit">
+                                      {(payment as any).contracts.contract_number}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground mt-1">
+                                      {(payment as any).contracts.status === 'active' ? 'نشط' : 
+                                       (payment as any).contracts.status === 'completed' ? 'مكتمل' :
+                                       (payment as any).contracts.status === 'cancelled' ? 'ملغي' : 
+                                       (payment as any).contracts.status || '-'}
+                                    </span>
+                                  </div>
+                                ) : (payment as any).contract_id ? (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <Button 

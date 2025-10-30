@@ -99,7 +99,12 @@ export const usePayments = (filters?: {
             total_amount
           ),
           contracts (
-            contract_number
+            id,
+            contract_number,
+            status,
+            start_date,
+            end_date,
+            monthly_amount
           )
         `)
         .eq("company_id", effectiveCompanyId)

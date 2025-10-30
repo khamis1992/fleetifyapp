@@ -11,6 +11,7 @@ export interface TrafficViolation {
   amount: number;
   location: string;
   vehicle_plate?: string;
+  vehicle_id?: string;
   customer_id?: string;
   contract_id?: string;
   reason: string;
@@ -19,6 +20,13 @@ export interface TrafficViolation {
   payment_status: 'unpaid' | 'paid' | 'partially_paid';
   created_at: string;
   updated_at: string;
+  vehicles?: {
+    id: string;
+    plate_number: string;
+    make: string;
+    model: string;
+    year?: number;
+  };
   customers?: {
     first_name: string;
     last_name: string;
@@ -26,12 +34,20 @@ export interface TrafficViolation {
     phone: string;
   };
   contracts?: {
+    id: string;
     contract_number: string;
-    vehicles?: {
-      plate_number: string;
-      make: string;
-      model: string;
-    };
+    status: string;
+    start_date?: string;
+    end_date?: string;
+    customer_id?: string;
+  };
+  agreements?: {
+    id: string;
+    contract_number: string;
+    status: string;
+    start_date?: string;
+    end_date?: string;
+    customer_id?: string;
   };
 }
 
@@ -84,6 +100,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
             amount,
             location,
             vehicle_plate,
+            vehicle_id,
             reason,
             notes,
             status,
@@ -91,7 +108,22 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
             customer_id,
             contract_id,
             created_at,
-            updated_at
+            updated_at,
+            vehicles (
+              id,
+              plate_number,
+              make,
+              model,
+              year
+            ),
+            contracts (
+              id,
+              contract_number,
+              status,
+              start_date,
+              end_date,
+              customer_id
+            )
           `)
           .eq('company_id', profile.company_id)
           .order('created_at', { ascending: false })
@@ -103,26 +135,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
           throw error;
         }
 
-        // Fetch customer data separately if needed
-        const violationsWithCustomers = await Promise.all(
-          (data || []).map(async (violation) => {
-            if (violation.customer_id) {
-              const { data: customer } = await supabase
-                .from('customers')
-                .select('first_name, last_name, company_name, phone')
-                .eq('id', violation.customer_id)
-                .single();
-              
-              return {
-                ...violation,
-                customers: customer
-              };
-            }
-            return violation;
-          })
-        );
-
-        return violationsWithCustomers as any[];
+        return data as any[];
       } catch (error) {
         console.error('Error in useTrafficViolations:', error);
         throw error;

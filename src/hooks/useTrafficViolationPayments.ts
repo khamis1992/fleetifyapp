@@ -61,6 +61,18 @@ export function useAllTrafficViolationPayments() {
   return useQuery({
     queryKey: ['all-traffic-violation-payments'],
     queryFn: async () => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+
       const { data, error } = await supabase
         .from('traffic_violation_payments')
         .select(`
@@ -69,14 +81,25 @@ export function useAllTrafficViolationPayments() {
             penalty_number,
             violation_type,
             amount,
+            vehicle_id,
+            contract_id,
             customer_id,
             customers (
               first_name,
               last_name,
               company_name
+            ),
+            contracts (
+              id,
+              contract_number,
+              status,
+              start_date,
+              end_date,
+              customer_id
             )
           )
         `)
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
       if (error) {

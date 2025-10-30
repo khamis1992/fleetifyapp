@@ -21,10 +21,11 @@ export default function TrafficViolationPayments() {
   const { formatCurrency } = useCurrencyFormatter();
 
   // تصفية البيانات
-  const filteredPayments = payments.filter(payment => {
+  const filteredPayments = payments.filter((payment: any) => {
     const matchesSearch = searchTerm === '' || 
       payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.penalties?.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.penalties?.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.penalties?.contracts?.contract_number?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     const matchesMethod = methodFilter === 'all' || payment.payment_method === methodFilter;
@@ -188,7 +189,7 @@ export default function TrafficViolationPayments() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="البحث برقم الدفع أو رقم المخالفة..."
+                  placeholder="البحث برقم الدفع أو رقم المخالفة أو رقم العقد..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10"
@@ -237,6 +238,7 @@ export default function TrafficViolationPayments() {
                 <TableRow>
                   <TableHead className="text-right">رقم الدفع</TableHead>
                   <TableHead className="text-right">رقم المخالفة</TableHead>
+                  <TableHead className="text-right">رقم العقد</TableHead>
                   <TableHead className="text-right">تاريخ الدفع</TableHead>
                   <TableHead className="text-right">المبلغ</TableHead>
                   <TableHead className="text-right">طريقة الدفع</TableHead>
@@ -248,16 +250,34 @@ export default function TrafficViolationPayments() {
               <TableBody>
                 {filteredPayments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       لا توجد مدفوعات مطابقة للبحث
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPayments.map((payment) => (
+                  filteredPayments.map((payment: any) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.payment_number}</TableCell>
                       <TableCell className="font-medium text-blue-600">
                         {payment.penalties?.penalty_number}
+                      </TableCell>
+                      <TableCell>
+                        {payment.penalties?.contracts ? (
+                          <div className="flex flex-col">
+                            <Badge variant="outline" className="w-fit">
+                              {payment.penalties.contracts.contract_number}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {payment.penalties.contracts.status === 'active' ? 'نشط' : 
+                               payment.penalties.contracts.status === 'completed' ? 'مكتمل' :
+                               payment.penalties.contracts.status === 'cancelled' ? 'ملغي' : payment.penalties.contracts.status}
+                            </span>
+                          </div>
+                        ) : payment.penalties?.contract_id ? (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
