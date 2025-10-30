@@ -91,7 +91,7 @@ const PropertyContracts = lazy(() => import("./pages/properties/PropertyContract
 
 // Fleet Management pages
 const Maintenance = lazy(() => import("./pages/fleet/Maintenance"));
-const TrafficViolations = lazy(() => import("./pages/fleet/TrafficViolations"));
+const TrafficViolations = lazy(() => import("./pages/fleet/TrafficViolationsRedesigned"));
 const TrafficViolationPayments = lazy(() => import("./pages/fleet/TrafficViolationPayments"));
 const FleetReports = lazy(() => import("./pages/fleet/FleetReports"));
 const DispatchPermits = lazy(() => import("./pages/fleet/DispatchPermits"));
