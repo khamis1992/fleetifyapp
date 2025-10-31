@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Car, MoreVertical, Wrench, Edit, Trash2, Eye, Calendar, Fuel, Settings } from 'lucide-react';
 import { Vehicle } from '@/hooks/useVehicles';
-import { EnhancedVehicleDetailsDialog } from './EnhancedVehicleDetailsDialog';
 import { VehicleForm } from './VehicleForm';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -36,11 +36,15 @@ const statusLabels = {
 };
 
 export function VehicleListItem({ vehicle }: VehicleListItemProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  const navigate = useNavigate();
   const [showEditForm, setShowEditForm] = useState(false);
 
   const status = vehicle.status || 'available';
   const { formatCurrency } = useCurrencyFormatter();
+
+  const handleViewDetails = () => {
+    navigate(`/fleet/vehicles/${vehicle.id}`);
+  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'غير محدد';
@@ -156,7 +160,7 @@ export function VehicleListItem({ vehicle }: VehicleListItemProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setShowDetails(true)}>
+                  <DropdownMenuItem onClick={handleViewDetails}>
                     <Eye className="h-4 w-4 mr-2" />
                     عرض التفاصيل
                   </DropdownMenuItem>
@@ -181,7 +185,7 @@ export function VehicleListItem({ vehicle }: VehicleListItemProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowDetails(true)}
+                onClick={handleViewDetails}
               >
                 عرض التفاصيل
               </Button>
@@ -189,13 +193,6 @@ export function VehicleListItem({ vehicle }: VehicleListItemProps) {
           </div>
         </CardContent>
       </Card>
-
-      <EnhancedVehicleDetailsDialog 
-        vehicle={vehicle}
-        open={showDetails}
-        onOpenChange={setShowDetails}
-        onEdit={() => setShowEditForm(true)}
-      />
       
       <VehicleForm 
         vehicle={vehicle}
