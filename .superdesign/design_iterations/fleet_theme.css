@@ -1,0 +1,446 @@
+/* Fleet Management Page Theme - Based on KW Rent Flow ERP Design System */
+
+:root {
+  /* ===== Base Colors (from main system) ===== */
+  --fleet-background: 0 0% 96%;
+  --fleet-background-soft: 0 0% 94%;
+  --fleet-foreground: 0 0% 15%;
+  
+  /* Card System */
+  --fleet-card: 0 0% 100%;
+  --fleet-card-foreground: 0 0% 15%;
+  --fleet-card-hover: 0 0% 98%;
+  --fleet-card-border: 0 0% 85%;
+  
+  /* Primary Red */
+  --fleet-primary: 0 70% 45%;
+  --fleet-primary-foreground: 0 0% 100%;
+  --fleet-primary-dark: 0 70% 35%;
+  --fleet-primary-light: 0 70% 55%;
+  --fleet-primary-glow: 0 70% 45% / 0.2;
+  
+  /* Professional Orange Accent */
+  --fleet-accent: 25 90% 92%;
+  --fleet-accent-foreground: 0 0% 15%;
+  --fleet-accent-light: 25 90% 95%;
+  --fleet-accent-muted: 25 90% 85%;
+  --fleet-accent-dark: 25 85% 55%;
+  
+  /* Secondary Gray */
+  --fleet-secondary: 0 0% 85%;
+  --fleet-secondary-foreground: 0 0% 15%;
+  --fleet-secondary-dark: 0 0% 80%;
+  
+  /* Status Colors */
+  --fleet-available: 142 56% 42%; /* Green for available */
+  --fleet-available-bg: 142 56% 95%;
+  --fleet-available-border: 142 56% 70%;
+  
+  --fleet-rented: 210 100% 50%; /* Blue for rented */
+  --fleet-rented-bg: 210 100% 95%;
+  --fleet-rented-border: 210 100% 70%;
+  
+  --fleet-maintenance: 25 85% 55%; /* Orange for maintenance */
+  --fleet-maintenance-bg: 25 85% 95%;
+  --fleet-maintenance-border: 25 85% 70%;
+  
+  --fleet-out-of-service: 0 65% 51%; /* Red for out of service */
+  --fleet-out-of-service-bg: 0 65% 95%;
+  --fleet-out-of-service-border: 0 65% 70%;
+  
+  /* Muted Elements */
+  --fleet-muted: 0 0% 92%;
+  --fleet-muted-foreground: 0 0% 45%;
+  
+  /* Borders and Inputs */
+  --fleet-border: 0 0% 85%;
+  --fleet-input: 0 0% 98%;
+  --fleet-input-border: 0 0% 80%;
+  --fleet-input-focus: 0 70% 45%;
+  
+  /* ===== Gradients ===== */
+  --fleet-gradient-header: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+  --fleet-gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 99%) 100%);
+  --fleet-gradient-stat-available: linear-gradient(135deg, hsl(142 56% 95%) 0%, hsl(142 56% 98%) 100%);
+  --fleet-gradient-stat-rented: linear-gradient(135deg, hsl(210 100% 95%) 0%, hsl(210 100% 98%) 100%);
+  --fleet-gradient-stat-maintenance: linear-gradient(135deg, hsl(25 85% 95%) 0%, hsl(25 85% 98%) 100%);
+  --fleet-gradient-stat-danger: linear-gradient(135deg, hsl(0 65% 95%) 0%, hsl(0 65% 98%) 100%);
+  --fleet-gradient-primary: linear-gradient(135deg, hsl(0 70% 35%), hsl(0 70% 45%));
+  --fleet-gradient-accent: linear-gradient(135deg, hsl(25 90% 95%), hsl(25 90% 85%));
+  
+  /* ===== Shadows ===== */
+  --fleet-shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+  --fleet-shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+  --fleet-shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  --fleet-shadow-glow: 0 0 20px hsl(0 70% 45% / 0.2);
+  --fleet-shadow-stat: 0 2px 8px hsl(0 0% 15% / 0.06);
+  --fleet-shadow-hover: 0 8px 16px -4px hsl(0 0% 15% / 0.12);
+  
+  /* ===== Typography ===== */
+  --fleet-font-sans: 'Cairo', sans-serif;
+  --fleet-font-body: 'Tajawal', sans-serif;
+  
+  /* ===== Spacing ===== */
+  --fleet-spacing-xs: 0.5rem; /* 8px */
+  --fleet-spacing-sm: 0.75rem; /* 12px */
+  --fleet-spacing-md: 1rem; /* 16px */
+  --fleet-spacing-lg: 1.5rem; /* 24px */
+  --fleet-spacing-xl: 2rem; /* 32px */
+  --fleet-spacing-2xl: 3rem; /* 48px */
+  
+  /* ===== Border Radius ===== */
+  --fleet-radius-sm: 0.5rem; /* 8px */
+  --fleet-radius-md: 0.75rem; /* 12px */
+  --fleet-radius-lg: 1rem; /* 16px */
+  --fleet-radius-xl: 1.25rem; /* 20px */
+  
+  /* ===== Transitions ===== */
+  --fleet-transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --fleet-transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --fleet-transition-micro: all 0.15s ease-out;
+  
+  /* ===== Z-Index Layers ===== */
+  --fleet-z-base: 1;
+  --fleet-z-dropdown: 10;
+  --fleet-z-modal: 50;
+  --fleet-z-toast: 100;
+}
+
+/* ===== Component-Specific Styles ===== */
+
+/* Header Section */
+.fleet-header {
+  background: var(--fleet-gradient-header);
+  border-bottom: 1px solid hsl(var(--fleet-border));
+  padding: var(--fleet-spacing-lg);
+  border-radius: var(--fleet-radius-md);
+  margin-bottom: var(--fleet-spacing-lg);
+}
+
+.fleet-title {
+  font-family: var(--fleet-font-sans);
+  font-size: 2rem;
+  font-weight: 700;
+  color: hsl(var(--fleet-foreground));
+  margin: 0;
+  line-height: 1.2;
+}
+
+.fleet-subtitle {
+  font-family: var(--fleet-font-body);
+  font-size: 1rem;
+  color: hsl(var(--fleet-muted-foreground));
+  margin-top: var(--fleet-spacing-xs);
+}
+
+/* System Aligned Statistics Cards - Clean & Professional */
+.system-stat-card {
+  background: hsl(var(--fleet-card));
+  border: 1px solid hsl(var(--fleet-border));
+  border-radius: var(--fleet-radius-md);
+  padding: var(--fleet-spacing-lg);
+  transition: var(--fleet-transition-smooth);
+  box-shadow: var(--fleet-shadow-subtle);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.system-stat-card:hover {
+  border-color: hsl(var(--fleet-primary) / 0.4);
+  box-shadow: var(--fleet-shadow-card);
+  transform: translateY(-2px);
+}
+
+.system-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(var(--fleet-primary)), hsl(var(--fleet-accent-dark)));
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+
+.system-stat-card:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Icon Wrapper */
+.stat-icon-wrapper {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--fleet-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.system-stat-card:hover .stat-icon-wrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Stat Divider */
+.stat-divider {
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, hsl(var(--fleet-available) / 0.3), transparent);
+  border-radius: 1px;
+  margin-top: var(--fleet-spacing-sm);
+}
+
+/* Number Animation */
+.system-stat-card h3 {
+  transition: all 0.2s ease;
+}
+
+.system-stat-card:hover h3 {
+  color: hsl(var(--fleet-primary)) !important;
+  transform: scale(1.05);
+}
+
+/* Legacy Support - keeping old classes for compatibility */
+.fleet-stat-card {
+  background: var(--fleet-gradient-card);
+  border: 1px solid hsl(var(--fleet-card-border));
+  border-radius: var(--fleet-radius-md);
+  padding: var(--fleet-spacing-lg);
+  box-shadow: var(--fleet-shadow-stat);
+  transition: var(--fleet-transition-smooth);
+  cursor: pointer;
+}
+
+.fleet-stat-card:hover {
+  box-shadow: var(--fleet-shadow-hover);
+  transform: translateY(-2px);
+  border-color: hsl(var(--fleet-primary) / 0.3);
+}
+
+.fleet-stat-number {
+  font-family: var(--fleet-font-sans);
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: var(--fleet-spacing-sm) 0;
+}
+
+.fleet-stat-label {
+  font-family: var(--fleet-font-body);
+  font-size: 0.875rem;
+  color: hsl(var(--fleet-foreground));
+  font-weight: 600;
+  margin-bottom: var(--fleet-spacing-xs);
+}
+
+.fleet-stat-description {
+  font-family: var(--fleet-font-body);
+  font-size: 0.75rem;
+  color: hsl(var(--fleet-muted-foreground));
+}
+
+/* Buttons */
+.fleet-btn-primary {
+  background: var(--fleet-gradient-primary);
+  color: hsl(var(--fleet-primary-foreground));
+  border: none;
+  border-radius: var(--fleet-radius-sm);
+  padding: var(--fleet-spacing-sm) var(--fleet-spacing-lg);
+  font-family: var(--fleet-font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--fleet-transition-smooth);
+  box-shadow: var(--fleet-shadow-subtle);
+}
+
+.fleet-btn-primary:hover {
+  box-shadow: var(--fleet-shadow-glow);
+  transform: translateY(-1px);
+}
+
+.fleet-btn-secondary {
+  background: hsl(var(--fleet-card));
+  color: hsl(var(--fleet-foreground));
+  border: 1px solid hsl(var(--fleet-border));
+  border-radius: var(--fleet-radius-sm);
+  padding: var(--fleet-spacing-sm) var(--fleet-spacing-lg);
+  font-family: var(--fleet-font-sans);
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--fleet-transition-smooth);
+}
+
+.fleet-btn-secondary:hover {
+  background: hsl(var(--fleet-card-hover));
+  border-color: hsl(var(--fleet-primary));
+  box-shadow: var(--fleet-shadow-subtle);
+}
+
+/* Filters Section */
+.fleet-filters {
+  background: hsl(var(--fleet-card));
+  border: 1px solid hsl(var(--fleet-border));
+  border-radius: var(--fleet-radius-md);
+  padding: var(--fleet-spacing-lg);
+  box-shadow: var(--fleet-shadow-card);
+  margin-bottom: var(--fleet-spacing-lg);
+}
+
+.fleet-filter-input {
+  background: hsl(var(--fleet-input));
+  border: 1px solid hsl(var(--fleet-input-border));
+  border-radius: var(--fleet-radius-sm);
+  padding: var(--fleet-spacing-sm) var(--fleet-spacing-md);
+  font-family: var(--fleet-font-body);
+  font-size: 1rem;
+  color: hsl(var(--fleet-foreground));
+  transition: var(--fleet-transition-micro);
+  width: 100%;
+}
+
+.fleet-filter-input:focus {
+  outline: none;
+  border-color: hsl(var(--fleet-input-focus));
+  box-shadow: 0 0 0 3px hsl(var(--fleet-primary-glow));
+}
+
+/* Vehicle Cards */
+.fleet-vehicle-card {
+  background: var(--fleet-gradient-card);
+  border: 1px solid hsl(var(--fleet-card-border));
+  border-radius: var(--fleet-radius-md);
+  overflow: hidden;
+  box-shadow: var(--fleet-shadow-card);
+  transition: var(--fleet-transition-smooth);
+}
+
+.fleet-vehicle-card:hover {
+  box-shadow: var(--fleet-shadow-elevated);
+  transform: translateY(-4px);
+  border-color: hsl(var(--fleet-primary) / 0.3);
+}
+
+.fleet-vehicle-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  background: hsl(var(--fleet-muted));
+}
+
+.fleet-vehicle-content {
+  padding: var(--fleet-spacing-lg);
+}
+
+.fleet-vehicle-name {
+  font-family: var(--fleet-font-sans);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(var(--fleet-foreground));
+  margin-bottom: var(--fleet-spacing-xs);
+}
+
+.fleet-vehicle-plate {
+  font-family: var(--fleet-font-body);
+  font-size: 0.875rem;
+  color: hsl(var(--fleet-muted-foreground));
+  margin-bottom: var(--fleet-spacing-sm);
+}
+
+/* Status Badges */
+.fleet-badge {
+  display: inline-block;
+  padding: var(--fleet-spacing-xs) var(--fleet-spacing-sm);
+  border-radius: var(--fleet-radius-sm);
+  font-family: var(--fleet-font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fleet-badge.available {
+  background: hsl(var(--fleet-available-bg));
+  color: hsl(var(--fleet-available));
+  border: 1px solid hsl(var(--fleet-available-border));
+}
+
+.fleet-badge.rented {
+  background: hsl(var(--fleet-rented-bg));
+  color: hsl(var(--fleet-rented));
+  border: 1px solid hsl(var(--fleet-rented-border));
+}
+
+.fleet-badge.maintenance {
+  background: hsl(var(--fleet-maintenance-bg));
+  color: hsl(var(--fleet-maintenance));
+  border: 1px solid hsl(var(--fleet-maintenance-border));
+}
+
+.fleet-badge.out-of-service {
+  background: hsl(var(--fleet-out-of-service-bg));
+  color: hsl(var(--fleet-out-of-service));
+  border: 1px solid hsl(var(--fleet-out-of-service-border));
+}
+
+/* Pagination */
+.fleet-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--fleet-spacing-sm);
+  margin-top: var(--fleet-spacing-xl);
+}
+
+.fleet-pagination-btn {
+  background: hsl(var(--fleet-card));
+  border: 1px solid hsl(var(--fleet-border));
+  border-radius: var(--fleet-radius-sm);
+  padding: var(--fleet-spacing-sm) var(--fleet-spacing-md);
+  font-family: var(--fleet-font-body);
+  font-size: 0.875rem;
+  color: hsl(var(--fleet-foreground));
+  cursor: pointer;
+  transition: var(--fleet-transition-micro);
+}
+
+.fleet-pagination-btn:hover {
+  background: hsl(var(--fleet-card-hover));
+  border-color: hsl(var(--fleet-primary));
+}
+
+.fleet-pagination-btn.active {
+  background: var(--fleet-gradient-primary);
+  color: hsl(var(--fleet-primary-foreground));
+  border-color: hsl(var(--fleet-primary));
+  font-weight: 700;
+}
+
+/* RTL Support */
+[dir="rtl"] .fleet-header,
+[dir="rtl"] .fleet-filters,
+[dir="rtl"] .fleet-vehicle-content {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .fleet-title {
+    font-size: 1.5rem;
+  }
+  
+  .fleet-stat-number {
+    font-size: 2rem;
+  }
+  
+  .fleet-vehicle-image {
+    height: 150px;
+  }
+}
+

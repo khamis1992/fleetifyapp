@@ -1,0 +1,127 @@
+/* Fleet Management - Maintenance Page Theme */
+
+:root {
+  /* Colors - Modern Professional Palette */
+  --background: oklch(0.98 0.005 264);
+  --foreground: oklch(0.15 0.01 264);
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.15 0.01 264);
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0.01 264);
+  
+  /* Primary - Deep Red (System Color) */
+  --primary: oklch(0.50 0.18 25);
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* Secondary - Neutral Gray */
+  --secondary: oklch(0.92 0.01 264);
+  --secondary-foreground: oklch(0.20 0.01 264);
+  
+  /* Muted - Light Gray */
+  --muted: oklch(0.95 0.01 264);
+  --muted-foreground: oklch(0.50 0.01 264);
+  
+  /* Accent - Professional Orange */
+  --accent: oklch(0.75 0.08 40);
+  --accent-foreground: oklch(0.15 0.01 264);
+  
+  /* Success - Green */
+  --success: oklch(0.55 0.15 145);
+  --success-foreground: oklch(0.98 0 0);
+  
+  /* Warning - Orange */
+  --warning: oklch(0.65 0.18 50);
+  --warning-foreground: oklch(0.98 0 0);
+  
+  /* Destructive - Red */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* Border & Input */
+  --border: oklch(0.88 0.01 264);
+  --input: oklch(0.88 0.01 264);
+  --ring: oklch(0.50 0.18 25);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.005 264);
+  --sidebar-foreground: oklch(0.15 0.01 264);
+  --sidebar-primary: oklch(0.50 0.18 25);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.92 0.01 264);
+  --sidebar-accent-foreground: oklch(0.20 0.01 264);
+  --sidebar-border: oklch(0.88 0.01 264);
+  --sidebar-ring: oklch(0.50 0.18 25);
+  
+  /* Typography - Arabic-friendly fonts */
+  --font-sans: 'Cairo', 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Amiri', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  
+  /* Border Radius */
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  
+  /* Shadows - Soft and Modern */
+  --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.08);
+  --shadow-sm: 0 2px 4px -1px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
+  --shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+  --shadow-md: 0 6px 12px -2px hsl(0 0% 0% / 0.10), 0 3px 6px -2px hsl(0 0% 0% / 0.08);
+  --shadow-lg: 0 10px 20px -3px hsl(0 0% 0% / 0.12), 0 4px 8px -2px hsl(0 0% 0% / 0.08);
+  --shadow-xl: 0 20px 30px -5px hsl(0 0% 0% / 0.15), 0 8px 12px -4px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.25);
+  
+  /* Spacing */
+  --spacing: 0.25rem;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Letter Spacing */
+  --tracking-normal: 0em;
+  --tracking-tight: -0.01em;
+  --tracking-wide: 0.02em;
+}
+
+/* Priority Colors */
+.priority-high {
+  background: oklch(0.55 0.22 25 / 0.1) !important;
+  color: oklch(0.55 0.22 25) !important;
+}
+
+.priority-medium {
+  background: oklch(0.65 0.18 50 / 0.1) !important;
+  color: oklch(0.65 0.18 50) !important;
+}
+
+.priority-low {
+  background: oklch(0.55 0.15 145 / 0.1) !important;
+  color: oklch(0.55 0.15 145) !important;
+}
+
+/* Status Colors */
+.status-active {
+  background: oklch(0.55 0.15 145 / 0.1) !important;
+  color: oklch(0.55 0.15 145) !important;
+}
+
+.status-pending {
+  background: oklch(0.65 0.18 50 / 0.1) !important;
+  color: oklch(0.65 0.18 50) !important;
+}
+
+.status-completed {
+  background: oklch(0.45 0.15 264 / 0.1) !important;
+  color: oklch(0.45 0.15 264) !important;
+}
+
+.status-cancelled {
+  background: oklch(0.50 0.01 264 / 0.1) !important;
+  color: oklch(0.50 0.01 264) !important;
+}
+

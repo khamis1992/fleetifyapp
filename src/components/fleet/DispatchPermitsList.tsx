@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   FileText, 
   Car, 
@@ -140,6 +140,30 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
     // يمكن الحذف فقط إذا لم يكن التصريح مكتملاً أو قيد التنفيذ
     return permit.status !== 'completed' && permit.status !== 'in_progress';
   };
+
+  // Filter permits based on search term, status, and priority
+  const filteredPermits = useMemo(() => {
+    if (!permits) return [];
+
+    return permits.filter((permit) => {
+      // Search filter
+      const matchesSearch = 
+        !searchTerm ||
+        permit.permit_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        permit.purpose?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        permit.vehicle?.plate_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        permit.vehicle?.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        permit.vehicle?.model?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || permit.status === statusFilter;
+
+      // Priority filter
+      const matchesPriority = priorityFilter === 'all' || permit.priority === priorityFilter;
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [permits, searchTerm, statusFilter, priorityFilter]);
 
   return (
     <div className="space-y-6" dir="rtl">

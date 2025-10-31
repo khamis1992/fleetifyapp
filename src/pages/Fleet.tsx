@@ -140,58 +140,98 @@ export default function Fleet() {
         </DialogContent>
       </Dialog>
 
-      {/* Fleet Overview Cards */}
+      {/* Fleet Overview Cards - System Aligned Design */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'available', excludeMaintenanceStatus: false })}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المركبات المتاحة</CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{fleetStatus?.available || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              جاهزة للإيجار
-            </p>
+        {/* Available Vehicles */}
+        <Card 
+          className="relative overflow-hidden cursor-pointer transition-all hover:border-primary/40 hover:shadow-card hover:-translate-y-0.5 group"
+          onClick={() => handleFiltersChange({ ...filters, status: 'available', excludeMaintenanceStatus: false })}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                <Car className="h-5 w-5 text-success" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">المركبات المتاحة</span>
+            </div>
+            <div className="mb-2">
+              <h3 className="text-3xl font-bold text-foreground mb-1 group-hover:text-primary group-hover:scale-105 transition-all">
+                {fleetStatus?.available || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground">جاهزة للإيجار</p>
+            </div>
+            <div className="h-0.5 w-full bg-gradient-to-r from-success/30 to-transparent rounded-full mt-3"></div>
           </CardContent>
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 origin-right group-hover:origin-left transition-transform duration-300"></div>
         </Card>
-        
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'rented', excludeMaintenanceStatus: false })}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المركبات المؤجرة</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{fleetStatus?.rented || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              حالياً تحت العقد
-            </p>
+
+        {/* Rented Vehicles */}
+        <Card 
+          className="relative overflow-hidden cursor-pointer transition-all hover:border-primary/40 hover:shadow-card hover:-translate-y-0.5 group"
+          onClick={() => handleFiltersChange({ ...filters, status: 'rented', excludeMaintenanceStatus: false })}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform" style={{ backgroundColor: 'hsl(0 70% 45% / 0.1)' }}>
+                <TrendingUp className="h-5 w-5" style={{ color: 'hsl(0 70% 45%)' }} />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">المركبات المؤجرة</span>
+            </div>
+            <div className="mb-2">
+              <h3 className="text-3xl font-bold text-foreground mb-1 group-hover:text-primary group-hover:scale-105 transition-all">
+                {fleetStatus?.rented || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground">حالياً تحت العقد</p>
+            </div>
+            <div className="h-0.5 w-full rounded-full mt-3" style={{ background: 'linear-gradient(90deg, hsl(0 70% 45% / 0.3), transparent)' }}></div>
           </CardContent>
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 origin-right group-hover:origin-left transition-transform duration-300"></div>
         </Card>
-        
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'maintenance', excludeMaintenanceStatus: false })}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الصيانة</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{fleetStatus?.maintenance || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              يتم صيانتها
-            </p>
+
+        {/* Maintenance */}
+        <Card 
+          className="relative overflow-hidden cursor-pointer transition-all hover:border-primary/40 hover:shadow-card hover:-translate-y-0.5 group"
+          onClick={() => handleFiltersChange({ ...filters, status: 'maintenance', excludeMaintenanceStatus: false })}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform" style={{ backgroundColor: 'hsl(25 85% 55% / 0.1)' }}>
+                <Wrench className="h-5 w-5" style={{ color: 'hsl(25 85% 55%)' }} />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">قيد الصيانة</span>
+            </div>
+            <div className="mb-2">
+              <h3 className="text-3xl font-bold text-foreground mb-1 group-hover:text-primary group-hover:scale-105 transition-all">
+                {fleetStatus?.maintenance || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground">يتم صيانتها</p>
+            </div>
+            <div className="h-0.5 w-full rounded-full mt-3" style={{ background: 'linear-gradient(90deg, hsl(25 85% 55% / 0.3), transparent)' }}></div>
           </CardContent>
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 origin-right group-hover:origin-left transition-transform duration-300"></div>
         </Card>
-        
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'out_of_service', excludeMaintenanceStatus: false })}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">خارج الخدمة</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{fleetStatus?.outOfService || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              تحتاج لإنتباه
-            </p>
+
+        {/* Out of Service */}
+        <Card 
+          className="relative overflow-hidden cursor-pointer transition-all hover:border-primary/40 hover:shadow-card hover:-translate-y-0.5 group"
+          onClick={() => handleFiltersChange({ ...filters, status: 'out_of_service', excludeMaintenanceStatus: false })}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">خارج الخدمة</span>
+            </div>
+            <div className="mb-2">
+              <h3 className="text-3xl font-bold text-foreground mb-1 group-hover:text-primary group-hover:scale-105 transition-all">
+                {fleetStatus?.outOfService || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground">تحتاج لانتباه</p>
+            </div>
+            <div className="h-0.5 w-full bg-gradient-to-r from-destructive/30 to-transparent rounded-full mt-3"></div>
           </CardContent>
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 origin-right group-hover:origin-left transition-transform duration-300"></div>
         </Card>
       </div>
 
