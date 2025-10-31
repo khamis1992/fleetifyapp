@@ -61,6 +61,8 @@ import { useContractDrafts } from "@/hooks/useContractDrafts";
 import { useToast } from "@/hooks/use-toast-mock";
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { getCurrencyConfig } from "@/utils/currencyConfig";
 
 function ContractsNew() {
   // State management
@@ -100,6 +102,19 @@ function ContractsNew() {
   const autoRenewContracts = useAutoRenewContracts();
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation();
   const contractDrafts = useContractDrafts();
+  const { formatCurrency: formatCurrencyAmount, currency } = useCurrencyFormatter();
+  const currencyConfig = getCurrencyConfig(currency);
+
+  // Helper function to format currency with Arabic symbol
+  const formatCurrencyWithSymbol = (amount: number, opts?: { minimumFractionDigits?: number; maximumFractionDigits?: number }) => {
+    const minDigits = opts?.minimumFractionDigits ?? currencyConfig.fractionDigits;
+    const maxDigits = opts?.maximumFractionDigits ?? currencyConfig.fractionDigits;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
+    }).format(amount);
+    return `${formatted} ${currencyConfig.symbol}`;
+  };
 
   // Data fetching with pagination
   const filtersWithPagination = useMemo(
@@ -308,14 +323,6 @@ function ContractsNew() {
     );
   };
 
-  // Helper function to format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("ar-SA", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   // Helper function to get customer name
   const getCustomerName = (contract: any) => {
     if (!contract.customers) return "غير محدد";
@@ -346,7 +353,7 @@ function ContractsNew() {
   }
 
   return (
-    <PageCustomizer pageId="contracts-page" title="Contracts" titleAr="العقود">
+    <PageCustomizer pageId="contracts-page" title="" titleAr="">
       <div className="space-y-6">
         {/* Page Header Section */}
         <div className="flex items-center gap-4">
@@ -355,7 +362,6 @@ function ContractsNew() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">إدارة العقود</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">نظام فليتفاي لإدارة الأساطيل</p>
           </div>
         </div>
 
@@ -473,7 +479,7 @@ function ContractsNew() {
             <div className="flex items-center justify-between text-white">
               <div>
                 <p className="text-red-100 text-sm font-medium mb-2">إجمالي الإيرادات الشهرية المتوقعة</p>
-                <h2 className="text-4xl font-bold mb-1">{formatCurrency(safeStatistics.totalRevenue || 0)} ر.س</h2>
+                <h2 className="text-4xl font-bold mb-1">{formatCurrencyWithSymbol(safeStatistics.totalRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
                 <p className="text-red-100 text-sm">من {safeStatistics.activeContracts?.length || 0} عقد نشط</p>
               </div>
               <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
@@ -675,7 +681,7 @@ function ContractsNew() {
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">القيمة الشهرية</p>
-                            <p className="font-bold text-red-600 text-lg">{formatCurrency(contract.monthly_amount || 0)} ر.س</p>
+                            <p className="font-bold text-red-600 text-lg">{formatCurrencyWithSymbol(contract.monthly_amount || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                           </div>
                         </div>
 

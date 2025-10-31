@@ -54,16 +54,22 @@ export function PageCustomizer({
   return (
     <div className="space-y-6">
       {/* Header with customization controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {title}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {titleAr}
-          </p>
+      {(title || titleAr) && (
+        <div className="flex items-center justify-between">
+          <div>
+            {title && (
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                {title}
+              </h1>
+            )}
+            {titleAr && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {titleAr}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Customizable dashboard wrapper */}
       {pageWidgets.length > 0 ? (

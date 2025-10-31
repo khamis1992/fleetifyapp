@@ -5,7 +5,7 @@
  * @component ContractDetailsPage
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -1347,6 +1347,14 @@ interface TimelineTabProps {
 const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
   const paidPayments = contractStats?.paidPayments || 0;
 
+  if (!contractStats) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        جاري تحميل بيانات الجدول الزمني...
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-lg font-semibold text-gray-900 mb-6">المخطط الزمني للعقد</h3>
@@ -1365,7 +1373,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
 
           {/* الدفعات */}
           {[1, 2, 3].map((num) => (
-            <React.Fragment key={num}>
+            <Fragment key={num}>
               <TimelineNode
                 icon={num <= paidPayments ? <Check className="w-6 h-6 text-green-600" /> : num === paidPayments + 1 ? <Clock className="w-6 h-6 text-blue-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
                 label={`الدفعة ${num}`}
@@ -1374,7 +1382,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
                 isCurrent={num === paidPayments + 1}
               />
               <TimelineConnector isCompleted={num < paidPayments} />
-            </React.Fragment>
+            </Fragment>
           ))}
 
           {/* نقطة الانتهاء */}
