@@ -60,6 +60,7 @@ import { useContractCreation } from "@/hooks/useContractCreation";
 import { useContractDrafts } from "@/hooks/useContractDrafts";
 import { useToast } from "@/hooks/use-toast-mock";
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
+import { formatDateInGregorian } from "@/utils/dateFormatter";
 
 function ContractsNew() {
   // State management
@@ -502,13 +503,7 @@ function ContractsNew() {
                               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                                 <Clock className="h-3 w-3" />
                                 <span>
-                                  آخر تحديث:{" "}
-                                  {new Date(draft.updated_at).toLocaleDateString("ar-SA", {
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                                  آخر تحديث: {formatDateInGregorian(draft.updated_at)}
                                 </span>
                               </div>
                             </div>
@@ -672,11 +667,11 @@ function ContractsNew() {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
                           <div>
                             <p className="text-xs text-gray-500 mb-1">تاريخ البداية</p>
-                            <p className="font-semibold text-gray-900">{contract.start_date ? new Date(contract.start_date).toLocaleDateString("ar-SA") : "غير محدد"}</p>
+                            <p className="font-semibold text-gray-900">{formatDateInGregorian(contract.start_date)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">تاريخ الانتهاء</p>
-                            <p className="font-semibold text-gray-900">{contract.end_date ? new Date(contract.end_date).toLocaleDateString("ar-SA") : "غير محدد"}</p>
+                            <p className="font-semibold text-gray-900">{formatDateInGregorian(contract.end_date)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">القيمة الشهرية</p>
