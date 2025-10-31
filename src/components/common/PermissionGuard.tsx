@@ -171,20 +171,24 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
 export const AdminOnly: React.FC<{ children: React.ReactNode; hideIfNoAccess?: boolean }> = ({ 
   children, 
   hideIfNoAccess = true 
-}) => (
-  <PermissionGuard requireCompanyAdmin hideIfNoAccess={hideIfNoAccess}>
-    {children}
-  </PermissionGuard>
-);
+}) => {
+  return (
+    <PermissionGuard requireCompanyAdmin hideIfNoAccess={hideIfNoAccess}>
+      {children}
+    </PermissionGuard>
+  );
+};
 
 export const SuperAdminOnly: React.FC<{ children: React.ReactNode; hideIfNoAccess?: boolean }> = ({ 
   children, 
   hideIfNoAccess = true 
-}) => (
-  <PermissionGuard requireGlobalAccess hideIfNoAccess={hideIfNoAccess}>
-    {children}
-  </PermissionGuard>
-);
+}) => {
+  return (
+    <PermissionGuard requireGlobalAccess hideIfNoAccess={hideIfNoAccess}>
+      {children}
+    </PermissionGuard>
+  );
+};
 
 export const FeatureGuard: React.FC<{ 
   feature: string; 
