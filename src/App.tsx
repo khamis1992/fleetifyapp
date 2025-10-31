@@ -45,11 +45,11 @@ const NativeMobileDemo = lazy(() => import("./pages/NativeMobileDemo"));
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
 const Customers = lazy(() => import("./pages/Customers"));
-const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage").then(module => ({ default: module.default })));
+const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage"));
 const Contracts = lazy(() => import("./pages/Contracts"));
-const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage").then(module => ({ default: module.default })));
+const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage"));
 const Fleet = lazy(() => import("./pages/Fleet"));
-const VehicleDetailsPage = lazy(() => import("./components/fleet/VehicleDetailsPage").then(module => ({ default: module.default })));
+const VehicleDetailsPage = lazy(() => import("./components/fleet/VehicleDetailsPage"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ReportsHub = lazy(() => import("./pages/reports/ReportsHub"));
 const ReportView = lazy(() => import("./pages/ReportView"));
@@ -489,7 +489,7 @@ const AppRoutes = () => {
             </Suspense>
           </RouteWrapper>
         } />
-        <Route path="contracts/:contractId" element={
+        <Route path="contracts/:contractNumber" element={
           <RouteWrapper routeName="Contract Details" fallbackPath="/contracts">
             <Suspense fallback={<PageSkeletonFallback />}>
               <ContractDetailsPage />

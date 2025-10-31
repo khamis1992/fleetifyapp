@@ -73,7 +73,7 @@ import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
  * مكون صفحة تفاصيل العقد الرئيسية
  */
 const ContractDetailsPage = () => {
-  const { contractId } = useParams<{ contractId: string }>();
+  const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,10 +88,10 @@ const ContractDetailsPage = () => {
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
-    queryKey: ['contract-details', contractId, companyId],
+    queryKey: ['contract-details', contractNumber, companyId],
     queryFn: async () => {
-      if (!contractId || !companyId) {
-        throw new Error('معرف العقد أو الشركة مفقود');
+      if (!contractNumber || !companyId) {
+        throw new Error('رقم العقد أو الشركة مفقود');
       }
 
       const { data, error } = await supabase
@@ -131,39 +131,39 @@ const ContractDetailsPage = () => {
             name
           )
         `)
-        .eq('id', contractId)
+        .eq('contract_number', contractNumber)
         .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
       return data as Contract;
     },
-    enabled: !!contractId && !!companyId,
+    enabled: !!contractNumber && !!companyId,
   });
 
   // جلب الفواتير المرتبطة
   const { data: invoices = [] } = useQuery({
-    queryKey: ['contract-invoices', contractId],
+    queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
-      if (!contractId) return [];
+      if (!contract?.id) return [];
       
       const { data, error } = await supabase
         .from('invoices')
         .select('*')
-        .eq('contract_id', contractId)
+        .eq('contract_id', contract.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as Invoice[];
     },
-    enabled: !!contractId,
+    enabled: !!contract?.id,
   });
 
   // جلب المدفوعات المرتبطة بالعقد
   const { data: contractPayments = [] } = useQuery({
-    queryKey: ['contract-payments', contractId, companyId],
+    queryKey: ['contract-payments', contract?.id, companyId],
     queryFn: async () => {
-      if (!contractId || !companyId) return [];
+      if (!contract?.id || !companyId) return [];
       
       const { data, error } = await supabase
         .from('payments')
@@ -176,20 +176,20 @@ const ContractDetailsPage = () => {
             customer_type
           )
         `)
-        .eq('contract_id', contractId)
+        .eq('contract_id', contract.id)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!contractId && !!companyId,
+    enabled: !!contract?.id && !!companyId,
   });
 
   // جلب فحوصات المركبة
   const { data: inspections, refetch: refetchInspections } = useVehicleInspections({
-    contractId: contractId || '',
-    enabled: !!contractId && !!contract?.vehicle_id,
+    contractId: contract?.id || '',
+    enabled: !!contract?.id && !!contract?.vehicle_id,
   });
 
   // الحصول على فحوصات الاستلام والتسليم

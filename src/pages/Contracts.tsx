@@ -242,12 +242,12 @@ function Contracts() {
   }, [])
 
   const handleViewDetails = useCallback((contract: any) => {
-    if (!contract?.id) {
-      console.error('Contract ID is missing:', contract)
+    if (!contract?.contract_number) {
+      console.error('Contract number is missing:', contract)
       return
     }
-    // Navigate to the new contract details page
-    navigate(`/contracts/${contract.id}`)
+    // Navigate to the new contract details page using contract number
+    navigate(`/contracts/${contract.contract_number}`)
   }, [navigate])
 
   const handleCancelContract = useCallback((contract: any) => {
