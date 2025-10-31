@@ -2,18 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 if (!SUPABASE_URL) {
   console.error('❌ Error: VITE_SUPABASE_URL environment variable is not set.');
-  console.error('Please set it in your .env file.');
-  process.exit(1);
-};
-const SUPABASE_PUBLISHABLE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  console.error('Please set it in your .env file or Vercel environment variables.');
+  throw new Error('VITE_SUPABASE_URL is required');
+}
+
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 if (!SUPABASE_PUBLISHABLE_KEY) {
   console.error('❌ Error: VITE_SUPABASE_ANON_KEY environment variable is not set.');
-  console.error('Please set it in your .env file.');
-  process.exit(1);
-};
+  console.error('Please set it in your .env file or Vercel environment variables.');
+  throw new Error('VITE_SUPABASE_ANON_KEY is required');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

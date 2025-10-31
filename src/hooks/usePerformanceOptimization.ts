@@ -131,7 +131,7 @@ export function usePerformanceOptimization(config: Partial<PerformanceConfig> = 
       }
       
       // تسجيل محدود في التطوير
-      if (process.env.NODE_ENV === 'development' && renderTime > 16) {
+      if (import.meta.env.DEV && renderTime > 16) {
         console.debug(`🎯 ${componentName || 'component'}: ${renderTime.toFixed(2)}ms`)
       }
     }

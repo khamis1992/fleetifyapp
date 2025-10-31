@@ -15,7 +15,7 @@ export const useLandingThemes = () => {
       if (error) throw error;
       setThemes(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.error('Error fetching themes:', error);
       }
     } finally {

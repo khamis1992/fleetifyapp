@@ -58,7 +58,7 @@ export const useLandingAnalytics = ({ companyId, dateRange }: LandingAnalyticsPa
         setPreviousPeriodAnalytics(previousData || []);
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.error('Error fetching analytics:', error);
       }
     } finally {

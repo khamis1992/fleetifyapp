@@ -137,7 +137,7 @@ export const VirtualizedContractsList: React.FC<VirtualizedContractsListProps> =
       </div>
 
       {/* Virtual scroll info (for debugging) */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="mt-2 text-xs text-muted-foreground text-center">
           عرض {virtualItems.length} من {contracts.length} عقد
         </div>

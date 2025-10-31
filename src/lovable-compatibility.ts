@@ -85,7 +85,7 @@ const setupLovableOptimizations = () => {
   if (!isLovableEnvironment()) return;
 
   // Disable React DevTools in production-like Lovable environment
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     if (typeof window !== 'undefined') {
       (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
         isDisabled: true,

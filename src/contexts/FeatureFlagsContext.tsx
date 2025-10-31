@@ -58,7 +58,7 @@ const getEnvironmentFlags = (): Partial<FeatureFlags> => {
   }
 
   // Development environment - enable more features
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     return {
       ...envFlags,
       responsiveDesign: true,
@@ -285,7 +285,7 @@ export function FeatureFlagsDeveloperTools() {
   const [isOpen, setIsOpen] = useState(false)
 
   // Only show in development
-  if (process.env.NODE_ENV !== 'development') {
+  if (import.meta.env.PROD) {
     return null
   }
 

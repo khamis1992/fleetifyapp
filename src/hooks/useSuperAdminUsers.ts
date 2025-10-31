@@ -629,14 +629,14 @@ export const useSuperAdminUsers = () => {
       });
 
       if (functionError) {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.error('Edge function error:', functionError);
         }
         throw new Error(functionError.message || 'Failed to reset password');
       }
 
       if (!result?.success) {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.error('Password reset failed:', result);
         }
         throw new Error(result?.error || 'Failed to reset password');
@@ -649,7 +649,7 @@ export const useSuperAdminUsers = () => {
 
       return result;
     } catch (error: unknown) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.error('Error resetting password:', error);
       }
       

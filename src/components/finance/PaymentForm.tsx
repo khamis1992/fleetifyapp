@@ -378,7 +378,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
           </Alert>
         )}
 
-        {debugInfo && process.env.NODE_ENV === 'development' && (
+        {debugInfo && import.meta.env.DEV && (
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>

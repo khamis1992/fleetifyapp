@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-muted-foreground mb-4">
               نعتذر، حدث خطأ في التطبيق. يرجى تحديث الصفحة والمحاولة مرة أخرى.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mb-4">
                 <summary className="cursor-pointer text-sm text-muted-foreground">
                   تفاصيل الخطأ (للمطورين)

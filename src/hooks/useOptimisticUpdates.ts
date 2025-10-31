@@ -326,7 +326,7 @@ export const logOptimisticUpdate = (
   queryKey: QueryKey,
   data: unknown
 ) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`🔄 [Optimistic ${operation}]`, {
       queryKey,
       data,

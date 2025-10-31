@@ -7,7 +7,7 @@ const NotFound = () => {
   // Log 404 errors for monitoring
   useEffect(() => {
     // Only log in development mode to avoid console pollution in production
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error(
         "404 Error: User attempted to access non-existent route:",
         location.pathname

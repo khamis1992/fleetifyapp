@@ -204,7 +204,7 @@ export function getTouchPadding(size: 'sm' | 'md' | 'lg' = 'md') {
  * Enable debug mode for touch targets (development only)
  */
 export function enableTouchTargetDebug() {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (import.meta.env.PROD) return;
 
   const auditResults = auditTouchTargets();
 
