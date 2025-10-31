@@ -113,7 +113,7 @@ export default function Maintenance() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 10
   
   // Read vehicle parameter from URL
   useEffect(() => {
@@ -283,11 +283,7 @@ export default function Maintenance() {
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-green-600 font-semibold flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                {statistics.total > 0 ? '12%' : '0%'}
-              </span>
-              <span className="text-gray-500">عن الشهر الماضي</span>
+              <span className="text-gray-500">إجمالي طلبات الصيانة</span>
             </div>
           </div>
 
@@ -647,24 +643,30 @@ export default function Maintenance() {
                     {selectedMaintenance.vehicles?.plate_number || 'غير محدد'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">النوع</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.vehicles?.vehicle_type || 'سيارة صالون'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">الموديل</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.vehicles?.year || '2022'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">الماركة</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.vehicles?.make} {selectedMaintenance.vehicles?.model}
-                  </span>
-                </div>
+                {selectedMaintenance.vehicles?.vehicle_type && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">النوع</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedMaintenance.vehicles.vehicle_type}
+                    </span>
+                  </div>
+                )}
+                {selectedMaintenance.vehicles?.year && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">الموديل</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedMaintenance.vehicles.year}
+                    </span>
+                  </div>
+                )}
+                {(selectedMaintenance.vehicles?.make || selectedMaintenance.vehicles?.model) && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">الماركة</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedMaintenance.vehicles?.make || ''} {selectedMaintenance.vehicles?.model || ''}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -747,7 +749,6 @@ export default function Maintenance() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{selectedMaintenance.technician_name}</p>
-                    <p className="text-sm text-gray-600">فني صيانة رئيسي</p>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, Calculator, Layers3, Upload, Search, ChevronDown, RotateCcw, Eye, Edit, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, Calculator, Layers3, Upload, Search, ChevronDown, RotateCcw, Eye, Edit, MoreVertical, ChevronLeft, ChevronRight, Trash2, Copy, Download, FileText, Camera } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,6 +14,11 @@ import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { useDeleteVehicle } from "@/hooks/useVehicles"
+import { useToast } from "@/hooks/use-toast"
+import type { Vehicle } from "@/hooks/useVehicles"
 
 export default function Fleet() {
   const navigate = useNavigate()
@@ -22,6 +27,8 @@ export default function Fleet() {
   
   // State Management
   const [showVehicleForm, setShowVehicleForm] = useState(false)
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null)
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -30,6 +37,10 @@ export default function Fleet() {
   const [filters, setFilters] = useState<IVehicleFilters>({
     excludeMaintenanceStatus: false
   })
+  
+  // Hooks
+  const { toast } = useToast()
+  const deleteVehicle = useDeleteVehicle()
   
   // Data Hooks
   const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus()
@@ -59,8 +70,68 @@ export default function Fleet() {
   const handleVehicleFormClose = (open: boolean) => {
     setShowVehicleForm(open)
     if (!open) {
+      setEditingVehicle(null)
       queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] })
+      queryClient.invalidateQueries({ queryKey: ['fleet-status'] })
     }
+  }
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle)
+    setShowVehicleForm(true)
+  }
+
+  const handleDeleteVehicle = async () => {
+    if (!vehicleToDelete) return
+    
+    try {
+      await deleteVehicle.mutateAsync(vehicleToDelete.id)
+      setVehicleToDelete(null)
+      queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] })
+      queryClient.invalidateQueries({ queryKey: ['fleet-status'] })
+    } catch (error) {
+      console.error('Error deleting vehicle:', error)
+    }
+  }
+
+  const handleCopyVehicle = (vehicle: Vehicle) => {
+    // Create a copy without ID and timestamps - VehicleForm will treat this as new vehicle
+    const vehicleData = {
+      ...vehicle,
+      plate_number: `${vehicle.plate_number} (نسخة)`,
+    }
+    
+    // Remove id and timestamps to make it a new vehicle
+    delete (vehicleData as any).id
+    delete (vehicleData as any).created_at
+    delete (vehicleData as any).updated_at
+    
+    // Open form with copied data (without id, so it's treated as new)
+    setEditingVehicle(vehicleData as Vehicle)
+    setShowVehicleForm(true)
+    
+    toast({
+      title: "تم نسخ المركبة",
+      description: "يمكنك الآن تعديل البيانات وإضافة المركبة",
+    })
+  }
+
+  const handleExportVehicle = (vehicle: Vehicle) => {
+    const vehicleJson = JSON.stringify(vehicle, null, 2)
+    const blob = new Blob([vehicleJson], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `vehicle_${vehicle.plate_number}_${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast({
+      title: "تم تصدير البيانات",
+      description: `تم تصدير بيانات المركبة ${vehicle.plate_number}`,
+    })
   }
 
   const handlePageChange = (page: number) => {
@@ -84,8 +155,6 @@ export default function Fleet() {
   return (
     <PageCustomizer
       pageId="fleet-page"
-      title="Fleet Management"
-      titleAr="إدارة الأسطول"
     >
       <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6 lg:p-8">
         
@@ -338,8 +407,9 @@ export default function Fleet() {
               {vehiclesData.data.map((vehicle, index) => (
                 <Card 
                   key={vehicle.id}
-                  className="overflow-hidden hover:shadow-elevated hover:-translate-y-1 transition-all animate-fade-in-up"
+                  className="overflow-hidden hover:shadow-elevated hover:-translate-y-1 transition-all animate-fade-in-up cursor-pointer"
                   style={{ animationDelay: `${(index % 8) * 0.1}s` }}
+                  onClick={() => navigate(`/fleet/vehicle/${vehicle.id}`)}
                 >
                   <div className="h-48 bg-muted relative overflow-hidden">
                     {vehicle.images && vehicle.images[0] ? (
@@ -379,30 +449,71 @@ export default function Fleet() {
                         <button 
                           className="p-2 hover:bg-accent rounded-lg transition-colors" 
                           title="عرض التفاصيل"
-                          onClick={() => navigate(`/fleet/vehicle/${vehicle.id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/fleet/vehicle/${vehicle.id}`)
+                          }}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button 
                           className="p-2 hover:bg-accent rounded-lg transition-colors" 
                           title="تعديل"
-                          onClick={() => {
-                            // TODO: Open edit dialog with vehicle data
-                            console.log('Edit vehicle:', vehicle.id)
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditVehicle(vehicle)
                           }}
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          className="p-2 hover:bg-accent rounded-lg transition-colors" 
-                          title="المزيد"
-                          onClick={() => {
-                            // TODO: Open context menu
-                            console.log('More options for vehicle:', vehicle.id)
-                          }}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button 
+                              className="p-2 hover:bg-accent rounded-lg transition-colors" 
+                              title="المزيد"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                              }}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}`)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              عرض التفاصيل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditVehicle(vehicle)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              تعديل المركبة
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleCopyVehicle(vehicle)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              نسخ المركبة
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExportVehicle(vehicle)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              تصدير البيانات
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}?tab=documents`)}>
+                              <Camera className="mr-2 h-4 w-4" />
+                              إدارة الصور
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}?tab=documents`)}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              الوثائق
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => setVehicleToDelete(vehicle)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              حذف المركبة
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 
@@ -532,14 +643,45 @@ export default function Fleet() {
         <Dialog open={showVehicleForm} onOpenChange={handleVehicleFormClose}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>إضافة مركبة جديدة</DialogTitle>
+              <DialogTitle>
+                {editingVehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
+              </DialogTitle>
             </DialogHeader>
             <VehicleForm 
+              vehicle={editingVehicle || undefined}
               open={showVehicleForm} 
               onOpenChange={handleVehicleFormClose}
             />
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!vehicleToDelete} onOpenChange={(open) => !open && setVehicleToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
+              <AlertDialogDescription>
+                {vehicleToDelete && (
+                  <>
+                    سيتم حذف المركبة <strong>{vehicleToDelete.plate_number}</strong> ({vehicleToDelete.make} {vehicleToDelete.model}).
+                    <br />
+                    هذا الإجراء لا يمكن التراجع عنه. سيتم تعطيل المركبة بدلاً من حذفها نهائياً.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteVehicle}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteVehicle.isPending}
+              >
+                {deleteVehicle.isPending ? "جاري الحذف..." : "حذف"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <Dialog open={showGroupManagement} onOpenChange={setShowGroupManagement}>
           <DialogContent className="max-w-4xl">

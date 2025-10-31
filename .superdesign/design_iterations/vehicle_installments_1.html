@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أقساط المركبات - KW Rent Flow</title>
+    
+    <!-- Google Fonts - Arabic Optimized -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Import Theme */
+        @import url('./vehicle_installments_theme.css');
+        
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif !important;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            direction: rtl;
+            text-align: right;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cairo', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Custom CSS Variables with HSL format */
+        :root {
+            --background: 0 0% 96%;
+            --background-soft: 0 0% 94%;
+            --foreground: 0 0% 15%;
+            --card: 0 0% 100%;
+            --card-foreground: 0 0% 15%;
+            --card-hover: 0 0% 98%;
+            --primary: 0 70% 45%;
+            --primary-foreground: 0 0% 100%;
+            --primary-dark: 0 70% 35%;
+            --primary-light: 0 70% 55%;
+            --primary-glow: 0 70% 45% / 0.2;
+            --secondary: 0 0% 85%;
+            --secondary-foreground: 0 0% 15%;
+            --muted: 0 0% 92%;
+            --muted-foreground: 0 0% 45%;
+            --accent: 25 90% 92%;
+            --accent-foreground: 0 0% 15%;
+            --accent-light: 25 90% 95%;
+            --success: 142 56% 42%;
+            --success-foreground: 0 0% 100%;
+            --success-light: 142 56% 95%;
+            --warning: 25 85% 55%;
+            --warning-foreground: 0 0% 100%;
+            --warning-light: 25 85% 95%;
+            --destructive: 0 65% 51%;
+            --destructive-foreground: 0 0% 100%;
+            --destructive-light: 0 65% 95%;
+            --info: 210 100% 60%;
+            --info-light: 210 100% 95%;
+            --border: 0 0% 85%;
+            --input: 0 0% 98%;
+            --ring: 0 70% 45%;
+        }
+        
+        /* Animations */
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes listItemFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes headerSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        @keyframes badgePulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+        
+        @keyframes overdueGlow {
+            0%, 100% {
+                box-shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+            }
+            50% {
+                box-shadow: 0 4px 6px -1px hsl(0 65% 51% / 0.3), 0 2px 4px -2px hsl(0 65% 51% / 0.2), 0 0 20px hsl(0 65% 51% / 0.2);
+            }
+        }
+        
+        @keyframes buttonRipple {
+            from {
+                transform: scale(0);
+                opacity: 0.3;
+            }
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        /* Animation Classes */
+        .animate-card-appear {
+            animation: cardAppear 600ms ease-out forwards;
+        }
+        
+        .animate-list-item {
+            animation: listItemFadeIn 500ms ease-out forwards;
+        }
+        
+        .animate-header {
+            animation: headerSlideDown 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        .animate-badge-pulse {
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        .animate-overdue-glow {
+            animation: overdueGlow 1s ease-in-out infinite;
+        }
+        
+        /* Stagger delays */
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+        .delay-500 { animation-delay: 500ms; }
+        
+        /* Card Styles */
+        .stat-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+        }
+        
+        .agreement-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: all 250ms ease-out;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+        }
+        
+        .agreement-card:hover {
+            background: hsl(var(--card-hover));
+            transform: translateX(4px);
+            box-shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+        }
+        
+        /* Button Styles */
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 200ms ease-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            background: hsl(var(--primary-light));
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px hsl(var(--primary) / 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0) scale(0.95);
+        }
+        
+        .btn-filter {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            cursor: pointer;
+            transition: all 150ms ease-out;
+            font-size: 0.875rem;
+        }
+        
+        .btn-filter:hover {
+            background: hsl(var(--accent-light));
+            transform: scale(1.02);
+        }
+        
+        .btn-filter.active {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+            transform: scale(1.05);
+        }
+        
+        /* Badge Styles */
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-success {
+            background: hsl(var(--success-light));
+            color: hsl(var(--success));
+            border: 1px solid hsl(var(--success) / 0.2);
+        }
+        
+        .badge-info {
+            background: hsl(var(--info-light));
+            color: hsl(var(--info));
+            border: 1px solid hsl(var(--info) / 0.2);
+        }
+        
+        .badge-destructive {
+            background: hsl(var(--destructive-light));
+            color: hsl(var(--destructive));
+            border: 1px solid hsl(var(--destructive) / 0.2);
+        }
+        
+        .badge-muted {
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border));
+        }
+        
+        /* Utility Classes */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        
+        .section-spacing {
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--accent-light)) 50%, hsl(var(--muted)) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+        
+        /* Icon styles */
+        .icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            stroke-width: 2;
+        }
+        
+        .icon-lg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .agreement-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
+        
+        <!-- Header Section -->
+        <header class="section-spacing animate-header">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: hsl(var(--foreground));">
+                        أقساط المركبات
+                    </h1>
+                    <p style="color: hsl(var(--muted-foreground)); font-size: 0.95rem;">
+                        إدارة اتفاقيات الأقساط مع التجار
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn-primary">
+                        <i data-lucide="plus" class="icon"></i>
+                        <span>اتفاقية مركبة واحدة</span>
+                    </button>
+                    <button class="btn-primary" style="background: hsl(var(--accent-foreground)); color: hsl(var(--accent-light));">
+                        <i data-lucide="file-plus" class="icon"></i>
+                        <span>متعدد المركبات</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Statistics Cards -->
+        <section class="section-spacing" style="margin-top: 2rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem;">
+                
+                <!-- Total Agreements Card -->
+                <div class="stat-card animate-card-appear delay-100">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--muted-foreground));">
+                            إجمالي الاتفاقيات
+                        </h3>
+                        <div style="padding: 0.5rem; background: hsl(var(--accent-light)); border-radius: 0.5rem;">
+                            <i data-lucide="calendar-clock" class="icon" style="color: hsl(var(--primary));"></i>
+                        </div>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: hsl(var(--foreground)); margin-bottom: 0.5rem;">
+                        125
+                    </div>
+                    <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        100 نشط، 25 مكتمل
+                    </p>
+                </div>
+                
+                <!-- Total Amount Card -->
+                <div class="stat-card animate-card-appear delay-200">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--muted-foreground));">
+                            إجمالي المبلغ
+                        </h3>
+                        <div style="padding: 0.5rem; background: hsl(var(--success-light)); border-radius: 0.5rem;">
+                            <i data-lucide="dollar-sign" class="icon" style="color: hsl(var(--success));"></i>
+                        </div>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: hsl(var(--foreground)); margin-bottom: 0.5rem;">
+                        500,000 <span style="font-size: 1rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        مدفوع: 350,000 ر.س
+                    </p>
+                </div>
+                
+                <!-- Outstanding Amount Card -->
+                <div class="stat-card animate-card-appear delay-300">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--muted-foreground));">
+                            المبلغ المستحق
+                        </h3>
+                        <div style="padding: 0.5rem; background: hsl(var(--warning-light)); border-radius: 0.5rem;">
+                            <i data-lucide="alert-circle" class="icon" style="color: hsl(var(--warning));"></i>
+                        </div>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: hsl(var(--foreground)); margin-bottom: 0.5rem;">
+                        150,000 <span style="font-size: 1rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        15 قسط متبقي
+                    </p>
+                </div>
+                
+                <!-- Overdue Amount Card -->
+                <div class="stat-card animate-card-appear delay-400">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--muted-foreground));">
+                            الأقساط المتأخرة
+                        </h3>
+                        <div style="padding: 0.5rem; background: hsl(var(--destructive-light)); border-radius: 0.5rem;">
+                            <i data-lucide="alert-triangle" class="icon" style="color: hsl(var(--destructive));"></i>
+                        </div>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: hsl(var(--destructive)); margin-bottom: 0.5rem;">
+                        25,000 <span style="font-size: 1rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        5 أقساط متأخرة
+                    </p>
+                </div>
+                
+            </div>
+        </section>
+        
+        <!-- Agreements List Section -->
+        <section class="section-spacing" style="margin-top: 2.5rem;">
+            <div style="background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1);">
+                
+                <!-- List Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground)); margin-bottom: 0.25rem;">
+                            اتفاقيات الأقساط
+                        </h2>
+                        <p style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                            قائمة جميع اتفاقيات الأقساط مع التجار
+                        </p>
+                    </div>
+                    
+                    <!-- Filter Buttons -->
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn-filter active" onclick="filterAgreements('all', this)">الكل</button>
+                        <button class="btn-filter" onclick="filterAgreements('draft', this)">مسودة</button>
+                        <button class="btn-filter" onclick="filterAgreements('active', this)">نشط</button>
+                        <button class="btn-filter" onclick="filterAgreements('completed', this)">مكتمل</button>
+                    </div>
+                </div>
+                
+                <!-- Agreements List -->
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    
+                    <!-- Agreement 1 - Active -->
+                    <div class="agreement-card animate-list-item delay-100" data-status="active">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: hsl(var(--foreground));">
+                                        AGR-2024-001
+                                    </h3>
+                                    <span class="badge badge-success">
+                                        <i data-lucide="check-circle" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        نشط
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">المركبة: </span>
+                                        ABC-1234 - Toyota Camry 2024
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">التاجر: </span>
+                                        محمد أحمد السالم
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">تاريخ البداية: </span>
+                                        01/01/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground));">
+                                    200,000 <span style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    12 قسط
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Agreement 2 - Completed -->
+                    <div class="agreement-card animate-list-item delay-200" data-status="completed">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: hsl(var(--foreground));">
+                                        AGR-2024-002
+                                    </h3>
+                                    <span class="badge badge-info">
+                                        <i data-lucide="check-check" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        مكتمل
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">المركبة: </span>
+                                        DEF-5678 - Honda Accord 2023
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">التاجر: </span>
+                                        شركة السيارات المتحدة
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">تاريخ البداية: </span>
+                                        15/02/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground));">
+                                    150,000 <span style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    10 أقساط
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Agreement 3 - Active with Overdue -->
+                    <div class="agreement-card animate-list-item delay-300 animate-overdue-glow" data-status="active">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: hsl(var(--foreground));">
+                                        AGR-2024-003
+                                    </h3>
+                                    <span class="badge badge-success">
+                                        <i data-lucide="check-circle" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        نشط
+                                    </span>
+                                    <span class="badge badge-destructive animate-badge-pulse">
+                                        <i data-lucide="alert-circle" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        2 قسط متأخر
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">المركبة: </span>
+                                        عقد متعدد المركبات (5 مركبات)
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">التاجر: </span>
+                                        علي خالد العتيبي
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">تاريخ البداية: </span>
+                                        01/03/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground));">
+                                    400,000 <span style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    20 قسط
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Agreement 4 - Draft -->
+                    <div class="agreement-card animate-list-item delay-400" data-status="draft">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: hsl(var(--foreground));">
+                                        AGR-2024-004
+                                    </h3>
+                                    <span class="badge badge-muted">
+                                        <i data-lucide="file-text" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        مسودة
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">المركبة: </span>
+                                        GHI-9012 - Nissan Altima 2024
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">التاجر: </span>
+                                        فهد سعد الرشيدي
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">تاريخ البداية: </span>
+                                        15/04/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground));">
+                                    180,000 <span style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    15 قسط
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Agreement 5 - Active -->
+                    <div class="agreement-card animate-list-item delay-500" data-status="active">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 600; color: hsl(var(--foreground));">
+                                        AGR-2024-005
+                                    </h3>
+                                    <span class="badge badge-success">
+                                        <i data-lucide="check-circle" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        نشط
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">المركبة: </span>
+                                        JKL-3456 - Chevrolet Malibu 2023
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">التاجر: </span>
+                                        مؤسسة المركبات الحديثة
+                                    </div>
+                                    <div>
+                                        <span style="font-weight: 600; color: hsl(var(--foreground));">تاريخ البداية: </span>
+                                        20/03/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--foreground));">
+                                    220,000 <span style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">ر.س</span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                    18 قسط
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+            </div>
+        </section>
+        
+    </div>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Filter functionality
+        function filterAgreements(status, button) {
+            // Update active button
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Filter agreements
+            const agreements = document.querySelectorAll('.agreement-card');
+            agreements.forEach(agreement => {
+                if (status === 'all' || agreement.dataset.status === status) {
+                    agreement.style.display = 'block';
+                } else {
+                    agreement.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add ripple effect to buttons
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+                ripple.style.pointerEvents = 'none';
+                ripple.style.animation = 'buttonRipple 600ms ease-out';
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+        
+        // Simulate number counting animation
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value.toLocaleString('ar-SA');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // Animate numbers on load (optional enhancement)
+        window.addEventListener('load', () => {
+            // Re-initialize icons after animations
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+

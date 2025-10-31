@@ -459,7 +459,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       }
 
       let result;
-      if (vehicle) {
+      if (vehicle && vehicle.id) {
         console.log("✏️ [VEHICLE_FORM] Updating existing vehicle:", vehicle.id);
         result = await updateVehicle.mutateAsync({ id: vehicle.id, ...vehicleData })
       } else {

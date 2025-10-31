@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Calculator, Loader2, AlertCircle, CheckSquare, Filter } from "lucide-react";
+import { Plus, Trash2, Calculator, Loader2, AlertCircle, CheckSquare, Filter, FilePlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -463,9 +463,9 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة عقد متعدد المركبات
+          <Button variant="secondary" className="gap-2">
+            <FilePlus className="h-4 w-4" />
+            متعدد المركبات
           </Button>
         )}
       </DialogTrigger>

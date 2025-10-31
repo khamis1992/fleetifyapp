@@ -902,7 +902,6 @@ const Customers = () => {
                       <col style={{ width: '50px' }} />
                       <col style={{ width: '200px' }} />
                       <col style={{ width: '150px' }} />
-                      <col style={{ width: '200px' }} />
                       <col style={{ width: '120px' }} />
                       <col style={{ width: '120px' }} />
                       <col style={{ width: '100px' }} />
@@ -917,7 +916,6 @@ const Customers = () => {
                         </th>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العميل</th>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">رقم الهاتف</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">البريد الإلكتروني</th>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">نوع العميل</th>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الحالة</th>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العقود</th>
@@ -946,15 +944,18 @@ const Customers = () => {
                                   {getCustomerInitials(customer)}
                                 </div>
                                 <div>
-                                  <p className="font-semibold">{getCustomerName(customer)}</p>
+                                  <p 
+                                    className="font-semibold cursor-pointer hover:text-primary transition-colors"
+                                    onClick={() => handleViewCustomer(customer)}
+                                  >
+                                    {getCustomerName(customer)}
+                                  </p>
                                   <p className="text-sm text-muted-foreground">{customer.id?.substring(0, 10)}...</p>
                                 </div>
                               </div>
                             </td>
                             
                             <td className="px-6 py-4 text-muted-foreground" style={{ minWidth: '150px', width: '150px' }}>{customer.phone || '-'}</td>
-                            
-                            <td className="px-6 py-4 text-muted-foreground" style={{ minWidth: '200px', width: '200px' }}>{customer.email || '-'}</td>
                             
                             <td className="px-6 py-4" style={{ minWidth: '120px', width: '120px' }}>
                               <Badge 

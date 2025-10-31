@@ -275,15 +275,15 @@ export const useDeleteVehicle = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
       toast({
-        title: "Success",
-        description: "Vehicle deactivated successfully",
+        title: "تم بنجاح",
+        description: "تم تعطيل المركبة بنجاح",
       })
     },
     onError: (error) => {
       console.error("Error deactivating vehicle:", error)
       toast({
-        title: "Error",
-        description: "Failed to deactivate vehicle",
+        title: "خطأ",
+        description: "فشل في تعطيل المركبة",
         variant: "destructive",
       })
     }

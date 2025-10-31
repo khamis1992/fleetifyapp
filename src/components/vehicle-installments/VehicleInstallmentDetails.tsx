@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CreditCard, Calendar, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowRight, CreditCard, Calendar, AlertCircle, CheckCircle, Check, CalendarClock, X } from "lucide-react";
 import { useVehicleInstallmentSchedules, useProcessInstallmentPayment } from "@/hooks/useVehicleInstallments";
 import { useContractVehicles } from "@/hooks/useContractVehicles";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { VehicleInstallmentWithDetails, VehicleInstallmentSchedule } from "@/types/vehicle-installments";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import "./vehicle-installments.css";
 
 interface VehicleInstallmentDetailsProps {
   installment: VehicleInstallmentWithDetails;
@@ -37,10 +38,14 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      paid: 'bg-green-100 text-green-800 border-green-200',
-      overdue: 'bg-red-100 text-red-800 border-red-200',
-      partially_paid: 'bg-blue-100 text-blue-800 border-blue-200',
+      pending: 'bg-warning-light text-warning border-warning/20',
+      paid: 'bg-success-light text-success border-success/20',
+      overdue: 'bg-destructive-light text-destructive border-destructive/20',
+      partially_paid: 'bg-info-light text-info border-info/20',
+      active: 'bg-success-light text-success border-success/20',
+      completed: 'bg-info-light text-info border-info/20',
+      draft: 'bg-muted text-muted-foreground border-border',
+      cancelled: 'bg-destructive-light text-destructive border-destructive/20',
     };
 
     const labels = {
@@ -48,25 +53,42 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
       paid: 'مدفوع',
       overdue: 'متأخر',
       partially_paid: 'مدفوع جزئياً',
+      active: 'نشط',
+      completed: 'مكتمل',
+      draft: 'مسودة',
+      cancelled: 'ملغي',
     };
 
     return (
-      <Badge className={variants[status as keyof typeof variants] || variants.pending}>
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${variants[status as keyof typeof variants] || variants.pending}`}>
         {labels[status as keyof typeof labels] || status}
-      </Badge>
+      </span>
     );
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'paid':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-success" />;
       case 'overdue':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="h-5 w-5 text-destructive" />;
       case 'partially_paid':
-        return <CreditCard className="h-4 w-4 text-blue-600" />;
+        return <CreditCard className="h-5 w-5 text-info" />;
       default:
-        return <Calendar className="h-4 w-4 text-yellow-600" />;
+        return <Calendar className="h-5 w-5 text-warning" />;
+    }
+  };
+  
+  const getStatusIconBg = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-success-light';
+      case 'overdue':
+        return 'bg-destructive-light';
+      case 'partially_paid':
+        return 'bg-info-light';
+      default:
+        return 'bg-warning-light';
     }
   };
 
@@ -101,34 +123,37 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 ml-2" />
-          العودة
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">تفاصيل اتفاقية الأقساط</h1>
-          <p className="text-muted-foreground">{installment.agreement_number}</p>
+      {/* Header with Back Button */}
+      <header className="mb-8 animate-fade-in">
+        <div className="flex items-center gap-4 mb-2">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
+            <ArrowRight className="h-4 w-4" />
+            العودة
+          </Button>
         </div>
-      </div>
+        <div>
+          <h1 className="text-3xl font-bold mb-1">تفاصيل اتفاقية الأقساط</h1>
+          <p className="text-muted-foreground text-base">{installment.agreement_number}</p>
+        </div>
+      </header>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>معلومات الاتفاقية</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+      {/* Info Cards Grid */}
+      <section className="mb-8">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+          {/* Agreement Info Card */}
+          <div className="info-card animate-slide-up delay-100">
+            <h2 className="text-xl font-bold mb-5">معلومات الاتفاقية</h2>
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <span className="font-medium text-muted-foreground">رقم الاتفاقية:</span>
+                <span className="block text-sm text-muted-foreground mb-1">رقم الاتفاقية</span>
                 <p className="font-semibold">{installment.agreement_number}</p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">الحالة:</span>
-                <div className="mt-1">{getStatusBadge(installment.status)}</div>
+                <span className="block text-sm text-muted-foreground mb-1">الحالة</span>
+                {getStatusBadge(installment.status)}
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">التاجر:</span>
+                <span className="block text-sm text-muted-foreground mb-1">التاجر</span>
                 <p className="font-semibold">
                   {installment.customers?.customer_type === 'individual' 
                     ? `${installment.customers?.first_name} ${installment.customers?.last_name}`
@@ -136,14 +161,14 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                 </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">
-                  {isMultiVehicle ? 'المركبات:' : 'المركبة:'}
+                <span className="block text-sm text-muted-foreground mb-1">
+                  {isMultiVehicle ? 'المركبات' : 'المركبة'}
                 </span>
                 {isMultiVehicle ? (
                   <div className="space-y-2 mt-2">
                     {contractVehicles?.map((cv) => (
                       <div key={cv.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                        <span className="font-semibold">
+                        <span className="font-semibold text-sm">
                           {cv.vehicles?.plate_number} - {cv.vehicles?.make} {cv.vehicles?.model}
                         </span>
                         <Badge variant="outline">
@@ -162,125 +187,148 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                 )}
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">تاريخ الاتفاقية:</span>
+                <span className="block text-sm text-muted-foreground mb-1">تاريخ الاتفاقية</span>
                 <p className="font-semibold">
                   {format(new Date(installment.agreement_date), 'dd/MM/yyyy', { locale: ar })}
                 </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">فترة الأقساط:</span>
+                <span className="block text-sm text-muted-foreground mb-1">فترة الأقساط</span>
                 <p className="font-semibold">
                   {format(new Date(installment.start_date), 'dd/MM/yyyy', { locale: ar })} - {format(new Date(installment.end_date), 'dd/MM/yyyy', { locale: ar })}
                 </p>
               </div>
             </div>
             {installment.notes && (
-              <div>
-                <span className="font-medium text-muted-foreground">ملاحظات:</span>
-                <p className="mt-1">{installment.notes}</p>
+              <div className="mt-5 pt-5 border-t border-border">
+                <span className="block text-sm text-muted-foreground mb-2">ملاحظات</span>
+                <p className="leading-relaxed">{installment.notes}</p>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>التفاصيل المالية</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* Financial Details Card */}
+          <div className="info-card animate-slide-up delay-200">
+            <h2 className="text-xl font-bold mb-5">التفاصيل المالية</h2>
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <span className="font-medium text-muted-foreground">المبلغ الإجمالي:</span>
-                <p className="text-lg font-bold">{formatCurrency(installment.total_amount)}</p>
+                <span className="block text-sm text-muted-foreground mb-1">المبلغ الإجمالي</span>
+                <p className="text-xl font-bold">
+                  {formatCurrency(installment.total_amount)}
+                </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">الدفعة المقدمة:</span>
-                <p className="text-lg font-semibold">{formatCurrency(installment.down_payment)}</p>
+                <span className="block text-sm text-muted-foreground mb-1">الدفعة المقدمة</span>
+                <p className="text-xl font-bold">
+                  {formatCurrency(installment.down_payment)}
+                </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">مبلغ القسط:</span>
-                <p className="text-lg font-semibold">{formatCurrency(installment.installment_amount)}</p>
+                <span className="block text-sm text-muted-foreground mb-1">مبلغ القسط</span>
+                <p className="text-xl font-bold">
+                  {formatCurrency(installment.installment_amount)}
+                </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">عدد الأقساط:</span>
-                <p className="text-lg font-semibold">{installment.number_of_installments}</p>
+                <span className="block text-sm text-muted-foreground mb-1">عدد الأقساط</span>
+                <p className="text-xl font-bold">
+                  {installment.number_of_installments} <span className="text-sm text-muted-foreground">قسط</span>
+                </p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">معدل الفائدة:</span>
-                <p className="text-lg font-semibold">{installment.interest_rate || 0}%</p>
+                <span className="block text-sm text-muted-foreground mb-1">معدل الفائدة</span>
+                <p className="text-xl font-bold">{installment.interest_rate || 0}%</p>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">المبلغ المتبقي:</span>
-                <p className="text-lg font-bold text-orange-600">
+                <span className="block text-sm text-muted-foreground mb-1">المبلغ المتبقي</span>
+                <p className="text-xl font-bold text-warning">
                   {formatCurrency(
                     (schedules?.reduce((sum, s) => sum + (s.amount - (s.paid_amount || 0)), 0) || 0)
                   )}
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>جدول الأقساط</CardTitle>
-          <CardDescription>تفاصيل جميع الأقساط ومواعيد استحقاقها</CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Installments Schedule Table */}
+      <section>
+        <div className="info-card animate-slide-up delay-300">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold mb-1">جدول الأقساط</h2>
+            <p className="text-sm text-muted-foreground">
+              تفاصيل جميع الأقساط ومواعيد استحقاقها
+            </p>
+          </div>
+
           {isLoading ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
           ) : schedules?.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground">
               لا توجد أقساط مجدولة
             </div>
           ) : (
-            <div className="space-y-3">
-              {schedules?.map((schedule) => (
+            <div className="flex flex-col gap-4">
+              {schedules?.map((schedule, index) => (
                 <div
                   key={schedule.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className={`installment-card ${schedule.status === 'overdue' ? 'overdue' : ''}`}
                 >
-                  <div className="flex items-center gap-4">
-                    {getStatusIcon(schedule.status)}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold">القسط رقم {schedule.installment_number}</span>
-                        {getStatusBadge(schedule.status)}
+                  <div className="flex justify-between items-start gap-4 flex-wrap">
+                    <div className="flex gap-4 items-start flex-1">
+                      <div className={`p-2 ${getStatusIconBg(schedule.status)} rounded-lg flex-shrink-0`}>
+                        {getStatusIcon(schedule.status)}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        تاريخ الاستحقاق: {format(new Date(schedule.due_date), 'dd/MM/yyyy', { locale: ar })}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-bold">القسط رقم {schedule.installment_number}</span>
+                          {getStatusBadge(schedule.status)}
+                          {schedule.status === 'overdue' && index === 0 && (
+                            <span className="animate-badge-pulse"></span>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          تاريخ الاستحقاق: {format(new Date(schedule.due_date), 'dd/MM/yyyy', { locale: ar })}
+                        </div>
+                        {schedule.paid_date && (
+                          <div className="text-sm text-success flex items-center gap-1">
+                            <Check className="h-3.5 w-3.5" />
+                            تاريخ الدفع: {format(new Date(schedule.paid_date), 'dd/MM/yyyy', { locale: ar })}
+                          </div>
+                        )}
                       </div>
-                      {schedule.paid_date && (
-                        <div className="text-sm text-green-600">
-                          تاريخ الدفع: {format(new Date(schedule.paid_date), 'dd/MM/yyyy', { locale: ar })}
+                    </div>
+                    <div className="text-left flex-shrink-0">
+                      <div className="text-lg font-bold mb-1">
+                        {formatCurrency(schedule.amount)}
+                      </div>
+                      {schedule.paid_amount && schedule.paid_amount > 0 && (
+                        <div className="text-sm text-success mb-2">
+                          مدفوع: {formatCurrency(schedule.paid_amount)}
                         </div>
                       )}
+                      {schedule.status !== 'paid' && (
+                        <Button
+                          size="sm"
+                          className="mt-2 gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPaymentDialog(schedule);
+                          }}
+                        >
+                          <CreditCard className="h-3.5 w-3.5" />
+                          تسجيل دفعة
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-lg font-bold">{formatCurrency(schedule.amount)}</div>
-                    {schedule.paid_amount && schedule.paid_amount > 0 && (
-                      <div className="text-sm text-green-600">
-                        مدفوع: {formatCurrency(schedule.paid_amount)}
-                      </div>
-                    )}
-                    {schedule.status !== 'paid' && (
-                      <Button
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => openPaymentDialog(schedule)}
-                      >
-                        تسجيل دفعة
-                      </Button>
-                    )}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent>
