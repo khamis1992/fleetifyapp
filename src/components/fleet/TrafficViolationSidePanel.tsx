@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FileText, CreditCard, CheckCircle, Edit, Printer, Mail, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrafficViolation } from '@/hooks/useTrafficViolations';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { TrafficViolation, useConfirmTrafficViolation, useUpdateTrafficViolation } from '@/hooks/useTrafficViolations';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { formatPhoneForWhatsApp } from '@/lib/phone';
+import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { TrafficViolationForm } from './TrafficViolationForm';
 
 interface TrafficViolationSidePanelProps {
   violation: TrafficViolation | null;
@@ -21,8 +27,147 @@ export const TrafficViolationSidePanel: React.FC<TrafficViolationSidePanelProps>
   onAddPayment
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const confirmMutation = useConfirmTrafficViolation();
+  const updateMutation = useUpdateTrafficViolation();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [companyCountry, setCompanyCountry] = useState<string>('');
+  const companyFilter = useCompanyFilter();
+
+  // الحصول على دولة الشركة
+  useEffect(() => {
+    const fetchCompanyCountry = async () => {
+      try {
+        if (!companyFilter?.company_id) return;
+        const { data, error } = await supabase
+          .from('companies')
+          .select('country')
+          .eq('id', companyFilter.company_id)
+          .single();
+        
+        if (!error && data?.country) {
+          setCompanyCountry(data.country);
+        }
+      } catch (error) {
+        console.error('Error fetching company country:', error);
+      }
+    };
+    fetchCompanyCountry();
+  }, [companyFilter?.company_id]);
 
   if (!violation) return null;
+
+  // معالجات الأزرار
+  const handleConfirm = () => {
+    if (!violation) return;
+    confirmMutation.mutate(violation.id, {
+      onSuccess: () => {
+        toast.success('تم تأكيد المخالفة بنجاح');
+        onClose();
+      }
+    });
+  };
+
+  const handleEdit = () => {
+    setShowEditDialog(true);
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditDialog(false);
+    toast.success('تم تحديث المخالفة بنجاح');
+    onClose();
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!violation) return;
+    
+    // الحصول على رقم هاتف العميل
+    const customerPhone = violation.customers?.phone;
+    
+    if (!customerPhone) {
+      toast.error('رقم الهاتف غير متوفر', {
+        description: 'لا يوجد رقم هاتف للعميل لإرسال الرسالة عبر واتساب'
+      });
+      return;
+    }
+
+    // تنسيق رقم الهاتف للواتساب
+    const { waNumber } = formatPhoneForWhatsApp(customerPhone, companyCountry);
+    
+    if (!waNumber) {
+      toast.error('رقم غير صالح', {
+        description: 'تعذر تنسيق رقم الهاتف لإرسال الرسالة'
+      });
+      return;
+    }
+
+    // إنشاء رسالة المخالفة
+    const customerName = violation.customers 
+      ? `${violation.customers.first_name} ${violation.customers.last_name}`
+      : 'العميل';
+    
+    const vehicleInfo = violation.vehicles
+      ? `المركبة: ${violation.vehicles.make} ${violation.vehicles.model} - ${violation.vehicles.plate_number}`
+      : violation.vehicle_plate 
+      ? `رقم اللوحة: ${violation.vehicle_plate}`
+      : '';
+
+    const statusText = violation.status === 'pending' 
+      ? 'في الانتظار' 
+      : violation.status === 'confirmed' 
+      ? 'مؤكدة' 
+      : 'ملغاة';
+
+    const paymentStatusText = violation.payment_status === 'unpaid' 
+      ? 'غير مدفوع' 
+      : violation.payment_status === 'paid' 
+      ? 'مدفوع' 
+      : 'مدفوع جزئياً';
+
+    const message = `*إشعار مخالفة مرورية*
+
+مرحباً ${customerName} 👋
+
+*تفاصيل المخالفة:*
+• رقم المخالفة: ${violation.penalty_number}
+• نوع المخالفة: ${violation.violation_type || '-'}
+• التاريخ: ${violation.penalty_date ? format(new Date(violation.penalty_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+• المبلغ: ${formatCurrency(violation.amount || 0)}
+${vehicleInfo ? `• ${vehicleInfo}` : ''}
+${violation.location ? `• الموقع: ${violation.location}` : ''}
+${violation.reason ? `• السبب: ${violation.reason}` : ''}
+
+*حالة المخالفة:* ${statusText}
+*حالة الدفع:* ${paymentStatusText}
+
+${violation.notes ? `*ملاحظات:*\n${violation.notes}\n` : ''}
+
+يرجى التواصل معنا لتسوية المخالفة.
+شكراً لتفهمكم.`.trim();
+
+    const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast.success('تم فتح الواتساب لإرسال الرسالة');
+  };
+
+  const handleCancel = () => {
+    if (!violation) return;
+    updateMutation.mutate({
+      id: violation.id,
+      status: 'cancelled'
+    }, {
+      onSuccess: () => {
+        toast.success('تم إلغاء المخالفة بنجاح');
+        setShowCancelConfirm(false);
+        onClose();
+      }
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -261,32 +406,91 @@ export const TrafficViolationSidePanel: React.FC<TrafficViolationSidePanelProps>
               إضافة دفعة
             </Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="flex items-center justify-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2"
+                onClick={handleConfirm}
+                disabled={confirmMutation.isPending || violation.status === 'confirmed'}
+              >
                 <CheckCircle className="w-4 h-4" />
-                تأكيد
+                {confirmMutation.isPending ? 'جاري...' : 'تأكيد'}
               </Button>
-              <Button variant="outline" className="flex items-center justify-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2"
+                onClick={handleEdit}
+                disabled={violation.status === 'cancelled'}
+              >
                 <Edit className="w-4 h-4" />
                 تعديل
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="flex items-center justify-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2"
+                onClick={handlePrint}
+              >
                 <Printer className="w-4 h-4" />
                 طباعة
               </Button>
-              <Button variant="outline" className="flex items-center justify-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2"
+                onClick={handleSendWhatsApp}
+                disabled={!violation.customers?.phone}
+                title={!violation.customers?.phone ? 'رقم الهاتف غير متوفر' : 'إرسال عبر واتساب'}
+              >
                 <Mail className="w-4 h-4" />
                 إرسال
               </Button>
             </div>
-            <Button variant="outline" className="w-full text-destructive flex items-center justify-center gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full text-destructive flex items-center justify-center gap-2"
+              onClick={() => setShowCancelConfirm(true)}
+              disabled={violation.status === 'cancelled' || updateMutation.isPending}
+            >
               <XCircle className="w-4 h-4" />
-              إلغاء المخالفة
+              {updateMutation.isPending ? 'جاري الإلغاء...' : 'إلغاء المخالفة'}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Dialog للتأكيد على الإلغاء */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تأكيد الإلغاء</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من إلغاء هذه المخالفة؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>
+              إلغاء
+            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'جاري الإلغاء...' : 'تأكيد الإلغاء'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog للتعديل */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل المخالفة #{violation.penalty_number}</DialogTitle>
+          </DialogHeader>
+          <TrafficViolationForm 
+            onSuccess={handleEditSuccess}
+            vehicleId={violation.vehicle_id}
+            violation={violation}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

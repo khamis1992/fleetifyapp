@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCreateTrafficViolation } from '@/hooks/useTrafficViolations';
+import { useCreateTrafficViolation, useUpdateTrafficViolation, TrafficViolation } from '@/hooks/useTrafficViolations';
 import { useVehicles } from '@/hooks/useVehicles';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -34,10 +34,13 @@ type ViolationFormData = z.infer<typeof violationSchema>;
 interface TrafficViolationFormProps {
   onSuccess: () => void;
   vehicleId?: string;
+  violation?: TrafficViolation | null;
 }
 
-export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationFormProps) {
+export function TrafficViolationForm({ onSuccess, vehicleId, violation }: TrafficViolationFormProps) {
   const createViolationMutation = useCreateTrafficViolation();
+  const updateViolationMutation = useUpdateTrafficViolation();
+  const isEditMode = !!violation;
   
   // Lazy load vehicles only when form opens
   const { data: vehicles = [] } = useVehicles({ limit: 50 });
@@ -101,37 +104,80 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
     }
   });
 
+  // ملء النموذج ببيانات المخالفة عند التعديل
+  useEffect(() => {
+    if (violation) {
+      form.reset({
+        penalty_number: violation.penalty_number || '',
+        violation_type: violation.violation_type || '',
+        penalty_date: violation.penalty_date ? new Date(violation.penalty_date).toISOString().split('T')[0] : '',
+        amount: violation.amount?.toString() || '0',
+        location: violation.location || '',
+        vehicle_plate: violation.vehicles?.plate_number || violation.vehicle_plate || '',
+        customer_id: violation.customer_id || '',
+        contract_id: violation.contract_id || '',
+        reason: violation.reason || '',
+        notes: violation.notes || '',
+        status: violation.status || 'pending',
+        payment_status: violation.payment_status || 'unpaid'
+      });
+    }
+  }, [violation, form]);
+
   // تعيين المركبة تلقائياً عند وجود vehicleId
   useEffect(() => {
-    if (preselectedVehicle?.plate_number) {
+    if (preselectedVehicle?.plate_number && !violation) {
       form.setValue('vehicle_plate', preselectedVehicle.plate_number);
     }
-  }, [preselectedVehicle, form]);
+  }, [preselectedVehicle, form, violation]);
 
   const onSubmit = async (data: ViolationFormData) => {
     try {
-      const violationData: any = {
-        penalty_number: data.penalty_number,
-        violation_type: data.violation_type,
-        penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
-        amount: parseFloat(data.amount),
-        location: data.location,
-        vehicle_plate: data.vehicle_plate,
-        vehicle_id: vehicleId, // إضافة vehicle_id من prop
-        customer_id: data.customer_id,
-        contract_id: data.contract_id,
-        reason: data.reason,
-        notes: data.notes,
-        status: data.status,
-        payment_status: data.payment_status
-      };
+      if (isEditMode && violation) {
+        // تحديث المخالفة
+        const updateData: any = {
+          id: violation.id,
+          violation_type: data.violation_type,
+          penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
+          amount: parseFloat(data.amount),
+          location: data.location,
+          vehicle_plate: data.vehicle_plate,
+          vehicle_id: vehicleId || violation.vehicle_id,
+          customer_id: data.customer_id,
+          contract_id: data.contract_id,
+          reason: data.reason,
+          notes: data.notes,
+          status: data.status,
+          payment_status: data.payment_status
+        };
 
-      await createViolationMutation.mutateAsync(violationData);
-      toast.success('تم إضافة المخالفة بنجاح');
+        await updateViolationMutation.mutateAsync(updateData);
+        toast.success('تم تحديث المخالفة بنجاح');
+      } else {
+        // إنشاء مخالفة جديدة
+        const violationData: any = {
+          penalty_number: data.penalty_number,
+          violation_type: data.violation_type,
+          penalty_date: new Date(data.penalty_date).toISOString().split('T')[0],
+          amount: parseFloat(data.amount),
+          location: data.location,
+          vehicle_plate: data.vehicle_plate,
+          vehicle_id: vehicleId,
+          customer_id: data.customer_id,
+          contract_id: data.contract_id,
+          reason: data.reason,
+          notes: data.notes,
+          status: data.status,
+          payment_status: data.payment_status
+        };
+
+        await createViolationMutation.mutateAsync(violationData);
+        toast.success('تم إضافة المخالفة بنجاح');
+      }
       onSuccess();
     } catch (error) {
-      console.error('Error creating violation:', error);
-      toast.error('حدث خطأ أثناء إضافة المخالفة');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} violation:`, error);
+      toast.error(`حدث خطأ أثناء ${isEditMode ? 'تحديث' : 'إضافة'} المخالفة`);
     }
   };
 
@@ -153,28 +199,39 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
   return (
     <Card>
       <CardHeader>
-        <CardTitle>بيانات المخالفة المرورية</CardTitle>
+        <CardTitle>{isEditMode ? 'تعديل المخالفة المرورية' : 'بيانات المخالفة المرورية'}</CardTitle>
         <CardDescription>
-          يرجى ملء جميع البيانات المطلوبة لتسجيل المخالفة المرورية
+          {isEditMode 
+            ? 'تعديل بيانات المخالفة المرورية' 
+            : 'يرجى ملء جميع البيانات المطلوبة لتسجيل المخالفة المرورية'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="penalty_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم المخالفة (اختياري)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="سيتم توليده تلقائياً إذا ترك فارغاً" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isEditMode && (
+                <FormField
+                  control={form.control}
+                  name="penalty_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>رقم المخالفة (اختياري)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="سيتم توليده تلقائياً إذا ترك فارغاً" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {isEditMode && (
+                <FormItem>
+                  <FormLabel>رقم المخالفة</FormLabel>
+                  <Input value={violation?.penalty_number || ''} disabled />
+                </FormItem>
+              )}
 
               <FormField
                 control={form.control}
@@ -196,7 +253,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>نوع المخالفة *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر نوع المخالفة" />
@@ -254,7 +311,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>رقم اللوحة</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر المركبة" />
@@ -279,7 +336,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>العميل</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر العميل" />
@@ -304,7 +361,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>رقم العقد</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر العقد" />
@@ -363,10 +420,13 @@ export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationF
             <div className="flex justify-end gap-4">
               <Button 
                 type="submit" 
-                disabled={createViolationMutation.isPending}
+                disabled={isEditMode ? updateViolationMutation.isPending : createViolationMutation.isPending}
                 className="px-8"
               >
-                {createViolationMutation.isPending ? 'جاري الحفظ...' : 'حفظ المخالفة'}
+                {isEditMode 
+                  ? (updateViolationMutation.isPending ? 'جاري التحديث...' : 'تحديث المخالفة')
+                  : (createViolationMutation.isPending ? 'جاري الحفظ...' : 'حفظ المخالفة')
+                }
               </Button>
             </div>
           </form>
