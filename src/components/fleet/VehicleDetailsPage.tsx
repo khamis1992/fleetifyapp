@@ -181,7 +181,7 @@ const VehicleDetailsPage = () => {
 
   const handleEdit = useCallback(() => {
     console.log('🔧 [VehicleDetailsPage] Edit button clicked, vehicle:', vehicle);
-    console.log('🔧 [VehicleDetailsPage] isLoading:', isLoading);
+    console.log('🔧 [VehicleDetailsPage] loadingVehicle:', loadingVehicle);
     console.log('🔧 [VehicleDetailsPage] vehicleId:', vehicleId);
     
     if (!vehicle) {
@@ -196,7 +196,7 @@ const VehicleDetailsPage = () => {
     
     console.log('✅ [VehicleDetailsPage] Opening edit form for vehicle:', vehicle.id);
     setShowEditForm(true);
-  }, [vehicle, isLoading, vehicleId, toast]);
+  }, [vehicle, loadingVehicle, vehicleId, toast]);
 
   const handleNewContract = useCallback(() => {
     if (!vehicleId) {
@@ -322,7 +322,7 @@ const VehicleDetailsPage = () => {
               <Button 
                 type="button"
                 onClick={handleEdit} 
-                disabled={!vehicle || isLoading}
+                disabled={!vehicle || loadingVehicle}
                 className="gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Edit3 className="w-4 h-4" />
