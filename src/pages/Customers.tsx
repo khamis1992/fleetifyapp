@@ -107,7 +107,7 @@ const Customers = () => {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100); // Increased from 50 to 100
+  const [pageSize, setPageSize] = useState(50); // Reduced to 50 for faster initial load
 
   // Build filters for the query
   const filters: CustomerFilters = {
@@ -133,22 +133,6 @@ const Customers = () => {
     }
   }, [error, filters]);
   
-  // Fetch counts for all customer types using optimized count-only queries
-  const { data: individualCount = 0 } = useCustomerCount({
-    customer_type: 'individual',
-    includeInactive: false,
-  });
-  
-  const { data: corporateCount = 0 } = useCustomerCount({
-    customer_type: 'corporate',
-    includeInactive: false,
-  });
-  
-  const { data: blacklistedCount = 0 } = useCustomerCount({
-    is_blacklisted: true,
-    includeInactive: true, // Include both active and inactive blacklisted customers
-  });
-  
   // Extract pagination data and customers array
   const customers = React.useMemo(() => {
     // Handle new pagination structure from useEnhancedCustomers
@@ -170,6 +154,68 @@ const Customers = () => {
     return customers.length;
   }, [customersResult, customers.length]);
 
+  // Calculate approximate counts from loaded data for instant display
+  // This provides immediate feedback while accurate counts load in background
+  const approximateIndividualCount = React.useMemo(() => {
+    if (customerType === 'all') {
+      return customers.filter(c => c.customer_type === 'individual').length;
+    }
+    return customerType === 'individual' ? customers.length : 0;
+  }, [customers, customerType]);
+
+  const approximateCorporateCount = React.useMemo(() => {
+    if (customerType === 'all') {
+      return customers.filter(c => c.customer_type === 'corporate').length;
+    }
+    return customerType === 'corporate' ? customers.length : 0;
+  }, [customers, customerType]);
+
+  const approximateBlacklistedCount = React.useMemo(() => {
+    return customers.filter(c => c.is_blacklisted).length;
+  }, [customers]);
+
+  // Fetch accurate counts in background (these load after initial render for better performance)
+  // Delay count queries to improve initial page load speed
+  const [shouldFetchCounts, setShouldFetchCounts] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (!isLoading && customersResult && totalCustomersInDB > 0) {
+      // Delay count queries by 500ms to let main data render first
+      const timer = setTimeout(() => {
+        setShouldFetchCounts(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setShouldFetchCounts(false);
+    }
+  }, [isLoading, customersResult, totalCustomersInDB]);
+  
+  const { data: individualCount } = useCustomerCount({
+    customer_type: 'individual',
+    includeInactive: false,
+  }, {
+    enabled: shouldFetchCounts,
+  });
+  
+  const { data: corporateCount } = useCustomerCount({
+    customer_type: 'corporate',
+    includeInactive: false,
+  }, {
+    enabled: shouldFetchCounts,
+  });
+  
+  const { data: blacklistedCount } = useCustomerCount({
+    is_blacklisted: true,
+    includeInactive: true,
+  }, {
+    enabled: shouldFetchCounts,
+  });
+
+  // Use accurate counts if available and data is loaded, otherwise use approximate counts
+  const finalIndividualCount = shouldFetchCounts && individualCount !== undefined ? individualCount : approximateIndividualCount;
+  const finalCorporateCount = shouldFetchCounts && corporateCount !== undefined ? corporateCount : approximateCorporateCount;
+  const finalBlacklistedCount = shouldFetchCounts && blacklistedCount !== undefined ? blacklistedCount : approximateBlacklistedCount;
+
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
   
   // Virtual scrolling implementation for desktop
@@ -177,7 +223,7 @@ const Customers = () => {
     count: customers.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => isMobile ? 120 : 60,
-    overscan: 10,
+    overscan: 5, // Reduced from 10 to 5 for better performance
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -343,9 +389,9 @@ const Customers = () => {
   // Calculate stats with comprehensive safety checks
   const safeCustomers = Array.isArray(customers) ? customers : [];
   const totalCustomers = totalCustomersInDB; // Use total from database
-  const individualCustomers = individualCount; // Use optimized count query
-  const corporateCustomers = corporateCount; // Use optimized count query
-  const blacklistedCustomers = blacklistedCount; // Use optimized count query
+  const individualCustomers = finalIndividualCount; // Use final count (accurate or approximate)
+  const corporateCustomers = finalCorporateCount; // Use final count (accurate or approximate)
+  const blacklistedCustomers = finalBlacklistedCount; // Use final count (accurate or approximate)
   
   // Handle page changes
   const handlePageChange = (newPage: number) => {

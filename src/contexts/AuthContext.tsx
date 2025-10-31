@@ -42,10 +42,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isInitialized.current = true;
 
     try {
-      // Add timeout to getSession call to prevent hanging (5s for slow networks)
+      // Add timeout to getSession call to prevent hanging (increased to 8s for slow networks)
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Session timeout')), 5000)
+        setTimeout(() => reject(new Error('Session timeout')), 8000) // Increased from 5s to 8s
       );
       
       const { data: { session }, error } = await Promise.race([
@@ -78,14 +78,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with basic user`);
         }
         
-        // Load full profile in background with timeout
+        // Load full profile in background with timeout (increased to 10s for slower networks)
         const profilePromise = authService.getCurrentUser();
-        const profileTimeout = new Promise<null>((resolve) => 
-          setTimeout(() => {
-            console.warn('⚠️ [AUTH_CONTEXT] Profile fetch timeout (5s) - using basic user');
+        const profileTimeout = new Promise<null>((resolve) => {
+          const timeoutId = setTimeout(() => {
+            console.warn('⚠️ [AUTH_CONTEXT] Profile fetch timeout (10s) - using basic user');
+            console.warn('⚠️ [AUTH_CONTEXT] This may indicate slow network. Profile will load automatically when ready.');
             resolve(null);
-          }, 5000)
-        );
+          }, 10000); // Increased from 5s to 10s
+          
+          // Clear timeout if profile loads successfully
+          profilePromise.then(() => {
+            clearTimeout(timeoutId);
+          }).catch(() => {
+            clearTimeout(timeoutId);
+          });
+        });
         
         try {
           const authUser = await Promise.race([profilePromise, profileTimeout]);
@@ -93,6 +101,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(authUser);
             setSessionError(null);
             console.log(`📝 [AUTH_CONTEXT] Full profile loaded at ${Date.now() - initStartTime}ms`);
+          } else if (mountedRef.current && !authUser) {
+            // Profile timeout occurred, but continue trying in background
+            profilePromise.then((user) => {
+              if (mountedRef.current && user) {
+                console.log(`📝 [AUTH_CONTEXT] Profile loaded after timeout at ${Date.now() - initStartTime}ms`);
+                setUser(user);
+              }
+            }).catch(() => {
+              // Silent fail - basic user already loaded
+            });
           }
         } catch (error) {
           console.error('📝 [AUTH_CONTEXT] Error fetching user profile (background):', error);
@@ -185,15 +203,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!isInitialized.current) {
       initializeAuth();
       
-      // Safety timeout - if still loading after 6 seconds, force loading to false
+      // Safety timeout - if still loading after 10 seconds, force loading to false
       // This should rarely trigger since we unblock UI immediately with basic user
+      // Increased from 6s to 10s to accommodate slower networks
       initTimeoutRef.current = setTimeout(() => {
         if (mountedRef.current && loading) {
-          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout (6s) - forcing loading to false');
-          console.warn('⚠️ This timeout should rarely occur. If you see this often, check network connectivity.');
+          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout (10s) - forcing loading to false');
+          console.warn('⚠️ [AUTH_CONTEXT] This timeout should rarely occur. If you see this often, check network connectivity.');
           setLoading(false);
         }
-      }, 6000);
+      }, 10000); // Increased from 6s to 10s
     } else {
       console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
       // If already initialized but still loading, force it to false

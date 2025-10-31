@@ -8,7 +8,7 @@ import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 export type EnhancedCustomer = Customer;
 
 // Optimized hook for fetching customer counts only (no data)
-export const useCustomerCount = (filters?: CustomerFilters) => {
+export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?: boolean }) => {
   const { companyId, getQueryKey, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
   
   // Use customer view context with fallback
@@ -19,7 +19,7 @@ export const useCustomerCount = (filters?: CustomerFilters) => {
   } catch (error) {
     viewAllCustomers = false;
   }
-  
+
   const activeFilter = viewAllCustomers && hasGlobalAccess ? getFilterForGlobalView() : getFilterForOwnCompany();
   
   const { 
@@ -84,7 +84,7 @@ export const useCustomerCount = (filters?: CustomerFilters) => {
       
       return count || 0;
     },
-    enabled: isSystemLevel || !!companyId,
+    enabled: (options?.enabled !== false) && (isSystemLevel || !!companyId),
     staleTime: 60 * 1000, // 1 minute cache for counts
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false, // Don't refetch counts on window focus

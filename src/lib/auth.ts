@@ -98,49 +98,73 @@ export const authService = {
       console.log('📝 [AUTH] Fetching profile for user:', user.id);
 
       // OPTIMIZATION: Execute profile, employee, and roles queries IN PARALLEL
-      // Wrap in try-catch to handle timeout gracefully
+      // Add individual timeouts to prevent hanging on slow networks
       let profile = null;
       let employeeCompany = null;
       let roles = null;
       let profileError = null;
 
       try {
+        // Add timeout wrapper for each query to prevent hanging
+        // Each query has its own timeout, but we continue even if some fail
+        const profileQuery = supabase
+          .from('profiles')
+          .select(`
+            *,
+            companies:company_id (
+              id,
+              name,
+              name_ar,
+              business_type,
+              active_modules
+            )
+          `)
+          .eq('user_id', user.id)
+          .single();
+        
+        const employeeQuery = supabase
+          .from('employees')
+          .select(`
+            company_id,
+            companies (
+              id,
+              name,
+              name_ar,
+              business_type,
+              active_modules
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        const rolesQuery = supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+
+        // Execute queries in parallel with individual timeout handling
         const [profileResult, employeeResult, rolesResult] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select(`
-              *,
-              companies:company_id (
-                id,
-                name,
-                name_ar,
-                business_type,
-                active_modules
-              )
-            `)
-            .eq('user_id', user.id)
-            .single(),
+          Promise.race([
+            profileQuery,
+            new Promise<{ data: null; error: Error }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: new Error('Profile query timeout') }), 8000)
+            )
+          ]).catch(() => ({ data: null, error: new Error('Profile query failed') })),
           
-          supabase
-            .from('employees')
-            .select(`
-              company_id,
-              companies (
-                id,
-                name,
-                name_ar,
-                business_type,
-                active_modules
-              )
-            `)
-            .eq('user_id', user.id)
-            .eq('is_active', true)
-            .maybeSingle(),
+          Promise.race([
+            employeeQuery,
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), 8000)
+            )
+          ]).catch(() => ({ data: null, error: null })),
           
-          supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
+          Promise.race([
+            rolesQuery,
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), 5000)
+            )
+          ]).catch(() => ({ data: null, error: null }))
         ]);
 
         profile = profileResult.data;
