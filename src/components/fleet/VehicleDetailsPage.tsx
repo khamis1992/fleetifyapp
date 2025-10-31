@@ -228,6 +228,18 @@ const VehicleDetailsPage = () => {
     });
   }, [queryClient, vehicleId, toast]);
 
+  const handleNewViolation = useCallback(() => {
+    if (!vehicleId) {
+      toast({
+        title: 'خطأ',
+        description: 'معرف المركبة غير متوفر.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setShowViolationForm(true);
+  }, [vehicleId, toast]);
+
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
     const colors: Record<string, string> = {
@@ -574,46 +586,17 @@ const VehicleDetailsPage = () => {
 
               {/* تبويب الصيانة */}
               <TabsContent value="maintenance" className="mt-0">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">سجل الصيانة</h3>
-                    <Button 
-                      onClick={() => setShowMaintenanceForm(true)}
-                      className="gap-2 bg-red-600 hover:bg-red-700"
-                    >
-                      <Plus className="w-4 h-4" />
-                      تسجيل صيانة
-                    </Button>
-                  </div>
-                  <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
-                </div>
+                <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
               </TabsContent>
 
               {/* تبويب المخالفات */}
               <TabsContent value="violations" className="mt-0">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => setShowViolationForm(true)}
-                        className="gap-2 bg-red-600 hover:bg-red-700"
-                      >
-                        <Plus className="w-4 h-4" />
-                        تسجيل مخالفة
-                      </Button>
-                      <Button 
-                        onClick={() => navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`)}
-                        variant="outline"
-                        className="gap-2"
-                      >
-                        <AlertTriangle className="w-4 h-4" />
-                        عرض جميع المخالفات
-                      </Button>
-                    </div>
-                  </div>
-                  <ViolationsTab violations={violations} formatCurrency={formatCurrency} onNewViolation={() => setShowViolationForm(true)} />
-                </div>
+                <ViolationsTab 
+                  violations={violations} 
+                  formatCurrency={formatCurrency} 
+                  onNewViolation={handleNewViolation}
+                  vehicleId={vehicleId}
+                />
               </TabsContent>
 
               {/* تبويب الوثائق */}
@@ -870,7 +853,7 @@ interface ContractsTabProps {
 const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, onNewContract }: ContractsTabProps) => {
   const navigate = useNavigate();
 
-  const handleNewContract = () => {
+  const handleClick = () => {
     if (onNewContract) {
       onNewContract();
     } else if (vehicleId) {
@@ -884,7 +867,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
     <div>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">العقود المرتبطة بالمركبة</h3>
-        <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={handleNewContract}>
+        <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={handleClick}>
           <Plus className="w-4 h-4" />
           عقد جديد
         </Button>
@@ -960,115 +943,176 @@ interface MaintenanceTabProps {
   onNewMaintenance?: () => void;
 }
 
-const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMaintenance }: MaintenanceTabProps) => (
-  <div>
-
-    {maintenanceRecords.length === 0 ? (
-      <Card>
-        <CardContent className="p-8 text-center text-gray-500">
-          لا توجد سجلات صيانة لهذه المركبة
-        </CardContent>
-      </Card>
-    ) : (
-      <div className="space-y-4">
-        {maintenanceRecords.map((record) => (
-          <Card key={record.id}>
-            <CardContent className="p-4 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  {record.service_type || 'صيانة'}
-                </h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  تاريخ: {record.service_date ? format(new Date(record.service_date), 'dd/MM/yyyy') : '-'} 
-                  {record.service_provider && ` • الورشة: ${record.service_provider}`}
-                </p>
-                <p className="text-sm text-gray-600 mb-2">
-                  التكلفة: {formatCurrency(record.cost || 0)} 
-                  {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('ar-SA')} كم`}
-                </p>
-                {record.description && (
-                  <p className="text-sm text-gray-500">{record.description}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMaintenance }: MaintenanceTabProps) => {
+  const navigate = useNavigate();
+  
+  const handleNewMaintenance = () => {
+    if (onNewMaintenance) {
+      onNewMaintenance();
+    } else if (vehicleId) {
+      navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
+    } else {
+      navigate('/fleet/maintenance');
+    }
+  };
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">سجل الصيانة</h3>
+        <Button 
+          onClick={handleNewMaintenance}
+          className="gap-2 bg-red-600 hover:bg-red-700"
+        >
+          <Plus className="w-4 h-4" />
+          تسجيل صيانة
+        </Button>
       </div>
-    )}
-  </div>
-);
+
+      {maintenanceRecords.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            لا توجد سجلات صيانة لهذه المركبة
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {maintenanceRecords.map((record) => (
+            <Card key={record.id}>
+              <CardContent className="p-4 flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">
+                    {record.service_type || 'صيانة'}
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-2">
+                    تاريخ: {record.service_date ? format(new Date(record.service_date), 'dd/MM/yyyy') : '-'} 
+                    {record.service_provider && ` • الورشة: ${record.service_provider}`}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    التكلفة: {formatCurrency(record.cost || 0)} 
+                    {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('ar-SA')} كم`}
+                  </p>
+                  {record.description && (
+                    <p className="text-sm text-gray-500">{record.description}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // تبويب المخالفات
 interface ViolationsTabProps {
   violations: any[];
   formatCurrency: (amount: number) => string;
   onNewViolation?: () => void;
+  vehicleId?: string;
 }
 
-const ViolationsTab = ({ violations, formatCurrency, onNewViolation }: ViolationsTabProps) => (
-  <div>
+const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }: ViolationsTabProps) => {
+  const navigate = useNavigate();
 
-    {violations.length === 0 ? (
-      <Card>
-        <CardContent className="p-8 text-center text-gray-500">
-          لا توجد مخالفات مسجلة لهذه المركبة
-        </CardContent>
-      </Card>
-    ) : (
-      <div className="space-y-4">
-        {violations.map((violation) => (
-          <Card key={violation.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">
-                    {violation.violation_type || 'مخالفة مرورية'}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    رقم المخالفة: #{violation.violation_number || violation.id.substring(0, 8)}
-                  </p>
-                </div>
-                <Badge className={violation.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
-                  {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
-                </Badge>
-              </div>
+  const handleNewViolation = () => {
+    if (onNewViolation) {
+      onNewViolation();
+    } else if (vehicleId) {
+      navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`);
+    } else {
+      navigate('/fleet/traffic-violations');
+    }
+  };
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <div className="text-gray-500">التاريخ</div>
-                  <div className="font-semibold">
-                    {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">المبلغ</div>
-                  <div className="font-semibold text-red-600">
-                    {formatCurrency(violation.fine_amount || 0)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">الحالة</div>
-                  <div className="font-semibold">
-                    {violation.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">المسؤول</div>
-                  <div className="font-semibold">
-                    {violation.responsible_party === 'customer' ? 'العميل' : 'الشركة'}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleNewViolation}
+            className="gap-2 bg-red-600 hover:bg-red-700"
+          >
+            <Plus className="w-4 h-4" />
+            تسجيل مخالفة
+          </Button>
+          {vehicleId && (
+            <Button 
+              onClick={() => navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`)}
+              variant="outline"
+              className="gap-2"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              عرض جميع المخالفات
+            </Button>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-);
+
+      {violations.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            لا توجد مخالفات مسجلة لهذه المركبة
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {violations.map((violation) => (
+            <Card key={violation.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {violation.violation_type || 'مخالفة مرورية'}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      رقم المخالفة: #{violation.violation_number || violation.id.substring(0, 8)}
+                    </p>
+                  </div>
+                  <Badge className={violation.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                    {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="text-gray-500">التاريخ</div>
+                    <div className="font-semibold">
+                      {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">المبلغ</div>
+                    <div className="font-semibold text-red-600">
+                      {formatCurrency(violation.fine_amount || 0)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">الحالة</div>
+                    <div className="font-semibold">
+                      {violation.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">المسؤول</div>
+                    <div className="font-semibold">
+                      {violation.responsible_party === 'customer' ? 'العميل' : 'الشركة'}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default VehicleDetailsPage;
 

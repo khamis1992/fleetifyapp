@@ -1,22 +1,21 @@
 import * as React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Home,
   Users,
-  FileText,
-  Car,
-  BarChart3,
-  Building2,
   MoreHorizontal,
   Plus,
   Settings,
   HelpCircle,
   Search,
   DollarSign,
-  FileEdit
+  FileEdit,
+  FileText,
+  Car
 } from 'lucide-react';
 import { useModuleConfig } from '@/modules/core/hooks/useModuleConfig';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { PRIMARY_NAVIGATION } from '@/navigation/navigationConfig';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,7 @@ export const MobileNavigation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { moduleContext, isLoading } = useModuleConfig();
+  const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
   const { data: badges } = useNavBadges();
   const { vibrate } = useHapticFeedback();
 
@@ -51,56 +51,55 @@ export const MobileNavigation: React.FC = () => {
     return location.pathname.startsWith(href);
   };
 
-  // Generate navigation items based on enabled modules
+  // Generate navigation items based on PRIMARY_NAVIGATION and enabled modules
   const navigationItems = React.useMemo(() => {
     if (isLoading || !moduleContext || !moduleContext.activeModules || !Array.isArray(moduleContext.activeModules)) return [];
 
-    const items = [
-      {
-        name: 'الرئيسية',
-        href: '/dashboard',
-        icon: Home,
-        badgeKey: 'dashboard'
+    // Map PRIMARY_NAVIGATION to mobile bottom nav items
+    const items: Array<{
+      name: string;
+      href: string;
+      icon: React.ElementType;
+      badgeKey: string;
+    }> = [];
+
+    PRIMARY_NAVIGATION.forEach((section) => {
+      // Check permissions
+      if (section.requiresSuperAdmin && !hasGlobalAccess) return;
+      if (section.requiresAdmin && !hasCompanyAdminAccess && !hasGlobalAccess) return;
+
+      // Check module context
+      if (section.id === 'fleet' && !moduleContext.activeModules.includes('vehicles')) return;
+      if (section.id === 'quotations-contracts' && 
+          !moduleContext.activeModules.includes('contracts') && 
+          !moduleContext.activeModules.includes('customers')) return;
+      if (section.id === 'finance' && !moduleContext.activeModules.includes('finance')) return;
+      if (section.id === 'hr' && !moduleContext.activeModules.includes('hr')) return;
+      if (section.id === 'inventory' && !moduleContext.activeModules.includes('inventory')) return;
+      if (section.id === 'sales' && !moduleContext.activeModules.includes('sales')) return;
+
+      // For mobile bottom nav, use the main href if available, otherwise use first submenu item
+      if (section.href) {
+        items.push({
+          name: section.name,
+          href: section.href,
+          icon: section.icon,
+          badgeKey: section.id
+        });
+      } else if (section.submenu && section.submenu.length > 0) {
+        // Use first submenu item as the main link
+        const firstSubItem = section.submenu[0];
+        items.push({
+          name: section.name,
+          href: firstSubItem.href,
+          icon: section.icon,
+          badgeKey: section.id
+        });
       }
-    ];
-
-    // Add modules based on what's enabled
-    if (moduleContext.activeModules.includes('properties')) {
-      items.push({
-        name: 'العقارات',
-        href: '/properties',
-        icon: Building2,
-        badgeKey: 'properties'
-      });
-    }
-
-    if (moduleContext.activeModules.includes('contracts') || moduleContext.activeModules.includes('customers')) {
-      items.push({
-        name: 'العقود',
-        href: '/contracts',
-        icon: FileText,
-        badgeKey: 'contracts'
-      });
-    }
-
-    if (moduleContext.activeModules.includes('vehicles')) {
-      items.push({
-        name: 'الأسطول',
-        href: '/fleet',
-        icon: Car,
-        badgeKey: 'fleet'
-      });
-    }
-
-    items.push({
-      name: 'التقارير',
-      href: '/reports',
-      icon: BarChart3,
-      badgeKey: 'finance'
     });
 
     return items;
-  }, [moduleContext, isLoading]);
+  }, [moduleContext, isLoading, hasCompanyAdminAccess, hasGlobalAccess]);
 
   // Get quick actions based on current nav item
   const getQuickActions = React.useCallback((href: string): QuickAction[] => {
