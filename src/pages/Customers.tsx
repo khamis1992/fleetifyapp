@@ -477,12 +477,13 @@ const Customers = () => {
   // Mobile view
   if (isMobile) {
     return (
-      <PageCustomizer
-        pageId="customers-page"
-        title="Customers"
-        titleAr="العملاء"
-      >
-        <div className="space-y-6 p-4">
+      <>
+        <PageCustomizer
+          pageId="customers-page"
+          title="Customers"
+          titleAr="العملاء"
+        >
+          <div className="space-y-6 p-4">
           {/* Mobile Header */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">العملاء</h1>
@@ -620,118 +621,118 @@ const Customers = () => {
               </div>
             </div>
           )}
+          </div>
+        </PageCustomizer>
+        
+        {/* Shared Dialogs for Mobile */}
+        <CustomerCreationOptionsDialog
+          open={showCreationOptionsDialog}
+          onOpenChange={setShowCreationOptionsDialog}
+          onSelectFullForm={handleSelectFullForm}
+          onSelectQuickAdd={handleSelectQuickAdd}
+        />
+        
+        <EnhancedCustomerDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+        />
+        
+        <CustomerDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          customerId={selectedCustomer?.id || ''}
+          onEdit={() => {
+            setShowDetailsDialog(false);
+            setShowEditDialog(true);
+          }}
+          onCreateContract={() => {
+            toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
+          }}
+        />
+        
+        <EnhancedCustomerDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          editingCustomer={selectedCustomer}
+        />
+        
+        <BulkDeleteCustomersDialog
+          open={showBulkDeleteDialog}
+          onOpenChange={setShowBulkDeleteDialog}
+        />
+        
+        <CustomerCSVUpload
+          open={showCSVUpload}
+          onOpenChange={setShowCSVUpload}
+          onUploadComplete={() => {
+            refetch();
+            toast.success('تم رفع ملف العملاء بنجاح');
+          }}
+        />
 
-          {/* Dialogs */}
-          <CustomerCreationOptionsDialog
-            open={showCreationOptionsDialog}
-            onOpenChange={setShowCreationOptionsDialog}
-            onSelectFullForm={handleSelectFullForm}
-            onSelectQuickAdd={handleSelectQuickAdd}
-            onSelectImport={handleImportWizard}
-          />
-          
-          <EnhancedCustomerDialog
-            open={showCreateDialog}
-            onOpenChange={setShowCreateDialog}
-          />
-          
-          <CustomerDetailsDialog
-            open={showDetailsDialog}
-            onOpenChange={setShowDetailsDialog}
-            customerId={selectedCustomer?.id || ''}
-            onEdit={() => {
-              setShowDetailsDialog(false);
-              setShowEditDialog(true);
-            }}
-            onCreateContract={() => {
-              // Navigate to create contract page with selected customer
-              toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
-            }}
-          />
-          
-          <EnhancedCustomerDialog
-            open={showEditDialog}
-            onOpenChange={setShowEditDialog}
-            editingCustomer={selectedCustomer}
-          />
-          
-          <BulkDeleteCustomersDialog
-            open={showBulkDeleteDialog}
-            onOpenChange={setShowBulkDeleteDialog}
-          />
-          
-          <CustomerCSVUpload
-            open={showCSVUpload}
-            onOpenChange={setShowCSVUpload}
-            onUploadComplete={() => {
-              refetch();
-              toast.success('تم رفع ملف العملاء بنجاح');
-            }}
-          />
+        <CustomerImportWizard
+          open={showImportWizard}
+          onOpenChange={setShowImportWizard}
+          onComplete={() => {
+            refetch();
+            toast.success('تم استيراد العملاء بنجاح');
+          }}
+        />
+        
+        <QuickCustomerForm
+          open={showQuickCreateDialog}
+          onOpenChange={setShowQuickCreateDialog}
+          onSuccess={(customerId, customerData) => {
+            refetch();
+            toast.success('تم إنشاء العميل السريع بنجاح');
+          }}
+        />
 
-          <CustomerImportWizard
-            open={showImportWizard}
-            onOpenChange={setShowImportWizard}
-            onComplete={() => {
-              refetch();
-              toast.success('تم استيراد العملاء بنجاح');
-            }}
-          />
-          
-          <QuickCustomerForm
-            open={showQuickCreateDialog}
-            onOpenChange={setShowQuickCreateDialog}
-            onSuccess={(customerId, customerData) => {
-              refetch();
-              toast.success('تم إنشاء العميل السريع بنجاح');
-            }}
-          />
-
-          {/* Delete Confirmation Dialog */}
-          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
-                <AlertDialogDescription>
-                  هل أنت متأكد من حذف العميل{' '}
-                  <strong>
-                    {customerToDelete?.customer_type === 'individual'
-                      ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
-                      : customerToDelete?.company_name}
-                  </strong>
-                  ؟
-                  <br />
-                  <br />
-                  <span className="text-destructive font-medium">
-                    هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
-                  </span>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={confirmDelete}
-                  disabled={deleteCustomerMutation.isPending}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </PageCustomizer>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حذف العميل{' '}
+                <strong>
+                  {customerToDelete?.customer_type === 'individual'
+                    ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
+                    : customerToDelete?.company_name}
+                </strong>
+                ؟
+                <br />
+                <br />
+                <span className="text-destructive font-medium">
+                  هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={deleteCustomerMutation.isPending}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
   // Desktop view with virtual scrolling
   return (
-    <PageCustomizer
-      pageId="customers-page"
-      title="Customers"
-      titleAr="العملاء"
-    >
-      <div className="space-y-6 p-6">
+    <>
+      <PageCustomizer
+        pageId="customers-page"
+        title="Customers"
+        titleAr="العملاء"
+      >
+        <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -859,9 +860,6 @@ const Customers = () => {
 
         {/* Customer Table with Virtual Scrolling */}
         <Card className="rounded-2xl border border-border shadow-sm overflow-hidden">
-          <CardHeader className="p-6 border-b border-border">
-            <CardTitle className="text-xl font-semibold">قائمة العملاء</CardTitle>
-          </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="space-y-2">
@@ -1111,181 +1109,106 @@ const Customers = () => {
             )}
           </CardContent>
         </Card>
+        </div>
+      </PageCustomizer>
+      
+      {/* Shared Dialogs for Desktop */}
+      <CustomerCreationOptionsDialog
+        open={showCreationOptionsDialog}
+        onOpenChange={setShowCreationOptionsDialog}
+        onSelectFullForm={handleSelectFullForm}
+        onSelectQuickAdd={handleSelectQuickAdd}
+      />
+      
+      <EnhancedCustomerDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+      />
+      
+      <CustomerDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        customerId={selectedCustomer?.id || ''}
+        onEdit={() => {
+          setShowDetailsDialog(false);
+          setShowEditDialog(true);
+        }}
+        onCreateContract={() => {
+          toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
+        }}
+      />
+      
+      <EnhancedCustomerDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        editingCustomer={selectedCustomer}
+      />
+      
+      <BulkDeleteCustomersDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+      />
+      
+      <CustomerCSVUpload
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
+        onUploadComplete={() => {
+          refetch();
+          toast.success('تم رفع ملف العملاء بنجاح');
+        }}
+      />
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-muted-foreground">
-                إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">عدد العملاء:</span>
-                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="200">200</SelectItem>
-                    <SelectItem value="500">500</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">الصفحات:</span>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                {totalPages > 5 && (
-                  <>
-                    <span className="text-sm text-muted-foreground">...</span>
-                    <Button
-                      variant={currentPage === totalPages ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(totalPages)}
-                    >
-                      {totalPages}
-                    </Button>
-                  </>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  السابق
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  التالي
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+      <CustomerImportWizard
+        open={showImportWizard}
+        onOpenChange={setShowImportWizard}
+        onComplete={() => {
+          refetch();
+          toast.success('تم استيراد العملاء بنجاح');
+        }}
+      />
 
-        {/* Dialogs */}
-        <CustomerCreationOptionsDialog
-          open={showCreationOptionsDialog}
-          onOpenChange={setShowCreationOptionsDialog}
-          onSelectFullForm={handleSelectFullForm}
-          onSelectQuickAdd={handleSelectQuickAdd}
-          onSelectImport={handleImportWizard}
-        />
-        
-        <EnhancedCustomerDialog
-          open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
-        />
-        
-        <CustomerDetailsDialog
-          open={showDetailsDialog}
-          onOpenChange={setShowDetailsDialog}
-          customerId={selectedCustomer?.id || ''}
-          onEdit={() => {
-            setShowDetailsDialog(false);
-            setShowEditDialog(true);
-          }}
-          onCreateContract={() => {
-            // Navigate to create contract page with selected customer
-            toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
-          }}
-        />
-        
-        <EnhancedCustomerDialog
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          editingCustomer={selectedCustomer}
-        />
-        
-        <BulkDeleteCustomersDialog
-          open={showBulkDeleteDialog}
-          onOpenChange={setShowBulkDeleteDialog}
-        />
-        
-        <CustomerCSVUpload
-          open={showCSVUpload}
-          onOpenChange={setShowCSVUpload}
-          onUploadComplete={() => {
-            refetch();
-            toast.success('تم رفع ملف العملاء بنجاح');
-          }}
-        />
+      <QuickCustomerForm
+        open={showQuickCreateDialog}
+        onOpenChange={setShowQuickCreateDialog}
+        onSuccess={(customerId, customerData) => {
+          refetch();
+          toast.success('تم إنشاء العميل السريع بنجاح');
+        }}
+      />
 
-        <CustomerImportWizard
-          open={showImportWizard}
-          onOpenChange={setShowImportWizard}
-          onComplete={() => {
-            refetch();
-            toast.success('تم استيراد العملاء بنجاح');
-          }}
-        />
-
-        {/* Quick Customer Form */}
-        <QuickCustomerForm
-          open={showQuickCreateDialog}
-          onOpenChange={setShowQuickCreateDialog}
-          onSuccess={(customerId, customerData) => {
-            refetch();
-            toast.success('تم إنشاء العميل السريع بنجاح');
-          }}
-        />
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
-              <AlertDialogDescription>
-                هل أنت متأكد من حذف العميل{' '}
-                <strong>
-                  {customerToDelete?.customer_type === 'individual'
-                    ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
-                    : customerToDelete?.company_name}
-                </strong>
-                ؟
-                <br />
-                <br />
-                <span className="text-destructive font-medium">
-                  هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
-                </span>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDelete}
-                disabled={deleteCustomerMutation.isPending}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </PageCustomizer>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف العميل{' '}
+              <strong>
+                {customerToDelete?.customer_type === 'individual'
+                  ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
+                  : customerToDelete?.company_name}
+              </strong>
+              ؟
+              <br />
+              <br />
+              <span className="text-destructive font-medium">
+                هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteCustomerMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
