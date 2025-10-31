@@ -8,18 +8,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-if (!SUPABASE_URL) {
-  console.error('❌ Error: VITE_SUPABASE_URL environment variable is not set.');
-  console.error('Please set it in your .env file.');
-  process.exit(1);
-};
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-if (!SUPABASE_ANON_KEY) {
-  console.error('❌ Error: VITE_SUPABASE_ANON_KEY environment variable is not set.');
-  console.error('Please set it in your .env file.');
-  process.exit(1);
-};
+const SUPABASE_URL = 'https://qwhunliohlkkahbspfiu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs';
 
 // معرف شركة العراف
 const AL_ARRAF_COMPANY_ID = '24bc0b21-4e2d-4413-9842-31719a3669f4';

@@ -37,7 +37,14 @@
     "build:apk": "./build-apk.sh",
     "verify:apk": "./verify-build.sh",
     "demo:apk": "./demo-apk-build.sh",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "fix:credentials": "node scripts/fix-hardcoded-credentials.js",
+    "fix:credentials:dry-run": "node scripts/fix-hardcoded-credentials.js --dry-run",
+    "security:scan": "node scripts/security-scanner.js --scan-all",
+    "security:scan:credentials": "node scripts/security-scanner.js --scan-credentials",
+    "security:scan:deps": "node scripts/security-scanner.js --scan-deps",
+    "security:scan:report": "node scripts/security-scanner.js --scan-all --report security-report.txt",
+    "security:scan:json": "node scripts/security-scanner.js --scan-all --output json --report security-report.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -840,12 +840,6 @@ interface ContractsTabProps {
   contracts: any[];
   getCustomerName: (customer: any) => string;
   formatCurrency: (amount: number) => string;
-}
-
-interface ContractsTabProps {
-  contracts: any[];
-  getCustomerName: (customer: any) => string;
-  formatCurrency: (amount: number) => string;
   vehicleId?: string;
   onNewContract?: () => void;
 }

@@ -5,7 +5,7 @@
  * @component CustomerDetailsPage
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -120,10 +120,19 @@ const CustomerDetailsPage = () => {
         .eq('company_id', companyId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching customer:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('العميل غير موجود');
+      }
+      
       return data;
     },
     enabled: !!customerId && !!companyId,
+    retry: 1,
   });
 
   // جلب عقود العميل
@@ -200,13 +209,14 @@ const CustomerDetailsPage = () => {
 
   // تنسيق اسم العميل
   const customerName = useMemo(() => {
-    if (!customer) return '';
+    if (!customer) return 'غير محدد';
     if (customer.customer_type === 'corporate') {
-      return customer.company_name_ar || customer.company_name || '';
+      return customer.company_name_ar || customer.company_name || 'شركة';
     }
     const firstName = customer.first_name_ar || customer.first_name || '';
     const lastName = customer.last_name_ar || customer.last_name || '';
-    return `${firstName} ${lastName}`.trim();
+    const name = `${firstName} ${lastName}`.trim();
+    return name || 'غير محدد';
   }, [customer]);
 
   // تنسيق بيانات العقود للعرض
@@ -249,17 +259,43 @@ const CustomerDetailsPage = () => {
   // معالجة حالات التحميل والأخطاء
   const isLoading = loadingCustomer || loadingContracts || loadingPayments;
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 [CustomerDetailsPage] Debug:', {
+      customerId,
+      companyId,
+      isLoading,
+      hasCustomer: !!customer,
+      customerError: customerError?.message,
+    });
+  }, [customerId, companyId, isLoading, customer, customerError]);
+
   if (isLoading) {
     return <PageSkeletonFallback />;
   }
 
   if (customerError || !customer) {
+    console.error('❌ [CustomerDetailsPage] Error or no customer:', {
+      error: customerError,
+      hasCustomer: !!customer,
+      customerId,
+      companyId,
+    });
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">العميل غير موجود</h3>
-            <p className="text-gray-600 mb-4">لم يتم العثور على هذا العميل</p>
+            <p className="text-gray-600 mb-4">
+              {customerError?.message || 'لم يتم العثور على هذا العميل'}
+            </p>
+            {!customerId && (
+              <p className="text-sm text-red-600 mb-2">معرف العميل مفقود</p>
+            )}
+            {!companyId && (
+              <p className="text-sm text-red-600 mb-2">معرف الشركة مفقود</p>
+            )}
             <Button onClick={() => navigate('/customers')}>
               العودة لصفحة العملاء
             </Button>
@@ -326,11 +362,14 @@ const CustomerDetailsPage = () => {
 
   // دالة للحصول على الأحرف الأولى من الاسم
   const getInitials = (name: string): string => {
-    const names = name.split(' ');
+    if (!name || name === 'غير محدد') return '؟';
+    const names = name.split(' ').filter(n => n.length > 0);
+    if (names.length === 0) return '؟';
     return names
       .slice(0, 2)
       .map((n) => n[0])
-      .join('');
+      .join('')
+      .toUpperCase();
   };
 
   return (
@@ -671,24 +710,62 @@ const CustomerDetailsPage = () => {
 
               {/* تبويبات أخرى */}
               <TabsContent value="vehicles" className="mt-0">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  السيارات المؤجرة
-                </h3>
-                <p className="text-gray-600">محتوى تبويب السيارات...</p>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    السيارات المؤجرة
+                  </h3>
+                  {formattedContracts.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {formattedContracts.map((contract) => (
+                        <Card key={contract.id}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Car className="w-8 h-8 text-blue-600" />
+                              <div>
+                                <h4 className="font-semibold">{contract.vehicleName}</h4>
+                                <p className="text-sm text-gray-600">
+                                  عقد #{contract.contractNumber}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="p-8 text-center text-gray-500">
+                        لا توجد سيارات مؤجرة لهذا العميل
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="documents" className="mt-0">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  المستندات والملفات
-                </h3>
-                <p className="text-gray-600">محتوى تبويب المستندات...</p>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    المستندات والملفات
+                  </h3>
+                  <Card>
+                    <CardContent className="p-8 text-center text-gray-500">
+                      لا توجد مستندات متاحة حالياً
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="activity" className="mt-0">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  سجل النشاط
-                </h3>
-                <p className="text-gray-600">محتوى تبويب سجل النشاط...</p>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    سجل النشاط
+                  </h3>
+                  <Card>
+                    <CardContent className="p-8 text-center text-gray-500">
+                      لا توجد أنشطة مسجلة حالياً
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             </div>
           </Tabs>

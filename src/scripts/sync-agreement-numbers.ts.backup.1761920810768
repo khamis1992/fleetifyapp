@@ -27,12 +27,7 @@ function loadEnvFile() {
 // Load environment variables
 loadEnvFile();
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-if (!SUPABASE_URL) {
-  console.error('❌ Error: VITE_SUPABASE_URL environment variable is not set.');
-  console.error('Please set it in your .env file.');
-  process.exit(1);
-};
+const SUPABASE_URL = "https://qwhunliohlkkahbspfiu.supabase.co";
 // IMPORTANT: Use the SERVICE_ROLE_KEY for admin-level operations. 
 // This key should be stored securely and not be exposed on the client-side.
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
