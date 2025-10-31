@@ -930,7 +930,7 @@ const Customers = () => {
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الإجراءات</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border" style={{ position: 'relative', height: `${virtualizer.getTotalSize()}px` }}>
+                    <tbody className="divide-y divide-border">
                       {virtualItems.map((virtualItem) => {
                         const customer = customers[virtualItem.index];
                         
@@ -938,15 +938,6 @@ const Customers = () => {
                           <tr
                             key={customer.id}
                             className="border-b hover:bg-accent/30 transition-all duration-200"
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              width: '100%',
-                              height: `${virtualItem.size}px`,
-                              transform: `translateY(${virtualItem.start}px)`,
-                              display: 'table-row',
-                            }}
                           >
                             <td className="px-6 py-4" style={{ minWidth: '50px', width: '50px' }}>
                               <input type="checkbox" className="w-4 h-4 rounded border-border" />
