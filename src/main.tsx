@@ -24,52 +24,94 @@ const removeLoadingClass = () => {
 setTimeout(removeLoadingClass, 500);
 
 // Global error handler for dynamic import failures
-window.addEventListener('error', (event) => {
-  const isChunkLoadError = 
-    event.message.includes('Failed to fetch dynamically imported module') ||
-    event.message.includes('Importing a module script failed') ||
-    event.message.includes('error loading dynamically imported module');
-  
-  if (isChunkLoadError) {
-    console.warn('🔄 [CHUNK_LOAD_ERROR] Detected stale chunk, reloading page...');
-    // Prevent infinite reload loop
-    const hasReloaded = sessionStorage.getItem('chunk_reload_attempted');
-    if (!hasReloaded) {
-      sessionStorage.setItem('chunk_reload_attempted', 'true');
-      window.location.reload();
-    } else {
-      console.error('🔄 [CHUNK_LOAD_ERROR] Reload attempted but failed, clearing session and trying again');
-      sessionStorage.removeItem('chunk_reload_attempted');
-      window.location.reload();
+// IMPORTANT: Only enable in production to avoid conflicts with HMR in development
+if (!import.meta.env.DEV) {
+  window.addEventListener('error', (event) => {
+    const isChunkLoadError = 
+      event.message.includes('Failed to fetch dynamically imported module') ||
+      event.message.includes('Importing a module script failed') ||
+      event.message.includes('error loading dynamically imported module');
+    
+    if (isChunkLoadError) {
+      console.warn('🔄 [CHUNK_LOAD_ERROR] Detected stale chunk, reloading page...');
+      // Prevent infinite reload loop
+      const hasReloaded = sessionStorage.getItem('chunk_reload_attempted');
+      if (!hasReloaded) {
+        sessionStorage.setItem('chunk_reload_attempted', 'true');
+        window.location.reload();
+      } else {
+        console.error('🔄 [CHUNK_LOAD_ERROR] Reload attempted but failed, clearing session and trying again');
+        sessionStorage.removeItem('chunk_reload_attempted');
+        window.location.reload();
+      }
     }
-  }
-});
+  });
 
-// Clear reload flag on successful load
-window.addEventListener('load', () => {
-  sessionStorage.removeItem('chunk_reload_attempted');
-});
+  // Clear reload flag on successful load
+  window.addEventListener('load', () => {
+    sessionStorage.removeItem('chunk_reload_attempted');
+  });
 
-
-// Handle unhandled promise rejections (for dynamic imports)
-window.addEventListener('unhandledrejection', (event) => {
-  const error = event.reason;
-  const isChunkLoadError = 
-    error?.message?.includes('Failed to fetch dynamically imported module') ||
-    error?.message?.includes('Importing a module script failed') ||
-    error?.message?.includes('error loading dynamically imported module') ||
-    (error instanceof TypeError && error.message.includes('fetch'));
-  
-  if (isChunkLoadError) {
-    console.warn('🔄 [CHUNK_LOAD_ERROR] Detected stale chunk in promise, reloading page...');
-    event.preventDefault();
-    const hasReloaded = sessionStorage.getItem('chunk_reload_attempted');
-    if (!hasReloaded) {
-      sessionStorage.setItem('chunk_reload_attempted', 'true');
-      window.location.reload();
+  // Handle unhandled promise rejections (for dynamic imports)
+  window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason;
+    const isChunkLoadError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('error loading dynamically imported module') ||
+      (error instanceof TypeError && error.message.includes('fetch'));
+    
+    if (isChunkLoadError) {
+      console.warn('🔄 [CHUNK_LOAD_ERROR] Detected stale chunk in promise, reloading page...');
+      event.preventDefault();
+      const hasReloaded = sessionStorage.getItem('chunk_reload_attempted');
+      if (!hasReloaded) {
+        sessionStorage.setItem('chunk_reload_attempted', 'true');
+        window.location.reload();
+      }
     }
-  }
-});
+  });
+} else {
+  // In development mode, just log chunk errors without reloading
+  // HMR will handle module updates automatically
+  window.addEventListener('error', (event) => {
+    const isChunkLoadError = 
+      event.message.includes('Failed to fetch dynamically imported module') ||
+      event.message.includes('Importing a module script failed') ||
+      event.message.includes('error loading dynamically imported module');
+    
+    if (isChunkLoadError) {
+      console.warn('🔄 [DEV] Chunk load error detected (HMR will handle this):', event.message);
+      // Don't reload in development - let HMR handle it
+      return;
+    }
+    
+    // Log other errors but don't prevent default behavior
+    if (event.error && !event.error.message?.includes('ResizeObserver')) {
+      console.error('🔄 [DEV] Global error:', event.error);
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason;
+    const isChunkLoadError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('error loading dynamically imported module') ||
+      (error instanceof TypeError && error.message.includes('fetch'));
+    
+    if (isChunkLoadError) {
+      console.warn('🔄 [DEV] Chunk load error in promise (HMR will handle this):', error?.message);
+      // Don't prevent default or reload in development - let HMR handle it
+      return;
+    }
+    
+    // Log other promise rejections but don't prevent default
+    if (error && !error.message?.includes('ResizeObserver')) {
+      console.error('🔄 [DEV] Unhandled promise rejection:', error);
+    }
+  });
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -83,14 +125,11 @@ const root = createRoot(rootElement);
 
 console.log('✅ [MAIN] React root created, rendering app...');
 
-// تمكين React StrictMode في بيئة التطوير
+// NOTE: StrictMode disabled in development to prevent HMR conflicts
+// StrictMode causes double renders which can trigger infinite reload loops with HMR
 if (import.meta.env.DEV) {
-  console.log('✅ [MAIN] Rendering in development mode with StrictMode');
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  console.log('✅ [MAIN] Rendering in development mode (StrictMode disabled for HMR compatibility)');
+  root.render(<App />);
 } else {
   console.log('✅ [MAIN] Rendering in production mode');
   root.render(<App />);

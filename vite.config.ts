@@ -59,7 +59,11 @@ export default defineConfig(({ mode }) => ({
       'framer-motion',
       'recharts'
     ],
-    exclude: ['lucide-react'],
+    exclude: [
+      'lucide-react',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-collapsible'
+    ],
     force: true,
     esbuildOptions: {
       target: 'es2020',

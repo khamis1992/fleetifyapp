@@ -163,9 +163,14 @@ export const skipWaitingAndActivate = async (): Promise<void> => {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       console.log('✅ Activating new service worker...');
       
-      // Reload page after activation
+      // Reload page after activation (only in production)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
+        if (import.meta.env.PROD) {
+          console.log('✅ Service worker controller changed, reloading...');
+          window.location.reload();
+        } else {
+          console.log('✅ Service worker controller changed (dev mode - no reload)');
+        }
       });
     }
   } catch (error) {

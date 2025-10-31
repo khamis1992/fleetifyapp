@@ -1,4 +1,5 @@
-import { useState, useMemo, lazy, Suspense } from "react"
+import { useState, useMemo, lazy, Suspense, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -66,9 +67,26 @@ const StatusIcon = ({ status }: { status: string }) => {
 }
 
 export default function Maintenance() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined)
   const [activeTab, setActiveTab] = useState("vehicles")
+  
+  // Read vehicle parameter from URL query string
+  useEffect(() => {
+    const vehicleParam = searchParams.get('vehicle')
+    if (vehicleParam) {
+      console.log('🔧 [Maintenance] Vehicle parameter found in URL:', vehicleParam)
+      setSelectedVehicleId(vehicleParam)
+      setShowMaintenanceForm(true)
+      // Clear the parameter from URL after reading it
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev)
+        newParams.delete('vehicle')
+        return newParams
+      }, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
   
   // Performance-optimized hooks with conditional loading based on active tab
   const { data: maintenanceRecords, isLoading: maintenanceLoading } = useVehicleMaintenance(undefined, {

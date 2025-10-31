@@ -30,30 +30,56 @@ export const useOptimizedRecentActivities = () => {
           timestamp: new Date().toISOString()
         });
 
-        if (!companyId) {
-          console.warn('⚠️ [ACTIVITIES] No company ID available - returning empty array');
+        if (!companyId && !isSystemLevel) {
+          console.warn('⚠️ [ACTIVITIES] No company ID available and not system level - returning empty array');
           return [];
         }
 
         // Optimized query - fetch only last 10 activities, no complex joins
-        const { data: activities, error } = await supabase
+        // Handle null company_id gracefully by filtering nulls out
+        let query = supabase
           .from('system_logs')
           .select('id, category, action, message, level, created_at')
-          .eq('company_id', companyId)
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
           .order('created_at', { ascending: false })
           .limit(10); // Reduced from 15 to 10 for faster loading
 
+        // Only filter by company_id if we have one (system-level users can see all)
+        if (companyId) {
+          query = query.not('company_id', 'is', null).eq('company_id', companyId);
+        } else if (isSystemLevel) {
+          // For system-level users without companyId, show all activities
+          query = query.not('company_id', 'is', null);
+        }
+
+        const { data: activities, error } = await query;
+
         if (error) {
-          console.error('❌ [ACTIVITIES] Error fetching activities:', {
+          // Log detailed error information for debugging
+          const errorDetails = {
             message: error.message,
             code: error.code,
             details: error.details,
             hint: error.hint,
             companyId,
-            timestamp: new Date().toISOString(),
-            fullError: error
-          });
+            isSystemLevel,
+            timestamp: new Date().toISOString()
+          };
+          
+          console.error('❌ [ACTIVITIES] Error fetching activities:', errorDetails);
+          
+          // Handle specific error types gracefully
+          if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
+            console.warn('⚠️ [ACTIVITIES] RLS policy or permission issue - returning empty array');
+            return [];
+          }
+          
+          if (error.code === '42P01') {
+            console.error('❌ [ACTIVITIES] Table system_logs does not exist');
+            return [];
+          }
+          
+          // For other errors, return empty array to prevent UI breaking
           return [];
         }
 
@@ -88,12 +114,14 @@ export const useOptimizedRecentActivities = () => {
         return [];
       }
     },
-    enabled: !!companyId,
+    enabled: !!companyId || isSystemLevel, // Enable for company-scoped users or system-level users
     staleTime: 10 * 60 * 1000, // 10 minutes - تخزين مؤقت لمدة أطول
     gcTime: 30 * 60 * 1000, // 30 minutes - الاحتفاظ بالذاكرة المؤقتة
     refetchOnMount: false, // لا تحمل مرة أخرى عند التحميل
     refetchOnWindowFocus: false, // لا تحمل عند العودة للنافذة
     placeholderData: [], // عرض فوري للبيانات القديمة
+    retry: 1, // Only retry once on failure
+    retryDelay: 1000, // Wait 1 second before retry
   });
 };
 

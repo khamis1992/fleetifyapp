@@ -365,10 +365,10 @@ const CustomersNew = () => {
       </div>
       
       {/* Customers Table */}
-      <Card className="border shadow-card overflow-hidden opacity-0 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+      <Card className="bg-card rounded-2xl border border-border shadow-card overflow-hidden opacity-0 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
         
         {/* Table Header */}
-        <div className="p-6 border-b">
+        <div className="p-6 border-b border-border">
           <h2 className="text-xl font-semibold">قائمة العملاء</h2>
         </div>
         
@@ -376,15 +376,18 @@ const CustomersNew = () => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-accent border-b">
+              <tr className="bg-accent border-b border-border">
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">
-                  <input type="checkbox" className="w-4 h-4 rounded border-border" />
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" className="w-4 h-4 rounded border-border" />
+                  </div>
                 </th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العميل</th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">رقم الهاتف</th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">البريد الإلكتروني</th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">نوع العميل</th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الحالة</th>
+                <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العقود</th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الإجراءات</th>
               </tr>
             </thead>
@@ -395,7 +398,7 @@ const CustomersNew = () => {
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="opacity-0 animate-in fade-in slide-in-from-right-4 duration-300" 
                       style={{ animationDelay: `${i * 60}ms` }}>
-                    <td className="px-6 py-4" colSpan={7}>
+                    <td className="px-6 py-4" colSpan={8}>
                       <div className="h-12 bg-muted/50 rounded animate-pulse" />
                     </td>
                   </tr>
@@ -403,7 +406,7 @@ const CustomersNew = () => {
               ) : error ? (
                 // Error state
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <AlertCircle className="w-16 h-16 text-destructive" />
                       <div className="space-y-2">
@@ -424,7 +427,7 @@ const CustomersNew = () => {
                 </tr>
               ) : customers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <Users className="w-12 h-12 text-muted-foreground/50" />
                       <p className="text-lg">لا توجد عملاء</p>
@@ -437,7 +440,7 @@ const CustomersNew = () => {
                   <tr 
                     key={customer.id} 
                     className={cn(
-                      "hover:bg-accent-light transition-all hover:translate-x-1",
+                      "table-row hover:bg-accent-light transition-all hover:translate-x-1",
                       "opacity-0 animate-in fade-in slide-in-from-right-4 duration-300"
                     )}
                     style={{ animationDelay: `${index * 60}ms` }}
@@ -476,9 +479,9 @@ const CustomersNew = () => {
                     <td className="px-6 py-4">
                       <Badge 
                         className={cn(
-                          "rounded-full flex items-center gap-1 w-fit",
+                          "rounded-full flex items-center gap-1 w-fit transition-all",
                           customer.is_active 
-                            ? "bg-success-light text-success animate-pulse" 
+                            ? "bg-success-light text-success" 
                             : "bg-gray-100 text-gray-500"
                         )}
                       >
@@ -488,6 +491,14 @@ const CustomersNew = () => {
                         )} />
                         {customer.is_active ? 'نشط' : 'معلق'}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-semibold" style={{ color: 'hsl(var(--primary))' }}>
+                        {(() => {
+                          const count = customer.total_contracts || customer.contracts_count || customer.contracts?.length || 0;
+                          return `${count} ${count === 1 ? 'عقد' : 'عقود'}`;
+                        })()}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <DropdownMenu>

@@ -173,14 +173,32 @@ const VehicleDetailsPage = () => {
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
+    console.log('🔧 [VehicleDetailsPage] Edit button clicked, vehicle:', vehicle);
+    if (!vehicle) {
+      console.warn('⚠️ [VehicleDetailsPage] Cannot edit: vehicle not loaded yet');
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم تحميل بيانات المركبة بعد. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive'
+      });
+      return;
+    }
     setShowEditForm(true);
-  }, []);
+  }, [vehicle, toast]);
 
   const handleMaintenance = useCallback(() => {
-    if (vehicleId) {
-      navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
+    console.log('🔧 [VehicleDetailsPage] Maintenance button clicked, vehicleId:', vehicleId);
+    if (!vehicleId) {
+      console.warn('⚠️ [VehicleDetailsPage] Cannot open maintenance: vehicleId not available');
+      toast({
+        title: 'خطأ',
+        description: 'معرف المركبة غير متوفر. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive'
+      });
+      return;
     }
-  }, [navigate, vehicleId]);
+    navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
+  }, [navigate, vehicleId, toast]);
 
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
@@ -261,11 +279,22 @@ const VehicleDetailsPage = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button onClick={handleEdit} className="gap-2 bg-red-600 hover:bg-red-700">
+              <Button 
+                type="button"
+                onClick={handleEdit} 
+                disabled={!vehicle || isLoading}
+                className="gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Edit3 className="w-4 h-4" />
                 تعديل
               </Button>
-              <Button variant="outline" onClick={handleMaintenance} className="gap-2">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={handleMaintenance} 
+                disabled={!vehicle || isLoading}
+                className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Wrench className="w-4 h-4" />
                 صيانة
               </Button>
@@ -551,13 +580,11 @@ const VehicleDetailsPage = () => {
       </main>
 
       {/* Vehicle Form Dialog */}
-      {showEditForm && vehicle && (
-        <VehicleForm 
-          vehicle={vehicle}
-          open={showEditForm}
-          onOpenChange={setShowEditForm}
-        />
-      )}
+      <VehicleForm 
+        vehicle={vehicle || undefined}
+        open={showEditForm}
+        onOpenChange={setShowEditForm}
+      />
     </div>
   );
 };

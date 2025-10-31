@@ -174,6 +174,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');
     
+    // In development mode (HMR), reset initialization flag to allow re-initialization
+    // This prevents issues where HMR reloads the component but isInitialized stays true
+    if (import.meta.env.DEV && isInitialized.current) {
+      console.log('📝 [AUTH_CONTEXT] HMR detected - resetting initialization flag');
+      isInitialized.current = false;
+    }
+    
     // Only initialize if not already done (prevents HMR issues)
     if (!isInitialized.current) {
       initializeAuth();
@@ -198,8 +205,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       mountedRef.current = false;
-      // DON'T reset isInitialized on HMR - only on real unmount
-      // isInitialized will naturally reset when the module is actually reloaded
+      
+      // In development, allow re-initialization on HMR
+      // In production, keep initialization flag to prevent unnecessary re-initialization
+      if (import.meta.env.DEV) {
+        // Reset initialization flag on unmount in development to allow HMR to work properly
+        isInitialized.current = false;
+      }
 
       if (authListenerRef.current?.subscription) {
         authListenerRef.current.subscription.unsubscribe();

@@ -40,6 +40,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [assetCodeInput, setAssetCodeInput] = useState("")
   
+  // Log when component receives props
+  useEffect(() => {
+    console.log('🔧 [VehicleForm] Props changed:', { open, vehicle: vehicle ? { id: vehicle.id, plate_number: vehicle.plate_number } : null });
+  }, [open, vehicle]);
+  
   // Fixed asset lookup
   const { data: fixedAsset, isLoading: assetLoading, error: assetError } = useFixedAssetByCode(assetCodeInput)
   

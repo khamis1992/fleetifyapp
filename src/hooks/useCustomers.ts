@@ -35,19 +35,24 @@ export const useCustomers = (filters?: CustomerFilters) => {
       companyId,
     }),
     queryFn: async ({ signal }) => {
-      console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
-        companyId,
-        filter,
-        isBrowsingMode,
-        browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-        hasGlobalAccess,
-        userCompany: user?.company?.name,
-        filters
-      });
+      // Reduced logging for performance - uncomment for debugging
+      // console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
+      //   companyId,
+      //   filter,
+      //   isBrowsingMode,
+      //   browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+      //   hasGlobalAccess,
+      //   userCompany: user?.company?.name,
+      //   filters
+      // });
 
       if (!companyId && !hasGlobalAccess) {
-        console.log('❌ [CUSTOMERS] No company ID found and no global access');
-        return [];
+        // Reduced logging for performance - uncomment for debugging
+        // console.log('❌ [CUSTOMERS] No company ID found and no global access');
+        return {
+          data: [],
+          pagination: undefined
+        };
       }
 
       let query = supabase
@@ -57,16 +62,19 @@ export const useCustomers = (filters?: CustomerFilters) => {
 
       // Apply company filter based on unified access logic
       if (filter.company_id) {
-        console.log('🏢 [CUSTOMERS] Applying company filter:', filter.company_id);
+        // Reduced logging for performance - uncomment for debugging
+        // console.log('🏢 [CUSTOMERS] Applying company filter:', filter.company_id);
         query = query.eq('company_id', filter.company_id);
       } else if (hasGlobalAccess && !isBrowsingMode) {
-        console.log('🏢 [CUSTOMERS] Super admin without browse mode - showing own company customers only');
+        // Reduced logging for performance - uncomment for debugging
+        // console.log('🏢 [CUSTOMERS] Super admin without browse mode - showing own company customers only');
         // For super_admin not in browse mode, show their own company customers only (not all)
         if (companyId) {
           query = query.eq('company_id', companyId);
         }
       } else if (companyId) {
-        console.log('🏢 [CUSTOMERS] Applying fallback company filter:', companyId);
+        // Reduced logging for performance - uncomment for debugging
+        // console.log('🏢 [CUSTOMERS] Applying fallback company filter:', companyId);
         query = query.eq('company_id', companyId);
       }
 
@@ -153,15 +161,28 @@ export const useCustomers = (filters?: CustomerFilters) => {
 
         const { count, error: countError } = await countQuery;
         if (countError) {
-          console.error('❌ [CUSTOMERS] Error fetching count:', {
+          // Enhanced error logging for count query
+          const errorDetails = {
             message: countError.message,
             details: countError.details,
             hint: countError.hint,
             code: countError.code,
-            fullError: countError
-          });
-          // Don't throw, just use 0 as fallback
-          totalCount = 0;
+            companyId,
+            hasGlobalAccess,
+            filterCompanyId: filter.company_id,
+            timestamp: new Date().toISOString()
+          };
+          
+          console.error('❌ [CUSTOMERS] Error fetching count:', errorDetails);
+          
+          // Handle RLS/permission errors gracefully
+          if (countError.code === 'PGRST301' || countError.message?.includes('permission') || countError.message?.includes('policy')) {
+            console.warn('⚠️ [CUSTOMERS] RLS policy issue in count query - using 0 as fallback');
+            totalCount = 0;
+          } else {
+            // For other errors, use 0 as fallback but don't throw
+            totalCount = 0;
+          }
         } else {
           totalCount = count || 0;
         }
@@ -178,13 +199,52 @@ export const useCustomers = (filters?: CustomerFilters) => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ [CUSTOMERS] Error fetching customers:', {
+        // Enhanced error logging with more context
+        const errorDetails = {
           message: error.message,
           details: error.details,
           hint: error.hint,
           code: error.code,
-          fullError: error
-        });
+          companyId,
+          hasGlobalAccess,
+          isBrowsingMode,
+          filterCompanyId: filter.company_id,
+          browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.error('❌ [CUSTOMERS] Error fetching customers:', errorDetails);
+        
+        // Handle specific error types gracefully
+        if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
+          console.warn('⚠️ [CUSTOMERS] RLS policy or permission issue - returning empty result');
+          return {
+            data: [],
+            pagination: memoizedFilters?.page || memoizedFilters?.pageSize ? {
+              page,
+              pageSize,
+              totalCount: 0,
+              totalPages: 0,
+              hasMore: false
+            } : undefined
+          };
+        }
+        
+        if (error.code === '42P01') {
+          console.error('❌ [CUSTOMERS] Table customers does not exist');
+          return {
+            data: [],
+            pagination: memoizedFilters?.page || memoizedFilters?.pageSize ? {
+              page,
+              pageSize,
+              totalCount: 0,
+              totalPages: 0,
+              hasMore: false
+            } : undefined
+          };
+        }
+        
+        // For other errors, throw to let React Query handle retry
         throw new Error(`Failed to fetch customers: ${error.message || 'Unknown error'}`);
       }
 
@@ -199,15 +259,16 @@ export const useCustomers = (filters?: CustomerFilters) => {
         } : undefined
       };
 
-      console.log('✅ [CUSTOMERS] Successfully fetched customers:', {
-        count: data?.length || 0,
-        totalCount,
-        page,
-        pageSize,
-        companyFilter: filter.company_id,
-        isBrowsingMode,
-        browsedCompanyName: browsedCompany?.name
-      });
+      // Reduced logging for performance - uncomment for debugging
+      // console.log('✅ [CUSTOMERS] Successfully fetched customers:', {
+      //   count: data?.length || 0,
+      //   totalCount,
+      //   page,
+      //   pageSize,
+      //   companyFilter: filter.company_id,
+      //   isBrowsingMode,
+      //   browsedCompanyName: browsedCompany?.name
+      // });
 
       return result;
     },

@@ -7,6 +7,90 @@ import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 
 export type EnhancedCustomer = Customer;
 
+// Optimized hook for fetching customer counts only (no data)
+export const useCustomerCount = (filters?: CustomerFilters) => {
+  const { companyId, getQueryKey, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
+  
+  // Use customer view context with fallback
+  let viewAllCustomers = false;
+  try {
+    const context = useCustomerViewContext();
+    viewAllCustomers = context.viewAllCustomers;
+  } catch (error) {
+    viewAllCustomers = false;
+  }
+  
+  const activeFilter = viewAllCustomers && hasGlobalAccess ? getFilterForGlobalView() : getFilterForOwnCompany();
+  
+  const { 
+    includeInactive = false, 
+    searchTerm, 
+    search,
+    customer_code,
+    customer_type,
+    is_blacklisted,
+  } = filters || {};
+  
+  return useQuery({
+    queryKey: getQueryKey(['customer-count'], [includeInactive, searchTerm, search, customer_code, customer_type, is_blacklisted, viewAllCustomers]),
+    queryFn: async (): Promise<number> => {
+      if (!isSystemLevel && !companyId) {
+        return 0;
+      }
+      
+      // Build count query only (no data fetching)
+      let countQuery = supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
+      
+      if (activeFilter.company_id) {
+        countQuery = countQuery.eq('company_id', activeFilter.company_id);
+      }
+      
+      if (!includeInactive) {
+        countQuery = countQuery.eq('is_active', true);
+      }
+      
+      if (customer_type) {
+        countQuery = countQuery.eq('customer_type', customer_type);
+      }
+
+      if (is_blacklisted !== undefined) {
+        countQuery = countQuery.eq('is_blacklisted', is_blacklisted);
+      }
+      
+      const searchText = searchTerm || search;
+      if (searchText) {
+        countQuery = countQuery.or(
+          `first_name.ilike.%${searchText}%,` +
+          `last_name.ilike.%${searchText}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
+      }
+
+      if (customer_code?.trim()) {
+        countQuery = countQuery.ilike('customer_code', `%${customer_code}%`);
+      }
+      
+      const { count, error: countError } = await countQuery;
+      
+      if (countError) {
+        console.error('❌ [useCustomerCount] Error counting customers:', countError);
+        return 0;
+      }
+      
+      return count || 0;
+    },
+    enabled: isSystemLevel || !!companyId,
+    staleTime: 60 * 1000, // 1 minute cache for counts
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false, // Don't refetch counts on window focus
+  });
+};
+
 export const useCustomers = (filters?: CustomerFilters) => {
   const { companyId, getQueryKey, validateCompanyAccess, browsedCompany, isBrowsingMode, isSystemLevel, hasGlobalAccess, filter, getFilterForOwnCompany, getFilterForGlobalView } = useUnifiedCompanyAccess();
   
@@ -24,14 +108,15 @@ export const useCustomers = (filters?: CustomerFilters) => {
   // For Super Admins: default to their own company unless explicitly viewing all customers
   const activeFilter = viewAllCustomers && hasGlobalAccess ? getFilterForGlobalView() : getFilterForOwnCompany();
   
-  console.log('🎯 [useCustomers] Filter logic:', {
-    viewAllCustomers,
-    hasGlobalAccess,
-    userCompanyId: companyId,
-    activeFilter,
-    getFilterForOwnCompany: getFilterForOwnCompany(),
-    getFilterForGlobalView: getFilterForGlobalView()
-  });
+  // Reduced logging for performance - uncomment for debugging
+  // console.log('🎯 [useCustomers] Filter logic:', {
+  //   viewAllCustomers,
+  //   hasGlobalAccess,
+  //   userCompanyId: companyId,
+  //   activeFilter,
+  //   getFilterForOwnCompany: getFilterForOwnCompany(),
+  //   getFilterForGlobalView: getFilterForGlobalView()
+  // });
   const { 
     includeInactive = false, 
     searchTerm, 
@@ -44,19 +129,19 @@ export const useCustomers = (filters?: CustomerFilters) => {
     pageSize = 50
   } = filters || {};
   
-  // Debug logging for company context
-  console.log('🏢 [useCustomers] Company context:', {
-    companyId,
-    isBrowsingMode,
-    isSystemLevel,
-    hasGlobalAccess,
-    browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-    filters,
-    defaultFilter: filter,
-    activeFilter,
-    viewAllCustomers,
-    queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, page, pageSize])
-  });
+  // Reduced logging for performance - uncomment for debugging
+  // console.log('🏢 [useCustomers] Company context:', {
+  //   companyId,
+  //   isBrowsingMode,
+  //   isSystemLevel,
+  //   hasGlobalAccess,
+  //   browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+  //   filters,
+  //   defaultFilter: filter,
+  //   activeFilter,
+  //   viewAllCustomers,
+  //   queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, page, pageSize])
+  // });
   
   return useQuery({
     queryKey: getQueryKey(['customers'], [includeInactive, searchTerm, search, customer_code, limit, customer_type, is_blacklisted, viewAllCustomers, page, pageSize]),
@@ -68,17 +153,18 @@ export const useCustomers = (filters?: CustomerFilters) => {
         throw new Error("No company access available");
       }
       
-      console.log('🔍 [useCustomers] Executing query:', {
-        isSystemLevel,
-        companyId,
-        hasGlobalAccess,
-        defaultFilterCompanyId: filter.company_id,
-        activeFilterCompanyId: activeFilter.company_id,
-        viewAllCustomers,
-        usingActiveFilter: !!activeFilter.company_id,
-        page,
-        pageSize
-      });
+      // Reduced logging for performance - uncomment for debugging
+      // console.log('🔍 [useCustomers] Executing query:', {
+      //   isSystemLevel,
+      //   companyId,
+      //   hasGlobalAccess,
+      //   defaultFilterCompanyId: filter.company_id,
+      //   activeFilterCompanyId: activeFilter.company_id,
+      //   viewAllCustomers,
+      //   usingActiveFilter: !!activeFilter.company_id,
+      //   page,
+      //   pageSize
+      // });
       
       // Build count query first
       let countQuery = supabase
@@ -88,10 +174,12 @@ export const useCustomers = (filters?: CustomerFilters) => {
       // Use the active filter based on view mode
       if (activeFilter.company_id) {
         countQuery = countQuery.eq('company_id', activeFilter.company_id);
-        console.log('🔍 [useCustomers] Applied active company filter:', activeFilter.company_id);
-      } else {
-        console.log('🔍 [useCustomers] No company filter - viewing all customers');
+        // Reduced logging for performance
+        // console.log('🔍 [useCustomers] Applied active company filter:', activeFilter.company_id);
       }
+      // else {
+      //   console.log('🔍 [useCustomers] No company filter - viewing all customers');
+      // }
       
       if (!includeInactive) {
         countQuery = countQuery.eq('is_active', true);
@@ -181,15 +269,16 @@ export const useCustomers = (filters?: CustomerFilters) => {
         throw error;
       }
       
-      console.log('✅ [useCustomers] Successfully fetched customers:', {
-        count: data?.length || 0,
-        total: count || 0,
-        page,
-        pageSize,
-        companyId,
-        isSystemLevel,
-        customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
-      });
+      // Reduced logging for performance - uncomment for debugging
+      // console.log('✅ [useCustomers] Successfully fetched customers:', {
+      //   count: data?.length || 0,
+      //   total: count || 0,
+      //   page,
+      //   pageSize,
+      //   companyId,
+      //   isSystemLevel,
+      //   customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
+      // });
       
       return {
         data: data || [],

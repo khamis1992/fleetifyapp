@@ -29,7 +29,7 @@ export const useFleetStatus = () => {
       // Get vehicle counts by status
       const { data: vehicles } = await supabase
         .from('vehicles')
-        .select('status')
+        .select('id, status')
         .eq('company_id', companyId)
         .eq('is_active', true);
 
@@ -43,17 +43,43 @@ export const useFleetStatus = () => {
         };
       }
 
+      // Get active contracts to determine rented vehicles
+      const { data: activeContracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('vehicle_id')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('vehicle_id', 'is', null);
+
+      // Log error but don't fail - use status field as fallback
+      if (contractsError) {
+        console.warn('⚠️ [FleetStatus] Error fetching active contracts, using vehicle status as fallback:', contractsError.message);
+      }
+
+      // Create a set of vehicle IDs that are in active contracts
+      const rentedVehicleIds = new Set(
+        activeContracts?.map(contract => contract.vehicle_id).filter(Boolean) || []
+      );
+
+      // Count vehicles by status
       const statusCounts = vehicles.reduce((acc, vehicle) => {
         const status = vehicle.status || 'available';
         acc[status] = (acc[status] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      const available = statusCounts.available || 0;
-      const rented = statusCounts.rented || 0;
       const maintenance = statusCounts.maintenance || 0;
+      const outOfService = statusCounts.out_of_service || 0;
       const total = vehicles.length;
-      const outOfService = Math.max(0, total - (available + rented + maintenance));
+
+      // Calculate rented vehicles: use active contracts as source of truth
+      // If contracts query failed, fall back to status field
+      const rentedFromContracts = rentedVehicleIds.size;
+      const rentedFromStatus = statusCounts.rented || 0;
+      const rented = contractsError ? rentedFromStatus : rentedFromContracts;
+
+      // Calculate available: total - rented - maintenance - outOfService
+      const available = Math.max(0, total - rented - maintenance - outOfService);
 
       return {
         available,
@@ -64,6 +90,6 @@ export const useFleetStatus = () => {
       };
     },
     enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes - reduced for more accurate data
   });
 };

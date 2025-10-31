@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageCustomizer } from '@/components/PageCustomizer';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCustomers } from '@/hooks/useEnhancedCustomers';
+import { useCustomers, useCustomerCount } from '@/hooks/useEnhancedCustomers';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -114,23 +114,20 @@ const Customers = () => {
     }
   }, [error, filters]);
   
-  // Fetch counts for all customer types (without pagination - get total counts)
-  const { data: individualCountResult } = useCustomers({
+  // Fetch counts for all customer types using optimized count-only queries
+  const { data: individualCount = 0 } = useCustomerCount({
     customer_type: 'individual',
     includeInactive: false,
-    pageSize: 999999 // Large number to get all records for accurate count
   });
   
-  const { data: corporateCountResult } = useCustomers({
+  const { data: corporateCount = 0 } = useCustomerCount({
     customer_type: 'corporate',
     includeInactive: false,
-    pageSize: 999999 // Large number to get all records for accurate count
   });
   
-  const { data: blacklistedCountResult } = useCustomers({
+  const { data: blacklistedCount = 0 } = useCustomerCount({
     is_blacklisted: true,
     includeInactive: true, // Include both active and inactive blacklisted customers
-    pageSize: 999999 // Large number to get all records for accurate count
   });
   
   // Extract pagination data and customers array
@@ -166,16 +163,16 @@ const Customers = () => {
 
   const virtualItems = virtualizer.getVirtualItems();
 
-  // Debug log to understand the data structure (remove in production)
-  React.useEffect(() => {
-    console.log('🔍 [Customers] Data structure check:', {
-      customersResult,
-      customers,
-      isArray: Array.isArray(customers),
-      length: customers.length,
-      type: typeof customersResult
-    });
-  }, [customersResult, customers]);
+  // Reduced logging for performance - uncomment for debugging
+  // React.useEffect(() => {
+  //   console.log('🔍 [Customers] Data structure check:', {
+  //     customersResult,
+  //     customers,
+  //     isArray: Array.isArray(customers),
+  //     length: customers.length,
+  //     type: typeof customersResult
+  //   });
+  // }, [customersResult, customers]);
 
   // Event handlers
   const handleCreateCustomer = () => {
@@ -335,9 +332,9 @@ const Customers = () => {
   // Calculate stats with comprehensive safety checks
   const safeCustomers = Array.isArray(customers) ? customers : [];
   const totalCustomers = totalCustomersInDB; // Use total from database
-  const individualCustomers = individualCountResult?.total || 0; // Use total count from separate query
-  const corporateCustomers = corporateCountResult?.total || 0; // Use total count from separate query
-  const blacklistedCustomers = blacklistedCountResult?.total || 0; // Use total count from separate query
+  const individualCustomers = individualCount; // Use optimized count query
+  const corporateCustomers = corporateCount; // Use optimized count query
+  const blacklistedCustomers = blacklistedCount; // Use optimized count query
   
   // Handle page changes
   const handlePageChange = (newPage: number) => {

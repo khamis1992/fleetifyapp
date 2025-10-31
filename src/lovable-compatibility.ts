@@ -39,9 +39,21 @@ const setupLovableErrorHandling = () => {
       console.log('🔧 Lovable: React error detected, attempting recovery...');
       
       // Attempt to reload if React is completely broken
+      // But only if not already reloading and only in production
       if (!window.React || typeof window.React.useState !== 'function') {
-        console.log('🔧 Lovable: React is broken, reloading...');
-        setTimeout(() => window.location.reload(), 1000);
+        const reloadKey = 'lovable_reload_attempted';
+        const hasReloaded = sessionStorage.getItem(reloadKey);
+        
+        if (!hasReloaded && import.meta.env.PROD) {
+          console.log('🔧 Lovable: React is broken, reloading...');
+          sessionStorage.setItem(reloadKey, 'true');
+          setTimeout(() => {
+            sessionStorage.removeItem(reloadKey);
+            window.location.reload();
+          }, 1000);
+        } else {
+          console.warn('🔧 Lovable: React error detected but reload prevented (already reloaded or in dev mode)');
+        }
       }
     }
   });
