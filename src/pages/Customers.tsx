@@ -903,7 +903,17 @@ const Customers = () => {
                   className="overflow-auto"
                   style={{ height: 'calc(100vh - 450px)', minHeight: '400px' }}
                 >
-                  <table className="w-full">
+                  <table className="w-full" style={{ tableLayout: 'fixed' }}>
+                    <colgroup>
+                      <col style={{ width: '50px' }} />
+                      <col style={{ width: '200px' }} />
+                      <col style={{ width: '150px' }} />
+                      <col style={{ width: '200px' }} />
+                      <col style={{ width: '120px' }} />
+                      <col style={{ width: '120px' }} />
+                      <col style={{ width: '100px' }} />
+                      <col style={{ width: '100px' }} />
+                    </colgroup>
                     <thead className="sticky top-0 bg-accent/50 border-b border-border z-10">
                       <tr>
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">
@@ -920,14 +930,14 @@ const Customers = () => {
                         <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الإجراءات</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-border" style={{ position: 'relative', height: `${virtualizer.getTotalSize()}px` }}>
                       {virtualItems.map((virtualItem) => {
                         const customer = customers[virtualItem.index];
                         
                         return (
                           <tr
                             key={customer.id}
-                            className="border-b hover:bg-accent/30 transition-all duration-200 hover:translate-x-1"
+                            className="border-b hover:bg-accent/30 transition-all duration-200"
                             style={{
                               position: 'absolute',
                               top: 0,
@@ -935,13 +945,14 @@ const Customers = () => {
                               width: '100%',
                               height: `${virtualItem.size}px`,
                               transform: `translateY(${virtualItem.start}px)`,
+                              display: 'table-row',
                             }}
                           >
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '50px', width: '50px' }}>
                               <input type="checkbox" className="w-4 h-4 rounded border-border" />
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '200px', width: '200px' }}>
                               <div className="flex items-center gap-3">
                                 <div 
                                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
@@ -956,11 +967,11 @@ const Customers = () => {
                               </div>
                             </td>
                             
-                            <td className="px-6 py-4 text-muted-foreground">{customer.phone || '-'}</td>
+                            <td className="px-6 py-4 text-muted-foreground" style={{ minWidth: '150px', width: '150px' }}>{customer.phone || '-'}</td>
                             
-                            <td className="px-6 py-4 text-muted-foreground">{customer.email || '-'}</td>
+                            <td className="px-6 py-4 text-muted-foreground" style={{ minWidth: '200px', width: '200px' }}>{customer.email || '-'}</td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '120px', width: '120px' }}>
                               <Badge 
                                 variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}
                                 className="px-3 py-1 rounded-full text-sm"
@@ -969,7 +980,7 @@ const Customers = () => {
                               </Badge>
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '120px', width: '120px' }}>
                               {customer.is_blacklisted ? (
                                 <Badge variant="destructive" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
                                   <span className="w-2 h-2 rounded-full bg-destructive"></span>
@@ -988,13 +999,13 @@ const Customers = () => {
                               )}
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '100px', width: '100px' }}>
                               <span className="font-semibold text-primary">
                                 {finalContractCounts[customer.id] || 0} {finalContractCounts[customer.id] === 1 ? 'عقد' : 'عقود'}
                               </span>
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" style={{ minWidth: '100px', width: '100px' }}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
