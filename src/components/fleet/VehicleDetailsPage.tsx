@@ -32,16 +32,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
 import { VehicleDocumentsPanel } from './VehicleDocumentsPanel';
 import { VehicleInsurancePanel } from './VehicleInsurancePanel';
 import { VehicleForm } from './VehicleForm';
+import { MaintenanceForm } from './MaintenanceForm';
+import { TrafficViolationForm } from './TrafficViolationForm';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Vehicle } from '@/hooks/useVehicles';
+import { useQueryClient } from '@tanstack/react-query';
 
 /**
  * مكون صفحة تفاصيل المركبة الرئيسية
@@ -56,6 +60,9 @@ const VehicleDetailsPage = () => {
   // الحالة المحلية
   const [activeTab, setActiveTab] = useState('overview');
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [showViolationForm, setShowViolationForm] = useState(false);
+  const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
   const { data: vehicle, isLoading: loadingVehicle, error: vehicleError } = useQuery({
@@ -199,6 +206,36 @@ const VehicleDetailsPage = () => {
     }
     navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
   }, [navigate, vehicleId, toast]);
+
+  const handleNewContract = useCallback(() => {
+    if (!vehicleId) {
+      toast({
+        title: 'خطأ',
+        description: 'معرف المركبة غير متوفر.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    navigate(`/contracts?vehicle=${vehicleId}`);
+  }, [navigate, vehicleId, toast]);
+
+  const handleMaintenanceSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance', vehicleId] });
+    setShowMaintenanceForm(false);
+    toast({
+      title: 'نجاح',
+      description: 'تم تسجيل الصيانة بنجاح',
+    });
+  }, [queryClient, vehicleId, toast]);
+
+  const handleViolationSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['vehicle-violations', vehicleId] });
+    setShowViolationForm(false);
+    toast({
+      title: 'نجاح',
+      description: 'تم تسجيل المخالفة بنجاح',
+    });
+  }, [queryClient, vehicleId, toast]);
 
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
@@ -501,6 +538,13 @@ const VehicleDetailsPage = () => {
                   المخالفات
                 </TabsTrigger>
                 <TabsTrigger
+                  value="insurance"
+                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  التأمين
+                </TabsTrigger>
+                <TabsTrigger
                   value="documents"
                   className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
                 >
@@ -528,12 +572,23 @@ const VehicleDetailsPage = () => {
 
               {/* تبويب التسعير */}
               <TabsContent value="pricing" className="mt-0">
-                <VehiclePricingPanel vehicle={vehicle} onPricingUpdate={() => {}} />
+                <VehiclePricingPanel vehicleId={vehicle.id} />
+              </TabsContent>
+
+              {/* تبويب التأمين */}
+              <TabsContent value="insurance" className="mt-0">
+                <VehicleInsurancePanel vehicleId={vehicle.id} />
               </TabsContent>
 
               {/* تبويب العقود */}
               <TabsContent value="contracts" className="mt-0">
-                <ContractsTab contracts={contracts} getCustomerName={getCustomerName} formatCurrency={formatCurrency} />
+                <ContractsTab 
+                  contracts={contracts} 
+                  getCustomerName={getCustomerName} 
+                  formatCurrency={formatCurrency}
+                  vehicleId={vehicleId}
+                  onNewContract={handleNewContract}
+                />
               </TabsContent>
 
               {/* تبويب الصيانة */}
@@ -541,15 +596,25 @@ const VehicleDetailsPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">سجل الصيانة</h3>
-                    <Button 
-                      onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicleId}`)}
-                      className="gap-2"
-                    >
-                      <Wrench className="w-4 h-4" />
-                      عرض جميع سجلات الصيانة
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => setShowMaintenanceForm(true)}
+                        className="gap-2 bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                        تسجيل صيانة
+                      </Button>
+                      <Button 
+                        onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicleId}`)}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <Wrench className="w-4 h-4" />
+                        عرض جميع سجلات الصيانة
+                      </Button>
+                    </div>
                   </div>
-                  <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} />
+                  <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
                 </div>
               </TabsContent>
 
@@ -558,15 +623,25 @@ const VehicleDetailsPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
-                    <Button 
-                      onClick={() => navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`)}
-                      className="gap-2"
-                    >
-                      <AlertTriangle className="w-4 h-4" />
-                      عرض جميع المخالفات
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => setShowViolationForm(true)}
+                        className="gap-2 bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                        تسجيل مخالفة
+                      </Button>
+                      <Button 
+                        onClick={() => navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`)}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        عرض جميع المخالفات
+                      </Button>
+                    </div>
                   </div>
-                  <ViolationsTab violations={violations} formatCurrency={formatCurrency} />
+                  <ViolationsTab violations={violations} formatCurrency={formatCurrency} onNewViolation={() => setShowViolationForm(true)} />
                 </div>
               </TabsContent>
 
@@ -585,6 +660,26 @@ const VehicleDetailsPage = () => {
         open={showEditForm}
         onOpenChange={setShowEditForm}
       />
+
+      {/* Maintenance Form Dialog */}
+      <MaintenanceForm
+        vehicleId={vehicleId}
+        open={showMaintenanceForm}
+        onOpenChange={(open) => {
+          setShowMaintenanceForm(open);
+          if (!open) {
+            // Invalidate queries when dialog closes
+            queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance', vehicleId] });
+          }
+        }}
+      />
+
+      {/* Traffic Violation Form Dialog */}
+      <Dialog open={showViolationForm} onOpenChange={setShowViolationForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <TrafficViolationForm onSuccess={handleViolationSuccess} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -786,14 +881,32 @@ interface ContractsTabProps {
   formatCurrency: (amount: number) => string;
 }
 
-const ContractsTab = ({ contracts, getCustomerName, formatCurrency }: ContractsTabProps) => {
-  const { toast } = useToast();
+interface ContractsTabProps {
+  contracts: any[];
+  getCustomerName: (customer: any) => string;
+  formatCurrency: (amount: number) => string;
+  vehicleId?: string;
+  onNewContract?: () => void;
+}
+
+const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, onNewContract }: ContractsTabProps) => {
+  const navigate = useNavigate();
+
+  const handleNewContract = () => {
+    if (onNewContract) {
+      onNewContract();
+    } else if (vehicleId) {
+      navigate(`/contracts?vehicle=${vehicleId}`);
+    } else {
+      navigate('/contracts');
+    }
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">العقود المرتبطة بالمركبة</h3>
-        <Button className="gap-2 bg-red-600 hover:bg-red-700">
+        <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={handleNewContract}>
           <Plus className="w-4 h-4" />
           عقد جديد
         </Button>
@@ -865,17 +978,12 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency }: ContractsT
 interface MaintenanceTabProps {
   maintenanceRecords: any[];
   formatCurrency: (amount: number) => string;
+  vehicleId?: string;
+  onNewMaintenance?: () => void;
 }
 
-const MaintenanceTab = ({ maintenanceRecords, formatCurrency }: MaintenanceTabProps) => (
+const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMaintenance }: MaintenanceTabProps) => (
   <div>
-    <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-semibold text-gray-900">سجل الصيانة والإصلاحات</h3>
-      <Button className="gap-2 bg-red-600 hover:bg-red-700">
-        <Plus className="w-4 h-4" />
-        تسجيل صيانة
-      </Button>
-    </div>
 
     {maintenanceRecords.length === 0 ? (
       <Card>
@@ -919,17 +1027,11 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency }: MaintenanceTabPr
 interface ViolationsTabProps {
   violations: any[];
   formatCurrency: (amount: number) => string;
+  onNewViolation?: () => void;
 }
 
-const ViolationsTab = ({ violations, formatCurrency }: ViolationsTabProps) => (
+const ViolationsTab = ({ violations, formatCurrency, onNewViolation }: ViolationsTabProps) => (
   <div>
-    <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-semibold text-gray-900">المخالفات المرورية</h3>
-      <Button className="gap-2 bg-red-600 hover:bg-red-700">
-        <Plus className="w-4 h-4" />
-        تسجيل مخالفة
-      </Button>
-    </div>
 
     {violations.length === 0 ? (
       <Card>
