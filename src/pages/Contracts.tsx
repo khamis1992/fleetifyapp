@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { PageCustomizer } from "@/components/PageCustomizer"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -90,6 +90,7 @@ function Contracts() {
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined)
+  const [preselectedVehicleId, setPreselectedVehicleId] = useState<string | undefined>(undefined)
   const [draftIdToLoad, setDraftIdToLoad] = useState<string | undefined>(undefined)
   const [contractToEdit, setContractToEdit] = useState<any>(undefined)
   const [showRenewalDialog, setShowRenewalDialog] = useState(false)
@@ -113,6 +114,7 @@ function Contracts() {
   // Hooks
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -162,6 +164,22 @@ function Contracts() {
       setShowContractWizard(true)
     }
   }, [location.state])
+
+  // Handle vehicle parameter from URL query string
+  useEffect(() => {
+    const vehicleParam = searchParams.get('vehicle')
+    if (vehicleParam) {
+      console.log('🔧 [Contracts] Vehicle parameter found in URL:', vehicleParam)
+      setPreselectedVehicleId(vehicleParam)
+      setShowContractWizard(true)
+      // Clear the parameter from URL after reading it
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev)
+        newParams.delete('vehicle')
+        return newParams
+      }, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   // Optimized handlers with useCallback
   const handleRefresh = useCallback(async () => {
@@ -602,6 +620,7 @@ function Contracts() {
           onOpenChange={setShowContractWizard}
           onSubmit={handleContractSubmit}
           preselectedCustomerId={preselectedCustomerId}
+          preselectedVehicleId={preselectedVehicleId}
           draftIdToLoad={draftIdToLoad}
           contractToEdit={contractToEdit}
         />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,13 +33,31 @@ type ViolationFormData = z.infer<typeof violationSchema>;
 
 interface TrafficViolationFormProps {
   onSuccess: () => void;
+  vehicleId?: string;
 }
 
-export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
+export function TrafficViolationForm({ onSuccess, vehicleId }: TrafficViolationFormProps) {
   const createViolationMutation = useCreateTrafficViolation();
   
   // Lazy load vehicles only when form opens
   const { data: vehicles = [] } = useVehicles({ limit: 50 });
+
+  // جلب بيانات المركبة المحددة مسبقاً
+  const { data: preselectedVehicle } = useQuery({
+    queryKey: ['vehicle', vehicleId],
+    queryFn: async () => {
+      if (!vehicleId) return null;
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model')
+        .eq('id', vehicleId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!vehicleId,
+  });
 
   // جلب قائمة العملاء - محدودة للأداء
   const { data: customers = [] } = useQuery({
@@ -83,6 +101,13 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
     }
   });
 
+  // تعيين المركبة تلقائياً عند وجود vehicleId
+  useEffect(() => {
+    if (preselectedVehicle?.plate_number) {
+      form.setValue('vehicle_plate', preselectedVehicle.plate_number);
+    }
+  }, [preselectedVehicle, form]);
+
   const onSubmit = async (data: ViolationFormData) => {
     try {
       const violationData: any = {
@@ -92,6 +117,7 @@ export function TrafficViolationForm({ onSuccess }: TrafficViolationFormProps) {
         amount: parseFloat(data.amount),
         location: data.location,
         vehicle_plate: data.vehicle_plate,
+        vehicle_id: vehicleId, // إضافة vehicle_id من prop
         customer_id: data.customer_id,
         contract_id: data.contract_id,
         reason: data.reason,

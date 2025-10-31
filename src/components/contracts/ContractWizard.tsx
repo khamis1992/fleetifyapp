@@ -42,6 +42,7 @@ interface ContractWizardProps {
   onOpenChange: (open: boolean) => void
   onSubmit?: (contractData: any) => Promise<any>
   preselectedCustomerId?: string
+  preselectedVehicleId?: string
   draftIdToLoad?: string
   contractToEdit?: any
 }
@@ -235,6 +236,7 @@ export const ContractWizard: React.FC<ContractWizardProps> = ({
   onOpenChange,
   onSubmit,
   preselectedCustomerId,
+  preselectedVehicleId,
   draftIdToLoad,
   contractToEdit
 }) => {
@@ -244,6 +246,7 @@ export const ContractWizard: React.FC<ContractWizardProps> = ({
         <ContractWizardProvider
           onSubmit={onSubmit}
           preselectedCustomerId={preselectedCustomerId}
+          preselectedVehicleId={preselectedVehicleId}
           draftIdToLoad={draftIdToLoad}
           contractToEdit={contractToEdit}
         >

@@ -58,6 +58,7 @@ export interface CreateTrafficViolationData {
   amount: number;
   location: string;
   vehicle_plate?: string;
+  vehicle_id?: string;
   customer_id?: string;
   contract_id?: string;
   reason: string;
@@ -229,6 +230,7 @@ export function useCreateTrafficViolation() {
           amount: data.amount,
           location: data.location,
           vehicle_plate: data.vehicle_plate,
+          vehicle_id: data.vehicle_id,
           customer_id: data.customer_id,
           contract_id: data.contract_id,
           reason: data.reason,

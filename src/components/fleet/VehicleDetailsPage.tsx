@@ -181,6 +181,9 @@ const VehicleDetailsPage = () => {
 
   const handleEdit = useCallback(() => {
     console.log('🔧 [VehicleDetailsPage] Edit button clicked, vehicle:', vehicle);
+    console.log('🔧 [VehicleDetailsPage] isLoading:', isLoading);
+    console.log('🔧 [VehicleDetailsPage] vehicleId:', vehicleId);
+    
     if (!vehicle) {
       console.warn('⚠️ [VehicleDetailsPage] Cannot edit: vehicle not loaded yet');
       toast({
@@ -190,22 +193,10 @@ const VehicleDetailsPage = () => {
       });
       return;
     }
+    
+    console.log('✅ [VehicleDetailsPage] Opening edit form for vehicle:', vehicle.id);
     setShowEditForm(true);
-  }, [vehicle, toast]);
-
-  const handleMaintenance = useCallback(() => {
-    console.log('🔧 [VehicleDetailsPage] Maintenance button clicked, vehicleId:', vehicleId);
-    if (!vehicleId) {
-      console.warn('⚠️ [VehicleDetailsPage] Cannot open maintenance: vehicleId not available');
-      toast({
-        title: 'خطأ',
-        description: 'معرف المركبة غير متوفر. يرجى المحاولة مرة أخرى.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
-  }, [navigate, vehicleId, toast]);
+  }, [vehicle, isLoading, vehicleId, toast]);
 
   const handleNewContract = useCallback(() => {
     if (!vehicleId) {
@@ -324,16 +315,6 @@ const VehicleDetailsPage = () => {
               >
                 <Edit3 className="w-4 h-4" />
                 تعديل
-              </Button>
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={handleMaintenance} 
-                disabled={!vehicle || isLoading}
-                className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Wrench className="w-4 h-4" />
-                صيانة
               </Button>
             </div>
           </div>
@@ -596,23 +577,13 @@ const VehicleDetailsPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">سجل الصيانة</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => setShowMaintenanceForm(true)}
-                        className="gap-2 bg-red-600 hover:bg-red-700"
-                      >
-                        <Plus className="w-4 h-4" />
-                        تسجيل صيانة
-                      </Button>
-                      <Button 
-                        onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicleId}`)}
-                        variant="outline"
-                        className="gap-2"
-                      >
-                        <Wrench className="w-4 h-4" />
-                        عرض جميع سجلات الصيانة
-                      </Button>
-                    </div>
+                    <Button 
+                      onClick={() => setShowMaintenanceForm(true)}
+                      className="gap-2 bg-red-600 hover:bg-red-700"
+                    >
+                      <Plus className="w-4 h-4" />
+                      تسجيل صيانة
+                    </Button>
                   </div>
                   <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
                 </div>
@@ -658,7 +629,14 @@ const VehicleDetailsPage = () => {
       <VehicleForm 
         vehicle={vehicle || undefined}
         open={showEditForm}
-        onOpenChange={setShowEditForm}
+        onOpenChange={(open) => {
+          setShowEditForm(open);
+          if (!open) {
+            // Invalidate queries when dialog closes to refresh vehicle data
+            queryClient.invalidateQueries({ queryKey: ['vehicle-details', vehicleId, companyId] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+          }
+        }}
       />
 
       {/* Maintenance Form Dialog */}
@@ -677,7 +655,7 @@ const VehicleDetailsPage = () => {
       {/* Traffic Violation Form Dialog */}
       <Dialog open={showViolationForm} onOpenChange={setShowViolationForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <TrafficViolationForm onSuccess={handleViolationSuccess} />
+          <TrafficViolationForm onSuccess={handleViolationSuccess} vehicleId={vehicleId} />
         </DialogContent>
       </Dialog>
     </div>

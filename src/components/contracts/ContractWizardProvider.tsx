@@ -113,6 +113,7 @@ interface ContractWizardProviderProps {
   children: ReactNode
   onSubmit?: (data: ContractWizardData) => Promise<any>
   preselectedCustomerId?: string
+  preselectedVehicleId?: string
   draftIdToLoad?: string
   contractToEdit?: any
 }
@@ -121,6 +122,7 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
   children,
   onSubmit,
   preselectedCustomerId,
+  preselectedVehicleId,
   draftIdToLoad,
   contractToEdit
 }) => {
@@ -157,6 +159,13 @@ export const ContractWizardProvider: React.FC<ContractWizardProviderProps> = ({
       updateData({ customer_id: preselectedCustomerId })
     }
   }, [preselectedCustomerId])
+
+  // Set preselected vehicle
+  useEffect(() => {
+    if (preselectedVehicleId) {
+      updateData({ vehicle_id: preselectedVehicleId })
+    }
+  }, [preselectedVehicleId])
 
   // Load draft when draftIdToLoad is provided
   useEffect(() => {
