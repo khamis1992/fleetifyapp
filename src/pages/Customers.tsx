@@ -480,8 +480,6 @@ const Customers = () => {
       <>
         <PageCustomizer
           pageId="customers-page"
-          title="Customers"
-          titleAr="العملاء"
         >
           <div className="space-y-6 p-4">
           {/* Mobile Header */}
@@ -729,8 +727,6 @@ const Customers = () => {
     <>
       <PageCustomizer
         pageId="customers-page"
-        title="Customers"
-        titleAr="العملاء"
       >
         <div className="space-y-6 p-6">
         {/* Header */}
