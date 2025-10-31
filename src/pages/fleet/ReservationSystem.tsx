@@ -10,34 +10,17 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Calendar, Users } from 'lucide-react';
 import { VehicleReservationSystem } from '@/components/fleet/VehicleReservationSystem';
 import { VehicleAvailabilityCalendar } from '@/components/fleet/VehicleAvailabilityCalendar';
 import { DriverAssignmentModule } from '@/components/fleet/DriverAssignmentModule';
 import { ResponsiveContainer } from '@/components/ui/responsive-container';
-import { ResponsivePageActions } from '@/components/ui/responsive-page-actions';
-
 export default function ReservationSystem() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('reservations');
 
   return (
     <ResponsiveContainer className="space-y-6">
-      {/* Header */}
-      <ResponsivePageActions
-        title="نظام الحجوزات والأسطول"
-        subtitle="إدارة الحجوزات والتوفرية وتعيين السائقين"
-        primaryAction={{
-          id: 'back',
-          label: 'العودة للأسطول',
-          icon: null,
-          onClick: () => navigate('/fleet'),
-          type: 'outline'
-        }}
-      />
-
       {/* Three-Tab Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-full grid-cols-3">

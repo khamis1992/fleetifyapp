@@ -433,9 +433,6 @@ const CustomerDetailsPage = () => {
             </div>
             <div className="text-3xl font-extrabold text-blue-600 mb-2">{stats.activeContracts}</div>
             <div className="text-sm text-gray-600 font-medium mb-3">عقود نشطة</div>
-            <div className="text-xs text-gray-500">
-              <span className="text-green-600 font-semibold">↑ 1</span> منذ الشهر الماضي
-            </div>
           </div>
 
           {/* بطاقة المبلغ المستحق */}
@@ -873,46 +870,6 @@ const CustomerDetailsPage = () => {
                   <p className="text-sm text-gray-500 mt-1">جميع الوثائق المرتبطة بالعميل</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm transition-all duration-200 hover:border-blue-500">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#dbeafe' }}>
-                        <FileText className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1">صورة الهوية الوطنية</h4>
-                        <p className="text-xs text-gray-500 mb-2">تم الرفع في 15/01/2024</p>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-green-100 text-green-700">معتمد</Badge>
-                          <span className="text-xs text-gray-500">2.4 MB</span>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm transition-all duration-200 hover:border-blue-500">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#d1fae5' }}>
-                        <FileText className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1">رخصة القيادة</h4>
-                        <p className="text-xs text-gray-500 mb-2">تم الرفع في 15/01/2024</p>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-green-100 text-green-700">معتمد</Badge>
-                          <span className="text-xs text-gray-500">1.8 MB</span>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200 hover:border-blue-500">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#dbeafe' }}>
                     <Upload className="w-8 h-8 text-blue-600" />
@@ -935,65 +892,8 @@ const CustomerDetailsPage = () => {
                   <p className="text-sm text-gray-500 mt-1">آخر الأنشطة والتحديثات</p>
                 </div>
                 
-                <div className="relative pr-8">
-                  <div className="absolute right-2 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                  
-                  <div className="relative pb-8">
-                    <div className="absolute right-0 top-0 w-4 h-4 rounded-full bg-white border-3 border-red-600" style={{ transform: 'translateX(50%)' }}></div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#d1fae5' }}>
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">تم استلام الدفعة</h4>
-                            <p className="text-xs text-gray-500">30/10/2024 - 02:30 م</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-green-100 text-green-700">مكتمل</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mr-10">تم استلام دفعة بمبلغ 2,500 ر.س للعقد #CNT-001 عن طريق التحويل البنكي</p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative pb-8">
-                    <div className="absolute right-0 top-0 w-4 h-4 rounded-full bg-white border-3 border-red-600" style={{ transform: 'translateX(50%)' }}></div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#dbeafe' }}>
-                            <FileText className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">تحديث بيانات العميل</h4>
-                            <p className="text-xs text-gray-500">25/10/2024 - 10:15 ص</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-blue-100 text-blue-700">تحديث</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mr-10">تم تحديث العنوان ورقم الجوال</p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative pb-0">
-                    <div className="absolute right-0 top-0 w-4 h-4 rounded-full bg-white border-3 border-red-600" style={{ transform: 'translateX(50%)' }}></div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#dbeafe' }}>
-                            <UserPlus className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">تسجيل عميل جديد</h4>
-                            <p className="text-xs text-gray-500">15/01/2024 - 09:00 ص</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-blue-100 text-blue-700">جديد</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mr-10">تم تسجيل العميل في النظام</p>
-                    </div>
-                  </div>
+                <div className="bg-white rounded-xl p-8 text-center text-gray-500 border border-gray-200">
+                  لا توجد أنشطة مسجلة حتى الآن
                 </div>
               </div>
             )}

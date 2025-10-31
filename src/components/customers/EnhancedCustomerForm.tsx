@@ -27,7 +27,6 @@ import {
   FileText,
   CheckCircle,
   AlertTriangle,
-  TestTube,
   ArrowRight,
   ArrowLeft,
   Calculator,
@@ -205,31 +204,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     setHasDuplicates(false);
   };
 
-  // Mock data generation for testing
-  const generateMockData = () => {
-    const mockData = customerType === 'individual' 
-      ? {
-          first_name: 'أحمد',
-          last_name: 'المحمد',
-          phone: '+96599123456',
-          email: 'ahmed@example.com',
-          national_id: '12345678901',
-          license_number: 'C123456'
-        }
-      : {
-          company_name: 'شركة التطوير المتقدم',
-          phone: '+96522123456',
-          email: 'info@company.com',
-          national_id: '98765432101'
-        };
-    
-    Object.keys(mockData).forEach(key => {
-      form.setValue(key as keyof CustomerFormData, mockData[key as keyof typeof mockData]);
-    });
-    
-    toast.success('تم ملء البيانات الوهمية بنجاح');
-  };
-
   const renderFormContent = () => (
     <div className="space-y-6">
       {/* Step Navigation */}
@@ -362,17 +336,6 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                   <User className="h-5 w-5" />
                   البيانات الأساسية
                 </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateMockData}
-                  className="flex items-center gap-2 text-xs"
-                  title="ملء بيانات وهمية لتسريع الاختبار"
-                >
-                  <TestTube className="h-4 w-4" />
-                  بيانات وهمية
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">

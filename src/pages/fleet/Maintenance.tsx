@@ -590,13 +590,13 @@ export default function Maintenance() {
       />
 
       {/* Side Panel */}
-      <div
-        className={cn(
-          "fixed top-0 left-0 h-full w-full md:w-[500px] bg-white shadow-2xl transition-transform duration-400 z-50 overflow-y-auto",
-          sidePanelOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        {selectedMaintenance && (
+      {sidePanelOpen && selectedMaintenance && (
+        <div
+          className={cn(
+            "fixed top-0 right-0 h-full w-full md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto",
+            "transition-transform duration-300 ease-in-out"
+          )}
+        >
           <div className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -783,8 +783,8 @@ export default function Maintenance() {
               </Button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Maintenance Form */}
       <Suspense fallback={<div>Loading...</div>}>
