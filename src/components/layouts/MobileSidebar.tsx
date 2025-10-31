@@ -151,84 +151,93 @@ export function MobileSidebar() {
             </h3>
             <div className="space-y-1">
               {/* Finance Settings */}
-              {SETTINGS_ITEMS.finance && SETTINGS_ITEMS.finance.length > 0 && (
-                <AdminOnly hideIfNoAccess>
-                  <Collapsible defaultOpen={location.pathname.startsWith('/finance/accounting-wizard') || 
-                    location.pathname.startsWith('/finance/account-mappings') ||
-                    location.pathname.startsWith('/finance/budgets') ||
-                    location.pathname.startsWith('/finance/cost-centers') ||
-                    location.pathname.startsWith('/finance/vendors') ||
-                    location.pathname.startsWith('/finance/assets')}>
-                    <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                      <SETTINGS_ITEMS.finance[0].icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="font-medium flex-1">إعدادات المالية</span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="mr-8 mt-1 space-y-1">
-                        {SETTINGS_ITEMS.finance.map((settingItem) => (
-                          <NavLink key={settingItem.id} to={settingItem.href!} className={getNavClassName}>
-                            <settingItem.icon className="h-4 w-4 flex-shrink-0" />
-                            <span>{settingItem.name}</span>
-                          </NavLink>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </AdminOnly>
-              )}
+              {SETTINGS_ITEMS.finance && SETTINGS_ITEMS.finance.length > 0 && (() => {
+                const FinanceIcon = SETTINGS_ITEMS.finance[0].icon;
+                return (
+                  <AdminOnly hideIfNoAccess>
+                    <Collapsible defaultOpen={location.pathname.startsWith('/finance/accounting-wizard') || 
+                      location.pathname.startsWith('/finance/account-mappings') ||
+                      location.pathname.startsWith('/finance/budgets') ||
+                      location.pathname.startsWith('/finance/cost-centers') ||
+                      location.pathname.startsWith('/finance/vendors') ||
+                      location.pathname.startsWith('/finance/assets')}>
+                      <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                        <FinanceIcon className="h-5 w-5 flex-shrink-0" />
+                        <span className="font-medium flex-1">إعدادات المالية</span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mr-8 mt-1 space-y-1">
+                          {SETTINGS_ITEMS.finance.map((settingItem) => (
+                            <NavLink key={settingItem.id} to={settingItem.href!} className={getNavClassName}>
+                              <settingItem.icon className="h-4 w-4 flex-shrink-0" />
+                              <span>{settingItem.name}</span>
+                            </NavLink>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </AdminOnly>
+                );
+              })()}
 
               {/* HR Settings */}
-              {SETTINGS_ITEMS.hr && SETTINGS_ITEMS.hr.length > 0 && (
-                <AdminOnly hideIfNoAccess>
-                  <Collapsible defaultOpen={location.pathname.startsWith('/hr/location-settings') || 
-                    location.pathname.startsWith('/hr/settings')}>
-                    <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                      <SETTINGS_ITEMS.hr[0].icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="font-medium flex-1">إعدادات الموارد البشرية</span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="mr-8 mt-1 space-y-1">
-                        {SETTINGS_ITEMS.hr.map((settingItem) => (
-                          <NavLink key={settingItem.id} to={settingItem.href!} className={getNavClassName}>
-                            <settingItem.icon className="h-4 w-4 flex-shrink-0" />
-                            <span>{settingItem.name}</span>
-                          </NavLink>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </AdminOnly>
-              )}
+              {SETTINGS_ITEMS.hr && SETTINGS_ITEMS.hr.length > 0 && (() => {
+                const HRIcon = SETTINGS_ITEMS.hr[0].icon;
+                return (
+                  <AdminOnly hideIfNoAccess>
+                    <Collapsible defaultOpen={location.pathname.startsWith('/hr/location-settings') || 
+                      location.pathname.startsWith('/hr/settings')}>
+                      <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                        <HRIcon className="h-5 w-5 flex-shrink-0" />
+                        <span className="font-medium flex-1">إعدادات الموارد البشرية</span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mr-8 mt-1 space-y-1">
+                          {SETTINGS_ITEMS.hr.map((settingItem) => (
+                            <NavLink key={settingItem.id} to={settingItem.href!} className={getNavClassName}>
+                              <settingItem.icon className="h-4 w-4 flex-shrink-0" />
+                              <span>{settingItem.name}</span>
+                            </NavLink>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </AdminOnly>
+                );
+              })()}
 
               {/* Admin Settings */}
-              {SETTINGS_ITEMS.admin && SETTINGS_ITEMS.admin.length > 0 && (
-                <SuperAdminOnly hideIfNoAccess>
-                  <Collapsible defaultOpen={location.pathname.startsWith('/approvals') || 
-                    location.pathname.startsWith('/audit') ||
-                    location.pathname.startsWith('/backup')}>
-                    <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
-                      <SETTINGS_ITEMS.admin[0].icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="font-medium flex-1">إدارة النظام</span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="mr-8 mt-1 space-y-1">
-                        {SETTINGS_ITEMS.admin.map((adminItem) => {
-                          if (adminItem.requiresSuperAdmin && !hasGlobalAccess) return null;
-                          return (
-                            <NavLink key={adminItem.id} to={adminItem.href!} className={getNavClassName}>
-                              <adminItem.icon className="h-4 w-4 flex-shrink-0" />
-                              <span>{adminItem.name}</span>
-                            </NavLink>
-                          );
-                        })}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SuperAdminOnly>
-              )}
+              {SETTINGS_ITEMS.admin && SETTINGS_ITEMS.admin.length > 0 && (() => {
+                const AdminIcon = SETTINGS_ITEMS.admin[0].icon;
+                return (
+                  <SuperAdminOnly hideIfNoAccess>
+                    <Collapsible defaultOpen={location.pathname.startsWith('/approvals') || 
+                      location.pathname.startsWith('/audit') ||
+                      location.pathname.startsWith('/backup')}>
+                      <CollapsibleTrigger className="flex items-center gap-3 w-full px-4 py-3 text-right transition-colors rounded-md hover:bg-accent/60">
+                        <AdminIcon className="h-5 w-5 flex-shrink-0" />
+                        <span className="font-medium flex-1">إدارة النظام</span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mr-8 mt-1 space-y-1">
+                          {SETTINGS_ITEMS.admin.map((adminItem) => {
+                            if (adminItem.requiresSuperAdmin && !hasGlobalAccess) return null;
+                            return (
+                              <NavLink key={adminItem.id} to={adminItem.href!} className={getNavClassName}>
+                                <adminItem.icon className="h-4 w-4 flex-shrink-0" />
+                                <span>{adminItem.name}</span>
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </SuperAdminOnly>
+                );
+              })()}
             </div>
           </div>
         )}
