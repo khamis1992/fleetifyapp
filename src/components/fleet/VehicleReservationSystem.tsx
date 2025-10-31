@@ -5,7 +5,7 @@
  * NOTE: This component uses mock data for vehicle_reservations table which doesn't exist yet
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { Plus, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,24 +46,32 @@ export function VehicleReservationSystem() {
   const [showConvertDialog, setShowConvertDialog] = useState(false)
 
   // Mock data - Database table 'vehicle_reservations' not yet created
-  const [reservations, setReservations] = useState<Reservation[]>([
-    {
-      id: '1',
-      company_id: user?.profile?.company_id || '',
-      vehicle_id: '1',
-      customer_id: '1',
-      customer_name: 'أحمد محمد',
-      vehicle_plate: '123 ج ع',
-      vehicle_make: 'تويوتا',
-      vehicle_model: 'كامري',
-      start_date: new Date().toISOString(),
-      end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      hold_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      status: 'pending',
-      notes: 'حجز تجريبي',
-      created_at: new Date().toISOString(),
-    },
-  ])
+  const [reservations, setReservations] = useState<Reservation[]>(() => {
+    const initialReservations: Reservation[] = [
+      {
+        id: '1',
+        company_id: user?.profile?.company_id || '',
+        vehicle_id: '1',
+        customer_id: '1',
+        customer_name: 'أحمد محمد',
+        vehicle_plate: '123 ج ع',
+        vehicle_make: 'تويوتا',
+        vehicle_model: 'كامري',
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        hold_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending',
+        notes: 'حجز تجريبي',
+        created_at: new Date().toISOString(),
+      },
+    ]
+    return initialReservations
+  })
+
+  // Helper function to ensure reservations is always an array
+  const getSafeReservations = useCallback(() => {
+    return Array.isArray(reservations) ? reservations : []
+  }, [reservations])
 
   // Create reservation mutation (mock implementation)
   const createReservation = useMutation({
@@ -90,7 +98,8 @@ export function VehicleReservationSystem() {
       return newReservation
     },
     onSuccess: (newReservation) => {
-      setReservations([newReservation, ...reservations])
+      const safeReservations = Array.isArray(reservations) ? reservations : [];
+      setReservations([newReservation, ...safeReservations])
       toast.success('تم إنشاء الحجز بنجاح')
       setShowNewReservation(false)
     },
@@ -103,13 +112,15 @@ export function VehicleReservationSystem() {
   // Convert to contract mutation (mock implementation)
   const convertToContract = useMutation({
     mutationFn: async (reservationId: string) => {
-      const res = reservations.find(r => r.id === reservationId)
+      const safeReservations = Array.isArray(reservations) ? reservations : [];
+      const res = safeReservations.find(r => r.id === reservationId)
       if (!res) throw new Error('Reservation not found')
       return res
     },
     onSuccess: () => {
       if (selectedReservation) {
-        setReservations(reservations.map(r => 
+        const safeReservations = Array.isArray(reservations) ? reservations : [];
+        setReservations(safeReservations.map(r => 
           r.id === selectedReservation.id 
             ? { ...r, status: 'converted' as const }
             : r
@@ -130,7 +141,8 @@ export function VehicleReservationSystem() {
       return reservationId
     },
     onSuccess: (reservationId) => {
-      setReservations(reservations.map(r => 
+      const safeReservations = Array.isArray(reservations) ? reservations : [];
+      setReservations(safeReservations.map(r => 
         r.id === reservationId 
           ? { ...r, status: 'cancelled' as const }
           : r
@@ -151,10 +163,11 @@ export function VehicleReservationSystem() {
 
   // Group reservations by status
   const groupedReservations = useMemo(() => {
+    const safeReservations = Array.isArray(reservations) ? reservations : [];
     return {
-      pending: reservations.filter(r => r.status === 'pending'),
-      confirmed: reservations.filter(r => r.status === 'confirmed'),
-      converted: reservations.filter(r => r.status === 'converted'),
+      pending: safeReservations.filter(r => r.status === 'pending'),
+      confirmed: safeReservations.filter(r => r.status === 'confirmed'),
+      converted: safeReservations.filter(r => r.status === 'converted'),
     }
   }, [reservations])
 

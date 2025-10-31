@@ -95,7 +95,6 @@ const TrafficViolations = lazy(() => import("./pages/fleet/TrafficViolationsRede
 const TrafficViolationPayments = lazy(() => import("./pages/fleet/TrafficViolationPayments"));
 const FleetReports = lazy(() => import("./pages/fleet/FleetReports"));
 const DispatchPermits = lazy(() => import("./pages/fleet/DispatchPermits"));
-const VehicleConditionCheck = lazy(() => import("./pages/fleet/VehicleConditionCheck").then(m => ({ default: m.VehicleConditionCheck })));
 const FleetFinancialAnalysis = lazy(() => import("./pages/fleet/FleetFinancialAnalysis"));
 const ReservationSystem = lazy(() => import("./pages/fleet/ReservationSystem"));
 const VehicleInstallments = lazy(() => import("./pages/VehicleInstallments"));
@@ -432,13 +431,6 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <DispatchPermits />
-            </Suspense>
-          </AdminRoute>
-        } />
-        <Route path="fleet/vehicle-condition-check" element={
-          <AdminRoute>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <VehicleConditionCheck />
             </Suspense>
           </AdminRoute>
         } />
@@ -905,11 +897,6 @@ const AppRoutes = () => {
         <Route path="fleet/dispatch-permits" element={
           <AdminRoute>
             <DispatchPermits />
-          </AdminRoute>
-        } />
-        <Route path="fleet/vehicle-condition-check" element={
-          <AdminRoute>
-            <VehicleConditionCheck />
           </AdminRoute>
         } />
         <Route path="fleet/maintenance" element={

@@ -43,7 +43,13 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         query = query.limit(limit)
       }
 
-      const { data, error } = await query.abortSignal(signal) // ✅ Enable request cancellation
+      // Handle abort signal properly - Supabase doesn't support .abortSignal() directly
+      // The signal will be used by React Query's fetch implementation
+      const { data, error } = await query
+
+      if (signal?.aborted) {
+        throw new Error('Request aborted')
+      }
 
       if (error) {
         console.error("Error fetching vehicles:", error)
@@ -72,7 +78,10 @@ export const useAvailableVehicles = () => {
         .eq("is_active", true)
         .eq("status", "available")
         .order("plate_number")
-        .abortSignal(signal) // ✅ Enable request cancellation
+
+      if (signal?.aborted) {
+        throw new Error('Request aborted')
+      }
 
       if (error) {
         console.error("Error fetching available vehicles:", error)

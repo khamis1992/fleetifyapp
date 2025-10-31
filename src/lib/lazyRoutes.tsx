@@ -35,9 +35,6 @@ export const LazyTrafficViolations = lazy(() => import('@/pages/fleet/TrafficVio
 export const LazyTrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 export const LazyFleetReports = lazy(() => import('@/pages/fleet/FleetReports'));
 export const LazyDispatchPermits = lazy(() => import('@/pages/fleet/DispatchPermits'));
-export const LazyVehicleConditionCheck = lazy(() => 
-  import('@/pages/fleet/VehicleConditionCheck').then(module => ({ default: module.VehicleConditionCheck }))
-);
 export const LazyFleetFinancialAnalysis = lazy(() => import('@/pages/fleet/FleetFinancialAnalysis'));
 export const LazyVehicleInstallments = lazy(() => import('@/pages/VehicleInstallments'));
 
