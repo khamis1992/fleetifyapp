@@ -75,7 +75,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                     تعديل المركبة
                   </DropdownMenuItem>
                   {status === 'available' && (
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicle.id}`)}>
                       <Wrench className="h-4 w-4 mr-2" />
                       جدولة الصيانة
                     </DropdownMenuItem>

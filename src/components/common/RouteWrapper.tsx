@@ -6,7 +6,7 @@
  */
 
 import React, { Suspense, ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { RouteErrorBoundary } from './RouteErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageSkeletonFallback } from './LazyPageWrapper';
@@ -100,6 +100,37 @@ export const RouteWrapper: React.FC<RouteWrapperProps> = ({
   return (
     <RouteErrorBoundary routeName={routeName} fallbackPath={fallbackPath}>
       {children}
+    </RouteErrorBoundary>
+  );
+};
+
+/**
+ * Route Key Wrapper
+ * 
+ * Forces component remount on route change by adding a key based on location.pathname
+ * This ensures components reload properly when navigating between pages
+ */
+interface RouteKeyWrapperProps {
+  children: ReactNode;
+  routeName?: string;
+  fallbackPath?: string;
+}
+
+export const RouteKeyWrapper: React.FC<RouteKeyWrapperProps> = ({
+  children,
+  routeName,
+  fallbackPath
+}) => {
+  const location = useLocation();
+  
+  // Use location.pathname as key to force remount on navigation
+  const routeKey = location.pathname + location.search;
+  
+  return (
+    <RouteErrorBoundary routeName={routeName} fallbackPath={fallbackPath}>
+      <div key={routeKey}>
+        {children}
+      </div>
     </RouteErrorBoundary>
   );
 };

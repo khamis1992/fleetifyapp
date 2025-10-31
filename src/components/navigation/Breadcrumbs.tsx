@@ -88,6 +88,26 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
     { label: 'إدارة الأسطول', path: '/fleet' },
     { label: 'التقارير', path: '/fleet/reports', isActive: true },
   ],
+  '/fleet/traffic-violation-payments': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'مدفوعات المخالفات', path: '/fleet/traffic-violation-payments', isActive: true },
+  ],
+  '/fleet/vehicle-installments': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'أقساط المركبات', path: '/fleet/vehicle-installments', isActive: true },
+  ],
+  '/fleet/reservation-system': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'نظام الحجوزات', path: '/fleet/reservation-system', isActive: true },
+  ],
+  '/fleet/financial-analysis': [
+    { label: 'لوحة التحكم', path: '/dashboard' },
+    { label: 'إدارة الأسطول', path: '/fleet' },
+    { label: 'التحليل المالي', path: '/fleet/financial-analysis', isActive: true },
+  ],
 
   // Customers
   '/customers': [
@@ -214,6 +234,18 @@ export const Breadcrumbs: React.FC = () => {
   const breadcrumbs = useMemo(() => {
     // Check for exact match first
     let items = BREADCRUMB_ROUTES[location.pathname];
+
+    // Handle dynamic routes (e.g., /fleet/vehicles/:vehicleId)
+    if (!items && location.pathname.startsWith('/fleet/vehicles/')) {
+      const vehicleId = location.pathname.split('/fleet/vehicles/')[1];
+      if (vehicleId) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'إدارة الأسطول', path: '/fleet' },
+          { label: 'تفاصيل المركبة', path: undefined, isActive: true },
+        ];
+      }
+    }
 
     // If no exact match, try to find a partial match
     if (!items) {

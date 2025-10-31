@@ -23,7 +23,7 @@ import { ProtectedRoute, AdminRoute, SuperAdminRoute } from "@/components/common
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 import { LazyLoadErrorBoundary } from "@/components/common/LazyLoadErrorBoundary";
 import { RouteErrorBoundary } from "@/components/common/RouteErrorBoundary";
-import { RouteWrapper } from "@/components/common/RouteWrapper";
+import { RouteWrapper, RouteKeyWrapper } from "@/components/common/RouteWrapper";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
@@ -166,13 +166,13 @@ const FleetHelp = lazy(() => import("./pages/help/FleetHelp"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // CRITICAL FIX: Use cache but allow fresh data on page navigation
-      refetchOnMount: false,         // Refetch on mount to ensure fresh data
-      refetchOnWindowFocus: false,  // Don't refetch when switching browser tabs
-      refetchOnReconnect: true,     // Only refetch when internet reconnects
+      // CRITICAL FIX: Refetch on mount to ensure fresh data on navigation
+      refetchOnMount: true,          // Always refetch when component mounts (fixed from false)
+      refetchOnWindowFocus: false,   // Don't refetch when switching browser tabs
+      refetchOnReconnect: true,     // Refetch when internet reconnects
       
-      // Cache configuration - Keep data fresh longer
-      staleTime: 2 * 60 * 1000,     // Data stays fresh for 2 minutes (reduced from 5)
+      // Cache configuration - Keep data fresh but allow refetch
+      staleTime: 1 * 60 * 1000,     // Data stays fresh for 1 minute (reduced from 2)
       gcTime: 30 * 60 * 1000,       // Keep unused data in cache for 30 minutes
       
       // Retry configuration - Fail fast
@@ -265,7 +265,7 @@ const App = () => {
 
 const AppRoutes = () => {
   const location = useLocation();
-  const { isNavigating, visitCount } = useStableNavigation();
+  const { visitCount } = useStableNavigation();
 
   console.log('🧭 [ROUTES] Current path:', location.pathname);
 
@@ -283,7 +283,7 @@ const AppRoutes = () => {
   }, [location.pathname, visitCount]);
 
   return (
-    <Routes>
+    <Routes key={location.pathname}>
       <Route path="/" element={<Index />} />
       <Route path="/premium-landing" element={<PremiumLanding />} />
       <Route path="/auth" element={<Auth />} />

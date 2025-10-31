@@ -207,3 +207,25 @@ export const useUpdatePermitStatus = () => {
     },
   });
 };
+
+export const useDeleteDispatchPermit = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (permitId: string) => {
+      const { error } = await supabase
+        .from('vehicle_dispatch_permits')
+        .delete()
+        .eq('id', permitId);
+
+      if (error) {
+        throw error;
+      }
+
+      return permitId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dispatch-permits'] });
+    },
+  });
+};

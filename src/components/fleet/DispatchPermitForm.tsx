@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarIcon, Clock, FileText, MapPin, Car, User, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCreateDispatchPermit, type CreateDispatchPermitData } from "@/hooks/useDispatchPermits";
+import { useCreateDispatchPermit, useUpdateDispatchPermit, type CreateDispatchPermitData } from "@/hooks/useDispatchPermits";
+import { useDispatchPermits } from "@/hooks/useDispatchPermits";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateConditionReportForPermit, useVehicleConditionReports } from "@/hooks/useVehicleCondition";
@@ -21,9 +22,10 @@ import { VehicleConditionReportDialog } from "./VehicleConditionReportDialog";
 interface DispatchPermitFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editingPermitId?: string | null;
 }
 
-export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormProps) {
+export function DispatchPermitForm({ open, onOpenChange, editingPermitId }: DispatchPermitFormProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [activeTab, setActiveTab] = useState("details");
@@ -33,46 +35,128 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
   const [conditionReportDialogOpen, setConditionReportDialogOpen] = useState(false);
   
   const { toast } = useToast();
+  const { data: permits } = useDispatchPermits();
+  const editingPermit = editingPermitId ? permits?.find(p => p.id === editingPermitId) : null;
+  const isEditMode = !!editingPermit;
 
   const form = useForm<CreateDispatchPermitData>();
   const createPermit = useCreateDispatchPermit();
+  const updatePermit = useUpdateDispatchPermit();
   const createConditionReport = useCreateConditionReportForPermit();
   const { data: vehicles } = useVehicles();
-  const { data: conditionReports } = useVehicleConditionReports(createdPermitId || undefined);
+  const { data: conditionReports } = useVehicleConditionReports(createdPermitId || editingPermitId || undefined);
 
   const availableVehicles = vehicles?.filter(v => v.status === 'available') || [];
   const selectedVehicle = vehicles?.find(v => v.id === selectedVehicleId);
 
+  // Populate form when editing
+  useEffect(() => {
+    if (editingPermit && open) {
+      form.reset({
+        vehicle_id: editingPermit.vehicle_id,
+        request_type: editingPermit.request_type,
+        purpose: editingPermit.purpose,
+        purpose_ar: editingPermit.purpose_ar || '',
+        destination: editingPermit.destination,
+        destination_ar: editingPermit.destination_ar || '',
+        start_date: editingPermit.start_date,
+        end_date: editingPermit.end_date,
+        start_time: editingPermit.start_time || '',
+        end_time: editingPermit.end_time || '',
+        estimated_km: editingPermit.estimated_km || undefined,
+        fuel_allowance: editingPermit.fuel_allowance || undefined,
+        driver_name: editingPermit.driver_name || '',
+        driver_phone: editingPermit.driver_phone || '',
+        driver_license: editingPermit.driver_license || '',
+        priority: editingPermit.priority || 'normal',
+        notes: editingPermit.notes || '',
+      });
+      setStartDate(new Date(editingPermit.start_date));
+      setEndDate(new Date(editingPermit.end_date));
+      setSelectedVehicleId(editingPermit.vehicle_id);
+      setCreatedPermitId(editingPermit.id);
+    } else if (!editingPermit && open) {
+      // Reset form for new permit
+      form.reset();
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setSelectedVehicleId("");
+      setCreatedPermitId(null);
+      setActiveTab("details");
+      setConditionReportCompleted(false);
+    }
+  }, [editingPermit, open, form]);
+
   const onSubmitPermitDetails = async (data: CreateDispatchPermitData) => {
     try {
-      const result = await createPermit.mutateAsync({
-        ...data,
-        start_date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
-        end_date: endDate ? format(endDate, 'yyyy-MM-dd') : '',
-      });
-      
-      // Store the created permit ID and vehicle ID
-      setCreatedPermitId(result.id);
-      setSelectedVehicleId(data.vehicle_id);
-      
-      // Create pre-dispatch condition report
-      await createConditionReport.mutateAsync({
-        permitId: result.id,
-        inspectionType: 'pre_dispatch'
-      });
-      
-      // Move to condition report tab
-      setActiveTab("condition");
-      
-      toast({
-        title: "تم إنشاء تصريح الحركة بنجاح",
-        description: "يرجى إكمال فحص حالة المركبة قبل التشغيل",
-      });
+      if (isEditMode && editingPermit) {
+        // Update existing permit
+        await updatePermit.mutateAsync({
+          id: editingPermit.id,
+          updates: {
+            vehicle_id: data.vehicle_id,
+            request_type: data.request_type,
+            purpose: data.purpose,
+            purpose_ar: data.purpose_ar || null,
+            destination: data.destination,
+            destination_ar: data.destination_ar || null,
+            start_date: startDate ? format(startDate, 'yyyy-MM-dd') : data.start_date,
+            end_date: endDate ? format(endDate, 'yyyy-MM-dd') : data.end_date,
+            start_time: data.start_time || null,
+            end_time: data.end_time || null,
+            estimated_km: data.estimated_km || null,
+            fuel_allowance: data.fuel_allowance || null,
+            driver_name: data.driver_name || null,
+            driver_phone: data.driver_phone || null,
+            driver_license: data.driver_license || null,
+            priority: data.priority || 'normal',
+            notes: data.notes || null,
+          }
+        });
+        
+        toast({
+          title: "تم تحديث التصريح بنجاح",
+          description: "تم تحديث تصريح الحركة بنجاح",
+        });
+        
+        onOpenChange(false);
+        form.reset();
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setActiveTab("details");
+        setCreatedPermitId(null);
+        setSelectedVehicleId("");
+      } else {
+        // Create new permit
+        const result = await createPermit.mutateAsync({
+          ...data,
+          start_date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+          end_date: endDate ? format(endDate, 'yyyy-MM-dd') : '',
+        });
+        
+        // Store the created permit ID and vehicle ID
+        setCreatedPermitId(result.id);
+        setSelectedVehicleId(data.vehicle_id);
+        
+        // Create pre-dispatch condition report
+        await createConditionReport.mutateAsync({
+          permitId: result.id,
+          inspectionType: 'pre_dispatch'
+        });
+        
+        // Move to condition report tab
+        setActiveTab("condition");
+        
+        toast({
+          title: "تم إنشاء تصريح الحركة بنجاح",
+          description: "يرجى إكمال فحص حالة المركبة قبل التشغيل",
+        });
+      }
       
     } catch (error) {
       toast({
-        title: "خطأ في إنشاء التصريح",
-        description: "حدث خطأ أثناء إنشاء تصريح الحركة",
+        title: isEditMode ? "خطأ في تحديث التصريح" : "خطأ في إنشاء التصريح",
+        description: `حدث خطأ أثناء ${isEditMode ? 'تحديث' : 'إنشاء'} تصريح الحركة`,
         variant: "destructive",
       });
     }
@@ -123,7 +207,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              طلب تصريح حركة داخلية للمركبة
+              {isEditMode ? 'تعديل تصريح الحركة' : 'طلب تصريح حركة داخلية للمركبة'}
             </DialogTitle>
           </DialogHeader>
 
@@ -135,7 +219,7 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
               </TabsTrigger>
               <TabsTrigger 
                 value="condition" 
-                disabled={!createdPermitId}
+                disabled={!createdPermitId && !isEditMode}
                 className="flex items-center gap-2"
               >
                 <ClipboardCheck className="h-4 w-4" />
@@ -525,10 +609,13 @@ export function DispatchPermitForm({ open, onOpenChange }: DispatchPermitFormPro
                   <div className="flex gap-4 pt-4">
                     <Button 
                       type="submit" 
-                      disabled={createPermit.isPending || !selectedVehicleId}
+                      disabled={(createPermit.isPending || updatePermit.isPending) || (!selectedVehicleId && !isEditMode)}
                       className="flex-1"
                     >
-                      {createPermit.isPending ? "جاري الإرسال..." : "التالي - فحص المركبة"}
+                      {isEditMode 
+                        ? (updatePermit.isPending ? "جاري التحديث..." : "حفظ التغييرات") 
+                        : (createPermit.isPending ? "جاري الإرسال..." : "التالي - فحص المركبة")
+                      }
                     </Button>
                     <Button 
                       type="button" 

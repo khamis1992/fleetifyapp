@@ -10,6 +10,7 @@ import { ResponsivePageActions } from "@/components/ui/responsive-page-actions";
 
 export default function DispatchPermits() {
   const [showPermitForm, setShowPermitForm] = useState(false);
+  const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
   const { data: permits } = useDispatchPermits();
 
   // Calculate statistics
@@ -100,13 +101,19 @@ export default function DispatchPermits() {
       </div>
 
       {/* Main Content */}
-      <DispatchPermitsList />
+      <DispatchPermitsList onEditPermit={setEditingPermitId} />
 
       {/* Permit Form Dialog */}
-      {showPermitForm && (
+      {(showPermitForm || editingPermitId) && (
         <DispatchPermitForm 
-          open={showPermitForm} 
-          onOpenChange={setShowPermitForm}
+          open={showPermitForm || !!editingPermitId} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowPermitForm(false);
+              setEditingPermitId(null);
+            }
+          }}
+          editingPermitId={editingPermitId}
         />
       )}
     </div>

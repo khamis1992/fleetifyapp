@@ -10,6 +10,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Calendar, Users } from 'lucide-react';
 import { VehicleReservationSystem } from '@/components/fleet/VehicleReservationSystem';
@@ -19,6 +20,7 @@ import { ResponsiveContainer } from '@/components/ui/responsive-container';
 import { ResponsivePageActions } from '@/components/ui/responsive-page-actions';
 
 export default function ReservationSystem() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('reservations');
 
   return (
@@ -31,7 +33,7 @@ export default function ReservationSystem() {
           id: 'back',
           label: 'العودة للأسطول',
           icon: null,
-          onClick: () => window.location.href = '/fleet',
+          onClick: () => navigate('/fleet'),
           type: 'outline'
         }}
       />

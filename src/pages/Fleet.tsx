@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
 import { Plus, Car, AlertTriangle, TrendingUp, Wrench, FileText, Layers3, Calculator, Upload } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -36,6 +36,7 @@ export default function Fleet() {
     cardLayout: true,
     fullscreenModals: true
   })
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [showGroupManagement, setShowGroupManagement] = useState(false)
@@ -108,7 +109,7 @@ export default function Fleet() {
             id: 'financial-analysis',
             label: 'التحليل المالي',
             icon: <Calculator className="h-4 w-4 mr-2" />,
-            onClick: () => window.location.href = '/fleet/financial-analysis',
+            onClick: () => navigate('/fleet/financial-analysis'),
             type: 'outline'
           },
           {
@@ -141,7 +142,7 @@ export default function Fleet() {
 
       {/* Fleet Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'available', excludeMaintenanceStatus: false })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المركبات المتاحة</CardTitle>
             <Car className="h-4 w-4 text-muted-foreground" />
@@ -154,7 +155,7 @@ export default function Fleet() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'rented', excludeMaintenanceStatus: false })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المركبات المؤجرة</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -167,7 +168,7 @@ export default function Fleet() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'maintenance', excludeMaintenanceStatus: false })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">قيد الصيانة</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -180,7 +181,7 @@ export default function Fleet() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleFiltersChange({ ...filters, status: 'out_of_service', excludeMaintenanceStatus: false })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">خارج الخدمة</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />

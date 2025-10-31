@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Eye,
   Edit,
+  Trash2,
   Filter,
   Search
 } from "lucide-react";
@@ -23,8 +24,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useDispatchPermits } from "@/hooks/useDispatchPermits";
+import { useDispatchPermits, useDeleteDispatchPermit } from "@/hooks/useDispatchPermits";
 import { DispatchPermitDetailsDialog } from "./DispatchPermitDetailsDialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const statusConfig = {
   pending: {
@@ -80,13 +92,17 @@ const requestTypeConfig = {
   other: "أخرى"
 };
 
-export function DispatchPermitsList() {
+export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId: string) => void }) {
   const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
+  const [permitToEdit, setPermitToEdit] = useState<string | null>(null);
+  const [permitToDelete, setPermitToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
   const { data: permits, isLoading } = useDispatchPermits();
+  const deletePermit = useDeleteDispatchPermit();
+  const { toast } = useToast();
 
   if (isLoading) {
     return (
@@ -96,18 +112,34 @@ export function DispatchPermitsList() {
     );
   }
 
-  const filteredPermits = permits?.filter(permit => {
-    const matchesSearch = 
-      permit.permit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      permit.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      permit.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      permit.vehicle?.plate_number?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || permit.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || permit.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
-  }) || [];
+  const handleDelete = async () => {
+    if (!permitToDelete) return;
+
+    try {
+      await deletePermit.mutateAsync(permitToDelete);
+      toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف تصريح الحركة بنجاح",
+      });
+      setPermitToDelete(null);
+    } catch (error) {
+      toast({
+        title: "خطأ في الحذف",
+        description: "حدث خطأ أثناء حذف تصريح الحركة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const canEdit = (permit: any) => {
+    // يمكن التعديل فقط إذا كان التصريح في حالة pending أو rejected
+    return permit.status === 'pending' || permit.status === 'rejected';
+  };
+
+  const canDelete = (permit: any) => {
+    // يمكن الحذف فقط إذا لم يكن التصريح مكتملاً أو قيد التنفيذ
+    return permit.status !== 'completed' && permit.status !== 'in_progress';
+  };
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -285,6 +317,34 @@ export function DispatchPermitsList() {
                         <Eye className="h-4 w-4 mr-1" />
                         عرض التفاصيل
                       </Button>
+                      
+                      {canEdit(permit) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (onEditPermit) {
+                              onEditPermit(permit.id);
+                            } else {
+                              setPermitToEdit(permit.id);
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          تعديل
+                        </Button>
+                      )}
+                      
+                      {canDelete(permit) && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setPermitToDelete(permit.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          حذف
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -314,6 +374,27 @@ export function DispatchPermitsList() {
           onOpenChange={() => setSelectedPermit(null)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!permitToDelete} onOpenChange={(open) => !open && setPermitToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من رغبتك في حذف هذا التصريح؟ لا يمكن التراجع عن هذه العملية.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

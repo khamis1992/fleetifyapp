@@ -37,6 +37,7 @@ import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
 import { VehicleDocumentsPanel } from './VehicleDocumentsPanel';
 import { VehicleInsurancePanel } from './VehicleInsurancePanel';
+import { VehicleForm } from './VehicleForm';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -54,6 +55,7 @@ const VehicleDetailsPage = () => {
 
   // الحالة المحلية
   const [activeTab, setActiveTab] = useState('overview');
+  const [showEditForm, setShowEditForm] = useState(false);
 
   // جلب بيانات المركبة من قاعدة البيانات
   const { data: vehicle, isLoading: loadingVehicle, error: vehicleError } = useQuery({
@@ -171,18 +173,14 @@ const VehicleDetailsPage = () => {
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
-    toast({
-      title: 'تعديل المركبة',
-      description: 'فتح نموذج تعديل بيانات المركبة',
-    });
-  }, [toast]);
+    setShowEditForm(true);
+  }, []);
 
   const handleMaintenance = useCallback(() => {
-    toast({
-      title: 'تسجيل صيانة',
-      description: 'فتح نموذج تسجيل صيانة جديدة',
-    });
-  }, [toast]);
+    if (vehicleId) {
+      navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
+    }
+  }, [navigate, vehicleId]);
 
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
@@ -511,12 +509,36 @@ const VehicleDetailsPage = () => {
 
               {/* تبويب الصيانة */}
               <TabsContent value="maintenance" className="mt-0">
-                <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">سجل الصيانة</h3>
+                    <Button 
+                      onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicleId}`)}
+                      className="gap-2"
+                    >
+                      <Wrench className="w-4 h-4" />
+                      عرض جميع سجلات الصيانة
+                    </Button>
+                  </div>
+                  <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} />
+                </div>
               </TabsContent>
 
               {/* تبويب المخالفات */}
               <TabsContent value="violations" className="mt-0">
-                <ViolationsTab violations={violations} formatCurrency={formatCurrency} />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
+                    <Button 
+                      onClick={() => navigate(`/fleet/traffic-violations?vehicle=${vehicleId}`)}
+                      className="gap-2"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      عرض جميع المخالفات
+                    </Button>
+                  </div>
+                  <ViolationsTab violations={violations} formatCurrency={formatCurrency} />
+                </div>
               </TabsContent>
 
               {/* تبويب الوثائق */}
@@ -527,6 +549,15 @@ const VehicleDetailsPage = () => {
           </Tabs>
         </Card>
       </main>
+
+      {/* Vehicle Form Dialog */}
+      {showEditForm && vehicle && (
+        <VehicleForm 
+          vehicle={vehicle}
+          open={showEditForm}
+          onOpenChange={setShowEditForm}
+        />
+      )}
     </div>
   );
 };
