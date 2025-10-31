@@ -44,8 +44,7 @@ const NativeMobileDemo = lazy(() => import("./pages/NativeMobileDemo"));
 // Heavy pages - lazy loaded with retry for better reliability
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
-const Customers = lazy(() => import("./pages/CustomersNew"));
-const CustomersOld = lazy(() => import("./pages/Customers"));
+const Customers = lazy(() => import("./pages/Customers"));
 const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage").then(module => ({ default: module.default })));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage").then(module => ({ default: module.default })));
@@ -518,13 +517,6 @@ const AppRoutes = () => {
             </Suspense>
           </RouteWrapper>
         } />
-        <Route path="customers-old" element={
-          <RouteWrapper routeName="Customers (Old)" fallbackPath="/dashboard">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <CustomersOld />
-            </Suspense>
-          </RouteWrapper>
-        } />
         <Route path="customers/:customerId" element={
           <RouteWrapper routeName="Customer Details" fallbackPath="/customers">
             <Suspense fallback={<PageSkeletonFallback />}>
@@ -933,11 +925,6 @@ const AppRoutes = () => {
         <Route path="customers" element={
           <Suspense fallback={<PageSkeletonFallback />}>
             <Customers />
-          </Suspense>
-        } />
-        <Route path="customers-old" element={
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <CustomersOld />
           </Suspense>
         } />
         <Route path="tenants" element={<Tenants />} />

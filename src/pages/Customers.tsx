@@ -36,7 +36,18 @@ import {
   Upload,
   Car,
   FileText,
-  Zap
+  Zap,
+  UserPlus,
+  UserCheck,
+  UserX,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  Download,
+  MoreVertical,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import {
   Table,
@@ -59,19 +70,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { EnhancedCustomerDialog, CustomerDetailsDialog, BulkDeleteCustomersDialog, CustomerCSVUpload, CustomerImportWizard, CustomerCreationOptionsDialog } from '@/components/customers';
+import { 
+  EnhancedCustomerDialog, 
+  CustomerDetailsDialog, 
+  BulkDeleteCustomersDialog, 
+  CustomerCSVUpload, 
+  CustomerImportWizard, 
+  CustomerCreationOptionsDialog 
+} from '@/components/customers';
 import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
 import { TypeAheadSearch } from '@/components/ui/type-ahead-search';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const Customers = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isMobile } = useSimpleBreakpoint();
-  const { hasFullCompanyControl } = useUnifiedCompanyAccess();
+  const { hasFullCompanyControl, companyId } = useUnifiedCompanyAccess();
   const parentRef = useRef<HTMLDivElement>(null);
   
   // State management
@@ -153,7 +172,7 @@ const Customers = () => {
 
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
   
-  // Virtual scrolling implementation
+  // Virtual scrolling implementation for desktop
   const virtualizer = useVirtualizer({
     count: customers.length,
     getScrollElement: () => parentRef.current,
@@ -162,17 +181,6 @@ const Customers = () => {
   });
 
   const virtualItems = virtualizer.getVirtualItems();
-
-  // Reduced logging for performance - uncomment for debugging
-  // React.useEffect(() => {
-  //   console.log('🔍 [Customers] Data structure check:', {
-  //     customersResult,
-  //     customers,
-  //     isArray: Array.isArray(customers),
-  //     length: customers.length,
-  //     type: typeof customersResult
-  //   });
-  // }, [customersResult, customers]);
 
   // Event handlers
   const handleCreateCustomer = () => {
@@ -193,6 +201,10 @@ const Customers = () => {
 
   const handleCSVUpload = () => {
     setShowCSVUpload(true);
+  };
+
+  const handleImportWizard = () => {
+    setShowImportWizard(true);
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -234,7 +246,6 @@ const Customers = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const queryClient = useQueryClient();
-  const { companyId } = useUnifiedCompanyAccess();
 
   // Delete customer mutation
   const deleteCustomerMutation = useMutation({
@@ -347,17 +358,305 @@ const Customers = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
+  // Get customer display name
+  const getCustomerName = (customer: Customer) => {
+    if (customer.customer_type === 'individual') {
+      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
+             `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() ||
+             'غير محدد';
+    }
+    return customer.company_name || customer.company_name_ar || 'غير محدد';
+  };
+
+  // Get customer initials for avatar
+  const getCustomerInitials = (customer: Customer) => {
+    if (customer.customer_type === 'individual') {
+      const firstName = customer.first_name || customer.first_name_ar || '';
+      const lastName = customer.last_name || customer.last_name_ar || '';
+      return (firstName[0] || '') + (lastName[0] || '');
+    }
+    const companyName = customer.company_name || customer.company_name_ar || '';
+    return companyName.substring(0, 2);
+  };
+
+  // Get avatar color based on customer type
+  const getAvatarColor = (index: number) => {
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--success))',
+      'hsl(var(--warning))',
+      'hsl(210 100% 50%)',
+    ];
+    return colors[index % colors.length];
+  };
+
   // Mobile view
   if (isMobile) {
     return (
-      <div className="space-y-6 p-4">
-        {/* Mobile Header */}
+      <PageCustomizer
+        pageId="customers-page"
+        title="Customers"
+        titleAr="العملاء"
+      >
+        <div className="space-y-6 p-4">
+          {/* Mobile Header */}
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">العملاء</h1>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCSVUpload}
+              >
+                <Upload className="h-4 w-4 ml-2" />
+                استيراد CSV
+              </Button>
+              <Button onClick={handleCreateCustomer}>
+                <Plus className="h-4 w-4 ml-2" />
+                عميل جديد
+              </Button>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث عن العملاء..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="نوع العميل" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الأنواع</SelectItem>
+                  <SelectItem value="individual">أفراد</SelectItem>
+                  <SelectItem value="corporate">شركات</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant={includeInactive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIncludeInactive(!includeInactive)}
+              >
+                <Filter className="h-4 w-4 ml-2" />
+                شامل غير النشطين
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalCustomers}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">القائمة السوداء</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">{blacklistedCustomers}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Customer List with Virtual Scrolling */}
+          <div ref={parentRef} className="h-[calc(100vh-250px)] overflow-auto">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualItems.map((virtualItem) => {
+                const customer = customers[virtualItem.index];
+                return (
+                  <div
+                    key={customer.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <MobileCustomerCard
+                      customer={customer}
+                      onView={() => handleViewCustomer(customer)}
+                      onEdit={() => handleEditCustomer(customer)}
+                      onDelete={() => handleDeleteCustomer(customer)}
+                      onToggleBlacklist={() => handleToggleBlacklist(customer)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                الصفحة {currentPage} من {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  السابق
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  التالي
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Dialogs */}
+          <CustomerCreationOptionsDialog
+            open={showCreationOptionsDialog}
+            onOpenChange={setShowCreationOptionsDialog}
+            onSelectFullForm={handleSelectFullForm}
+            onSelectQuickAdd={handleSelectQuickAdd}
+            onSelectImport={handleImportWizard}
+          />
+          
+          <EnhancedCustomerDialog
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+          />
+          
+          <CustomerDetailsDialog
+            open={showDetailsDialog}
+            onOpenChange={setShowDetailsDialog}
+            customerId={selectedCustomer?.id || ''}
+            onEdit={() => {
+              setShowDetailsDialog(false);
+              setShowEditDialog(true);
+            }}
+            onCreateContract={() => {
+              // Navigate to create contract page with selected customer
+              toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
+            }}
+          />
+          
+          <EnhancedCustomerDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            editingCustomer={selectedCustomer}
+          />
+          
+          <BulkDeleteCustomersDialog
+            open={showBulkDeleteDialog}
+            onOpenChange={setShowBulkDeleteDialog}
+          />
+          
+          <CustomerCSVUpload
+            open={showCSVUpload}
+            onOpenChange={setShowCSVUpload}
+            onUploadComplete={() => {
+              refetch();
+              toast.success('تم رفع ملف العملاء بنجاح');
+            }}
+          />
+
+          <CustomerImportWizard
+            open={showImportWizard}
+            onOpenChange={setShowImportWizard}
+            onComplete={() => {
+              refetch();
+              toast.success('تم استيراد العملاء بنجاح');
+            }}
+          />
+          
+          <QuickCustomerForm
+            open={showQuickCreateDialog}
+            onOpenChange={setShowQuickCreateDialog}
+            onSuccess={(customerId, customerData) => {
+              refetch();
+              toast.success('تم إنشاء العميل السريع بنجاح');
+            }}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+                <AlertDialogDescription>
+                  هل أنت متأكد من حذف العميل{' '}
+                  <strong>
+                    {customerToDelete?.customer_type === 'individual'
+                      ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
+                      : customerToDelete?.company_name}
+                  </strong>
+                  ؟
+                  <br />
+                  <br />
+                  <span className="text-destructive font-medium">
+                    هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmDelete}
+                  disabled={deleteCustomerMutation.isPending}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </PageCustomizer>
+    );
+  }
+
+  // Desktop view with virtual scrolling
+  return (
+    <PageCustomizer
+      pageId="customers-page"
+      title="Customers"
+      titleAr="العملاء"
+    >
+      <div className="space-y-6 p-6">
+        {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">العملاء</h1>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">إدارة العملاء</h1>
+            <p className="text-muted-foreground">إدارة شاملة لجميع عملاء النظام</p>
+          </div>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              size="sm"
               onClick={handleCSVUpload}
             >
               <Upload className="h-4 w-4 ml-2" />
@@ -371,48 +670,45 @@ const Customers = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="البحث عن العملاء..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10"
+        <div className="flex gap-4">
+          <div className="flex-1 max-w-md">
+            <TypeAheadSearch
+              placeholder="ابحث عن عميل... (اكتب اسم، رقم هاتف، أو بريد إلكتروني)"
+              onSelect={handleTypeAheadSelect}
             />
           </div>
           
-          <div className="flex gap-2">
-            <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="نوع العميل" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="individual">أفراد</SelectItem>
-                <SelectItem value="corporate">شركات</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              variant={includeInactive ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIncludeInactive(!includeInactive)}
-            >
-              <Filter className="h-4 w-4 ml-2" />
-              شامل غير النشطين
-            </Button>
-          </div>
+          <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="نوع العميل" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الأنواع</SelectItem>
+              <SelectItem value="individual">أفراد</SelectItem>
+              <SelectItem value="corporate">شركات</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            variant={includeInactive ? "default" : "outline"}
+            onClick={() => setIncludeInactive(!includeInactive)}
+          >
+            <Filter className="h-4 w-4 ml-2" />
+            شامل غير النشطين
+          </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalCustomers}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                أفراد: {individualCustomers} | شركات: {corporateCustomers}
+              </p>
             </CardContent>
           </Card>
           
@@ -422,69 +718,296 @@ const Customers = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">{blacklistedCustomers}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                عملاء محظورين
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">العملاء النشطون</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {totalCustomers - blacklistedCustomers}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {totalCustomers > 0 
+                  ? `${Math.round(((totalCustomers - blacklistedCustomers) / totalCustomers) * 100)}% من الإجمالي` 
+                  : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">الصفحات</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalPages}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                صفحة {currentPage} من {totalPages}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Customer List with Virtual Scrolling */}
-        <div ref={parentRef} className="h-[calc(100vh-250px)] overflow-auto">
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualItems.map((virtualItem) => {
-              const customer = customers[virtualItem.index];
-              return (
-                <div
-                  key={customer.id}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualItem.size}px`,
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  <MobileCustomerCard
-                    customer={customer}
-                    onView={() => handleViewCustomer(customer)}
-                    onEdit={() => handleEditCustomer(customer)}
-                    onDelete={() => handleDeleteCustomer(customer)}
-                    onToggleBlacklist={() => handleToggleBlacklist(customer)}
-                  />
+        {/* Customer Table with Virtual Scrolling */}
+        <Card>
+          <CardHeader>
+            <CardTitle>قائمة العملاء</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-14 bg-muted/50 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="text-destructive mb-4">
+                  <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div className="space-y-2 text-center">
+                  <p className="text-lg font-semibold text-destructive">حدث خطأ في تحميل البيانات</p>
+                  <p className="text-sm text-muted-foreground">
+                    {error instanceof Error ? error.message : 'خطأ غير معروف'}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => refetch()}
+                    className="mt-4"
+                  >
+                    إعادة المحاولة
+                  </Button>
+                </div>
+              </div>
+            ) : customers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <p className="text-lg">لا توجد عملاء</p>
+                <p className="text-sm mt-2">ابدأ بإضافة عميل جديد</p>
+              </div>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                {/* Virtualized Table */}
+                <div
+                  ref={parentRef}
+                  className="overflow-auto"
+                  style={{ height: 'calc(100vh - 450px)', minHeight: '400px' }}
+                >
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-muted/50 border-b z-10">
+                      <tr>
+                        <th className="w-[50px] text-right px-4 py-3 text-sm font-medium">#</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium">الاسم</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium">النوع</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium">الهاتف</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium">البريد الإلكتروني</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium">الحالة</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium w-[150px]">الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {virtualItems.map((virtualItem) => {
+                        const customer = customers[virtualItem.index];
+                        const rowNumber = (currentPage - 1) * pageSize + virtualItem.index + 1;
+                        
+                        return (
+                          <tr
+                            key={customer.id}
+                            className="border-b hover:bg-muted/50 transition-colors"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                          >
+                            <td className="w-[50px] px-4 py-3 font-medium text-sm">
+                              {rowNumber}
+                            </td>
+                            
+                            <td className="px-4 py-3 font-medium">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs"
+                                  style={{ background: getAvatarColor(virtualItem.index) }}
+                                >
+                                  {getCustomerInitials(customer)}
+                                </div>
+                                {getCustomerName(customer)}
+                              </div>
+                            </td>
+                            
+                            <td className="px-4 py-3">
+                              <Badge variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}>
+                                {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                              </Badge>
+                            </td>
+                            
+                            <td className="px-4 py-3 font-mono text-sm">
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span>{customer.phone || '-'}</span>
+                              </div>
+                            </td>
+                            
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{customer.email || '-'}</span>
+                              </div>
+                            </td>
+                            
+                            <td className="px-4 py-3">
+                              {customer.is_blacklisted ? (
+                                <Badge variant="destructive">محظور</Badge>
+                              ) : customer.is_active ? (
+                                <Badge variant="default">نشط</Badge>
+                              ) : (
+                                <Badge variant="secondary">غير نشط</Badge>
+                              )}
+                            </td>
+                            
+                            <td className="px-4 py-3 text-left">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleQuickRent(customer)}
+                                  title="إنشاء عقد إيجار"
+                                  className="text-primary hover:text-primary hover:bg-primary/10"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewCustomer(customer)}
+                                  title="عرض التفاصيل"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditCustomer(customer)}
+                                  title="تعديل"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  title="حذف"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Footer - Statistics */}
+                <div className="bg-muted/30 border-t px-4 py-3 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      عرض <strong>{customers.length}</strong> من <strong>{totalCustomersInDB}</strong> عميل
+                    </span>
+                    <span className="text-xs">
+                      الصفحة {currentPage} من {totalPages}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              الصفحة {currentPage} من {totalPages}
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">عدد العملاء:</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                السابق
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                التالي
-              </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">الصفحات:</span>
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                {totalPages > 5 && (
+                  <>
+                    <span className="text-sm text-muted-foreground">...</span>
+                    <Button
+                      variant={currentPage === totalPages ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  السابق
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  التالي
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -495,6 +1018,7 @@ const Customers = () => {
           onOpenChange={setShowCreationOptionsDialog}
           onSelectFullForm={handleSelectFullForm}
           onSelectQuickAdd={handleSelectQuickAdd}
+          onSelectImport={handleImportWizard}
         />
         
         <EnhancedCustomerDialog
@@ -535,7 +1059,17 @@ const Customers = () => {
             toast.success('تم رفع ملف العملاء بنجاح');
           }}
         />
-        
+
+        <CustomerImportWizard
+          open={showImportWizard}
+          onOpenChange={setShowImportWizard}
+          onComplete={() => {
+            refetch();
+            toast.success('تم استيراد العملاء بنجاح');
+          }}
+        />
+
+        {/* Quick Customer Form */}
         <QuickCustomerForm
           open={showQuickCreateDialog}
           onOpenChange={setShowQuickCreateDialog}
@@ -544,454 +1078,40 @@ const Customers = () => {
             toast.success('تم إنشاء العميل السريع بنجاح');
           }}
         />
-      </div>
-    );
-  }
 
-  // Desktop view with virtual scrolling
-  return (
-    <PageCustomizer
-      pageId="customers-page"
-      title="Customers"
-      titleAr="العملاء"
-    >
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">إدارة العملاء</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleCSVUpload}
-          >
-            <Upload className="h-4 w-4 ml-2" />
-            استيراد CSV
-          </Button>
-          <Button onClick={handleCreateCustomer}>
-            <Plus className="h-4 w-4 ml-2" />
-            عميل جديد
-          </Button>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex gap-4">
-        <div className="flex-1 max-w-md">
-          <TypeAheadSearch
-            placeholder="ابحث عن عميل... (اكتب اسم، رقم هاتف، أو بريد إلكتروني)"
-            onSelect={handleTypeAheadSelect}
-          />
-        </div>
-        
-        <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="نوع العميل" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">جميع الأنواع</SelectItem>
-            <SelectItem value="individual">أفراد</SelectItem>
-            <SelectItem value="corporate">شركات</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Button 
-          variant={includeInactive ? "default" : "outline"}
-          onClick={() => setIncludeInactive(!includeInactive)}
-        >
-          <Filter className="h-4 w-4 ml-2" />
-          شامل غير النشطين
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              أفراد: {individualCustomers} | شركات: {corporateCustomers}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">القائمة السوداء</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{blacklistedCustomers}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              عملاء محظورين
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">العملاء النشطون</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalCustomers - blacklistedCustomers}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalCustomers > 0 
-                ? `${Math.round(((totalCustomers - blacklistedCustomers) / totalCustomers) * 100)}% من الإجمالي` 
-                : '0%'}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">الصفحات</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPages}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              صفحة {currentPage} من {totalPages}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Customer Table with Virtual Scrolling */}
-      <Card>
-        <CardHeader>
-          <CardTitle>قائمة العملاء</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-14 bg-muted/50 rounded animate-pulse" />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="text-destructive mb-4">
-                <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="space-y-2 text-center">
-                <p className="text-lg font-semibold text-destructive">حدث خطأ في تحميل البيانات</p>
-                <p className="text-sm text-muted-foreground">
-                  {error instanceof Error ? error.message : 'خطأ غير معروف'}
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => refetch()}
-                  className="mt-4"
-                >
-                  إعادة المحاولة
-                </Button>
-              </div>
-            </div>
-          ) : customers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <p className="text-lg">لا توجد عملاء</p>
-              <p className="text-sm mt-2">ابدأ بإضافة عميل جديد</p>
-            </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden">
-              {/* Virtualized Table */}
-              <div
-                ref={parentRef}
-                className="overflow-auto"
-                style={{ height: 'calc(100vh - 450px)', minHeight: '400px' }}
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حذف العميل{' '}
+                <strong>
+                  {customerToDelete?.customer_type === 'individual'
+                    ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
+                    : customerToDelete?.company_name}
+                </strong>
+                ؟
+                <br />
+                <br />
+                <span className="text-destructive font-medium">
+                  هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={deleteCustomerMutation.isPending}
+                className="bg-destructive hover:bg-destructive/90"
               >
-                <table className="w-full">
-                  <thead className="sticky top-0 bg-muted/50 border-b z-10">
-                    <tr>
-                      <th className="w-[50px] text-right px-4 py-3 text-sm font-medium">#</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium">الاسم</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium">النوع</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium">الهاتف</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium">البريد الإلكتروني</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium">الحالة</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium w-[150px]">الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customers.map((customer, index) => {
-                      const rowNumber = (currentPage - 1) * pageSize + index + 1;
-                      
-                      return (
-                        <tr
-                          key={customer.id}
-                          className="border-b hover:bg-muted/50 transition-colors"
-                        >
-                          <td className="w-[50px] px-4 py-3 font-medium text-sm">
-                            {rowNumber}
-                          </td>
-                          
-                          <td className="px-4 py-3 font-medium">
-                            {customer.customer_type === 'individual' 
-                              ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'N/A'
-                              : customer.company_name || 'N/A'}
-                          </td>
-                          
-                          <td className="px-4 py-3">
-                            <Badge variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}>
-                              {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
-                            </Badge>
-                          </td>
-                          
-                          <td className="px-4 py-3 font-mono text-sm">
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-4 w-4 text-muted-foreground" />
-                              <span>{customer.phone || '-'}</span>
-                            </div>
-                          </td>
-                          
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span>{customer.email || '-'}</span>
-                            </div>
-                          </td>
-                          
-                          <td className="px-4 py-3">
-                            {customer.is_blacklisted ? (
-                              <Badge variant="destructive">محظور</Badge>
-                            ) : customer.is_active ? (
-                              <Badge variant="default">نشط</Badge>
-                            ) : (
-                              <Badge variant="secondary">غير نشط</Badge>
-                            )}
-                          </td>
-                          
-                          <td className="px-4 py-3 text-left">
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleQuickRent(customer)}
-                                title="إنشاء عقد إيجار"
-                                className="text-primary hover:text-primary hover:bg-primary/10"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewCustomer(customer)}
-                                title="عرض التفاصيل"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditCustomer(customer)}
-                                title="تعديل"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteCustomer(customer)}
-                                title="حذف"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Footer - Statistics */}
-              <div className="bg-muted/30 border-t px-4 py-3 text-sm text-muted-foreground">
-                <div className="flex items-center justify-between">
-                  <span>
-                    عرض <strong>{customers.length}</strong> من <strong>{totalCustomersInDB}</strong> عميل
-                  </span>
-                  <span className="text-xs">
-                    الصفحة {currentPage} من {totalPages}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              إظهار {Math.min(pageSize, totalCustomers - (currentPage - 1) * pageSize)} من {totalCustomers} عملاء
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">عدد العملاء:</span>
-              <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="200">200</SelectItem>
-                  <SelectItem value="500">500</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">الصفحات:</span>
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-              {totalPages > 5 && (
-                <>
-                  <span className="text-sm text-muted-foreground">...</span>
-                  <Button
-                    variant={currentPage === totalPages ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(totalPages)}
-                  >
-                    {totalPages}
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                السابق
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                التالي
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Dialogs */}
-      <CustomerCreationOptionsDialog
-        open={showCreationOptionsDialog}
-        onOpenChange={setShowCreationOptionsDialog}
-        onSelectFullForm={handleSelectFullForm}
-        onSelectQuickAdd={handleSelectQuickAdd}
-      />
-      
-      <EnhancedCustomerDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-      />
-      
-      <CustomerDetailsDialog
-        open={showDetailsDialog}
-        onOpenChange={setShowDetailsDialog}
-        customerId={selectedCustomer?.id || ''}
-        onEdit={() => {
-          setShowDetailsDialog(false);
-          setShowEditDialog(true);
-        }}
-        onCreateContract={() => {
-          // Navigate to create contract page with selected customer
-          toast.info('انتقل إلى صفحة العقود لإنشاء عقد جديد');
-        }}
-      />
-      
-      <EnhancedCustomerDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        editingCustomer={selectedCustomer}
-      />
-      
-      <BulkDeleteCustomersDialog
-        open={showBulkDeleteDialog}
-        onOpenChange={setShowBulkDeleteDialog}
-      />
-      
-      <CustomerCSVUpload
-        open={showCSVUpload}
-        onOpenChange={setShowCSVUpload}
-        onUploadComplete={() => {
-          refetch();
-          toast.success('تم رفع ملف العملاء بنجاح');
-        }}
-      />
-
-      {/* Quick Customer Form */}
-      <QuickCustomerForm
-        open={showQuickCreateDialog}
-        onOpenChange={setShowQuickCreateDialog}
-        onSuccess={(customerId, customerData) => {
-          refetch();
-          toast.success('تم إنشاء العميل السريع بنجاح');
-        }}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد حذف العميل</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف العميل{' '}
-              <strong>
-                {customerToDelete?.customer_type === 'individual'
-                  ? `${customerToDelete?.first_name} ${customerToDelete?.last_name}`
-                  : customerToDelete?.company_name}
-              </strong>
-              ؟
-              <br />
-              <br />
-              <span className="text-destructive font-medium">
-                هذا الإجراء لا يمكن التراجع عنه. سيتم حذف العميل وجميع بياناته المرتبطة نهائياً.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={deleteCustomerMutation.isPending}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+                {deleteCustomerMutation.isPending ? 'جاري الحذف...' : 'حذف العميل'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </PageCustomizer>
   );
 };
