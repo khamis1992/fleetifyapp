@@ -14,8 +14,6 @@ import {
   Trash2,
   ChevronDown,
   Calendar,
-  Bell,
-  Settings,
   User,
   CheckCircle,
   XCircle,
@@ -348,51 +346,22 @@ function ContractsNew() {
 
   return (
     <PageCustomizer pageId="contracts-page" title="Contracts" titleAr="العقود">
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Top Navigation Bar */}
-        <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              {/* Right Side - Logo & Title */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-800 rounded-xl flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">إدارة العقود</h1>
-                    <p className="text-xs text-gray-500 hidden lg:block">نظام فليتفاي لإدارة الأساطيل</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Left Side - Actions */}
-              <div className="flex items-center gap-3">
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                </button>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block">
-                  <Settings className="w-5 h-5 text-gray-600" />
-                </button>
-                <div className="flex items-center gap-2 pr-3 border-r border-gray-200">
-                  <div className="w-9 h-9 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-                  </div>
-                  <div className="hidden lg:block">
-                    <p className="text-sm font-medium text-gray-900">{user?.email?.split("@")[0] || "مستخدم"}</p>
-                    <p className="text-xs text-gray-500">مدير النظام</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="space-y-6">
+        {/* Page Header Section */}
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded-xl flex items-center justify-center flex-shrink-0">
+            <FileText className="w-6 h-6 text-white" />
           </div>
-        </nav>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">إدارة العقود</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">نظام فليتفاي لإدارة الأساطيل</p>
+          </div>
+        </div>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
           {/* Action Buttons Row */}
-          <div className="mb-6 flex flex-wrap gap-3 animate-fade-in-up">
+          <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => setShowContractWizard(true)}
               className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-red-500/30 hover:scale-105 transition-transform flex items-center gap-2"
@@ -436,7 +405,7 @@ function ContractsNew() {
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Active Contracts Card */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in">
               <div className="flex items-start justify-between mb-3">
@@ -499,7 +468,7 @@ function ContractsNew() {
           </div>
 
           {/* Total Revenue Card */}
-          <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 mb-6 shadow-xl animate-fade-in-up">
+          <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 shadow-xl animate-fade-in-up">
             <div className="flex items-center justify-between text-white">
               <div>
                 <p className="text-red-100 text-sm font-medium mb-2">إجمالي الإيرادات الشهرية المتوقعة</p>
@@ -514,7 +483,7 @@ function ContractsNew() {
 
           {/* Resume Draft Section */}
           {contractDrafts.loadDrafts.data && contractDrafts.loadDrafts.data.length > 0 && (
-            <Card className="mb-6">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileEdit className="h-5 w-5" />
@@ -569,7 +538,7 @@ function ContractsNew() {
           )}
 
           {/* Search & Filters Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 overflow-hidden animate-fade-in-up">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-fade-in-up">
             <div className="p-4 border-b border-gray-200">
               <button onClick={() => setShowFilters(!showFilters)} className="w-full flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -609,7 +578,7 @@ function ContractsNew() {
           </div>
 
           {/* Tabs Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-fade-in-up">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             {/* Tabs Header */}
             <div className="border-b border-gray-200 relative">
               <div className="flex gap-2 p-2 overflow-x-auto">
@@ -744,27 +713,7 @@ function ContractsNew() {
               )}
             </div>
           </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 mt-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-600">© 2025 فليتفاي - نظام إدارة الأساطيل. جميع الحقوق محفوظة.</p>
-              <div className="flex items-center gap-4">
-                <a href="#" className="text-sm text-gray-600 hover:text-red-600 transition-colors">
-                  المساعدة
-                </a>
-                <a href="#" className="text-sm text-gray-600 hover:text-red-600 transition-colors">
-                  الدعم الفني
-                </a>
-                <a href="#" className="text-sm text-gray-600 hover:text-red-600 transition-colors">
-                  الشروط والأحكام
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
+        </div>
       </div>
 
       {/* Dialogs */}
