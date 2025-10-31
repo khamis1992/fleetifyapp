@@ -256,6 +256,40 @@ const CustomerDetailsPage = () => {
     }));
   }, [payments]);
 
+  // معالجات الأحداث - يجب أن تكون قبل أي early return
+  const handleBack = useCallback(() => {
+    navigate('/customers');
+  }, [navigate]);
+
+  const handleEdit = useCallback(() => {
+    toast({
+      title: 'تعديل البيانات',
+      description: 'فتح نموذج تعديل بيانات العميل',
+    });
+  }, [toast]);
+
+  const handleDelete = useCallback(() => {
+    toast({
+      title: 'حذف العميل',
+      description: 'هل أنت متأكد من حذف هذا العميل؟',
+      variant: 'destructive',
+    });
+  }, [toast]);
+
+  const handleArchive = useCallback(() => {
+    toast({
+      title: 'أرشفة العميل',
+      description: 'تم أرشفة العميل بنجاح',
+    });
+  }, [toast]);
+
+  const handleGenerateReport = useCallback(() => {
+    toast({
+      title: 'إنشاء تقرير',
+      description: 'جاري إنشاء التقرير...',
+    });
+  }, [toast]);
+
   // معالجة حالات التحميل والأخطاء
   const isLoading = loadingCustomer || loadingContracts || loadingPayments;
 
@@ -296,7 +330,7 @@ const CustomerDetailsPage = () => {
             {!companyId && (
               <p className="text-sm text-red-600 mb-2">معرف الشركة مفقود</p>
             )}
-            <Button onClick={() => navigate('/customers')}>
+            <Button onClick={handleBack}>
               العودة لصفحة العملاء
             </Button>
           </CardContent>
@@ -304,40 +338,6 @@ const CustomerDetailsPage = () => {
       </div>
     );
   }
-
-  // معالجات الأحداث
-  const handleBack = useCallback(() => {
-    navigate('/customers');
-  }, [navigate]);
-
-  const handleEdit = useCallback(() => {
-    toast({
-      title: 'تعديل البيانات',
-      description: 'فتح نموذج تعديل بيانات العميل',
-    });
-  }, [toast]);
-
-  const handleDelete = useCallback(() => {
-    toast({
-      title: 'حذف العميل',
-      description: 'هل أنت متأكد من حذف هذا العميل؟',
-      variant: 'destructive',
-    });
-  }, [toast]);
-
-  const handleArchive = useCallback(() => {
-    toast({
-      title: 'أرشفة العميل',
-      description: 'تم أرشفة العميل بنجاح',
-    });
-  }, [toast]);
-
-  const handleGenerateReport = useCallback(() => {
-    toast({
-      title: 'إنشاء تقرير',
-      description: 'جاري إنشاء التقرير...',
-    });
-  }, [toast]);
 
   // دالة للحصول على لون الحالة
   const getStatusColor = (status: string): string => {

@@ -120,15 +120,6 @@ const ContractDetailsPage = () => {
             year,
             color,
             status
-          ),
-          account:chart_of_accounts!account_id(
-            id,
-            account_number,
-            account_name_ar
-          ),
-          cost_center:cost_centers!cost_center_id(
-            id,
-            name
           )
         `)
         .eq('contract_number', contractNumber)
