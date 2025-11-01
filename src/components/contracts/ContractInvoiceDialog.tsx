@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -274,6 +274,9 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
             <FileText className="h-5 w-5" />
             إنشاء فاتورة من العقد رقم {contract.contract_number}
           </DialogTitle>
+          <DialogDescription>
+            إنشاء فاتورة جديدة مرتبطة بالعقد
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

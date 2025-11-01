@@ -43,10 +43,16 @@ BEGIN
   END IF;
 
   -- Check if invoice already exists for this month
+  -- Check if there's already an invoice for this contract in the same month/year
+  -- Use due_date to determine the month (since invoice_month column doesn't exist)
+  -- Also check invoice_date as fallback in case due_date is NULL
   IF EXISTS (
     SELECT 1 FROM invoices
     WHERE contract_id = p_contract_id
-      AND invoice_month = p_invoice_month
+      AND (
+        (due_date IS NOT NULL AND DATE_TRUNC('month', due_date)::DATE = p_invoice_month)
+        OR (due_date IS NULL AND invoice_date IS NOT NULL AND DATE_TRUNC('month', invoice_date)::DATE = p_invoice_month)
+      )
       AND status != 'cancelled'
   ) THEN
     RAISE NOTICE 'Invoice already exists for contract % in month %', p_contract_id, p_invoice_month;
@@ -76,11 +82,14 @@ BEGIN
     invoice_number,
     invoice_date,
     due_date,
-    invoice_month,
     total_amount,
-    amount_paid,
+    subtotal,
+    tax_amount,
+    discount_amount,
+    paid_amount,
     balance_due,
     status,
+    payment_status,
     invoice_type,
     notes,
     created_at,
@@ -92,12 +101,15 @@ BEGIN
     v_invoice_number,
     v_invoice_date,
     v_due_date,
-    p_invoice_month,
+    v_total_amount,
     v_total_amount,
     0,
+    0,
+    0,
     v_total_amount,
+    'sent',
     'unpaid',
-    'rental',
+    'service',
     'فاتورة إيجار شهرية - ' || TO_CHAR(p_invoice_month, 'YYYY-MM') || ' - عقد #' || v_contract.contract_number,
     NOW(),
     NOW()

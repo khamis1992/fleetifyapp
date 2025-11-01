@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Printer } from "lucide-react";
 import { ProfessionalInvoiceTemplate } from "@/components/finance";
@@ -45,6 +45,9 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
               </Button>
             </div>
           </div>
+          <DialogDescription>
+            معاينة تفاصيل الفاتورة قبل الطباعة أو التحميل
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-4">
