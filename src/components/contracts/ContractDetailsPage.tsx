@@ -1012,7 +1012,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           <div className="flex justify-between pt-2 border-t border-gray-300">
             <span className="text-gray-900 font-semibold">الحساب المحاسبي</span>
             <span className="font-semibold text-red-600">
-              {contract.account?.account_name_ar || '-'}
+              {contract.account_id ? 'مربوط' : '-'}
             </span>
           </div>
         </CardContent>
