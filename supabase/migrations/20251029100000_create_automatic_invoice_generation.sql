@@ -281,10 +281,11 @@ $$;
 -- ================================================================
 -- This function should be called on the 28th of each month
 -- It creates invoices for the NEXT month (due on the 1st)
+DROP FUNCTION IF EXISTS run_monthly_invoice_generation();
 CREATE OR REPLACE FUNCTION run_monthly_invoice_generation()
 RETURNS TABLE (
   company_id UUID,
-  company_name VARCHAR(255),
+  company_name TEXT,
   invoices_created INTEGER,
   invoices_skipped INTEGER
 )
@@ -305,7 +306,9 @@ BEGIN
 
   -- Loop through all companies
   FOR v_company IN
-    SELECT id, name FROM companies WHERE is_active = true
+    SELECT id, name FROM companies
+    WHERE (subscription_status = 'active' OR subscription_status IS NULL)
+       AND (subscription_expires_at IS NULL OR subscription_expires_at > CURRENT_DATE)
   LOOP
     v_created := 0;
     v_skipped := 0;

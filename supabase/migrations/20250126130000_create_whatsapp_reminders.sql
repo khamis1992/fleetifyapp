@@ -423,6 +423,88 @@ BEGIN
 END;
 $$;
 
+-- Step 10.5: Create function to check and queue payment reminders (for cron job)
+CREATE OR REPLACE FUNCTION check_payment_reminders()
+RETURNS TABLE (
+    reminder_id UUID,
+    company_id UUID,
+    invoice_id UUID,
+    invoice_number TEXT,
+    customer_id UUID,
+    customer_name TEXT,
+    phone_number TEXT,
+    message_template TEXT,
+    message_variables JSONB,
+    reminder_type TEXT,
+    scheduled_date DATE,
+    scheduled_time TIME
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+    v_reminder RECORD;
+    v_queued_count INTEGER := 0;
+BEGIN
+    -- Find all pending reminders scheduled for today or earlier
+    -- that haven't been cancelled and where invoice is still unpaid
+    FOR v_reminder IN
+        SELECT 
+            rs.id,
+            rs.company_id,
+            rs.invoice_id,
+            i.invoice_number,
+            rs.customer_id,
+            rs.customer_name,
+            rs.phone_number,
+            rs.message_template,
+            rs.message_variables,
+            rs.reminder_type,
+            rs.scheduled_date,
+            rs.scheduled_time
+        FROM reminder_schedules rs
+        JOIN invoices i ON rs.invoice_id = i.id
+        WHERE rs.scheduled_date <= CURRENT_DATE
+        AND rs.status = 'pending'
+        AND i.payment_status != 'paid'
+        AND i.status != 'cancelled'
+        ORDER BY rs.scheduled_date ASC, rs.scheduled_time ASC
+    LOOP
+        -- Mark reminder as queued
+        UPDATE reminder_schedules
+        SET 
+            status = 'queued',
+            updated_at = NOW()
+        WHERE id = v_reminder.id
+        AND status = 'pending'; -- Only update if still pending
+        
+        -- Log queued action
+        INSERT INTO reminder_history (reminder_schedule_id, action, success, phone_number)
+        VALUES (v_reminder.id, 'queued', true, v_reminder.phone_number);
+        
+        -- Return the reminder details
+        RETURN QUERY SELECT 
+            v_reminder.id,
+            v_reminder.company_id,
+            v_reminder.invoice_id,
+            v_reminder.invoice_number,
+            v_reminder.customer_id,
+            v_reminder.customer_name,
+            v_reminder.phone_number,
+            v_reminder.message_template,
+            v_reminder.message_variables,
+            v_reminder.reminder_type,
+            v_reminder.scheduled_date,
+            v_reminder.scheduled_time;
+        
+        v_queued_count := v_queued_count + 1;
+    END LOOP;
+    
+    RAISE NOTICE '✅ check_payment_reminders: % reminders queued for processing', v_queued_count;
+END;
+$$;
+
 -- Step 11: Create function to cancel reminders when invoice is paid
 CREATE OR REPLACE FUNCTION cancel_reminders_on_payment()
 RETURNS TRIGGER
@@ -466,8 +548,106 @@ SELECT
 FROM reminder_schedules
 GROUP BY company_id;
 
+-- Step 12.5: Ensure reminder_templates table has required columns for WhatsApp reminders
+-- Add columns if they don't exist (in case table was created by earlier migration)
+DO $$
+BEGIN
+    -- Add template_name column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'template_name'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN template_name TEXT;
+        -- Copy from name if name exists
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'reminder_templates' AND column_name = 'name'
+        ) THEN
+            UPDATE reminder_templates SET template_name = name WHERE template_name IS NULL;
+        END IF;
+    END IF;
+    
+    -- Add reminder_type column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'reminder_type'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN reminder_type TEXT;
+        -- Copy from stage if stage exists (with mapping)
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'reminder_templates' AND column_name = 'stage'
+        ) THEN
+            UPDATE reminder_templates SET reminder_type = stage WHERE reminder_type IS NULL;
+        END IF;
+    END IF;
+    
+    -- Add template_text column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'template_text'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN template_text TEXT;
+        -- Copy from body if body exists
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'reminder_templates' AND column_name = 'body'
+        ) THEN
+            UPDATE reminder_templates SET template_text = body WHERE template_text IS NULL;
+        END IF;
+    END IF;
+    
+    -- Add is_default column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'is_default'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN is_default BOOLEAN DEFAULT false;
+    END IF;
+    
+    -- Add language column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'language'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN language TEXT DEFAULT 'ar';
+    END IF;
+    
+    -- Add is_active column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'reminder_templates' AND column_name = 'is_active'
+    ) THEN
+        ALTER TABLE reminder_templates ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+    
+    -- Ensure unique constraint exists for WhatsApp reminders
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_namespace n ON n.oid = c.connamespace
+        WHERE n.nspname = 'public' 
+        AND c.conname = 'unique_company_template'
+    ) THEN
+        ALTER TABLE reminder_templates 
+        ADD CONSTRAINT unique_company_template UNIQUE (company_id, template_name, reminder_type);
+    END IF;
+END $$;
+
 -- Step 13: Insert default templates
-INSERT INTO reminder_templates (company_id, template_name, reminder_type, template_text, is_default)
+-- Note: Also populate columns from earlier migration schema (name, stage, body, channel, subject, status)
+INSERT INTO reminder_templates (
+    company_id, 
+    template_name, 
+    reminder_type, 
+    template_text, 
+    is_default,
+    name,
+    stage,
+    body,
+    channel,
+    subject,
+    status
+)
 SELECT 
     id as company_id,
     'Default Pre-Due Reminder' as template_name,
@@ -480,11 +660,36 @@ SELECT
 
 شكراً لتعاونكم 🙏
 [اسم الشركة]' as template_text,
-    true as is_default
+    true as is_default,
+    'Default Pre-Due Reminder' as name,
+    'initial' as stage,
+    'مرحباً [اسم العميل] 👋
+
+تذكير ودي: فاتورتك رقم [رقم الفاتورة] بمبلغ [المبلغ] د.ك ستستحق خلال 3 أيام.
+
+📅 تاريخ الاستحقاق: [تاريخ الاستحقاق]
+
+شكراً لتعاونكم 🙏
+[اسم الشركة]' as body,
+    'whatsapp' as channel,
+    'تذكير استحقاق الفاتورة' as subject,
+    'active' as status
 FROM companies
 ON CONFLICT (company_id, template_name, reminder_type) DO NOTHING;
 
-INSERT INTO reminder_templates (company_id, template_name, reminder_type, template_text, is_default)
+INSERT INTO reminder_templates (
+    company_id, 
+    template_name, 
+    reminder_type, 
+    template_text, 
+    is_default,
+    name,
+    stage,
+    body,
+    channel,
+    subject,
+    status
+)
 SELECT 
     id as company_id,
     'Default Due Date Reminder' as template_name,
@@ -499,7 +704,22 @@ SELECT
 
 شكراً 🙏
 [اسم الشركة]' as template_text,
-    true as is_default
+    true as is_default,
+    'Default Due Date Reminder' as name,
+    'first_reminder' as stage,
+    'مرحباً [اسم العميل] 👋
+
+فاتورتك رقم [رقم الفاتورة] مستحقة اليوم.
+
+💰 المبلغ: [المبلغ] د.ك
+
+الرجاء الدفع في أقرب وقت ممكن لتجنب رسوم التأخير.
+
+شكراً 🙏
+[اسم الشركة]' as body,
+    'whatsapp' as channel,
+    'فاتورة مستحقة اليوم' as subject,
+    'active' as status
 FROM companies
 ON CONFLICT (company_id, template_name, reminder_type) DO NOTHING;
 
@@ -507,6 +727,8 @@ ON CONFLICT (company_id, template_name, reminder_type) DO NOTHING;
 GRANT SELECT ON reminder_dashboard_stats TO authenticated;
 GRANT EXECUTE ON FUNCTION generate_reminder_schedule_for_invoice TO authenticated;
 GRANT EXECUTE ON FUNCTION get_pending_reminders_for_today TO authenticated;
+GRANT EXECUTE ON FUNCTION check_payment_reminders TO authenticated;
+GRANT EXECUTE ON FUNCTION check_payment_reminders TO service_role;
 
 -- Step 15: Add comments
 COMMENT ON TABLE reminder_schedules IS 'Scheduled WhatsApp payment reminders for invoices';
@@ -515,6 +737,7 @@ COMMENT ON TABLE whatsapp_connection_status IS 'WhatsApp Web connection status a
 COMMENT ON TABLE reminder_templates IS 'Customizable message templates for reminders';
 COMMENT ON FUNCTION generate_reminder_schedule_for_invoice IS 'Auto-generate 4 reminder schedules for an invoice';
 COMMENT ON FUNCTION get_pending_reminders_for_today IS 'Get all reminders scheduled for today';
+COMMENT ON FUNCTION check_payment_reminders IS 'Check for pending reminders and queue them for processing (for cron job)';
 COMMENT ON VIEW reminder_dashboard_stats IS 'Real-time statistics for reminder dashboard';
 
 -- Step 16: Success message
@@ -522,10 +745,11 @@ DO $$
 BEGIN
     RAISE NOTICE '✅ WhatsApp Payment Reminder System created successfully';
     RAISE NOTICE '📋 Tables: reminder_schedules, reminder_history, whatsapp_connection_status, reminder_templates';
-    RAISE NOTICE '🔧 Functions: generate_reminder_schedule_for_invoice, get_pending_reminders_for_today';
+    RAISE NOTICE '🔧 Functions: generate_reminder_schedule_for_invoice, get_pending_reminders_for_today, check_payment_reminders';
     RAISE NOTICE '⚡ Triggers: Auto-generate reminders on invoice creation, Cancel on payment';
     RAISE NOTICE '👁️ Views: reminder_dashboard_stats';
     RAISE NOTICE '📱 Next: Set up WhatsApp Web service (see WHATSAPP_REMINDER_SYSTEM_PLAN.md)';
     RAISE NOTICE '⏰ Schedule: Reminders at -3 days, due date, +3 days, +10 days';
+    RAISE NOTICE '🔄 Cron: Use check_payment_reminders() function for scheduled daily processing';
     RAISE NOTICE '🔒 RLS policies enabled';
 END $$;

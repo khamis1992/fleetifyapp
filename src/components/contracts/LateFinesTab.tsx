@@ -18,6 +18,7 @@ import {
 import { useLateFineSettings, useCalculateLateFines, calculateLateFine } from '@/hooks/useLateFines';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { LateFinesSettings } from './LateFinesSettings';
+import { formatDateInGregorian } from '@/utils/dateFormatter';
 
 interface LateFinesTabProps {
   contract: any;
@@ -112,7 +113,7 @@ export const LateFinesTab: React.FC<LateFinesTabProps> = ({ contract }) => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">تاريخ انتهاء العقد</span>
                   <span className="font-medium">
-                    {new Date(contract.end_date).toLocaleDateString('ar-SA')}
+                    {formatDateInGregorian(contract.end_date)}
                   </span>
                 </div>
                 

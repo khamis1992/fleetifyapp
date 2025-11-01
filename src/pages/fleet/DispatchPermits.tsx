@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, Filter, BarChart3 } from "lucide-react";
+import { Plus, FileText, Filter, BarChart3, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -7,11 +7,13 @@ import { DispatchPermitForm } from "@/components/fleet/DispatchPermitForm";
 import { DispatchPermitsList } from "@/components/fleet/DispatchPermitsList";
 import { useDispatchPermits } from "@/hooks/useDispatchPermits";
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DispatchPermits() {
   const [showPermitForm, setShowPermitForm] = useState(false);
   const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
-  const { data: permits } = useDispatchPermits();
+  const { data: permits, isLoading, error } = useDispatchPermits();
 
   // Calculate statistics
   const stats = {
@@ -22,6 +24,35 @@ export default function DispatchPermits() {
     completed: permits?.filter(p => p.status === 'completed').length || 0,
     rejected: permits?.filter(p => p.status === 'rejected').length || 0,
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6" dir="rtl">
+        <ResponsivePageActions
+          title="تصاريح الحركة الداخلية"
+          subtitle="إدارة تصاريح حركة المركبات والموافقات"
+        />
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>خطأ في تحميل البيانات</AlertTitle>
+          <AlertDescription>
+            حدث خطأ أثناء تحميل تصاريح الحركة. يرجى المحاولة مرة أخرى.
+            {error instanceof Error && ` ${error.message}`}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">

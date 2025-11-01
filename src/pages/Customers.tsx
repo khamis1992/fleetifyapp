@@ -86,6 +86,7 @@ import { MobileCustomerCard } from '@/components/customers';
 import { TypeAheadSearch } from '@/components/ui/type-ahead-search';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { exportTableToCSV } from '@/utils/exports/csvExport';
 
 const Customers = () => {
   const { user } = useAuth();
@@ -289,6 +290,94 @@ const Customers = () => {
 
   const handleImportWizard = () => {
     setShowImportWizard(true);
+  };
+
+  const handleExport = () => {
+    if (customers.length === 0) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    try {
+      // Define columns for export
+      const columns = [
+        { header: 'رقم العميل', key: 'customer_code' },
+        { header: 'نوع العميل', key: 'customer_type' },
+        { header: 'الاسم الأول', key: 'first_name' },
+        { header: 'اسم العائلة', key: 'last_name' },
+        { header: 'الاسم الأول (عربي)', key: 'first_name_ar' },
+        { header: 'اسم العائلة (عربي)', key: 'last_name_ar' },
+        { header: 'اسم الشركة', key: 'company_name' },
+        { header: 'اسم الشركة (عربي)', key: 'company_name_ar' },
+        { header: 'البريد الإلكتروني', key: 'email' },
+        { header: 'رقم الهاتف', key: 'phone' },
+        { header: 'هاتف بديل', key: 'alternative_phone' },
+        { header: 'رقم الهوية', key: 'national_id' },
+        { header: 'رقم جواز السفر', key: 'passport_number' },
+        { header: 'رقم الرخصة', key: 'license_number' },
+        { header: 'العنوان', key: 'address' },
+        { header: 'العنوان (عربي)', key: 'address_ar' },
+        { header: 'المدينة', key: 'city' },
+        { header: 'الدولة', key: 'country' },
+        { header: 'تاريخ الميلاد', key: 'date_of_birth' },
+        { header: 'انتهاء الرخصة', key: 'license_expiry' },
+        { header: 'الحد الائتماني', key: 'credit_limit' },
+        { header: 'جهة الاتصال الطارئة', key: 'emergency_contact_name' },
+        { header: 'هاتف الطوارئ', key: 'emergency_contact_phone' },
+        { header: 'عدد العقود', key: 'contracts_count' },
+        { header: 'الحالة', key: 'is_active' },
+        { header: 'ملاحظات', key: 'notes' },
+      ];
+
+      // Format customer data for export
+      const exportData = customers.map(customer => ({
+        customer_code: customer.customer_code || '',
+        customer_type: customer.customer_type === 'individual' ? 'فرد' : 'شركة',
+        first_name: customer.first_name || '',
+        last_name: customer.last_name || '',
+        first_name_ar: customer.first_name_ar || '',
+        last_name_ar: customer.last_name_ar || '',
+        company_name: customer.company_name || '',
+        company_name_ar: customer.company_name_ar || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        alternative_phone: customer.alternative_phone || '',
+        national_id: customer.national_id || '',
+        passport_number: customer.passport_number || '',
+        license_number: customer.license_number || '',
+        address: customer.address || '',
+        address_ar: customer.address_ar || '',
+        city: customer.city || '',
+        country: customer.country || '',
+        date_of_birth: customer.date_of_birth 
+          ? new Date(customer.date_of_birth).toLocaleDateString('ar-SA')
+          : '',
+        license_expiry: customer.license_expiry
+          ? new Date(customer.license_expiry).toLocaleDateString('ar-SA')
+          : '',
+        credit_limit: customer.credit_limit || 0,
+        emergency_contact_name: customer.emergency_contact_name || '',
+        emergency_contact_phone: customer.emergency_contact_phone || '',
+        contracts_count: customer.contracts_count || finalContractCounts[customer.id] || 0,
+        is_active: customer.is_active ? 'نشط' : 'غير نشط',
+        notes: customer.notes || '',
+      }));
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+      const filename = `عملاء_${timestamp}`;
+
+      // Export to CSV
+      exportTableToCSV(exportData, columns, filename, {
+        includeHeaders: true,
+        includeBOM: true,
+      });
+
+      toast.success(`تم تصدير ${customers.length} عميل بنجاح`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('حدث خطأ أثناء التصدير');
+    }
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -746,22 +835,28 @@ const Customers = () => {
 
         {/* Search and Filters Section */}
         <Card className="p-4 rounded-2xl border border-border shadow-sm mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+            {/* Search Input - أكبر حجم */}
+            <div className="flex-1 min-w-0 relative">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none z-10" />
               <Input
                 type="text"
-                placeholder="بحث عن عميل..."
+                placeholder="بحث عن عميل... (الاسم، رقم الهاتف، رقم العميل، البريد الإلكتروني)"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 rounded-xl border border-input bg-input focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
+                }}
+                className="w-full pr-12 pl-4 py-3 h-12 text-base rounded-xl border border-input bg-input focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
             
             {/* Customer Type Filter */}
-            <Select value={customerType} onValueChange={(value: any) => setCustomerType(value)}>
-              <SelectTrigger className="px-4 py-3 rounded-xl border border-input bg-input min-w-[150px]">
+            <Select value={customerType} onValueChange={(value: any) => {
+              setCustomerType(value);
+              setCurrentPage(1); // Reset to first page when filtering
+            }}>
+              <SelectTrigger className="px-4 py-3 h-12 rounded-xl border border-input bg-input w-full md:w-[180px]">
                 <SelectValue placeholder="نوع العميل" />
               </SelectTrigger>
               <SelectContent>
@@ -772,8 +867,11 @@ const Customers = () => {
             </Select>
             
             {/* Status Filter */}
-            <Select value={includeInactive ? "all" : "active"} onValueChange={(value) => setIncludeInactive(value === "all")}>
-              <SelectTrigger className="px-4 py-3 rounded-xl border border-input bg-input min-w-[150px]">
+            <Select value={includeInactive ? "all" : "active"} onValueChange={(value) => {
+              setIncludeInactive(value === "all");
+              setCurrentPage(1); // Reset to first page when filtering
+            }}>
+              <SelectTrigger className="px-4 py-3 h-12 rounded-xl border border-input bg-input w-full md:w-[180px]">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -785,8 +883,9 @@ const Customers = () => {
             {/* Export Button */}
             <Button
               variant="outline"
-              className="px-4 py-3 rounded-xl border border-input bg-input hover:bg-accent transition-all"
-              onClick={() => toast.info('ميزة التصدير قريباً')}
+              className="px-4 py-3 h-12 rounded-xl border border-input bg-input hover:bg-accent transition-all w-full md:w-[140px] flex-shrink-0"
+              onClick={handleExport}
+              disabled={isLoading || customers.length === 0}
             >
               <Download className="h-5 w-5 ml-2" />
               <span>تصدير</span>

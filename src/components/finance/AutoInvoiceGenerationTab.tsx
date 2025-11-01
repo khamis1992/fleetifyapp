@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -44,6 +45,7 @@ interface MonthlyResult {
 
 export const AutoInvoiceGenerationTab: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
   const [isBackfilling, setIsBackfilling] = useState(false);
   const [isGeneratingMonthly, setIsGeneratingMonthly] = useState(false);
   const [backfillResults, setBackfillResults] = useState<BackfillResult[]>([]);
@@ -75,6 +77,12 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
       const totalSkipped = (data || []).reduce((sum, r) => sum + r.invoices_skipped, 0);
 
       toast.success(`تم إنشاء ${totalCreated} فاتورة بنجاح. تم تخطي ${totalSkipped} فاتورة موجودة.`);
+      
+      // Refresh invoices list
+      if (totalCreated > 0) {
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+      }
     } catch (error: any) {
       console.error('Backfill error:', error);
       toast.error(error.message || 'حدث خطأ أثناء توليد الفواتير التاريخية');
@@ -98,19 +106,43 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
     setMonthlyResults([]);
 
     try {
+      // Ensure the date is the first day of the month
+      const invoiceMonth = new Date(selectedMonth);
+      invoiceMonth.setDate(1);
+      const invoiceMonthStr = format(invoiceMonth, 'yyyy-MM-dd');
+
+      console.log('Generating invoices for month:', invoiceMonthStr, 'Company ID:', companyId);
+
       const { data, error } = await supabase.rpc('generate_monthly_invoices_for_date', {
         p_company_id: companyId,
-        p_invoice_month: selectedMonth
+        p_invoice_month: invoiceMonthStr
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
+      }
+
+      console.log('RPC Result:', data);
 
       setMonthlyResults(data || []);
       
       const created = (data || []).filter(r => r.status === 'created').length;
       const skipped = (data || []).filter(r => r.status === 'skipped').length;
+      const errors = (data || []).filter(r => r.status?.startsWith('error')).length;
 
-      toast.success(`تم إنشاء ${created} فاتورة. تم تخطي ${skipped}.`);
+      if (errors > 0) {
+        toast.warning(`تم إنشاء ${created} فاتورة. تم تخطي ${skipped}. حدثت ${errors} أخطاء.`);
+      } else {
+        toast.success(`تم إنشاء ${created} فاتورة. تم تخطي ${skipped}.`);
+      }
+
+      // Refresh invoices list
+      if (created > 0) {
+        // Invalidate queries to refresh the invoices list
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+      }
     } catch (error: any) {
       console.error('Monthly generation error:', error);
       toast.error(error.message || 'حدث خطأ أثناء توليد الفواتير');
@@ -165,10 +197,14 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                   id="month"
                   type="date"
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  onChange={(e) => {
+                    const date = new Date(e.target.value);
+                    date.setDate(1); // Ensure it's the first day of the month
+                    setSelectedMonth(format(date, 'yyyy-MM-dd'));
+                  }}
                 />
                 <p className="text-sm text-muted-foreground">
-                  سيتم إنشاء الفواتير لليوم الأول من الشهر المحدد
+                  سيتم إنشاء الفواتير لليوم الأول من الشهر المحدد ({format(new Date(selectedMonth), 'MMMM yyyy', { locale: ar })})
                 </p>
               </div>
 
@@ -197,7 +233,7 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                   <h4 className="font-medium mb-3">
                     النتائج - {format(new Date(selectedMonth), 'MMMM yyyy', { locale: ar })}
                   </h4>
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                       <div className="text-2xl font-bold">{monthlyResults.length}</div>
                       <div className="text-sm text-muted-foreground">إجمالي</div>
@@ -215,6 +251,71 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                       <div className="text-sm text-muted-foreground">تم التخطي</div>
                     </div>
                   </div>
+                  
+                  {/* Show errors if any */}
+                  {monthlyResults.some(r => r.status?.startsWith('error')) && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <h5 className="font-medium text-red-800 mb-2">الأخطاء:</h5>
+                      <div className="space-y-1 text-sm text-red-700">
+                        {monthlyResults
+                          .filter(r => r.status?.startsWith('error'))
+                          .map((result, idx) => (
+                            <div key={idx}>• {result.status}</div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show detailed results table */}
+                  {monthlyResults.length > 0 && (
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle className="text-sm">التفاصيل</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>رقم العقد</TableHead>
+                              <TableHead>رقم الفاتورة</TableHead>
+                              <TableHead>الحالة</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {monthlyResults.map((result, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium">
+                                  {result.contract_id?.substring(0, 8)}...
+                                </TableCell>
+                                <TableCell>
+                                  {result.invoice_number || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  {result.status === 'created' && (
+                                    <Badge variant="default" className="bg-green-600">
+                                      <CheckCircle className="h-3 w-3 ml-1" />
+                                      تم الإنشاء
+                                    </Badge>
+                                  )}
+                                  {result.status === 'skipped' && (
+                                    <Badge variant="secondary">
+                                      تم التخطي
+                                    </Badge>
+                                  )}
+                                  {result.status?.startsWith('error') && (
+                                    <Badge variant="destructive">
+                                      <XCircle className="h-3 w-3 ml-1" />
+                                      خطأ
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </CardContent>
