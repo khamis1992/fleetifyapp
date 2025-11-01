@@ -262,6 +262,16 @@ const ContractDetailsPage = () => {
     }
   }, [contract]);
 
+  const handleInvoicePay = useCallback((invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsPayDialogOpen(true);
+  }, []);
+
+  const handleInvoicePreview = useCallback((invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsPreviewDialogOpen(true);
+  }, []);
+
   const handleInvoiceDownload = useCallback(async (invoice: Invoice) => {
     try {
       // استيراد دالة التصدير
@@ -291,7 +301,7 @@ const ContractDetailsPage = () => {
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [toast, handleInvoicePreview]);
 
   const handleInvoicePrint = useCallback((invoice: Invoice) => {
     // فتح معاينة الفاتورة ثم الطباعة
@@ -306,16 +316,6 @@ const ContractDetailsPage = () => {
       variant: 'destructive',
     });
   }, [toast]);
-
-  const handleInvoicePay = useCallback((invoice: Invoice) => {
-    setSelectedInvoice(invoice);
-    setIsPayDialogOpen(true);
-  }, []);
-
-  const handleInvoicePreview = useCallback((invoice: Invoice) => {
-    setSelectedInvoice(invoice);
-    setIsPreviewDialogOpen(true);
-  }, []);
 
   // دوال مساعدة
   const getStatusColor = (status: string): string => {

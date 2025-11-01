@@ -22,7 +22,21 @@ DECLARE
   v_month_offset INTEGER;
   v_new_due_date DATE;
   v_updated INTEGER := 0;
+  v_table_exists BOOLEAN;
 BEGIN
+  -- Check if table exists
+  SELECT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contract_payment_schedules'
+  ) INTO v_table_exists;
+
+  IF NOT v_table_exists THEN
+    RAISE NOTICE '⚠️ Table contract_payment_schedules does not exist. Skipping payment schedule updates.';
+    RETURN QUERY SELECT 0::INTEGER, 'Table contract_payment_schedules does not exist'::TEXT;
+    RETURN;
+  END IF;
+
   RAISE NOTICE '🔄 Starting to fix payment schedule due dates...';
   
   -- Loop through all payment schedules
@@ -89,7 +103,22 @@ DECLARE
   v_invoice_month DATE;
   v_new_due_date DATE;
   v_updated INTEGER := 0;
+  v_column_exists BOOLEAN;
 BEGIN
+  -- Check if contract_id column exists in invoices table
+  SELECT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'invoices'
+    AND column_name = 'contract_id'
+  ) INTO v_column_exists;
+
+  IF NOT v_column_exists THEN
+    RAISE NOTICE '⚠️ Column invoices.contract_id does not exist. Skipping invoice updates.';
+    RETURN QUERY SELECT 0::INTEGER, 'Column invoices.contract_id does not exist'::TEXT;
+    RETURN;
+  END IF;
+
   RAISE NOTICE '🔄 Starting to fix invoice due dates...';
   
   -- Loop through all invoices with contract_id
@@ -191,3 +220,42 @@ COMMENT ON FUNCTION fix_payment_schedule_due_dates IS 'Updates all payment sched
 COMMENT ON FUNCTION fix_invoice_due_dates IS 'Updates all invoice due dates to be on the 1st of each month';
 COMMENT ON FUNCTION calculate_payment_due_dates IS 'Calculates payment due dates starting from the 1st of the month after contract start';
 
+-- ================================================================
+-- EXECUTE THE FIX FUNCTIONS
+-- ================================================================
+-- Run the functions to update existing data
+-- ================================================================
+
+-- Update payment schedules
+DO $$
+DECLARE
+  result RECORD;
+BEGIN
+  RAISE NOTICE '🔄 Starting to execute fix_payment_schedule_due_dates()...';
+  BEGIN
+    SELECT * INTO result FROM fix_payment_schedule_due_dates();
+    RAISE NOTICE '✅ Payment schedules updated: % rows', result.updated_count;
+    RAISE NOTICE '📝 Message: %', result.message;
+  EXCEPTION
+    WHEN OTHERS THEN
+      RAISE NOTICE '⚠️ Warning: Could not update payment schedules: %', SQLERRM;
+      RAISE NOTICE 'This is normal if the table does not exist yet.';
+  END;
+END $$;
+
+-- Update invoices
+DO $$
+DECLARE
+  result RECORD;
+BEGIN
+  RAISE NOTICE '🔄 Starting to execute fix_invoice_due_dates()...';
+  BEGIN
+    SELECT * INTO result FROM fix_invoice_due_dates();
+    RAISE NOTICE '✅ Invoices updated: % rows', result.updated_count;
+    RAISE NOTICE '📝 Message: %', result.message;
+  EXCEPTION
+    WHEN OTHERS THEN
+      RAISE NOTICE '⚠️ Warning: Could not update invoices: %', SQLERRM;
+      RAISE NOTICE 'This is normal if the contract_id column does not exist yet.';
+  END;
+END $$;
