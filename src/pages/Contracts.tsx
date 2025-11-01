@@ -88,6 +88,23 @@ function ContractsNew() {
   const [filters, setFilters] = useState<any>({});
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Apply tab filter to status filter
+  useEffect(() => {
+    if (activeTab === "all") {
+      setFilters((prev: any) => {
+        const { status, ...rest } = prev;
+        return rest;
+      });
+    } else if (activeTab === "active") {
+      setFilters((prev: any) => ({ ...prev, status: "active" }));
+    } else if (activeTab === "cancelled") {
+      setFilters((prev: any) => ({ ...prev, status: "cancelled" }));
+    } else if (activeTab === "alerts") {
+      // Filter for contracts expiring soon
+      setFilters((prev: any) => ({ ...prev, status: "expiring_soon" }));
+    }
+  }, [activeTab]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
