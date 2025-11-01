@@ -44,11 +44,12 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
   // Fetch contracts for export
   const { data: contracts, error, isLoading } = useQuery({
-    queryKey: ['contracts-export', user?.profile?.company_id],
+    queryKey: ['contracts-export', user?.profile?.company_id, contractStatus, contractType, dateRange, customStartDate, customEndDate],
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
       
-      let query = supabase
+      // Build base query
+      let baseQuery = supabase
         .from('contracts')
         .select(`
           *,
@@ -60,35 +61,55 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
       // Apply filters
       if (contractStatus !== 'all') {
-        query = query.eq('status', contractStatus);
+        baseQuery = baseQuery.eq('status', contractStatus);
       }
       
       if (contractType !== 'all') {
-        query = query.eq('contract_type', contractType);
+        baseQuery = baseQuery.eq('contract_type', contractType);
       }
 
       // Apply date range filter
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        query = query.gte('contract_date', customStartDate).lte('contract_date', customEndDate);
+        baseQuery = baseQuery.gte('contract_date', customStartDate).lte('contract_date', customEndDate);
       } else if (dateRange === 'month') {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
-        query = query.gte('contract_date', startOfMonth.toISOString().split('T')[0]);
+        baseQuery = baseQuery.gte('contract_date', startOfMonth.toISOString().split('T')[0]);
       } else if (dateRange === 'year') {
         const startOfYear = new Date();
         startOfYear.setMonth(0, 1);
-        query = query.gte('contract_date', startOfYear.toISOString().split('T')[0]);
+        baseQuery = baseQuery.gte('contract_date', startOfYear.toISOString().split('T')[0]);
       }
 
-      const { data, error } = await query.order('contract_date', { ascending: false });
-      
-      if (error) {
-        console.error('Contract export query error:', error);
-        throw error;
+      // Apply ordering
+      baseQuery = baseQuery.order('contract_date', { ascending: false });
+
+      // Fetch all contracts in batches (Supabase has a limit per request)
+      const allContracts: any[] = [];
+      const batchSize = 1000; // Supabase default limit
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const batchQuery = baseQuery.range(offset, offset + batchSize - 1);
+        const { data: batch, error: fetchError } = await batchQuery;
+
+        if (fetchError) {
+          console.error('Contract export query error:', fetchError);
+          throw fetchError;
+        }
+
+        if (batch && batch.length > 0) {
+          allContracts.push(...batch);
+          offset += batchSize;
+          hasMore = batch.length === batchSize;
+        } else {
+          hasMore = false;
+        }
       }
       
-      console.log('Fetched contracts for export:', data?.length || 0);
-      return data || [];
+      console.log('Fetched contracts for export:', allContracts.length);
+      return allContracts;
     },
     enabled: !!user?.profile?.company_id && open
   });

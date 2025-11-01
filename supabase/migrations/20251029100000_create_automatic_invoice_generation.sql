@@ -241,8 +241,9 @@ BEGIN
 
     RAISE NOTICE '📋 Processing contract: % (Start: %)', v_contract.contract_number, v_contract.start_date;
 
-    -- Start from the first day of the contract start month
-    v_current_month := DATE_TRUNC('month', v_contract.start_date)::DATE;
+    -- Start from the first day of the month AFTER the contract start date
+    -- If contract starts on Jan 18, invoices should start from Feb 1st
+    v_current_month := DATE_TRUNC('month', v_contract.start_date + INTERVAL '1 month')::DATE;
 
     -- Loop through each month from start date to today
     WHILE v_current_month <= DATE_TRUNC('month', CURRENT_DATE)::DATE LOOP
