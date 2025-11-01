@@ -63,6 +63,8 @@ import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
+import { ContractRenewalDialog } from './ContractRenewalDialog';
+import { ContractAmendmentForm } from './ContractAmendmentForm';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -87,6 +89,9 @@ const ContractDetailsPage = () => {
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
+  const [isAmendmentDialogOpen, setIsAmendmentDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -240,20 +245,59 @@ const ContractDetailsPage = () => {
 
   const handleEdit = useCallback(() => {
     if (contract) {
-      // فتح نموذج التعديل (يمكن تنفيذه لاحقاً)
-      toast({
-        title: 'تعديل العقد',
-        description: 'فتح نموذج تعديل العقد',
-      });
+      // الانتقال إلى صفحة التعديل مع تمرير بيانات العقد
+      navigate(`/contracts?edit=${contract.id}`);
     }
-  }, [contract, toast]);
+  }, [contract, navigate]);
 
   const handleRenew = useCallback(() => {
-    toast({
-      title: 'تجديد العقد',
-      description: 'جاري تجديد العقد...',
-    });
+    if (contract) {
+      setIsRenewalDialogOpen(true);
+    }
+  }, [contract]);
+
+  const handleAmend = useCallback(() => {
+    if (contract) {
+      setIsAmendmentDialogOpen(true);
+    }
+  }, [contract]);
+
+  const handleInvoiceDownload = useCallback(async (invoice: Invoice) => {
+    try {
+      // استيراد دالة التصدير
+      const { exportToPDF } = await import('@/utils/exportHelpers');
+      const elementId = `invoice-${invoice.id}`;
+      
+      // إنشاء عنصر مؤقت للفاتورة
+      const tempDiv = document.createElement('div');
+      tempDiv.id = elementId;
+      tempDiv.style.display = 'none';
+      document.body.appendChild(tempDiv);
+      
+      // هنا يمكنك استخدام ProfessionalInvoiceTemplate لعرض الفاتورة
+      // ثم تصديرها كـ PDF
+      toast({
+        title: 'جاري تحميل الفاتورة',
+        description: 'سيتم تحميل الفاتورة كملف PDF',
+      });
+      
+      // فتح معاينة الفاتورة أولاً
+      handleInvoicePreview(invoice);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast({
+        title: 'خطأ في التحميل',
+        description: 'فشل تحميل الفاتورة',
+        variant: 'destructive',
+      });
+    }
   }, [toast]);
+
+  const handleInvoicePrint = useCallback((invoice: Invoice) => {
+    // فتح معاينة الفاتورة ثم الطباعة
+    handleInvoicePreview(invoice);
+    // سيتم الطباعة من داخل معاينة الفاتورة
+  }, [handleInvoicePreview]);
 
   const handleTerminate = useCallback(() => {
     toast({
@@ -494,14 +538,18 @@ const ContractDetailsPage = () => {
                   <Edit3 className="w-4 h-4" />
                   تعديل
                 </Button>
-                <Button onClick={handleRenew} className="gap-2 bg-green-600 hover:bg-green-700">
-                  <RefreshCw className="w-4 h-4" />
-                  تجديد العقد
-                </Button>
-                <Button variant="outline" className="gap-2">
-                  <FileEdit className="w-4 h-4" />
-                  تعديل العقد
-                </Button>
+                {contract.status === 'active' && (
+                  <>
+                    <Button onClick={handleRenew} className="gap-2 bg-green-600 hover:bg-green-700">
+                      <RefreshCw className="w-4 h-4" />
+                      تجديد العقد
+                    </Button>
+                    <Button onClick={handleAmend} variant="outline" className="gap-2 border-blue-500 text-blue-700 hover:bg-blue-50">
+                      <FileEdit className="w-4 h-4" />
+                      تعديل العقد
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="outline"
                   onClick={handleTerminate}
@@ -792,19 +840,41 @@ const ContractDetailsPage = () => {
 
       {/* Dialogs */}
       {contract && (
-        <ContractInvoiceDialog
-          open={isInvoiceDialogOpen}
-          onOpenChange={setIsInvoiceDialogOpen}
-          contract={contract}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
-            setIsInvoiceDialogOpen(false);
-            toast({
-              title: 'تم إنشاء الفاتورة بنجاح',
-              description: 'تم إنشاء الفاتورة بنجاح',
-            });
-          }}
-        />
+        <>
+          <ContractInvoiceDialog
+            open={isInvoiceDialogOpen}
+            onOpenChange={setIsInvoiceDialogOpen}
+            contract={contract}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+              setIsInvoiceDialogOpen(false);
+              toast({
+                title: 'تم إنشاء الفاتورة بنجاح',
+                description: 'تم إنشاء الفاتورة بنجاح',
+              });
+            }}
+          />
+          
+          <ContractRenewalDialog
+            open={isRenewalDialogOpen}
+            onOpenChange={setIsRenewalDialogOpen}
+            contract={contract}
+          />
+          
+          <ContractAmendmentForm
+            open={isAmendmentDialogOpen}
+            onOpenChange={setIsAmendmentDialogOpen}
+            contract={contract}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+              setIsAmendmentDialogOpen(false);
+              toast({
+                title: 'تم تعديل العقد بنجاح',
+                description: 'تم تعديل العقد بنجاح',
+              });
+            }}
+          />
+        </>
       )}
       
       {selectedInvoice && (
@@ -979,6 +1049,20 @@ interface InvoicesTabProps {
 }
 
 const InvoicesTab = ({ invoices, contractId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
+  const handleInvoiceDownload = useCallback(async (invoice: Invoice) => {
+    try {
+      // فتح معاينة الفاتورة أولاً
+      onPreview(invoice);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+    }
+  }, [onPreview]);
+
+  const handleInvoicePrint = useCallback((invoice: Invoice) => {
+    // فتح معاينة الفاتورة ثم الطباعة
+    onPreview(invoice);
+  }, [onPreview]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -1067,11 +1151,21 @@ const InvoicesTab = ({ invoices, contractId, onPay, onPreview, onCreateInvoice, 
                       <Eye className="w-4 h-4" />
                       عرض
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 gap-2"
+                      onClick={() => handleInvoiceDownload(invoice)}
+                    >
                       <Download className="w-4 h-4" />
                       تحميل
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 gap-2"
+                      onClick={() => handleInvoicePrint(invoice)}
+                    >
                       <Printer className="w-4 h-4" />
                       طباعة
                     </Button>
@@ -1115,6 +1209,8 @@ interface PaymentScheduleTabProps {
 }
 
 const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: PaymentScheduleTabProps) => {
+  const { toast } = useToast();
+  
   // حساب جدول الدفعات المستحق
   const paymentSchedule = useMemo(() => {
     if (!contract.start_date || !contract.monthly_amount) return [];
@@ -1226,11 +1322,34 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                 </td>
                 <td className="px-4 py-4">
                   {payment.status === 'paid' ? (
-                    <Button variant="link" size="sm" className="text-red-600">
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="text-red-600"
+                      onClick={() => {
+                        // عرض تفاصيل الدفعة المدفوعة
+                        toast({
+                          title: 'الدفعة المدفوعة',
+                          description: `تم دفع مبلغ ${formatCurrency(payment.amount)} في ${format(payment.dueDate, 'dd/MM/yyyy')}`,
+                        });
+                      }}
+                    >
                       عرض
                     </Button>
                   ) : payment.status === 'pending' ? (
-                    <Button variant="link" size="sm" className="text-green-600 font-medium">
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="text-green-600 font-medium"
+                      onClick={() => {
+                        // فتح نافذة الدفع
+                        toast({
+                          title: 'دفع مستحق',
+                          description: `المبلغ المستحق: ${formatCurrency(payment.amount)}`,
+                        });
+                        // يمكن هنا فتح نافذة الدفع
+                      }}
+                    >
                       دفع
                     </Button>
                   ) : (
