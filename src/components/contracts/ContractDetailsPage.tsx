@@ -143,7 +143,12 @@ const ContractDetailsPage = () => {
   const { data: invoices = [] } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
-      if (!contract?.id) return [];
+      if (!contract?.id) {
+        console.log('⚠️ [CONTRACT_INVOICES] No contract ID available');
+        return [];
+      }
+      
+      console.log('🔍 [CONTRACT_INVOICES] Fetching invoices for contract:', contract.id);
       
       const { data, error } = await supabase
         .from('invoices')
@@ -151,8 +156,13 @@ const ContractDetailsPage = () => {
         .eq('contract_id', contract.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as Invoice[];
+      if (error) {
+        console.error('❌ [CONTRACT_INVOICES] Error fetching invoices:', error);
+        throw error;
+      }
+      
+      console.log('✅ [CONTRACT_INVOICES] Found invoices:', data?.length || 0, data);
+      return data as Invoice[] || [];
     },
     enabled: !!contract?.id,
   });
@@ -778,6 +788,7 @@ const ContractDetailsPage = () => {
                 <InvoicesTab
                   invoices={invoices}
                   contractId={contract.id}
+                  companyId={companyId}
                   onPay={handleInvoicePay}
                   onPreview={handleInvoicePreview}
                   onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
@@ -1042,13 +1053,14 @@ const InfoRow = ({ label, value, mono, dir }: InfoRowProps) => (
 interface InvoicesTabProps {
   invoices: Invoice[];
   contractId: string;
+  companyId?: string;
   onPay: (invoice: Invoice) => void;
   onPreview: (invoice: Invoice) => void;
   onCreateInvoice: () => void;
   formatCurrency: (amount: number) => string;
 }
 
-const InvoicesTab = ({ invoices, contractId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
+const InvoicesTab = ({ invoices, contractId, companyId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
   const handleInvoiceDownload = useCallback(async (invoice: Invoice) => {
     try {
       // فتح معاينة الفاتورة أولاً
@@ -1075,8 +1087,11 @@ const InvoicesTab = ({ invoices, contractId, onPay, onPreview, onCreateInvoice, 
 
       {invoices.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            لا توجد فواتير لهذا العقد
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500 mb-4">لا توجد فواتير لهذا العقد</p>
+            <p className="text-sm text-gray-400 mb-4">
+              يمكنك إنشاء الفواتير لجميع العقود من صفحة الفواتير → تبويب "الإنشاء التلقائي"
+            </p>
           </CardContent>
         </Card>
       ) : (
