@@ -160,6 +160,15 @@ export const useContractsData = (filters: any = {}) => {
         query = query.eq('company_id', companyId);
       }
 
+      // Apply status filter BEFORE pagination (at database level)
+      if (filters?.status && filters.status !== 'all' && filters.status !== '') {
+        if (filters.status === 'expiring_soon') {
+          // Special handling for expiring_soon - handled in frontend filtering
+        } else {
+          query = query.eq('status', filters.status);
+        }
+      }
+
       // Apply pagination
       if (filters?.page || filters?.pageSize) {
         const from = (page - 1) * pageSize;
