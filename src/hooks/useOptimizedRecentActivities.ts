@@ -36,21 +36,25 @@ export const useOptimizedRecentActivities = () => {
         }
 
         // Optimized query - fetch only last 10 activities, no complex joins
-        // Handle null company_id gracefully by filtering nulls out
+        // Build query with proper null handling
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        
+        // Start with base query
         let query = supabase
           .from('system_logs')
           .select('id, category, action, message, level, created_at')
-          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: false })
-          .limit(10); // Reduced from 15 to 10 for faster loading
+          .limit(10);
 
-        // Only filter by company_id if we have one (system-level users can see all)
+        // Filter by company_id based on context
         if (companyId) {
-          query = query.not('company_id', 'is', null).eq('company_id', companyId);
+          query = query.eq('company_id', companyId);
         } else if (isSystemLevel) {
-          // For system-level users without companyId, show all activities
+          // For system-level users without companyId, show all activities with company_id
           query = query.not('company_id', 'is', null);
         }
+        // Note: If no companyId and not system level, we already return early above
 
         const { data: activities, error } = await query;
 
@@ -67,6 +71,7 @@ export const useOptimizedRecentActivities = () => {
           };
           
           console.error('❌ [ACTIVITIES] Error fetching activities:', errorDetails);
+          console.error('❌ [ACTIVITIES] Full error object:', error);
           
           // Handle specific error types gracefully
           if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
@@ -76,6 +81,12 @@ export const useOptimizedRecentActivities = () => {
           
           if (error.code === '42P01') {
             console.error('❌ [ACTIVITIES] Table system_logs does not exist');
+            return [];
+          }
+          
+          // Handle PostgREST filter syntax errors
+          if (error.code === 'PGRST100' || error.message?.includes('syntax error') || error.message?.includes('invalid')) {
+            console.error('❌ [ACTIVITIES] Query syntax error - check filter syntax');
             return [];
           }
           

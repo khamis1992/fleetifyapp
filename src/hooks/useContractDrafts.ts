@@ -27,6 +27,26 @@ import type { ContractDraft, ContractDraftInput, ContractDraftUpdateInput } from
  * // Delete a draft
  * deleteDraft.mutate(draftId);
  */
+/**
+ * Maps database record to ContractDraft interface
+ */
+function mapDraftFromDb(draft: any): ContractDraft {
+  const draftData = draft.data || {};
+  return {
+    id: draft.id,
+    company_id: draft.company_id,
+    user_id: draft.created_by,
+    draft_data: draftData,
+    // Extract optional fields from data JSONB if they exist, otherwise null
+    customer_id: draft.customer_id || draftData.customer_id || null,
+    vehicle_id: draft.vehicle_id || draftData.vehicle_id || null,
+    draft_name: draft.draft_name || draftData.draft_name || null,
+    created_at: draft.created_at,
+    updated_at: draft.updated_at,
+    expires_at: draft.last_saved_at || draft.created_at,
+  };
+}
+
 export function useContractDrafts() {
   const { user } = useAuth();
   const { companyId } = useUnifiedCompanyAccess();
@@ -47,8 +67,7 @@ export function useContractDrafts() {
         .from('contract_drafts')
         .select('*')
         .eq('company_id', companyId)
-        .eq('user_id', user.id)
-        .gt('expires_at', new Date().toISOString()) // Only non-expired drafts
+        .eq('created_by', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -56,7 +75,8 @@ export function useContractDrafts() {
         throw error;
       }
 
-      return data || [];
+      // Map database fields to ContractDraft interface
+      return (data || []).map(mapDraftFromDb);
     },
     enabled: !!companyId && !!user?.id,
     staleTime: 30000, // Cache for 30 seconds
@@ -73,11 +93,9 @@ export function useContractDrafts() {
 
       const draftPayload = {
         company_id: companyId,
-        user_id: user.id,
-        draft_data: input.draft_data,
-        customer_id: input.customer_id || null,
-        vehicle_id: input.vehicle_id || null,
-        draft_name: input.draft_name || null,
+        created_by: user.id,
+        data: input.draft_data,
+        last_saved_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
@@ -87,12 +105,12 @@ export function useContractDrafts() {
           .from('contract_drafts')
           .update(draftPayload)
           .eq('id', input.id)
-          .eq('user_id', user.id) // Security: only update own drafts
+          .eq('created_by', user.id) // Security: only update own drafts
           .select()
           .single();
 
         if (error) throw error;
-        return data;
+        return mapDraftFromDb(data);
       } else {
         const { data, error } = await supabase
           .from('contract_drafts')
@@ -101,7 +119,7 @@ export function useContractDrafts() {
           .single();
 
         if (error) throw error;
-        return data;
+        return mapDraftFromDb(data);
       }
     },
     onSuccess: (data, variables) => {
@@ -127,7 +145,7 @@ export function useContractDrafts() {
         .from('contract_drafts')
         .delete()
         .eq('id', draftId)
-        .eq('user_id', user.id); // Security: only delete own drafts
+        .eq('created_by', user.id); // Security: only delete own drafts
 
       if (error) throw error;
     },
@@ -161,7 +179,10 @@ export function useContractDrafts() {
           throw error;
         }
 
-        return data;
+        if (!data) return null;
+
+        // Map database fields to ContractDraft interface
+        return mapDraftFromDb(data);
       },
       enabled: !!draftId,
     });

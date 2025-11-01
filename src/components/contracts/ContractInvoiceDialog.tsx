@@ -36,8 +36,9 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   const { formatCurrency, currency } = useCurrencyFormatter();
   
   const getInitialDescription = () => {
-    const dueDate = new Date();
-    dueDate.setMonth(dueDate.getMonth() + 1); // Default due date is next month
+    // Default due date is 1st of next month
+    const now = new Date();
+    const dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     return formatMonthlyPaymentDescription(dueDate, contract?.contract_number || '');
   };
 

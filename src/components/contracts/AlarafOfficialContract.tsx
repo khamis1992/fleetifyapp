@@ -28,10 +28,12 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
     const numberOfPayments = Math.ceil(totalAmount / monthlyAmount);
     const schedule = [];
 
+    // بدء من اليوم الأول من الشهر التالي لتاريخ بداية العقد
     const startDate = new Date(contract.start_date);
+    const firstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
     for (let i = 0; i < numberOfPayments; i++) {
-      const dueDate = addMonths(startDate, i);
+      const dueDate = addMonths(firstMonth, i);
       schedule.push({
         number: i + 1,
         dueDate: format(dueDate, 'yyyy/MM/dd'),

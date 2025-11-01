@@ -62,6 +62,7 @@ import { LateFinesTab } from './LateFinesTab';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
+import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -85,6 +86,7 @@ const ContractDetailsPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -730,6 +732,7 @@ const ContractDetailsPage = () => {
                   contractId={contract.id}
                   onPay={handleInvoicePay}
                   onPreview={handleInvoicePreview}
+                  onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
                   formatCurrency={formatCurrency}
                 />
               </TabsContent>
@@ -788,6 +791,22 @@ const ContractDetailsPage = () => {
       </main>
 
       {/* Dialogs */}
+      {contract && (
+        <ContractInvoiceDialog
+          open={isInvoiceDialogOpen}
+          onOpenChange={setIsInvoiceDialogOpen}
+          contract={contract}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+            setIsInvoiceDialogOpen(false);
+            toast({
+              title: 'تم إنشاء الفاتورة بنجاح',
+              description: 'تم إنشاء الفاتورة بنجاح',
+            });
+          }}
+        />
+      )}
+      
       {selectedInvoice && (
         <>
           <PayInvoiceDialog
@@ -955,24 +974,16 @@ interface InvoicesTabProps {
   contractId: string;
   onPay: (invoice: Invoice) => void;
   onPreview: (invoice: Invoice) => void;
+  onCreateInvoice: () => void;
   formatCurrency: (amount: number) => string;
 }
 
-const InvoicesTab = ({ invoices, contractId, onPay, onPreview, formatCurrency }: InvoicesTabProps) => {
-  const { toast } = useToast();
-
-  const handleCreateInvoice = () => {
-    toast({
-      title: 'إنشاء فاتورة جديدة',
-      description: 'جاري فتح نموذج إنشاء الفاتورة...',
-    });
-  };
-
+const InvoicesTab = ({ invoices, contractId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">فواتير العقد</h3>
-        <Button onClick={handleCreateInvoice} className="gap-2 bg-red-600 hover:bg-red-700">
+        <Button onClick={onCreateInvoice} className="gap-2 bg-red-600 hover:bg-red-700">
           <Plus className="w-4 h-4" />
           إنشاء فاتورة
         </Button>
@@ -1113,11 +1124,13 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
     const numberOfPayments = Math.ceil(totalAmount / monthlyAmount);
     const schedule = [];
 
+    // بدء من اليوم الأول من الشهر التالي لتاريخ بداية العقد
     const startDate = new Date(contract.start_date);
+    const firstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
     for (let i = 0; i < numberOfPayments; i++) {
-      const dueDate = new Date(startDate);
-      dueDate.setMonth(dueDate.getMonth() + i);
+      const dueDate = new Date(firstMonth);
+      dueDate.setMonth(firstMonth.getMonth() + i);
 
       schedule.push({
         number: i + 1,
