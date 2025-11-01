@@ -29,7 +29,8 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 interface BackfillResult {
-  contract_id: string;
+  result_contract_id?: string;
+  contract_id?: string; // For backwards compatibility
   contract_number: string;
   months_processed?: number;
   invoices_created: number;
