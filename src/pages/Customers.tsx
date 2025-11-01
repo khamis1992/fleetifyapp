@@ -292,13 +292,97 @@ const Customers = () => {
     setShowImportWizard(true);
   };
 
-  const handleExport = () => {
-    if (customers.length === 0) {
-      toast.error('لا توجد بيانات للتصدير');
-      return;
-    }
-
+  const handleExport = async () => {
     try {
+      // Show loading toast
+      toast.info('جاري جلب جميع العملاء للتصدير...');
+      
+      // Fetch ALL customers for export (without pagination)
+      // Build query with same filters as current page
+      let query = supabase
+        .from('customers')
+        .select('*');
+
+      // Apply company filter
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      // Apply filters (same as current page filters)
+      if (!includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      if (customerType !== 'all') {
+        query = query.eq('customer_type', customerType);
+      }
+
+      if (searchTerm?.trim()) {
+        const searchText = searchTerm.trim();
+        query = query.or(
+          `first_name.ilike.%${searchText}%,` +
+          `last_name.ilike.%${searchText}%,` +
+          `first_name_ar.ilike.%${searchText}%,` +
+          `last_name_ar.ilike.%${searchText}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `company_name_ar.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
+      }
+
+      // Order by created_at
+      query = query.order('created_at', { ascending: false });
+
+      // Fetch all customers in batches (Supabase has a limit per request)
+      const allCustomers: any[] = [];
+      const batchSize = 1000; // Supabase default limit
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const batchQuery = query.range(offset, offset + batchSize - 1);
+        const { data: batch, error: fetchError } = await batchQuery;
+
+        if (fetchError) {
+          console.error('Export error - failed to fetch customers:', fetchError);
+          toast.error('حدث خطأ أثناء جلب بيانات العملاء');
+          return;
+        }
+
+        if (batch && batch.length > 0) {
+          allCustomers.push(...batch);
+          offset += batchSize;
+          hasMore = batch.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      if (!allCustomers || allCustomers.length === 0) {
+        toast.error('لا توجد بيانات للتصدير');
+        return;
+      }
+
+      // Fetch contract counts for all customers
+      const customerIds = allCustomers.map(c => c.id);
+      const { data: contractCountsData } = await supabase
+        .from('contracts')
+        .select('customer_id')
+        .eq('company_id', companyId || '')
+        .in('customer_id', customerIds);
+
+      const contractCounts: Record<string, number> = {};
+      customerIds.forEach(id => {
+        contractCounts[id] = 0;
+      });
+      contractCountsData?.forEach(contract => {
+        if (contract.customer_id) {
+          contractCounts[contract.customer_id] = (contractCounts[contract.customer_id] || 0) + 1;
+        }
+      });
+
       // Define columns for export
       const columns = [
         { header: 'رقم العميل', key: 'customer_code' },
@@ -330,7 +414,7 @@ const Customers = () => {
       ];
 
       // Format customer data for export
-      const exportData = customers.map(customer => ({
+      const exportData = allCustomers.map(customer => ({
         customer_code: customer.customer_code || '',
         customer_type: customer.customer_type === 'individual' ? 'فرد' : 'شركة',
         first_name: customer.first_name || '',
@@ -358,7 +442,7 @@ const Customers = () => {
         credit_limit: customer.credit_limit || 0,
         emergency_contact_name: customer.emergency_contact_name || '',
         emergency_contact_phone: customer.emergency_contact_phone || '',
-        contracts_count: customer.contracts_count || finalContractCounts[customer.id] || 0,
+        contracts_count: contractCounts[customer.id] || 0,
         is_active: customer.is_active ? 'نشط' : 'غير نشط',
         notes: customer.notes || '',
       }));
@@ -373,7 +457,7 @@ const Customers = () => {
         includeBOM: true,
       });
 
-      toast.success(`تم تصدير ${customers.length} عميل بنجاح`);
+      toast.success(`تم تصدير ${allCustomers.length} عميل بنجاح`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('حدث خطأ أثناء التصدير');
