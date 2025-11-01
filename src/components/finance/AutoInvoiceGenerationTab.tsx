@@ -31,9 +31,11 @@ import { ar } from 'date-fns/locale';
 interface BackfillResult {
   contract_id: string;
   contract_number: string;
-  months_processed: number;
+  months_processed?: number;
   invoices_created: number;
+  invoices_updated?: number;
   invoices_skipped: number;
+  message?: string;
 }
 
 interface MonthlyResult {
@@ -64,9 +66,11 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
     setBackfillResults([]);
 
     try {
-      const { data, error } = await supabase.rpc('backfill_contract_invoices', {
+      // Use the new smart backfill function
+      const { data, error } = await supabase.rpc('smart_backfill_contract_invoices', {
         p_company_id: companyId,
-        p_contract_id: null
+        p_contract_id: null,
+        p_update_wrong_dates: true
       });
 
       if (error) throw error;
@@ -74,12 +78,23 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
       setBackfillResults(data || []);
       
       const totalCreated = (data || []).reduce((sum, r) => sum + r.invoices_created, 0);
+      const totalUpdated = (data || []).reduce((sum, r) => sum + (r.invoices_updated || 0), 0);
       const totalSkipped = (data || []).reduce((sum, r) => sum + r.invoices_skipped, 0);
 
-      toast.success(`تم إنشاء ${totalCreated} فاتورة بنجاح. تم تخطي ${totalSkipped} فاتورة موجودة.`);
+      if (totalCreated > 0 || totalUpdated > 0) {
+        toast.success(
+          `✅ تم بنجاح:\n` +
+          `• ${totalCreated} فاتورة جديدة تم إنشاؤها\n` +
+          `• ${totalUpdated} فاتورة تم تحديث تاريخها\n` +
+          `• ${totalSkipped} فاتورة موجودة تم تخطيها`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.info(`جميع الفواتير موجودة بالفعل. تم تخطي ${totalSkipped} فاتورة.`);
+      }
       
       // Refresh invoices list
-      if (totalCreated > 0) {
+      if (totalCreated > 0 || totalUpdated > 0) {
         queryClient.invalidateQueries({ queryKey: ['invoices'] });
         queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
       }
@@ -370,9 +385,10 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>رقم العقد</TableHead>
-                          <TableHead className="text-center">عدد الأشهر</TableHead>
                           <TableHead className="text-center">تم إنشاؤها</TableHead>
+                          <TableHead className="text-center">تم تحديثها</TableHead>
                           <TableHead className="text-center">تم تخطيها</TableHead>
+                          <TableHead>الحالة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -382,17 +398,26 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                               {result.contract_number}
                             </TableCell>
                             <TableCell className="text-center">
-                              {result.months_processed}
-                            </TableCell>
-                            <TableCell className="text-center">
                               <Badge variant="default" className="bg-green-600">
                                 {result.invoices_created}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge className="bg-blue-600">
+                                {result.invoices_updated || 0}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">
                               <Badge variant="secondary">
                                 {result.invoices_skipped}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {result.message && (
+                                <span className="text-xs text-gray-500">
+                                  {result.message}
+                                </span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -401,7 +426,7 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
 
                     {/* Summary */}
                     <div className="mt-4 p-4 bg-muted rounded-lg">
-                      <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="grid grid-cols-4 gap-4 text-center">
                         <div>
                           <div className="text-2xl font-bold">{backfillResults.length}</div>
                           <div className="text-sm text-muted-foreground">عقود</div>
@@ -411,6 +436,12 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                             {backfillResults.reduce((sum, r) => sum + r.invoices_created, 0)}
                           </div>
                           <div className="text-sm text-muted-foreground">فواتير جديدة</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {backfillResults.reduce((sum, r) => sum + (r.invoices_updated || 0), 0)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">تم تحديثها</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-gray-600">

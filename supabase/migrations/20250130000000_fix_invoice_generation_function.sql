@@ -45,9 +45,8 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Check if invoice already exists for this month WITH due_date ON THE 1ST
-  -- IMPORTANT: Only skip if there's already an invoice due on the 1st of the month
-  -- If there are invoices with wrong due dates (e.g., 18th), we'll still create a new one on the 1st
+  -- Check if invoice already exists for this month
+  -- First, check for invoices with correct due date (on 1st)
   SELECT COUNT(*) INTO v_existing_count
   FROM invoices
   WHERE contract_id IS NOT NULL
@@ -58,15 +57,7 @@ BEGIN
     )
     AND (status IS NULL OR status != 'cancelled');
   
-  -- Log detailed information for debugging
-  IF v_existing_count > 0 THEN
-    RAISE NOTICE '⏭️ Skipping contract % month %: found % existing invoice(s) with due_date = % (on 1st)', 
-      p_contract_id, p_invoice_month, v_existing_count, p_invoice_month;
-    RETURN NULL;
-  END IF;
-  
-  -- Also check if there are any invoices in this month with wrong due dates (not on 1st)
-  -- Log them for information - we'll still create a new one on the 1st
+  -- Also check for invoices in this month with wrong due dates (not on 1st)
   SELECT COUNT(*) INTO v_wrong_date_count
   FROM invoices
   WHERE contract_id IS NOT NULL
@@ -77,9 +68,43 @@ BEGIN
     )
     AND (status IS NULL OR status != 'cancelled');
   
+  -- If we have an invoice with correct due date (on 1st), skip
+  IF v_existing_count > 0 THEN
+    RAISE NOTICE '⏭️ Skipping contract % month %: found % existing invoice(s) with due_date = % (on 1st)', 
+      p_contract_id, p_invoice_month, v_existing_count, p_invoice_month;
+    RETURN NULL;
+  END IF;
+  
+  -- If we have invoices with wrong due dates, update them instead of creating new ones
   IF v_wrong_date_count > 0 THEN
-    RAISE NOTICE '⚠️ Found % invoice(s) with wrong due dates (not on 1st) for contract % month % - will create new invoice on 1st', 
+    RAISE NOTICE '⚠️ Found % invoice(s) with wrong due dates (not on 1st) for contract % month % - updating to 1st', 
       v_wrong_date_count, p_contract_id, p_invoice_month;
+    
+    -- Update existing invoices to have due_date on the 1st
+    UPDATE invoices
+    SET due_date = p_invoice_month,
+        invoice_date = COALESCE(invoice_date, p_invoice_month),
+        updated_at = NOW()
+    WHERE contract_id = p_contract_id
+      AND (
+        (due_date IS NOT NULL AND DATE_TRUNC('month', due_date)::DATE = p_invoice_month AND due_date != p_invoice_month)
+        OR (due_date IS NULL AND invoice_date IS NOT NULL AND DATE_TRUNC('month', invoice_date)::DATE = p_invoice_month AND invoice_date != p_invoice_month)
+      )
+      AND (status IS NULL OR status != 'cancelled');
+    
+    -- Return the first updated invoice ID (or NULL if no rows updated)
+    SELECT id INTO v_invoice_id
+    FROM invoices
+    WHERE contract_id = p_contract_id
+      AND due_date = p_invoice_month
+      AND (status IS NULL OR status != 'cancelled')
+    ORDER BY created_at DESC
+    LIMIT 1;
+    
+    IF v_invoice_id IS NOT NULL THEN
+      RAISE NOTICE '✅ Updated invoice % for contract % - Month: %', v_invoice_id, p_contract_id, p_invoice_month;
+      RETURN v_invoice_id;
+    END IF;
   END IF;
   
   RAISE NOTICE '✅ No existing invoice found for contract % month % - proceeding to create', 

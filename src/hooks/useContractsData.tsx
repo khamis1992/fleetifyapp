@@ -286,7 +286,8 @@ export const useContractsData = (filters: any = {}) => {
     const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
     
     // Include both active and under_review contracts in revenue calculation
-    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract: any) => sum + (contract.contract_amount || 0), 0);
+    // Use monthly_amount for monthly revenue, not contract_amount (total contract value)
+    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract: any) => sum + (contract.monthly_amount || 0), 0);
 
     console.log('📊 [CONTRACTS_STATS] Statistics calculated:', {
       total: statsContracts.length,
