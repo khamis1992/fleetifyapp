@@ -6,9 +6,9 @@
  * @component CustomerDetailsPage
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
@@ -58,6 +58,25 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { PaymentForm } from '@/components/finance/PaymentForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 /**
  * مكون صفحة تفاصيل العميل الرئيسية
@@ -67,9 +86,19 @@ const CustomerDetailsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const companyId = useCurrentCompanyId();
+  const queryClient = useQueryClient();
 
   // الحالة المحلية
   const [activeTab, setActiveTab] = useState('contracts');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // جلب بيانات العميل من قاعدة البيانات
   const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
@@ -146,6 +175,12 @@ const CustomerDetailsPage = () => {
     },
     enabled: !!customerId,
   });
+
+  // جلب مستندات العميل
+  const { data: documents = [], isLoading: loadingDocuments } = useCustomerDocuments(customerId);
+  const uploadDocument = useUploadCustomerDocument();
+  const deleteDocument = useDeleteCustomerDocument();
+  const downloadDocument = useDownloadCustomerDocument();
 
   // حساب الإحصائيات من البيانات الحقيقية
   const stats = useMemo(() => {
@@ -229,33 +264,179 @@ const CustomerDetailsPage = () => {
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
-    toast({
-      title: 'تعديل البيانات',
-      description: 'فتح نموذج تعديل بيانات العميل',
-    });
-  }, [toast]);
+    navigate(`/customers/edit/${customerId}`);
+  }, [navigate, customerId]);
 
   const handleDelete = useCallback(() => {
-    toast({
-      title: 'حذف العميل',
-      description: 'هل أنت متأكد من حذف هذا العميل؟',
-      variant: 'destructive',
-    });
-  }, [toast]);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!customerId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم الحذف بنجاح',
+        description: 'تم حذف العميل بنجاح',
+      });
+      
+      navigate('/customers');
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل حذف العميل',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  }, [customerId, navigate, toast]);
 
   const handleArchive = useCallback(() => {
-    toast({
-      title: 'أرشفة العميل',
-      description: 'تم أرشفة العميل بنجاح',
-    });
-  }, [toast]);
+    setIsArchiveDialogOpen(true);
+  }, []);
+
+  const confirmArchive = useCallback(async () => {
+    if (!customerId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ is_active: false })
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم الأرشفة بنجاح',
+        description: 'تم أرشفة العميل بنجاح',
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل أرشفة العميل',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsArchiveDialogOpen(false);
+    }
+  }, [customerId, companyId, queryClient, toast]);
 
   const handleGenerateReport = useCallback(() => {
+    if (!customer) return;
+    
+    // إنشاء تقرير PDF بسيط
+    const reportData = {
+      customerName,
+      stats,
+      contracts: formattedContracts,
+      payments: formattedPayments,
+      createdAt: new Date().toLocaleDateString('ar-SA'),
+    };
+    
+    console.log('Report data:', reportData);
+    
     toast({
       title: 'إنشاء تقرير',
-      description: 'جاري إنشاء التقرير...',
+      description: 'سيتم تنزيل التقرير قريباً',
     });
-  }, [toast]);
+    
+    // TODO: إضافة مكتبة PDF لإنشاء التقرير الفعلي
+  }, [customer, customerName, stats, formattedContracts, formattedPayments, toast]);
+
+  // معالج رفع المستندات
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !customerId) return;
+
+    const file = files[0];
+    
+    // التحقق من حجم الملف (الحد الأقصى 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'خطأ',
+        description: 'حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // رفع الملف
+    uploadDocument.mutate({
+      customer_id: customerId,
+      document_type: selectedDocumentType,
+      document_name: file.name,
+      file: file,
+    });
+
+    // إعادة تعيين قيمة input
+    event.target.value = '';
+  }, [customerId, selectedDocumentType, uploadDocument, toast]);
+
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleDeleteDocument = useCallback((documentId: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+      deleteDocument.mutate(documentId);
+    }
+  }, [deleteDocument]);
+
+  const handleDownloadDocument = useCallback((document: any) => {
+    downloadDocument.mutate(document);
+  }, [downloadDocument]);
+
+  // معالجات أزرار العقود
+  const handleViewContract = useCallback((contractId: string) => {
+    navigate(`/contracts/${contractId}`);
+  }, [navigate]);
+
+  const handleRenewContract = useCallback((contract: any) => {
+    navigate(`/contracts/new?renew=${contract.id}`);
+  }, [navigate]);
+
+  const handleContinuePayment = useCallback((contract: any) => {
+    setSelectedContract(contract);
+    setIsPaymentDialogOpen(true);
+  }, []);
+
+  // معالجات أزرار المدفوعات
+  const handleViewPayment = useCallback((payment: any) => {
+    setSelectedPayment(payment);
+    // يمكن إضافة dialog لعرض تفاصيل الدفعة
+  }, []);
+
+  const handleNextPage = useCallback(() => {
+    setCurrentPage(prev => prev + 1);
+  }, []);
+
+  const handlePreviousPage = useCallback(() => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  }, []);
+
+  // معالجات أزرار السيارات
+  const handleViewVehicle = useCallback((vehicleId: string) => {
+    navigate(`/vehicles/${vehicleId}`);
+  }, [navigate]);
+
+  // معالجات شريط التنقل العلوي
+  const handleNotifications = useCallback(() => {
+    navigate('/notifications');
+  }, [navigate]);
+
+  const handleSettings = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
 
   // معالجة حالات التحميل والأخطاء
   const isLoading = loadingCustomer || loadingContracts || loadingPayments;
@@ -340,11 +521,21 @@ const CustomerDetailsPage = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="w-10 h-10 rounded-lg relative"
+                onClick={handleNotifications}
+              >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </Button>
-              <Button variant="ghost" size="icon" className="w-10 h-10 rounded-lg">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="w-10 h-10 rounded-lg"
+                onClick={handleSettings}
+              >
                 <Settings className="w-5 h-5" />
               </Button>
               <Avatar className="w-9 h-9 cursor-pointer">
@@ -618,7 +809,10 @@ const CustomerDetailsPage = () => {
                     <h3 className="text-lg font-bold text-gray-900">العقود النشطة</h3>
                     <p className="text-sm text-gray-500 mt-1">إجمالي {formattedContracts.length} عقد نشط</p>
                   </div>
-                  <Button className="bg-red-600 hover:bg-red-700 gap-2">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 gap-2"
+                    onClick={() => navigate(`/contracts?customer=${customerId}`)}
+                  >
                     <Plus className="w-4 h-4" />
                     عقد جديد
                   </Button>
@@ -695,17 +889,28 @@ const CustomerDetailsPage = () => {
                         </div>
                         
                         <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-                          <Button variant="outline" className="flex-1 gap-2">
+                          <Button 
+                            variant="outline" 
+                            className="flex-1 gap-2"
+                            onClick={() => handleViewContract(contract.id)}
+                          >
                             <Eye className="w-4 h-4" />
                             عرض التفاصيل
                           </Button>
                           {contract.paymentStatus === 'paid' ? (
-                            <Button variant="outline" className="flex-1 gap-2">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1 gap-2"
+                              onClick={() => handleRenewContract(contract)}
+                            >
                               <RefreshCw className="w-4 h-4" />
                               تجديد العقد
                             </Button>
                           ) : (
-                            <Button className="flex-1 gap-2 bg-red-600 hover:bg-red-700">
+                            <Button 
+                              className="flex-1 gap-2 bg-red-600 hover:bg-red-700"
+                              onClick={() => handleContinuePayment(contract)}
+                            >
                               <CreditCard className="w-4 h-4" />
                               متابعة الدفع
                             </Button>
@@ -730,7 +935,10 @@ const CustomerDetailsPage = () => {
                     <h3 className="text-lg font-bold text-gray-900">سجل المدفوعات</h3>
                     <p className="text-sm text-gray-500 mt-1">آخر {formattedPayments.length} عمليات دفع</p>
                   </div>
-                  <Button className="bg-red-600 hover:bg-red-700 gap-2">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 gap-2"
+                    onClick={() => setIsPaymentDialogOpen(true)}
+                  >
                     <Plus className="w-4 h-4" />
                     تسجيل دفعة جديدة
                   </Button>
@@ -779,7 +987,12 @@ const CustomerDetailsPage = () => {
                             </Badge>
                           </td>
                           <td className="px-6 py-4">
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="gap-2"
+                              onClick={() => handleViewPayment(payment)}
+                            >
                               <Eye className="w-3.5 h-3.5" />
                               عرض
                             </Button>
@@ -790,15 +1003,30 @@ const CustomerDetailsPage = () => {
                   </table>
                 </div>
                 
-                {formattedPayments.length > 5 && (
+                {formattedPayments.length > itemsPerPage && (
                   <div className="mt-6 flex items-center justify-between">
-                    <p className="text-sm text-gray-500">عرض {Math.min(5, formattedPayments.length)} من {formattedPayments.length} عملية</p>
+                    <p className="text-sm text-gray-500">
+                      عرض {Math.min(currentPage * itemsPerPage, formattedPayments.length)} من {formattedPayments.length} عملية
+                    </p>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" disabled className="gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={currentPage === 1}
+                        className="gap-2"
+                        onClick={handlePreviousPage}
+                      >
                         <ChevronRight className="w-4 h-4" />
                         السابق
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-2">
+                      <span className="text-sm text-gray-600">صفحة {currentPage}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={currentPage * itemsPerPage >= formattedPayments.length}
+                        className="gap-2"
+                        onClick={handleNextPage}
+                      >
                         التالي
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
@@ -852,7 +1080,11 @@ const CustomerDetailsPage = () => {
                         </div>
                       </div>
                       
-                      <Button variant="outline" className="w-full mt-4 gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="w-full mt-4 gap-2"
+                        onClick={() => handleViewVehicle(contract.vehicle?.id || '')}
+                      >
                         <Eye className="w-4 h-4" />
                         عرض التفاصيل
                       </Button>
@@ -867,20 +1099,133 @@ const CustomerDetailsPage = () => {
               <div className="animate-in fade-in-50 duration-300">
                 <div className="mb-6">
                   <h3 className="text-lg font-bold text-gray-900">المستندات والملفات</h3>
-                  <p className="text-sm text-gray-500 mt-1">جميع الوثائق المرتبطة بالعميل</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {documents.length > 0 
+                      ? `${documents.length} مستند مرفوع`
+                      : 'لا توجد مستندات مرفوعة'}
+                  </p>
                 </div>
                 
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200 hover:border-blue-500">
+                {/* منطقة رفع المستندات */}
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200 hover:border-blue-500 mb-6">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#dbeafe' }}>
                     <Upload className="w-8 h-8 text-blue-600" />
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">رفع مستند جديد</h4>
-                  <p className="text-sm text-gray-500 mb-4">اسحب الملفات هنا أو انقر للاختيار</p>
-                  <Button className="bg-red-600 hover:bg-red-700 gap-2">
+                  <p className="text-sm text-gray-500 mb-4">اختر نوع المستند ثم اضغط لاختيار الملف</p>
+                  
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <select
+                      value={selectedDocumentType}
+                      onChange={(e) => setSelectedDocumentType(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    >
+                      <option value="identity">بطاقة الهوية</option>
+                      <option value="license">رخصة القيادة</option>
+                      <option value="contract">عقد</option>
+                      <option value="invoice">فاتورة</option>
+                      <option value="receipt">إيصال</option>
+                      <option value="insurance">تأمين</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  />
+                  
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 gap-2"
+                    onClick={handleUploadClick}
+                    disabled={uploadDocument.isPending}
+                  >
                     <Upload className="w-4 h-4" />
-                    اختر ملف
+                    {uploadDocument.isPending ? 'جاري الرفع...' : 'اختر ملف'}
                   </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    الصيغ المدعومة: PDF, JPG, PNG, DOC, DOCX (حتى 10MB)
+                  </p>
                 </div>
+
+                {/* قائمة المستندات */}
+                {loadingDocuments ? (
+                  <div className="text-center py-8 text-gray-500">جاري تحميل المستندات...</div>
+                ) : documents.length > 0 ? (
+                  <div className="space-y-3">
+                    {documents.map((doc) => (
+                      <div 
+                        key={doc.id} 
+                        className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm transition-all duration-300 hover:shadow-md hover:border-red-300"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600">
+                              <FileText className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-gray-900 mb-1">{doc.document_name}</h4>
+                              <div className="flex items-center gap-3 text-sm text-gray-500">
+                                <Badge className="bg-blue-100 text-blue-700">
+                                  {doc.document_type === 'identity' ? 'هوية' :
+                                   doc.document_type === 'license' ? 'رخصة' :
+                                   doc.document_type === 'contract' ? 'عقد' :
+                                   doc.document_type === 'invoice' ? 'فاتورة' :
+                                   doc.document_type === 'receipt' ? 'إيصال' :
+                                   doc.document_type === 'insurance' ? 'تأمين' :
+                                   'أخرى'}
+                                </Badge>
+                                <span>•</span>
+                                <span>{format(new Date(doc.uploaded_at), 'dd/MM/yyyy', { locale: ar })}</span>
+                                {doc.file_size && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{(doc.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                                  </>
+                                )}
+                              </div>
+                              {doc.notes && (
+                                <p className="text-sm text-gray-600 mt-2">{doc.notes}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="gap-2"
+                              onClick={() => handleDownloadDocument(doc)}
+                              disabled={downloadDocument.isPending}
+                            >
+                              <Download className="w-4 h-4" />
+                              تحميل
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              disabled={deleteDocument.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              حذف
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-500 border border-gray-200">
+                    <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p>لا توجد مستندات مرفوعة حتى الآن</p>
+                    <p className="text-sm mt-1">ابدأ برفع المستندات باستخدام الزر أعلاه</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -900,6 +1245,134 @@ const CustomerDetailsPage = () => {
           </div>
         </div>
       </main>
+
+      {/* نموذج تسجيل دفعة جديدة */}
+      <PaymentForm
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        customerId={customerId}
+        contractId={selectedContract?.id}
+        type="receipt"
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['customer-payments', customerId] });
+          queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+          setSelectedContract(null);
+        }}
+      />
+
+      {/* Dialog حذف العميل */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              تأكيد حذف العميل
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-gray-600 mt-4">
+              هل أنت متأكد من حذف العميل <span className="font-bold text-gray-900">{customerName}</span>؟
+              <br />
+              <br />
+              <span className="text-red-600 font-semibold">⚠️ تحذير:</span> سيتم حذف جميع البيانات المرتبطة بالعميل بشكل نهائي ولن يمكن استعادتها.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 mt-4">
+            <AlertDialogCancel className="mt-0">إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              نعم، احذف العميل
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog أرشفة العميل */}
+      <AlertDialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-orange-600 flex items-center gap-2">
+              <Archive className="w-5 h-5" />
+              تأكيد أرشفة العميل
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-gray-600 mt-4">
+              هل أنت متأكد من أرشفة العميل <span className="font-bold text-gray-900">{customerName}</span>؟
+              <br />
+              <br />
+              سيتم تعطيل العميل ولن يظهر في القائمة الرئيسية. يمكنك إلغاء الأرشفة لاحقاً إذا أردت.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 mt-4">
+            <AlertDialogCancel className="mt-0">إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmArchive}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              نعم، أرشف العميل
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog عرض تفاصيل الدفعة */}
+      {selectedPayment && (
+        <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-blue-600" />
+                تفاصيل الدفعة
+              </DialogTitle>
+              <DialogDescription>
+                معلومات تفصيلية عن الدفعة رقم #{selectedPayment.paymentNumber}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">رقم الدفعة</div>
+                  <div className="text-base font-semibold font-mono">#{selectedPayment.paymentNumber}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">التاريخ</div>
+                  <div className="text-base font-semibold">
+                    {selectedPayment.date ? format(new Date(selectedPayment.date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">المبلغ</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {selectedPayment.amount.toLocaleString('ar-SA')} ر.س
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">طريقة الدفع</div>
+                  <div className="text-base font-semibold">{selectedPayment.paymentMethod}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">رقم العقد</div>
+                  <div className="text-base font-semibold font-mono">#{selectedPayment.contractNumber.substring(0, 8)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">الحالة</div>
+                  <Badge className={cn(
+                    selectedPayment.status === 'paid' ? 'bg-green-100 text-green-700' :
+                    selectedPayment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  )}>
+                    {selectedPayment.status === 'paid' ? 'مدفوع' : selectedPayment.status === 'pending' ? 'معلق' : 'فشل'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedPayment(null)}>
+                إغلاق
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

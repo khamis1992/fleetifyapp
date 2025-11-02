@@ -28,9 +28,10 @@ interface PaymentFormProps {
   invoiceId?: string;
   contractId?: string;
   type: 'receipt' | 'payment';
+  onSuccess?: () => void;
 }
 
-export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, contractId, type }: PaymentFormProps) {
+export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceId, contractId, type, onSuccess }: PaymentFormProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -198,6 +199,12 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
 
       console.log('Payment created successfully:', data);
       toast.success(`تم إنشاء ${type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف'} بنجاح`);
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+      
       onOpenChange(false);
       
       // Reset form
