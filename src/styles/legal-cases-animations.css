@@ -77,14 +77,14 @@
     background: white;
     border: 1px solid rgb(229, 231, 235);
     border-radius: 1rem;
-    box-shadow: 0 4px 12px -2px rgba(30, 58, 138, 0.08);
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card-enhanced:hover {
-    box-shadow: 0 8px 20px -4px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
-    border-color: rgb(59, 130, 246);
+    border-color: hsl(var(--primary));
 }
 
 .stat-card-icon-enhanced {
@@ -143,10 +143,10 @@
 /* Gradient Header */
 .legal-header-gradient {
     background: linear-gradient(to bottom right, 
-        rgb(239, 246, 255), 
-        rgba(238, 242, 255, 0.3), 
+        hsl(var(--primary) / 0.05), 
+        hsl(var(--primary) / 0.02), 
         white);
-    border: 1px solid rgba(59, 130, 246, 0.1);
+    border: 1px solid hsl(var(--primary) / 0.1);
 }
 
 /* Custom Scrollbar */
@@ -161,33 +161,33 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgb(59, 130, 246);
+    background: hsl(var(--primary));
     border-radius: 0.5rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgb(37, 99, 235);
+    background: hsl(var(--primary) / 0.8);
 }
 
 /* Priority Colors */
 .priority-urgent {
-    background-color: rgb(254, 242, 242);
-    color: rgb(220, 38, 38);
+    background-color: hsl(var(--destructive) / 0.1);
+    color: hsl(var(--destructive));
 }
 
 .priority-high {
-    background-color: rgb(254, 243, 237);
+    background-color: rgba(251, 146, 60, 0.1);
     color: rgb(234, 88, 12);
 }
 
 .priority-medium {
-    background-color: rgb(254, 252, 232);
+    background-color: rgba(250, 204, 21, 0.1);
     color: rgb(202, 138, 4);
 }
 
 .priority-low {
-    background-color: rgb(239, 246, 255);
-    color: rgb(37, 99, 235);
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
 }
 
 /* Status Colors */
@@ -213,7 +213,7 @@
 
 /* Avatar Gradients */
 .avatar-gradient-blue {
-    background: linear-gradient(to bottom right, rgb(96, 165, 250), rgb(37, 99, 235));
+    background: linear-gradient(to bottom right, hsl(var(--primary) / 0.8), hsl(var(--primary)));
 }
 
 .avatar-gradient-purple {
@@ -233,7 +233,7 @@
 }
 
 .avatar-gradient-indigo {
-    background: linear-gradient(to bottom right, rgb(165, 180, 252), rgb(79, 70, 229));
+    background: linear-gradient(to bottom right, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.9));
 }
 
 /* Responsive Tabs */

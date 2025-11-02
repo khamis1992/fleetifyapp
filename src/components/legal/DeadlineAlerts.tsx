@@ -31,7 +31,8 @@ interface Deadline {
 }
 
 export const DeadlineAlerts: React.FC = () => {
-  const { data: cases, isLoading } = useLegalCases();
+  const { data: casesResponse, isLoading } = useLegalCases();
+  const cases = casesResponse?.data || [];
 
   // Generate deadlines from cases
   const deadlines = useMemo(() => {

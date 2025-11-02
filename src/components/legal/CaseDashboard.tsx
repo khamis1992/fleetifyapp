@@ -29,7 +29,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
 
 export const CaseDashboard: React.FC = () => {
-  const { data: cases, isLoading } = useLegalCases();
+  const { data: casesResponse, isLoading } = useLegalCases();
+  const cases = casesResponse?.data || [];
   const { data: stats } = useLegalCaseStats();
 
   // Calculate case statistics

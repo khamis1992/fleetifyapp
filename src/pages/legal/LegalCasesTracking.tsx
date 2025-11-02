@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,8 @@ export const LegalCasesTracking: React.FC = () => {
   const [showTriggersConfig, setShowTriggersConfig] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
   const [caseTimeline, setCaseTimeline] = useState<TimelineEntry[]>([
     {
       id: '1',
@@ -92,15 +94,26 @@ export const LegalCasesTracking: React.FC = () => {
     },
   ]);
 
-  const { data: cases, isLoading, error } = useLegalCases({
+  const { data: casesResponse, isLoading, error } = useLegalCases({
     case_status: statusFilter !== 'all' ? statusFilter : undefined,
     case_type: typeFilter !== 'all' ? typeFilter : undefined,
     search: searchTerm || undefined,
+    page: currentPage,
+    pageSize: pageSize,
   });
+
+  const cases = casesResponse?.data || [];
+  const totalCases = casesResponse?.count || 0;
+  const totalPages = Math.ceil(totalCases / pageSize);
 
   const { data: stats } = useLegalCaseStats();
   const { data: selectedCaseData } = useLegalCase(selectedCaseId || '');
   const { companyId } = useUnifiedCompanyAccess();
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter]);
 
   const getCaseStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; class: string }> = {
@@ -120,13 +133,13 @@ export const LegalCasesTracking: React.FC = () => {
 
   const getCaseTypeBadge = (type: string) => {
     const typeMap: Record<string, { label: string; color: string }> = {
-      civil: { label: 'مدني', color: 'bg-blue-100 text-blue-800' },
-      criminal: { label: 'جنائي', color: 'bg-red-100 text-red-800' },
-      commercial: { label: 'تجاري', color: 'bg-purple-100 text-purple-800' },
-      labor: { label: 'عمالي', color: 'bg-green-100 text-green-800' },
-      administrative: { label: 'إداري', color: 'bg-gray-100 text-gray-800' },
-      traffic: { label: 'مروري', color: 'bg-yellow-100 text-yellow-800' },
-      rental: { label: 'إيجار', color: 'bg-indigo-100 text-indigo-800' },
+      civil: { label: 'مدني', color: 'bg-primary/10 text-primary' },
+      criminal: { label: 'جنائي', color: 'bg-destructive/10 text-destructive' },
+      commercial: { label: 'تجاري', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900/20 dark:text-violet-400' },
+      labor: { label: 'عمالي', color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
+      administrative: { label: 'إداري', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
+      traffic: { label: 'مروري', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
+      rental: { label: 'إيجار', color: 'bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-400' },
     };
     const config = typeMap[type] || { label: type, color: 'bg-gray-100 text-gray-800' };
     return <span className={`badge-enhanced ${config.color}`}>{config.label}</span>;
@@ -194,13 +207,13 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="p-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="stat-card-icon-enhanced bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
+              <div className="stat-card-icon-enhanced bg-gradient-to-br from-primary to-primary/80 text-white">
                 <Scale className="w-8 h-8" />
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-bold text-gray-900">تتبع القضايا القانونية</h1>
-                  <button className="p-1.5 rounded-full hover:bg-blue-100 transition-colors">
+                  <button className="p-1.5 rounded-full hover:bg-primary/10 transition-colors">
                     <HelpCircle className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -211,14 +224,14 @@ export const LegalCasesTracking: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowTriggersConfig(true)}
-                className="inline-flex items-center gap-2 hover:border-blue-400 transition-all hover:shadow-md"
+                className="inline-flex items-center gap-2 hover:border-primary transition-all hover:shadow-md"
               >
                 <Zap className="w-4 h-4" />
                 Auto-Create Setup
               </Button>
               <Button 
                 onClick={() => setShowCaseWizard(true)}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 قضية جديدة
@@ -233,73 +246,91 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="stat-card-enhanced p-6 animate-stat-card" style={{ animationDelay: '100ms' }}>
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/80 to-primary shadow-lg">
                 <FileText className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">+12%</span>
+              {stats.total > 0 && (
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">
+                  {stats.active > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '0%'}
+                </span>
+              )}
             </div>
             <h3 className="text-sm font-medium text-gray-600 mb-1 uppercase tracking-wide">إجمالي القضايا</h3>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-bold text-gray-900">{stats.total || 142}</p>
+              <p className="text-4xl font-bold text-gray-900">{stats.total || 0}</p>
               <span className="text-sm text-gray-500">قضية</span>
             </div>
             <p className="text-sm text-green-600 font-medium mt-2 flex items-center gap-1">
               <TrendingUp className="w-4 h-4" />
-              {stats.active || 85} نشطة
+              {stats.active || 0} نشطة
             </p>
           </div>
 
-          <div className="stat-card-enhanced p-6 urgent-glow animate-stat-card" style={{ animationDelay: '200ms' }}>
+          <div className={`stat-card-enhanced p-6 animate-stat-card ${stats.highPriority > 0 ? 'urgent-glow' : ''}`} style={{ animationDelay: '200ms' }}>
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-destructive/80 to-destructive shadow-lg">
                 <AlertCircle className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full urgent-pulse">عاجل</span>
+              {stats.highPriority > 0 && (
+                <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-1 rounded-full urgent-pulse">عاجل</span>
+              )}
             </div>
             <h3 className="text-sm font-medium text-gray-600 mb-1 uppercase tracking-wide">عالية الأولوية</h3>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-bold text-gray-900">{stats.highPriority || 18}</p>
+              <p className="text-4xl font-bold text-gray-900">{stats.highPriority || 0}</p>
               <span className="text-sm text-gray-500">قضية</span>
             </div>
-            <p className="text-sm text-red-600 font-medium mt-2 flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              تحتاج متابعة فورية
-            </p>
+            {stats.highPriority > 0 && (
+              <p className="text-sm text-destructive font-medium mt-2 flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                تحتاج متابعة فورية
+              </p>
+            )}
           </div>
 
           <div className="stat-card-enhanced p-6 animate-stat-card" style={{ animationDelay: '300ms' }}>
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-600/80 to-green-600 shadow-lg">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">+8%</span>
+              {stats.totalValue > 0 && stats.pendingBilling > 0 && (
+                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  {Math.round((stats.pendingBilling / stats.total) * 100)}% معلق
+                </span>
+              )}
             </div>
             <h3 className="text-sm font-medium text-gray-600 mb-1 uppercase tracking-wide">إجمالي التكاليف</h3>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalValue || 450000)}</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalValue || 0)}</p>
             </div>
-            <p className="text-sm text-orange-600 font-medium mt-2 flex items-center gap-1">
-              <FileClock className="w-4 h-4" />
-              {stats.pendingBilling || 12} فاتورة معلقة
-            </p>
+            {stats.pendingBilling > 0 && (
+              <p className="text-sm text-amber-600 font-medium mt-2 flex items-center gap-1">
+                <FileClock className="w-4 h-4" />
+                {stats.pendingBilling} فاتورة معلقة
+              </p>
+            )}
           </div>
 
           <div className="stat-card-enhanced p-6 animate-stat-card" style={{ animationDelay: '400ms' }}>
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-600/80 to-amber-600 shadow-lg">
                 <TrendingDown className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">متأخر</span>
+              {stats.overduePayments > 0 && (
+                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">متأخر</span>
+              )}
             </div>
             <h3 className="text-sm font-medium text-gray-600 mb-1 uppercase tracking-wide">مدفوعات متأخرة</h3>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-bold text-gray-900">{stats.overduePayments || 32}</p>
+              <p className="text-4xl font-bold text-gray-900">{stats.overduePayments || 0}</p>
               <span className="text-sm text-gray-500">حالة</span>
             </div>
-            <p className="text-sm text-orange-600 font-medium mt-2 flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              تحتاج متابعة
-            </p>
+            {stats.overduePayments > 0 && (
+              <p className="text-sm text-amber-600 font-medium mt-2 flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                تحتاج متابعة
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -308,31 +339,31 @@ export const LegalCasesTracking: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <TabsList className="w-full grid grid-cols-7 h-auto p-0 bg-transparent tab-list-scroll">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">لوحة التحكم</span>
             </TabsTrigger>
-            <TabsTrigger value="cases" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="cases" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <Folder className="w-4 h-4" />
               <span className="hidden sm:inline">قائمة القضايا</span>
             </TabsTrigger>
-            <TabsTrigger value="case-details" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="case-details" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <FileSearch className="w-4 h-4" />
               <span className="hidden sm:inline">التفاصيل</span>
             </TabsTrigger>
-            <TabsTrigger value="deadlines" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="deadlines" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <CalendarClock className="w-4 h-4" />
               <span className="hidden sm:inline">المواعيد</span>
             </TabsTrigger>
-            <TabsTrigger value="notice-generator" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="notice-generator" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">الإنذارات</span>
             </TabsTrigger>
-            <TabsTrigger value="settlement" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="settlement" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <Handshake className="w-4 h-4" />
               <span className="hidden sm:inline">التسويات</span>
             </TabsTrigger>
-            <TabsTrigger value="delinquent" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap rounded-none">
+            <TabsTrigger value="delinquent" className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors whitespace-nowrap rounded-none">
               <UserX className="w-4 h-4" />
               <span className="hidden sm:inline">متأخرين</span>
             </TabsTrigger>
@@ -356,12 +387,12 @@ export const LegalCasesTracking: React.FC = () => {
                     placeholder="بحث في القضايا..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="pr-10 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                <SelectTrigger className="focus:ring-2 focus:ring-primary focus:border-primary transition-all">
                   <SelectValue placeholder="الحالة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -373,7 +404,7 @@ export const LegalCasesTracking: React.FC = () => {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                <SelectTrigger className="focus:ring-2 focus:ring-primary focus:border-primary transition-all">
                   <SelectValue placeholder="النوع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -417,7 +448,7 @@ export const LegalCasesTracking: React.FC = () => {
                         }}
                       >
                         <TableCell className="whitespace-nowrap">
-                          <span className="font-mono font-semibold text-blue-700">{legalCase.case_number}</span>
+                          <span className="font-mono font-semibold text-primary">{legalCase.case_number}</span>
                         </TableCell>
                         <TableCell>
                           <div className="font-medium text-gray-900">{legalCase.case_title_ar || legalCase.case_title}</div>
@@ -458,18 +489,47 @@ export const LegalCasesTracking: React.FC = () => {
             {/* Pagination */}
             {cases && cases.length > 0 && (
               <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-gray-600">
-                    عرض <span className="font-semibold">1-{cases.length}</span> من <span className="font-semibold">{stats?.total || cases.length}</span> قضية
+                    عرض <span className="font-semibold">{(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCases)}</span> من <span className="font-semibold">{totalCases}</span> قضية
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
-                    <Button variant="default" size="sm">1</Button>
-                    <Button variant="outline" size="sm">2</Button>
-                    <Button variant="outline" size="sm">3</Button>
-                    <Button variant="outline" size="sm">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <Button 
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"} 
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                   </div>

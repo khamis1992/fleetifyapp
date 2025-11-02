@@ -80,6 +80,8 @@ interface UseLegalCasesFilters {
   client_id?: string;
   lawyer_id?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export const useLegalCases = (filters?: UseLegalCasesFilters) => {
@@ -91,10 +93,16 @@ export const useLegalCases = (filters?: UseLegalCasesFilters) => {
     queryFn: async () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
+      const page = filters?.page || 1;
+      const pageSize = filters?.pageSize || 50;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = supabase
         .from('legal_cases')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, total_costs, created_at, case_description', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       // Apply company filter
       if (companyFilter.company_id) {
@@ -121,12 +129,13 @@ export const useLegalCases = (filters?: UseLegalCasesFilters) => {
         query = query.or(`case_title.ilike.%${filters.search}%,case_number.ilike.%${filters.search}%,client_name.ilike.%${filters.search}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
-      return data as LegalCase[];
+      return { data: data as LegalCase[], count: count || 0 };
     },
     enabled: !!user?.id,
+    staleTime: 30000, // Cache for 30 seconds
   });
 };
 
@@ -307,6 +316,28 @@ export const useLegalCaseStats = () => {
 
       if (error) throw error;
 
+      // Return zeros if no data
+      if (!data || data.length === 0) {
+        return {
+          total: 0,
+          active: 0,
+          closed: 0,
+          suspended: 0,
+          onHold: 0,
+          highPriority: 0,
+          totalValue: 0,
+          pendingBilling: 0,
+          overduePayments: 0,
+          byType: {
+            civil: 0,
+            criminal: 0,
+            commercial: 0,
+            labor: 0,
+            administrative: 0,
+          },
+        };
+      }
+
       // Calculate statistics
       const stats = {
         total: data.length,
@@ -330,5 +361,6 @@ export const useLegalCaseStats = () => {
       return stats;
     },
     enabled: !!user?.id,
+    staleTime: 60000, // Cache for 1 minute
   });
 };
