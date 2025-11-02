@@ -162,18 +162,40 @@ export const usePayments = (filters?: {
 export const useCreatePayment = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
   
   return useMutation({
     mutationFn: async (paymentData: CreatePaymentData) => {
-      if (!user?.profile?.company_id || !user?.id) {
-        throw new Error("User data is required");
+      // استخدام company_id من invoice إذا كان متوفراً، وإلا من user
+      let targetCompanyId: string | undefined;
+      
+      if (paymentData.invoice_id) {
+        // جلب company_id من الفاتورة
+        const { data: invoice } = await supabase
+          .from("invoices")
+          .select("company_id")
+          .eq("id", paymentData.invoice_id)
+          .single();
+        
+        if (invoice?.company_id) {
+          targetCompanyId = invoice.company_id;
+        }
+      }
+      
+      // استخدام companyId من useUnifiedCompanyAccess أو user.profile.company_id كبديل
+      if (!targetCompanyId) {
+        targetCompanyId = companyId || user?.profile?.company_id;
+      }
+      
+      if (!targetCompanyId || !user?.id) {
+        throw new Error("User data and company ID are required");
       }
       
       // Generate payment number
       const { data: existingPayments } = await supabase
         .from("payments")
         .select("payment_number")
-        .eq("company_id", user.profile.company_id)
+        .eq("company_id", targetCompanyId)
         .order("created_at", { ascending: false })
         .limit(1);
       
@@ -191,7 +213,7 @@ export const useCreatePayment = () => {
         .insert({
           ...paymentData,
           payment_number: paymentNumber,
-          company_id: user.profile.company_id,
+          company_id: targetCompanyId,
           payment_status: 'completed',
           created_by: user.id
         })

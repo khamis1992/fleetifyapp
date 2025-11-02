@@ -306,6 +306,7 @@ export function PayInvoiceDialog({
         invoice_id: invoice.id,
         customer_id: invoice.customer_id,
         vendor_id: invoice.vendor_id,
+        contract_id: invoice.contract_id,
       });
 
       // إذا كان الدفع جزئياً، إنشاء فاتورة جديدة للمبلغ المتبقي
