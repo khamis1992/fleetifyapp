@@ -640,9 +640,9 @@ const Customers = () => {
   const getAvatarColor = (index: number) => {
     const colors = [
       'hsl(var(--primary))',
-      'hsl(var(--success))',
-      'hsl(var(--warning))',
-      'hsl(210 100% 50%)',
+      'rgb(22, 163, 74)', // green-600
+      'rgb(234, 88, 12)', // orange-600
+      'rgb(59, 130, 246)', // blue-500
     ];
     return colors[index % colors.length];
   };
@@ -985,7 +985,7 @@ const Customers = () => {
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">إجمالي العملاء</p>
                 <h3 className="text-4xl font-bold mb-2">{totalCustomers.toLocaleString('ar-SA')}</h3>
-                <p className="text-sm text-success flex items-center gap-1 mt-2">
+                <p className="text-sm text-green-600 flex items-center gap-1 mt-2">
                   <TrendingUp className="w-4 h-4" />
                   <span>أفراد: {individualCustomers} | شركات: {corporateCustomers}</span>
                 </p>
@@ -1001,10 +1001,10 @@ const Customers = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">العملاء النشطون</p>
-                <h3 className="text-4xl font-bold mb-2 text-success">
+                <h3 className="text-4xl font-bold mb-2 text-green-600">
                   {totalCustomers > 0 ? (totalCustomers - blacklistedCustomers).toLocaleString('ar-SA') : 0}
                 </h3>
-                <p className="text-sm text-success flex items-center gap-1 mt-2">
+                <p className="text-sm text-green-600 flex items-center gap-1 mt-2">
                   <CheckCircle className="w-4 h-4" />
                   <span>
                     {totalCustomers > 0 
@@ -1013,8 +1013,8 @@ const Customers = () => {
                   </span>
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-success/10">
-                <UserCheck className="w-6 h-6 text-success" />
+              <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/20">
+                <UserCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </Card>
@@ -1024,14 +1024,14 @@ const Customers = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">العملاء المعلقون</p>
-                <h3 className="text-4xl font-bold mb-2 text-warning">{blacklistedCustomers.toLocaleString('ar-SA')}</h3>
-                <p className="text-sm text-warning flex items-center gap-1 mt-2">
+                <h3 className="text-4xl font-bold mb-2 text-amber-600">{blacklistedCustomers.toLocaleString('ar-SA')}</h3>
+                <p className="text-sm text-amber-600 flex items-center gap-1 mt-2">
                   <AlertCircle className="w-4 h-4" />
                   <span>يحتاج متابعة</span>
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-warning/10">
-                <UserX className="w-6 h-6 text-warning" />
+              <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/20">
+                <UserX className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </Card>
@@ -1156,8 +1156,8 @@ const Customers = () => {
                                   محظور
                                 </Badge>
                               ) : customer.is_active ? (
-                                <Badge variant="default" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit bg-success/10 text-success border-success/20">
-                                  <span className="w-2 h-2 rounded-full bg-success"></span>
+                                <Badge variant="default" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                                  <span className="w-2 h-2 rounded-full bg-green-600"></span>
                                   نشط
                                 </Badge>
                               ) : (

@@ -871,7 +871,7 @@ function ContractsNew() {
       <SendRemindersDialog 
         open={showRemindersDialog} 
         onOpenChange={setShowRemindersDialog}
-        contracts={data || []}
+        contracts={safeFilteredContracts || []}
       />
 
       {showTemplateManager && (

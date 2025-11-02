@@ -12,6 +12,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { 
+  useCustomerDocuments, 
+  useUploadCustomerDocument, 
+  useDeleteCustomerDocument, 
+  useDownloadCustomerDocument 
+} from '@/hooks/useCustomerDocuments';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -821,7 +827,11 @@ const CustomerDetailsPage = () => {
                 <div className="space-y-4">
                   {formattedContracts.length > 0 ? (
                     formattedContracts.map((contract, index) => (
-                      <div key={contract.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm transition-all duration-300 hover:border-red-600 hover:shadow-md hover:-translate-y-1">
+                      <div 
+                        key={contract.id} 
+                        className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm transition-all duration-300 hover:border-red-600 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+                        onClick={() => navigate(`/contracts/${contract.contractNumber}`)}
+                      >
                         <div className="flex items-start justify-between mb-5 pb-4 border-b border-gray-200">
                           <div className="flex items-start gap-4 flex-1">
                             <div className={cn(
@@ -892,7 +902,10 @@ const CustomerDetailsPage = () => {
                           <Button 
                             variant="outline" 
                             className="flex-1 gap-2"
-                            onClick={() => handleViewContract(contract.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewContract(contract.id);
+                            }}
                           >
                             <Eye className="w-4 h-4" />
                             عرض التفاصيل
@@ -901,7 +914,10 @@ const CustomerDetailsPage = () => {
                             <Button 
                               variant="outline" 
                               className="flex-1 gap-2"
-                              onClick={() => handleRenewContract(contract)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRenewContract(contract);
+                              }}
                             >
                               <RefreshCw className="w-4 h-4" />
                               تجديد العقد
@@ -909,7 +925,10 @@ const CustomerDetailsPage = () => {
                           ) : (
                             <Button 
                               className="flex-1 gap-2 bg-red-600 hover:bg-red-700"
-                              onClick={() => handleContinuePayment(contract)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleContinuePayment(contract);
+                              }}
                             >
                               <CreditCard className="w-4 h-4" />
                               متابعة الدفع

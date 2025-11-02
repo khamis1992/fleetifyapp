@@ -27,6 +27,7 @@ import {
   Plus,
   Car,
   Upload,
+  ChevronLeft,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -887,13 +888,20 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
             const daysRemaining = endDate ? differenceInDays(endDate, new Date()) : 0;
 
             return (
-              <Card key={contract.id} className="transition-all hover:border-red-300 hover:shadow-md">
+              <Card 
+                key={contract.id} 
+                className="transition-all hover:border-red-400 hover:shadow-lg cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                onClick={() => navigate(`/contracts/${contract.contract_number}`)}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">
-                        عقد #{contract.contract_number}
-                      </h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          عقد #{contract.contract_number}
+                        </h4>
+                        <ChevronLeft className="w-4 h-4 text-gray-400" />
+                      </div>
                       <p className="text-sm text-gray-600">العميل: {customerName}</p>
                     </div>
                     <Badge className={contract.status === 'active' ? 'status-available' : 'bg-gray-100'}>
