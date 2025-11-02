@@ -30,6 +30,7 @@ import {
   XOctagon,
   AlertCircle,
   Check,
+  MessageSquare,
 } from "lucide-react";
 
 // Component imports
@@ -399,15 +400,26 @@ function ContractsNew() {
               className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
             >
               <Zap className="w-5 h-5 text-amber-500" />
-              <span>الوضع السريع</span>
+              <span>عقود ايجار</span>
             </Button>
+            {user?.roles?.includes('super_admin') && (
+              <Button
+                onClick={() => setShowCSVUpload(true)}
+                variant="outline"
+                className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
+              >
+                <Upload className="w-5 h-5 text-blue-500" />
+                <span className="hidden lg:inline">استيراد CSV</span>
+              </Button>
+            )}
             <Button
-              onClick={() => setShowCSVUpload(true)}
+              onClick={() => navigate('/collections')}
               variant="outline"
-              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
+              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-purple-500 transition-colors flex items-center gap-2"
+              title="إرسال تنبيهات الواتساب للعقود"
             >
-              <Upload className="w-5 h-5 text-blue-500" />
-              <span className="hidden lg:inline">استيراد CSV</span>
+              <MessageSquare className="w-5 h-5 text-purple-500" />
+              <span className="hidden lg:inline">إرسال تنبيهات</span>
             </Button>
             <Button
               onClick={() => setShowExportDialog(true)}

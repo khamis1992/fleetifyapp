@@ -99,7 +99,12 @@ export const useContractsData = (filters: any = {}) => {
     queryKey: queryKeys.contracts.list({
       page: filters?.page,
       pageSize: filters?.pageSize,
-      companyId: filter?.company_id
+      companyId: filter?.company_id,
+      status: filters?.status,
+      search: filters?.search,
+      contract_type: filters?.contract_type,
+      customer_id: filters?.customer_id,
+      cost_center_id: filters?.cost_center_id
     }),
     queryFn: async () => {
       const companyId = filter?.company_id || null;
@@ -109,7 +114,9 @@ export const useContractsData = (filters: any = {}) => {
         browsedCompanyId: browsedCompany?.id,
         actualUserCompanyId,
         page: filters?.page,
-        pageSize: filters?.pageSize
+        pageSize: filters?.pageSize,
+        statusFilter: filters?.status,
+        allFilters: filters
       });
 
       // Get total count if pagination is requested
@@ -124,6 +131,13 @@ export const useContractsData = (filters: any = {}) => {
 
         if (companyId) {
           countQuery = countQuery.eq('company_id', companyId);
+        }
+
+        // Apply status filter to count query as well
+        if (filters?.status && filters.status !== 'all' && filters.status !== '') {
+          if (filters.status !== 'expiring_soon') {
+            countQuery = countQuery.eq('status', filters.status);
+          }
         }
 
         const { count, error: countError } = await countQuery;
