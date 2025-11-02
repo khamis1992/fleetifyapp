@@ -8,8 +8,8 @@ import { logger } from '@/lib/logger';
 export interface Payment {
   id: string;
   company_id: string;
-  payment_type: 'receipt' | 'payment';
-  payment_method: string;
+  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card'; // طريقة الدفع الفعلية
+  payment_method: 'received' | 'made'; // نوع العملية: received (استلام) أو made (دفع)
   payment_number: string;
   amount: number;
   payment_date: string;
@@ -30,8 +30,8 @@ export interface Payment {
 }
 
 interface CreatePaymentData {
-  payment_type: 'receipt' | 'payment';
-  payment_method: string;
+  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card'; // طريقة الدفع الفعلية
+  payment_method: 'received' | 'made'; // نوع العملية: received (استلام) أو made (دفع)
   amount: number;
   payment_date: string;
   reference_number?: string;

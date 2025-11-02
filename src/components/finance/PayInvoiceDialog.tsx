@@ -297,8 +297,8 @@ export function PayInvoiceDialog({
     try {
       // تسجيل الدفعة
       await createPayment.mutateAsync({
-        payment_type: invoice.customer_id ? 'receipt' : 'payment',
-        payment_method: data.payment_method,
+        payment_type: data.payment_method, // طريقة الدفع: cash, bank_transfer, check, credit_card, debit_card
+        payment_method: invoice.customer_id ? 'received' : 'made', // نوع العملية: received أو made
         amount: data.amount,
         payment_date: data.payment_date,
         reference_number: data.reference_number,
