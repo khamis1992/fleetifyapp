@@ -93,7 +93,8 @@ const maintenanceTypeLabels = {
   routine: "صيانة دورية",
   repair: "إصلاح",
   emergency: "صيانة طارئة",
-  preventive: "صيانة وقائية"
+  preventive: "صيانة وقائية",
+  maintenance: "صيانة"
 }
 
 const maintenanceTypeColors = {
@@ -134,6 +135,11 @@ export default function Maintenance() {
     limit: 100
   })
   
+  const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles({
+    limit: 50,
+    enabled: true
+  })
+  
   const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts({
     priority: true,
     limit: 5
@@ -145,31 +151,88 @@ export default function Maintenance() {
 
   // Calculate statistics
   const statistics = useMemo(() => {
-    if (!maintenanceRecords) return { total: 0, pending: 0, completed: 0 }
-    
-    return {
-      total: maintenanceRecords.length,
-      pending: maintenanceRecords.filter(m => m.status === 'in_progress').length,
-      completed: maintenanceRecords.filter(m => m.status === 'completed').length
+    if (!maintenanceRecords || maintenanceRecords.length === 0) {
+      console.log('🔍 [Maintenance Stats] No records found:', maintenanceRecords)
+      return { total: 0, pending: 0, inProgress: 0, completed: 0, cancelled: 0 }
     }
-  }, [maintenanceRecords])
-
-  // Filter records
-  const filteredRecords = useMemo(() => {
-    if (!maintenanceRecords) return []
     
-    return maintenanceRecords.filter(record => {
-      const matchesSearch = !searchQuery || 
-        record.maintenance_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.maintenance_type?.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesStatus = statusFilter === "all" || record.status === statusFilter
-      const matchesType = typeFilter === "all" || record.maintenance_type === typeFilter
-      
-      return matchesSearch && matchesStatus && matchesType
-    })
-  }, [maintenanceRecords, searchQuery, statusFilter, typeFilter])
+    const stats = {
+      total: maintenanceRecords.length,
+      pending: maintenanceRecords.filter(m => m.status === 'pending').length,
+      inProgress: maintenanceRecords.filter(m => m.status === 'in_progress').length,
+      completed: maintenanceRecords.filter(m => m.status === 'completed').length,
+      cancelled: maintenanceRecords.filter(m => m.status === 'cancelled').length
+    }
+    
+    console.log('📊 [Maintenance Stats] Calculated:', stats)
+    console.log('📋 [Maintenance Records] Sample:', maintenanceRecords.slice(0, 3).map(r => ({ 
+      id: r.id, 
+      status: r.status, 
+      maintenance_number: r.maintenance_number 
+    })))
+    console.log('🚗 [Maintenance Vehicles] Count:', maintenanceVehicles?.length || 0)
+    if (maintenanceVehicles && maintenanceVehicles.length > 0) {
+      console.log('🚗 [Maintenance Vehicles] Sample:', maintenanceVehicles.slice(0, 3).map(v => ({
+        id: v.id,
+        plate_number: v.plate_number,
+        status: v.status
+      })))
+    }
+    
+    return stats
+  }, [maintenanceRecords, maintenanceVehicles])
+
+  // Filter records and combine with vehicles in maintenance
+  const filteredRecords = useMemo(() => {
+    const records: any[] = []
+    
+    // Add maintenance records
+    if (maintenanceRecords) {
+      records.push(...maintenanceRecords.filter(record => {
+        const matchesSearch = !searchQuery || 
+          record.maintenance_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          record.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          record.maintenance_type?.toLowerCase().includes(searchQuery.toLowerCase())
+        
+        const matchesStatus = statusFilter === "all" || record.status === statusFilter
+        const matchesType = typeFilter === "all" || record.maintenance_type === typeFilter
+        
+        return matchesSearch && matchesStatus && matchesType
+      }))
+    }
+    
+    // Add vehicles in maintenance status (if they match search)
+    if (maintenanceVehicles) {
+      maintenanceVehicles.forEach(vehicle => {
+        const matchesSearch = !searchQuery || 
+          vehicle.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase())
+        
+        // Only show if matches search or if status filter is "all" or matches "in_progress"
+        if (matchesSearch && (statusFilter === "all" || statusFilter === "in_progress")) {
+          records.push({
+            id: `vehicle-${vehicle.id}`,
+            maintenance_number: `VEH-${vehicle.plate_number}`,
+            maintenance_type: 'maintenance',
+            status: 'in_progress',
+            priority: 'medium',
+            vehicle_id: vehicle.id,
+            vehicles: {
+              plate_number: vehicle.plate_number,
+              make: vehicle.make,
+              model: vehicle.model
+            },
+            scheduled_date: vehicle.last_maintenance_date,
+            description: 'مركبة في حالة صيانة',
+            isVehicleInMaintenance: true, // Flag to identify this is a vehicle in maintenance status
+            vehicle: vehicle
+          })
+        }
+      })
+    }
+    
+    return records
+  }, [maintenanceRecords, maintenanceVehicles, searchQuery, statusFilter, typeFilter])
 
   // Pagination
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage)
@@ -179,6 +242,12 @@ export default function Maintenance() {
   )
 
   const openSidePanel = (maintenance: any) => {
+    // If it's a vehicle in maintenance status, open maintenance form instead
+    if (maintenance.isVehicleInMaintenance && maintenance.vehicle_id) {
+      setSelectedVehicleId(maintenance.vehicle_id)
+      setShowMaintenanceForm(true)
+      return
+    }
     setSelectedMaintenance(maintenance)
     setSidePanelOpen(true)
   }
@@ -270,7 +339,7 @@ export default function Maintenance() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           {/* Total */}
           <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
             <div className="flex items-center justify-between">
@@ -287,20 +356,58 @@ export default function Maintenance() {
             </div>
           </div>
 
+          {/* Vehicles in Maintenance */}
+          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm mb-2">المركبات في الصيانة</p>
+                <h3 className="text-3xl font-bold text-purple-600">{maintenanceVehicles?.length || 0}</h3>
+              </div>
+              <div className="bg-purple-100 p-4 rounded-xl">
+                <Car className="w-8 h-8 text-purple-600" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <span className="text-purple-600 font-semibold">
+                {maintenanceVehicles?.length || 0} مركبة
+              </span>
+              <span className="text-gray-500">قيد الصيانة</span>
+            </div>
+          </div>
+
           {/* Pending */}
           <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-gray-600 text-sm mb-2">معلقة</p>
+                <h3 className="text-3xl font-bold text-yellow-600">{statistics.pending}</h3>
+              </div>
+              <div className="bg-yellow-100 p-4 rounded-xl">
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <span className="text-yellow-600 font-semibold">
+                {statistics.total > 0 ? Math.round((statistics.pending / statistics.total) * 100) : 0}%
+              </span>
+              <span className="text-gray-500">من الإجمالي</span>
+            </div>
+          </div>
+
+          {/* In Progress */}
+          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-gray-600 text-sm mb-2">قيد المعالجة</p>
-                <h3 className="text-3xl font-bold text-orange-600">{statistics.pending}</h3>
+                <h3 className="text-3xl font-bold text-orange-600">{statistics.inProgress}</h3>
               </div>
               <div className="bg-orange-100 p-4 rounded-xl">
-                <Clock className="w-8 h-8 text-orange-600" />
+                <Wrench className="w-8 h-8 text-orange-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-sm">
               <span className="text-orange-600 font-semibold">
-                {statistics.total > 0 ? Math.round((statistics.pending / statistics.total) * 100) : 0}%
+                {statistics.total > 0 ? Math.round((statistics.inProgress / statistics.total) * 100) : 0}%
               </span>
               <span className="text-gray-500">من الإجمالي</span>
             </div>
@@ -413,26 +520,51 @@ export default function Maintenance() {
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <td className="px-6 py-4">
-                          <span className="font-mono font-semibold text-red-600">
-                            #{maintenance.maintenance_number || maintenance.id?.slice(0, 3).toUpperCase()}
-                          </span>
+                          {maintenance.isVehicleInMaintenance ? (
+                            <span className="font-mono font-semibold text-purple-600">
+                              {maintenance.vehicle?.plate_number || maintenance.vehicles?.plate_number}
+                            </span>
+                          ) : (
+                            <span className="font-mono font-semibold text-red-600">
+                              #{maintenance.maintenance_number || maintenance.id?.slice(0, 3).toUpperCase()}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <TypeIcon className={cn("w-4 h-4", typeColor)} />
-                            <span>{maintenanceTypeLabels[maintenance.maintenance_type as keyof typeof maintenanceTypeLabels] || maintenance.maintenance_type}</span>
+                            {maintenance.isVehicleInMaintenance ? (
+                              <>
+                                <Car className="w-4 h-4 text-purple-600" />
+                                <span className="text-purple-600 font-semibold">مركبة في الصيانة</span>
+                                <Badge className="bg-purple-100 text-purple-700 text-xs">صيانة</Badge>
+                              </>
+                            ) : (
+                              <>
+                                <TypeIcon className={cn("w-4 h-4", typeColor)} />
+                                <span>{maintenanceTypeLabels[maintenance.maintenance_type as keyof typeof maintenanceTypeLabels] || maintenance.maintenance_type}</span>
+                              </>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Car className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">{maintenance.vehicles?.plate_number || 'غير محدد'}</span>
+                            <span className="font-medium">{maintenance.vehicles?.plate_number || maintenance.vehicle?.plate_number || 'غير محدد'}</span>
+                            {maintenance.vehicle && (
+                              <span className="text-xs text-gray-500">
+                                ({maintenance.vehicle.make} {maintenance.vehicle.model})
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-gray-600">
-                          {maintenance.scheduled_date 
-                            ? new Date(maintenance.scheduled_date).toLocaleDateString('ar-SA')
-                            : 'غير محدد'}
+                          {maintenance.isVehicleInMaintenance 
+                            ? (maintenance.vehicle?.last_maintenance_date
+                                ? new Date(maintenance.vehicle.last_maintenance_date).toLocaleDateString('ar-SA')
+                                : 'غير محدد')
+                            : (maintenance.scheduled_date 
+                                ? new Date(maintenance.scheduled_date).toLocaleDateString('ar-SA')
+                                : 'غير محدد')}
                         </td>
                         <td className="px-6 py-4">
                           <Badge className={cn(
@@ -456,7 +588,9 @@ export default function Maintenance() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="font-semibold text-gray-900">
-                            {formatCurrency(maintenance.actual_cost || maintenance.estimated_cost || 0)}
+                            {maintenance.isVehicleInMaintenance 
+                              ? '-' 
+                              : formatCurrency(maintenance.actual_cost || maintenance.estimated_cost || 0)}
                           </span>
                         </td>
                         <td className="px-6 py-4">

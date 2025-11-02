@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة تفاصيل العقد - العراف لتأجير السيارات</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="contract_print_theme.css">
+    
+    <style>
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes progressFill {
+            from {
+                width: 0;
+            }
+            to {
+                width: var(--progress-width);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .animate-card {
+            animation: cardAppear 0.4s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .animate-card:nth-child(1) { animation-delay: 0ms; }
+        .animate-card:nth-child(2) { animation-delay: 100ms; }
+        .animate-card:nth-child(3) { animation-delay: 200ms; }
+        .animate-card:nth-child(4) { animation-delay: 300ms; }
+        
+        .progress-fill {
+            animation: progressFill 1s ease-out;
+        }
+        
+        .badge-pending {
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Print-specific styles */
+        @media print {
+            .animate-fade-in,
+            .animate-card,
+            .progress-fill,
+            .badge-pending {
+                animation: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- صفحة 1: ملخص العقد -->
+    <div class="print-container animate-fade-in">
+        
+        <!-- الترويسة -->
+        <div class="print-header">
+            <h1 class="company-name">العراف لتأجير السيارات</h1>
+            <p class="company-name-en">Alaraf Car Rental</p>
+            
+            <div class="company-info">
+                <div class="company-info-item">
+                    <i data-lucide="map-pin"></i>
+                    <span>الدوحة، دولة قطر</span>
+                </div>
+                <div class="company-info-item">
+                    <i data-lucide="phone"></i>
+                    <span class="ltr">+974 3115 1919</span>
+                </div>
+                <div class="company-info-item">
+                    <i data-lucide="mail"></i>
+                    <span>info@alaraf.online</span>
+                </div>
+                <div class="company-info-item">
+                    <i data-lucide="globe"></i>
+                    <span>www.alaraf.online</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- عنوان العقد -->
+        <div class="contract-title">
+            <h2>
+                <i data-lucide="file-text"></i>
+                ملخص تفاصيل العقد
+            </h2>
+            <p class="contract-subtitle">Contract Details Summary</p>
+            
+            <div class="contract-meta">
+                <div>
+                    <strong>رقم العقد:</strong>
+                    <span class="font-mono ltr">CNT-2024-001</span>
+                </div>
+                <div>
+                    <strong>تاريخ الطباعة:</strong>
+                    <span id="printDate">02 نوفمبر 2025</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معلومات العقد الأساسية -->
+        <div class="card animate-card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i data-lucide="file-text"></i>
+                </div>
+                <h3 class="card-title">معلومات العقد الأساسية</h3>
+            </div>
+            <div class="card-content">
+                <div class="info-row">
+                    <span class="info-label">رقم العقد</span>
+                    <span class="info-value mono ltr">CNT-2024-001</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">نوع العقد</span>
+                    <span class="info-value">إيجار سيارة</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">تاريخ التوقيع</span>
+                    <span class="info-value">01 يناير 2024م</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">تاريخ البدء</span>
+                    <span class="info-value">01 يناير 2024م</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">تاريخ الانتهاء</span>
+                    <span class="info-value">31 ديسمبر 2024م</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">مدة العقد</span>
+                    <span class="info-value">365 يوماً (12 شهر)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">الحالة</span>
+                    <span class="info-value">
+                        <span class="badge badge-active">
+                            <i data-lucide="check-circle"></i>
+                            نشط
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معلومات الأطراف والمركبة -->
+        <div class="grid grid-2">
+            <!-- معلومات العميل -->
+            <div class="card animate-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <h3 class="card-title">الطرف الأول (المستأجر)</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-row">
+                        <span class="info-label">الاسم</span>
+                        <span class="info-value">أحمد محمد السليطي</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم العميل</span>
+                        <span class="info-value mono ltr">CUST-001</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">نوع العميل</span>
+                        <span class="info-value">فرد</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم الهوية</span>
+                        <span class="info-value mono ltr">28501234567</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">الجوال</span>
+                        <span class="info-value mono ltr">+974 5012 3456</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">البريد الإلكتروني</span>
+                        <span class="info-value ltr">ahmad@email.com</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">العنوان</span>
+                        <span class="info-value">الدوحة، دولة قطر</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- معلومات المركبة -->
+            <div class="card animate-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i data-lucide="car"></i>
+                    </div>
+                    <h3 class="card-title">معلومات المركبة</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-row">
+                        <span class="info-label">النوع</span>
+                        <span class="info-value">تويوتا كامري</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">الموديل</span>
+                        <span class="info-value">2024</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم اللوحة</span>
+                        <span class="info-value mono">أ ب ج 1234</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">اللون</span>
+                        <span class="info-value">أبيض لؤلؤي</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم الهيكل</span>
+                        <span class="info-value mono ltr">ABC123XYZ456</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">الحالة</span>
+                        <span class="info-value">
+                            <span class="badge badge-active">مؤجر</span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">التأمين</span>
+                        <span class="info-value">ساري حتى 31/12/2025</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- الملخص المالي -->
+        <div class="financial-summary animate-card">
+            <h3 class="card-title" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="dollar-sign"></i>
+                الملخص المالي
+            </h3>
+            
+            <div class="financial-row">
+                <span class="financial-label">قيمة العقد الإجمالية</span>
+                <span class="financial-value">50,000.00 ر.ق</span>
+            </div>
+            
+            <div class="financial-row">
+                <span class="financial-label">المبلغ الشهري</span>
+                <span class="financial-value">4,166.67 ر.ق</span>
+            </div>
+            
+            <div class="financial-row">
+                <span class="financial-label">عدد الدفعات الكلي</span>
+                <span class="financial-value">12 دفعة</span>
+            </div>
+            
+            <div style="border-top: 1px dashed #D1D5DB; margin: 1rem 0;"></div>
+            
+            <div class="financial-row">
+                <span class="financial-label">المبلغ المدفوع</span>
+                <span class="financial-value" style="color: #059669;">30,000.00 ر.ق</span>
+            </div>
+            
+            <div class="financial-row">
+                <span class="financial-label">عدد الدفعات المدفوعة</span>
+                <span class="financial-value" style="color: #059669;">7 دفعات</span>
+            </div>
+            
+            <div style="border-top: 1px dashed #D1D5DB; margin: 1rem 0;"></div>
+            
+            <div class="financial-row total">
+                <span class="financial-label">المبلغ المتبقي</span>
+                <span class="financial-value">20,000.00 ر.ق</span>
+            </div>
+            
+            <div class="financial-row">
+                <span class="financial-label">الدفعات المتبقية</span>
+                <span class="financial-value">5 دفعات</span>
+            </div>
+            
+            <!-- شريط التقدم -->
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span>نسبة الإنجاز</span>
+                    <span class="font-bold">58%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="--progress-width: 58%; width: 58%;">
+                        7 من 12 دفعة
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- جدول الدفعات -->
+        <div class="card animate-card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i data-lucide="calendar"></i>
+                </div>
+                <h3 class="card-title">جدول الدفعات (ملخص)</h3>
+            </div>
+            <div class="card-content">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="table-number">#</th>
+                                <th>تاريخ الاستحقاق</th>
+                                <th class="table-amount">المبلغ</th>
+                                <th>الحالة</th>
+                                <th>تاريخ الدفع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="table-number">1</td>
+                                <td>01 فبراير 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>28 يناير 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">2</td>
+                                <td>01 مارس 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>27 فبراير 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">3</td>
+                                <td>01 أبريل 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>29 مارس 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">4</td>
+                                <td>01 مايو 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>30 أبريل 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">5</td>
+                                <td>01 يونيو 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>28 مايو 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">6</td>
+                                <td>01 يوليو 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>29 يونيو 2024</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">7</td>
+                                <td>01 أغسطس 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-paid"><i data-lucide="check"></i> مدفوع</span></td>
+                                <td>30 يوليو 2024</td>
+                            </tr>
+                            <tr style="background: #FEF3C7;">
+                                <td class="table-number">8</td>
+                                <td>01 سبتمبر 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-pending"><i data-lucide="clock"></i> معلق</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">9</td>
+                                <td>01 أكتوبر 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-unpaid"><i data-lucide="circle"></i> قادم</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">10</td>
+                                <td>01 نوفمبر 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-unpaid"><i data-lucide="circle"></i> قادم</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">11</td>
+                                <td>01 ديسمبر 2024</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-unpaid"><i data-lucide="circle"></i> قادم</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td class="table-number">12</td>
+                                <td>01 يناير 2025</td>
+                                <td class="table-amount">4,166.67 ر.ق</td>
+                                <td><span class="badge badge-unpaid"><i data-lucide="circle"></i> قادم</span></td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- أهم الشروط الأساسية -->
+        <div class="card animate-card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i data-lucide="file-check"></i>
+                </div>
+                <h3 class="card-title">أهم الشروط الأساسية</h3>
+            </div>
+            <div class="card-content">
+                <ul class="terms-list">
+                    <li>يلتزم المستأجر بدفع الأقساط الشهرية في مواعيدها المحددة دون تأخير</li>
+                    <li>المركبة مؤمنة بالكامل ضد جميع المخاطر طوال فترة العقد</li>
+                    <li>يتحمل المستأجر مسؤولية جميع المخالفات المرورية التي تحدث أثناء فترة الإيجار</li>
+                    <li>يجب إرجاع المركبة بنفس الحالة التي كانت عليها عند الاستلام (باستثناء التآكل الطبيعي)</li>
+                    <li>غرامة التأخير عن الدفع: 1.5% شهرياً من قيمة القسط المتأخر</li>
+                </ul>
+                
+                <div class="terms-notice">
+                    <i data-lucide="info"></i>
+                    <strong>للاطلاع على الشروط والأحكام الكاملة،</strong>
+                    يرجى مراجعة العقد الرسمي المرفق في الصفحات التالية
+                </div>
+            </div>
+        </div>
+        
+        <!-- التوقيعات -->
+        <div class="signatures-section">
+            <div class="signatures-grid">
+                <!-- توقيع المستأجر -->
+                <div class="signature-box">
+                    <h4 class="signature-title">
+                        <i data-lucide="pen-tool"></i>
+                        توقيع المستأجر
+                    </h4>
+                    <p class="signature-subtitle">(الطرف الأول)</p>
+                    
+                    <div class="signature-line"></div>
+                    
+                    <div class="signature-info">
+                        <div class="signature-field">
+                            <span class="signature-field-label">الاسم:</span>
+                            <span class="signature-field-value"></span>
+                        </div>
+                        <div class="signature-field">
+                            <span class="signature-field-label">التاريخ:</span>
+                            <span class="signature-field-value"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- توقيع ممثل الشركة -->
+                <div class="signature-box">
+                    <h4 class="signature-title">
+                        <i data-lucide="pen-tool"></i>
+                        توقيع ممثل الشركة
+                    </h4>
+                    <p class="signature-subtitle">(الطرف الثاني)</p>
+                    
+                    <div class="signature-line"></div>
+                    
+                    <div class="signature-info">
+                        <div class="signature-field">
+                            <span class="signature-field-label">الاسم:</span>
+                            <span class="signature-field-value"></span>
+                        </div>
+                        <div class="signature-field">
+                            <span class="signature-field-label">التاريخ:</span>
+                            <span class="signature-field-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الختم الرسمي -->
+            <div class="official-seal">
+                <div class="seal-box">
+                    <i data-lucide="shield-check" style="width: 48px; height: 48px;"></i>
+                    <div>الختم الرسمي</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- التذييل -->
+        <div class="print-footer">
+            <div class="footer-divider"></div>
+            <p><strong>هذا العقد ملزم قانونياً للطرفين</strong></p>
+            <p style="margin-top: 0.5rem; font-size: 10pt;">
+                للاستفسارات: info@alaraf.online | +974 3115 1919
+            </p>
+        </div>
+        
+    </div>
+    
+    <!-- فاصل الصفحة -->
+    <div class="page-break"></div>
+    
+    <!-- صفحة 2-N: العقد الرسمي الكامل -->
+    <div class="print-container">
+        <div style="text-align: center; padding: 3rem 0; background: linear-gradient(135deg, #FEE2E2 0%, #FFFFFF 100%); border-radius: 1rem; margin-bottom: 2rem;">
+            <h2 style="font-size: 2rem; color: #991B1B; margin-bottom: 1rem;">
+                <i data-lucide="file-badge"></i>
+                العقد الرسمي الكامل
+            </h2>
+            <p style="color: #4B5563; font-size: 1.1rem;">
+                عقد إيجار سيارة - العراف لتأجير السيارات
+            </p>
+            <p style="color: #6B7280; margin-top: 1rem;">
+                16 مادة قانونية + ملحقين تفصيليين
+            </p>
+        </div>
+        
+        <div style="background: #F9FAFB; border: 2px solid #991B1B; border-radius: 0.75rem; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+            <i data-lucide="info" style="width: 32px; height: 32px; color: #991B1B; margin-bottom: 1rem;"></i>
+            <h3 style="color: #991B1B; margin-bottom: 1rem;">ملاحظة هامة</h3>
+            <p style="color: #4B5563; line-height: 1.8;">
+                العقد التالي هو العقد الرسمي الكامل لشركة العراف لتأجير السيارات.
+                <br>
+                يحتوي على جميع المواد القانونية والشروط والأحكام التفصيلية.
+                <br>
+                تم إنشاء هذا العقد باستخدام مكون <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">AlarafOfficialContractComplete</code>
+            </p>
+        </div>
+        
+        <!-- هنا سيتم إدراج AlarafOfficialContractComplete -->
+        <div id="official-contract-content">
+            <div style="background: white; border: 2px dashed #D1D5DB; border-radius: 0.75rem; padding: 4rem 2rem; text-align: center; color: #6B7280;">
+                <i data-lucide="file-text" style="width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <h3 style="color: #4B5563; margin-bottom: 1rem;">محتوى العقد الرسمي</h3>
+                <p style="max-width: 600px; margin: 0 auto; line-height: 1.8;">
+                    في التطبيق الفعلي، سيتم هنا عرض مكون <strong>AlarafOfficialContractComplete</strong> الذي يحتوي على:
+                </p>
+                <ul style="list-style: none; padding: 0; margin-top: 2rem; text-align: right; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <li style="padding: 0.5rem; margin-bottom: 0.5rem; background: #F9FAFB; border-radius: 0.375rem;">✓ المقدمة وتعريف الأطراف</li>
+                    <li style="padding: 0.5rem; margin-bottom: 0.5rem; background: #F9FAFB; border-radius: 0.375rem;">✓ 16 مادة قانونية شاملة</li>
+                    <li style="padding: 0.5rem; margin-bottom: 0.5rem; background: #F9FAFB; border-radius: 0.375rem;">✓ الملحق الأول: جدول الدفعات التفصيلي</li>
+                    <li style="padding: 0.5rem; margin-bottom: 0.5rem; background: #F9FAFB; border-radius: 0.375rem;">✓ الملحق الثاني: حالة المركبة عند الاستلام</li>
+                    <li style="padding: 0.5rem; margin-bottom: 0.5rem; background: #F9FAFB; border-radius: 0.375rem;">✓ التوقيعات والأختام النهائية</li>
+                </ul>
+                <p style="margin-top: 2rem; font-size: 0.875rem; color: #9CA3AF;">
+                    <strong>ملاحظة تقنية:</strong> في التطبيق React الفعلي، سيتم استبدال هذا القسم بمكون React 
+                    <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; color: #991B1B;">&lt;AlarafOfficialContractComplete contract={contract} /&gt;</code>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Set print date
+        const printDate = new Date().toLocaleDateString('ar-EG', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById('printDate').textContent = printDate;
+        
+        // Print button functionality
+        function printContract() {
+            window.print();
+        }
+        
+        // Add print button listener
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                printContract();
+            }
+        });
+    </script>
+</body>
+</html>
+

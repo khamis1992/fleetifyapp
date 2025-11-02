@@ -16,7 +16,6 @@ import {
   FileText,
   User,
   Car,
-  Edit3,
   RefreshCw,
   FileEdit,
   XCircle,
@@ -65,6 +64,7 @@ import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog'
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
 import { ContractRenewalDialog } from './ContractRenewalDialog';
 import { ContractAmendmentForm } from './ContractAmendmentForm';
+import { ContractPrintDialog } from './ContractPrintDialog';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -92,6 +92,7 @@ const ContractDetailsPage = () => {
   const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
   const [isAmendmentDialogOpen, setIsAmendmentDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -243,7 +244,7 @@ const ContractDetailsPage = () => {
   }, [navigate]);
 
   const handlePrint = useCallback(() => {
-    window.print();
+    setIsPrintDialogOpen(true);
   }, []);
 
   const handleExport = useCallback(() => {
@@ -252,13 +253,6 @@ const ContractDetailsPage = () => {
       description: 'جاري تصدير العقد...',
     });
   }, [toast]);
-
-  const handleEdit = useCallback(() => {
-    if (contract) {
-      // الانتقال إلى صفحة التعديل مع تمرير بيانات العقد
-      navigate(`/contracts?edit=${contract.id}`);
-    }
-  }, [contract, navigate]);
 
   const handleRenew = useCallback(() => {
     if (contract) {
@@ -544,10 +538,6 @@ const ContractDetailsPage = () => {
 
               {/* أزرار الإجراءات */}
               <div className="flex items-center gap-2 flex-wrap pt-2">
-                <Button onClick={handleEdit} className="gap-2 bg-red-600 hover:bg-red-700">
-                  <Edit3 className="w-4 h-4" />
-                  تعديل
-                </Button>
                 {contract.status === 'active' && (
                   <>
                     <Button onClick={handleRenew} className="gap-2 bg-green-600 hover:bg-green-700">
@@ -884,6 +874,12 @@ const ContractDetailsPage = () => {
                 description: 'تم تعديل العقد بنجاح',
               });
             }}
+          />
+          
+          <ContractPrintDialog
+            open={isPrintDialogOpen}
+            onOpenChange={setIsPrintDialogOpen}
+            contract={contract}
           />
         </>
       )}
