@@ -48,6 +48,7 @@ import { ContractCancellationDialog } from "@/components/contracts/ContractCance
 import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog";
 import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpload";
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
+import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
 import { ExpressContractForm } from "@/components/contracts";
 import { ContractAmendmentForm } from "@/components/contracts";
@@ -86,6 +87,7 @@ function ContractsNew() {
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [filters, setFilters] = useState<any>({});
   const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري
@@ -448,7 +450,7 @@ function ContractsNew() {
               </Button>
             )}
             <Button
-              onClick={() => navigate('/collections')}
+              onClick={() => setShowRemindersDialog(true)}
               variant="outline"
               className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-purple-500 transition-colors flex items-center gap-2"
               title="إرسال تنبيهات الواتساب للعقود"
@@ -865,6 +867,12 @@ function ContractsNew() {
       />
 
       <BulkDeleteContractsDialog open={showBulkDelete} onOpenChange={setShowBulkDelete} />
+
+      <SendRemindersDialog 
+        open={showRemindersDialog} 
+        onOpenChange={setShowRemindersDialog}
+        contracts={data || []}
+      />
 
       {showTemplateManager && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
