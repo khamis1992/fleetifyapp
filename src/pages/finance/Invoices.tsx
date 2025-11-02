@@ -42,6 +42,7 @@ import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 
 // Auto Invoice Generation Tab
 const AutoInvoiceGenerationTab = lazy(() => import("@/components/finance/AutoInvoiceGenerationTab"))
+const FixMissingInvoices = lazy(() => import("@/components/finance/FixMissingInvoices"))
 
 const Invoices = () => {
   const navigate = useNavigate()
@@ -359,7 +360,7 @@ const Invoices = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="invoices" className="gap-2">
             <Receipt className="h-4 w-4" />
             قائمة الفواتير
@@ -367,6 +368,10 @@ const Invoices = () => {
           <TabsTrigger value="auto-generation" className="gap-2">
             <Zap className="h-4 w-4" />
             التوليد التلقائي
+          </TabsTrigger>
+          <TabsTrigger value="fix-missing" className="gap-2">
+            <AlertCircle className="h-4 w-4" />
+            إصلاح المفقود
           </TabsTrigger>
         </TabsList>
 
@@ -720,6 +725,22 @@ const Invoices = () => {
             </Card>
           }>
             <AutoInvoiceGenerationTab />
+          </Suspense>
+        </TabsContent>
+
+        {/* Tab 3: Fix Missing Invoices */}
+        <TabsContent value="fix-missing" className="space-y-6">
+          <Suspense fallback={
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="text-muted-foreground">جاري التحميل...</span>
+                </div>
+              </CardContent>
+            </Card>
+          }>
+            <FixMissingInvoices />
           </Suspense>
         </TabsContent>
       </Tabs>
