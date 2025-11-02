@@ -4,6 +4,7 @@ import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   RefreshCw,
   Filter,
@@ -87,24 +88,37 @@ function ContractsNew() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [filters, setFilters] = useState<any>({});
+  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري
+  const debouncedSearch = useDebounce(searchInput, 500); // تأخير 500ms
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // تطبيق البحث المؤجل على الفلاتر
+  useEffect(() => {
+    setFilters((prev: any) => {
+      if (debouncedSearch.trim() === "") {
+        const { search, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, search: debouncedSearch.trim() };
+    });
+  }, [debouncedSearch]);
+  
   // Apply tab filter to status filter
   useEffect(() => {
-    if (activeTab === "all") {
-      setFilters((prev: any) => {
-        const { status, ...rest } = prev;
-        return rest;
-      });
-    } else if (activeTab === "active") {
-      setFilters((prev: any) => ({ ...prev, status: "active" }));
-    } else if (activeTab === "cancelled") {
-      setFilters((prev: any) => ({ ...prev, status: "cancelled" }));
-    } else if (activeTab === "alerts") {
-      // Filter for contracts expiring soon
-      setFilters((prev: any) => ({ ...prev, status: "expiring_soon" }));
-    }
+    setFilters((prev: any) => {
+      const { status, ...rest } = prev; // احذف status أولاً
+      if (activeTab === "all") {
+        return rest; // أعد rest بدون status
+      } else if (activeTab === "active") {
+        return { ...rest, status: "active" };
+      } else if (activeTab === "cancelled") {
+        return { ...rest, status: "cancelled" };
+      } else if (activeTab === "alerts") {
+        return { ...rest, status: "expiring_soon" };
+      }
+      return rest;
+    });
   }, [activeTab]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -588,7 +602,8 @@ function ContractsNew() {
                     type="text"
                     placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
                     className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                    onChange={(e) => setFilters((prev: any) => ({ ...prev, search: e.target.value }))}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </div>
 
@@ -598,7 +613,10 @@ function ContractsNew() {
                     <Filter className="w-4 h-4" />
                     <span>تطبيق الفلاتر</span>
                   </Button>
-                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => setFilters({})}>
+                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => {
+                    setSearchInput("");
+                    setFilters({});
+                  }}>
                     <XCircle className="w-4 h-4" />
                     <span>مسح الفلاتر</span>
                   </Button>
