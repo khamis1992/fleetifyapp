@@ -9,12 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, FileText, AlertTriangle, Download, Users } from 'lucide-react';
+import { Search, FileText, AlertTriangle, Download, Users, RefreshCw } from 'lucide-react';
 import DelinquentSummaryCards from './DelinquentSummaryCards';
 import DelinquentCustomersTable from './DelinquentCustomersTable';
 import LegalWarningDialog from './LegalWarningDialog';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
 import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
+import { useRefreshDelinquentCustomers } from '@/hooks/useDelinquentCustomers';
 import { toast } from 'sonner';
 import type { DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import type { GeneratedWarning } from '@/hooks/useGenerateLegalWarning';
@@ -31,6 +32,7 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   const convertToCase = useConvertToLegalCase();
   const generateWarning = useGenerateLegalWarning();
+  const refreshDelinquentCustomers = useRefreshDelinquentCustomers();
 
   // Build filters object
   const filters = {
@@ -155,9 +157,21 @@ export const DelinquentCustomersTab: React.FC = () => {
                 <CardTitle className="text-2xl">العملاء المتأخرون عن الدفع</CardTitle>
                 <CardDescription className="text-base mt-1">
                   تتبع ومتابعة العملاء المتأخرين - جاهز للتحويل إلى قضايا قانونية
+                  <span className="block text-xs text-muted-foreground mt-1">
+                    يتم تحديث القائمة تلقائياً يومياً في الساعة 9 صباحاً
+                  </span>
                 </CardDescription>
               </div>
             </div>
+            <Button
+              variant="outline"
+              onClick={() => refreshDelinquentCustomers.mutate()}
+              disabled={refreshDelinquentCustomers.isPending}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshDelinquentCustomers.isPending ? 'animate-spin' : ''}`} />
+              {refreshDelinquentCustomers.isPending ? 'جاري التحديث...' : 'تحديث الآن'}
+            </Button>
           </div>
         </CardHeader>
       </Card>

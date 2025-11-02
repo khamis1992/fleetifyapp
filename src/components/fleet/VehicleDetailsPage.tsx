@@ -117,24 +117,25 @@ const VehicleDetailsPage = () => {
 
   // جلب سجل الصيانة
   const { data: maintenanceRecords = [], isLoading: loadingMaintenance } = useQuery({
-    queryKey: ['vehicle-maintenance', vehicleId],
+    queryKey: ['vehicle-maintenance', vehicleId, companyId],
     queryFn: async () => {
-      if (!vehicleId) return [];
+      if (!vehicleId || !companyId) return [];
 
       const { data, error } = await supabase
-        .from('maintenance_records')
+        .from('vehicle_maintenance')
         .select('*')
         .eq('vehicle_id', vehicleId)
-        .order('service_date', { ascending: false })
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) {
         console.error('Error fetching maintenance:', error);
-        return [];
+        throw error; // إعادة رمي الخطأ للمعالجة الصحيحة
       }
       return data || [];
     },
-    enabled: !!vehicleId,
+    enabled: !!vehicleId && !!companyId,
   });
 
   // جلب المخالفات المرورية
@@ -984,18 +985,30 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 mb-1">
-                    {record.service_type || 'صيانة'}
+                    {record.maintenance_type || 'صيانة'}
+                    {record.maintenance_number && ` (#${record.maintenance_number})`}
                   </h4>
                   <p className="text-sm text-gray-600 mb-2">
-                    تاريخ: {record.service_date ? format(new Date(record.service_date), 'dd/MM/yyyy') : '-'} 
+                    تاريخ: {record.scheduled_date ? format(new Date(record.scheduled_date), 'dd/MM/yyyy', { locale: ar }) : 
+                              record.completed_date ? format(new Date(record.completed_date), 'dd/MM/yyyy', { locale: ar }) : '-'} 
                     {record.service_provider && ` • الورشة: ${record.service_provider}`}
+                    {record.status && (
+                      <Badge className="mr-2" variant={record.status === 'completed' ? 'default' : 'secondary'}>
+                        {record.status === 'completed' ? 'مكتملة' : 
+                         record.status === 'in_progress' ? 'قيد التنفيذ' :
+                         record.status === 'pending' ? 'قيد الانتظار' : record.status}
+                      </Badge>
+                    )}
                   </p>
                   <p className="text-sm text-gray-600 mb-2">
-                    التكلفة: {formatCurrency(record.cost || 0)} 
+                    التكلفة: {formatCurrency(record.actual_cost || record.estimated_cost || 0)} 
                     {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('ar-SA')} كم`}
                   </p>
                   {record.description && (
                     <p className="text-sm text-gray-500">{record.description}</p>
+                  )}
+                  {record.notes && (
+                    <p className="text-sm text-gray-400 mt-1">{record.notes}</p>
                   )}
                 </div>
               </CardContent>

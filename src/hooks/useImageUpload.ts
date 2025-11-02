@@ -10,6 +10,16 @@ interface UseImageUploadOptions {
   folder?: string;
 }
 
+// Timeout helper function
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('انتهت المهلة الزمنية للعملية')), timeoutMs)
+    )
+  ]);
+};
+
 export const useImageUpload = (options: UseImageUploadOptions = {}) => {
   const {
     bucket = 'branding-assets',
@@ -21,6 +31,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const validateFile = (file: File): boolean => {
     // Check file type
@@ -39,47 +50,85 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
     return true;
   };
 
-  const compressImage = async (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
-    return new Promise((resolve) => {
+  const compressImage = async (file: File, maxWidth = 1200, quality = 0.75): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      // Skip compression for small files (< 500KB)
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB < 0.5) {
+        resolve(file);
+        return;
+      }
+
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
 
-      img.onload = () => {
-        // Calculate new dimensions
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
+      // Add timeout for image loading
+      const timeoutId = setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('انتهت المهلة الزمنية لتحميل الصورة'));
+      }, 10000); // 10 seconds timeout
 
-        canvas.width = width;
-        canvas.height = height;
-
-        // Draw and compress
-        ctx?.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const compressedFile = new File([blob], file.name, {
-                type: file.type,
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
-              resolve(file);
-            }
-          },
-          file.type,
-          quality
-        );
+      img.onerror = () => {
+        clearTimeout(timeoutId);
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('فشل تحميل الصورة'));
       };
 
-      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        clearTimeout(timeoutId);
+        
+        try {
+          // Calculate new dimensions
+          let { width, height } = img;
+          
+          // Only compress if image is larger than maxWidth
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw and compress with timeout
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const compressionTimeout = setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(file); // Fallback to original file if compression takes too long
+          }, 5000);
+
+          canvas.toBlob(
+            (blob) => {
+              clearTimeout(compressionTimeout);
+              URL.revokeObjectURL(objectUrl);
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+            quality
+          );
+        } catch (error) {
+          URL.revokeObjectURL(objectUrl);
+          console.error('Compression error:', error);
+          resolve(file); // Fallback to original file
+        }
+      };
+
+      img.src = objectUrl;
     });
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const uploadImage = async (file: File, retryCount = 0): Promise<string | null> => {
     if (!user?.profile?.company_id) {
       toast.error('لا يمكن تحديد الشركة');
       return null;
@@ -90,41 +139,90 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
     }
 
     setUploading(true);
+    setUploadProgress(0);
 
     try {
-      // Compress image before upload
-      const compressedFile = await compressImage(file);
+      // Show compression status
+      toast.loading('جاري ضغط الصورة...', { id: 'upload-status' });
+      
+      // Compress image with timeout (max 15 seconds)
+      const compressedFile = await withTimeout(
+        compressImage(file, 1200, 0.75),
+        15000
+      );
+
+      setUploadProgress(30);
+      toast.loading('جاري رفع الصورة...', { id: 'upload-status' });
 
       // Create file path
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = folder 
         ? `${user.profile.company_id}/${folder}/${fileName}`
         : `${user.profile.company_id}/${fileName}`;
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      setUploadProgress(50);
+
+      // Upload to Supabase Storage with timeout (max 60 seconds)
+      const uploadPromise = supabase.storage
         .from(bucket)
         .upload(filePath, compressedFile, {
           cacheControl: '3600',
           upsert: false
         });
 
+      const { error: uploadError } = await withTimeout(uploadPromise, 60000);
+
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        toast.error('فشل في رفع الصورة');
+        
+        // Retry logic for network errors
+        if (uploadError.message?.includes('network') || uploadError.message?.includes('timeout')) {
+          if (retryCount < 2) {
+            toast.loading(`إعادة المحاولة... (${retryCount + 1}/2)`, { id: 'upload-status' });
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+            return uploadImage(file, retryCount + 1);
+          }
+        }
+
+        let errorMessage = 'فشل في رفع الصورة';
+        if (uploadError.message?.includes('duplicate') || uploadError.message?.includes('already exists')) {
+          errorMessage = 'الصورة موجودة مسبقاً';
+        } else if (uploadError.message?.includes('permission') || uploadError.message?.includes('denied')) {
+          errorMessage = 'ليس لديك صلاحية لرفع الصورة';
+        } else if (uploadError.message?.includes('network') || uploadError.message?.includes('timeout')) {
+          errorMessage = 'انتهت المهلة الزمنية أو فشل الاتصال بالخادم';
+        }
+
+        toast.error(errorMessage, { id: 'upload-status' });
         return null;
       }
+
+      setUploadProgress(90);
 
       // Get public URL
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       
-      toast.success('تم رفع الصورة بنجاح');
+      setUploadProgress(100);
+      toast.success('تم رفع الصورة بنجاح', { id: 'upload-status' });
+      
+      // Reset progress after a short delay
+      setTimeout(() => setUploadProgress(0), 500);
+      
       return data.publicUrl;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('حدث خطأ أثناء رفع الصورة');
+      
+      let errorMessage = 'حدث خطأ أثناء رفع الصورة';
+      if (error.message?.includes('انتهت المهلة الزمنية')) {
+        errorMessage = 'انتهت المهلة الزمنية للعملية. يرجى المحاولة مرة أخرى';
+      } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
+        errorMessage = 'فشل الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت';
+      }
+
+      toast.error(errorMessage, { id: 'upload-status' });
+      setUploadProgress(0);
       return null;
     } finally {
       setUploading(false);
@@ -180,6 +278,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
   return {
     uploading,
     preview,
+    uploadProgress,
     uploadImage,
     deleteImage,
     createPreview,

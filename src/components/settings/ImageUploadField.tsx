@@ -28,7 +28,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   showUrlInput = true
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploading, uploadImage, deleteImage, createPreview, preview, clearPreview } = useImageUpload({
+  const { uploading, uploadImage, deleteImage, createPreview, preview, clearPreview, uploadProgress } = useImageUpload({
     folder,
     maxSizeMB: 5,
     allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -122,8 +122,19 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
               </div>
               
               {uploading && (
-                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-background/50 flex flex-col items-center justify-center gap-2">
                   <LoadingSpinner size="sm" />
+                  {uploadProgress > 0 && (
+                    <div className="w-3/4 bg-background/80 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-primary h-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-foreground">
+                    {uploadProgress > 0 ? `${uploadProgress}%` : 'جاري المعالجة...'}
+                  </p>
                 </div>
               )}
             </div>
@@ -137,9 +148,19 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             onClick={() => fileInputRef.current?.click()}
           >
             {uploading ? (
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-3">
                 <LoadingSpinner size="sm" />
-                <p className="text-sm text-muted-foreground">جاري رفع الصورة...</p>
+                {uploadProgress > 0 && (
+                  <div className="w-48 bg-background/80 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {uploadProgress > 0 ? `جاري رفع الصورة... ${uploadProgress}%` : 'جاري المعالجة...'}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
