@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAvailableVehiclesForMaintenance } from "@/hooks/useMaintenanceVehicles"
-import { useCreateVehicleMaintenance, VehicleMaintenance } from "@/hooks/useVehicles"
+import { useCreateVehicleMaintenance, useUpdateVehicleMaintenance, VehicleMaintenance } from "@/hooks/useVehicles"
 import { useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
@@ -32,6 +32,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
   const { data: vehicles } = useAvailableVehiclesForMaintenance()
   const { data: costCenters } = useCostCenters()
   const createMaintenance = useCreateVehicleMaintenance()
+  const updateMaintenance = useUpdateVehicleMaintenance()
   const scheduleMaintenanceStatus = useScheduleMaintenanceStatus()
   const [moveToMaintenance, setMoveToMaintenance] = useState(true)
   
@@ -72,8 +73,15 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         payment_method: (maintenance as any).payment_method || "cash",
         invoice_number: (maintenance as any).invoice_number || "",
       })
+      // If maintenance exists and is in_progress, vehicle is already in maintenance
+      setMoveToMaintenance(maintenance.status === 'in_progress')
+    } else if (vehicleId) {
+      form.reset({
+        ...form.getValues(),
+        vehicle_id: vehicleId
+      })
     }
-  }, [maintenance, form])
+  }, [maintenance, vehicleId, form])
 
   useEffect(() => {
     if (!open) {
@@ -91,10 +99,45 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         tax_amount: data.tax_amount ? parseFloat(data.tax_amount) : 0,
         parts_replaced: data.parts_replaced ? data.parts_replaced.split(",").map((p: string) => p.trim()) : [],
         created_by: user?.id,
-        status: "pending" as const,
       }
 
-      const maintenanceResult = await createMaintenance.mutateAsync(maintenanceData)
+      // Update existing maintenance
+      if (maintenance?.id) {
+        const updatedData = {
+          ...maintenanceData,
+          status: maintenance.status, // Keep existing status
+        }
+        
+        await updateMaintenance.mutateAsync({
+          id: maintenance.id,
+          ...updatedData
+        })
+        
+        // Only update vehicle status if it changed and moveToMaintenance is true
+        if (moveToMaintenance && data.vehicle_id && maintenance.status !== 'in_progress') {
+          try {
+            await scheduleMaintenanceStatus.mutateAsync({ 
+              vehicleId: data.vehicle_id, 
+              maintenanceId: maintenance.id 
+            });
+          } catch (statusError) {
+            console.warn('Failed to update vehicle status:', statusError);
+          }
+        }
+        
+        onOpenChange(false)
+        form.reset()
+        return
+      }
+
+      // Create new maintenance
+      // Set initial status based on moveToMaintenance flag
+      const initialStatus = moveToMaintenance ? 'in_progress' : 'pending'
+      
+      const maintenanceResult = await createMaintenance.mutateAsync({
+        ...maintenanceData,
+        status: initialStatus,
+      })
       
       if (moveToMaintenance && data.vehicle_id) {
         try {
@@ -110,7 +153,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
       onOpenChange(false)
       form.reset()
     } catch (error) {
-      console.error("Error creating maintenance:", error)
+      console.error("Error saving maintenance:", error)
     }
   }
 
@@ -564,11 +607,13 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
               </Button>
               <Button 
                 type="submit" 
-                disabled={createMaintenance.isPending}
+                disabled={createMaintenance.isPending || updateMaintenance.isPending}
                 className="btn-primary bg-red-600 hover:bg-red-700 text-white px-6 flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                {createMaintenance.isPending ? "جاري الجدولة..." : "جدولة الصيانة"}
+                {createMaintenance.isPending || updateMaintenance.isPending 
+                  ? (maintenance ? "جاري التحديث..." : "جاري الجدولة...") 
+                  : (maintenance ? "تحديث الصيانة" : "جدولة الصيانة")}
               </Button>
             </div>
           </form>

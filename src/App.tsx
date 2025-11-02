@@ -94,7 +94,7 @@ const TrafficViolations = lazy(() => import("./pages/fleet/TrafficViolationsRede
 const TrafficViolationPayments = lazy(() => import("./pages/fleet/TrafficViolationPayments"));
 const FleetReports = lazy(() => import("./pages/fleet/FleetReports"));
 const DispatchPermits = lazy(() => import("./pages/fleet/DispatchPermits"));
-const FleetFinancialAnalysis = lazy(() => import("./pages/fleet/FleetFinancialAnalysis"));
+const FleetFinancialAnalysis = lazy(() => import("./pages/fleet/FleetFinancialAnalysisNew"));
 const ReservationSystem = lazy(() => import("./pages/fleet/ReservationSystem"));
 const VehicleInstallments = lazy(() => import("./pages/VehicleInstallments"));
 

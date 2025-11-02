@@ -301,6 +301,11 @@ const VehicleDetailsPage = () => {
   }
 
   const vehicleName = `${vehicle.make} ${vehicle.model} ${vehicle.year || ''}`;
+  
+  // استخراج الصورة من مصفوفة الصور
+  const vehicleImage = vehicle.images && Array.isArray(vehicle.images) && vehicle.images.length > 0 
+    ? (typeof vehicle.images[0] === 'string' ? vehicle.images[0] : (vehicle.images[0] as any)?.url || '')
+    : '';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -342,9 +347,9 @@ const VehicleDetailsPage = () => {
               {/* صورة المركبة */}
               <div className="lg:w-1/3">
                 <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                  {vehicle.image_url ? (
+                  {vehicleImage ? (
                     <img
-                      src={vehicle.image_url}
+                      src={vehicleImage}
                       alt={vehicleName}
                       className="w-full h-full object-cover"
                     />

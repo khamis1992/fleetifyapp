@@ -34,8 +34,10 @@ import {
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles"
 import { useSmartAlerts } from "@/hooks/useSmartAlerts"
-import { useVehicleStatusUpdate, useCompleteMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
+import { useVehicleStatusUpdate, useCompleteMaintenanceStatus, useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { useDeleteVehicleMaintenance, useUpdateVehicleMaintenance } from "@/hooks/useVehicles"
+import { supabase } from "@/integrations/supabase/client"
 import { cn } from "@/lib/utils"
 
 // Lazy load heavy components
@@ -148,6 +150,9 @@ export default function Maintenance() {
   const { formatCurrency } = useCurrencyFormatter()
   const completeMaintenanceStatus = useCompleteMaintenanceStatus()
   const vehicleStatusUpdate = useVehicleStatusUpdate()
+  const scheduleMaintenanceStatus = useScheduleMaintenanceStatus()
+  const deleteMaintenance = useDeleteVehicleMaintenance()
+  const updateMaintenance = useUpdateVehicleMaintenance()
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -182,9 +187,14 @@ export default function Maintenance() {
     return stats
   }, [maintenanceRecords, maintenanceVehicles])
 
-  // Filter records and combine with vehicles in maintenance
+  // Filter records and combine with vehicles in maintenance - FIXED
   const filteredRecords = useMemo(() => {
     const records: any[] = []
+    
+    // Get vehicle IDs that already have maintenance records
+    const vehiclesWithMaintenance = new Set(
+      maintenanceRecords?.map(r => r.vehicle_id).filter(Boolean) || []
+    )
     
     // Add maintenance records
     if (maintenanceRecords) {
@@ -201,9 +211,14 @@ export default function Maintenance() {
       }))
     }
     
-    // Add vehicles in maintenance status (if they match search)
+    // Add vehicles in maintenance status ONLY if they don't have a maintenance record
     if (maintenanceVehicles) {
       maintenanceVehicles.forEach(vehicle => {
+        // Skip if this vehicle already has a maintenance record
+        if (vehiclesWithMaintenance.has(vehicle.id)) {
+          return
+        }
+        
         const matchesSearch = !searchQuery || 
           vehicle.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase())
@@ -242,10 +257,22 @@ export default function Maintenance() {
   )
 
   const openSidePanel = (maintenance: any) => {
-    // If it's a vehicle in maintenance status, open maintenance form instead
+    // If it's a vehicle in maintenance status, find its maintenance record first
     if (maintenance.isVehicleInMaintenance && maintenance.vehicle_id) {
-      setSelectedVehicleId(maintenance.vehicle_id)
-      setShowMaintenanceForm(true)
+      // Try to find existing maintenance record for this vehicle
+      const existingRecord = maintenanceRecords?.find(
+        r => r.vehicle_id === maintenance.vehicle_id && r.status === 'in_progress'
+      )
+      
+      if (existingRecord) {
+        // If found, show the actual record
+        setSelectedMaintenance(existingRecord)
+        setSidePanelOpen(true)
+      } else {
+        // If not found, open form to create new maintenance record
+        setSelectedVehicleId(maintenance.vehicle_id)
+        setShowMaintenanceForm(true)
+      }
       return
     }
     setSelectedMaintenance(maintenance)
@@ -264,17 +291,58 @@ export default function Maintenance() {
     setCurrentPage(1)
   }
 
-  const handleDelete = async (maintenanceId: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
-      // Implement delete logic here
-      console.log('Delete maintenance:', maintenanceId)
+  const handleDelete = async (maintenanceId: string, vehicleId?: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return
+    
+    try {
+      await deleteMaintenance.mutateAsync({ 
+        maintenanceId, 
+        vehicleId 
+      })
       closeSidePanel()
+    } catch (error) {
+      console.error('Failed to delete maintenance:', error)
     }
   }
 
-  const handleStatusChange = async (maintenanceId: string, vehicleId: string) => {
+  const handleStatusChange = async (maintenanceId: string, vehicleId: string, currentStatus: string) => {
+    // Validate status transition
+    if (currentStatus === 'completed') {
+      alert('هذا الطلب مكتمل بالفعل')
+      return
+    }
+    
+    if (currentStatus === 'cancelled') {
+      alert('لا يمكن تغيير حالة الطلب الملغي')
+      return
+    }
+
     try {
-      await completeMaintenanceStatus.mutateAsync({ vehicleId, maintenanceId })
+      // If status is pending, first move to in_progress
+      if (currentStatus === 'pending') {
+        await updateMaintenance.mutateAsync({
+          id: maintenanceId,
+          status: 'in_progress'
+        })
+        
+        // Also update vehicle status if not already in maintenance
+        const { data: vehicle } = await supabase
+          .from('vehicles')
+          .select('status')
+          .eq('id', vehicleId)
+          .single()
+          
+        if (vehicle?.status !== 'maintenance') {
+          await scheduleMaintenanceStatus.mutateAsync({ 
+            vehicleId, 
+            maintenanceId 
+          })
+        }
+      } else if (currentStatus === 'in_progress') {
+        // Complete maintenance
+        await completeMaintenanceStatus.mutateAsync({ vehicleId, maintenanceId })
+      }
+      
       closeSidePanel()
     } catch (error) {
       console.error('Failed to change status:', error)
@@ -608,8 +676,8 @@ export default function Maintenance() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setSelectedVehicleId(maintenance.vehicle_id)
-                                setShowMaintenanceForm(true)
+                                setSelectedMaintenance(maintenance) // Set the maintenance record
+                                setShowMaintenanceForm(true) // Open form in edit mode
                               }}
                               className="p-2 hover:bg-green-50 rounded-lg transition-colors"
                               title="تعديل"
@@ -619,7 +687,7 @@ export default function Maintenance() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleDelete(maintenance.id)
+                                handleDelete(maintenance.id, maintenance.vehicle_id)
                               }}
                               className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                               title="حذف"
@@ -892,7 +960,7 @@ export default function Maintenance() {
             <div className="flex gap-3">
               <Button
                 onClick={() => {
-                  setSelectedVehicleId(selectedMaintenance.vehicle_id)
+                  setSelectedMaintenance(selectedMaintenance) // Keep the maintenance data
                   setShowMaintenanceForm(true)
                   closeSidePanel()
                 }}
@@ -902,14 +970,22 @@ export default function Maintenance() {
                 <span>تعديل</span>
               </Button>
               <Button
-                onClick={() => handleStatusChange(selectedMaintenance.id, selectedMaintenance.vehicle_id)}
+                onClick={() => handleStatusChange(
+                  selectedMaintenance.id, 
+                  selectedMaintenance.vehicle_id,
+                  selectedMaintenance.status
+                )}
                 className="btn-hover flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md"
               >
                 <CheckCircle className="w-5 h-5" />
-                <span>تغيير الحالة</span>
+                <span>
+                  {selectedMaintenance.status === 'pending' ? 'بدء الصيانة' : 
+                   selectedMaintenance.status === 'in_progress' ? 'إكمال الصيانة' : 
+                   'تغيير الحالة'}
+                </span>
               </Button>
               <Button
-                onClick={() => handleDelete(selectedMaintenance.id)}
+                onClick={() => handleDelete(selectedMaintenance.id, selectedMaintenance.vehicle_id)}
                 variant="outline"
                 className="btn-hover bg-red-50 hover:bg-red-100 text-red-600 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
               >
@@ -923,14 +999,19 @@ export default function Maintenance() {
       {/* Maintenance Form */}
       <Suspense fallback={<div>Loading...</div>}>
         <MaintenanceForm 
+          maintenance={selectedMaintenance} // Pass maintenance record for editing
           vehicleId={selectedVehicleId}
           open={showMaintenanceForm}
           onOpenChange={(open) => {
             setShowMaintenanceForm(open);
-            if (!open) setSelectedVehicleId(undefined);
+            if (!open) {
+              setSelectedVehicleId(undefined);
+              setSelectedMaintenance(null); // Clear selected maintenance when closing
+            }
           }}
         />
       </Suspense>
     </div>
   )
 }
+

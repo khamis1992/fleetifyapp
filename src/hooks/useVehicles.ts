@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useCurrentCompanyId } from "./useUnifiedCompanyAccess";
 import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration";
+import { useVehicleStatusUpdate } from "@/hooks/useVehicleStatusIntegration";
 import { queryKeys } from "@/utils/queryKeys";
 
 // Types - Import from centralized vehicle types file
@@ -529,8 +530,90 @@ export const useUpdateVehicleMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
-        title: "Success",
-        description: "Maintenance updated successfully",
+        title: "نجح",
+        description: "تم تحديث طلب الصيانة بنجاح",
+      })
+    }
+  })
+}
+
+export const useDeleteVehicleMaintenance = () => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const vehicleStatusUpdate = useVehicleStatusUpdate()
+  
+  return useMutation({
+    mutationFn: async ({ maintenanceId, vehicleId }: { maintenanceId: string; vehicleId?: string }) => {
+      // Get maintenance record first to check vehicle status
+      const { data: maintenance, error: fetchError } = await supabase
+        .from("vehicle_maintenance")
+        .select("vehicle_id, status")
+        .eq("id", maintenanceId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Delete journal entry if exists
+      try {
+        const { data: journalEntry } = await supabase
+          .from("journal_entries")
+          .select("id")
+          .eq("source_type", "maintenance")
+          .eq("source_id", maintenanceId)
+          .single()
+
+        if (journalEntry) {
+          await supabase
+            .from("journal_entries")
+            .delete()
+            .eq("id", journalEntry.id)
+        }
+      } catch (error) {
+        console.warn('Could not delete journal entry:', error)
+      }
+
+      // Delete maintenance record
+      const { error } = await supabase
+        .from("vehicle_maintenance")
+        .delete()
+        .eq("id", maintenanceId)
+
+      if (error) throw error
+
+      // If vehicle is in maintenance status, return it to available
+      if (maintenance.vehicle_id) {
+        const { data: vehicle } = await supabase
+          .from("vehicles")
+          .select("status")
+          .eq("id", maintenance.vehicle_id)
+          .single()
+
+        if (vehicle?.status === 'maintenance') {
+          await vehicleStatusUpdate.mutateAsync({
+            vehicleId: maintenance.vehicle_id,
+            newStatus: 'available',
+            reason: 'Maintenance record deleted'
+          })
+        }
+      }
+
+      return { success: true }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      queryClient.invalidateQueries({ queryKey: ['maintenance-vehicles'] })
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف طلب الصيانة بنجاح",
+      })
+    },
+    onError: (error: any) => {
+      console.error("Error deleting maintenance:", error)
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في حذف طلب الصيانة",
+        variant: "destructive",
       })
     }
   })

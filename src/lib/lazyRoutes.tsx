@@ -35,7 +35,7 @@ export const LazyTrafficViolations = lazy(() => import('@/pages/fleet/TrafficVio
 export const LazyTrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 export const LazyFleetReports = lazy(() => import('@/pages/fleet/FleetReports'));
 export const LazyDispatchPermits = lazy(() => import('@/pages/fleet/DispatchPermits'));
-export const LazyFleetFinancialAnalysis = lazy(() => import('@/pages/fleet/FleetFinancialAnalysis'));
+export const LazyFleetFinancialAnalysis = lazy(() => import('@/pages/fleet/FleetFinancialAnalysisNew'));
 export const LazyVehicleInstallments = lazy(() => import('@/pages/VehicleInstallments'));
 
 // ==================== Contract Pages ====================

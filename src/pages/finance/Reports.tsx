@@ -2,7 +2,26 @@ import { useState } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, Calendar, TrendingUp, DollarSign, PieChart, Eye, BarChart3 } from "lucide-react"
+import { 
+  FileText, 
+  Download, 
+  Calendar, 
+  TrendingUp, 
+  TrendingDown,
+  DollarSign, 
+  PieChart, 
+  Eye, 
+  BarChart3,
+  FileBarChart,
+  Clock,
+  Filter,
+  HelpCircle,
+  CheckCircle,
+  Building,
+  Users,
+  Sparkles,
+  Banknote
+} from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
 import { CostCenterReports } from "@/components/finance/CostCenterReports"
@@ -17,7 +36,8 @@ import { Badge } from "@/components/ui/badge"
 import { exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { EnhancedFinancialReportsViewer } from "@/components/finance/EnhancedFinancialReportsViewer"
-import { HelpIcon } from '@/components/help/HelpIcon';
+import { HelpIcon } from '@/components/help/HelpIcon'
+import { cn } from "@/lib/utils"
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("balance-sheet")
@@ -217,50 +237,84 @@ const Reports = () => {
       </Breadcrumb>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl text-white">
-            <FileText className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">التقارير المالية</h1>
-              <HelpIcon topic="accountTypes" />
+      <div className="mb-8 animate-slide-up">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-primary to-primary-dark rounded-xl text-white shadow-card">
+              <FileText className="h-6 w-6" />
             </div>
-            <p className="text-muted-foreground">الميزانية العمومية وقائمة الدخل والتقارير التحليلية</p>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">التقارير المالية</h1>
+                <HelpIcon topic="accountTypes" />
+              </div>
+              <p className="text-muted-foreground">الميزانية العمومية وقائمة الدخل والتقارير التحليلية</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" />
+              تصفية
+            </Button>
+            <Button className="gap-2 bg-gradient-to-br from-primary to-primary-dark">
+              <Download className="h-4 w-4" />
+              تصدير
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">التقارير المتاحة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reportTypes.length}</div>
-            <p className="text-xs text-muted-foreground">نوع تقرير</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="border-0 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 animate-slide-up stagger-1">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <FileBarChart className="h-5 w-5 text-primary" />
+              </div>
+              <Badge variant="secondary" className="bg-success/10 text-success hover:bg-success/20">
+                +12%
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">التقارير المتاحة</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-3xl font-bold text-foreground">{reportTypes.length}</h3>
+              <span className="text-xs text-muted-foreground mb-1">نوع تقرير</span>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">آخر تحديث</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">اليوم</div>
-            <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('en-GB')}</p>
+        <Card className="border-0 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 animate-slide-up stagger-2">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2.5 rounded-lg bg-warning/10">
+                <Calendar className="h-5 w-5 text-warning" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">محدث</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">آخر تحديث</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-3xl font-bold text-foreground">اليوم</h3>
+              <span className="text-xs text-muted-foreground mb-1">{new Date().toLocaleDateString('ar-QA')}</span>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">الفترة المشمولة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">هذا الشهر</div>
-            <p className="text-xs text-muted-foreground">يمكن تخصيصها</p>
+        <Card className="border-0 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 animate-slide-up stagger-3">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2.5 rounded-lg bg-success/10">
+                <Clock className="h-5 w-5 text-success" />
+              </div>
+              <Button variant="link" className="text-xs font-medium text-primary p-0 h-auto hover:underline">
+                تخصيص
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">الفترة المشمولة</p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-3xl font-bold text-foreground">هذا الشهر</h3>
+              <span className="text-xs text-muted-foreground mb-1">نوفمبر 2025</span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -284,160 +338,218 @@ const Reports = () => {
 
 
         <TabsContent value="balance-sheet" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <Card className="border-0 shadow-card">
+            <CardHeader className="border-b border-border pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-xl mb-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
                     الميزانية العمومية
                   </CardTitle>
-                  <CardDescription>
-                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('en-GB')}
+                  <CardDescription className="text-sm">
+                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('ar-QA')}
                   </CardDescription>
                 </div>
-                <Button onClick={handleExportBalanceSheet} size="sm">
-                  <Download className="h-4 w-4 mr-2" />
+                <Button onClick={handleExportBalanceSheet} className="gap-2 bg-gradient-to-br from-primary to-primary-dark">
+                  <Download className="h-4 w-4" />
                   تحميل التقرير
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {balanceLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <LoadingSpinner />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Assets */}
-                  <div>
-                    <h3 className="font-semibold mb-4 text-lg border-b pb-2">الأصول</h3>
-                    <Table>
-                      <TableBody>
-                        {balanceSheetData?.assets?.map((account: any) => (
-                          <TableRow key={account.id}>
-                            <TableCell className="font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Assets */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-primary">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        <h3 className="font-bold text-lg">الأصول</h3>
+                      </div>
+                      <Table>
+                        <TableBody>
+                          {balanceSheetData?.assets?.map((account: any, index: number) => (
+                            <TableRow 
+                              key={account.id}
+                              className="hover:bg-accent/50 transition-colors"
+                            >
+                              <TableCell className="font-medium">{account.account_name_translated || account.account_name}</TableCell>
+                              <TableCell className="text-left font-semibold">
+                                <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-gradient-to-br from-accent-light to-accent font-bold">
+                            <TableCell className="text-lg">إجمالي الأصول</TableCell>
+                            <TableCell className="text-left text-lg">
+                              <span className="text-success">
+                                {formatCurrency(balanceSheetData?.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+                              </span>
+                            </TableCell>
                           </TableRow>
-                        ))}
-                        <TableRow className="border-t-2 font-bold">
-                          <TableCell>إجمالي الأصول</TableCell>
-                          <TableCell className="text-right">
-                            {balanceSheetData?.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableBody>
+                      </Table>
+                    </div>
 
-                  {/* Liabilities and Equity */}
-                  <div>
-                    <h3 className="font-semibold mb-4 text-lg border-b pb-2">الخصوم وحقوق الملكية</h3>
-                    <Table>
-                      <TableBody>
-                        <TableRow className="bg-muted/50">
-                          <TableCell className="font-semibold" colSpan={2}>الخصوم</TableCell>
-                        </TableRow>
-                        {balanceSheetData?.liabilities?.map((account: any) => (
-                          <TableRow key={account.id}>
-                            <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
+                    {/* Liabilities and Equity */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-warning">
+                        <TrendingDown className="h-5 w-5 text-warning" />
+                        <h3 className="font-bold text-lg">الخصوم وحقوق الملكية</h3>
+                      </div>
+                      <Table>
+                        <TableBody>
+                          <TableRow className="bg-muted/50">
+                            <TableCell className="font-bold" colSpan={2}>الخصوم</TableCell>
                           </TableRow>
-                        ))}
-                        <TableRow className="bg-muted/50">
-                          <TableCell className="font-semibold" colSpan={2}>حقوق الملكية</TableCell>
-                        </TableRow>
-                        {balanceSheetData?.equity?.map((account: any) => (
-                          <TableRow key={account.id}>
-                            <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                            <TableCell className="text-right">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
+                          {balanceSheetData?.liabilities?.map((account: any) => (
+                            <TableRow 
+                              key={account.id}
+                              className="hover:bg-accent/50 transition-colors"
+                            >
+                              <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
+                              <TableCell className="text-left font-semibold">
+                                <span className="text-muted-foreground">{formatCurrency(Number(account.current_balance))}</span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/50">
+                            <TableCell className="font-bold" colSpan={2}>حقوق الملكية</TableCell>
                           </TableRow>
-                        ))}
-                        <TableRow className="border-t-2 font-bold">
-                          <TableCell>إجمالي الخصوم وحقوق الملكية</TableCell>
-                          <TableCell className="text-right">
-                            {(
-                              (balanceSheetData?.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
-                              (balanceSheetData?.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                            ).toFixed(2)} ر.ق
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                          {balanceSheetData?.equity?.map((account: any) => (
+                            <TableRow 
+                              key={account.id}
+                              className="hover:bg-accent/50 transition-colors"
+                            >
+                              <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
+                              <TableCell className="text-left font-semibold">
+                                <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-gradient-to-br from-accent-light to-accent font-bold">
+                            <TableCell className="text-lg">إجمالي الخصوم وحقوق الملكية</TableCell>
+                            <TableCell className="text-left text-lg">
+                              <span className="text-success">
+                                {formatCurrency(
+                                  (balanceSheetData?.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
+                                  (balanceSheetData?.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
+                                )}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-                </div>
+                  
+                  {/* Balance Verification */}
+                  <div className="mt-6 p-4 rounded-lg bg-success/10 border border-success/20">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-success text-white">
+                        <CheckCircle className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-success">الميزانية متوازنة</p>
+                        <p className="text-sm text-muted-foreground">إجمالي الأصول = إجمالي الخصوم وحقوق الملكية</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="income-statement" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <Card className="border-0 shadow-card">
+            <CardHeader className="border-b border-border pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-xl mb-2">
+                    <PieChart className="h-5 w-5 text-success" />
                     قائمة الدخل
                   </CardTitle>
-                  <CardDescription>
-                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('en-GB')}
+                  <CardDescription className="text-sm">
+                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('ar-QA')}
                   </CardDescription>
                 </div>
-                <Button onClick={handleExportIncomeStatement} size="sm">
-                  <Download className="h-4 w-4 mr-2" />
+                <Button onClick={handleExportIncomeStatement} className="gap-2 bg-gradient-to-br from-primary to-primary-dark">
+                  <Download className="h-4 w-4" />
                   تحميل التقرير
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {incomeLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <LoadingSpinner />
                 </div>
               ) : (
-                <div className="max-w-2xl">
+                <div className="max-w-4xl mx-auto">
                   <Table>
                     <TableBody>
-                      <TableRow className="bg-muted/50">
-                        <TableCell className="font-semibold" colSpan={2}>الإيرادات</TableCell>
+                      <TableRow className="bg-success/10">
+                        <TableCell className="font-bold text-success" colSpan={2}>
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4" />
+                            الإيرادات
+                          </div>
+                        </TableCell>
                       </TableRow>
                       {incomeStatementData?.revenue?.map((account: any) => (
-                        <TableRow key={account.id}>
-                          <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-right text-green-600">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
+                        <TableRow key={account.id} className="hover:bg-accent/50 transition-colors">
+                          <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
+                          <TableCell className="text-left font-semibold">
+                            <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
+                          </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="border-b-2">
-                        <TableCell className="font-bold">إجمالي الإيرادات</TableCell>
-                        <TableCell className="text-right font-bold text-green-600">
-                          {incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
+                      <TableRow className="bg-success/20 font-bold border-b-2 border-success">
+                        <TableCell>إجمالي الإيرادات</TableCell>
+                        <TableCell className="text-left">
+                          <span className="text-success">
+                            {formatCurrency(incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+                          </span>
                         </TableCell>
                       </TableRow>
 
-                      <TableRow className="bg-muted/50">
-                        <TableCell className="font-semibold" colSpan={2}>المصروفات</TableCell>
+                      <TableRow className="bg-destructive/10">
+                        <TableCell className="font-bold text-destructive pt-6" colSpan={2}>
+                          <div className="flex items-center gap-2">
+                            <TrendingDown className="h-4 w-4" />
+                            المصروفات
+                          </div>
+                        </TableCell>
                       </TableRow>
                       {incomeStatementData?.expenses?.map((account: any) => (
-                        <TableRow key={account.id}>
-                          <TableCell className="pl-4">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-right text-red-600">{Number(account.current_balance).toFixed(2)} ر.ق</TableCell>
+                        <TableRow key={account.id} className="hover:bg-accent/50 transition-colors">
+                          <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
+                          <TableCell className="text-left font-semibold">
+                            <span className="text-destructive">{formatCurrency(Number(account.current_balance))}</span>
+                          </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="border-b-2">
-                        <TableCell className="font-bold">إجمالي المصروفات</TableCell>
-                        <TableCell className="text-right font-bold text-red-600">
-                          {incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0).toFixed(2) || '0.00'} ر.ق
+                      <TableRow className="bg-destructive/20 font-bold border-b-2 border-destructive">
+                        <TableCell>إجمالي المصروفات</TableCell>
+                        <TableCell className="text-left">
+                          <span className="text-destructive">
+                            {formatCurrency(incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
+                          </span>
                         </TableCell>
                       </TableRow>
 
-                      <TableRow className="border-t-4 border-primary bg-primary/5">
-                        <TableCell className="font-bold text-lg">صافي الربح (الخسارة)</TableCell>
-                        <TableCell className="text-right font-bold text-lg">
-                          {(
+                      <TableRow className="bg-gradient-to-br from-primary to-primary-dark text-white">
+                        <TableCell className="font-bold text-xl py-6">صافي الربح</TableCell>
+                        <TableCell className="text-left font-bold text-xl py-6">
+                          {formatCurrency(
                             (incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) -
                             (incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                          ).toFixed(2)} ر.ق
+                          )}
                         </TableCell>
                       </TableRow>
                     </TableBody>

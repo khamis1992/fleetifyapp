@@ -23,6 +23,7 @@ import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useFixedAssetByCode } from "@/hooks/useFixedAssetByCode"
+import { ImageUploadField } from "@/components/settings/ImageUploadField"
 
 interface VehicleFormProps {
   vehicle?: Vehicle
@@ -60,6 +61,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       year: new Date().getFullYear(),
       color: "",
       vin: "",
+      image_url: "",
       
       // Technical Information
       engine_number: "",
@@ -131,6 +133,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
   useEffect(() => {
     if (vehicle) {
+      // استخراج الصورة الأولى من مصفوفة الصور
+      const firstImage = vehicle.images && Array.isArray(vehicle.images) && vehicle.images.length > 0 
+        ? (typeof vehicle.images[0] === 'string' ? vehicle.images[0] : (vehicle.images[0] as any)?.url || '')
+        : '';
+      
       form.reset({
         plate_number: vehicle.plate_number,
         make: vehicle.make,
@@ -138,6 +145,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         year: vehicle.year,
         color: vehicle.color || "",
         vin: vehicle.vin || "",
+        image_url: firstImage,
         engine_number: vehicle.engine_number || "",
         fuel_capacity: vehicle.fuel_capacity?.toString() || "",
         transmission_type: vehicle.transmission_type || "automatic",
@@ -423,6 +431,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         body_type: finalData.body_type?.trim() || null,
         fuel_type: finalData.fuel_type || "gasoline",
         seating_capacity: finalData.seating_capacity ? parseInt(finalData.seating_capacity) : 5,
+        
+        // Image
+        images: finalData.image_url ? [finalData.image_url] : null,
         
         // Date fields
         purchase_date: finalData.purchase_date || null,
@@ -719,6 +730,29 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           )}
                         />
                       </div>
+
+                      {/* صورة المركبة */}
+                      <FormField
+                        control={form.control}
+                        name="image_url"
+                        render={({ field }) => (
+                          <FormItem className="text-right">
+                            <FormControl>
+                              <ImageUploadField
+                                label="صورة المركبة"
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="اسحب صورة المركبة هنا أو انقر للاختيار"
+                                folder="vehicles"
+                                aspectRatio="auto"
+                                maxWidth={300}
+                                showUrlInput={true}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-right" />
+                          </FormItem>
+                        )}
+                      />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
