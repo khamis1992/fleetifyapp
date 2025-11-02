@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 export interface Payment {
   id: string;
   company_id: string;
-  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card'; // طريقة الدفع الفعلية
+  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'online_transfer'; // طريقة الدفع الفعلية
   payment_method: 'received' | 'made'; // نوع العملية: received (استلام) أو made (دفع)
   payment_number: string;
   amount: number;
@@ -19,7 +19,7 @@ export interface Payment {
   vendor_id?: string;
   invoice_id?: string;
   contract_id?: string;
-  payment_status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  payment_status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'cleared' | 'bounced';
   late_fine_amount?: number;
   late_fine_status?: 'none' | 'paid' | 'waived' | 'pending';
   late_fine_type?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
@@ -30,7 +30,7 @@ export interface Payment {
 }
 
 interface CreatePaymentData {
-  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card'; // طريقة الدفع الفعلية
+  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'online_transfer'; // طريقة الدفع الفعلية
   payment_method: 'received' | 'made'; // نوع العملية: received (استلام) أو made (دفع)
   amount: number;
   payment_date: string;
@@ -215,12 +215,16 @@ export const useCreatePayment = () => {
           payment_number: paymentNumber,
           company_id: targetCompanyId,
           payment_status: 'completed',
+          transaction_type: paymentData.customer_id ? 'receipt' : 'payment',
           created_by: user.id
         })
         .select()
         .single();
       
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('Error creating payment:', paymentError);
+        throw paymentError;
+      }
       
       // If this is a payment for an invoice, update the invoice
       if (paymentData.invoice_id) {

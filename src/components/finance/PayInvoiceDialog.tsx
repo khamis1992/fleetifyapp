@@ -41,7 +41,9 @@ import { differenceInDays } from 'date-fns';
 
 const paymentSchema = z.object({
   amount: z.number().min(0.001, 'المبلغ يجب أن يكون أكبر من صفر'),
-  payment_method: z.string().min(1, 'طريقة الدفع مطلوبة'),
+  payment_method: z.enum(['cash', 'check', 'bank_transfer', 'credit_card', 'online_transfer'], {
+    required_error: 'طريقة الدفع مطلوبة',
+  }),
   payment_date: z.string().min(1, 'تاريخ الدفع مطلوب'),
   reference_number: z.string().optional(),
   notes: z.string().optional(),
@@ -596,7 +598,7 @@ export function PayInvoiceDialog({
                               <SelectItem value="bank_transfer">🏦 تحويل بنكي</SelectItem>
                               <SelectItem value="check">📝 شيك</SelectItem>
                               <SelectItem value="credit_card">💳 بطاقة ائتمان</SelectItem>
-                              <SelectItem value="debit_card">💳 بطاقة مدى</SelectItem>
+                              <SelectItem value="online_transfer">🌐 دفع إلكتروني</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
