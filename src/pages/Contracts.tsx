@@ -96,11 +96,20 @@ function ContractsNew() {
   // تطبيق البحث المؤجل على الفلاتر
   useEffect(() => {
     setFilters((prev: any) => {
-      if (debouncedSearch.trim() === "") {
+      const currentSearch = prev.search || "";
+      const newSearch = debouncedSearch.trim();
+      
+      // إذا لم يتغير البحث، لا تحدث filters
+      if (currentSearch === newSearch) {
+        return prev;
+      }
+      
+      // تحديث فقط إذا تغير البحث
+      if (newSearch === "") {
         const { search, ...rest } = prev;
         return rest;
       }
-      return { ...prev, search: debouncedSearch.trim() };
+      return { ...prev, search: newSearch };
     });
   }, [debouncedSearch]);
   
@@ -108,16 +117,27 @@ function ContractsNew() {
   useEffect(() => {
     setFilters((prev: any) => {
       const { status, ...rest } = prev; // احذف status أولاً
+      let newStatus: string | undefined;
+      
       if (activeTab === "all") {
-        return rest; // أعد rest بدون status
+        newStatus = undefined;
       } else if (activeTab === "active") {
-        return { ...rest, status: "active" };
+        newStatus = "active";
       } else if (activeTab === "cancelled") {
-        return { ...rest, status: "cancelled" };
+        newStatus = "cancelled";
       } else if (activeTab === "alerts") {
-        return { ...rest, status: "expiring_soon" };
+        newStatus = "expiring_soon";
       }
-      return rest;
+      
+      // إذا لم يتغير status، لا تحدث filters
+      if (prev.status === newStatus) {
+        return prev;
+      }
+      
+      if (newStatus === undefined) {
+        return rest; // أعد rest بدون status
+      }
+      return { ...rest, status: newStatus };
     });
   }, [activeTab]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -155,7 +175,8 @@ function ContractsNew() {
       page,
       pageSize,
     }),
-    [filters, page, pageSize]
+    // استخدام القيم الفعلية بدلاً من الكائن نفسه
+    [filters.search, filters.status, filters.contract_type, filters.customer_id, filters.cost_center_id, page, pageSize]
   );
 
   const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -37,6 +37,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast-mock';
+import { differenceInDays } from 'date-fns';
 
 const paymentSchema = z.object({
   amount: z.number().min(0.001, 'المبلغ يجب أن يكون أكبر من صفر'),
@@ -104,8 +105,72 @@ export function PayInvoiceDialog({
     enabled: !!invoice.id && open,
   });
 
+  // حساب غرامات التأخير تلقائياً إذا لم تكن موجودة
+  const calculatedLateFee = useMemo(() => {
+    if (!invoice.due_date) return null;
+    
+    const dueDate = new Date(invoice.due_date);
+    const today = new Date();
+    const daysOverdue = differenceInDays(today, dueDate);
+    
+    // إذا لم تكن الفاتورة متأخرة، لا توجد غرامة
+    if (daysOverdue <= 0) return null;
+    
+    // إذا كانت هناك غرامات موجودة في قاعدة البيانات، استخدمها
+    if (lateFees.length > 0) return null;
+    
+    // احسب غرامة التأخير باستخدام RPC function
+    return {
+      days_overdue: daysOverdue,
+      fee_amount: 0, // سيتم حسابها من RPC
+      status: 'pending',
+      calculated: true
+    };
+  }, [invoice.due_date, lateFees]);
+
+  // جلب حساب غرامة التأخير من قاعدة البيانات
+  const { data: calculatedFeeAmount } = useQuery({
+    queryKey: ['calculate-late-fee', invoice.id, calculatedLateFee?.days_overdue],
+    queryFn: async () => {
+      if (!invoice.id || !calculatedLateFee || !calculatedLateFee.days_overdue) return 0;
+      
+      try {
+        const { data, error } = await supabase.rpc('calculate_late_fee', {
+          p_invoice_id: invoice.id,
+          p_days_overdue: calculatedLateFee.days_overdue
+        });
+        
+        if (error) {
+          console.error('Error calculating late fee:', error);
+          return 0;
+        }
+        
+        return Number(data) || 0;
+      } catch (error) {
+        console.error('Error calculating late fee:', error);
+        return 0;
+      }
+    },
+    enabled: !!invoice.id && !!calculatedLateFee && calculatedLateFee.days_overdue > 0 && lateFees.length === 0,
+  });
+
+  // دمج غرامات التأخير الموجودة والمحسوبة
+  const allLateFees = useMemo(() => {
+    if (lateFees.length > 0) return lateFees;
+    
+    if (calculatedLateFee && calculatedFeeAmount && calculatedFeeAmount > 0) {
+      return [{
+        ...calculatedLateFee,
+        fee_amount: calculatedFeeAmount,
+        id: 'calculated-' + invoice.id
+      }];
+    }
+    
+    return [];
+  }, [lateFees, calculatedLateFee, calculatedFeeAmount, invoice.id]);
+
   // حساب إجمالي غرامات التأخير
-  const totalLateFees = lateFees.reduce((sum, fee) => sum + (fee.fee_amount || 0), 0);
+  const totalLateFees = allLateFees.reduce((sum, fee) => sum + (fee.fee_amount || 0), 0);
   
   // حساب المبلغ الإجمالي المستحق (رصيد الفاتورة + غرامات التأخير)
   const totalAmountDue = invoice.balance_due + totalLateFees;
@@ -342,13 +407,13 @@ export function PayInvoiceDialog({
                       <span className="font-semibold text-orange-900">غرامات التأخير</span>
                     </div>
                     <div className="space-y-2">
-                      {lateFees.map((fee: any, index: number) => (
+                      {allLateFees.map((fee: any, index: number) => (
                         <div key={fee.id || index} className="flex justify-between items-center text-sm">
                           <span className="text-orange-700">
                             {fee.days_overdue} يوم تأخير
                             {fee.status === 'pending' && (
                               <Badge variant="outline" className="mr-2 text-xs">
-                                معلقة
+                                {fee.calculated ? 'محسوبة' : 'معلقة'}
                               </Badge>
                             )}
                           </span>
@@ -363,6 +428,21 @@ export function PayInvoiceDialog({
                           {formatCurrency(totalLateFees)}
                         </span>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* رسالة إذا كانت الفاتورة متأخرة ولكن لا توجد غرامات بعد */}
+              {invoice.due_date && differenceInDays(new Date(), new Date(invoice.due_date)) > 0 && totalLateFees === 0 && !loadingLateFees && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-yellow-800">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="text-sm font-medium">
+                        الفاتورة متأخرة {differenceInDays(new Date(), new Date(invoice.due_date))} يوم
+                        {differenceInDays(new Date(), new Date(invoice.due_date)) > 7 ? ' - قد يتم تطبيق غرامات تأخير' : ''}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -515,7 +595,7 @@ export function PayInvoiceDialog({
                               <SelectItem value="bank_transfer">🏦 تحويل بنكي</SelectItem>
                               <SelectItem value="check">📝 شيك</SelectItem>
                               <SelectItem value="credit_card">💳 بطاقة ائتمان</SelectItem>
-                              <SelectItem value="online">🌐 دفع إلكتروني</SelectItem>
+                              <SelectItem value="debit_card">💳 بطاقة مدى</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

@@ -893,7 +893,11 @@ const ContractDetailsPage = () => {
           <PayInvoiceDialog
             open={isPayDialogOpen}
             onOpenChange={setIsPayDialogOpen}
-            invoice={selectedInvoice}
+            invoice={{
+              ...selectedInvoice,
+              contract_id: selectedInvoice.contract_id || contract?.id,
+              company_id: selectedInvoice.company_id || contract?.company_id || companyId,
+            }}
             onPaymentCreated={() => {
               queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
               queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
