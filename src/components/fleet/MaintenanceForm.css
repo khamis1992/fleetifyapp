@@ -1,0 +1,104 @@
+/**
+ * أنماط جدولة الصيانة - Maintenance Schedule Styles
+ * Alaraf Car Rental - Design System
+ */
+
+.maintenance-form-dialog {
+  --primary: #991B1B;
+  --primary-dark: #7F1D1D;
+  --primary-light: #FEE2E2;
+  --secondary: #D97706;
+  --warning-bg: #FEF3C7;
+  --warning-border: #D97706;
+  --border: #E5E7EB;
+  --radius: 0.75rem;
+}
+
+.maintenance-form-dialog .dialog-header-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.maintenance-form-dialog .step-card {
+  animation: stepSlideIn 0.4s ease-out;
+  transition: all 0.2s ease;
+}
+
+.maintenance-form-dialog .step-card:nth-of-type(1) { animation-delay: 0ms; }
+.maintenance-form-dialog .step-card:nth-of-type(2) { animation-delay: 100ms; }
+.maintenance-form-dialog .step-card:nth-of-type(3) { animation-delay: 200ms; }
+.maintenance-form-dialog .step-card:nth-of-type(4) { animation-delay: 300ms; }
+
+@keyframes stepSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.maintenance-form-dialog .step-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+}
+
+.maintenance-form-dialog .step-number {
+  background: var(--primary);
+}
+
+.maintenance-form-dialog .form-label-icon {
+  color: var(--primary);
+}
+
+.maintenance-form-dialog .form-input,
+.maintenance-form-dialog .form-select,
+.maintenance-form-dialog .form-textarea {
+  transition: all 0.2s ease;
+}
+
+.maintenance-form-dialog .form-input:focus,
+.maintenance-form-dialog .form-select:focus,
+.maintenance-form-dialog .form-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1) !important;
+  transform: scale(1.01);
+}
+
+.maintenance-form-dialog .btn-primary {
+  background: var(--primary);
+  transition: all 0.15s ease;
+}
+
+.maintenance-form-dialog .btn-primary:hover {
+  background: var(--primary-dark);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px -2px rgba(153, 27, 27, 0.3);
+}
+
+.maintenance-form-dialog .btn-primary:active {
+  transform: scale(0.95);
+}
+
+.maintenance-form-dialog .checkbox-wrapper {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.maintenance-form-dialog .icon-wrapper {
+  background: var(--primary-light);
+}
+
+.maintenance-form-dialog .icon-wrapper svg {
+  color: var(--primary);
+}
+
+.maintenance-form-dialog .btn-close {
+  transition: all 0.2s ease;
+}
+
+.maintenance-form-dialog .btn-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}

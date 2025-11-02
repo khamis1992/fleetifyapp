@@ -409,7 +409,7 @@ export default function Fleet() {
                   key={vehicle.id}
                   className="overflow-hidden hover:shadow-elevated hover:-translate-y-1 transition-all animate-fade-in-up cursor-pointer"
                   style={{ animationDelay: `${(index % 8) * 0.1}s` }}
-                  onClick={() => navigate(`/fleet/vehicle/${vehicle.id}`)}
+                  onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
                 >
                   <div className="h-48 bg-muted relative overflow-hidden">
                     {vehicle.images && vehicle.images[0] ? (
@@ -451,7 +451,7 @@ export default function Fleet() {
                           title="عرض التفاصيل"
                           onClick={(e) => {
                             e.stopPropagation()
-                            navigate(`/fleet/vehicle/${vehicle.id}`)
+                            navigate(`/fleet/vehicles/${vehicle.id}`)
                           }}
                         >
                           <Eye className="w-4 h-4" />
@@ -479,7 +479,7 @@ export default function Fleet() {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}`)}>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}>
                               <Eye className="mr-2 h-4 w-4" />
                               عرض التفاصيل
                             </DropdownMenuItem>
@@ -496,11 +496,11 @@ export default function Fleet() {
                               <Download className="mr-2 h-4 w-4" />
                               تصدير البيانات
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}?tab=documents`)}>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicles/${vehicle.id}?tab=documents`)}>
                               <Camera className="mr-2 h-4 w-4" />
                               إدارة الصور
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicle/${vehicle.id}?tab=documents`)}>
+                            <DropdownMenuItem onClick={() => navigate(`/fleet/vehicles/${vehicle.id}?tab=documents`)}>
                               <FileText className="mr-2 h-4 w-4" />
                               الوثائق
                             </DropdownMenuItem>

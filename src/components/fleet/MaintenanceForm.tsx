@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { NumberInput } from "@/components/ui/NumberInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAvailableVehiclesForMaintenance } from "@/hooks/useMaintenanceVehicles"
 import { useCreateVehicleMaintenance, VehicleMaintenance } from "@/hooks/useVehicles"
 import { useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { useAuth } from "@/contexts/AuthContext"
+import { 
+  Car, Wrench, Zap, FileText, Calendar, DollarSign, 
+  CreditCard, Building, Phone, Building2, X, Check
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import "./MaintenanceForm.css"
 
 interface MaintenanceFormProps {
   maintenance?: VehicleMaintenance
@@ -28,7 +33,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
   const { data: costCenters } = useCostCenters()
   const createMaintenance = useCreateVehicleMaintenance()
   const scheduleMaintenanceStatus = useScheduleMaintenanceStatus()
-  const [moveToMaintenance, setMoveToMaintenance] = useState(true) // Auto-move vehicle to maintenance by default
+  const [moveToMaintenance, setMoveToMaintenance] = useState(true)
   
   const form = useForm({
     defaultValues: {
@@ -70,6 +75,13 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
     }
   }, [maintenance, form])
 
+  useEffect(() => {
+    if (!open) {
+      form.reset()
+      setMoveToMaintenance(true)
+    }
+  }, [open, form])
+
   const onSubmit = async (data: any) => {
     try {
       const maintenanceData = {
@@ -82,10 +94,8 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         status: "pending" as const,
       }
 
-      // Create maintenance record first
       const maintenanceResult = await createMaintenance.mutateAsync(maintenanceData)
       
-      // If user chose to move vehicle to maintenance status, update vehicle status
       if (moveToMaintenance && data.vehicle_id) {
         try {
           await scheduleMaintenanceStatus.mutateAsync({ 
@@ -94,7 +104,6 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
           });
         } catch (statusError) {
           console.warn('Failed to update vehicle status, but maintenance was created:', statusError);
-          // Don't fail the whole operation if status update fails
         }
       }
       
@@ -105,7 +114,6 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
     }
   }
 
-  // Get default maintenance cost center
   const maintenanceCostCenter = costCenters?.find(c => c.center_code === 'MAINTENANCE_OPS')
 
   useEffect(() => {
@@ -116,33 +124,60 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {maintenance ? "تعديل الصيانة" : "جدولة الصيانة"}
-          </DialogTitle>
-          <DialogDescription>
-            {maintenance ? "تحديث معلومات الصيانة" : "جدولة صيانة جديدة لمركبة"}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="maintenance-form-dialog max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="dialog-header-gradient text-white p-6 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="icon-wrapper bg-white/20 p-3 rounded-lg">
+                <Wrench className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {maintenance ? "تعديل الصيانة" : "جدولة الصيانة"}
+                </h2>
+                <p className="text-sm opacity-90 mt-1">
+                  {maintenance ? "تحديث معلومات الصيانة" : "جدولة صيانة جديدة لمركبة"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onOpenChange(false)}
+              className="btn-close p-2 rounded-lg hover:bg-white/20 transition-all duration-200 hover:rotate-90"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
+        {/* Form Content */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>تفاصيل الصيانة</CardTitle>
-                <CardDescription>المعلومات الأساسية حول الصيانة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-4">
+            {/* Step 1: Basic Information */}
+            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
+                    1
+                  </span>
+                  <h3 className="text-lg font-bold">المعلومات الأساسية</h3>
+                </div>
+                <span className="text-xs text-gray-500">1/4</span>
+              </div>
+
+              <div className="space-y-5">
                 <FormField
                   control={form.control}
                   name="vehicle_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>المركبة *</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <Car className="w-5 h-5 text-red-600" />
+                        <span>المركبة *</span>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!vehicleId}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="form-select h-11">
                             <SelectValue placeholder="اختر المركبة" />
                           </SelectTrigger>
                         </FormControl>
@@ -165,10 +200,13 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="maintenance_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>نوع الصيانة *</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Wrench className="w-5 h-5 text-red-600" />
+                          <span>نوع الصيانة *</span>
+                        </FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="form-select h-11">
                               <SelectValue placeholder="اختر النوع" />
                             </SelectTrigger>
                           </FormControl>
@@ -196,10 +234,13 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>الأولوية</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Zap className="w-5 h-5 text-red-600" />
+                          <span>الأولوية</span>
+                        </FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="form-select h-11">
                               <SelectValue placeholder="اختر الأولوية" />
                             </SelectTrigger>
                           </FormControl>
@@ -221,12 +262,16 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الوصف *</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <FileText className="w-5 h-5 text-red-600" />
+                        <span>الوصف *</span>
+                      </FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
                           placeholder="وصف أعمال الصيانة المطلوبة..."
                           rows={3}
+                          className="form-textarea min-h-[80px]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -240,9 +285,12 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="scheduled_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>التاريخ المحدد</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Calendar className="w-5 h-5 text-red-600" />
+                          <span>التاريخ المحدد</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} type="date" />
+                          <Input {...field} type="date" className="form-input h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -254,98 +302,131 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="estimated_cost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>التكلفة المقدرة (د.ك)</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <DollarSign className="w-5 h-5 text-red-600" />
+                          <span>التكلفة المقدرة (د.ك)</span>
+                        </FormLabel>
                         <FormControl>
-                          <NumberInput {...field} step="0.001" placeholder="0.000" />
+                          <NumberInput {...field} step="0.001" placeholder="0.000" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+              </div>
+            </div>
 
-                {/* Financial Integration Section */}
-                <div className="space-y-4 border-t pt-4">
-                  <h3 className="text-lg font-medium">البيانات المالية الإضافية</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="tax_amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>مبلغ الضريبة (د.ك)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number" 
-                              step="0.001" 
-                              placeholder="0.000"
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            {/* Step 2: Financial Information */}
+            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
+                    2
+                  </span>
+                  <h3 className="text-lg font-bold">المعلومات المالية</h3>
+                </div>
+                <span className="text-xs text-gray-500">2/4</span>
+              </div>
 
-                    <FormField
-                      control={form.control}
-                      name="payment_method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>طريقة الدفع</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="اختر طريقة الدفع" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="cash">نقد</SelectItem>
-                              <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                              <SelectItem value="check">شيك</SelectItem>
-                              <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="tax_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <DollarSign className="w-5 h-5 text-red-600" />
+                          <span>مبلغ الضريبة (د.ك)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            type="number" 
+                            step="0.001" 
+                            placeholder="0.000"
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            className="form-input h-11"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
-                    name="invoice_number"
+                    name="payment_method"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>رقم الفاتورة</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="رقم الفاتورة من مزود الخدمة" />
-                        </FormControl>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <CreditCard className="w-5 h-5 text-red-600" />
+                          <span>طريقة الدفع</span>
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="form-select h-11">
+                              <SelectValue placeholder="اختر طريقة الدفع" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="cash">نقد</SelectItem>
+                            <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                            <SelectItem value="check">شيك</SelectItem>
+                            <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>مزود الخدمة</CardTitle>
-                <CardDescription>معلومات حول مزود الخدمة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="invoice_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <FileText className="w-5 h-5 text-red-600" />
+                        <span>رقم الفاتورة</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="رقم الفاتورة من مزود الخدمة" className="form-input h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Step 3: Service Provider */}
+            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
+                    3
+                  </span>
+                  <h3 className="text-lg font-bold">مزود الخدمة</h3>
+                </div>
+                <span className="text-xs text-gray-500">3/4</span>
+              </div>
+
+              <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="service_provider"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>مزود الخدمة</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Building className="w-5 h-5 text-red-600" />
+                          <span>مزود الخدمة</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="اسم الشركة أو الميكانيكي" />
+                          <Input {...field} placeholder="اسم الشركة أو الميكانيكي" className="form-input h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -357,9 +438,12 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     name="service_provider_contact"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>معلومات التواصل</FormLabel>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Phone className="w-5 h-5 text-red-600" />
+                          <span>معلومات التواصل</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="رقم الهاتف أو البريد الإلكتروني" />
+                          <Input {...field} placeholder="رقم الهاتف أو البريد الإلكتروني" className="form-input h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -372,31 +456,45 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="parts_replaced"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>القطع المراد استبدالها</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <Wrench className="w-5 h-5 text-red-600" />
+                        <span>القطع المراد استبدالها</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="اذكر القطع مفصولة بفواصل" />
+                        <Input {...field} placeholder="اذكر القطع مفصولة بفواصل" className="form-input h-11" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>معلومات إضافية</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* Step 4: Additional Settings */}
+            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
+                    4
+                  </span>
+                  <h3 className="text-lg font-bold">إعدادات إضافية</h3>
+                </div>
+                <span className="text-xs text-gray-500">4/4</span>
+              </div>
+
+              <div className="space-y-5">
                 <FormField
                   control={form.control}
                   name="cost_center_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>مركز التكلفة</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <Building2 className="w-5 h-5 text-red-600" />
+                        <span>مركز التكلفة</span>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="form-select h-11">
                             <SelectValue placeholder="اختر مركز التكلفة" />
                           </SelectTrigger>
                         </FormControl>
@@ -418,12 +516,16 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ملاحظات إضافية</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <FileText className="w-5 h-5 text-red-600" />
+                        <span>ملاحظات إضافية</span>
+                      </FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
                           placeholder="أي ملاحظات إضافية أو تعليمات خاصة..."
                           rows={3}
+                          className="form-textarea min-h-[80px]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -431,39 +533,41 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                   )}
                 />
 
-                {/* Fleet/Maintenance Integration Option */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id="moveToMaintenance"
-                      checked={moveToMaintenance}
-                      onCheckedChange={(checked) => setMoveToMaintenance(checked as boolean)}
-                      className="mt-1"
-                    />
-                    <div className="space-y-1">
-                      <label 
-                        htmlFor="moveToMaintenance" 
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        نقل المركبة إلى قسم الصيانة تلقائياً
-                      </label>
-                      <p className="text-xs text-muted-foreground">
-                        عند تفعيل هذا الخيار، ستختفي المركبة من قائمة الأسطول وتظهر في قسم الصيانة حتى انتهاء الصيانة
-                      </p>
+                <div className="checkbox-wrapper flex items-start gap-3 p-4 rounded-lg border border-orange-200 bg-orange-50">
+                  <Checkbox
+                    id="moveToMaintenance"
+                    checked={moveToMaintenance}
+                    onCheckedChange={(checked) => setMoveToMaintenance(checked as boolean)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="moveToMaintenance" className="flex-1 cursor-pointer">
+                    <div className="font-semibold text-gray-900 mb-1">
+                      نقل المركبة إلى قسم الصيانة تلقائياً
                     </div>
-                  </div>
+                    <div className="text-xs text-gray-600">
+                      عند تفعيل هذا الخيار، ستختفي المركبة من قائمة الأسطول وتظهر في قسم الصيانة حتى انتهاء الصيانة
+                    </div>
+                  </label>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {/* Form Actions */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="px-6"
+              >
                 إلغاء
               </Button>
               <Button 
                 type="submit" 
                 disabled={createMaintenance.isPending}
+                className="btn-primary bg-red-600 hover:bg-red-700 text-white px-6 flex items-center gap-2"
               >
+                <Check className="w-4 h-4" />
                 {createMaintenance.isPending ? "جاري الجدولة..." : "جدولة الصيانة"}
               </Button>
             </div>

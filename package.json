@@ -47,6 +47,9 @@
     "security:scan:json": "node scripts/security-scanner.js --scan-all --output json --report security-report.json",
     "import:contracts": "tsx scripts/import-customer-contracts.ts",
     "update:contracts": "tsx scripts/update-contracts-from-json.ts",
+    "report:missing-customers": "tsx scripts/generate-missing-customers-report.ts",
+    "create:missing-customers": "tsx scripts/create-missing-customers.ts",
+    "fix:contract-status": "tsx scripts/fix-contract-status.ts",
     "check:env": "tsx scripts/check-env.ts"
   },
   "dependencies": {

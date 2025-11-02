@@ -463,13 +463,8 @@ async function findOrCreateContract(
     };
     
     if (contractToUpdate) {
-      // تحديث العقد الموجود
-      // إذا كان العقد ملغى أو منتهي، نفعله نشطاً
-      if (contractToUpdate.status === 'cancelled' || contractToUpdate.status === 'completed' || contractToUpdate.status === 'expired') {
-        contractPayload.status = 'active';
-      } else {
-        contractPayload.status = contractToUpdate.status || 'active';
-      }
+      // تحديث العقد الموجود - الاحتفاظ بالحالة الأصلية
+      contractPayload.status = contractToUpdate.status || 'active';
       
       const { error: updateError } = await supabase
         .from('contracts')

@@ -1,0 +1,89 @@
+/**
+ * ثيم جدولة الصيانة - Alaraf Car Rental
+ * Maintenance Schedule Theme
+ * 
+ * ألوان متناسقة مع هوية العراف
+ * Colors matching Alaraf brand identity
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ألوان العراف الأساسية - Alaraf Brand Colors */
+  --background: oklch(0.96 0 0);
+  --foreground: oklch(0.15 0 0);
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.15 0 0);
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0 0);
+  
+  /* الأحمر الرئيسي - Alaraf Red */
+  --primary: oklch(0.52 0.19 25);
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* البرتقالي/الذهبي - Alaraf Gold */
+  --secondary: oklch(0.68 0.15 55);
+  --secondary-foreground: oklch(0.15 0 0);
+  
+  /* الألوان المحايدة */
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.15 0 0);
+  
+  /* الأحمر للخطأ - Error Red */
+  --destructive: oklch(0.58 0.24 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* الحدود والمدخلات */
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.52 0.19 25);
+  
+  /* ألوان الحالات - Status Colors */
+  --status-success: oklch(0.56 0.13 152);
+  --status-success-bg: oklch(0.95 0.02 152);
+  --status-warning: oklch(0.68 0.15 55);
+  --status-warning-bg: oklch(0.98 0.04 55);
+  --status-error: oklch(0.58 0.24 27);
+  --status-error-bg: oklch(0.98 0.04 27);
+  
+  /* الخطوط - Fonts */
+  --font-sans: 'Cairo', 'Noto Kufi Arabic', sans-serif;
+  --font-serif: 'Cairo', 'Noto Kufi Arabic', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+  
+  /* الهامش والحدود */
+  --radius: 0.75rem;
+  --spacing: 0.25rem;
+  
+  /* الظلال - Shadows */
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* الطباعة - Print Styles */
+@media print {
+  :root {
+    --background: oklch(1.0 0 0);
+    --shadow-2xs: none;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+    --shadow-2xl: none;
+  }
+}
