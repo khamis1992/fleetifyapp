@@ -894,8 +894,10 @@ const ContractDetailsPage = () => {
             open={isPayDialogOpen}
             onOpenChange={setIsPayDialogOpen}
             invoice={selectedInvoice}
-            onSuccess={() => {
+            onPaymentCreated={() => {
               queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+              queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+              queryClient.invalidateQueries({ queryKey: ['invoice-late-fees'] });
               setIsPayDialogOpen(false);
               toast({
                 title: 'تم الدفع بنجاح',
