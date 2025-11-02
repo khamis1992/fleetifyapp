@@ -396,8 +396,8 @@ async function findOrCreateContract(
     // البحث عن عقود موجودة مرتبطة بالعميل (حتى لو كانت بمركبة مختلفة)
     // أولاً: البحث عن عقود مرتبطة بالمركبة والعميل
     let { data: existingContracts, error: searchError } = await supabase
-      .from('rental_contracts')
-      .select('id, start_date, monthly_rent, status, contract_number, vehicle_id')
+      .from('contracts')
+      .select('id, start_date, monthly_amount, status, contract_number, vehicle_id')
       .eq('company_id', COMPANY_ID)
       .eq('vehicle_id', vehicleId)
       .eq('customer_id', customerId)
@@ -407,8 +407,8 @@ async function findOrCreateContract(
     // إذا لم نجد، نبحث عن أي عقود للعميل (حتى بمركبة مختلفة)
     if ((!existingContracts || existingContracts.length === 0) && !searchError) {
       const { data: customerContracts, error: customerContractsError } = await supabase
-        .from('rental_contracts')
-        .select('id, start_date, monthly_rent, status, contract_number, vehicle_id')
+        .from('contracts')
+        .select('id, start_date, monthly_amount, status, contract_number, vehicle_id')
         .eq('company_id', COMPANY_ID)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
@@ -454,26 +454,25 @@ async function findOrCreateContract(
       contract_date: startDate,
       start_date: startDate,
       end_date: endDateStr,
-      monthly_rent: monthlyRent,
-      notes: notes === '-' ? null : notes,
-      payment_day: 1,
-      payment_frequency: 'monthly',
-      late_fee_per_day: 120,
-      max_late_fee: 3000,
+      monthly_amount: monthlyRent,
+      contract_amount: monthlyRent, // إجمالي قيمة العقد
+      contract_type: 'rental',
+      description: notes === '-' ? null : notes,
+      terms: notes === '-' ? null : notes,
       updated_at: new Date().toISOString()
     };
     
     if (contractToUpdate) {
       // تحديث العقد الموجود
       // إذا كان العقد ملغى أو منتهي، نفعله نشطاً
-      if (contractToUpdate.status === 'cancelled' || contractToUpdate.status === 'completed') {
+      if (contractToUpdate.status === 'cancelled' || contractToUpdate.status === 'completed' || contractToUpdate.status === 'expired') {
         contractPayload.status = 'active';
       } else {
         contractPayload.status = contractToUpdate.status || 'active';
       }
       
       const { error: updateError } = await supabase
-        .from('rental_contracts')
+        .from('contracts')
         .update(contractPayload)
         .eq('id', contractToUpdate.id);
       
@@ -501,7 +500,7 @@ async function findOrCreateContract(
       contractPayload.contract_number = `CNT-${vehicleNumber}-${new Date(startDate).getFullYear()}`;
       
       const { data: newContract, error: insertError } = await supabase
-        .from('rental_contracts')
+        .from('contracts')
         .insert(contractPayload)
         .select('id, contract_number')
         .single();
@@ -564,24 +563,24 @@ async function main() {
   console.log(`✅ تم قراءة ${vehicles.length} سجل من الملف`);
   console.log('');
   
-  // التحقق من وجود جدول rental_contracts
-  console.log('🔍 التحقق من وجود جدول rental_contracts...');
+  // التحقق من وجود جدول contracts
+  console.log('🔍 التحقق من وجود جدول contracts...');
   const { data: tableCheck, error: tableError } = await supabase
-    .from('rental_contracts')
+    .from('contracts')
     .select('id')
     .limit(1);
   
   if (tableError) {
-    console.error(`❌ خطأ في الوصول إلى جدول rental_contracts: ${tableError.message}`);
+    console.error(`❌ خطأ في الوصول إلى جدول contracts: ${tableError.message}`);
     console.error(`   الكود: ${(tableError as any).code || 'N/A'}`);
     console.error('');
     console.error('⚠️  قد يكون الجدول غير موجود أو لا توجد صلاحيات للوصول إليه.');
     console.error('   يرجى التحقق من:');
-    console.error('   1. وجود جدول rental_contracts في قاعدة البيانات');
+    console.error('   1. وجود جدول contracts في قاعدة البيانات');
     console.error('   2. صلاحيات SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
-  console.log('✅ جدول rental_contracts موجود ويمكن الوصول إليه');
+  console.log('✅ جدول contracts موجود ويمكن الوصول إليه');
   console.log('');
   
   // التشخيص: طباعة بعض الأمثلة من المركبات الموجودة في قاعدة البيانات
