@@ -678,7 +678,11 @@ function ContractsNew() {
                     </div>
                   ) : (
                     safeFilteredContracts.map((contract) => (
-                      <div key={contract.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        key={contract.id} 
+                        className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => handleViewDetails(contract)}
+                      >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -714,7 +718,7 @@ function ContractsNew() {
                           </div>
                         </div>
 
-                        <div className="border-t border-gray-200 pt-4 flex flex-wrap gap-2">
+                        <div className="border-t border-gray-200 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-gray-50 text-gray-700 hover:bg-gray-100">
                             <Eye className="w-4 h-4 ml-2" />
                             عرض

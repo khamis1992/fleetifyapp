@@ -10,6 +10,8 @@ import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import * as React from "react";
 import { StatCardNumber } from "@/components/ui/NumberDisplay";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast-mock";
 
 interface CustomerInvoicesTabProps {
   customerId: string;
@@ -20,6 +22,8 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
   const { data: invoices, isLoading: invoicesLoading } = useCustomerInvoices(customerId);
   const { data: summary, isLoading: summaryLoading } = useCustomerInvoicesSummary(customerId);
   const { formatCurrency } = useCurrencyFormatter();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   // Payment and preview dialog state
   const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
@@ -257,8 +261,18 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
           onOpenChange={setIsPayDialogOpen}
           invoice={selectedInvoice}
           onPaymentCreated={() => {
+            // Invalidate queries to refresh invoices and summary
+            queryClient.invalidateQueries({ queryKey: ['customer-invoices', customerId] });
+            queryClient.invalidateQueries({ queryKey: ['customer-invoices-summary', customerId] });
+            queryClient.invalidateQueries({ queryKey: ['customer-payments', customerId] });
+            
             setIsPayDialogOpen(false);
             setSelectedInvoice(null);
+            
+            toast({
+              title: "تم تسجيل الدفع بنجاح",
+              description: "تم تحديث حالة الفاتورة بنجاح",
+            });
           }}
         />
       )}
