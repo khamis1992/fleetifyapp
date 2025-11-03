@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useSendManualReminders } from '@/hooks/useSendManualReminders';
 import { toast } from 'sonner';
+import { sendBulkWhatsAppMessages, formatPhoneForWhatsApp, defaultTemplates } from '@/utils/whatsappWebSender';
 
 interface Contract {
   id: string;
@@ -66,8 +67,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   const [selectedType, setSelectedType] = useState<ReminderType>('general');
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState('');
-  
-  const sendReminders = useSendManualReminders();
+  const [isSending, setIsSending] = useState(false);
 
   // Helper function to get customer phone from contract
   const getCustomerPhone = (contract: Contract): string | undefined => {
@@ -124,7 +124,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       return;
     }
 
-    console.log('📤 [SendRemindersDialog] Sending reminders:', {
+    console.log('📤 [SendRemindersDialog] Sending reminders via WhatsApp Web:', {
       count: contractsToSend.length,
       reminderType: selectedType,
       contracts: contractsToSend.map(c => ({
@@ -134,20 +134,91 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       })),
     });
 
+    // Direct sending via WhatsApp Web (فوري - يعمل الآن!)
+    setIsSending(true);
+    
     try {
-      await sendReminders.mutateAsync({
-        contracts: contractsToSend,
-        reminderType: selectedType,
-        customMessage: customMessage || undefined,
+      // Prepare messages
+      const messages = contractsToSend.map(contract => {
+        const customerName = contract.customer_name || 'عزيزي العميل';
+        const contractNumber = contract.contract_number;
+        
+        // Generate message based on type
+        let message = customMessage;
+        
+        if (!message) {
+          switch (selectedType) {
+            case 'general':
+              message = defaultTemplates.general(customerName, contractNumber);
+              break;
+            case 'pre_due':
+              message = defaultTemplates.pre_due(
+                customerName,
+                contractNumber,
+                contract.monthly_rent || contract.monthly_amount || 0,
+                'قريباً'
+              );
+              break;
+            case 'due_date':
+              message = defaultTemplates.due_date(
+                customerName,
+                contractNumber,
+                contract.monthly_rent || contract.monthly_amount || 0
+              );
+              break;
+            case 'overdue':
+              message = defaultTemplates.overdue(
+                customerName,
+                contractNumber,
+                contract.monthly_rent || contract.monthly_amount || 0
+              );
+              break;
+            case 'escalation':
+              message = defaultTemplates.escalation(
+                customerName,
+                contractNumber,
+                contract.monthly_rent || contract.monthly_amount || 0
+              );
+              break;
+            default:
+              message = defaultTemplates.general(customerName, contractNumber);
+          }
+        }
+        
+        return {
+          phone: contract.customer_phone,
+          message,
+          customerName,
+        };
       });
 
-      toast.success(`تم إرسال ${contractsToSend.length} تنبيه بنجاح`);
+      // Show confirmation
+      const confirmMessage = `سيتم فتح ${messages.length} نافذة واتساب ويب.\n\nكل نافذة ستحتوي على رسالة جاهزة للإرسال.\nفقط اضغط "إرسال" في كل نافذة.\n\nهل تريد المتابعة؟`;
+      
+      if (!confirm(confirmMessage)) {
+        setIsSending(false);
+        return;
+      }
+
+      // Send messages
+      toast.info('جاري فتح نوافذ واتساب ويب...', {
+        description: `سيتم فتح ${messages.length} نافذة بفاصل 2 ثانية`,
+      });
+
+      const result = await sendBulkWhatsAppMessages(messages, 2000);
+
+      toast.success(`تم فتح ${result.sent} نافذة واتساب بنجاح!`, {
+        description: 'يرجى الضغط على "إرسال" في كل نافذة',
+      });
+
       onOpenChange(false);
       setSelectedContracts([]);
       setCustomMessage('');
     } catch (error: any) {
-      console.error('❌ [SendRemindersDialog] Error sending reminders:', error);
-      toast.error(error?.message || 'فشل إرسال التنبيهات. يرجى المحاولة مرة أخرى.');
+      console.error('❌ [SendRemindersDialog] Error in direct send:', error);
+      toast.error('حدث خطأ أثناء فتح واتساب: ' + error.message);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -206,17 +277,17 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
             إرسال تنبيهات واتساب
           </DialogTitle>
           <DialogDescription>
-            إرسال تذكيرات دفع للعملاء عبر واتساب بشكل فوري
+            إرسال تذكيرات دفع للعملاء عبر واتساب
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Info Alert */}
-          <Alert className="border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900">
-              <strong>ملاحظة:</strong> سيتم إرسال التذكيرات فوراً للعقود المحددة. 
-              تأكد من أن أرقام الهواتف صحيحة قبل الإرسال.
+          {/* Send Method Selection */}
+          <Alert className="border-green-200 bg-green-50">
+            <Info className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-900">
+              <strong>إرسال فوري عبر واتساب ويب:</strong> سيتم فتح نوافذ واتساب ويب مع الرسائل جاهزة. 
+              فقط اضغط "إرسال" في كل نافذة. لا يحتاج إعدادات إضافية! ✅
             </AlertDescription>
           </Alert>
 
@@ -376,18 +447,18 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           </Button>
           <Button
             onClick={handleSend}
-            disabled={selectedContracts.length === 0 || sendReminders.isPending}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+            disabled={selectedContracts.length === 0 || isSending}
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
           >
-            {sendReminders.isPending ? (
+            {isSending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                جاري الإرسال...
+                جاري فتح واتساب...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                إرسال ({selectedContracts.length})
+                إرسال عبر واتساب ويب ({selectedContracts.length})
               </>
             )}
           </Button>

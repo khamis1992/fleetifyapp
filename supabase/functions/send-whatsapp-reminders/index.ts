@@ -42,16 +42,61 @@ async function sendWhatsAppMessage(
       };
     }
 
-    // Format phone number (remove all non-digits)
-    const formattedPhone = phone.replace(/\D/g, '');
+    // Format phone number according to Ultramsg API requirements
+    // Required format: +1408XXXXXXX (international format with +)
+    let formattedPhone = phone.trim();
     
-    // Validate phone number
-    if (!formattedPhone || formattedPhone.length < 8) {
-      return { success: false, error: 'Invalid phone number format' };
+    // Remove all non-digits except +
+    formattedPhone = formattedPhone.replace(/[^\d+]/g, '');
+    
+    // If starts with 00, replace with +
+    if (formattedPhone.startsWith('00')) {
+      formattedPhone = '+' + formattedPhone.substring(2);
+    }
+    // If starts with country code without +, add +
+    else if (formattedPhone.length > 0 && !formattedPhone.startsWith('+')) {
+      // Common country codes: 974 (Qatar/Kuwait), 966 (Saudi), 971 (UAE), etc.
+      // For Kuwait/Qatar numbers starting with 974, add +
+      if (formattedPhone.startsWith('974')) {
+        formattedPhone = '+' + formattedPhone;
+      }
+      // For other formats, assume international format needed
+      else if (formattedPhone.length >= 8) {
+        formattedPhone = '+' + formattedPhone;
+      }
+    }
+    
+    // Validate phone number (must have + and at least 8 digits)
+    if (!formattedPhone.startsWith('+') || formattedPhone.length < 10) {
+      console.error(`❌ Invalid phone format: ${phone} → ${formattedPhone}`);
+      return { 
+        success: false, 
+        error: `Invalid phone number format. Expected international format with + (e.g., +97412345678). Got: ${phone}` 
+      };
     }
 
-    console.log(`📞 Sending to: ${formattedPhone}`);
+    console.log(`📞 Sending to: ${formattedPhone} (original: ${phone})`);
 
+    // Validate message length (Ultramsg max: 4096 characters)
+    if (message.length > 4096) {
+      console.warn(`⚠️ Message too long (${message.length} chars), truncating to 4096`);
+      message = message.substring(0, 4096);
+    }
+    
+    // Prepare request body according to Ultramsg API documentation
+    // API Reference: https://docs.ultramsg.com/api/post/messages/chat
+    const requestBody = {
+      token: ULTRAMSG_TOKEN,
+      to: formattedPhone, // International format: +1408XXXXXXX
+      body: message, // UTF-8 or UTF-16 string with emoji, max 4096 characters
+    };
+    
+    console.log('📤 Sending to Ultramsg API:', {
+      url: `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/chat`,
+      to: formattedPhone,
+      messageLength: message.length,
+    });
+    
     // Call Ultramsg API
     const response = await fetch(
       `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/chat`,
@@ -60,26 +105,57 @@ async function sendWhatsAppMessage(
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          token: ULTRAMSG_TOKEN,
-          to: formattedPhone,
-          body: message,
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
-    const data = await response.json();
+    // Parse response
+    let data;
+    const responseText = await response.text();
     
-    // Check response
-    if (data.sent === 'true' || data.sent === true) {
-      return { 
-        success: true, 
-        messageId: data.id || data.msgId 
-      };
-    } else {
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse Ultramsg response:', responseText);
       return { 
         success: false, 
-        error: data.error || 'Unknown error from Ultramsg' 
+        error: `Invalid response from Ultramsg: ${responseText.substring(0, 100)}` 
+      };
+    }
+    
+    // Log full response for debugging
+    console.log('📥 Ultramsg API Response:', JSON.stringify(data));
+    
+    // Check response according to Ultramsg API documentation
+    // Success indicators: sent=true, or id/msgId present, or status='sent'
+    if (data.sent === 'true' || data.sent === true || data.id || data.msgId || data.status === 'sent') {
+      return { 
+        success: true, 
+        messageId: data.id || data.msgId || data.messageId || 'unknown'
+      };
+    } 
+    // Check for error response
+    else if (data.error || data.message) {
+      const errorMsg = data.error || data.message || 'Unknown error from Ultramsg';
+      console.error('❌ Ultramsg API Error:', errorMsg);
+      return { 
+        success: false, 
+        error: errorMsg
+      };
+    }
+    // If response status is not OK, treat as error
+    else if (!response.ok) {
+      return { 
+        success: false, 
+        error: `HTTP ${response.status}: ${response.statusText}` 
+      };
+    }
+    // Unknown response format
+    else {
+      console.warn('⚠️ Unknown response format from Ultramsg:', data);
+      return { 
+        success: false, 
+        error: `Unexpected response format: ${JSON.stringify(data).substring(0, 200)}` 
       };
     }
   } catch (error) {
