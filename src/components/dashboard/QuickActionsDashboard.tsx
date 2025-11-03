@@ -175,7 +175,7 @@ const QuickActionsDashboard: React.FC = () => {
     
     if (action.id === 'record-payment') {
       // فتح صفحة تسجيل الدفعات الجديدة
-      window.open('/payment-sheets/index.html', '_blank');
+      window.open('/payment-registration', '_blank');
       return;
     }
     

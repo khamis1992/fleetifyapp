@@ -65,7 +65,7 @@ const PaymentsDashboard = () => {
   // Placeholder functions for quick actions
   const openRecordPaymentDialog = () => {
     // فتح صفحة تسجيل الدفعات الجديدة
-    window.open('/payment-sheets/index.html', '_blank');
+    window.open('/payment-registration', '_blank');
   };
 
   const sendPaymentReminders = () => {
@@ -78,7 +78,7 @@ const PaymentsDashboard = () => {
 
   const recordPayment = (payment: any) => {
     // فتح صفحة تسجيل الدفعات الجديدة
-    window.open('/payment-sheets/index.html', '_blank');
+    window.open('/payment-registration', '_blank');
   };
 
   const sendReminder = (payment: any) => {

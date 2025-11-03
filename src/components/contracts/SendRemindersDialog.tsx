@@ -3,7 +3,7 @@
  * Allows manual sending of payment reminders to customers via WhatsApp
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,18 @@ interface Contract {
   contract_number: string;
   customer_name?: string;
   customer_phone?: string;
+  customers?: {
+    phone?: string;
+    first_name_ar?: string;
+    last_name_ar?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name_ar?: string;
+    company_name?: string;
+    customer_type?: string;
+  };
   monthly_rent?: number;
+  monthly_amount?: number;
   status?: string;
 }
 
@@ -58,10 +69,37 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   
   const sendReminders = useSendManualReminders();
 
-  // Filter contracts with phone numbers
-  const eligibleContracts = contracts.filter(c => 
-    c.customer_phone && c.status === 'active'
-  );
+  // Helper function to get customer phone from contract
+  const getCustomerPhone = (contract: Contract): string | undefined => {
+    return contract.customer_phone || contract.customers?.phone;
+  };
+
+  // Helper function to check if contract is active
+  const isActiveContract = (contract: Contract): boolean => {
+    const status = contract.status?.toLowerCase();
+    return status === 'active' || status === 'rented' || status === 'approved';
+  };
+
+  // Filter contracts with phone numbers and active status
+  const eligibleContracts = useMemo(() => {
+    const filtered = contracts.filter(c => {
+      const phone = getCustomerPhone(c);
+      const isActive = isActiveContract(c);
+      return phone && phone.trim() !== '' && phone !== '000000000' && isActive;
+    });
+
+    // Log for debugging
+    if (open && contracts.length > 0) {
+      console.log('📋 [SendRemindersDialog] Contracts Analysis:', {
+        totalContracts: contracts.length,
+        eligibleContracts: filtered.length,
+        sampleContract: contracts[0],
+        sampleEligible: filtered[0],
+      });
+    }
+
+    return filtered;
+  }, [contracts, open]);
 
   const handleSend = async () => {
     if (selectedContracts.length === 0) {
@@ -69,9 +107,32 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       return;
     }
 
-    const contractsToSend = eligibleContracts.filter(c => 
-      selectedContracts.includes(c.id)
-    );
+    const contractsToSend = eligibleContracts
+      .filter(c => selectedContracts.includes(c.id))
+      .map(c => ({
+        ...c,
+        customer_phone: getCustomerPhone(c) || '',
+        customer_name: c.customer_name || 
+          (c.customers?.customer_type === 'corporate'
+            ? (c.customers?.company_name_ar || c.customers?.company_name)
+            : `${c.customers?.first_name_ar || c.customers?.first_name || ''} ${c.customers?.last_name_ar || c.customers?.last_name || ''}`.trim()),
+        monthly_rent: c.monthly_rent || c.monthly_amount,
+      }));
+
+    if (contractsToSend.length === 0) {
+      toast.error('لا توجد عقود صالحة للإرسال');
+      return;
+    }
+
+    console.log('📤 [SendRemindersDialog] Sending reminders:', {
+      count: contractsToSend.length,
+      reminderType: selectedType,
+      contracts: contractsToSend.map(c => ({
+        id: c.id,
+        contract_number: c.contract_number,
+        customer_phone: c.customer_phone,
+      })),
+    });
 
     try {
       await sendReminders.mutateAsync({
@@ -80,11 +141,13 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         customMessage: customMessage || undefined,
       });
 
+      toast.success(`تم إرسال ${contractsToSend.length} تنبيه بنجاح`);
       onOpenChange(false);
       setSelectedContracts([]);
       setCustomMessage('');
-    } catch (error) {
-      console.error('Error sending reminders:', error);
+    } catch (error: any) {
+      console.error('❌ [SendRemindersDialog] Error sending reminders:', error);
+      toast.error(error?.message || 'فشل إرسال التنبيهات. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -286,12 +349,18 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                     />
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{contract.contract_number}</div>
-                      <div className="text-sm text-gray-600">{contract.customer_name}</div>
+                      <div className="text-sm text-gray-600">
+                        {contract.customer_name || 
+                         (contract.customers?.customer_type === 'corporate'
+                           ? (contract.customers?.company_name_ar || contract.customers?.company_name)
+                           : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim()) ||
+                         'غير محدد'}
+                      </div>
                     </div>
                     <div className="text-left">
                       <Badge variant="outline" className="gap-1">
                         <MessageSquare className="h-3 w-3" />
-                        {contract.customer_phone}
+                        {getCustomerPhone(contract) || 'لا يوجد رقم'}
                       </Badge>
                     </div>
                   </div>
