@@ -1,23 +1,20 @@
 import React from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedLegalAIInterface_v2 } from '@/components/legal';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { Scale, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export const Legal: React.FC = () => {
-  const { user } = useAuth();
-  const companyId = user?.user_metadata?.company_id;
+  const companyId = useCurrentCompanyId();
 
   if (!companyId) {
     return (
       <div className="container mx-auto py-6">
-        <Alert variant="destructive">
-          <AlertDescription>
-            خطأ: لم يتم العثور على معرف الشركة. يرجى تسجيل الدخول مرة أخرى.
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
   }

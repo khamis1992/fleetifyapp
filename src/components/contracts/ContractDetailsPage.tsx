@@ -43,8 +43,8 @@ import {
   CalendarCheck,
   CalendarX,
   Check,
-  FileText,
   FilePlus,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -777,6 +777,7 @@ const ContractDetailsPage = () => {
               <TabsContent value="invoices" className="mt-0">
                 <InvoicesTab
                   invoices={invoices}
+                  contract={contract}
                   contractId={contract.id}
                   companyId={companyId}
                   onPay={handleInvoicePay}
@@ -1054,6 +1055,7 @@ const InfoRow = ({ label, value, mono, dir }: InfoRowProps) => (
 // مكون تبويب الفواتير
 interface InvoicesTabProps {
   invoices: Invoice[];
+  contract: Contract;
   contractId: string;
   companyId?: string;
   onPay: (invoice: Invoice) => void;
@@ -1062,7 +1064,37 @@ interface InvoicesTabProps {
   formatCurrency: (amount: number) => string;
 }
 
-const InvoicesTab = ({ invoices, contractId, companyId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
+const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPreview, onCreateInvoice, formatCurrency }: InvoicesTabProps) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // حساب عدد الفواتير المتوقعة
+  const expectedInvoicesCount = useMemo(() => {
+    if (!contract.start_date || !contract.monthly_amount) return 0;
+    
+    const totalAmount = contract.contract_amount || 0;
+    const monthlyAmount = contract.monthly_amount;
+    
+    if (totalAmount > 0) {
+      return Math.ceil(totalAmount / monthlyAmount);
+    }
+    
+    // إذا لم يكن contract_amount موجود، احسب من التواريخ
+    if (contract.end_date) {
+      const start = new Date(contract.start_date);
+      const end = new Date(contract.end_date);
+      const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+      return months;
+    }
+    
+    return 12; // افتراضياً سنة واحدة
+  }, [contract]);
+
+  // التحقق من وجود فواتير ناقصة
+  const missingInvoicesCount = expectedInvoicesCount - invoices.length;
+  const hasMissingInvoices = missingInvoicesCount > 0;
+  
   const handleInvoiceDownload = useCallback(async (invoice: Invoice) => {
     try {
       // فتح معاينة الفاتورة أولاً
@@ -1077,23 +1109,129 @@ const InvoicesTab = ({ invoices, contractId, companyId, onPay, onPreview, onCrea
     onPreview(invoice);
   }, [onPreview]);
 
+  // دالة لإنشاء فواتير من جدول الدفعات
+  const handleGenerateInvoicesFromSchedule = useCallback(async () => {
+    if (!contractId || !companyId) {
+      toast({
+        title: "خطأ",
+        description: "معلومات العقد غير متوفرة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // استدعاء RPC function لإنشاء الفواتير
+      const { data, error } = await supabase.rpc('generate_invoices_from_payment_schedule', {
+        p_contract_id: contractId
+      });
+
+      if (error) throw error;
+
+      const createdCount = data || 0;
+      
+      toast({
+        title: "تم بنجاح ✓",
+        description: createdCount > 0 
+          ? `تم إنشاء ${createdCount} فاتورة جديدة من جدول الدفعات` 
+          : 'جميع الفواتير موجودة مسبقاً',
+        variant: createdCount > 0 ? "default" : "default"
+      });
+
+      // إعادة تحميل الفواتير
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contractId] });
+    } catch (error: any) {
+      console.error('Error generating invoices:', error);
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في إنشاء الفواتير",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [contractId, companyId, queryClient, toast]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">فواتير العقد</h3>
-        <Button onClick={onCreateInvoice} className="gap-2 bg-red-600 hover:bg-red-700">
-          <Plus className="w-4 h-4" />
-          إنشاء فاتورة
-        </Button>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">فواتير العقد</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {invoices.length} من {expectedInvoicesCount} فاتورة متوقعة
+              {hasMissingInvoices && (
+                <span className="text-orange-600 font-semibold mr-2">
+                  ({missingInvoicesCount} فاتورة ناقصة)
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {hasMissingInvoices && (
+              <Button 
+                onClick={handleGenerateInvoicesFromSchedule} 
+                className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري الإنشاء...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    {invoices.length === 0 ? 'إنشاء فواتير تلقائية' : `إكمال الفواتير الناقصة (${missingInvoicesCount})`}
+                  </>
+                )}
+              </Button>
+            )}
+            <Button onClick={onCreateInvoice} className="gap-2 bg-red-600 hover:bg-red-700">
+              <Plus className="w-4 h-4" />
+              إنشاء فاتورة
+            </Button>
+          </div>
+        </div>
+        
+        {/* تنبيه للفواتير الناقصة */}
+        {hasMissingInvoices && invoices.length > 0 && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              تنقص هذا العقد <strong>{missingInvoicesCount} فاتورة</strong> من أصل {expectedInvoicesCount} فاتورة متوقعة حسب جدول الدفعات. 
+              يمكنك إنشاء الفواتير الناقصة تلقائياً بالضغط على الزر أعلاه.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       {invoices.length === 0 ? (
-        <Card>
+        <Card className="border-2 border-dashed border-gray-300">
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500 mb-4">لا توجد فواتير لهذا العقد</p>
-            <p className="text-sm text-gray-400 mb-4">
-              يمكنك إنشاء الفواتير لجميع العقود من صفحة الفواتير → تبويب "الإنشاء التلقائي"
+            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-700 font-semibold mb-2">لا توجد فواتير لهذا العقد</p>
+            <p className="text-sm text-gray-500 mb-6">
+              يمكنك إنشاء الفواتير تلقائياً بناءً على جدول الدفعات المحسوب من بيانات العقد
             </p>
+            <Button 
+              onClick={handleGenerateInvoicesFromSchedule} 
+              className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg"
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري إنشاء الفواتير...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  إنشاء فواتير تلقائية
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       ) : (

@@ -13,6 +13,8 @@ import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiag
 import { UnifiedOdometerInput } from '@/components/fleet/UnifiedOdometerInput';
 import { useUpdateOdometerForOperation } from '@/hooks/useUnifiedOdometerManagement';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { MobileDatePicker } from '@/components/mobile/MobileDatePicker';
+import { useContractHelpers } from '@/hooks/useContractHelpers';
 
 interface Damage {
   type: string;
@@ -45,6 +47,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
   const { data: vehicleData } = useContractVehicle(contract.vehicle_id);
   const { formatCurrency } = useCurrencyFormatter();
   const { updateForContractEnd } = useUpdateOdometerForOperation();
+  const { getCustomerName } = useContractHelpers();
   
   const [odometerReading, setOdometerReading] = useState<number>(0);
   const [fuelLevel, setFuelLevel] = useState<number>(100);
@@ -254,9 +257,10 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
             <div>
               <Label>العميل</Label>
               <Input value={
-                contract.customers?.customer_type === 'corporate' 
-                  ? (contract.customers?.company_name_ar || 'غير محدد')
-                  : `${contract.customers?.first_name_ar || ''} ${contract.customers?.last_name_ar || ''}`.trim() || 'غير محدد'
+                (() => {
+                  const customerData = contract.customer || contract.customers;
+                  return getCustomerName(customerData);
+                })()
               } disabled />
             </div>
           </div>
@@ -286,12 +290,13 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="return_date">تاريخ الإرجاع</Label>
-              <Input
-                id="return_date"
-                type="date"
-                value={formData.return_date}
-                onChange={(e) => setFormData({ ...formData, return_date: e.target.value })}
-                required
+              <MobileDatePicker
+                value={formData.return_date ? new Date(formData.return_date) : undefined}
+                onChange={(date) => setFormData({ 
+                  ...formData, 
+                  return_date: date ? date.toISOString().split('T')[0] : '' 
+                })}
+                placeholder="اختر تاريخ الإرجاع"
               />
             </div>
             <div>
@@ -336,14 +341,23 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Vehicle Damage Diagram */}
-          <div>
+          <div className="w-full">
             <h4 className="font-medium mb-4">مجسم أضرار المركبة</h4>
-          <VehicleConditionDiagram
-            damagePoints={damagePoints}
-            onDamagePointsChange={handleDamagePointsChange}
-            readOnly={false}
-            conditionReportId={contract.id} // Pass contract ID as placeholder for condition report
-          />
+            {vehicleData ? (
+              <VehicleConditionDiagram
+                damagePoints={damagePoints}
+                onDamagePointsChange={handleDamagePointsChange}
+                readOnly={false}
+                conditionReportId={contract.id}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  جاري تحميل معلومات المركبة...
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Separator */}
