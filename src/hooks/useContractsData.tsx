@@ -181,7 +181,8 @@ export const useContractsData = (filters: any = {}) => {
             last_name,
             company_name_ar,
             company_name,
-            customer_type
+            customer_type,
+            phone
           ),
           cost_center:cost_centers(
             id,
@@ -373,13 +374,22 @@ export const useContractsData = (filters: any = {}) => {
       return [];
     }
     
-    // If no filters are applied, return all contracts
+    // Enhance contracts with flattened customer data for easier access
+    const enhancedContracts = contracts.map(contract => ({
+      ...contract,
+      customer_name: contract.customers?.customer_type === 'corporate' 
+        ? (contract.customers?.company_name_ar || contract.customers?.company_name)
+        : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim(),
+      customer_phone: contract.customers?.phone
+    }));
+    
+    // If no filters are applied, return all enhanced contracts
     if (!filters || Object.keys(filters).length === 0) {
-      console.log('🔍 [CONTRACTS_FILTER] No filters applied, returning all contracts:', contracts.length);
-      return contracts;
+      console.log('🔍 [CONTRACTS_FILTER] No filters applied, returning all contracts:', enhancedContracts.length);
+      return enhancedContracts;
     }
     
-    const result = contracts.filter((contract: any) => {
+    const result = enhancedContracts.filter((contract: any) => {
       // Search filter
       if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.toLowerCase().trim();
