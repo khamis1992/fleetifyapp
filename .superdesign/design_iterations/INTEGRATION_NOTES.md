@@ -11,7 +11,34 @@
 public/payment-sheets/index.html
 ```
 
-### 2. تحديث PaymentsDashboard.tsx
+### 2. تحديث QuickActionsDashboard.tsx (الصفحة الرئيسية - قسم الإجراءات السريعة)
+**الملف:** `src/components/dashboard/QuickActionsDashboard.tsx`
+
+**التغييرات:**
+- ✅ السطر 183-186: تحديث معالج "تسجيل دفعة" ليفتح الصفحة الجديدة
+- ✅ السطر 50-52: حذف state `showCreatePayment` (غير مستخدم)
+- ✅ السطر 201-204: حذف دالة `handlePaymentCreated()` (غير مستخدمة)
+- ✅ السطر 330-335: حذف `UnifiedPaymentForm` dialog (غير مستخدم)
+- ✅ السطر 22-25: حذف import `UnifiedPaymentForm` و `Tooltip` (غير مستخدمة)
+
+**قبل:**
+```typescript
+if (action.id === 'record-payment') {
+  setShowCreatePayment(true);
+  return;
+}
+```
+
+**بعد:**
+```typescript
+if (action.id === 'record-payment') {
+  // فتح صفحة تسجيل الدفعات الجديدة
+  window.open('/payment-sheets/index.html', '_blank');
+  return;
+}
+```
+
+### 3. تحديث PaymentsDashboard.tsx
 **الملف:** `src/pages/finance/PaymentsDashboard.tsx`
 
 **التغييرات:**
@@ -74,7 +101,15 @@ const recordPayment = (payment: any) => {
 
 ## 🎯 نقاط الوصول للصفحة الجديدة
 
-### 1. لوحة المدفوعات (PaymentsDashboard)
+### 1. الصفحة الرئيسية (Dashboard) - قسم الإجراءات السريعة ⭐
+**المسار:** `/` (الصفحة الرئيسية)
+
+**المكون:** `QuickActionsDashboard.tsx`
+
+**الأماكن:**
+- بطاقة "تسجيل دفعة" في قسم "إجراءات سريعة" → يفتح الصفحة الجديدة
+
+### 2. لوحة المدفوعات (PaymentsDashboard)
 **المسار:** `/finance/payments`
 
 **الأماكن:**
@@ -84,7 +119,7 @@ const recordPayment = (payment: any) => {
 2. **جدول المدفوعات المتأخرة:**
    - قائمة الإجراءات (⋮) → "تسجيل دفعة" → يفتح الصفحة الجديدة
 
-### 2. صفحة تفاصيل العميل (CustomerDetailsPage)
+### 3. صفحة تفاصيل العميل (CustomerDetailsPage)
 **المسار:** `/customers/:customerId`
 
 **الأماكن:**
@@ -161,10 +196,18 @@ https://yourdomain.com/payment-sheets/index.html
 
 ## ⚠️ ملاحظات مهمة
 
-### 1. الـ Dialog القديم
-- ✅ لم نحذف الـ dialog القديم من CustomerDetailsPage
+### 1. الكود القديم المحذوف ✅
+**من QuickActionsDashboard.tsx:**
+- ✅ تم حذف `UnifiedPaymentForm` dialog بالكامل
+- ✅ تم حذف state `showCreatePayment`
+- ✅ تم حذف دالة `handlePaymentCreated()`
+- ✅ تم حذف imports غير المستخدمة
+- ✅ الكود أصبح أنظف وأخف
+
+**من CustomerDetailsPage.tsx:**
+- ⚠️ لم نحذف الـ dialog القديم (إذا كان موجوداً)
 - ✅ فقط غيرنا onClick ليفتح الصفحة الجديدة
-- ⚠️ يمكن حذف الـ dialog لاحقاً لتنظيف الكود
+- ℹ️ يمكن حذف الـ dialog لاحقاً لتنظيف الكود
 
 ### 2. الأقساط (Vehicle Installments)
 - ✅ لم نعدل على `VehicleInstallmentDetails.tsx`

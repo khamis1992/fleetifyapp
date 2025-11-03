@@ -19,15 +19,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { VehicleForm } from '@/components/fleet/VehicleForm';
 import { EnhancedContractForm } from '@/components/contracts/EnhancedContractForm';
-import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { toast } from 'sonner';
 
 interface QuickAction {
@@ -50,7 +44,6 @@ const QuickActionsDashboard: React.FC = () => {
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [showCreateVehicle, setShowCreateVehicle] = useState(false);
   const [showCreateContract, setShowCreateContract] = useState(false);
-  const [showCreatePayment, setShowCreatePayment] = useState(false);
 
   const quickActions: QuickAction[] = [
     {
@@ -181,7 +174,8 @@ const QuickActionsDashboard: React.FC = () => {
     }
     
     if (action.id === 'record-payment') {
-      setShowCreatePayment(true);
+      // فتح صفحة تسجيل الدفعات الجديدة
+      window.open('/payment-sheets/index.html', '_blank');
       return;
     }
     
@@ -201,11 +195,6 @@ const QuickActionsDashboard: React.FC = () => {
   const handleContractCreated = (contract: any) => {
     setShowCreateContract(false);
     toast.success('تم إنشاء العقد بنجاح');
-  };
-
-  const handlePaymentCreated = (payment: any) => {
-    setShowCreatePayment(false);
-    toast.success('تم تسجيل الدفعة بنجاح');
   };
 
   const ActionButton = ({ action, index, variant = 'default' }: { 
@@ -337,19 +326,6 @@ const QuickActionsDashboard: React.FC = () => {
         open={showCreateContract}
         onOpenChange={setShowCreateContract}
         onSubmit={handleContractCreated}
-      />
-
-      {/* Payment Creation Dialog */}
-      <UnifiedPaymentForm
-        open={showCreatePayment}
-        onOpenChange={setShowCreatePayment}
-        type="customer_payment"
-        onSuccess={handlePaymentCreated}
-        onCancel={() => setShowCreatePayment(false)}
-        options={{
-          autoCreateJournalEntry: true,
-          showJournalPreview: true
-        }}
       />
     </>
   );
