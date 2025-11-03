@@ -956,7 +956,7 @@ const CustomerDetailsPage = () => {
                   </div>
                   <Button 
                     className="bg-red-600 hover:bg-red-700 gap-2"
-                    onClick={() => setIsPaymentDialogOpen(true)}
+                    onClick={() => window.open('/payment-sheets/index.html', '_blank')}
                   >
                     <Plus className="w-4 h-4" />
                     تسجيل دفعة جديدة

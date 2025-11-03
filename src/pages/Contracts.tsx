@@ -390,13 +390,20 @@ function ContractsNew() {
 
   // Helper function to get vehicle info
   const getVehicleInfo = (contract: any) => {
-    if (!contract.vehicles) return "غير محدد";
-    const vehicle = contract.vehicles;
+    // دعم كلا التنسيقين: vehicle و vehicles
+    const vehicle = contract.vehicle || contract.vehicles;
+    if (!vehicle) return "غير محدد";
+    
     const make = vehicle.make_ar || vehicle.make || "";
     const model = vehicle.model_ar || vehicle.model || "";
     const year = vehicle.year || "";
     const plate = vehicle.plate_number || "";
-    return `${make} ${model} ${year}${plate ? ` | ${plate}` : ""}`;
+    
+    // تجنب عرض نص فارغ
+    const vehicleInfo = `${make} ${model} ${year}`.trim();
+    if (!vehicleInfo) return "غير محدد";
+    
+    return `${vehicleInfo}${plate ? ` | ${plate}` : ""}`;
   };
 
   if (isLoading) {

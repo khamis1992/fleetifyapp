@@ -64,7 +64,8 @@ const PaymentsDashboard = () => {
 
   // Placeholder functions for quick actions
   const openRecordPaymentDialog = () => {
-    toast.info("ميزة تسجيل الدفعة قيد التطوير");
+    // فتح صفحة تسجيل الدفعات الجديدة
+    window.open('/payment-sheets/index.html', '_blank');
   };
 
   const sendPaymentReminders = () => {
@@ -76,7 +77,8 @@ const PaymentsDashboard = () => {
   };
 
   const recordPayment = (payment: any) => {
-    toast.info(`تسجيل دفعة للعقد ${payment.contract_number}`);
+    // فتح صفحة تسجيل الدفعات الجديدة
+    window.open('/payment-sheets/index.html', '_blank');
   };
 
   const sendReminder = (payment: any) => {

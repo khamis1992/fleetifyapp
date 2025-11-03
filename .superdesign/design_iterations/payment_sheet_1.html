@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - تسجيل إجراءات الدفعات مع نظام AI ذكي</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="payment_sheet_theme.css">
+    
+    <style>
+        /* إضافات CSS للحركات والتفاعلات */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf0 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        /* Container الرئيسي */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Header */
+        .header-card {
+            background: linear-gradient(135deg, hsl(0, 70%, 40%) 0%, hsl(0, 70%, 50%) 100%);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(200, 40, 40, 0.2);
+            animation: slideDown 0.4s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .ai-badge {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.35rem 1rem;
+            border-radius: 2rem;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            animation: pulse-ai 2s infinite;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @keyframes pulse-ai {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.8);
+                transform: scale(1.05);
+            }
+        }
+        
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+        
+        /* أزرار الإجراءات */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            font-family: 'Tajawal', sans-serif;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: hsl(0, 70%, 45%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* الجدول الذكي */
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+            animation: fadeIn 0.6s ease-out 0.2s backwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .payment-table thead {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        
+        .payment-table th {
+            padding: 1rem;
+            text-align: right;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #d1d5db;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .payment-table tbody tr {
+            transition: all 0.2s ease;
+            animation: slideInRow 0.4s ease-out backwards;
+        }
+        
+        @keyframes slideInRow {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .payment-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+        .payment-table tbody tr:nth-child(2) { animation-delay: 0.15s; }
+        .payment-table tbody tr:nth-child(3) { animation-delay: 0.2s; }
+        .payment-table tbody tr:nth-child(4) { animation-delay: 0.25s; }
+        .payment-table tbody tr:nth-child(5) { animation-delay: 0.3s; }
+        
+        .payment-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        
+        .payment-table tbody tr:hover {
+            background-color: hsl(0, 70%, 98%) !important;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(200, 40, 40, 0.1);
+        }
+        
+        .payment-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            color: #374151;
+        }
+        
+        .payment-table td.editing {
+            background-color: #fef3c7 !important;
+            box-shadow: inset 0 0 0 2px #f59e0b;
+            animation: editPulse 0.3s ease;
+        }
+        
+        @keyframes editPulse {
+            0%, 100% {
+                box-shadow: inset 0 0 0 2px #f59e0b;
+            }
+            50% {
+                box-shadow: inset 0 0 0 3px #f59e0b;
+            }
+        }
+        
+        /* حقول الإدخال */
+        .table-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.2s ease;
+        }
+        
+        .table-input:focus {
+            outline: none;
+            border-color: hsl(0, 70%, 45%);
+            box-shadow: 0 0 0 3px hsla(0, 70%, 45%, 0.1);
+        }
+        
+        .table-input.number-input {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+        }
+        
+        /* اختيار اللون */
+        .color-select {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .color-select:hover {
+            border-color: hsl(0, 70%, 45%);
+        }
+        
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #d1d5db;
+        }
+        
+        /* شارة اللون */
+        .color-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        /* حقل الملاحظات الذكي */
+        .smart-notes-container {
+            position: relative;
+        }
+        
+        .smart-notes-input {
+            width: 100%;
+            min-height: 60px;
+            padding: 0.5rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-family: 'Tajawal', sans-serif;
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+        
+        .smart-notes-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+        
+        .smart-notes-input.ai-analyzing {
+            border-color: #f59e0b;
+            animation: analyzing-border 1.5s infinite;
+        }
+        
+        @keyframes analyzing-border {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.4);
+            }
+        }
+        
+        .ai-indicator {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            background: #f59e0b;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+        
+        /* نافذة اكتشاف AI */
+        .ai-detection-box {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            max-width: 450px;
+            width: 90%;
+            z-index: 1000;
+            animation: slideInRight 0.4s ease-out;
+            border: 2px solid #f59e0b;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        .ai-detection-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #fef3c7;
+        }
+        
+        .ai-detection-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            color: #92400e;
+            font-size: 1.125rem;
+        }
+        
+        .ai-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            animation: rotate360 2s linear infinite;
+        }
+        
+        @keyframes rotate360 {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .ai-detection-content {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .ai-field {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #fef3c7;
+            border-radius: 0.5rem;
+        }
+        
+        .ai-field-icon {
+            width: 24px;
+            height: 24px;
+            color: #f59e0b;
+        }
+        
+        .ai-field-content {
+            flex: 1;
+        }
+        
+        .ai-field-label {
+            font-size: 0.75rem;
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .ai-field-value {
+            font-weight: 600;
+            color: #1f2937;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .ai-detection-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-ai-confirm {
+            flex: 1;
+            background: linear-gradient(135deg, hsl(142, 56%, 42%) 0%, hsl(142, 56%, 35%) 100%);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .btn-ai-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px hsla(142, 56%, 42%, 0.3);
+        }
+        
+        .btn-ai-reject {
+            flex: 1;
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .btn-ai-reject:hover {
+            background: #e5e7eb;
+        }
+        
+        /* إحصائيات سريعة */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.6s ease-out 0.4s backwards;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        /* أمثلة الجمل الذكية */
+        .examples-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 2px solid #f59e0b;
+            animation: fadeIn 0.6s ease-out 0.6s backwards;
+        }
+        
+        .examples-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 1rem;
+            font-size: 1.125rem;
+        }
+        
+        .examples-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .example-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .example-item:hover {
+            transform: translateX(-4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .example-text {
+            flex: 1;
+            color: #374151;
+        }
+        
+        .example-arrow {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+        
+        .example-result {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        /* أزرار الإجراءات في الجدول */
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+        }
+        
+        .action-btn:hover {
+            background: #f3f4f6;
+            transform: scale(1.1);
+        }
+        
+        .action-btn.delete:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        /* زر إضافة صف جديد */
+        .add-row-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            color: #6b7280;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .add-row-btn:hover {
+            background: linear-gradient(135deg, hsl(0, 70%, 45%) 0%, hsl(0, 70%, 40%) 100%);
+            color: white;
+            border-color: hsl(0, 70%, 45%);
+            transform: translateY(-2px);
+        }
+        
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 2000;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .toast.success {
+            border-right: 4px solid hsl(142, 56%, 42%);
+        }
+        
+        .toast.error {
+            border-right: 4px solid #dc2626;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header-card {
+                padding: 1.5rem;
+            }
+            
+            .header-title {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .payment-table {
+                min-width: 1000px;
+            }
+            
+            .ai-detection-box {
+                right: 1rem;
+                left: 1rem;
+                bottom: 1rem;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header-card">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <h1 class="header-title">
+                        <i data-lucide="clipboard-list" style="width: 2rem; height: 2rem;"></i>
+                        تسجيل إجراءات الدفعات
+                    </h1>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addNewRow()">
+                        <i data-lucide="plus" style="width: 1.25rem; height: 1.25rem;"></i>
+                        إضافة دفعة
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveData()">
+                        <i data-lucide="save" style="width: 1.25rem; height: 1.25rem;"></i>
+                        حفظ
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportToExcel()">
+                        <i data-lucide="file-spreadsheet" style="width: 1.25rem; height: 1.25rem;"></i>
+                        تصدير Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="printTable()">
+                        <i data-lucide="printer" style="width: 1.25rem; height: 1.25rem;"></i>
+                        طباعة
+                    </button>
+                </div>
+            </div>
+            
+            <!-- شريط البحث والتصفية -->
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <div style="position: relative;">
+                        <i data-lucide="search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 1.25rem; height: 1.25rem; color: #6b7280;"></i>
+                        <input type="text" 
+                               id="searchInput" 
+                               class="table-input" 
+                               placeholder="🔍 بحث عن عميل، رقم مركبة، رقم جوال..."
+                               oninput="filterTable()"
+                               style="padding-right: 3rem; background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.5);">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; color: white;">
+                    <span style="font-size: 0.875rem; opacity: 0.9;">عرض:</span>
+                    <select id="statusFilter" 
+                            class="btn btn-secondary" 
+                            onchange="filterTable()"
+                            style="padding: 0.5rem 1rem; border: none;">
+                        <option value="all">جميع الدفعات</option>
+                        <option value="paid">المسددة</option>
+                        <option value="pending">المعلقة</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- إحصائيات سريعة -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);">
+                    <i data-lucide="file-text" style="width: 1.5rem; height: 1.5rem; color: #2563eb;"></i>
+                </div>
+                <div class="stat-value" id="totalPayments">5</div>
+                <div class="stat-label">إجمالي الدفعات</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, hsl(142, 56%, 95%) 0%, hsl(142, 56%, 85%) 100%);">
+                    <i data-lucide="dollar-sign" style="width: 1.5rem; height: 1.5rem; color: hsl(142, 56%, 42%);"></i>
+                </div>
+                <div class="stat-value" id="totalAmount">9,000</div>
+                <div class="stat-label">إجمالي المبالغ (ريال)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, hsl(0, 70%, 95%) 0%, hsl(0, 70%, 90%) 100%);">
+                    <i data-lucide="trending-up" style="width: 1.5rem; height: 1.5rem; color: hsl(0, 70%, 45%);"></i>
+                </div>
+                <div class="stat-value" id="averageAmount">1,800</div>
+                <div class="stat-label">متوسط القسط (ريال)</div>
+            </div>
+        </div>
+
+        <!-- الجدول الرئيسي -->
+        <div class="table-container">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>رقم المركبة</th>
+                        <th>لون المركبة</th>
+                        <th>اسم العميل</th>
+                        <th>رقم الجوال</th>
+                        <th>القسط الشهري</th>
+                        <th>الملاحظات الذكية</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </tbody>
+            </table>
+            
+            <button class="add-row-btn" onclick="addNewRow()">
+                <i data-lucide="plus-circle" style="width: 1.5rem; height: 1.5rem;"></i>
+                إضافة صف جديد
+            </button>
+        </div>
+
+        <!-- قسم أمثلة الجمل الذكية -->
+        <div class="examples-section">
+            <h3 class="examples-title">
+                <i data-lucide="lightbulb" style="width: 1.5rem; height: 1.5rem;"></i>
+                أمثلة على الجمل الذكية التي يفهمها النظام
+            </h3>
+            
+            <div class="examples-grid">
+                <div class="example-item">
+                    <span class="example-text">"تم سداد مبلغ 1500"</span>
+                    <span class="example-arrow">→</span>
+                    <span class="example-result">دفعة 1,500 ريال</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-text">"دفع 2000 نقداً"</span>
+                    <span class="example-arrow">→</span>
+                    <span class="example-result">دفعة نقدية 2,000 ريال</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-text">"تحويل بنكي 3500"</span>
+                    <span class="example-arrow">→</span>
+                    <span class="example-result">دفعة بنكية 3,500 ريال</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-text">"دفعة متأخرة 1000 مع غرامة 100"</span>
+                    <span class="example-arrow">→</span>
+                    <span class="example-result">دفعة 1,000 + غرامة 100</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-text">"سداد كامل 15000"</span>
+                    <span class="example-arrow">→</span>
+                    <span class="example-result">سداد كامل للعقد</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بيانات العقود النشطة (يتم جلبها من قاعدة البيانات)
+        let activeContracts = [
+            {
+                contractId: 'C-2024-001',
+                customerId: 1,
+                customerName: 'أحمد محمد السعيد',
+                phone: '0512345678',
+                vehicleId: 'V-001',
+                vehicleNumber: 'ABC-1234',
+                color: 'white',
+                monthlyPayment: 1500,
+                startDate: '2024-01-15',
+                endDate: '2025-01-15',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-002',
+                customerId: 2,
+                customerName: 'محمد علي الأحمد',
+                phone: '0523456789',
+                vehicleId: 'V-002',
+                vehicleNumber: 'XYZ-5678',
+                color: 'black',
+                monthlyPayment: 2000,
+                startDate: '2024-02-01',
+                endDate: '2025-02-01',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-003',
+                customerId: 3,
+                customerName: 'فاطمة أحمد خالد',
+                phone: '0534567890',
+                vehicleId: 'V-003',
+                vehicleNumber: 'DEF-9012',
+                color: 'red',
+                monthlyPayment: 1800,
+                startDate: '2024-01-20',
+                endDate: '2025-01-20',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-004',
+                customerId: 4,
+                customerName: 'سارة خالد عمر',
+                phone: '0545678901',
+                vehicleId: 'V-004',
+                vehicleNumber: 'GHI-3456',
+                color: 'blue',
+                monthlyPayment: 1200,
+                startDate: '2024-03-01',
+                endDate: '2025-03-01',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-005',
+                customerId: 5,
+                customerName: 'عبدالله عمر محمد',
+                phone: '0556789012',
+                vehicleId: 'V-005',
+                vehicleNumber: 'JKL-7890',
+                color: 'silver',
+                monthlyPayment: 2500,
+                startDate: '2024-02-15',
+                endDate: '2025-02-15',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-006',
+                customerId: 6,
+                customerName: 'خالد سعيد الغامدي',
+                phone: '0567890123',
+                vehicleId: 'V-006',
+                vehicleNumber: 'MNO-1111',
+                color: 'white',
+                monthlyPayment: 1700,
+                startDate: '2024-01-10',
+                endDate: '2025-01-10',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-007',
+                customerId: 7,
+                customerName: 'نورة محمد القحطاني',
+                phone: '0578901234',
+                vehicleId: 'V-007',
+                vehicleNumber: 'PQR-2222',
+                color: 'gray',
+                monthlyPayment: 2200,
+                startDate: '2024-02-20',
+                endDate: '2025-02-20',
+                status: 'active'
+            },
+            {
+                contractId: 'C-2024-008',
+                customerId: 8,
+                customerName: 'عمر عبدالعزيز الدوسري',
+                phone: '0589012345',
+                vehicleId: 'V-008',
+                vehicleNumber: 'STU-3333',
+                color: 'black',
+                monthlyPayment: 1900,
+                startDate: '2024-03-05',
+                endDate: '2025-03-05',
+                status: 'active'
+            }
+        ];
+
+        // بيانات الدفعات المسجلة
+        let paymentsData = [];
+
+        // ألوان المركبات المتاحة
+        const vehicleColors = {
+            'white': { name: 'أبيض', hex: '#ffffff', border: '#e5e7eb' },
+            'black': { name: 'أسود', hex: '#000000' },
+            'red': { name: 'أحمر', hex: '#dc2626' },
+            'blue': { name: 'أزرق', hex: '#2563eb' },
+            'green': { name: 'أخضر', hex: '#059669' },
+            'silver': { name: 'فضي', hex: '#94a3b8' },
+            'gray': { name: 'رمادي', hex: '#6b7280' }
+        };
+
+        // جلب العقود النشطة من قاعدة البيانات
+        async function fetchActiveContracts() {
+            try {
+                // يمكنك استبدال هذا بـ API حقيقي من FleetifyApp
+                // const response = await fetch('/api/contracts/active');
+                // const data = await response.json();
+                // activeContracts = data;
+                
+                // في حالة الاستخدام مع FleetifyApp الحقيقي:
+                /*
+                const response = await fetch('/api/rental-agreements', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const agreements = await response.json();
+                    // تصفية العقود النشطة فقط
+                    activeContracts = agreements.filter(agreement => 
+                        agreement.status === 'active' || agreement.status === 'approved'
+                    ).map(agreement => ({
+                        contractId: agreement.agreement_number || agreement.id,
+                        customerId: agreement.customer_id,
+                        customerName: agreement.customer_name,
+                        phone: agreement.customer_phone,
+                        vehicleId: agreement.vehicle_id,
+                        vehicleNumber: agreement.vehicle_plate_number || agreement.vehicle_number,
+                        color: agreement.vehicle_color || 'white',
+                        monthlyPayment: agreement.monthly_payment || agreement.rental_rate,
+                        startDate: agreement.start_date,
+                        endDate: agreement.end_date,
+                        status: agreement.status
+                    }));
+                    
+                    console.log('تم جلب العقود النشطة:', activeContracts.length);
+                }
+                */
+                
+                console.log('عدد العقود النشطة المتاحة:', activeContracts.length);
+            } catch (error) {
+                console.error('خطأ في جلب العقود:', error);
+                showToast('error', 'فشل في جلب العقود النشطة');
+            }
+        }
+
+        // تهيئة الأيقونات
+        function initIcons() {
+            lucide.createIcons();
+        }
+
+        // رسم الجدول
+        function renderTable() {
+            const tbody = document.getElementById('paymentsTableBody');
+            tbody.innerHTML = '';
+
+            paymentsData.forEach((payment, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="text" 
+                               class="table-input number-input" 
+                               value="${payment.vehicleNumber}"
+                               readonly
+                               style="background-color: #f3f4f6; cursor: not-allowed;"
+                               title="يتم ملؤه تلقائياً عند اختيار العميل">
+                    </td>
+                    <td>
+                        <div class="color-badge" style="background: ${vehicleColors[payment.color]?.hex === '#ffffff' ? '#f3f4f6' : vehicleColors[payment.color]?.hex + '20'}; border: 1px solid ${vehicleColors[payment.color]?.border || vehicleColors[payment.color]?.hex};">
+                            <div class="color-dot" style="background: ${vehicleColors[payment.color]?.hex}; border-color: ${vehicleColors[payment.color]?.border || '#d1d5db'};"></div>
+                            ${vehicleColors[payment.color]?.name || payment.color}
+                        </div>
+                    </td>
+                    <td>
+                        <select class="table-input" 
+                                onchange="selectCustomer(${payment.id}, this.value)"
+                                onfocus="highlightCell(this)"
+                                onblur="removeHighlight(this)"
+                                style="font-weight: 600;">
+                            <option value="">-- اختر عميل من العقود النشطة --</option>
+                            ${activeContracts.map(contract => `
+                                <option value="${contract.contractId}" 
+                                        ${payment.contractId === contract.contractId ? 'selected' : ''}>
+                                    ${contract.customerName} - ${contract.vehicleNumber} (${contract.contractId})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" 
+                               class="table-input number-input" 
+                               value="${payment.phone}"
+                               readonly
+                               style="background-color: #f3f4f6; cursor: not-allowed;"
+                               title="يتم ملؤه تلقائياً عند اختيار العميل">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               class="table-input number-input" 
+                               value="${payment.monthlyPayment}"
+                               readonly
+                               style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 700; color: #059669;"
+                               title="يتم ملؤه تلقائياً عند اختيار العميل">
+                    </td>
+                    <td>
+                        <div class="smart-notes-container">
+                            <textarea class="smart-notes-input" 
+                                      id="notes-${payment.id}"
+                                      placeholder="اكتب هنا... مثال: تم سداد مبلغ 1500"
+                                      oninput="analyzeNotes(${payment.id}, this.value)"
+                                      onfocus="highlightCell(this)"
+                                      onblur="removeHighlight(this)">${payment.notes}</textarea>
+                            <div class="ai-indicator" id="ai-indicator-${payment.id}" style="display: none;">
+                                <i data-lucide="sparkles" style="width: 1rem; height: 1rem;"></i>
+                                <span>جاري التحليل</span>
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="action-btn delete" onclick="deletePayment(${payment.id})" title="حذف">
+                            <i data-lucide="trash-2" style="width: 1.25rem; height: 1.25rem;"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            initIcons();
+            updateStats();
+        }
+
+        // اختيار عميل من العقود النشطة
+        function selectCustomer(paymentId, contractId) {
+            if (!contractId) return;
+            
+            const contract = activeContracts.find(c => c.contractId === contractId);
+            if (!contract) return;
+            
+            const payment = paymentsData.find(p => p.id === paymentId);
+            if (!payment) return;
+            
+            // ملء جميع التفاصيل تلقائياً
+            payment.contractId = contract.contractId;
+            payment.customerId = contract.customerId;
+            payment.customerName = contract.customerName;
+            payment.phone = contract.phone;
+            payment.vehicleId = contract.vehicleId;
+            payment.vehicleNumber = contract.vehicleNumber;
+            payment.color = contract.color;
+            payment.monthlyPayment = contract.monthlyPayment;
+            
+            // إعادة رسم الجدول
+            renderTable();
+            
+            // إظهار إشعار
+            showToast('success', `تم اختيار العميل: ${contract.customerName}`);
+            
+            // تأثير بصري للصف المحدث
+            setTimeout(() => {
+                const rows = document.querySelectorAll('#paymentsTableBody tr');
+                const currentRow = Array.from(rows).find(row => {
+                    const select = row.querySelector('select');
+                    return select && select.value === contractId;
+                });
+                
+                if (currentRow) {
+                    currentRow.style.background = 'linear-gradient(90deg, hsl(0, 70%, 95%) 0%, #ffffff 100%)';
+                    setTimeout(() => {
+                        currentRow.style.background = '';
+                    }, 2000);
+                }
+            }, 100);
+        }
+
+        // تحديث البيانات
+        function updatePayment(id, field, value) {
+            const payment = paymentsData.find(p => p.id === id);
+            if (payment) {
+                payment[field] = value;
+                updateStats();
+            }
+        }
+
+        // تحديث الإحصائيات
+        function updateStats() {
+            const total = paymentsData.length;
+            const totalAmount = paymentsData.reduce((sum, p) => sum + parseFloat(p.monthlyPayment || 0), 0);
+            const average = total > 0 ? Math.round(totalAmount / total) : 0;
+
+            document.getElementById('totalPayments').textContent = total;
+            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString('ar-SA');
+            document.getElementById('averageAmount').textContent = average.toLocaleString('ar-SA');
+        }
+
+        // تسليط الضوء على الخلية
+        function highlightCell(input) {
+            const td = input.closest('td');
+            td.classList.add('editing');
+        }
+
+        // إزالة التسليط
+        function removeHighlight(input) {
+            const td = input.closest('td');
+            td.classList.remove('editing');
+        }
+
+        // تحليل الملاحظات بالذكاء الاصطناعي
+        let analysisTimeout;
+        function analyzeNotes(paymentId, text) {
+            const payment = paymentsData.find(p => p.id === paymentId);
+            if (!payment) return;
+
+            payment.notes = text;
+
+            // إظهار مؤشر التحليل
+            const indicator = document.getElementById(`ai-indicator-${paymentId}`);
+            const textarea = document.getElementById(`notes-${paymentId}`);
+            
+            if (text.trim().length > 5) {
+                indicator.style.display = 'flex';
+                textarea.classList.add('ai-analyzing');
+
+                // إلغاء التحليل السابق
+                clearTimeout(analysisTimeout);
+
+                // تحليل بعد 1.5 ثانية من التوقف عن الكتابة
+                analysisTimeout = setTimeout(() => {
+                    performAIAnalysis(paymentId, text, payment);
+                }, 1500);
+            } else {
+                indicator.style.display = 'none';
+                textarea.classList.remove('ai-analyzing');
+            }
+        }
+
+        // تنفيذ التحليل الذكي
+        function performAIAnalysis(paymentId, text, payment) {
+            const indicator = document.getElementById(`ai-indicator-${paymentId}`);
+            const textarea = document.getElementById(`notes-${paymentId}`);
+            
+            // استخراج المعلومات من النص
+            const analysis = extractPaymentInfo(text);
+
+            // إخفاء مؤشر التحليل
+            indicator.style.display = 'none';
+            textarea.classList.remove('ai-analyzing');
+
+            // إذا تم اكتشاف دفعة، عرض نافذة التأكيد
+            if (analysis.amount > 0) {
+                showAIDetectionBox(payment, analysis);
+            }
+        }
+
+        // استخراج معلومات الدفع من النص
+        function extractPaymentInfo(text) {
+            const analysis = {
+                amount: 0,
+                paymentMethod: 'غير محدد',
+                operationType: 'سداد',
+                lateFee: 0,
+                isFullPayment: false
+            };
+
+            // البحث عن المبلغ
+            const amountPatterns = [
+                /(\d+)\s*ريال/,
+                /مبلغ\s*(\d+)/,
+                /(\d+)\s*ر\.س/,
+                /دفع\s*(\d+)/,
+                /سداد\s*(\d+)/,
+                /تحويل\s*(\d+)/,
+                /(\d{3,})/  // أي رقم من 3 أرقام فأكثر
+            ];
+
+            for (const pattern of amountPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    analysis.amount = parseFloat(match[1]);
+                    break;
+                }
+            }
+
+            // تحديد طريقة الدفع
+            if (text.includes('نقد') || text.includes('كاش')) {
+                analysis.paymentMethod = 'نقدي';
+            } else if (text.includes('بنك') || text.includes('تحويل')) {
+                analysis.paymentMethod = 'تحويل بنكي';
+            } else if (text.includes('بطاقة') || text.includes('فيزا') || text.includes('مدى')) {
+                analysis.paymentMethod = 'بطاقة';
+            } else if (text.includes('شيك')) {
+                analysis.paymentMethod = 'شيك';
+            }
+
+            // تحديد نوع العملية
+            if (text.includes('سداد كامل') || text.includes('دفع كامل')) {
+                analysis.isFullPayment = true;
+                analysis.operationType = 'سداد كامل';
+            } else if (text.includes('دفعة')) {
+                analysis.operationType = 'دفعة جزئية';
+            }
+
+            // البحث عن غرامة تأخير
+            const feePattern = /غرامة\s*(\d+)/;
+            const feeMatch = text.match(feePattern);
+            if (feeMatch) {
+                analysis.lateFee = parseFloat(feeMatch[1]);
+            }
+
+            return analysis;
+        }
+
+        // عرض نافذة اكتشاف AI
+        function showAIDetectionBox(payment, analysis) {
+            // إزالة أي نافذة موجودة
+            const existingBox = document.querySelector('.ai-detection-box');
+            if (existingBox) {
+                existingBox.remove();
+            }
+
+            const detectionBox = document.createElement('div');
+            detectionBox.className = 'ai-detection-box';
+            detectionBox.innerHTML = `
+                <div class="ai-detection-header">
+                    <div class="ai-detection-title">
+                        <div class="ai-icon">
+                            <i data-lucide="sparkles" style="width: 1rem; height: 1rem;"></i>
+                        </div>
+                        FleetifyAI اكتشف دفعة جديدة
+                    </div>
+                    <button class="action-btn" onclick="closeAIDetectionBox()">
+                        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem;"></i>
+                    </button>
+                </div>
+                
+                <div class="ai-detection-content">
+                    <div class="ai-field">
+                        <i data-lucide="dollar-sign" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">المبلغ المستخرج</div>
+                            <div class="ai-field-value">${analysis.amount.toLocaleString('ar-SA')} ريال</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <i data-lucide="car" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">المركبة</div>
+                            <div class="ai-field-value">${payment.vehicleNumber}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <i data-lucide="user" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">العميل</div>
+                            <div class="ai-field-value">${payment.customerName} (${payment.phone})</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <i data-lucide="file-text" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">نوع العملية</div>
+                            <div class="ai-field-value">${analysis.operationType}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <i data-lucide="credit-card" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">طريقة الدفع</div>
+                            <div class="ai-field-value">${analysis.paymentMethod}</div>
+                        </div>
+                    </div>
+                    
+                    ${analysis.lateFee > 0 ? `
+                    <div class="ai-field">
+                        <i data-lucide="alert-circle" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">غرامة تأخير</div>
+                            <div class="ai-field-value">${analysis.lateFee.toLocaleString('ar-SA')} ريال</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="ai-field">
+                        <i data-lucide="calendar" class="ai-field-icon"></i>
+                        <div class="ai-field-content">
+                            <div class="ai-field-label">التاريخ</div>
+                            <div class="ai-field-value">${new Date().toLocaleDateString('ar-SA')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ai-detection-actions">
+                    <button class="btn-ai-confirm" onclick="confirmAIPayment(${payment.id}, ${JSON.stringify(analysis).replace(/"/g, '&quot;')})">
+                        <i data-lucide="check" style="width: 1.25rem; height: 1.25rem; display: inline;"></i>
+                        تأكيد وتسجيل الدفعة
+                    </button>
+                    <button class="btn-ai-reject" onclick="closeAIDetectionBox()">
+                        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem; display: inline;"></i>
+                        تجاهل
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(detectionBox);
+            initIcons();
+        }
+
+        // إغلاق نافذة AI
+        function closeAIDetectionBox() {
+            const box = document.querySelector('.ai-detection-box');
+            if (box) {
+                box.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => box.remove(), 300);
+            }
+        }
+
+        // تأكيد الدفعة من AI
+        function confirmAIPayment(paymentId, analysis) {
+            console.log('تم تأكيد الدفعة:', paymentId, analysis);
+            
+            // هنا يمكن إرسال البيانات للسيرفر
+            showToast('success', 'تم تسجيل الدفعة بنجاح!');
+            
+            closeAIDetectionBox();
+        }
+
+        // إضافة صف جديد
+        function addNewRow() {
+            const newId = Math.max(...paymentsData.map(p => p.id), 0) + 1;
+            paymentsData.push({
+                id: newId,
+                contractId: '',
+                customerId: null,
+                vehicleId: '',
+                vehicleNumber: '',
+                color: 'white',
+                customerName: '',
+                phone: '',
+                monthlyPayment: 0,
+                notes: ''
+            });
+            renderTable();
+            
+            // التمرير للصف الجديد
+            setTimeout(() => {
+                const tbody = document.getElementById('paymentsTableBody');
+                const lastRow = tbody.lastElementChild;
+                lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // التركيز على قائمة اختيار العميل
+                const selectInput = lastRow.querySelector('select');
+                if (selectInput) {
+                    selectInput.focus();
+                    // إضافة تأثير بصري
+                    selectInput.style.boxShadow = '0 0 0 4px hsla(0, 70%, 45%, 0.2)';
+                    setTimeout(() => {
+                        selectInput.style.boxShadow = '';
+                    }, 2000);
+                }
+            }, 100);
+        }
+
+        // حذف دفعة
+        function deletePayment(id) {
+            if (confirm('هل أنت متأكد من حذف هذه الدفعة؟')) {
+                paymentsData = paymentsData.filter(p => p.id !== id);
+                renderTable();
+                showToast('success', 'تم حذف الدفعة بنجاح');
+            }
+        }
+
+        // تصفية الجدول
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const tbody = document.getElementById('paymentsTableBody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const vehicleNumber = row.cells[0]?.textContent.toLowerCase() || '';
+                const customerName = row.cells[2]?.querySelector('select')?.options[row.cells[2]?.querySelector('select')?.selectedIndex]?.text.toLowerCase() || '';
+                const phone = row.cells[3]?.textContent.toLowerCase() || '';
+                const notes = row.cells[5]?.textContent.toLowerCase() || '';
+                
+                const matchesSearch = !searchTerm || 
+                    vehicleNumber.includes(searchTerm) ||
+                    customerName.includes(searchTerm) ||
+                    phone.includes(searchTerm) ||
+                    notes.includes(searchTerm);
+                
+                // يمكن إضافة منطق التصفية حسب الحالة لاحقاً
+                const matchesStatus = statusFilter === 'all';
+                
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // تحديث عداد النتائج
+            if (searchTerm) {
+                console.log(`تم العثور على ${visibleCount} من ${rows.length} دفعة`);
+            }
+        }
+
+        // حفظ البيانات
+        function saveData() {
+            // التحقق من وجود دفعات للحفظ
+            if (paymentsData.length === 0) {
+                showToast('error', 'لا توجد دفعات لحفظها!');
+                return;
+            }
+            
+            // التحقق من اكتمال البيانات
+            const incompletePayments = paymentsData.filter(p => !p.contractId || !p.notes);
+            if (incompletePayments.length > 0) {
+                showToast('error', `يوجد ${incompletePayments.length} دفعة غير مكتملة!`);
+                return;
+            }
+            
+            // في حالة الاستخدام مع FleetifyApp الحقيقي:
+            /*
+            const savePromises = paymentsData.map(async (payment) => {
+                const paymentData = {
+                    contract_id: payment.contractId,
+                    customer_id: payment.customerId,
+                    vehicle_id: payment.vehicleId,
+                    amount: payment.monthlyPayment,
+                    payment_date: new Date().toISOString(),
+                    notes: payment.notes,
+                    payment_method: 'manual', // أو استخراجه من نظام AI
+                    status: 'completed'
+                };
+                
+                const response = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                return response.json();
+            });
+            
+            Promise.all(savePromises)
+                .then(results => {
+                    console.log('تم حفظ جميع الدفعات:', results);
+                    showToast('success', `تم حفظ ${results.length} دفعة بنجاح!`);
+                    paymentsData = []; // تنظيف البيانات بعد الحفظ
+                    renderTable();
+                })
+                .catch(error => {
+                    console.error('خطأ في حفظ الدفعات:', error);
+                    showToast('error', 'فشل في حفظ بعض الدفعات');
+                });
+            */
+            
+            console.log('حفظ البيانات:', paymentsData);
+            showToast('success', `تم حفظ ${paymentsData.length} دفعة بنجاح!`);
+        }
+
+        // تصدير إلى Excel
+        function exportToExcel() {
+            showToast('success', 'جاري تصدير البيانات إلى Excel...');
+            // يمكن استخدام مكتبة مثل SheetJS لتصدير حقيقي
+        }
+
+        // طباعة الجدول
+        function printTable() {
+            window.print();
+        }
+
+        // إظهار إشعار
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" 
+                   style="width: 1.5rem; height: 1.5rem; color: ${type === 'success' ? 'hsl(142, 56%, 42%)' : '#dc2626'};"></i>
+                <span style="font-weight: 600;">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            initIcons();
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideUp 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // تهيئة الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            // جلب العقود النشطة أولاً
+            await fetchActiveContracts();
+            
+            // رسم الجدول
+            renderTable();
+            
+            // تهيئة الأيقونات
+            initIcons();
+            
+            // رسالة ترحيب
+            console.log('%c🎉 نظام FleetifyApp لتسجيل الدفعات جاهز!', 'color: hsl(0, 70%, 45%); font-size: 16px; font-weight: bold;');
+            console.log(`%c✅ ${activeContracts.length} عقد نشط متاح`, 'color: hsl(142, 56%, 42%); font-size: 14px;');
+        });
+    </script>
+</body>
+</html>

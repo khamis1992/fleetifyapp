@@ -69,29 +69,42 @@ export const useContractsData = (filters: any = {}) => {
   const { data: allContractsForStats } = useQuery({
     queryKey: [...queryKeys.contracts.lists(), 'all-for-stats', filter?.company_id],
     queryFn: async () => {
-      const companyId = filter?.company_id || null;
-      console.log('📊 [CONTRACTS_STATS] Fetching all contracts for statistics', { companyId });
+      try {
+        const companyId = filter?.company_id || null;
+        
+        // التحقق من صحة companyId
+        if (!companyId) {
+          console.warn('⚠️ [CONTRACTS_STATS] No company ID available, skipping stats fetch');
+          return [];
+        }
 
-      let query = supabase
-        .from('contracts')
-        .select('id, status, contract_amount, monthly_amount');
+        console.log('📊 [CONTRACTS_STATS] Fetching all contracts for statistics', { companyId });
 
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
+        let query = supabase
+          .from('contracts')
+          .select('id, status, contract_amount, monthly_amount');
 
-      const { data, error } = await query;
+        if (companyId) {
+          query = query.eq('company_id', companyId);
+        }
 
-      if (error) {
-        console.error('❌ [CONTRACTS_STATS] Error fetching stats:', error);
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('❌ [CONTRACTS_STATS] Error fetching stats:', error);
+          return [];
+        }
+
+        console.log('✅ [CONTRACTS_STATS] Fetched contracts for stats:', data?.length || 0);
+        return data || [];
+      } catch (err) {
+        console.error('❌ [CONTRACTS_STATS] Exception in stats fetch:', err);
         return [];
       }
-
-      console.log('✅ [CONTRACTS_STATS] Fetched contracts for stats:', data?.length || 0);
-      return data || [];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!filter?.company_id,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    retry: 1,
   });
 
   // Fetch contracts with customer data (paginated)
@@ -107,17 +120,25 @@ export const useContractsData = (filters: any = {}) => {
       cost_center_id: filters?.cost_center_id
     }),
     queryFn: async () => {
-      const companyId = filter?.company_id || null;
-      console.log('🔍 [CONTRACTS_QUERY] Fetching contracts', {
-        companyId,
-        isBrowsingMode,
-        browsedCompanyId: browsedCompany?.id,
-        actualUserCompanyId,
-        page: filters?.page,
-        pageSize: filters?.pageSize,
-        statusFilter: filters?.status,
-        allFilters: filters
-      });
+      try {
+        const companyId = filter?.company_id || null;
+        
+        // التحقق من صحة companyId
+        if (!companyId) {
+          console.warn('⚠️ [CONTRACTS_QUERY] No company ID available');
+          return [];
+        }
+
+        console.log('🔍 [CONTRACTS_QUERY] Fetching contracts', {
+          companyId,
+          isBrowsingMode,
+          browsedCompanyId: browsedCompany?.id,
+          actualUserCompanyId,
+          page: filters?.page,
+          pageSize: filters?.pageSize,
+          statusFilter: filters?.status,
+          allFilters: filters
+        });
 
       // Get total count if pagination is requested
       let totalCount = 0;
@@ -238,23 +259,28 @@ export const useContractsData = (filters: any = {}) => {
 
       console.log('✅ [CONTRACTS_QUERY] Successfully fetched contracts with vehicle data:', data?.length || 0);
 
-      // Return with pagination info if pagination is requested
-      if (filters?.page || filters?.pageSize) {
-        return {
-          data: data || [],
-          pagination: {
-            page,
-            pageSize,
-            totalCount,
-            totalPages: Math.ceil(totalCount / pageSize),
-            hasMore: (page * pageSize) < totalCount
-          }
-        };
-      }
+        // Return with pagination info if pagination is requested
+        if (filters?.page || filters?.pageSize) {
+          return {
+            data: data || [],
+            pagination: {
+              page,
+              pageSize,
+              totalCount,
+              totalPages: Math.ceil(totalCount / pageSize),
+              hasMore: (page * pageSize) < totalCount
+            }
+          };
+        }
 
-      return data || [];
+        return data || [];
+      } catch (err) {
+        console.error('❌ [CONTRACTS_QUERY] Exception in contracts fetch:', err);
+        return [];
+      }
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!filter?.company_id,
+    retry: 1,
   });
 
   // Extract contracts from response (handle both array and paginated response)

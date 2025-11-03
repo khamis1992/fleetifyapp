@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - تسجيل الدفعات</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: hsl(0, 0%, 96%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: hsl(0, 0%, 15%);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .header-title .icon {
+            color: hsl(0, 70%, 45%);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary {
+            background: hsl(0, 70%, 45%);
+            color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary:hover {
+            background: hsl(0, 70%, 40%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: hsl(0, 0%, 45%);
+            border: 1px solid hsl(0, 0%, 85%);
+        }
+        
+        .btn-secondary:hover {
+            background: hsl(0, 0%, 98%);
+            border-color: hsl(0, 0%, 75%);
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: hsl(0, 0%, 15%);
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            color: hsl(0, 0%, 45%);
+            font-size: 0.875rem;
+        }
+        
+        /* Table Container */
+        .table-container {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid hsl(0, 0%, 92%);
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            max-width: 400px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.625rem 1rem 0.625rem 2.75rem;
+            border: 1px solid hsl(0, 0%, 85%);
+            border-radius: 0.5rem;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: hsl(0, 70%, 45%);
+            box-shadow: 0 0 0 3px hsla(0, 70%, 45%, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: hsl(0, 0%, 60%);
+            pointer-events: none;
+        }
+        
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: hsl(0, 0%, 98%);
+            border-bottom: 2px solid hsl(0, 0%, 92%);
+        }
+        
+        th {
+            padding: 1rem 1.25rem;
+            text-align: right;
+            font-weight: 600;
+            color: hsl(0, 0%, 30%);
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid hsl(0, 0%, 95%);
+            transition: all 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: hsl(0, 0%, 99%);
+        }
+        
+        td {
+            padding: 1rem 1.25rem;
+            color: hsl(0, 0%, 25%);
+        }
+        
+        .customer-cell {
+            font-weight: 600;
+            color: hsl(0, 0%, 15%);
+        }
+        
+        .vehicle-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: hsl(0, 70%, 45%);
+        }
+        
+        .phone-cell {
+            font-family: 'JetBrains Mono', monospace;
+            color: hsl(0, 0%, 45%);
+            font-size: 0.875rem;
+        }
+        
+        .amount-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: hsl(142, 56%, 42%);
+        }
+        
+        /* Notes Input */
+        .notes-input {
+            width: 100%;
+            min-width: 250px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid hsl(0, 0%, 85%);
+            border-radius: 0.375rem;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .notes-input:focus {
+            outline: none;
+            border-color: hsl(25, 90%, 55%);
+            box-shadow: 0 0 0 3px hsla(25, 90%, 55%, 0.1);
+        }
+        
+        .notes-input.has-content {
+            border-color: hsl(25, 90%, 55%);
+            background: hsl(25, 90%, 98%);
+        }
+        
+        /* Action Button */
+        .btn-confirm {
+            padding: 0.5rem 0.75rem;
+            background: hsl(142, 56%, 42%);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .btn-confirm:hover:not(:disabled) {
+            background: hsl(142, 56%, 35%);
+            transform: scale(1.05);
+        }
+        
+        .btn-confirm:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-paid {
+            background: hsl(142, 56%, 95%);
+            color: hsl(142, 56%, 35%);
+        }
+        
+        .status-pending {
+            background: hsl(25, 90%, 95%);
+            color: hsl(25, 90%, 45%);
+        }
+        
+        /* AI Detection Modal */
+        .ai-modal {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            padding: 1.5rem;
+            max-width: 400px;
+            width: calc(100% - 4rem);
+            z-index: 1000;
+            border: 2px solid hsl(25, 90%, 55%);
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .ai-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid hsl(0, 0%, 92%);
+        }
+        
+        .ai-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            color: hsl(25, 90%, 45%);
+        }
+        
+        .ai-modal-content {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .ai-field {
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: hsl(25, 90%, 98%);
+            border-radius: 0.5rem;
+        }
+        
+        .ai-field-label {
+            font-size: 0.75rem;
+            color: hsl(25, 90%, 40%);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .ai-field-value {
+            font-weight: 600;
+            color: hsl(0, 0%, 15%);
+        }
+        
+        .ai-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .btn-ai-confirm {
+            flex: 1;
+            background: hsl(142, 56%, 42%);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-ai-confirm:hover {
+            background: hsl(142, 56%, 35%);
+        }
+        
+        .btn-ai-reject {
+            flex: 1;
+            background: hsl(0, 0%, 96%);
+            color: hsl(0, 0%, 40%);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-ai-reject:hover {
+            background: hsl(0, 0%, 92%);
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 2000;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        .toast.success {
+            border-right: 4px solid hsl(142, 56%, 42%);
+        }
+        
+        .toast.error {
+            border-right: 4px solid hsl(0, 65%, 51%);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 1rem 1.25rem;
+            }
+            
+            .header-title {
+                font-size: 1.25rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-wrapper {
+                overflow-x: scroll;
+            }
+            
+            table {
+                min-width: 900px;
+            }
+            
+            .ai-modal {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="header-title">
+                <i data-lucide="receipt" class="icon" style="width: 1.75rem; height: 1.75rem;"></i>
+                تسجيل الدفعات
+            </h1>
+            
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="saveAllPayments()">
+                    <i data-lucide="save" style="width: 1rem; height: 1rem;"></i>
+                    حفظ الدفعات
+                </button>
+                <button class="btn btn-secondary" onclick="exportToExcel()">
+                    <i data-lucide="file-spreadsheet" style="width: 1rem; height: 1rem;"></i>
+                    تصدير Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, hsl(220, 70%, 95%) 0%, hsl(220, 70%, 90%) 100%);">
+                    <i data-lucide="users" style="width: 1.5rem; height: 1.5rem; color: hsl(220, 70%, 45%);"></i>
+                </div>
+                <div class="stat-value" id="totalContracts">8</div>
+                <div class="stat-label">عقود نشطة</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, hsl(142, 56%, 95%) 0%, hsl(142, 56%, 90%) 100%);">
+                    <i data-lucide="check-circle" style="width: 1.5rem; height: 1.5rem; color: hsl(142, 56%, 42%);"></i>
+                </div>
+                <div class="stat-value" id="paidCount">0</div>
+                <div class="stat-label">دفعات مسجلة</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, hsl(25, 90%, 95%) 0%, hsl(25, 90%, 90%) 100%);">
+                    <i data-lucide="clock" style="width: 1.5rem; height: 1.5rem; color: hsl(25, 90%, 55%);"></i>
+                </div>
+                <div class="stat-value" id="pendingCount">8</div>
+                <div class="stat-label">في الانتظار</div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon" style="width: 1.125rem; height: 1.125rem;"></i>
+                    <input type="text" 
+                           class="search-input" 
+                           id="searchInput"
+                           placeholder="بحث عن عميل، مركبة، أو رقم جوال..."
+                           oninput="filterTable()">
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم العميل</th>
+                            <th>رقم المركبة</th>
+                            <th>رقم الجوال</th>
+                            <th>القسط الشهري</th>
+                            <th>تسجيل الدفعة</th>
+                            <th>الحالة</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contractsTable">
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بيانات العقود النشطة
+        let activeContracts = [
+            {
+                contractId: 'C-2024-001',
+                customerId: 1,
+                customerName: 'أحمد محمد السعيد',
+                phone: '0512345678',
+                vehicleNumber: 'ABC-1234',
+                color: 'white',
+                monthlyPayment: 1500,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-002',
+                customerId: 2,
+                customerName: 'محمد علي الأحمد',
+                phone: '0523456789',
+                vehicleNumber: 'XYZ-5678',
+                color: 'black',
+                monthlyPayment: 2000,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-003',
+                customerId: 3,
+                customerName: 'فاطمة أحمد خالد',
+                phone: '0534567890',
+                vehicleNumber: 'DEF-9012',
+                color: 'red',
+                monthlyPayment: 1800,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-004',
+                customerId: 4,
+                customerName: 'سارة خالد عمر',
+                phone: '0545678901',
+                vehicleNumber: 'GHI-3456',
+                color: 'blue',
+                monthlyPayment: 1200,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-005',
+                customerId: 5,
+                customerName: 'عبدالله عمر محمد',
+                phone: '0556789012',
+                vehicleNumber: 'JKL-7890',
+                color: 'silver',
+                monthlyPayment: 2500,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-006',
+                customerId: 6,
+                customerName: 'خالد سعيد الغامدي',
+                phone: '0567890123',
+                vehicleNumber: 'MNO-1111',
+                color: 'white',
+                monthlyPayment: 1700,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-007',
+                customerId: 7,
+                customerName: 'نورة محمد القحطاني',
+                phone: '0578901234',
+                vehicleNumber: 'PQR-2222',
+                color: 'gray',
+                monthlyPayment: 2200,
+                notes: '',
+                status: 'pending'
+            },
+            {
+                contractId: 'C-2024-008',
+                customerId: 8,
+                customerName: 'عمر عبدالعزيز الدوسري',
+                phone: '0589012345',
+                vehicleNumber: 'STU-3333',
+                color: 'black',
+                monthlyPayment: 1900,
+                notes: '',
+                status: 'pending'
+            }
+        ];
+
+        // تهيئة الأيقونات
+        function initIcons() {
+            lucide.createIcons();
+        }
+
+        // رسم الجدول
+        function renderTable() {
+            const tbody = document.getElementById('contractsTable');
+            tbody.innerHTML = '';
+
+            activeContracts.forEach((contract, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="customer-cell">${contract.customerName}</td>
+                    <td class="vehicle-cell">${contract.vehicleNumber}</td>
+                    <td class="phone-cell">${contract.phone}</td>
+                    <td class="amount-cell">${contract.monthlyPayment.toLocaleString('ar-SA')} ريال</td>
+                    <td>
+                        <textarea class="notes-input" 
+                                  id="notes-${contract.contractId}"
+                                  placeholder="مثال: تم سداد مبلغ 1500"
+                                  oninput="handleNotesInput('${contract.contractId}', this.value)"
+                                  onfocus="this.classList.add('has-content')"
+                                  onblur="if(!this.value) this.classList.remove('has-content')">${contract.notes}</textarea>
+                    </td>
+                    <td>
+                        <span class="status-badge status-${contract.status}" id="status-${contract.contractId}">
+                            ${contract.status === 'paid' ? '✓ مسددة' : '⏳ في الانتظار'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-confirm" 
+                                id="btn-${contract.contractId}"
+                                onclick="confirmPayment('${contract.contractId}')"
+                                ${!contract.notes ? 'disabled' : ''}>
+                            <i data-lucide="check" style="width: 1rem; height: 1rem;"></i>
+                            تأكيد
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            initIcons();
+            updateStats();
+        }
+
+        // معالجة الملاحظات
+        let analysisTimeout;
+        function handleNotesInput(contractId, notes) {
+            const contract = activeContracts.find(c => c.contractId === contractId);
+            if (!contract) return;
+
+            contract.notes = notes;
+
+            // تفعيل/تعطيل زر التأكيد
+            const btn = document.getElementById(`btn-${contractId}`);
+            btn.disabled = !notes.trim();
+
+            // تحليل النص بعد 1.5 ثانية
+            clearTimeout(analysisTimeout);
+            if (notes.trim().length > 5) {
+                analysisTimeout = setTimeout(() => {
+                    analyzePayment(contractId, notes);
+                }, 1500);
+            }
+        }
+
+        // تحليل الدفعة بالذكاء الاصطناعي
+        function analyzePayment(contractId, text) {
+            const contract = activeContracts.find(c => c.contractId === contractId);
+            if (!contract) return;
+
+            const analysis = extractPaymentInfo(text);
+
+            if (analysis.amount > 0) {
+                showAIModal(contract, analysis);
+            }
+        }
+
+        // استخراج معلومات الدفع من النص
+        function extractPaymentInfo(text) {
+            const analysis = {
+                amount: 0,
+                paymentMethod: 'غير محدد',
+                operationType: 'سداد',
+                lateFee: 0
+            };
+
+            // البحث عن المبلغ
+            const amountPatterns = [
+                /(\d+)\s*ريال/,
+                /مبلغ\s*(\d+)/,
+                /دفع\s*(\d+)/,
+                /سداد\s*(\d+)/,
+                /تحويل\s*(\d+)/,
+                /(\d{3,})/
+            ];
+
+            for (const pattern of amountPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    analysis.amount = parseFloat(match[1]);
+                    break;
+                }
+            }
+
+            // تحديد طريقة الدفع
+            if (text.includes('نقد') || text.includes('كاش')) {
+                analysis.paymentMethod = 'نقدي';
+            } else if (text.includes('بنك') || text.includes('تحويل')) {
+                analysis.paymentMethod = 'تحويل بنكي';
+            } else if (text.includes('بطاقة') || text.includes('فيزا') || text.includes('مدى')) {
+                analysis.paymentMethod = 'بطاقة';
+            }
+
+            // البحث عن غرامة
+            const feePattern = /غرامة\s*(\d+)/;
+            const feeMatch = text.match(feePattern);
+            if (feeMatch) {
+                analysis.lateFee = parseFloat(feeMatch[1]);
+            }
+
+            return analysis;
+        }
+
+        // عرض نافذة AI
+        function showAIModal(contract, analysis) {
+            // إزالة أي نافذة موجودة
+            const existingModal = document.querySelector('.ai-modal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.className = 'ai-modal';
+            modal.innerHTML = `
+                <div class="ai-modal-header">
+                    <div class="ai-modal-title">
+                        <i data-lucide="sparkles" style="width: 1.25rem; height: 1.25rem;"></i>
+                        تم اكتشاف دفعة
+                    </div>
+                    <button onclick="closeAIModal()" style="background: none; border: none; cursor: pointer; color: hsl(0, 0%, 60%);">
+                        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem;"></i>
+                    </button>
+                </div>
+                
+                <div class="ai-modal-content">
+                    <div class="ai-field">
+                        <div style="flex: 1;">
+                            <div class="ai-field-label">العميل</div>
+                            <div class="ai-field-value">${contract.customerName}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <div style="flex: 1;">
+                            <div class="ai-field-label">المبلغ المستخرج</div>
+                            <div class="ai-field-value">${analysis.amount.toLocaleString('ar-SA')} ريال</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-field">
+                        <div style="flex: 1;">
+                            <div class="ai-field-label">طريقة الدفع</div>
+                            <div class="ai-field-value">${analysis.paymentMethod}</div>
+                        </div>
+                    </div>
+                    
+                    ${analysis.lateFee > 0 ? `
+                    <div class="ai-field">
+                        <div style="flex: 1;">
+                            <div class="ai-field-label">غرامة تأخير</div>
+                            <div class="ai-field-value">${analysis.lateFee.toLocaleString('ar-SA')} ريال</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="ai-modal-actions">
+                    <button class="btn-ai-confirm" onclick="closeAIModal()">
+                        فهمت
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            initIcons();
+        }
+
+        // إغلاق نافذة AI
+        function closeAIModal() {
+            const modal = document.querySelector('.ai-modal');
+            if (modal) {
+                modal.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+
+        // تأكيد الدفعة
+        function confirmPayment(contractId) {
+            const contract = activeContracts.find(c => c.contractId === contractId);
+            if (!contract || !contract.notes.trim()) return;
+
+            contract.status = 'paid';
+            
+            // تحديث الواجهة
+            const statusBadge = document.getElementById(`status-${contractId}`);
+            statusBadge.className = 'status-badge status-paid';
+            statusBadge.innerHTML = '✓ مسددة';
+            
+            const btn = document.getElementById(`btn-${contractId}`);
+            btn.disabled = true;
+            
+            updateStats();
+            showToast('success', `تم تسجيل الدفعة للعميل: ${contract.customerName}`);
+        }
+
+        // تحديث الإحصائيات
+        function updateStats() {
+            const paidCount = activeContracts.filter(c => c.status === 'paid').length;
+            const pendingCount = activeContracts.filter(c => c.status === 'pending').length;
+            
+            document.getElementById('paidCount').textContent = paidCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+        }
+
+        // تصفية الجدول
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#contractsTable tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        // حفظ جميع الدفعات
+        function saveAllPayments() {
+            const payments = activeContracts.filter(c => c.status === 'paid' && c.notes);
+            
+            if (payments.length === 0) {
+                showToast('error', 'لا توجد دفعات لحفظها!');
+                return;
+            }
+            
+            console.log('حفظ الدفعات:', payments);
+            showToast('success', `تم حفظ ${payments.length} دفعة بنجاح!`);
+        }
+
+        // تصدير إلى Excel
+        function exportToExcel() {
+            showToast('success', 'جاري تصدير البيانات...');
+        }
+
+        // إظهار إشعار
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" 
+                   style="width: 1.25rem; height: 1.25rem; color: ${type === 'success' ? 'hsl(142, 56%, 42%)' : 'hsl(0, 65%, 51%)'};"></i>
+                <span style="font-weight: 600;">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            initIcons();
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideUp 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // تهيئة الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            console.log('%c✅ نظام تسجيل الدفعات جاهز!', 'color: hsl(0, 70%, 45%); font-size: 16px; font-weight: bold;');
+            console.log(`%c📋 ${activeContracts.length} عقد نشط متاح`, 'color: hsl(142, 56%, 42%); font-size: 14px;');
+        });
+    </script>
+</body>
+</html>
+

@@ -1111,7 +1111,10 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
 
   // دالة لإنشاء فواتير من جدول الدفعات
   const handleGenerateInvoicesFromSchedule = useCallback(async () => {
+    console.log('🔵 [INVOICE_GEN] Starting invoice generation', { contractId, companyId });
+    
     if (!contractId || !companyId) {
+      console.error('❌ [INVOICE_GEN] Missing required data', { contractId, companyId });
       toast({
         title: "خطأ",
         description: "معلومات العقد غير متوفرة",
@@ -1122,14 +1125,22 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
 
     setIsGenerating(true);
     try {
+      console.log('📞 [INVOICE_GEN] Calling RPC function', { p_contract_id: contractId });
+      
       // استدعاء RPC function لإنشاء الفواتير
       const { data, error } = await supabase.rpc('generate_invoices_from_payment_schedule', {
         p_contract_id: contractId
       });
 
-      if (error) throw error;
+      console.log('📥 [INVOICE_GEN] RPC response', { data, error });
+
+      if (error) {
+        console.error('❌ [INVOICE_GEN] RPC error', error);
+        throw error;
+      }
 
       const createdCount = data || 0;
+      console.log('✅ [INVOICE_GEN] Created invoices count:', createdCount);
       
       toast({
         title: "تم بنجاح ✓",
@@ -1140,9 +1151,11 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
       });
 
       // إعادة تحميل الفواتير
-      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contractId] });
+      console.log('🔄 [INVOICE_GEN] Invalidating queries');
+      await queryClient.invalidateQueries({ queryKey: ['contract-invoices', contractId] });
+      console.log('✅ [INVOICE_GEN] Queries invalidated');
     } catch (error: any) {
-      console.error('Error generating invoices:', error);
+      console.error('❌ [INVOICE_GEN] Error generating invoices:', error);
       toast({
         title: "خطأ",
         description: error.message || "فشل في إنشاء الفواتير",
@@ -1150,6 +1163,7 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
       });
     } finally {
       setIsGenerating(false);
+      console.log('🏁 [INVOICE_GEN] Generation process completed');
     }
   }, [contractId, companyId, queryClient, toast]);
 
