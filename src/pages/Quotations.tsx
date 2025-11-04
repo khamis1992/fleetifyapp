@@ -17,6 +17,8 @@ import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator"
+import { PageHelp } from "@/components/help";
+import { QuotationsPageHelpContent } from "@/components/help/content";
 
 interface QuotationFormData {
   customer_id: string
@@ -748,6 +750,8 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </form>
         </DialogContent>
       </Dialog>
+    <PageHelp content={<QuotationsPageHelpContent />} />
+
     </div>
   )
 }

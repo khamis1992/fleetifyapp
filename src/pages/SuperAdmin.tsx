@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { PageHelp } from "@/components/help";
+import { SuperAdminPageHelpContent } from "@/components/help/content";
 
 const SuperAdmin: React.FC = () => {
   const { user, loading } = useAuth();

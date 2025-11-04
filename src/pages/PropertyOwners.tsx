@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { PageHelp } from "@/components/help";
+import { PropertyOwnersPageHelpContent } from "@/components/help/content";
 
 export default function PropertyOwners() {
   const [search, setSearch] = useState('');

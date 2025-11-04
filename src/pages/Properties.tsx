@@ -11,6 +11,8 @@ import {
 import { useProperties, usePropertiesStats } from '@/modules/properties/hooks';
 import { PropertySearchFilters } from '@/modules/properties/types';
 import { Link } from 'react-router-dom';
+import { PageHelp } from "@/components/help";
+import { PropertiesPageHelpContent } from "@/components/help/content";
 
 export default function Properties() {
   const [filters, setFilters] = useState<PropertySearchFilters>({});

@@ -14,6 +14,8 @@ import { CreateUserDialog } from '@/components/super-admin/CreateUserDialog';
 import { UserDetailsDialog } from '@/components/super-admin/UserDetailsDialog';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { PageHelp } from "@/components/help";
+import { UsersPageHelpContent } from "@/components/help/content";
 
 const SuperAdminUsers: React.FC = () => {
   const { user: currentUser } = useAuth();

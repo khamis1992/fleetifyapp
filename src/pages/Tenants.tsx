@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
+import { PageHelp } from "@/components/help";
+import { TenantsPageHelpContent } from "@/components/help/content";
 
 const Tenants: React.FC = () => {
   return (

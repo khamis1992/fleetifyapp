@@ -39,6 +39,8 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useDeleteVehicleMaintenance, useUpdateVehicleMaintenance } from "@/hooks/useVehicles"
 import { supabase } from "@/integrations/supabase/client"
 import { cn } from "@/lib/utils"
+import { PageHelp } from "@/components/help";
+import { MaintenancePageHelpContent } from "@/components/help/content";
 
 // Lazy load heavy components
 const SmartAlertsPanel = lazy(() => 
@@ -1011,6 +1013,8 @@ export default function Maintenance() {
           }}
         />
       </Suspense>
+    <PageHelp content={<MaintenancePageHelpContent />} />
+
     </div>
   )
 }

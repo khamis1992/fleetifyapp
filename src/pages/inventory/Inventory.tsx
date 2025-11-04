@@ -18,6 +18,8 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { ItemDetailsDialog } from "@/components/inventory/ItemDetailsDialog";
 import { StockAdjustmentDialog } from "@/components/inventory/StockAdjustmentDialog";
 import { AddInventoryItemForm } from "@/components/inventory/AddInventoryItemForm";
+import { PageHelp } from "@/components/help";
+import { InventoryPageHelpContent } from "@/components/help/content";
 
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
