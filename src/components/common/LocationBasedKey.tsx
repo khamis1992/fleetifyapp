@@ -20,9 +20,10 @@ interface LocationBasedKeyProps {
 export const LocationBasedKey: React.FC<LocationBasedKeyProps> = ({ children }) => {
   const location = useLocation();
   
-  // Create a unique key based on the current location
-  // This forces React to unmount and remount the component when location changes
-  const locationKey = `${location.pathname}${location.search}${location.hash}`;
+  // Create a unique key based on the current location pathname only
+  // We exclude search params to avoid remounting when user types in search fields
+  // This forces React to unmount and remount only when the actual page path changes
+  const locationKey = location.pathname;
   
   return (
     <div key={locationKey} className="h-full w-full">
