@@ -54,14 +54,49 @@ const employeeSchema = z.object({
   accountPassword: z.string().min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل').optional(),
   accountPasswordConfirm: z.string().optional(),
 }).superRefine((data, ctx) => {
-  if (data.createAccount && data.creationMethod === 'direct' && data.accountSetPassword) {
-    if (!data.accountPassword) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPassword'], message: 'يرجى إدخال كلمة المرور' });
-    } else if (data.accountPassword.length < 8) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPassword'], message: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+  // Validate account creation fields when createAccount is enabled
+  if (data.createAccount) {
+    // Validate account email
+    if (!data.accountEmail || data.accountEmail.trim() === '') {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        path: ['accountEmail'], 
+        message: 'البريد الإلكتروني للحساب مطلوب عند إنشاء حساب مستخدم' 
+      });
     }
-    if (data.accountPassword !== data.accountPasswordConfirm) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountPasswordConfirm'], message: 'تأكيد كلمة المرور غير مطابق' });
+    
+    // Validate account roles
+    if (!data.accountRoles || data.accountRoles.length === 0) {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        path: ['accountRoles'], 
+        message: 'يجب اختيار دور واحد على الأقل للحساب' 
+      });
+    }
+    
+    // Validate password fields when direct creation with manual password is selected
+    if (data.creationMethod === 'direct' && data.accountSetPassword) {
+      if (!data.accountPassword) {
+        ctx.addIssue({ 
+          code: z.ZodIssueCode.custom, 
+          path: ['accountPassword'], 
+          message: 'يرجى إدخال كلمة المرور' 
+        });
+      } else if (data.accountPassword.length < 8) {
+        ctx.addIssue({ 
+          code: z.ZodIssueCode.custom, 
+          path: ['accountPassword'], 
+          message: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' 
+        });
+      }
+      
+      if (data.accountPassword !== data.accountPasswordConfirm) {
+        ctx.addIssue({ 
+          code: z.ZodIssueCode.custom, 
+          path: ['accountPasswordConfirm'], 
+          message: 'تأكيد كلمة المرور غير مطابق' 
+        });
+      }
     }
   }
 });
@@ -538,48 +573,51 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
                 <div className="space-y-3">
                   <FormLabel className="flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    الأدوار والصلاحيات
+                    الأدوار والصلاحيات *
                   </FormLabel>
                   <FormField
                     control={form.control}
                     name="accountRoles"
                     render={() => (
-                      <div className="grid gap-3">
-                        {availableRoles.map((role) => (
-                          <FormField
-                            key={role.value}
-                            control={form.control}
-                            name="accountRoles"
-                            render={({ field }) => (
-                              <FormItem
-                                key={role.value}
-                                className="flex flex-row items-start space-x-3 space-x-reverse space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(role.value)}
-                                    onCheckedChange={(checked) => {
-                                      const currentRoles = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentRoles, role.value]);
-                                      } else {
-                                        field.onChange(currentRoles.filter((r) => r !== role.value));
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                  <FormLabel className="text-sm font-medium">
-                                    {role.label}
-                                  </FormLabel>
-                                  <p className="text-xs text-muted-foreground">
-                                    {role.description}
-                                  </p>
-                                </div>
-                              </FormItem>
-                            )}
-                          />
-                        ))}
+                      <div className="space-y-2">
+                        <div className="grid gap-3">
+                          {availableRoles.map((role) => (
+                            <FormField
+                              key={role.value}
+                              control={form.control}
+                              name="accountRoles"
+                              render={({ field }) => (
+                                <FormItem
+                                  key={role.value}
+                                  className="flex flex-row items-start space-x-3 space-x-reverse space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(role.value)}
+                                      onCheckedChange={(checked) => {
+                                        const currentRoles = field.value || [];
+                                        if (checked) {
+                                          field.onChange([...currentRoles, role.value]);
+                                        } else {
+                                          field.onChange(currentRoles.filter((r) => r !== role.value));
+                                        }
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm font-medium">
+                                      {role.label}
+                                    </FormLabel>
+                                    <p className="text-xs text-muted-foreground">
+                                      {role.description}
+                                    </p>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
                       </div>
                     )}
                   />

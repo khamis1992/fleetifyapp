@@ -1,78 +1,90 @@
 /**
- * سكربت تشخيصي للتحقق من إعدادات البيئة
+ * Environment Variables Verification Script
+ * Checks if all required environment variables are properly configured
  */
 
-import fs from 'fs';
-import path from 'path';
+// Required environment variables for the application
+const requiredEnvVars = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+];
 
-// دالة تحميل متغيرات البيئة
-function loadEnvFile() {
-  const envPath = path.join(process.cwd(), '.env');
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf-8');
-    const lines = envContent.split('\n');
-    console.log(`✅ تم العثور على ملف .env`);
-    console.log(`📄 عدد الأسطر: ${lines.length}`);
-    console.log('');
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine && !trimmedLine.startsWith('#')) {
-        const [key, ...valueParts] = trimmedLine.split('=');
-        if (key && valueParts.length > 0) {
-          const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
-          process.env[key.trim()] = value;
-          
-          // طباعة المتغيرات (بدون إظهار القيم الكاملة لأسباب أمنية)
-          const displayValue = value.length > 20 ? value.substring(0, 20) + '...' : value;
-          console.log(`   ${key.trim()}: ${displayValue}`);
-        }
-      }
-    }
+// Optional environment variables (won't fail build but good to have)
+const optionalEnvVars = [
+  'VITE_OPENAI_API_KEY',
+];
+
+console.log('🔍 Checking Environment Variables...\n');
+
+let hasErrors = false;
+let hasWarnings = false;
+
+// Check required variables
+console.log('📋 Required Variables:');
+console.log('─'.repeat(50));
+
+requiredEnvVars.forEach((varName) => {
+  const value = process.env[varName] || import.meta?.env?.[varName];
+  
+  if (!value) {
+    console.log(`❌ ${varName}: MISSING (REQUIRED)`);
+    hasErrors = true;
   } else {
-    console.error(`❌ ملف .env غير موجود في: ${envPath}`);
+    // Mask sensitive data
+    const maskedValue = value.substring(0, 10) + '...' + value.substring(value.length - 4);
+    console.log(`✅ ${varName}: ${maskedValue}`);
   }
-}
-
-loadEnvFile();
-
-console.log('');
-console.log('🔍 التحقق من المتغيرات المطلوبة:');
-console.log('');
-
-const requiredVars = {
-  'VITE_SUPABASE_URL': process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  'SUPABASE_SERVICE_ROLE_KEY': process.env.SUPABASE_SERVICE_ROLE_KEY,
-  'SUPABASE_SERVICE_KEY': process.env.SUPABASE_SERVICE_KEY
-};
-
-let allFound = true;
-
-if (requiredVars['VITE_SUPABASE_URL']) {
-  console.log('✅ VITE_SUPABASE_URL: موجود');
-} else {
-  console.log('❌ VITE_SUPABASE_URL: غير موجود');
-  allFound = false;
-}
-
-if (requiredVars['SUPABASE_SERVICE_ROLE_KEY']) {
-  console.log('✅ SUPABASE_SERVICE_ROLE_KEY: موجود');
-} else if (requiredVars['SUPABASE_SERVICE_KEY']) {
-  console.log('✅ SUPABASE_SERVICE_KEY: موجود (بديل)');
-} else {
-  console.log('❌ SUPABASE_SERVICE_ROLE_KEY أو SUPABASE_SERVICE_KEY: غير موجود');
-  allFound = false;
-}
+});
 
 console.log('');
 
-if (allFound) {
-  console.log('✅ جميع المتغيرات المطلوبة موجودة!');
-} else {
-  console.log('❌ بعض المتغيرات المطلوبة غير موجودة!');
+// Check optional variables
+console.log('📋 Optional Variables:');
+console.log('─'.repeat(50));
+
+optionalEnvVars.forEach((varName) => {
+  const value = process.env[varName] || import.meta?.env?.[varName];
+  
+  if (!value) {
+    console.log(`⚠️  ${varName}: Not set (optional)`);
+    hasWarnings = true;
+  } else {
+    const maskedValue = value.substring(0, 10) + '...' + value.substring(value.length - 4);
+    console.log(`✅ ${varName}: ${maskedValue}`);
+  }
+});
+
+console.log('');
+console.log('─'.repeat(50));
+
+// Final status
+if (hasErrors) {
   console.log('');
-  console.log('يرجى التأكد من إضافة المتغيرات التالية في ملف .env:');
-  console.log('VITE_SUPABASE_URL=your_supabase_url');
-  console.log('SUPABASE_SERVICE_ROLE_KEY=your_service_key');
+  console.log('❌ CONFIGURATION ERROR: Required environment variables are missing!');
+  console.log('');
+  console.log('🔧 To fix this:');
+  console.log('');
+  console.log('1. Local Development:');
+  console.log('   - Create a .env file in the project root');
+  console.log('   - Add the required variables (see .env.example)');
+  console.log('');
+  console.log('2. Vercel Deployment:');
+  console.log('   - Go to: https://vercel.com/[your-project]/settings/environment-variables');
+  console.log('   - Add all required variables');
+  console.log('   - Redeploy your application');
+  console.log('');
+  console.log('📖 For detailed instructions, see: VERCEL_DEPLOYMENT_FIX.md');
+  console.log('');
+  process.exit(1);
+} else if (hasWarnings) {
+  console.log('');
+  console.log('✅ All required variables are configured');
+  console.log('⚠️  Some optional variables are missing (this is OK)');
+  console.log('');
+  process.exit(0);
+} else {
+  console.log('');
+  console.log('✅ All environment variables are properly configured!');
+  console.log('');
+  process.exit(0);
 }
-

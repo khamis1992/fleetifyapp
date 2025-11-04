@@ -258,10 +258,11 @@ const { user } = useAuth();
         });
       }
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء حساب المستخدم';
       toast({
         variant: 'destructive',
         title: 'تم إضافة الموظف لكن فشل إنشاء الحساب',
-        description: error.message || 'حدث خطأ أثناء إنشاء حساب المستخدم',
+        description: errorMessage,
       });
     } finally {
       setIsCreatingAccount(false);
