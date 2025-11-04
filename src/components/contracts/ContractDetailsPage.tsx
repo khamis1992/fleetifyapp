@@ -1139,19 +1139,87 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
     try {
       console.log('📞 [INVOICE_GEN] Calling RPC function', { p_contract_id: contractId });
       
-      // استدعاء RPC function لإنشاء الفواتير
-      const { data, error } = await supabase.rpc('generate_invoices_from_payment_schedule', {
-        p_contract_id: contractId
-      });
+      let createdCount = 0;
+      
+      // محاولة استخدام RPC function أولاً
+      try {
+        const { data, error } = await supabase.rpc('generate_invoices_from_payment_schedule', {
+          p_contract_id: contractId
+        });
 
-      console.log('📥 [INVOICE_GEN] RPC response', { data, error });
+        console.log('📥 [INVOICE_GEN] RPC response', { data, error });
 
-      if (error) {
-        console.error('❌ [INVOICE_GEN] RPC error', error);
-        throw error;
+        if (error) {
+          console.warn('⚠️ [INVOICE_GEN] RPC error, trying direct method', error);
+          
+          // استخدام الطريقة البديلة - إنشاء الفواتير مباشرة
+          if (!contract) {
+            throw new Error('بيانات العقد غير متوفرة');
+          }
+
+          const monthlyAmount = contract.monthly_amount || 0;
+          const totalAmount = contract.contract_amount || 0;
+          
+          if (!monthlyAmount || monthlyAmount <= 0) {
+            throw new Error('المبلغ الشهري غير محدد في العقد');
+          }
+
+          // حساب عدد الفواتير المطلوبة
+          const numberOfInvoices = totalAmount > 0 
+            ? Math.ceil(totalAmount / monthlyAmount)
+            : expectedInvoicesCount;
+
+          const startDate = new Date(contract.start_date);
+
+          for (let i = 0; i < numberOfInvoices; i++) {
+            // حساب تاريخ الاستحقاق
+            const dueDate = new Date(startDate);
+            dueDate.setMonth(startDate.getMonth() + i + 1);
+            dueDate.setDate(1); // أول يوم من الشهر
+
+            const invoiceNumber = `INV-${contract.contract_number}-${String(i + 1).padStart(3, '0')}`;
+
+            // التحقق من عدم وجود الفاتورة
+            const { data: existing } = await supabase
+              .from('invoices')
+              .select('id')
+              .eq('invoice_number', invoiceNumber)
+              .eq('company_id', companyId)
+              .maybeSingle();
+
+            if (!existing) {
+              const invoiceDate = new Date(dueDate);
+              invoiceDate.setDate(invoiceDate.getDate() - 5);
+
+              const { error: insertError } = await supabase.from('invoices').insert({
+                company_id: companyId,
+                customer_id: contract.customer_id,
+                contract_id: contractId,
+                invoice_number: invoiceNumber,
+                invoice_date: invoiceDate.toISOString().split('T')[0],
+                due_date: dueDate.toISOString().split('T')[0],
+                total_amount: monthlyAmount,
+                payment_status: 'unpaid',
+                invoice_type: 'rental',
+                description: `فاتورة إيجار شهرية - الشهر ${i + 1} من ${numberOfInvoices}`,
+              });
+
+              if (insertError) {
+                console.error('Error creating invoice:', invoiceNumber, insertError);
+              } else {
+                createdCount++;
+                console.log('✅ Created invoice:', invoiceNumber);
+              }
+            }
+          }
+        } else {
+          createdCount = data || 0;
+        }
+      } catch (rpcError) {
+        console.error('❌ [INVOICE_GEN] Complete RPC failure', rpcError);
+        throw rpcError;
       }
 
-      const createdCount = data || 0;
       console.log('✅ [INVOICE_GEN] Created invoices count:', createdCount);
       
       toast({
@@ -1162,22 +1230,27 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
         variant: createdCount > 0 ? "default" : "default"
       });
 
-      // إعادة تحميل الفواتير
-      console.log('🔄 [INVOICE_GEN] Invalidating queries');
+      // إعادة تحميل الفواتير بشكل فوري
+      console.log('🔄 [INVOICE_GEN] Invalidating and refetching queries');
       await queryClient.invalidateQueries({ queryKey: ['contract-invoices', contractId] });
-      console.log('✅ [INVOICE_GEN] Queries invalidated');
+      await queryClient.refetchQueries({ queryKey: ['contract-invoices', contractId] });
+      
+      // إعادة تحميل بيانات العقد أيضاً
+      await queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      
+      console.log('✅ [INVOICE_GEN] Queries invalidated and refetched');
     } catch (error: any) {
       console.error('❌ [INVOICE_GEN] Error generating invoices:', error);
       toast({
         title: "خطأ",
-        description: error.message || "فشل في إنشاء الفواتير",
+        description: error.message || "فشل في إنشاء الفواتير. " + (error.message || ''),
         variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
       console.log('🏁 [INVOICE_GEN] Generation process completed');
     }
-  }, [contractId, companyId, queryClient, toast]);
+  }, [contractId, companyId, queryClient, toast, contract, expectedInvoicesCount]);
 
   return (
     <div>
