@@ -1,5 +1,5 @@
 // SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
@@ -18,8 +18,71 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// ============================================================================
+// LOCAL STORAGE CACHE KEYS
+// ============================================================================
+const AUTH_CACHE_KEY = 'fleetify_auth_cache';
+const CACHE_VERSION = '1.0';
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes cache
+
+interface AuthCache {
+  user: AuthUser;
+  timestamp: number;
+  version: string;
+}
+
+// Helper to get cached user data
+const getCachedUser = (): AuthUser | null => {
+  try {
+    const cached = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!cached) return null;
+    
+    const data: AuthCache = JSON.parse(cached);
+    
+    // Check version
+    if (data.version !== CACHE_VERSION) {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+      return null;
+    }
+    
+    // Check TTL
+    if (Date.now() - data.timestamp > CACHE_TTL) {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+      return null;
+    }
+    
+    return data.user;
+  } catch (error) {
+    console.warn('📝 [AUTH_CACHE] Failed to load cache:', error);
+    return null;
+  }
+};
+
+// Helper to save user to cache
+const cacheUser = (user: AuthUser) => {
+  try {
+    const cacheData: AuthCache = {
+      user,
+      timestamp: Date.now(),
+      version: CACHE_VERSION
+    };
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.warn('📝 [AUTH_CACHE] Failed to save cache:', error);
+  }
+};
+
+// Helper to clear cache
+const clearCachedUser = () => {
+  try {
+    localStorage.removeItem(AUTH_CACHE_KEY);
+  } catch (error) {
+    console.warn('📝 [AUTH_CACHE] Failed to clear cache:', error);
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(getCachedUser);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -51,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: { session }, error } = await Promise.race([
         sessionPromise,
         timeoutPromise
-      ]).catch((err) => {
+      ]).catch(() => {
         console.warn('📝 [AUTH_CONTEXT] Session check timeout (5s), continuing without session');
         return { data: { session: null }, error: null };
       });
@@ -72,10 +135,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (session?.user) {
         if (mountedRef.current) {
           setSession(session);
-          // Set basic user immediately to unblock UI
-          setUser(session.user as AuthUser);
-          setLoading(false);
-          console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with basic user`);
+          
+          // 🚀 OPTIMIZATION: Try to use cached user first
+          const cachedUser = getCachedUser();
+          if (cachedUser && cachedUser.id === session.user.id) {
+            setUser(cachedUser);
+            setLoading(false);
+            console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with cached user (instant!)`);
+          } else {
+            // Set basic user immediately to unblock UI
+            setUser(session.user as AuthUser);
+            setLoading(false);
+            console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with basic user`);
+          }
         }
         
         // Load full profile in background with timeout (increased to 10s for slower networks)
@@ -99,6 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const authUser = await Promise.race([profilePromise, profileTimeout]);
           if (mountedRef.current && authUser) {
             setUser(authUser);
+            cacheUser(authUser); // 🚀 Save to cache
             setSessionError(null);
             console.log(`📝 [AUTH_CONTEXT] Full profile loaded at ${Date.now() - initStartTime}ms`);
           } else if (mountedRef.current && !authUser) {
@@ -107,6 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (mountedRef.current && user) {
                 console.log(`📝 [AUTH_CONTEXT] Profile loaded after timeout at ${Date.now() - initStartTime}ms`);
                 setUser(user);
+                cacheUser(user); // 🚀 Save to cache
               }
             }).catch(() => {
               // Silent fail - basic user already loaded
@@ -140,6 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (event === 'SIGNED_OUT') {
               setUser(null);
               setSession(null);
+              clearCachedUser(); // 🚀 Clear cache
               setIsSigningOut(false);
               return;
             }
@@ -149,8 +224,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               
               try {
                 const authUser = await authService.getCurrentUser();
-                if (mountedRef.current) {
+                if (mountedRef.current && authUser) {
                   setUser(authUser);
+                  cacheUser(authUser); // 🚀 Save to cache
                   setSessionError(null);
                 }
               } catch (error) {
@@ -275,6 +351,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     setIsSigningOut(true);
     const email = user?.email;
+    clearCachedUser(); // 🚀 Clear cache
     const result = await authService.signOut();
 
     if (!result.error && email) {
@@ -347,7 +424,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (session?.user) {
       try {
         const authUser = await authService.getCurrentUser();
-        setUser(authUser);
+        if (authUser) {
+          setUser(authUser);
+          cacheUser(authUser); // 🚀 Save to cache
+        }
       } catch (error) {
         console.error('📝 [AUTH_CONTEXT] Error refreshing user:', error);
       }
