@@ -3,9 +3,10 @@
  * صفحة تسجيل الدفعات للعقود النشطة
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,11 +53,13 @@ const PaymentRegistration = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const [contracts, setContracts] = useState<ActiveContract[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // تحسين الأداء
   const [loading, setLoading] = useState(true);
   const [aiModalData, setAiModalData] = useState<{
     contract: ActiveContract;
     analysis: PaymentAnalysis;
   } | null>(null);
+  const analysisTimeoutRef = useRef<NodeJS.Timeout>(); // إصلاح memory leak
 
   // جلب العقود النشطة
   useEffect(() => {
@@ -166,8 +169,7 @@ const PaymentRegistration = () => {
     return analysis;
   };
 
-  // معالجة الملاحظات
-  let analysisTimeout: NodeJS.Timeout;
+  // معالجة الملاحظات - محسّن لمنع memory leaks
   const handleNotesChange = (contractId: string, notes: string) => {
     setContracts(prev =>
       prev.map(c =>
@@ -176,9 +178,12 @@ const PaymentRegistration = () => {
     );
 
     // تحليل بعد 1.5 ثانية من التوقف عن الكتابة
-    clearTimeout(analysisTimeout);
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+    }
+    
     if (notes.trim().length > 5) {
-      analysisTimeout = setTimeout(() => {
+      analysisTimeoutRef.current = setTimeout(() => {
         const contract = contracts.find(c => c.contractId === contractId);
         if (!contract) return;
 
@@ -189,6 +194,15 @@ const PaymentRegistration = () => {
       }, 1500);
     }
   };
+  
+  // تنظيف timeout عند unmount
+  useEffect(() => {
+    return () => {
+      if (analysisTimeoutRef.current) {
+        clearTimeout(analysisTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // تأكيد الدفعة
   const confirmPayment = (contractId: string) => {
@@ -223,16 +237,17 @@ const PaymentRegistration = () => {
     }
   };
 
-  // تصفية العقود
-  const filteredContracts = contracts.filter(contract => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
+  // تصفية العقود - محسّن بـ useMemo و debounce
+  const filteredContracts = useMemo(() => {
+    if (!debouncedSearchTerm) return contracts;
+    
+    const searchLower = debouncedSearchTerm.toLowerCase().trim();
+    return contracts.filter(contract => (
       contract.customerName.toLowerCase().includes(searchLower) ||
       contract.vehicleNumber.toLowerCase().includes(searchLower) ||
       contract.phone.includes(searchLower)
-    );
-  });
+    ));
+  }, [contracts, debouncedSearchTerm]); // يُعاد حسابه فقط عند تغيير contracts أو debouncedSearchTerm
 
   const paidCount = contracts.filter(c => c.status === 'paid').length;
   const pendingCount = contracts.filter(c => c.status === 'pending').length;
@@ -329,7 +344,7 @@ const PaymentRegistration = () => {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {/* Search Bar */}
+            {/* Search Bar - محسّن مع مؤشر تحميل */}
             <div className="p-4 border-b">
               <div className="relative max-w-md">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -337,8 +352,14 @@ const PaymentRegistration = () => {
                   placeholder="🔍 بحث عن عميل، مركبة، أو رقم جوال..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
+                  className="pr-10 pl-10"
                 />
+                {/* مؤشر تحميل أثناء البحث */}
+                {searchTerm && searchTerm !== debouncedSearchTerm && (
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
             </div>
 
