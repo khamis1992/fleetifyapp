@@ -45,7 +45,7 @@ export const ChartOfAccountsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد موقع الإضافة"
-            description="انقر على زر 'إضافة حساب جديد' أو اختر الحساب الرئيسي الذي تريد إضافة الحساب الفرعي تحته من الهيكل الشجري."
+            description="انقر على زر "إضافة حساب جديد" أو اختر الحساب الرئيسي الذي تريد إضافة الحساب الفرعي تحته من الهيكل الشجري."
           />
           <HelpStep
             number={2}
@@ -60,7 +60,7 @@ export const ChartOfAccountsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ الحساب"
-            description="انقر على زر 'حفظ'. سيتم إضافة الحساب الجديد إلى الهيكل الشجري ويمكن استخدامه فوراً في تسجيل القيود اليومية."
+            description="انقر على زر "حفظ". سيتم إضافة الحساب الجديد إلى الهيكل الشجري ويمكن استخدامه فوراً في تسجيل القيود اليومية."
           />
         </div>
       </HelpSection>
@@ -87,7 +87,7 @@ export const ChartOfAccountsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="تأكيد التعديل"
-            description="انقر على 'حفظ التعديلات' لتطبيق التغييرات."
+            description="انقر على "حفظ التعديلات" لتطبيق التغييرات."
           />
         </div>
       </HelpSection>
@@ -104,12 +104,12 @@ export const ChartOfAccountsPageHelpContent = () => (
           <HelpStep
             number={2}
             title="إجمالي المدين"
-            description="مجموع المبالغ التي سجلت كـ 'مدين' على هذا الحساب خلال الفترة."
+            description="مجموع المبالغ التي سجلت كـ "مدين" على هذا الحساب خلال الفترة."
           />
           <HelpStep
             number={3}
             title="إجمالي الدائن"
-            description="مجموع المبالغ التي سجلت كـ 'دائن' على هذا الحساب خلال الفترة."
+            description="مجموع المبالغ التي سجلت كـ "دائن" على هذا الحساب خلال الفترة."
           />
           <HelpStep
             number={4}

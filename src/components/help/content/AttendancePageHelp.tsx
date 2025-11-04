@@ -50,7 +50,7 @@ export const AttendancePageHelpContent = () => (
           <HelpStep
             number={2}
             title="تطبيق المرشحات الإضافية"
-            description="يمكنك تضييق نطاق البحث باستخدام مرشحات الموظف (Employee Filter) أو حالة الحضور (Status Filter) مثل 'متأخر' أو 'غائب'."
+            description="يمكنك تضييق نطاق البحث باستخدام مرشحات الموظف (Employee Filter) أو حالة الحضور (Status Filter) مثل "متأخر" أو "غائب"."
           />
           <HelpStep
             number={3}
@@ -72,7 +72,7 @@ export const AttendancePageHelpContent = () => (
           <HelpStep
             number={2}
             title="بدء التصدير"
-            description="انقر على زر 'تصدير' (Export) الموجود في الزاوية العلوية اليمنى من الجدول."
+            description="انقر على زر "تصدير" (Export) الموجود في الزاوية العلوية اليمنى من الجدول."
           />
           <HelpStep
             number={3}

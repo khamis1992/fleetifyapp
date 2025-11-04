@@ -39,7 +39,7 @@ export const CreateContractHelp = () => (
         <HelpStep
           number={6}
           title="راجع واحفظ"
-          description="راجع جميع التفاصيل ثم انقر على 'حفظ' لإنشاء العقد."
+          description="راجع جميع التفاصيل ثم انقر على "حفظ" لإنشاء العقد."
         />
       </div>
     </HelpSection>

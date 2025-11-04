@@ -54,7 +54,7 @@ export const QuotationsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="بدء عملية الإنشاء"
-            description="انقر على زر 'إنشاء عرض جديد' (عادةً ما يكون زرًا أخضر أو أزرق في الزاوية العلوية)."
+            description="انقر على زر "إنشاء عرض جديد" (عادةً ما يكون زرًا أخضر أو أزرق في الزاوية العلوية)."
           />
           <HelpStep
             number={2}
@@ -74,7 +74,7 @@ export const QuotationsPageHelpContent = () => (
           <HelpStep
             number={5}
             title="حفظ وإرسال العرض"
-            description="بعد مراجعة جميع التفاصيل، انقر على 'حفظ' لتخزين العرض كمسودة، أو 'إرسال' لإرساله مباشرة إلى العميل عبر البريد الإلكتروني."
+            description="بعد مراجعة جميع التفاصيل، انقر على "حفظ" لتخزين العرض كمسودة، أو "إرسال" لإرساله مباشرة إلى العميل عبر البريد الإلكتروني."
           />
         </div>
       </HelpSection>
@@ -87,12 +87,12 @@ export const QuotationsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد العرض المقبول"
-            description="اذهب إلى قائمة العروض وقم بتصفية العروض حسب حالة 'مقبول'."
+            description="اذهب إلى قائمة العروض وقم بتصفية العروض حسب حالة "مقبول"."
           />
           <HelpStep
             number={2}
             title="بدء التحويل"
-            description="افتح تفاصيل العرض المقبول، وابحث عن زر 'تحويل إلى فاتورة' (Convert to Invoice)."
+            description="افتح تفاصيل العرض المقبول، وابحث عن زر "تحويل إلى فاتورة" (Convert to Invoice)."
           />
           <HelpStep
             number={3}
@@ -102,7 +102,7 @@ export const QuotationsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="إنشاء الفاتورة"
-            description="انقر على 'حفظ الفاتورة' لإتمام العملية. سيتم تحديث حالة العرض إلى 'مفوتر' (Invoiced)."
+            description="انقر على "حفظ الفاتورة" لإتمام العملية. سيتم تحديث حالة العرض إلى "مفوتر" (Invoiced)."
           />
         </div>
       </HelpSection>

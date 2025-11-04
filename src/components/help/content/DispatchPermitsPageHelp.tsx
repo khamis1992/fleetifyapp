@@ -50,7 +50,7 @@ export const DispatchPermitsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإنشاء"
-            description="انقر على زر <strong>'+ تصريح جديد'</strong> الموجود في الزاوية العلوية اليمنى من الصفحة."
+            description="انقر على زر <strong>"+ تصريح جديد"</strong> الموجود في الزاوية العلوية اليمنى من الصفحة."
           />
           <HelpStep
             number={2}
@@ -65,7 +65,7 @@ export const DispatchPermitsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="إرسال الطلب"
-            description="راجع جميع البيانات ثم انقر على زر <strong>'إرسال للموافقة'</strong>. سيتم تغيير حالة التصريح إلى <strong>'معلق'</strong>."
+            description="راجع جميع البيانات ثم انقر على زر <strong>"إرسال للموافقة"</strong>. سيتم تغيير حالة التصريح إلى <strong>"معلق"</strong>."
           />
         </div>
       </HelpSection>
@@ -77,7 +77,7 @@ export const DispatchPermitsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تصفية التصاريح المعلقة"
-            description="استخدم فلتر <strong>'الحالة'</strong> واختر <strong>'معلق'</strong> لعرض جميع الطلبات التي تحتاج إلى مراجعة."
+            description="استخدم فلتر <strong>"الحالة"</strong> واختر <strong>"معلق"</strong> لعرض جميع الطلبات التي تحتاج إلى مراجعة."
           />
           <HelpStep
             number={2}
@@ -104,12 +104,12 @@ export const DispatchPermitsPageHelpContent = () => (
           <HelpStep
             number={2}
             title="تطبيق الفلاتر"
-            description="انقر على أيقونة <strong>'الفلاتر'</strong> لفتح قائمة الخيارات المتقدمة. يمكنك التصفية حسب: <ul><li><strong>الحالة:</strong> (معتمد، مرفوض، منتهي).</li><li><strong>نطاق التاريخ:</strong> لتحديد التصاريح التي تبدأ أو تنتهي في فترة معينة.</li><li><strong>نوع المركبة:</strong> لتضييق البحث على فئة معينة من المركبات.</li></ul>"
+            description="انقر على أيقونة <strong>"الفلاتر"</strong> لفتح قائمة الخيارات المتقدمة. يمكنك التصفية حسب: <ul><li><strong>الحالة:</strong> (معتمد، مرفوض، منتهي).</li><li><strong>نطاق التاريخ:</strong> لتحديد التصاريح التي تبدأ أو تنتهي في فترة معينة.</li><li><strong>نوع المركبة:</strong> لتضييق البحث على فئة معينة من المركبات.</li></ul>"
           />
           <HelpStep
             number={3}
             title="حفظ التصفية"
-            description="يمكنك حفظ مجموعات الفلاتر المستخدمة بشكل متكرر كـ <strong>'عرض مخصص'</strong> للوصول إليها لاحقًا بسرعة."
+            description="يمكنك حفظ مجموعات الفلاتر المستخدمة بشكل متكرر كـ <strong>"عرض مخصص"</strong> للوصول إليها لاحقًا بسرعة."
           />
         </div>
       </HelpSection>

@@ -81,7 +81,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإضافة"
-            description="انقر على زر 'إضافة مدفوعات' الموجود في الزاوية العلوية للصفحة."
+            description="انقر على زر "إضافة مدفوعات" الموجود في الزاوية العلوية للصفحة."
           />
           <HelpStep
             number={2}
@@ -96,7 +96,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={4}
             title="التأكيد والحفظ"
-            description="راجع البيانات وتأكد من دقتها، ثم انقر على 'حفظ'. سيتم تحديث حالة العقد تلقائيًا."
+            description="راجع البيانات وتأكد من دقتها، ثم انقر على "حفظ". سيتم تحديث حالة العقد تلقائيًا."
           />
         </div>
       </HelpSection>
@@ -122,7 +122,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ التغييرات"
-            description="انقر على 'حفظ التغييرات' لتطبيق التعديلات على السجل المالي."
+            description="انقر على "حفظ التغييرات" لتطبيق التعديلات على السجل المالي."
           />
         </div>
       </HelpSection>

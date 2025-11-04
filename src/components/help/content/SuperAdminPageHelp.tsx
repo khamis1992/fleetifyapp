@@ -45,12 +45,12 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={1} 
             title="الوصول إلى قائمة الشركات" 
-            description="من القائمة الجانبية، انتقل إلى 'إدارة النظام' ثم 'الشركات'." 
+            description="من القائمة الجانبية، انتقل إلى "إدارة النظام" ثم "الشركات"." 
           />
           <HelpStep 
             number={2} 
             title="بدء عملية الإنشاء" 
-            description="اضغط على زر '+ إضافة شركة جديدة' الموجود في الزاوية العلوية." 
+            description="اضغط على زر "+ إضافة شركة جديدة" الموجود في الزاوية العلوية." 
           />
           <HelpStep 
             number={3} 
@@ -60,7 +60,7 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={4} 
             title="تفعيل الشركة" 
-            description="تأكد من تحديد خيار 'تفعيل' لتمكين المدير من تسجيل الدخول فورًا. اضغط 'حفظ'." 
+            description="تأكد من تحديد خيار "تفعيل" لتمكين المدير من تسجيل الدخول فورًا. اضغط "حفظ"." 
           />
         </div>
       </HelpSection>
@@ -71,7 +71,7 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={1} 
             title="البحث عن المستخدم" 
-            description="انتقل إلى 'إدارة المستخدمين' واستخدم شريط البحث للعثور على الموظف المراد نقله." 
+            description="انتقل إلى "إدارة المستخدمين" واستخدم شريط البحث للعثور على الموظف المراد نقله." 
           />
           <HelpStep 
             number={2} 
@@ -81,12 +81,12 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={3} 
             title="تغيير الشركة" 
-            description="في قسم 'معلومات الحساب'، ابحث عن حقل 'الشركة' واختر الشركة الجديدة من القائمة المنسدلة." 
+            description="في قسم "معلومات الحساب"، ابحث عن حقل "الشركة" واختر الشركة الجديدة من القائمة المنسدلة." 
           />
           <HelpStep 
             number={4} 
             title="تأكيد النقل" 
-            description="اضغط على زر 'حفظ التغييرات'. سيتم نقل المستخدم تلقائيًا إلى الشركة الجديدة مع تحديث صلاحياته." 
+            description="اضغط على زر "حفظ التغييرات". سيتم نقل المستخدم تلقائيًا إلى الشركة الجديدة مع تحديث صلاحياته." 
           />
         </div>
       </HelpSection>
@@ -97,7 +97,7 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={1} 
             title="الوصول إلى السجلات" 
-            description="من قائمة 'مراقبة النظام'، اختر 'سجلات الأحداث'." 
+            description="من قائمة "مراقبة النظام"، اختر "سجلات الأحداث"." 
           />
           <HelpStep 
             number={2} 
