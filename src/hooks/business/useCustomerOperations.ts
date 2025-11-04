@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tantml:react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
