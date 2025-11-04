@@ -95,18 +95,19 @@ function ContractsNew() {
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // تطبيق البحث المؤجل على الفلاتر
+  // تطبيق البحث المؤجل على الفلاتر - محسّن لمنع إعادة العرض الزائدة
   useEffect(() => {
+    const newSearch = debouncedSearch.trim();
+    
     setFilters((prev: any) => {
       const currentSearch = prev.search || "";
-      const newSearch = debouncedSearch.trim();
       
-      // إذا لم يتغير البحث، لا تحدث filters
+      // إذا لم يتغير البحث، أعد نفس الكائن لمنع إعادة العرض
       if (currentSearch === newSearch) {
         return prev;
       }
       
-      // تحديث فقط إذا تغير البحث
+      // تحديث فقط إذا تغير البحث فعلياً
       if (newSearch === "") {
         const { search, ...rest } = prev;
         return rest;
@@ -115,10 +116,9 @@ function ContractsNew() {
     });
   }, [debouncedSearch]);
   
-  // Apply tab filter to status filter
+  // Apply tab filter to status filter - محسّن لمنع إعادة العرض غير الضرورية
   useEffect(() => {
     setFilters((prev: any) => {
-      const { status, ...rest } = prev; // احذف status أولاً
       let newStatus: string | undefined;
       
       if (activeTab === "all") {
@@ -131,13 +131,15 @@ function ContractsNew() {
         newStatus = "expiring_soon";
       }
       
-      // إذا لم يتغير status، لا تحدث filters
+      // إذا لم يتغير status، أعد نفس الكائن بالضبط
       if (prev.status === newStatus) {
         return prev;
       }
       
+      // إنشاء كائن جديد فقط عند الحاجة
+      const { status, ...rest } = prev;
       if (newStatus === undefined) {
-        return rest; // أعد rest بدون status
+        return rest;
       }
       return { ...rest, status: newStatus };
     });
@@ -170,16 +172,26 @@ function ContractsNew() {
     return `${formatted} ${currencyConfig.symbol}`;
   };
 
-  // Data fetching with pagination
-  const filtersWithPagination = useMemo(
-    () => ({
+  // Data fetching with pagination - محسّن بشكل أفضل
+  const filtersWithPagination = useMemo(() => {
+    return {
       ...filters,
       page,
       pageSize,
-    }),
-    // استخدام القيم الفعلية بدلاً من الكائن نفسه
-    [filters.search, filters.status, filters.contract_type, filters.customer_id, filters.cost_center_id, page, pageSize]
-  );
+    };
+  }, [
+    filters.search, 
+    filters.status, 
+    filters.contract_type, 
+    filters.customer_id, 
+    filters.cost_center_id,
+    filters.start_date,
+    filters.end_date,
+    filters.min_amount,
+    filters.max_amount,
+    page, 
+    pageSize
+  ]);
 
   const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination);
 
@@ -625,7 +637,7 @@ function ContractsNew() {
 
             {showFilters && (
               <div className="p-6 space-y-4">
-                {/* Search Input */}
+                {/* Search Input - محسّن للأداء */}
                 <div className="relative">
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -633,8 +645,16 @@ function ContractsNew() {
                     placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
                     className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                     value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
+                    onChange={(e) => {
+                      // تحديث searchInput فقط دون إعادة عرض القوائم
+                      setSearchInput(e.target.value);
+                    }}
                   />
+                  {searchInput && searchInput !== debouncedSearch && (
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}

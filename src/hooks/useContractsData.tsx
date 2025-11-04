@@ -282,6 +282,9 @@ export const useContractsData = (filters: any = {}) => {
     },
     enabled: !!user?.id && !!filter?.company_id,
     retry: 1,
+    staleTime: 1 * 60 * 1000, // البيانات صالحة لمدة دقيقة - تمنع إعادة الجلب المتكررة
+    gcTime: 5 * 60 * 1000, // Cache لمدة 5 دقائق
+    refetchOnWindowFocus: false, // منع إعادة الجلب عند التركيز على النافذة
   });
 
   // Extract contracts from response (handle both array and paginated response)

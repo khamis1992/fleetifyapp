@@ -15,9 +15,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, MessageSquare, ExternalLink } from 'lucide-react';
+import { Info, MessageSquare, ExternalLink, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WhatsAppMonitor from '@/components/whatsapp/WhatsAppMonitor';
+import { WhatsAppMessagesReport } from '@/components/whatsapp/WhatsAppMessagesReport';
 
 const WhatsAppReminders: React.FC = () => {
   return (
@@ -33,10 +34,14 @@ const WhatsAppReminders: React.FC = () => {
       </div>
 
       <Tabs defaultValue="monitor" className="space-y-6">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="monitor" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             المراقبة والإدارة
+          </TabsTrigger>
+          <TabsTrigger value="report" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            تقرير الرسائل
           </TabsTrigger>
           <TabsTrigger value="setup" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
@@ -47,6 +52,11 @@ const WhatsAppReminders: React.FC = () => {
         {/* Monitor Tab */}
         <TabsContent value="monitor">
           <WhatsAppMonitor />
+        </TabsContent>
+
+        {/* Messages Report Tab */}
+        <TabsContent value="report">
+          <WhatsAppMessagesReport />
         </TabsContent>
 
         {/* Setup Instructions Tab */}
