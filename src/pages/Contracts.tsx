@@ -4,7 +4,6 @@ import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce";
 import {
   RefreshCw,
   Filter,
@@ -89,8 +88,7 @@ function ContractsNew() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
-  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري - للعرض فقط
-  const debouncedSearch = useDebounce(searchInput, 500); // تأخير 500ms - هذا يُستخدم في الفلترة
+  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري - يعمل مباشرة مثل صفحة العملاء
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -98,9 +96,9 @@ function ContractsNew() {
   const filters = useMemo(() => {
     const newFilters: any = {};
     
-    // البحث - استخدام debouncedSearch فقط (ليس searchInput)
-    if (debouncedSearch && debouncedSearch.trim()) {
-      newFilters.search = debouncedSearch.trim();
+    // البحث - استخدام searchInput مباشرة (مثل صفحة العملاء)
+    if (searchInput && searchInput.trim()) {
+      newFilters.search = searchInput.trim();
     }
     
     // Status من activeTab
@@ -113,7 +111,7 @@ function ContractsNew() {
     }
     
     return newFilters;
-  }, [debouncedSearch, activeTab]); // يتحدث فقط عند تغيير debouncedSearch أو activeTab
+  }, [searchInput, activeTab]); // يتحدث فقط عند تغيير searchInput أو activeTab
   
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -621,11 +619,6 @@ function ContractsNew() {
                       setSearchInput(e.target.value);
                     }}
                   />
-                  {searchInput && searchInput !== debouncedSearch && (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Action Buttons */}
