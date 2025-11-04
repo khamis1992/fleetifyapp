@@ -213,6 +213,28 @@ class AuditLogger {
   }
 
   /**
+   * Log customer operations
+   */
+  async logCustomer(
+    action: 'created' | 'updated' | 'deleted',
+    customerId: string,
+    companyId: string,
+    details?: any,
+    success: boolean = true
+  ): Promise<void> {
+    await this.log({
+      event_type: `customer_${action}` as AuditEventType,
+      severity: action === 'deleted' ? 'high' : 'low',
+      company_id: companyId,
+      entity_type: 'customer',
+      entity_id: customerId,
+      action: `customer_${action}`,
+      details,
+      success,
+    });
+  }
+
+  /**
    * Log legal AI operations
    */
   async logLegalAI(
