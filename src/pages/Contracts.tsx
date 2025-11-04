@@ -89,61 +89,32 @@ function ContractsNew() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
-  const [filters, setFilters] = useState<any>({});
-  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري
-  const debouncedSearch = useDebounce(searchInput, 500); // تأخير 500ms
+  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري - للعرض فقط
+  const debouncedSearch = useDebounce(searchInput, 500); // تأخير 500ms - هذا يُستخدم في الفلترة
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // تطبيق البحث المؤجل على الفلاتر - محسّن لمنع إعادة العرض الزائدة
-  useEffect(() => {
-    const newSearch = debouncedSearch.trim();
+  // بناء filters بشكل ذكي - استخدام useMemo لمنع إعادة الإنشاء غير الضرورية
+  const filters = useMemo(() => {
+    const newFilters: any = {};
     
-    setFilters((prev: any) => {
-      const currentSearch = prev.search || "";
-      
-      // إذا لم يتغير البحث، أعد نفس الكائن لمنع إعادة العرض
-      if (currentSearch === newSearch) {
-        return prev;
-      }
-      
-      // تحديث فقط إذا تغير البحث فعلياً
-      if (newSearch === "") {
-        const { search, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, search: newSearch };
-    });
-  }, [debouncedSearch]);
+    // البحث - استخدام debouncedSearch فقط (ليس searchInput)
+    if (debouncedSearch && debouncedSearch.trim()) {
+      newFilters.search = debouncedSearch.trim();
+    }
+    
+    // Status من activeTab
+    if (activeTab === "active") {
+      newFilters.status = "active";
+    } else if (activeTab === "cancelled") {
+      newFilters.status = "cancelled";
+    } else if (activeTab === "alerts") {
+      newFilters.status = "expiring_soon";
+    }
+    
+    return newFilters;
+  }, [debouncedSearch, activeTab]); // يتحدث فقط عند تغيير debouncedSearch أو activeTab
   
-  // Apply tab filter to status filter - محسّن لمنع إعادة العرض غير الضرورية
-  useEffect(() => {
-    setFilters((prev: any) => {
-      let newStatus: string | undefined;
-      
-      if (activeTab === "all") {
-        newStatus = undefined;
-      } else if (activeTab === "active") {
-        newStatus = "active";
-      } else if (activeTab === "cancelled") {
-        newStatus = "cancelled";
-      } else if (activeTab === "alerts") {
-        newStatus = "expiring_soon";
-      }
-      
-      // إذا لم يتغير status، أعد نفس الكائن بالضبط
-      if (prev.status === newStatus) {
-        return prev;
-      }
-      
-      // إنشاء كائن جديد فقط عند الحاجة
-      const { status, ...rest } = prev;
-      if (newStatus === undefined) {
-        return rest;
-      }
-      return { ...rest, status: newStatus };
-    });
-  }, [activeTab]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
@@ -665,7 +636,7 @@ function ContractsNew() {
                   </Button>
                   <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => {
                     setSearchInput("");
-                    setFilters({});
+                    setActiveTab("all");
                   }}>
                     <XCircle className="w-4 h-4" />
                     <span>مسح الفلاتر</span>
