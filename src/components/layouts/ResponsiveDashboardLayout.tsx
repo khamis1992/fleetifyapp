@@ -14,6 +14,7 @@ import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { ResponsiveContainer } from '@/components/ui/responsive-container';
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
+import { LocationBasedKey } from '@/components/common/LocationBasedKey';
 
 export const ResponsiveDashboardLayout: React.FC = () => {
   const { user, loading, validateSession } = useAuth();
@@ -122,7 +123,9 @@ export const ResponsiveDashboardLayout: React.FC = () => {
               className="py-4 md:py-6 lg:py-8"
               padding={isMobile ? 'sm' : isTablet ? 'default' : 'lg'}
             >
-              <Outlet />
+              <LocationBasedKey>
+                <Outlet />
+              </LocationBasedKey>
             </ResponsiveContainer>
           </main>
 

@@ -168,13 +168,13 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // CRITICAL FIX: Refetch on mount to ensure fresh data on navigation
-      refetchOnMount: true,          // Always refetch when component mounts (fixed from false)
+      refetchOnMount: 'always',      // ALWAYS refetch when component mounts (fixed navigation issue)
       refetchOnWindowFocus: false,   // Don't refetch when switching browser tabs
-      refetchOnReconnect: true,     // Refetch when internet reconnects
+      refetchOnReconnect: true,      // Refetch when internet reconnects
       
       // Cache configuration - Keep data fresh but allow refetch
-      staleTime: 1 * 60 * 1000,     // Data stays fresh for 1 minute (reduced from 2)
-      gcTime: 30 * 60 * 1000,       // Keep unused data in cache for 30 minutes
+      staleTime: 0,                  // Data becomes stale immediately (ensures fresh data on navigation)
+      gcTime: 30 * 60 * 1000,        // Keep unused data in cache for 30 minutes
       
       // Retry configuration - Fail fast
       retry: 1,                     // Only retry failed queries once
