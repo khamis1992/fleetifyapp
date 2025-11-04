@@ -364,13 +364,16 @@ export const useContractsData = (filters: any = {}) => {
     };
   }, [allContractsForStats]);
 
-  // Apply filters to contracts
+  // Apply filters to contracts - محسّن لمنع الفلترة الزائدة
   const filteredContracts = useMemo(() => {
-    console.log('🔍 [CONTRACTS_FILTER] Applying filters', { 
-      filtersApplied: Object.keys(filters).length > 0,
-      filters, 
-      contractsLength: contracts?.length 
-    });
+    // منع logs المفرطة - log فقط إذا تغير البحث فعلياً
+    if (filters.search) {
+      console.log('🔍 [CONTRACTS_FILTER] Applying filters', { 
+        filtersApplied: Object.keys(filters).length > 0,
+        searchTerm: filters.search,
+        contractsLength: contracts?.length 
+      });
+    }
     
     if (!contracts || contracts.length === 0) {
       console.log('🔍 [CONTRACTS_FILTER] No contracts data available');
@@ -495,7 +498,19 @@ export const useContractsData = (filters: any = {}) => {
     
     console.log('🔍 [CONTRACTS_FILTER] Final filtered results:', result.length, 'out of', contracts.length);
     return result;
-  }, [contracts, filters]);
+  }, [
+    contracts, 
+    filters.search, 
+    filters.status, 
+    filters.contract_type, 
+    filters.customer_id, 
+    filters.cost_center_id, 
+    filters.vehicle_id,
+    filters.start_date,
+    filters.end_date,
+    filters.min_amount,
+    filters.max_amount
+  ]); // استخدام القيم الفردية بدلاً من الكائن الكامل
 
   return {
     contracts,

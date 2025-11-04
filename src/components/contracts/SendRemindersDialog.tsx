@@ -3,7 +3,7 @@
  * Allows manual sending of payment reminders to customers via WhatsApp
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,8 @@ import {
 import { useSendManualReminders } from '@/hooks/useSendManualReminders';
 import { toast } from 'sonner';
 import { sendBulkWhatsAppMessages, formatPhoneForWhatsApp, defaultTemplates } from '@/utils/whatsappWebSender';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface Contract {
   id: string;
@@ -64,10 +66,75 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   onOpenChange,
   contracts = [],
 }) => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [selectedType, setSelectedType] = useState<ReminderType>('general');
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [allActiveContracts, setAllActiveContracts] = useState<Contract[]>([]);
+  const [isLoadingContracts, setIsLoadingContracts] = useState(false);
+
+  // Fetch all active contracts with valid phone numbers when dialog opens
+  useEffect(() => {
+    if (open && companyId) {
+      fetchAllActiveContracts();
+    }
+  }, [open, companyId]);
+
+  const fetchAllActiveContracts = async () => {
+    if (!companyId) return;
+    
+    setIsLoadingContracts(true);
+    try {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          monthly_amount,
+          monthly_rent,
+          status,
+          customers(
+            id,
+            first_name_ar,
+            last_name_ar,
+            first_name,
+            last_name,
+            company_name_ar,
+            company_name,
+            customer_type,
+            phone
+          )
+        `)
+        .eq('company_id', companyId)
+        .in('status', ['active', 'rented', 'approved'])
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching contracts:', error);
+        toast.error('فشل في جلب العقود');
+        return;
+      }
+
+      // Map to Contract interface
+      const mappedContracts: Contract[] = (data || []).map(c => ({
+        id: c.id,
+        contract_number: c.contract_number,
+        customer_phone: c.customers?.phone,
+        customers: c.customers,
+        monthly_rent: c.monthly_rent,
+        monthly_amount: c.monthly_amount,
+        status: c.status,
+      }));
+
+      setAllActiveContracts(mappedContracts);
+      console.log('📋 [SendRemindersDialog] Loaded all active contracts:', mappedContracts.length);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoadingContracts(false);
+    }
+  };
 
   // Helper function to get customer phone from contract
   const getCustomerPhone = (contract: Contract): string | undefined => {
@@ -80,26 +147,33 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
     return status === 'active' || status === 'rented' || status === 'approved';
   };
 
+  // Use allActiveContracts if available, otherwise fallback to passed contracts
+  const contractsToUse = useMemo(() => {
+    return allActiveContracts.length > 0 ? allActiveContracts : contracts;
+  }, [allActiveContracts, contracts]);
+
   // Filter contracts with phone numbers and active status
   const eligibleContracts = useMemo(() => {
-    const filtered = contracts.filter(c => {
+    const filtered = contractsToUse.filter(c => {
       const phone = getCustomerPhone(c);
       const isActive = isActiveContract(c);
       return phone && phone.trim() !== '' && phone !== '000000000' && isActive;
     });
 
     // Log for debugging
-    if (open && contracts.length > 0) {
+    if (open) {
       console.log('📋 [SendRemindersDialog] Contracts Analysis:', {
-        totalContracts: contracts.length,
+        totalContractsToUse: contractsToUse.length,
+        totalContractsPassed: contracts.length,
+        totalAllActiveContracts: allActiveContracts.length,
         eligibleContracts: filtered.length,
-        sampleContract: contracts[0],
+        sampleContract: contractsToUse[0],
         sampleEligible: filtered[0],
       });
     }
 
     return filtered;
-  }, [contracts, open]);
+  }, [contractsToUse, open]);
 
   const handleSend = async () => {
     if (selectedContracts.length === 0) {
@@ -296,8 +370,14 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
             <Card>
               <CardContent className="pt-4">
                 <div className="text-center">
-                  <Users className="h-5 w-5 text-blue-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-gray-900">{eligibleContracts.length}</div>
+                  {isLoadingContracts ? (
+                    <Loader2 className="h-5 w-5 text-blue-600 mx-auto mb-2 animate-spin" />
+                  ) : (
+                    <Users className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+                  )}
+                  <div className="text-2xl font-bold text-gray-900">
+                    {isLoadingContracts ? '...' : eligibleContracts.length}
+                  </div>
                   <div className="text-xs text-gray-600">عقود مؤهلة</div>
                 </div>
               </CardContent>
@@ -387,11 +467,21 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               </Button>
             </div>
 
-            {eligibleContracts.length === 0 ? (
+            {isLoadingContracts ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                <span className="mr-3 text-gray-600">جاري تحميل العقود...</span>
+              </div>
+            ) : eligibleContracts.length === 0 ? (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  لا توجد عقود نشطة مع أرقام هواتف صحيحة
+                  لا توجد عقود نشطة مع أرقام هواتف صحيحة.
+                  {allActiveContracts.length > 0 && (
+                    <span className="block mt-2 text-sm">
+                      تم جلب {allActiveContracts.length} عقد نشط، لكن جميعهم لديهم أرقام هواتف غير صالحة أو مفقودة.
+                    </span>
+                  )}
                 </AlertDescription>
               </Alert>
             ) : (
