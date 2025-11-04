@@ -10,6 +10,8 @@ import { LoadingProgress, useLoadingSteps } from '@/components/ui/LoadingProgres
 import { DemoTrialBanner } from '@/components/demo';
 import { WhatsNewModal } from '@/components/features';
 import { useWhatsNew } from '@/hooks/useWhatsNew';
+import { PageHelp } from "@/components/help";
+import { DashboardPageHelpContent } from "@/components/help/content";
 
 const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues

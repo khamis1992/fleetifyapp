@@ -65,6 +65,8 @@ import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getCurrencyConfig } from "@/utils/currencyConfig";
+import { PageHelp } from "@/components/help";
+import { ContractsPageHelpContent } from "@/components/help/content/ContractsPageHelp";
 
 function ContractsNew() {
   // State management
@@ -981,6 +983,14 @@ function ContractsNew() {
           }
         }
       `}</style>
+
+      {/* Help System */}
+      <PageHelp
+        title="دليل استخدام صفحة العقود"
+        description="تعرف على كيفية إدارة عقود التأجير بكفاءة"
+      >
+        <ContractsPageHelpContent />
+      </PageHelp>
     </PageCustomizer>
   );
 }

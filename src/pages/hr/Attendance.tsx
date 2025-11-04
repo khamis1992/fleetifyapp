@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { PageHelp } from "@/components/help";
+import { AttendancePageHelpContent } from "@/components/help/content";
 
 interface AttendanceRecord {
   id: string;
@@ -233,6 +235,8 @@ export default function Attendance() {
           })
         )}
       </div>
+    <PageHelp content={<AttendancePageHelpContent />} />
+
     </div>
   );
 }

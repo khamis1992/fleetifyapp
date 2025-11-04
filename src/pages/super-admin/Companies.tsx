@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PageHelp } from "@/components/help";
+import { CompaniesPageHelpContent } from "@/components/help/content";
 
 
 

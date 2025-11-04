@@ -19,6 +19,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useDeleteVehicle } from "@/hooks/useVehicles"
 import { useToast } from "@/hooks/use-toast"
 import type { Vehicle } from "@/hooks/useVehicles"
+import { PageHelp } from "@/components/help";
+import { VehiclesPageHelpContent } from "@/components/help/content";
 
 export default function Fleet() {
   const navigate = useNavigate()

@@ -87,6 +87,8 @@ import { TypeAheadSearch } from '@/components/ui/type-ahead-search';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { exportTableToCSV } from '@/utils/exports/csvExport';
+import { PageHelp } from '@/components/help';
+import { CustomersPageHelpContent } from '@/components/help/content/CustomersPageHelp';
 
 const Customers = () => {
   const { user } = useAuth();
@@ -1388,6 +1390,14 @@ const Customers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Help System */}
+      <PageHelp
+        title="دليل استخدام صفحة العملاء"
+        description="تعرف على كيفية إدارة العملاء بكفاءة"
+      >
+        <CustomersPageHelpContent />
+      </PageHelp>
     </>
   );
 };

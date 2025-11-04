@@ -22,6 +22,8 @@ import PayrollDialog from '@/components/hr/PayrollDialog';
 import PayrollDetailsModal from '@/components/hr/PayrollDetailsModal';
 import EditPayrollDialog from '@/components/hr/EditPayrollDialog';
 import PayrollActionButtons from '@/components/hr/PayrollActionButtons';
+import { PageHelp } from "@/components/help";
+import { PayrollPageHelpContent } from "@/components/help/content";
 
 interface PayrollReview {
   id: string;
@@ -356,6 +358,8 @@ const deletePayrollMutation = useDeletePayroll();
         employees={employees || []}
         isLoading={updatePayrollMutation.isPending}
       />
+    <PageHelp content={<PayrollPageHelpContent />} />
+
     </div>
   );
 }

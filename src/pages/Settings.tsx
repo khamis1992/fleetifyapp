@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { toast } from 'sonner';
+import { PageHelp } from "@/components/help";
+import { SettingsPageHelpContent } from "@/components/help/content";
 
 const Settings: React.FC = () => {
   const { user } = useAuth();

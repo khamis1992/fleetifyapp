@@ -5,6 +5,8 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { Scale, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { PageHelp } from "@/components/help";
+import { LegalPageHelpContent } from "@/components/help/content";
 
 export const Legal: React.FC = () => {
   const companyId = useCurrentCompanyId();

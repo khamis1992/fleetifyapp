@@ -35,6 +35,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { PageHelp } from "@/components/help";
+import { TrafficViolationsPageHelpContent } from "@/components/help/content";
 import '@/styles/traffic-violations-theme.css';
 
 // Lazy load heavy components for better performance
@@ -784,6 +786,8 @@ export default function TrafficViolationsRedesigned() {
           </TabsContent>
         </Tabs>
       </Card>
+    <PageHelp content={<TrafficViolationsPageHelpContent />} />
+
     </div>
   );
 }

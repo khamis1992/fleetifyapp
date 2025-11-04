@@ -9,6 +9,8 @@ import { useDispatchPermits } from "@/hooks/useDispatchPermits";
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHelp } from "@/components/help";
+import { DispatchPermitsPageHelpContent } from "@/components/help/content";
 
 export default function DispatchPermits() {
   const [showPermitForm, setShowPermitForm] = useState(false);
@@ -147,6 +149,8 @@ export default function DispatchPermits() {
           editingPermitId={editingPermitId}
         />
       )}
+    <PageHelp content={<DispatchPermitsPageHelpContent />} />
+
     </div>
   );
 }

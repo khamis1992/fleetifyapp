@@ -13,6 +13,8 @@
 
 import React from 'react';
 import { PaymentTracking } from '@/components/finance/PaymentTracking';
+import { PageHelp } from "@/components/help";
+import { PaymentTrackingPageHelpContent } from "@/components/help/content";
 
 const PaymentTrackingPage: React.FC = () => {
   return (

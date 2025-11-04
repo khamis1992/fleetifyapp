@@ -18,6 +18,8 @@ import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import { AttendancePermissionsPanel } from '@/components/hr/AttendancePermissionsPanel';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
+import { PageHelp } from "@/components/help";
+import { EmployeesPageHelpContent } from "@/components/help/content";
 interface Employee {
   id: string;
   company_id: string;
@@ -605,6 +607,8 @@ const { user } = useAuth();
           isCreatingPayroll={createPayrollMutation.isPending}
         />
       )}
+    <PageHelp content={<EmployeesPageHelpContent />} />
+
     </div>
   );
 }
