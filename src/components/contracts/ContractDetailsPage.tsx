@@ -58,6 +58,8 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ContractDocuments } from './ContractDocuments';
 import { OfficialContractView } from './OfficialContractView';
 import { LateFinesTab } from './LateFinesTab';
+import { ContractStatusBadge } from './ContractStatusBadge';
+import { ContractStatusManagement } from './ContractStatusManagement';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
@@ -93,6 +95,7 @@ const ContractDetailsPage = () => {
   const [isAmendmentDialogOpen, setIsAmendmentDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isStatusManagementOpen, setIsStatusManagementOpen] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -485,10 +488,12 @@ const ContractDetailsPage = () => {
                     </p>
                   </div>
                 </div>
-                <Badge className={cn('px-4 py-2 flex items-center gap-2 border', getStatusColor(contract.status))}>
-                  <CheckCircle className="w-4 h-4" />
-                  {getStatusText(contract.status)}
-                </Badge>
+                <ContractStatusBadge 
+                  status={contract.status} 
+                  clickable={true}
+                  onClick={() => setIsStatusManagementOpen(true)}
+                  className="px-4 py-2 text-sm"
+                />
               </div>
 
               {/* الصف الأوسط - معلومات العميل والسيارة */}
@@ -913,6 +918,13 @@ const ContractDetailsPage = () => {
           />
         </>
       )}
+      
+      {/* Dialog إدارة حالة العقد */}
+      <ContractStatusManagement
+        open={isStatusManagementOpen}
+        onOpenChange={setIsStatusManagementOpen}
+        contract={contract || {}}
+      />
     </div>
   );
 };

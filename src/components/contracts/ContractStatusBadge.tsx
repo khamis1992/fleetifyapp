@@ -4,9 +4,11 @@ import { CheckCircle, Clock, Pause, AlertCircle, XCircle, RefreshCw, FileText, F
 interface ContractStatusBadgeProps {
   status: string
   className?: string
+  onClick?: () => void
+  clickable?: boolean
 }
 
-export const ContractStatusBadge = ({ status, className }: ContractStatusBadgeProps) => {
+export const ContractStatusBadge = ({ status, className, onClick, clickable = false }: ContractStatusBadgeProps) => {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'active':
@@ -74,7 +76,8 @@ export const ContractStatusBadge = ({ status, className }: ContractStatusBadgePr
   return (
     <Badge 
       variant={config.variant} 
-      className={`${config.className} ${className}`}
+      className={`${config.className} ${className} ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+      onClick={clickable ? onClick : undefined}
     >
       <Icon className="h-3 w-3 mr-1" />
       {config.label}

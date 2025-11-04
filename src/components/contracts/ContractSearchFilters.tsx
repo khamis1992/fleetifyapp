@@ -58,6 +58,8 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
 
   const handleFilterChange = (key: string, value: unknown) => {
     console.log('🔧 [FILTER_CHANGE]', key, '=', value)
+    
+    // منع تحديث الصفحة عند تغيير الفلاتر
     const newFilters = { ...activeFilters };
     
     if (value === '' || value === null || value === undefined || value === 'all') {
@@ -67,7 +69,11 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
     }
     
     console.log('🔧 [FILTER_CHANGE] New filters:', newFilters)
-    onFiltersChange(newFilters);
+    
+    // استخدام setTimeout لتجنب تحديث الصفحة الفوري
+    setTimeout(() => {
+      onFiltersChange(newFilters);
+    }, 0);
   };
 
   const clearAllFilters = () => {

@@ -65,6 +65,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { PaymentForm } from '@/components/finance/PaymentForm';
+import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
 import {
   Dialog,
   DialogContent,
@@ -101,6 +102,7 @@ const CustomerDetailsPage = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -270,8 +272,22 @@ const CustomerDetailsPage = () => {
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
-    navigate(`/customers/edit/${customerId}`);
-  }, [navigate, customerId]);
+    setIsEditDialogOpen(true);
+  }, []);
+
+  const handleEditSuccess = useCallback((updatedCustomer: any) => {
+    toast({
+      title: 'تم التحديث بنجاح',
+      description: 'تم تحديث بيانات العميل بنجاح',
+    });
+    
+    // إعادة جلب بيانات العميل والعقود
+    queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+    queryClient.invalidateQueries({ queryKey: ['customer-contracts', customerId] });
+    
+    // إغلاق الـ dialog
+    setIsEditDialogOpen(false);
+  }, [toast, queryClient, customerId, companyId]);
 
   const handleDelete = useCallback(() => {
     setIsDeleteDialogOpen(true);
@@ -1332,6 +1348,32 @@ const CustomerDetailsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog تعديل بيانات العميل */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-blue-600" />
+              تعديل بيانات العميل
+            </DialogTitle>
+            <DialogDescription>
+              قم بتعديل معلومات العميل {customerName}
+            </DialogDescription>
+          </DialogHeader>
+          {customer && (
+            <EnhancedCustomerForm
+              mode="edit"
+              editingCustomer={customer}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
+              context="standalone"
+              integrationMode="dialog"
+              showDuplicateCheck={false}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog عرض تفاصيل الدفعة */}
       {selectedPayment && (

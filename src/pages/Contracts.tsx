@@ -762,7 +762,10 @@ function ContractsNew() {
                             <Eye className="w-4 h-4 ml-2" />
                             عرض
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => setContractToEdit(contract)} className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            setContractToEdit(contract);
+                            setShowContractWizard(true);
+                          }} className="bg-blue-50 text-blue-700 hover:bg-blue-100">
                             <Edit className="w-4 h-4 ml-2" />
                             تعديل
                           </Button>

@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tantml:react-query';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
+import { auditLogger } from '@/lib/auditLogger';
 import { 
   CreateCustomerData, 
   UpdateCustomerData,
@@ -192,6 +193,14 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       }
 
       console.log('✅ [useCustomerOperations] Customer updated successfully:', updatedCustomer);
+      
+      // تسجيل التعديل في سجل النشاط
+      auditLogger.logCustomer('updated', customerId, companyId, {
+        old_values: existingCustomer,
+        new_values: updatedCustomer,
+        changes: dataToUpdate
+      }).catch(err => console.error('Error logging customer update:', err));
+      
       return updatedCustomer;
     },
     onSuccess: (customer) => {
@@ -212,6 +221,22 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       // Update individual customer cache
       queryClient.setQueryData(['customer', customer.id], customer);
+      
+      // تحديث العقود المرتبطة بالعميل - عند تحديث بيانات العميل
+      queryClient.invalidateQueries({ 
+        queryKey: ['contract-details'],
+        exact: false 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['contracts'],
+        exact: false 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-contracts', customer.id] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-details', customer.id] 
+      });
       
       // Force background refetch for consistency
       setTimeout(() => {
