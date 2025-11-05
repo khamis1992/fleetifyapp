@@ -67,7 +67,7 @@ export const PropertiesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="بدء عملية الإضافة"
-            description="انقر على زر <strong>"+ إضافة أصل جديد"</strong> الموجود في الزاوية العلوية اليمنى من الشاشة."
+            description="انقر على زر <strong>+ إضافة أصل جديد</strong> الموجود في الزاوية العلوية اليمنى من الشاشة."
           />
           <HelpStep
             number={2}
@@ -82,7 +82,7 @@ export const PropertiesPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ الأصل"
-            description="بعد مراجعة جميع البيانات، انقر على زر <strong>"حفظ"</strong>. سيتم إدراج الأصل الجديد في قائمة الأصول النشطة."
+            description="بعد مراجعة جميع البيانات، انقر على زر <strong>حفظ</strong>. سيتم إدراج الأصل الجديد في قائمة الأصول النشطة."
           />
         </div>
       </HelpSection>
@@ -100,12 +100,12 @@ export const PropertiesPageHelpContent = () => (
           <HelpStep
             number={2}
             title="الانتقال إلى سجل الصيانة"
-            description="في صفحة تفاصيل الأصل، انتقل إلى علامة التبويب <strong>"الصيانة"</strong>."
+            description="في صفحة تفاصيل الأصل، انتقل إلى علامة التبويب <strong>الصيانة</strong>."
           />
           <HelpStep
             number={3}
             title="إضافة سجل جديد"
-            description="انقر على زر <strong>"+ إضافة سجل صيانة"</strong>. حدد نوع الصيانة (وقائية، إصلاح، فحص)، وتاريخ العملية، وتكلفة الصيانة، واسم المورد."
+            description="انقر على زر <strong>+ إضافة سجل صيانة</strong>. حدد نوع الصيانة (وقائية، إصلاح، فحص)، وتاريخ العملية، وتكلفة الصيانة، واسم المورد."
           />
           <HelpStep
             number={4}
@@ -115,7 +115,7 @@ export const PropertiesPageHelpContent = () => (
           <HelpStep
             number={5}
             title="حفظ السجل"
-            description="انقر على <strong>"حفظ"</strong> لإضافة السجل إلى تاريخ صيانة الأصل."
+            description="انقر على <strong>حفظ</strong> لإضافة السجل إلى تاريخ صيانة الأصل."
           />
         </div>
       </HelpSection>
@@ -133,17 +133,17 @@ export const PropertiesPageHelpContent = () => (
           <HelpStep
             number={2}
             title="تعديل البيانات الأساسية"
-            description="في صفحة التفاصيل، انقر على زر <strong>"تعديل"</strong> في قسم المعلومات الأساسية."
+            description="في صفحة التفاصيل، انقر على زر <strong>تعديل</strong> في قسم المعلومات الأساسية."
           />
           <HelpStep
             number={3}
             title="إدخال القراءة الجديدة"
-            description="قم بتحديث حقل <strong>"قراءة عداد المسافات"</strong> بالقيمة الحالية. يجب أن تكون القيمة الجديدة أكبر من القيمة السابقة."
+            description="قم بتحديث حقل <strong>قراءة عداد المسافات</strong> بالقيمة الحالية. يجب أن تكون القيمة الجديدة أكبر من القيمة السابقة."
           />
           <HelpStep
             number={4}
             title="تأكيد التحديث"
-            description="انقر على <strong>"حفظ التغييرات"</strong>. سيتم استخدام هذه القراءة في حسابات استهلاك الوقود وتذكيرات الصيانة."
+            description="انقر على <strong>حفظ التغييرات</strong>. سيتم استخدام هذه القراءة في حسابات استهلاك الوقود وتذكيرات الصيانة."
           />
         </div>
       </HelpSection>

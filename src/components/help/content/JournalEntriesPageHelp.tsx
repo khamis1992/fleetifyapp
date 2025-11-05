@@ -42,7 +42,7 @@ export const JournalEntriesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإضافة"
-            description="انقر على زر <strong>"+ قيد جديد"</strong> الموجود في الزاوية العلوية من الصفحة لفتح نموذج إدخال القيد."
+            description="انقر على زر <strong>+ قيد جديد</strong> الموجود في الزاوية العلوية من الصفحة لفتح نموذج إدخال القيد."
           />
           <HelpStep
             number={2}
@@ -62,7 +62,7 @@ export const JournalEntriesPageHelpContent = () => (
           <HelpStep
             number={5}
             title="حفظ القيد"
-            description="بعد التأكد من صحة البيانات وتوازن القيد، انقر على زر <strong>"حفظ"</strong> لإضافة القيد إلى دفتر اليومية العام."
+            description="بعد التأكد من صحة البيانات وتوازن القيد، انقر على زر <strong>حفظ</strong> لإضافة القيد إلى دفتر اليومية العام."
           />
         </div>
       </HelpSection>

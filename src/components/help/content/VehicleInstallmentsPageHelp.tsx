@@ -51,7 +51,7 @@ export const VehicleInstallmentsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإضافة"
-            description="انقر على زر <strong>"+ إضافة قسط جديد"</strong> الموجود في الزاوية العلوية اليمنى من الصفحة."
+            description="انقر على زر <strong>+ إضافة قسط جديد</strong> الموجود في الزاوية العلوية اليمنى من الصفحة."
           />
           <HelpStep
             number={2}
@@ -66,7 +66,7 @@ export const VehicleInstallmentsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ القسط"
-            description="بعد مراجعة جميع البيانات، انقر على زر <strong>"حفظ"</strong>. سيقوم النظام بإنشاء جدول الأقساط تلقائيًا."
+            description="بعد مراجعة جميع البيانات، انقر على زر <strong>حفظ</strong>. سيقوم النظام بإنشاء جدول الأقساط تلقائيًا."
           />
         </div>
       </HelpSection>
@@ -83,12 +83,12 @@ export const VehicleInstallmentsPageHelpContent = () => (
           <HelpStep
             number={2}
             title="فتح خيارات القسط"
-            description="انقر على أيقونة <strong>الثلاث نقاط (...)</strong> أو زر <strong>"الإجراءات"</strong> بجوار القسط."
+            description="انقر على أيقونة <strong>الثلاث نقاط (...)</strong> أو زر <strong>الإجراءات</strong> بجوار القسط."
           />
           <HelpStep
             number={3}
             title="تسجيل الدفع"
-            description="اختر <strong>"تسجيل الدفع"</strong>. أدخل تاريخ الدفع الفعلي ورقم الإيصال (اختياري) ثم اضغط <strong>"تأكيد"</strong>."
+            description="اختر <strong>تسجيل الدفع</strong>. أدخل تاريخ الدفع الفعلي ورقم الإيصال (اختياري) ثم اضغط <strong>تأكيد</strong>."
           />
         </div>
       </HelpSection>
@@ -105,12 +105,12 @@ export const VehicleInstallmentsPageHelpContent = () => (
           <HelpStep
             number={2}
             title="تطبيق الفلاتر"
-            description="انقر على زر <strong>"الفلاتر"</strong>. يمكنك التصفية حسب: <ul><li><strong>حالة السداد:</strong> (مدفوع، مستحق، متأخر)</li><li><strong>نطاق التاريخ:</strong> لتحديد الأقساط المستحقة في فترة زمنية معينة.</li><li><strong>المركبة:</strong> لعرض أقساط مركبة واحدة فقط.</li></ul>"
+            description="انقر على زر <strong>الفلاتر</strong>. يمكنك التصفية حسب: <ul><li><strong>حالة السداد:</strong> (مدفوع، مستحق، متأخر)</li><li><strong>نطاق التاريخ:</strong> لتحديد الأقساط المستحقة في فترة زمنية معينة.</li><li><strong>المركبة:</strong> لعرض أقساط مركبة واحدة فقط.</li></ul>"
           />
           <HelpStep
             number={3}
             title="إعادة تعيين"
-            description="لإزالة جميع الفلاتر والعودة إلى عرض جميع الأقساط، انقر على زر <strong>"إعادة تعيين"</strong>."
+            description="لإزالة جميع الفلاتر والعودة إلى عرض جميع الأقساط، انقر على زر <strong>إعادة تعيين</strong>."
           />
         </div>
       </HelpSection>

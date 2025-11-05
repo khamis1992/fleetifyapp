@@ -59,11 +59,11 @@ export const CompaniesPageHelpContent = () => (
       {/* العملية 1: إنشاء شركة جديدة */}
       <HelpSection title="العملية 1: إنشاء شركة جديدة" icon="plus">
         <div className="space-y-4">
-          <HelpStep number={1} title="الوصول إلى نموذج الإضافة" description="انقر على زر <strong>"+ إضافة شركة جديدة"</strong> الموجود في الزاوية العلوية اليمنى من الصفحة." />
+          <HelpStep number={1} title="الوصول إلى نموذج الإضافة" description="انقر على زر <strong>+ إضافة شركة جديدة</strong> الموجود في الزاوية العلوية اليمنى من الصفحة." />
           <HelpStep number={2} title="إدخال البيانات الأساسية" description="املأ الحقول الإلزامية: <strong>اسم الشركة</strong> (بالعربية والإنجليزية)، <strong>رقم السجل التجاري</strong>، و<strong>البريد الإلكتروني الرئيسي</strong>." />
           <HelpStep number={3} title="تحديد الإعدادات الأولية" description="اختر <strong>المنطقة الزمنية</strong>، <strong>العملة الافتراضية</strong>، و<strong>نوع الاشتراك</strong> لهذه الشركة." />
           <HelpStep number={4} title="تعيين مدير الشركة" description="في قسم \"مدير الشركة\"، ابحث عن اسم المستخدم الذي سيتم تعيينه كمدير للشركة الجديدة. هذا المستخدم سيحصل على صلاحيات \"مدير الشركة\" داخل نطاق هذه الشركة فقط." />
-          <HelpStep number={5} title="حفظ وإنهاء" description="انقر على زر <strong>"حفظ"</strong>. سيتم إنشاء الشركة وتفعيل وصولها تلقائياً، وسيتم إرسال إشعار لمدير الشركة المعين." />
+          <HelpStep number={5} title="حفظ وإنهاء" description="انقر على زر <strong>حفظ</strong>. سيتم إنشاء الشركة وتفعيل وصولها تلقائياً، وسيتم إرسال إشعار لمدير الشركة المعين." />
         </div>
       </HelpSection>
 
@@ -73,7 +73,7 @@ export const CompaniesPageHelpContent = () => (
           <HelpStep number={1} title="البحث عن الشركة" description="استخدم شريط البحث أو الفلاتر للعثور على الشركة المطلوبة في القائمة." />
           <HelpStep number={2} title="فتح صفحة التعديل" description="انقر على أيقونة <strong>القلم (تعديل)</strong> أو اسم الشركة لفتح شاشة التفاصيل والتعديل." />
           <HelpStep number={3} title="إجراء التعديلات" description="قم بتحديث البيانات المطلوبة (مثل العنوان، رقم الهاتف، أو حالة التفعيل). تذكر أن تغيير اسم الشركة قد يتطلب تحديثات في سجلات أخرى." />
-          <HelpStep number={4} title="تأكيد التعديلات" description="انقر على زر <strong>"تحديث البيانات"</strong> لحفظ التغييرات. ستظهر رسالة تأكيد بنجاح العملية." />
+          <HelpStep number={4} title="تأكيد التعديلات" description="انقر على زر <strong>تحديث البيانات</strong> لحفظ التغييرات. ستظهر رسالة تأكيد بنجاح العملية." />
         </div>
       </HelpSection>
 
