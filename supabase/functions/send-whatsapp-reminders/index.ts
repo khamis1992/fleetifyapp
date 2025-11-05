@@ -217,20 +217,17 @@ serve(async (req) => {
       );
     }
 
-    // Fetch queued reminders
-    const { data: reminders, error: fetchError } = await supabase
-      .from('reminder_schedules')
-      .select('id, phone_number, message_template, customer_name, invoice_id, customer_id, reminder_type')
-      .eq('status', 'queued')
-      .order('created_at', { ascending: true })
-      .limit(50); // Process max 50 at a time
+    // Fetch grouped reminders (one per customer)
+    const { data: groupedReminders, error: fetchError } = await supabase.rpc(
+      'get_grouped_reminders_for_today'
+    );
 
     if (fetchError) {
-      console.error('❌ Error fetching reminders:', fetchError);
+      console.error('❌ Error fetching grouped reminders:', fetchError);
       throw fetchError;
     }
 
-    if (!reminders || reminders.length === 0) {
+    if (!groupedReminders || groupedReminders.length === 0) {
       console.log('📭 No reminders to process');
       return new Response(
         JSON.stringify({
@@ -249,23 +246,48 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📤 Processing ${reminders.length} reminders...`);
+    console.log(`📤 Processing ${groupedReminders.length} grouped reminders...`);
 
     let successCount = 0;
     let failedCount = 0;
     const results = [];
 
-    // Process each reminder
-    for (const reminder of reminders as Reminder[]) {
-      console.log(`\n📨 Processing reminder ${reminder.id} for ${reminder.customer_name}`);
+    // Process each grouped reminder
+    for (const group of groupedReminders) {
+      console.log(`\n📨 Processing group for ${group.customer_name} (${group.invoice_count} invoices)`);
       
-      const sendResult = await sendWhatsAppMessage(
-        reminder.phone_number,
-        reminder.message_template
+      // Generate grouped message
+      const { data: messageData, error: msgError } = await supabase.rpc(
+        'generate_grouped_reminder_message',
+        {
+          p_customer_name: group.customer_name,
+          p_invoices_data: group.invoices_data,
+          p_total_amount: group.total_amount,
+          p_invoice_count: group.invoice_count,
+          p_reminder_type: group.reminder_type,
+          p_company_id: group.company_id
+        }
       );
 
+      if (msgError) {
+        console.error(`❌ Error generating message:`, msgError);
+        failedCount++;
+        continue;
+      }
+
+      const message = messageData;
+      console.log(`📝 Generated message (${message.length} chars)`);
+      
+      const sendResult = await sendWhatsAppMessage(
+        group.phone_number,
+        message
+      );
+
+      // Get all reminder IDs in this group
+      const reminderIds = group.invoices_data.map((inv: any) => inv.reminder_id);
+
       if (sendResult.success) {
-        // Update status to 'sent'
+        // Update ALL reminders in group to 'sent'
         const { error: updateError } = await supabase
           .from('reminder_schedules')
           .update({
@@ -274,85 +296,92 @@ serve(async (req) => {
             delivery_status: 'sent',
             updated_at: new Date().toISOString(),
           })
-          .eq('id', reminder.id);
+          .in('id', reminderIds);
 
         if (updateError) {
-          console.error(`❌ Error updating reminder ${reminder.id}:`, updateError);
+          console.error(`❌ Error updating reminders:`, updateError);
         }
 
-        // Log to reminder_history
+        // Log to reminder_history for each reminder
+        const historyRecords = reminderIds.map((rid: string) => ({
+          reminder_schedule_id: rid,
+          action: 'sent',
+          success: true,
+          phone_number: group.phone_number,
+          message_sent: message,
+        }));
+
         await supabase
           .from('reminder_history')
-          .insert({
-            reminder_schedule_id: reminder.id,
-            action: 'sent',
-            success: true,
-            phone_number: reminder.phone_number,
-            message_sent: reminder.message_template,
-          });
+          .insert(historyRecords);
 
         successCount++;
-        console.log(`✅ Sent to ${reminder.customer_name} (${reminder.phone_number})`);
+        console.log(`✅ Sent grouped message to ${group.customer_name} (${group.phone_number})`);
+        console.log(`   📊 Covered ${group.invoice_count} invoices, total: ${group.total_amount}`);
         
         results.push({
-          id: reminder.id,
+          customer: group.customer_name,
           status: 'sent',
-          customer: reminder.customer_name,
+          invoice_count: group.invoice_count,
+          total_amount: group.total_amount,
           messageId: sendResult.messageId
         });
       } else {
-        // Update status to 'failed'
+        // Update ALL reminders in group to 'failed'
         const { error: updateError } = await supabase
           .from('reminder_schedules')
           .update({
             status: 'failed',
             last_error: sendResult.error || 'Unknown error',
             retry_count: supabase.raw('COALESCE(retry_count, 0) + 1'),
-            next_retry_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // Retry in 30 mins
+            next_retry_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq('id', reminder.id);
+          .in('id', reminderIds);
 
         if (updateError) {
-          console.error(`❌ Error updating failed reminder ${reminder.id}:`, updateError);
+          console.error(`❌ Error updating failed reminders:`, updateError);
         }
 
         // Log to reminder_history
+        const historyRecords = reminderIds.map((rid: string) => ({
+          reminder_schedule_id: rid,
+          action: 'failed',
+          success: false,
+          phone_number: group.phone_number,
+          error_message: sendResult.error || 'Unknown error',
+        }));
+
         await supabase
           .from('reminder_history')
-          .insert({
-            reminder_schedule_id: reminder.id,
-            action: 'failed',
-            success: false,
-            phone_number: reminder.phone_number,
-            error_message: sendResult.error || 'Unknown error',
-          });
+          .insert(historyRecords);
 
         failedCount++;
-        console.log(`❌ Failed to send to ${reminder.customer_name}: ${sendResult.error}`);
+        console.log(`❌ Failed to send to ${group.customer_name}: ${sendResult.error}`);
         
         results.push({
-          id: reminder.id,
+          customer: group.customer_name,
           status: 'failed',
-          customer: reminder.customer_name,
+          invoice_count: group.invoice_count,
           error: sendResult.error
         });
       }
 
       // Delay between messages to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
     }
 
     const duration = Date.now() - startTime;
     console.log(`\n✅ Processing complete in ${duration}ms`);
-    console.log(`📊 Results: ${successCount} sent, ${failedCount} failed`);
+    console.log(`📊 Results: ${successCount} customers sent, ${failedCount} failed`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Processed ${reminders.length} reminders`,
-        sent: successCount,
-        failed: failedCount,
+        message: `Processed ${groupedReminders.length} grouped reminders (${successCount} customers)`,
+        customers_sent: successCount,
+        customers_failed: failedCount,
+        total_groups: groupedReminders.length,
         duration,
         results,
       }),

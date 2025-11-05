@@ -34,7 +34,7 @@ export const AddCustomerHelp = () => (
         <HelpStep
           number={5}
           title="احفظ البيانات"
-          description=&quot;انقر على زر &quot;حفظ&quot; لإضافة العميل إلى النظام."
+          description="انقر على زر &quot;حفظ&quot; لإضافة العميل إلى النظام."
         />
       </div>
     </HelpSection>
@@ -90,7 +90,7 @@ export const EditCustomerHelp = () => (
         <HelpStep
           number={4}
           title="احفظ التغييرات"
-          description=&quot;انقر على &quot;حفظ&quot; لتطبيق التعديلات."
+          description="انقر على &quot;حفظ&quot; لتطبيق التعديلات."
         />
       </div>
     </HelpSection>

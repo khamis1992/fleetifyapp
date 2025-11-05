@@ -11,7 +11,8 @@ export const FinanceReportsPageHelpContent = () => (
 
     {/* الوظائف الرئيسية */}
     <HelpSection title="الوظائف الرئيسية" icon="check">
-      <HelpList type="check" items={[
+      <HelpList type="check" items={
+
         "<strong>تقرير قائمة الدخل (Income Statement):</strong> عرض شامل للإيرادات والمصروفات لتحديد صافي الربح أو الخسارة خلال فترة محددة.",
         "<strong>تقرير الميزانية العمومية (Balance Sheet):</strong> تحليل دقيق للأصول والخصوم وحقوق الملكية في تاريخ معين.",
         "<strong>تقرير التدفقات النقدية (Cash Flow Statement):</strong> تتبع حركة النقد الداخل والخارج من الأنشطة التشغيلية والاستثمارية والتمويلية.",
@@ -22,18 +23,21 @@ export const FinanceReportsPageHelpContent = () => (
         "<strong>تصدير التقارير:</strong> تصدير جميع التقارير بصيغ مختلفة مثل PDF و Excel للمشاركة والتحليل الخارجي.",
         "<strong>تكامل محاسبي:</strong> ضمان توليد قيود محاسبية مزدوجة (Double-Entry) لكل معاملة مالية تلقائياً.",
         "<strong>نظام الإهلاك التلقائي:</strong> حساب إهلاك الأصول (المركبات) بشكل دوري وتضمينه في التقارير المالية."
-      ]} />
+      
+        } />
     </HelpSection>
 
     {/* فهم الإحصائيات والفلاتر */}
     <HelpSection title="فهم الإحصائيات والفلاتر المتاحة" icon="chart">
       <p>تعتمد دقة التقارير على كيفية استخدامك للفلاتر والإحصائيات التلخيصية:</p>
-      <HelpList type="bullet" items={[
+      <HelpList type="bullet" items={
+
         "<strong>فلتر الفترة الزمنية:</strong> يسمح لك بتحديد نطاق زمني دقيق (يومي، شهري، ربع سنوي، سنوي) لعرض البيانات المالية.",
         "<strong>فلتر نوع التقرير:</strong> يتيح التبديل السريع بين القوائم المالية الرئيسية (دخل، ميزانية، تدفق نقدي).",
         "<strong>إحصائيات ملخصة:</strong> تعرض في الجزء العلوي من الصفحة ملخصات سريعة لأهم المؤشرات مثل: إجمالي الإيرادات، إجمالي المصروفات، وصافي الربح للفترة المحددة.",
         "<strong>فلتر حالة الدفع:</strong> يمكنك من عزل المعاملات المدفوعة كلياً أو جزئياً أو المتأخرة (المستحقة) لتقييم السيولة."
-      ]} />
+      
+        } />
     </HelpSection>
 
     {/* شروحات تفصيلية لكل عملية */}
@@ -44,7 +48,7 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد الفترة الزمنية"
-            description=&quot;من قائمة الفلاتر، اختر &quot;الفترة الزمنية&quot; وحدد تاريخ البداية والنهاية للتقرير الذي ترغب في إنشائه (مثال: من 01/01/2024 إلى 31/12/2024)."
+            description="من قائمة الفلاتر، اختر &quot;الفترة الزمنية&quot; وحدد تاريخ البداية والنهاية للتقرير الذي ترغب في إنشائه (مثال: من 01/01/2024 إلى 31/12/2024).&quot;
           />
           <HelpStep
             number={2}
@@ -54,7 +58,7 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تطبيق الفلاتر"
-            description=&quot;اضغط على زر &quot;تطبيق&quot; أو &quot;عرض التقرير" ليقوم النظام بمعالجة البيانات وعرض التقرير المالي."
+            description="اضغط على زر &quot;تطبيق&quot; أو &quot;عرض التقرير&quot; ليقوم النظام بمعالجة البيانات وعرض التقرير المالي."
           />
           <HelpStep
             number={4}
@@ -72,12 +76,12 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى دفتر الأستاذ"
-            description=&quot;من قائمة التقارير، اختر &quot;دفتر الأستاذ العام&quot; (General Ledger)."
+            description="من قائمة التقارير، اختر &quot;دفتر الأستاذ العام&quot; (General Ledger).&quot;
           />
           <HelpStep
             number={2}
             title="تحديد الحساب"
-            description=&quot;استخدم فلتر &quot;الحساب&quot; للبحث عن حساب معين (مثل: &quot;إيرادات الإيجار&quot; أو &quot;مصروفات الصيانة")."
+            description="استخدم فلتر &quot;الحساب&quot; للبحث عن حساب معين (مثل: &quot;إيرادات الإيجار&quot; أو &quot;مصروفات الصيانة&quot;)."
           />
           <HelpStep
             number={3}
@@ -87,7 +91,7 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="تصدير البيانات"
-            description="إذا كنت بحاجة إلى مراجعة خارجية، استخدم زر &quot;تصدير إلى Excel&quot; في أعلى الصفحة."
+            description="إذا كنت بحاجة إلى مراجعة خارجية، استخدم زر &quot;تصدير إلى Excel&quot; في أعلى الصفحة.&quot;
           />
         </div>
       </HelpSection>
@@ -100,12 +104,12 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="اختيار تقرير الربحية"
-            description="انتقل إلى قسم &quot;تقارير الأداء&quot; واختر &quot;ربحية المركبات&quot;."
+            description="انتقل إلى قسم &quot;تقارير الأداء&quot; واختر &quot;ربحية المركبات&quot;.&quot;
           />
           <HelpStep
             number={2}
             title="تحديد المركبة"
-            description=&quot;استخدم فلتر &quot;المركبة" لتحديد مركبة معينة برقم لوحتها أو رقم الشاسيه."
+            description="استخدم فلتر &quot;المركبة&quot; لتحديد مركبة معينة برقم لوحتها أو رقم الشاسيه."
           />
           <HelpStep
             number={3}
