@@ -27,8 +27,7 @@ export const CustomersPageHelpContent = () => (
     <HelpSection title="الوظائف الرئيسية" icon="check">
       <HelpList
         type="check"
-        items={
-
+        items={[
           "إضافة عملاء جدد (أفراد أو شركات)",
           "البحث والفلترة السريعة",
           "تعديل بيانات العملاء",
@@ -36,9 +35,8 @@ export const CustomersPageHelpContent = () => (
           "إدارة العقود المرتبطة بالعميل",
           "تصدير قائمة العملاء",
           "استيراد عملاء من ملف CSV",
-        
-        }
-      />
+        ]}
+        />
     </HelpSection>
 
     {/* إضافة عميل */}
@@ -78,14 +76,12 @@ export const CustomersPageHelpContent = () => (
           في أعلى الصفحة، ستجد بطاقات إحصائية توضح:
         </p>
         <HelpList
-          items={
-
-            "إجمالي العملاء: العدد الكلي لجميع العملاء في النظام",
-          "العملاء الأفراد: عدد العملاء من نوع &quot;فرد&quot;",
-          "العملاء المؤسسيين: عدد العملاء من نوع &quot;شركة&quot;",
+          items={[
+          "إجمالي العملاء: العدد الكلي لجميع العملاء في النظام",
+          "العملاء الأفراد: عدد العملاء من نوع 'فرد'",
+          "العملاء المؤسسيين: عدد العملاء من نوع 'شركة'",
           "القائمة السوداء: عدد العملاء المحظورين",
-          
-        }
+        ]}
         />
       </HelpSection>
     </div>
@@ -98,13 +94,11 @@ export const CustomersPageHelpContent = () => (
         </p>
         <HelpList
           type="check"
-          items={
-
-            "نوع العميل (الكل / فرد / شركة)",
+          items={[
+          "نوع العميل (الكل / فرد / شركة)",
           "الحالة (نشط / غير نشط)",
           "القائمة السوداء",
-          
-        }
+        ]}
         />
         <p className="mt-3 text-sm text-gray-600">
           الفلاتر تعمل فوراً دون الحاجة للضغط على أي زر.
@@ -119,13 +113,13 @@ export const CustomersPageHelpContent = () => (
           <div>
             <h4 className="font-semibold mb-2">تصدير العملاء</h4>
             <p className="text-sm text-gray-700">
-              انقر على زر &quot;تصدير" لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
+              انقر على زر 'تصدير' لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-2">استيراد العملاء</h4>
             <p className="text-sm text-gray-700">
-              يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على &quot;استيراد" واتبع التعليمات.
+              يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على "استيراد" واتبع التعليمات.
             </p>
           </div>
         </div>

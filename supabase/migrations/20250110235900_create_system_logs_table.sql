@@ -46,3 +46,5 @@ COMMENT ON COLUMN system_logs.message IS 'وصف النشاط بشكل مفصل'
 COMMENT ON COLUMN system_logs.metadata IS 'بيانات إضافية بصيغة JSON';
 COMMENT ON COLUMN system_logs.duration_ms IS 'مدة تنفيذ العملية بالميلي ثانية';
 
+
+

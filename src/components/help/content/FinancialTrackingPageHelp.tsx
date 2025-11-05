@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة &quot;التتبع المالي&quot; (Financial Tracking)
+ * محتوى المساعدة لصفحة "التتبع المالي" (Financial Tracking)
  */
 export const FinancialTrackingPageHelpContent = () => (
   <>
@@ -20,17 +20,15 @@ export const FinancialTrackingPageHelpContent = () => (
     <HelpSection title="الوظائف الرئيسية" icon="check">
       <HelpList
         type="check"
-        items={
-
+        items={[
           "<strong>متابعة الإيرادات والمصروفات:</strong> عرض تفصيلي لجميع الإيرادات والمصروفات خلال فترة زمنية محددة.",
           "<strong>التقارير المالية:</strong> إنشاء تقارير مالية شاملة مثل قائمة الدخل والميزانية العمومية.",
           "<strong>التحليل المالي:</strong> أدوات تحليل متقدمة لفهم الاتجاهات المالية واتخاذ القرارات.",
-          "<strong>الرسوم البيانية:</strong> تصور البيانات المالية من خلال رسوم بيانية تفاعلية.',
-          "<strong>التنبيهات المالية:</strong> إشعارات تلقائية عند تجاوز الميزانية أو حدوث تغييرات مالية مهمة.',
-          "<strong>التصدير والطباعة:</strong> إمكانية تصدير التقارير بصيغ متعددة (PDF, Excel, CSV).',
-        
-        }
-      />
+          "<strong>الرسوم البيانية:</strong> تصور البيانات المالية من خلال رسوم بيانية تفاعلية.",
+          "<strong>التنبيهات المالية:</strong> إشعارات تلقائية عند تجاوز الميزانية أو حدوث تغييرات مالية مهمة.",
+          "<strong>التصدير والطباعة:</strong> إمكانية تصدير التقارير بصيغ متعددة (PDF, Excel, CSV).",
+        ]}
+        />
     </HelpSection>
 
     {/* كيفية استخدام الصفحة */}

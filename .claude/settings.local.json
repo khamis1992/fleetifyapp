@@ -118,7 +118,13 @@
       "Bash(timeout:*)",
       "Bash(node ultimate-quote-fixer.mjs:*)",
       "Bash(node fix-description-quotes.mjs:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git restore:*)",
+      "Bash(python fix_help_files.py:*)",
+      "Bash(python fix_help_clean.py:*)",
+      "Bash(for:*)",
+      "Bash(do sed -i 's/&quot;/\"\"/g' \"$f\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

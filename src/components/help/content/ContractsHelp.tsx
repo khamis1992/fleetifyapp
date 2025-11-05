@@ -39,7 +39,7 @@ export const CreateContractHelp = () => (
         <HelpStep
           number={6}
           title="راجع واحفظ"
-          description="راجع جميع التفاصيل ثم انقر على &quot;حفظ&quot; لإنشاء العقد."
+          description="راجع جميع التفاصيل ثم انقر على 'حفظ' لإنشاء العقد."
         />
       </div>
     </HelpSection>
@@ -47,17 +47,15 @@ export const CreateContractHelp = () => (
     <HelpSection title="الحقول المطلوبة" icon="alert">
       <HelpList
         type="check"
-        items={
-
+        items={[
           "العميل (إلزامي)",
           "المركبة (إلزامي)",
           "تاريخ البداية (إلزامي)",
           "مدة العقد بالأشهر (إلزامي)",
           "القيمة الشهرية (إلزامي)",
           "نوع العقد (إلزامي)",
-        
-        }
-      />
+        ]}
+        />
     </HelpSection>
 
     <HelpNote type="tip">
@@ -153,16 +151,14 @@ export const CancelContractHelp = () => (
 
     <HelpSection title="أسباب الإلغاء الشائعة" icon="info">
       <HelpList
-        items={
-
+        items={[
           "طلب العميل",
           "عدم السداد",
           "تلف المركبة",
           "انتهاك شروط العقد",
           "ظروف قاهرة",
-        
-        }
-      />
+        ]}
+        />
     </HelpSection>
 
     <HelpNote type="warning">
@@ -246,16 +242,14 @@ export const ContractInvoicesHelp = () => (
     <HelpSection title="كيف تعمل الفواتير التلقائية؟" icon="check">
       <HelpList
         type="check"
-        items={
-
+        items={[
           "تُنشأ فاتورة جديدة في بداية كل شهر",
           "القيمة تُحسب من القيمة الشهرية في العقد",
           "تُضاف الغرامات تلقائياً إذا تأخر السداد",
           "تُرسل إشعارات للعميل عند إنشاء الفاتورة",
           "يمكن عرض وطباعة الفواتير من صفحة العقد",
-        
-        }
-      />
+        ]}
+        />
     </HelpSection>
 
     <HelpNote type="info">
