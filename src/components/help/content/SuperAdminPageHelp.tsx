@@ -50,7 +50,7 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={2} 
             title="بدء عملية الإنشاء" 
-            description="اضغط على زر "+ إضافة شركة جديدة" الموجود في الزاوية العلوية." 
+            description="اضغط على زر &quot;+ إضافة شركة جديدة&quot; الموجود في الزاوية العلوية." 
           />
           <HelpStep 
             number={3} 
@@ -81,12 +81,12 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={3} 
             title="تغيير الشركة" 
-            description="في قسم "معلومات الحساب"، ابحث عن حقل "الشركة" واختر الشركة الجديدة من القائمة المنسدلة." 
+            description="في قسم &quot;معلومات الحساب"، ابحث عن حقل "الشركة&quot; واختر الشركة الجديدة من القائمة المنسدلة." 
           />
           <HelpStep 
             number={4} 
             title="تأكيد النقل" 
-            description="اضغط على زر "حفظ التغييرات". سيتم نقل المستخدم تلقائيًا إلى الشركة الجديدة مع تحديث صلاحياته." 
+            description="اضغط على زر &quot;حفظ التغييرات&quot;. سيتم نقل المستخدم تلقائيًا إلى الشركة الجديدة مع تحديث صلاحياته." 
           />
         </div>
       </HelpSection>
@@ -97,7 +97,7 @@ export const SuperAdminPageHelpContent = () => (
           <HelpStep 
             number={1} 
             title="الوصول إلى السجلات" 
-            description="من قائمة "مراقبة النظام"، اختر "سجلات الأحداث"." 
+            description="من قائمة &quot;مراقبة النظام"، اختر &quot;سجلات الأحداث"." 
           />
           <HelpStep 
             number={2} 

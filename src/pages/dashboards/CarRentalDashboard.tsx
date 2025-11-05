@@ -14,6 +14,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
+import { SystemLogsDebugger } from '@/components/dashboard/SystemLogsDebugger';
 
 
 const CarRentalDashboard: React.FC = () => {
@@ -130,6 +131,9 @@ const CarRentalDashboard: React.FC = () => {
 
       {/* Welcome Tour for New Users (K1 Fix #004) */}
       <WelcomeTour />
+
+      {/* System Logs Debugger - للمطورين فقط */}
+      {import.meta.env.DEV && <SystemLogsDebugger />}
     </>
   );
 };

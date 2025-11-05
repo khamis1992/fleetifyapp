@@ -5,11 +5,24 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Calendar, DollarSign } from 'lucide-react';
+import { Search, Filter, X, DollarSign, User, Building, Check, ChevronsUpDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface ContractSearchFiltersProps {
   onFiltersChange: (filters: any) => void;
@@ -22,6 +35,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
 }) => {
   const { user } = useAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
   const { currency } = useCurrencyFormatter();
 
   // Get customers for filter options
@@ -171,25 +185,97 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>العميل</Label>
-                <Select
-                  value={activeFilters.customer_id || ''}
-                  onValueChange={(value) => handleFilterChange('customer_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="جميع العملاء" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-700 z-50">
-                    <SelectItem value="all">جميع العملاء</SelectItem>
-                    {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.customer_type === 'individual' 
-                          ? `${customer.first_name} ${customer.last_name}`
-                          : customer.company_name
-                        }
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerOpen}
+                      className="w-full justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        {activeFilters.customer_id && activeFilters.customer_id !== 'all' ? (
+                          <>
+                            {customers?.find(c => c.id === activeFilters.customer_id)?.customer_type === 'individual' ? (
+                              <User className="h-4 w-4" />
+                            ) : (
+                              <Building className="h-4 w-4" />
+                            )}
+                            <span>
+                              {customers?.find(c => c.id === activeFilters.customer_id)?.customer_type === 'individual'
+                                ? `${customers?.find(c => c.id === activeFilters.customer_id)?.first_name} ${customers?.find(c => c.id === activeFilters.customer_id)?.last_name}`
+                                : customers?.find(c => c.id === activeFilters.customer_id)?.company_name
+                              }
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">جميع العملاء</span>
+                        )}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full min-w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="بحث عن عميل..." />
+                      <CommandEmpty>لم يتم العثور على عملاء.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            handleFilterChange('customer_id', '');
+                            setCustomerOpen(false);
+                          }}
+                          className="flex items-center space-x-2 p-3"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!activeFilters.customer_id || activeFilters.customer_id === 'all') ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span>جميع العملاء</span>
+                        </CommandItem>
+                        {customers?.map((customer) => {
+                          const displayName = customer.customer_type === 'individual' 
+                            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+                            : customer.company_name || 'عميل غير مسمى';
+                          
+                          return (
+                            <CommandItem
+                              key={customer.id}
+                              value={`${displayName} ${customer.first_name || ''} ${customer.last_name || ''} ${customer.company_name || ''}`}
+                              onSelect={() => {
+                                handleFilterChange('customer_id', customer.id);
+                                setCustomerOpen(false);
+                              }}
+                              className="flex items-center space-x-2 p-3"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  activeFilters.customer_id === customer.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                {customer.customer_type === 'individual' ? (
+                                  <User className="h-4 w-4 text-blue-500" />
+                                ) : (
+                                  <Building className="h-4 w-4 text-green-500" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium text-sm">
+                                    {displayName}
+                                  </div>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
@@ -269,21 +355,35 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
         {getActiveFiltersCount() > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-4 border-t">
             <span className="text-sm text-muted-foreground">الفلاتر النشطة:</span>
-            {Object.entries(activeFilters).map(([key, value]) => (
-              <Badge key={key} variant="secondary" className="flex items-center gap-1">
-                {key === 'search' && `البحث: ${value}`}
-                {key === 'status' && `الحالة: ${value}`}
-                {key === 'contract_type' && `النوع: ${value}`}
-                {key === 'start_date' && `من: ${value}`}
-                {key === 'end_date' && `إلى: ${value}`}
-                {key === 'min_amount' && `الحد الأدنى: ${value} ${currency}`}
-                {key === 'max_amount' && `الحد الأقصى: ${value} ${currency}`}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => handleFilterChange(key, '')}
-                />
-              </Badge>
-            ))}
+            {Object.entries(activeFilters).map(([key, value]) => {
+              let displayValue = value;
+              if (key === 'customer_id' && customers) {
+                const customer = customers.find(c => c.id === value);
+                if (customer) {
+                  displayValue = customer.customer_type === 'individual'
+                    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+                    : customer.company_name || 'عميل غير مسمى';
+                }
+              }
+              
+              return (
+                <Badge key={key} variant="secondary" className="flex items-center gap-1">
+                  {key === 'search' && `البحث: ${displayValue}`}
+                  {key === 'status' && `الحالة: ${displayValue}`}
+                  {key === 'contract_type' && `النوع: ${displayValue}`}
+                  {key === 'customer_id' && `العميل: ${displayValue}`}
+                  {key === 'cost_center_id' && `مركز التكلفة: ${displayValue}`}
+                  {key === 'start_date' && `من: ${displayValue}`}
+                  {key === 'end_date' && `إلى: ${displayValue}`}
+                  {key === 'min_amount' && `الحد الأدنى: ${displayValue} ${currency}`}
+                  {key === 'max_amount' && `الحد الأقصى: ${displayValue} ${currency}`}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => handleFilterChange(key, '')}
+                  />
+                </Badge>
+              );
+            })}
             <Button
               variant="ghost"
               size="sm"

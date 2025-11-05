@@ -113,13 +113,13 @@ export const CustomersPageHelpContent = () => (
           <div>
             <h4 className="font-semibold mb-2">تصدير العملاء</h4>
             <p className="text-sm text-gray-700">
-              انقر على زر "تصدير" لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
+              انقر على زر &quot;تصدير" لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-2">استيراد العملاء</h4>
             <p className="text-sm text-gray-700">
-              يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على "استيراد" واتبع التعليمات.
+              يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على &quot;استيراد" واتبع التعليمات.
             </p>
           </div>
         </div>

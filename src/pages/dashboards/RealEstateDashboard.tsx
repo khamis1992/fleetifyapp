@@ -16,6 +16,7 @@ import RealEstateEmptyState from '@/components/dashboard/RealEstateEmptyState';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { SystemLogsDebugger } from '@/components/dashboard/SystemLogsDebugger';
 
 
 // Real Estate Specific Widgets
@@ -240,6 +241,9 @@ const RealEstateDashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* System Logs Debugger - للمطورين فقط */}
+      {import.meta.env.DEV && <SystemLogsDebugger />}
     </>
   );
 };
