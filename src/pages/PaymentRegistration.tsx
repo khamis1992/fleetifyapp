@@ -29,6 +29,8 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
+import { PageHelp } from "@/components/help";
+import { PaymentRegistrationPageHelpContent } from "@/components/help/content";
 
 interface ActiveContract {
   contractId: string;
@@ -518,6 +520,12 @@ const PaymentRegistration = () => {
           </div>
         )}
       </div>
+      <PageHelp
+        title="دليل استخدام صفحة تسجيل الدفعات"
+        description="تعرف على كيفية تسجيل المدفوعات الواردة من العملاء بسرعة وسهولة"
+      >
+        <PaymentRegistrationPageHelpContent />
+      </PageHelp>
     </div>
   );
 };

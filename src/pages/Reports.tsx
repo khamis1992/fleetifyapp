@@ -29,6 +29,8 @@ import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { useCurrentCompany } from '@/hooks/useCurrentCompany';
 import { getReportModulesForBusinessType } from '@/utils/businessTypeReports';
 import { cn } from '@/lib/utils';
+import { PageHelp } from "@/components/help";
+import { ReportsPageHelpContent } from "@/components/help/content";
 
 export default function Reports() {
   // Responsive hooks
@@ -258,6 +260,12 @@ export default function Reports() {
           />
         )
       )}
+      <PageHelp
+        title="دليل استخدام صفحة التقارير"
+        description="تعرف على كيفية إنشاء وعرض وتصدير التقارير المختلفة"
+      >
+        <ReportsPageHelpContent />
+      </PageHelp>
     </div>
   );
 }

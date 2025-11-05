@@ -16,6 +16,8 @@ import { LateFeeManagement } from '@/components/invoices/LateFeeManagement';
 import { InvoiceDisputeManagement } from '@/components/invoices/InvoiceDisputeManagement';
 import { ARAgingReport } from '@/components/finance/ARAgingReport';
 import { PaymentTracking } from '@/components/finance/PaymentTracking';
+import { PageHelp } from "@/components/help";
+import { CollectionsPageHelpContent } from "@/components/help/content";
 
 const Collections = () => {
   const { toast } = useToast();
@@ -176,6 +178,12 @@ const Collections = () => {
           </Tabs>
         </div>
       </div>
+      <PageHelp
+        title="دليل استخدام مركز التحصيل"
+        description="تعرف على كيفية إدارة ومتابعة المدفوعات والتحصيلات"
+      >
+        <CollectionsPageHelpContent />
+      </PageHelp>
     </PageCustomizer>
   );
 };

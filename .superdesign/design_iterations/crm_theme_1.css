@@ -1,0 +1,307 @@
+/* 
+ * FleetifyApp CRM - Professional Theme
+ * نظام ألوان احترافي لصفحة إدارة العملاء
+ * تم التصميم بعناية لتوفير تجربة مستخدم مريحة ومهنية
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;900&display=swap');
+
+:root {
+  /* ===== الألوان الأساسية ===== */
+  /* خلفية النظام - رمادي فاتح جداً مريح للعين */
+  --background: oklch(0.9850 0.0020 240);
+  --foreground: oklch(0.1500 0.0050 240);
+  
+  /* البطاقات والعناصر */
+  --card: oklch(1.0000 0 0);
+  --card-foreground: oklch(0.1500 0.0050 240);
+  
+  /* النوافذ المنبثقة */
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0.1500 0.0050 240);
+  
+  /* ===== ألوان العناصر التفاعلية ===== */
+  /* اللون الأساسي - أخضر احترافي يوحي بالنجاح والنمو */
+  --primary: oklch(0.5800 0.1650 155);
+  --primary-foreground: oklch(0.9900 0 0);
+  
+  /* اللون الثانوي - رمادي متوسط للعناصر الأقل أهمية */
+  --secondary: oklch(0.9400 0.0080 240);
+  --secondary-foreground: oklch(0.2200 0.0100 240);
+  
+  /* العناصر الخافتة */
+  --muted: oklch(0.9500 0.0060 240);
+  --muted-foreground: oklch(0.5000 0.0120 240);
+  
+  /* اللون المميز - برتقالي دافئ للعناصر المهمة */
+  --accent: oklch(0.7200 0.1580 45);
+  --accent-foreground: oklch(0.1500 0.0050 240);
+  
+  /* ===== ألوان الحالات ===== */
+  /* التدمير/الحذف - أحمر هادئ */
+  --destructive: oklch(0.5500 0.2200 25);
+  --destructive-foreground: oklch(0.9900 0 0);
+  
+  /* النجاح - أخضر فاتح */
+  --success: oklch(0.6500 0.1600 145);
+  --success-foreground: oklch(0.9900 0 0);
+  
+  /* التحذير - كهرماني */
+  --warning: oklch(0.7800 0.1500 75);
+  --warning-foreground: oklch(0.1500 0.0050 240);
+  
+  /* معلومات - أزرق هادئ */
+  --info: oklch(0.6200 0.1400 230);
+  --info-foreground: oklch(0.9900 0 0);
+  
+  /* ===== الحدود والإدخالات ===== */
+  --border: oklch(0.9000 0.0100 240);
+  --input: oklch(0.9000 0.0100 240);
+  --ring: oklch(0.5800 0.1650 155);
+  
+  /* ===== ألوان الرسوم البيانية ===== */
+  --chart-1: oklch(0.5800 0.1650 155);  /* أخضر */
+  --chart-2: oklch(0.6500 0.1800 280);  /* بنفسجي */
+  --chart-3: oklch(0.7200 0.1580 45);   /* برتقالي */
+  --chart-4: oklch(0.6200 0.1400 230);  /* أزرق */
+  --chart-5: oklch(0.7000 0.1600 330);  /* وردي */
+  
+  /* ===== الشريط الجانبي ===== */
+  --sidebar: oklch(0.1800 0.0200 240);
+  --sidebar-foreground: oklch(0.9500 0.0060 240);
+  --sidebar-primary: oklch(0.5800 0.1650 155);
+  --sidebar-primary-foreground: oklch(0.9900 0 0);
+  --sidebar-accent: oklch(0.7200 0.1580 45);
+  --sidebar-accent-foreground: oklch(0.9900 0 0);
+  --sidebar-border: oklch(0.2800 0.0200 240);
+  --sidebar-ring: oklch(0.5800 0.1650 155);
+  
+  /* ===== الخطوط ===== */
+  --font-sans: 'IBM Plex Sans Arabic', 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'IBM Plex Sans Arabic', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  
+  /* ===== الزوايا المستديرة ===== */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 0.125rem);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 0.125rem);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  
+  /* ===== الظلال ===== */
+  --shadow-2xs: 0 1px 2px 0px hsl(240 5% 15% / 0.03);
+  --shadow-xs: 0 1px 3px 0px hsl(240 5% 15% / 0.05);
+  --shadow-sm: 0 2px 4px -1px hsl(240 5% 15% / 0.06), 0 1px 2px -1px hsl(240 5% 15% / 0.03);
+  --shadow: 0 4px 6px -1px hsl(240 5% 15% / 0.07), 0 2px 4px -1px hsl(240 5% 15% / 0.04);
+  --shadow-md: 0 6px 12px -2px hsl(240 5% 15% / 0.08), 0 3px 6px -2px hsl(240 5% 15% / 0.05);
+  --shadow-lg: 0 10px 20px -3px hsl(240 5% 15% / 0.10), 0 4px 8px -2px hsl(240 5% 15% / 0.06);
+  --shadow-xl: 0 20px 30px -5px hsl(240 5% 15% / 0.12), 0 8px 12px -3px hsl(240 5% 15% / 0.07);
+  --shadow-2xl: 0 25px 40px -10px hsl(240 5% 15% / 0.18);
+  
+  /* ===== المسافات ===== */
+  --spacing: 0.25rem;
+  --tracking-normal: -0.011em;
+}
+
+/* ===== تطبيق الثيم على العناصر الأساسية ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans) !important;
+  background-color: oklch(var(--background)) !important;
+  color: oklch(var(--foreground)) !important;
+  line-height: 1.6 !important;
+  letter-spacing: var(--tracking-normal) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  color: oklch(var(--foreground)) !important;
+  letter-spacing: -0.015em !important;
+}
+
+h1 {
+  font-size: 2.25rem !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+}
+
+h2 {
+  font-size: 1.875rem !important;
+  line-height: 1.3 !important;
+}
+
+h3 {
+  font-size: 1.5rem !important;
+  line-height: 1.4 !important;
+}
+
+h4 {
+  font-size: 1.25rem !important;
+  line-height: 1.5 !important;
+}
+
+/* ===== فئات مساعدة للألوان ===== */
+.bg-primary {
+  background-color: oklch(var(--primary)) !important;
+  color: oklch(var(--primary-foreground)) !important;
+}
+
+.bg-success {
+  background-color: oklch(var(--success)) !important;
+  color: oklch(var(--success-foreground)) !important;
+}
+
+.bg-warning {
+  background-color: oklch(var(--warning)) !important;
+  color: oklch(var(--warning-foreground)) !important;
+}
+
+.bg-danger {
+  background-color: oklch(var(--destructive)) !important;
+  color: oklch(var(--destructive-foreground)) !important;
+}
+
+.bg-info {
+  background-color: oklch(var(--info)) !important;
+  color: oklch(var(--info-foreground)) !important;
+}
+
+.text-muted {
+  color: oklch(var(--muted-foreground)) !important;
+}
+
+.text-primary {
+  color: oklch(var(--primary)) !important;
+}
+
+/* ===== فئات مساعدة للظلال ===== */
+.shadow-sm {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow {
+  box-shadow: var(--shadow) !important;
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* ===== بطاقات مخصصة ===== */
+.card {
+  background-color: oklch(var(--card)) !important;
+  border: 1px solid oklch(var(--border)) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: all 0.2s ease !important;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px);
+}
+
+/* ===== أزرار مخصصة ===== */
+.btn {
+  font-family: var(--font-sans) !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius) !important;
+  transition: all 0.2s ease !important;
+  padding: 0.625rem 1.25rem !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.btn-primary {
+  background-color: oklch(var(--primary)) !important;
+  color: oklch(var(--primary-foreground)) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.btn-primary:hover {
+  background-color: oklch(0.5200 0.1650 155) !important;
+  box-shadow: var(--shadow) !important;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: oklch(var(--secondary)) !important;
+  color: oklch(var(--secondary-foreground)) !important;
+}
+
+.btn-secondary:hover {
+  background-color: oklch(0.9000 0.0080 240) !important;
+}
+
+/* ===== حالات الأولوية ===== */
+.priority-high {
+  color: oklch(var(--destructive)) !important;
+  background-color: oklch(0.9700 0.0500 25) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+}
+
+.priority-medium {
+  color: oklch(var(--warning)) !important;
+  background-color: oklch(0.9700 0.0500 75) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+}
+
+.priority-low {
+  color: oklch(var(--info)) !important;
+  background-color: oklch(0.9700 0.0500 230) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+}
+
+/* ===== شارات الحالة ===== */
+.status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.375rem !important;
+  padding: 0.375rem 0.875rem !important;
+  border-radius: var(--radius-xl) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.status-active {
+  background-color: oklch(0.9500 0.0800 145) !important;
+  color: oklch(0.3500 0.1200 145) !important;
+}
+
+.status-pending {
+  background-color: oklch(0.9500 0.0800 75) !important;
+  color: oklch(0.5000 0.1200 75) !important;
+}
+
+.status-completed {
+  background-color: oklch(0.9500 0.0800 155) !important;
+  color: oklch(0.3500 0.1200 155) !important;
+}
+
+.status-expired {
+  background-color: oklch(0.9500 0.0800 25) !important;
+  color: oklch(0.4500 0.1600 25) !important;
+}
+

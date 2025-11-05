@@ -96,6 +96,28 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     icon: Home,
   },
 
+  // Customer Management (CRM)
+  {
+    id: 'customers',
+    name: 'إدارة العملاء',
+    name_en: 'Customer Management',
+    icon: Users,
+    submenu: [
+      {
+        id: 'customers-list',
+        name: 'قائمة العملاء',
+        href: '/customers',
+        icon: Users,
+      },
+      {
+        id: 'customers-crm',
+        name: 'إدارة العلاقات (CRM)',
+        href: '/customers/crm',
+        icon: PhoneCall,
+      },
+    ],
+  },
+
   // Fleet Management (Consolidated - 5 items)
   {
     id: 'fleet',

@@ -30,3 +30,6 @@ export * from './VehicleInstallmentsPageHelp';
 export * from './TrafficViolationsPageHelp';
 export * from './DriversPageHelp';
 export * from './QuotationsPageHelp';
+export * from './ReportsPageHelp';
+export * from './CollectionsPageHelp';
+export * from './PaymentRegistrationPageHelp';

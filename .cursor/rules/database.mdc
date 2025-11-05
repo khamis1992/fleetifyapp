@@ -1,0 +1,190 @@
+---
+title: Database Schema Reference
+description: Complete database structure reference for FleetifyApp
+tags: [database, schema, postgresql, supabase]
+---
+
+# 📊 FleetifyApp Database Schema
+
+## Project Info
+- **Project:** saas (qwhunliohlkkahbspfiu)
+- **Database:** PostgreSQL 17.6
+- **Company:** العراف لتاجير السيارات (24bc0b21-4e2d-4413-9842-31719a3669f4)
+- **Currency:** QAR
+
+---
+
+## 🔑 Critical Rules
+
+### Column Name Mapping (Common Mistakes)
+```
+❌ WRONG              →  ✅ CORRECT
+description          →  line_description (journal_entry_lines)
+level                →  account_level (chart_of_accounts)
+parent_code          →  parent_account_code
+account_name_en      →  account_name
+created_at           →  granted_at (user_roles only)
+status               →  payment_status (payments table)
+```
+
+### Financial Accounts Rules
+- ✅ Can post to: `is_header = false` AND `account_level >= 3`
+- ❌ Cannot post to: Headers OR level < 3
+- ⚠️ Always check account eligibility before creating journal entries
+
+---
+
+## 📋 Core Tables Structure
+
+### profiles (9 rows)
+```sql
+Columns:
+- id, user_id, company_id
+- email, first_name, last_name
+- first_name_ar, last_name_ar
+- is_active, language_preference
+```
+
+### chart_of_accounts (828 rows)
+```sql
+Columns:
+- id, company_id, account_code
+- account_name, account_name_ar
+- account_type ('assets'|'liabilities'|'equity'|'revenue'|'expenses')
+- account_level (1-6, must be >= 3 for posting)
+- balance_type ('debit'|'credit')
+- is_header (false for detail accounts)
+- current_balance, parent_account_code
+```
+
+### journal_entries (277 rows)
+```sql
+Columns:
+- id, company_id, entry_number, entry_date
+- description, total_debit, total_credit
+- status ('draft'|'posted'|'reversed')
+- reference_type, reference_id
+- created_by, posted_by
+```
+
+### journal_entry_lines (454 rows)
+```sql
+Columns:
+- id, journal_entry_id, account_id
+- line_description (NOT description!)
+- debit_amount, credit_amount
+- line_number (REQUIRED!)
+- cost_center_id, asset_id, employee_id
+```
+
+### contracts (588 rows)
+```sql
+Columns:
+- id, company_id, customer_id, vehicle_id
+- contract_number, start_date, end_date
+- contract_amount, monthly_amount
+- status, payment_status
+- journal_entry_id
+```
+
+### customers (781 rows)
+```sql
+Columns:
+- id, company_id, customer_code
+- customer_type ('individual'|'corporate')
+- first_name, last_name, company_name
+- email, phone, national_id
+```
+
+### vehicles (510 rows)
+```sql
+Columns:
+- id, company_id, plate_number
+- make, model, year, color
+- status ('available'|'rented'|'maintenance'|etc)
+- daily_rate, weekly_rate, monthly_rate
+```
+
+### invoices (1,250 rows)
+```sql
+Columns:
+- id, company_id, customer_id, contract_id
+- invoice_number, invoice_date, due_date
+- invoice_type, status, payment_status
+- total_amount, paid_amount, balance_due
+```
+
+### payments (6,568 rows)
+```sql
+Columns:
+- id, company_id, customer_id, contract_id
+- payment_number, payment_date
+- payment_type, payment_method
+- payment_status ('pending'|'completed'|'cleared'|etc)
+- amount, currency
+- transaction_type ('payment'|'receipt')
+```
+
+---
+
+## 🎯 Essential Accounts (Al-Araf Company)
+
+```
+11151 - البنك التجاري (حساب الجاري)  [Assets, Level 5]
+41101 - إيرادات تأجير سيارات شهري      [Revenue, Level 5]
+```
+
+---
+
+## 🔍 Common Queries
+
+### Get company_id for user:
+```sql
+SELECT company_id FROM profiles 
+WHERE email = 'user@example.com'
+```
+
+### Get accounts (detail only):
+```sql
+SELECT * FROM chart_of_accounts
+WHERE company_id = '...'
+AND is_header = false
+AND account_level >= 3
+AND is_active = true
+```
+
+### Create journal entry:
+```sql
+-- Step 1: Create entry
+INSERT INTO journal_entries (
+    company_id, entry_number, entry_date,
+    description, total_debit, total_credit,
+    status
+) VALUES (...);
+
+-- Step 2: Create lines (MUST have line_number!)
+INSERT INTO journal_entry_lines (
+    journal_entry_id, account_id,
+    line_description,  -- NOT description!
+    debit_amount, credit_amount,
+    line_number       -- REQUIRED!
+) VALUES (...);
+```
+
+---
+
+## ⚠️ RLS Policies
+
+All financial tables use:
+```sql
+WHERE company_id IN (
+    SELECT company_id FROM profiles 
+    WHERE id = auth.uid()
+)
+```
+
+**Note:** `auth.uid()` only works in app context, not in SQL Editor!
+
+---
+
+For complete details, see: `.claude/DATABASE_SCHEMA_REFERENCE.md`
