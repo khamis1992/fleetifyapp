@@ -44,7 +44,7 @@ export const PaymentTrackingPageHelpContent = () => (
           type="bullet"
           items={[
             "<strong>حقل البحث العام:</strong> استخدمه للبحث السريع عن طريق اسم العميل، رقم العقد، أو جزء من المبلغ.',
-            "<strong>فلتر حالة الدفع:</strong> اختر بين "مدفوع"، "متأخر"، "مستحق&quot; لعرض العقود ذات الصلة.',
+            "<strong>فلتر حالة الدفع:</strong> اختر بين "مدفوع"، "متأخر"، &quot;مستحق&quot; لعرض العقود ذات الصلة.',
             "<strong>فلتر التاريخ:</strong> حدد نطاقًا زمنيًا (تاريخ الاستحقاق أو تاريخ الدفع الفعلي) لمراجعة المعاملات خلال فترة محددة.',
             "<strong>فلتر العميل/المركبة:</strong> استخدم القوائم المنسدلة لتصفية المدفوعات حسب عميل معين أو مركبة محددة.',
           ]}
@@ -81,7 +81,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإضافة"
-            description="انقر على زر &quot;إضافة مدفوعات&quot; الموجود في الزاوية العلوية للصفحة."
+            description=&quot;انقر على زر &quot;إضافة مدفوعات&quot; الموجود في الزاوية العلوية للصفحة."
           />
           <HelpStep
             number={2}
@@ -96,7 +96,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={4}
             title="التأكيد والحفظ"
-            description="راجع البيانات وتأكد من دقتها، ثم انقر على &quot;حفظ&quot;. سيتم تحديث حالة العقد تلقائيًا."
+            description=&quot;راجع البيانات وتأكد من دقتها، ثم انقر على &quot;حفظ&quot;. سيتم تحديث حالة العقد تلقائيًا."
           />
         </div>
       </HelpSection>
@@ -122,7 +122,7 @@ export const PaymentTrackingPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ التغييرات"
-            description="انقر على &quot;حفظ التغييرات&quot; لتطبيق التعديلات على السجل المالي."
+            description=&quot;انقر على &quot;حفظ التغييرات&quot; لتطبيق التعديلات على السجل المالي."
           />
         </div>
       </HelpSection>

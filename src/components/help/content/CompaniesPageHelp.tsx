@@ -2,13 +2,13 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "الشركات" (Companies)
+ * محتوى المساعدة لصفحة &quot;الشركات&quot; (Companies)
  * هذه الصفحة مخصصة للمشرف العام (Super Admin) لإدارة الهيكل متعدد الشركات في نظام Fleetify.
  */
 export const CompaniesPageHelpContent = () => (
   <>
     {/* نظرة عامة */}
-    <HelpSection title="نظرة عامة على صفحة إدارة الشركات" icon="info">
+    <HelpSection title="نظرة عامة على صفحة إدارة الشركات" icon="info&quot;>
       <p>
         تُعد صفحة <strong>إدارة الشركات</strong> (Companies) هي لوحة التحكم الرئيسية للمشرف العام (Super Admin) في نظام Fleetify. تتيح لك هذه الصفحة الإشراف الكامل على جميع الكيانات التجارية المسجلة في النظام، والتي تعمل كـ &quot;مستأجرين" منفصلين (Multi-tenancy). من هنا، يمكنك إنشاء شركات جديدة، تعديل بيانات الشركات القائمة، وتفعيل أو تعطيل وصولها إلى النظام.
       </p>
@@ -80,8 +80,8 @@ export const CompaniesPageHelpContent = () => (
       {/* العملية 3: تعطيل وصول شركة مؤقتاً */}
       <HelpSection title="العملية 3: تعطيل وصول شركة مؤقتاً" icon="lock">
         <div className="space-y-4">
-          <HelpStep number={1} title="الوصول إلى إعدادات الشركة" description="اتبع الخطوات 1 و 2 من "العملية 2&quot; لفتح شاشة تعديل الشركة." />
-          <HelpStep number={2} title="تغيير حالة التفعيل" description="في قسم \"الحالة\" أو \"الإعدادات المتقدمة\"، قم بتبديل مفتاح <strong>\"الحالة النشطة\"</strong> إلى وضع الإيقاف (معطل)." />
+          <HelpStep number={1} title="الوصول إلى إعدادات الشركة" description="اتبع الخطوات 1 و 2 من &quot;العملية 2&quot; لفتح شاشة تعديل الشركة." />
+          <HelpStep number={2} title="تغيير حالة التفعيل" description="في قسم \&quot;الحالة\&quot; أو \"الإعدادات المتقدمة\"، قم بتبديل مفتاح <strong>\"الحالة النشطة\"</strong> إلى وضع الإيقاف (معطل)." />
           <HelpStep number={3} title="تأكيد التعطيل" description="سيطلب منك النظام تأكيد العملية. انقر على <strong>\"تأكيد التعطيل\"</strong>. سيتم تسجيل خروج جميع مستخدمي هذه الشركة ولن يتمكنوا من الوصول إلى النظام حتى يتم إعادة تفعيلها." />
         </div>
       </HelpSection>

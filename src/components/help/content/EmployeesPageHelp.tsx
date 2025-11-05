@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "الموظفين" (Employees) في تطبيق Fleetify.
+ * محتوى المساعدة لصفحة &quot;الموظفين&quot; (Employees) في تطبيق Fleetify.
  * يهدف هذا المحتوى إلى توفير شرح شامل ومفصل لكيفية إدارة الموظفين
  * واستخدام كافة وظائف الصفحة بكفاءة.
  */
@@ -57,7 +57,7 @@ export const EmployeesPageHelpContent = () => (
         type="number"
         items={[
           "<strong>حقل البحث:</strong> استخدمه للبحث عن موظف بالاسم الكامل أو البريد الإلكتروني.',
-          "<strong>فلتر الدور:</strong> لتضييق القائمة وعرض الموظفين الذين يحملون دورًا محددًا فقط (مثل &quot;مدير&quot; أو &quot;موظف").',
+          &quot;<strong>فلتر الدور:</strong> لتضييق القائمة وعرض الموظفين الذين يحملون دورًا محددًا فقط (مثل &quot;مدير&quot; أو &quot;موظف").',
           "<strong>فلتر الحالة:</strong> لعرض الموظفين النشطين أو المعطلين فقط.',
         ]}
       />
@@ -76,7 +76,7 @@ export const EmployeesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى نموذج الإضافة"
-            description="انقر على زر &quot;إضافة موظف جديد&quot; (عادة ما يكون في الزاوية العلوية اليمنى)."
+            description=&quot;انقر على زر &quot;إضافة موظف جديد&quot; (عادة ما يكون في الزاوية العلوية اليمنى)."
           />
           <HelpStep
             number={2}
@@ -86,12 +86,12 @@ export const EmployeesPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تحديد الدور والصلاحيات"
-            description="اختر الدور المناسب للموظف من القائمة المنسدلة (مثل &quot;مدير"، "موظف"). تذكر أن الدور يحدد صلاحيات الوصول للموظف."
+            description=&quot;اختر الدور المناسب للموظف من القائمة المنسدلة (مثل &quot;مدير"، "موظف"). تذكر أن الدور يحدد صلاحيات الوصول للموظف."
           />
           <HelpStep
             number={4}
             title="حفظ وإرسال الدعوة"
-            description="انقر على &quot;حفظ&quot;. سيتم إنشاء الحساب، وقد يتم إرسال بريد إلكتروني للموظف لتفعيل حسابه وتعيين كلمة المرور."
+            description=&quot;انقر على &quot;حفظ&quot;. سيتم إنشاء الحساب، وقد يتم إرسال بريد إلكتروني للموظف لتفعيل حسابه وتعيين كلمة المرور."
           />
         </div>
       </HelpSection>
@@ -115,12 +115,12 @@ export const EmployeesPageHelpContent = () => (
           <HelpStep
             number={3}
             title="إجراء التعديلات"
-            description="قم بتحديث الحقول المطلوبة (مثل تغيير الدور من "موظف&quot; إلى &quot;مدير")."
+            description="قم بتحديث الحقول المطلوبة (مثل تغيير الدور من &quot;موظف&quot; إلى &quot;مدير")."
           />
           <HelpStep
             number={4}
             title="تأكيد الحفظ"
-            description="انقر على &quot;حفظ التغييرات&quot; لتطبيق التعديلات على الفور."
+            description=&quot;انقر على &quot;حفظ التغييرات&quot; لتطبيق التعديلات على الفور."
           />
         </div>
       </HelpSection>
@@ -144,12 +144,12 @@ export const EmployeesPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تغيير الحالة"
-            description="اختر &quot;تعطيل الحساب&quot; أو &quot;تفعيل الحساب" حسب الحاجة. سيُطلب منك تأكيد العملية."
+            description=&quot;اختر &quot;تعطيل الحساب&quot; أو &quot;تفعيل الحساب" حسب الحاجة. سيُطلب منك تأكيد العملية."
           />
           <HelpStep
             number={4}
             title="التحقق من الحالة"
-            description="تأكد من أن حالة الموظف في القائمة قد تغيرت إلى "معطل&quot; أو &quot;نشط"."
+            description="تأكد من أن حالة الموظف في القائمة قد تغيرت إلى &quot;معطل&quot; أو &quot;نشط&quot;."
           />
         </div>
       </HelpSection>

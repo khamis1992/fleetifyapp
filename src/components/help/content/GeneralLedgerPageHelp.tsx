@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "دفتر الأستاذ العام" (General Ledger) في تطبيق Fleetify.
+ * محتوى المساعدة لصفحة &quot;دفتر الأستاذ العام&quot; (General Ledger) في تطبيق Fleetify.
  * يهدف هذا المحتوى إلى توضيح وظائف الصفحة وكيفية استخدامها للمستخدمين.
  */
 export const GeneralLedgerPageHelpContent = () => (
@@ -39,7 +39,7 @@ export const GeneralLedgerPageHelpContent = () => (
           <HelpStep
             number={1}
             title="البحث عن القيد"
-            description="استخدم حقل البحث أو الفلاتر لتحديد القيد المطلوب. يمكنك البحث برقم القيد (Entry Number) أو باسم الحساب المتأثر (مثل &quot;إيرادات الإيجار")."
+            description=&quot;استخدم حقل البحث أو الفلاتر لتحديد القيد المطلوب. يمكنك البحث برقم القيد (Entry Number) أو باسم الحساب المتأثر (مثل &quot;إيرادات الإيجار")."
           />
           <HelpStep
             number={2}
@@ -49,7 +49,7 @@ export const GeneralLedgerPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تتبع المصدر (Drill-down)"
-            description="في نافذة التفاصيل، ابحث عن رابط "المستند الأصلي&quot; أو &quot;تتبع المصدر". النقر عليه سينقلك مباشرة إلى صفحة المعاملة التي أنشأت هذا القيد (مثل صفحة عقد الإيجار أو فاتورة الصيانة)."
+            description="في نافذة التفاصيل، ابحث عن رابط &quot;المستند الأصلي&quot; أو &quot;تتبع المصدر&quot;. النقر عليه سينقلك مباشرة إلى صفحة المعاملة التي أنشأت هذا القيد (مثل صفحة عقد الإيجار أو فاتورة الصيانة)."
           />
         </div>
       </HelpSection>
@@ -67,12 +67,12 @@ export const GeneralLedgerPageHelpContent = () => (
           <HelpStep
             number={2}
             title="تصفية حسب الحساب"
-            description="اختر حسابًا محددًا من قائمة &quot;الحسابات" (Chart of Accounts) لعرض جميع الحركات التي أثرت على هذا الحساب فقط (مثلاً: حساب "البنك" لمراجعة جميع الإيداعات والمدفوعات)."
+            description=&quot;اختر حسابًا محددًا من قائمة &quot;الحسابات&quot; (Chart of Accounts) لعرض جميع الحركات التي أثرت على هذا الحساب فقط (مثلاً: حساب "البنك" لمراجعة جميع الإيداعات والمدفوعات)."
           />
           <HelpStep
             number={3}
             title="تطبيق الفلاتر"
-            description="اضغط على زر &quot;تطبيق&quot; أو &quot;بحث&quot; لعرض النتائج. يمكنك الآن مراجعة الأرصدة الافتتاحية والختامية للحساب المحدد خلال الفترة الزمنية المختارة."
+            description=&quot;اضغط على زر &quot;تطبيق&quot; أو &quot;بحث&quot; لعرض النتائج. يمكنك الآن مراجعة الأرصدة الافتتاحية والختامية للحساب المحدد خلال الفترة الزمنية المختارة."
           />
         </div>
       </HelpSection>

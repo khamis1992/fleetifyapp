@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "Properties" (المركبات/الأصول) في تطبيق Fleetify.
+ * محتوى المساعدة لصفحة &quot;Properties&quot; (المركبات/الأصول) في تطبيق Fleetify.
  * يهدف إلى توفير شرح شامل ومفصل لكافة وظائف الصفحة وكيفية استخدامها.
  */
 export const PropertiesPageHelpContent = () => (
@@ -49,12 +49,12 @@ export const PropertiesPageHelpContent = () => (
         <HelpStep
           number={2}
           title="تطبيق الفلاتر"
-          description="انقر على أيقونة "الفلاتر&quot; لفتح قائمة الخيارات. يمكنك التصفية حسب: <strong>حالة الأصل</strong> (نشط/خارج الخدمة)، <strong>نوع الأصل</strong> (شاحنة، سيارة، معدة)، و<strong>تاريخ انتهاء الترخيص</strong>."
+          description="انقر على أيقونة &quot;الفلاتر&quot; لفتح قائمة الخيارات. يمكنك التصفية حسب: <strong>حالة الأصل</strong> (نشط/خارج الخدمة)، <strong>نوع الأصل</strong> (شاحنة، سيارة، معدة)، و<strong>تاريخ انتهاء الترخيص</strong>."
         />
         <HelpStep
           number={3}
           title="حفظ التصفية"
-          description="بعد تطبيق مجموعة من الفلاتر، يمكنك حفظها كـ &quot;عرض مخصص" للوصول إليها بسرعة في المستقبل."
+          description=&quot;بعد تطبيق مجموعة من الفلاتر، يمكنك حفظها كـ &quot;عرض مخصص" للوصول إليها بسرعة في المستقبل."
         />
       </HelpSection>
     </div>

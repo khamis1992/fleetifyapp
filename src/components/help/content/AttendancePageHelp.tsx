@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "الحضور والانصراف" (Attendance) في تطبيق Fleetify.
+ * محتوى المساعدة لصفحة &quot;الحضور والانصراف&quot; (Attendance) في تطبيق Fleetify.
  * يهدف هذا المحتوى إلى توفير شرح شامل ومفصل لكيفية استخدام الصفحة ووظائفها الرئيسية.
  */
 export const AttendancePageHelpContent = () => (
@@ -50,7 +50,7 @@ export const AttendancePageHelpContent = () => (
           <HelpStep
             number={2}
             title="تطبيق المرشحات الإضافية"
-            description="يمكنك تضييق نطاق البحث باستخدام مرشحات الموظف (Employee Filter) أو حالة الحضور (Status Filter) مثل &quot;متأخر&quot; أو &quot;غائب"."
+            description=&quot;يمكنك تضييق نطاق البحث باستخدام مرشحات الموظف (Employee Filter) أو حالة الحضور (Status Filter) مثل &quot;متأخر&quot; أو &quot;غائب&quot;."
           />
           <HelpStep
             number={3}
@@ -72,7 +72,7 @@ export const AttendancePageHelpContent = () => (
           <HelpStep
             number={2}
             title="بدء التصدير"
-            description="انقر على زر &quot;تصدير" (Export) الموجود في الزاوية العلوية اليمنى من الجدول."
+            description=&quot;انقر على زر &quot;تصدير&quot; (Export) الموجود في الزاوية العلوية اليمنى من الجدول."
           />
           <HelpStep
             number={3}

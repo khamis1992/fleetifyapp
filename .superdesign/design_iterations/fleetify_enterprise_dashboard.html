@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - لوحة التحكم الرئيسية | نظام إدارة الأساطيل</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Professional Arabic Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;900&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Enterprise Theme CSS -->
+    <link rel="stylesheet" href="fleetify_enterprise_theme.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'hsl(0, 70%, 45%)',
+                        'primary-dark': 'hsl(0, 70%, 35%)',
+                        'primary-light': 'hsl(0, 70%, 55%)',
+                        accent: 'hsl(25, 90%, 92%)',
+                        'accent-strong': 'hsl(25, 90%, 55%)',
+                        success: 'hsl(142, 56%, 42%)',
+                        warning: 'hsl(25, 85%, 55%)',
+                        destructive: 'hsl(0, 65%, 51%)',
+                        info: 'hsl(220, 70%, 50%)',
+                        background: 'hsl(0, 0%, 96%)',
+                        card: 'hsl(0, 0%, 100%)',
+                        border: 'hsl(0, 0%, 85%)',
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                        amiri: ['Amiri', 'serif'],
+                        reem: ['Reem Kufi', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif !important;
+            background: hsl(0, 0%, 96%);
+            color: hsl(0, 0%, 15%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Professional Header Gradient */
+        .header-gradient {
+            background: linear-gradient(135deg, 
+                hsl(0, 0%, 100%) 0%, 
+                hsl(0, 0%, 98%) 100%);
+            border-bottom: 1px solid hsl(0, 0%, 85%);
+            box-shadow: 0 4px 6px -1px hsl(0 0% 15% / 0.08);
+        }
+        
+        /* Enterprise Stats Card */
+        .enterprise-stat-card {
+            background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(0, 0%, 98%) 100%);
+            border: 1px solid hsl(0, 0%, 90%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px hsl(0 0% 15% / 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .enterprise-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, hsl(0, 70%, 45%), hsl(0, 70%, 55%));
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+        
+        .enterprise-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -4px hsl(0 0% 15% / 0.12);
+            border-color: hsl(0, 70%, 45% / 0.3);
+        }
+        
+        .enterprise-stat-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        /* Professional Icon Background */
+        .icon-container {
+            width: 64px;
+            height: 64px;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .icon-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: inherit;
+            opacity: 0.15;
+            filter: blur(10px);
+        }
+        
+        .icon-primary {
+            background: linear-gradient(135deg, hsl(0, 70%, 45%), hsl(0, 70%, 55%));
+        }
+        
+        .icon-accent {
+            background: linear-gradient(135deg, hsl(25, 85%, 55%), hsl(25, 85%, 65%));
+        }
+        
+        .icon-success {
+            background: linear-gradient(135deg, hsl(142, 56%, 42%), hsl(142, 56%, 52%));
+        }
+        
+        .icon-info {
+            background: linear-gradient(135deg, hsl(220, 70%, 50%), hsl(220, 70%, 60%));
+        }
+        
+        /* Professional Number Counter */
+        .stat-value {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 800;
+            font-size: 2.25rem;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, hsl(0, 70%, 45%), hsl(0, 70%, 35%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Growth Badge */
+        .growth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .growth-positive {
+            background: hsl(142, 56%, 95%);
+            color: hsl(142, 56%, 35%);
+        }
+        
+        .growth-negative {
+            background: hsl(0, 65%, 95%);
+            color: hsl(0, 65%, 40%);
+        }
+        
+        /* Professional Action Button */
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 12px hsl(0 0% 0% / 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2));
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .action-btn:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px hsl(0 0% 0% / 0.25);
+        }
+        
+        .action-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        /* Chart Container */
+        .chart-wrapper {
+            background: white;
+            border: 1px solid hsl(0, 0%, 90%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px hsl(0 0% 15% / 0.08);
+        }
+        
+        /* Activity Timeline */
+        .activity-item {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        
+        .activity-item:hover {
+            background: hsl(0, 0%, 98%);
+            border-color: hsl(0, 0%, 85%);
+            transform: translateX(-4px);
+        }
+        
+        /* Alert Card */
+        .alert-card {
+            background: white;
+            border: 1px solid hsl(0, 0%, 90%);
+            border-right: 4px solid;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .alert-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px hsl(0 0% 15% / 0.1);
+        }
+        
+        .alert-warning {
+            border-right-color: hsl(25, 85%, 55%);
+        }
+        
+        .alert-danger {
+            border-right-color: hsl(0, 65%, 51%);
+        }
+        
+        .alert-info {
+            border-right-color: hsl(220, 70%, 50%);
+        }
+        
+        .alert-success {
+            border-right-color: hsl(142, 56%, 42%);
+        }
+        
+        /* Professional Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: hsl(0, 0%, 95%);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: hsl(0, 70%, 45%);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: hsl(0, 70%, 40%);
+        }
+        
+        /* Loading Animation */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Fade In Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        
+        /* Professional Badge Pulse */
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+<body class="font-cairo">
+    <!-- Professional Header -->
+    <header class="header-gradient sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-4">
+                    <div class="icon-container icon-primary w-14 h-14">
+                        <i data-lucide="car" class="w-8 h-8 text-white relative z-10"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 font-cairo">FleetifyApp</h1>
+                        <p class="text-sm text-gray-600 font-tajawal">نظام إدارة تأجير المركبات المتقدم</p>
+                    </div>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="hidden lg:flex flex-1 max-w-2xl mx-8">
+                    <div class="relative w-full">
+                        <input 
+                            type="search" 
+                            placeholder="ابحث في النظام... (Ctrl + K)" 
+                            class="w-full px-5 py-3 pr-12 text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                        >
+                        <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"></i>
+                    </div>
+                </div>
+                
+                <!-- Header Actions -->
+                <div class="flex items-center gap-3">
+                    <!-- Notifications -->
+                    <button class="relative p-3 rounded-xl hover:bg-gray-100 transition-all">
+                        <i data-lucide="bell" class="w-6 h-6 text-gray-700"></i>
+                        <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-600 rounded-full badge-pulse"></span>
+                    </button>
+                    
+                    <!-- Settings -->
+                    <button class="p-3 rounded-xl hover:bg-gray-100 transition-all">
+                        <i data-lucide="settings" class="w-6 h-6 text-gray-700"></i>
+                    </button>
+                    
+                    <!-- Profile -->
+                    <div class="flex items-center gap-3 pr-3 border-r-2 border-gray-200">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">أحمد محمد الصالح</p>
+                            <p class="text-xs text-gray-500 font-tajawal">مدير النظام</p>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold shadow-lg">
+                            أم
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-screen-2xl mx-auto px-6 py-8">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2 font-cairo">مرحباً بك، أحمد</h2>
+            <p class="text-gray-600 font-tajawal">إليك نظرة شاملة على أداء نظام الأساطيل اليوم</p>
+        </div>
+        
+        <!-- Enterprise Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Vehicles -->
+            <div class="enterprise-stat-card fade-in-up delay-1">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="icon-container icon-primary">
+                        <i data-lucide="car" class="w-7 h-7 text-white relative z-10"></i>
+                    </div>
+                    <span class="growth-badge growth-positive">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                        12%
+                    </span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-2 font-tajawal">إجمالي المركبات</h3>
+                <p class="stat-value mb-1">245</p>
+                <p class="text-xs text-gray-500 font-tajawal">+15 مركبة جديدة هذا الشهر</p>
+            </div>
+            
+            <!-- Active Contracts -->
+            <div class="enterprise-stat-card fade-in-up delay-2">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="icon-container icon-accent">
+                        <i data-lucide="file-text" class="w-7 h-7 text-white relative z-10"></i>
+                    </div>
+                    <span class="growth-badge growth-positive">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                        8%
+                    </span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-2 font-tajawal">العقود النشطة</h3>
+                <p class="stat-value mb-1">189</p>
+                <p class="text-xs text-gray-500 font-tajawal">من أصل 245 مركبة (معدل إشغال 77%)</p>
+            </div>
+            
+            <!-- Total Customers -->
+            <div class="enterprise-stat-card fade-in-up delay-3">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="icon-container icon-success">
+                        <i data-lucide="users" class="w-7 h-7 text-white relative z-10"></i>
+                    </div>
+                    <span class="growth-badge growth-positive">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                        15%
+                    </span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-2 font-tajawal">إجمالي العملاء</h3>
+                <p class="stat-value mb-1">312</p>
+                <p class="text-xs text-gray-500 font-tajawal">+28 عميل جديد هذا الربع</p>
+            </div>
+            
+            <!-- Monthly Revenue -->
+            <div class="enterprise-stat-card fade-in-up delay-4">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="icon-container icon-info">
+                        <i data-lucide="dollar-sign" class="w-7 h-7 text-white relative z-10"></i>
+                    </div>
+                    <span class="growth-badge growth-positive">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                        22%
+                    </span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-2 font-tajawal">الإيرادات الشهرية</h3>
+                <p class="stat-value mb-1">125,450</p>
+                <p class="text-xs text-gray-500 font-tajawal">ريال سعودي (+22,800 ر.س)</p>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="chart-wrapper mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 font-cairo">إجراءات سريعة</h2>
+                        <p class="text-sm text-gray-600 font-tajawal">الوظائف الأكثر استخداماً</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <button class="action-btn" style="background: linear-gradient(135deg, hsl(0, 70%, 45%), hsl(0, 70%, 55%));">
+                    <i data-lucide="plus-circle" class="w-8 h-8"></i>
+                    <span class="text-sm font-cairo">عقد جديد</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, hsl(25, 85%, 55%), hsl(25, 85%, 65%));">
+                    <i data-lucide="car" class="w-8 h-8"></i>
+                    <span class="text-sm font-cairo">إضافة مركبة</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, hsl(220, 70%, 50%), hsl(220, 70%, 60%));">
+                    <i data-lucide="user-plus" class="w-8 h-8"></i>
+                    <span class="text-sm font-cairo">عميل جديد</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, hsl(142, 56%, 42%), hsl(142, 56%, 52%));">
+                    <i data-lucide="credit-card" class="w-8 h-8"></i>
+                    <span class="text-sm font-cairo">تسجيل دفعة</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, hsl(270, 70%, 50%), hsl(270, 70%, 60%));">
+                    <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                    <span class="text-sm font-cairo">تقرير مالي</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
+            <!-- Revenue Trend Chart -->
+            <div class="lg:col-span-4 chart-wrapper">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-red-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 font-cairo">الأداء المالي</h2>
+                            <p class="text-sm text-gray-600 font-tajawal">اتجاه الإيرادات الشهرية</p>
+                        </div>
+                    </div>
+                    <select class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-tajawal focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option>آخر 7 أيام</option>
+                        <option selected>آخر 30 يوم</option>
+                        <option>آخر 90 يوم</option>
+                        <option>السنة الحالية</option>
+                    </select>
+                </div>
+                <div style="height: 320px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">معدل النمو</p>
+                        <p class="text-2xl font-bold text-green-600 font-cairo">▲ 22%</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">الربح الصافي</p>
+                        <p class="text-2xl font-bold text-blue-600 font-cairo">89,320 ر.س</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">هامش الربح</p>
+                        <p class="text-2xl font-bold text-purple-600 font-cairo">71.2%</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fleet Distribution Chart -->
+            <div class="lg:col-span-3 chart-wrapper">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-orange-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 font-cairo">حالة الأسطول</h2>
+                            <p class="text-sm text-gray-600 font-tajawal">توزيع المركبات</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="height: 280px;">
+                    <canvas id="fleetChart"></canvas>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-gray-200">
+                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                        <div class="w-4 h-4 bg-green-500 rounded-full mx-auto mb-2"></div>
+                        <p class="text-xs text-gray-600 mb-1 font-tajawal">متاح</p>
+                        <p class="text-xl font-bold text-gray-900 font-cairo">85</p>
+                        <p class="text-xs text-gray-500 font-tajawal">34.7%</p>
+                    </div>
+                    <div class="text-center p-3 bg-red-50 rounded-lg">
+                        <div class="w-4 h-4 bg-red-600 rounded-full mx-auto mb-2"></div>
+                        <p class="text-xs text-gray-600 mb-1 font-tajawal">مؤجر</p>
+                        <p class="text-xl font-bold text-gray-900 font-cairo">145</p>
+                        <p class="text-xs text-gray-500 font-tajawal">59.2%</p>
+                    </div>
+                    <div class="text-center p-3 bg-orange-50 rounded-lg">
+                        <div class="w-4 h-4 bg-orange-500 rounded-full mx-auto mb-2"></div>
+                        <p class="text-xs text-gray-600 mb-1 font-tajawal">صيانة</p>
+                        <p class="text-xl font-bold text-gray-900 font-cairo">15</p>
+                        <p class="text-xs text-gray-500 font-tajawal">6.1%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Section: Contract Distribution & Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Contract Distribution -->
+            <div class="lg:col-span-2 chart-wrapper">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <i data-lucide="bar-chart" class="w-5 h-5 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 font-cairo">توزيع العقود</h2>
+                            <p class="text-sm text-gray-600 font-tajawal">العقود حسب النوع والفترة</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="contractsChart"></canvas>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">عقود شهرية</p>
+                        <p class="text-2xl font-bold font-cairo" style="color: hsl(0, 70%, 45%);">45</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">عقود سنوية</p>
+                        <p class="text-2xl font-bold font-cairo" style="color: hsl(25, 85%, 55%);">98</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-1 font-tajawal">عقود مخصصة</p>
+                        <p class="text-2xl font-bold font-cairo" style="color: hsl(220, 70%, 50%);">46</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="chart-wrapper">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                            <i data-lucide="activity" class="w-5 h-5 text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 font-cairo">النشاطات الأخيرة</h2>
+                        </div>
+                    </div>
+                    <button class="text-sm font-semibold font-tajawal" style="color: hsl(0, 70%, 45%);">عرض الكل</button>
+                </div>
+                <div class="space-y-2" style="max-height: 360px; overflow-y: auto;">
+                    <div class="activity-item flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">عقد جديد مع العميل</p>
+                            <p class="text-xs text-gray-600 truncate font-tajawal">أحمد محمد الصالح - مركبة تويوتا كامري 2024</p>
+                            <p class="text-xs text-gray-400 mt-1 font-tajawal">منذ 5 دقائق</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background: hsl(220, 70%, 95%);">
+                            <i data-lucide="dollar-sign" class="w-5 h-5" style="color: hsl(220, 70%, 50%);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">دفعة مستلمة</p>
+                            <p class="text-xs text-gray-600 truncate font-tajawal">5,000 ر.س من العميلة فاطمة أحمد</p>
+                            <p class="text-xs text-gray-400 mt-1 font-tajawal">منذ 15 دقيقة</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="tool" class="w-5 h-5 text-orange-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">صيانة دورية</p>
+                            <p class="text-xs text-gray-600 truncate font-tajawal">مركبة ABC-123 في مركز الصيانة المعتمد</p>
+                            <p class="text-xs text-gray-400 mt-1 font-tajawal">منذ 30 دقيقة</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background: hsl(0, 70%, 95%);">
+                            <i data-lucide="alert-circle" class="w-5 h-5" style="color: hsl(0, 70%, 45%);"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">تنبيه: عقد قارب الانتهاء</p>
+                            <p class="text-xs text-gray-600 truncate font-tajawal">عقد العميل محمد خالد ينتهي خلال 3 أيام</p>
+                            <p class="text-xs text-gray-400 mt-1 font-tajawal">منذ ساعة</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 text-purple-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 font-cairo">تجديد تأمين</p>
+                            <p class="text-xs text-gray-600 truncate font-tajawal">تم تجديد تأمين المركبة XYZ-789 بنجاح</p>
+                            <p class="text-xs text-gray-400 mt-1 font-tajawal">منذ ساعتين</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 text-center">
+                    <p class="text-xs text-gray-500 flex items-center justify-center gap-1 font-tajawal">
+                        <i data-lucide="clock" class="w-3 h-3"></i>
+                        آخر تحديث: منذ دقيقتين
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Important Alerts -->
+        <div class="chart-wrapper">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 font-cairo">التنبيهات والإشعارات الهامة</h2>
+                        <p class="text-sm text-gray-600 font-tajawal">العناصر التي تحتاج انتباهك</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="alert-card alert-warning">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: hsl(25, 85%, 95%);">
+                            <i data-lucide="calendar" class="w-6 h-6" style="color: hsl(25, 85%, 55%);"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold font-cairo" style="color: hsl(25, 85%, 45%);">5</p>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900 font-cairo">عقود تنتهي قريباً</p>
+                    <p class="text-xs text-gray-600 font-tajawal">خلال 7 أيام القادمة</p>
+                </div>
+                
+                <div class="alert-card alert-danger">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: hsl(0, 65%, 95%);">
+                            <i data-lucide="alert-circle" class="w-6 h-6" style="color: hsl(0, 65%, 51%);"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold font-cairo" style="color: hsl(0, 65%, 45%);">3</p>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900 font-cairo">دفعات متأخرة</p>
+                    <p class="text-xs text-gray-600 font-tajawal">تحتاج متابعة عاجلة</p>
+                </div>
+                
+                <div class="alert-card alert-info">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: hsl(220, 70%, 95%);">
+                            <i data-lucide="tool" class="w-6 h-6" style="color: hsl(220, 70%, 50%);"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold font-cairo" style="color: hsl(220, 70%, 45%);">8</p>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900 font-cairo">صيانة دورية مطلوبة</p>
+                    <p class="text-xs text-gray-600 font-tajawal">مركبات تحتاج فحص دوري</p>
+                </div>
+                
+                <div class="alert-card alert-success">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: hsl(142, 56%, 95%);">
+                            <i data-lucide="file-text" class="w-6 h-6" style="color: hsl(142, 56%, 42%);"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold font-cairo" style="color: hsl(142, 56%, 38%);">12</p>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900 font-cairo">فواتير للمراجعة</p>
+                    <p class="text-xs text-gray-600 font-tajawal">جاهزة للموافقة</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+                datasets: [{
+                    label: 'الإيرادات (ر.س)',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+                    borderColor: 'hsl(0, 70%, 45%)',
+                    backgroundColor: 'hsl(0, 70%, 45% / 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'hsl(0, 70%, 45%)',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'hsl(0, 0%, 15%)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return 'الإيرادات: ' + context.parsed.y.toLocaleString('ar-SA') + ' ر.س';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'hsl(0, 0%, 90%)'
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Cairo'
+                            },
+                            callback: function(value) {
+                                return value.toLocaleString('ar-SA') + ' ر.س';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Cairo'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Fleet Status Chart
+        const fleetCtx = document.getElementById('fleetChart').getContext('2d');
+        new Chart(fleetCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['متاح', 'مؤجر', 'صيانة'],
+                datasets: [{
+                    data: [85, 145, 15],
+                    backgroundColor: [
+                        'hsl(142, 56%, 42%)',
+                        'hsl(0, 70%, 45%)',
+                        'hsl(25, 85%, 55%)'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'hsl(0, 0%, 15%)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold',
+                            family: 'Cairo'
+                        },
+                        bodyFont: {
+                            size: 13,
+                            family: 'Cairo'
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Contracts Distribution Chart
+        const contractsCtx = document.getElementById('contractsChart').getContext('2d');
+        new Chart(contractsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                datasets: [{
+                    label: 'عقود شهرية',
+                    data: [12, 19, 15, 17, 14, 18],
+                    backgroundColor: 'hsl(0, 70%, 45%)',
+                    borderRadius: 8,
+                    barThickness: 20
+                }, {
+                    label: 'عقود سنوية',
+                    data: [8, 11, 13, 15, 12, 16],
+                    backgroundColor: 'hsl(25, 85%, 55%)',
+                    borderRadius: 8,
+                    barThickness: 20
+                }, {
+                    label: 'عقود مخصصة',
+                    data: [5, 7, 9, 8, 10, 11],
+                    backgroundColor: 'hsl(220, 70%, 50%)',
+                    borderRadius: 8,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'hsl(0, 0%, 15%)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold',
+                            family: 'Cairo'
+                        },
+                        bodyFont: {
+                            size: 13,
+                            family: 'Cairo'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Cairo'
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'hsl(0, 0%, 90%)'
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Cairo'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Keyboard Shortcut (Ctrl+K for search)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input[type="search"]').focus();
+            }
+        });
+    </script>
+</body>
+</html>

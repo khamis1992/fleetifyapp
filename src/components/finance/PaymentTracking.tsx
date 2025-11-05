@@ -259,6 +259,9 @@ export const PaymentTracking: React.FC = () => {
     return icons[method] || <DollarSign className="h-4 w-4" />;
   };
 
+  // Check if there is any data
+  const hasData = invoiceTimelines && invoiceTimelines.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -269,6 +272,16 @@ export const PaymentTracking: React.FC = () => {
         </p>
       </div>
 
+      {/* Show message if no data */}
+      {!isLoading && !hasData && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            لا توجد بيانات مدفوعات لعرضها حالياً. يتم عرض البيانات عندما يكون هناك فواتير ومدفوعات مسجلة في النظام.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -278,7 +291,7 @@ export const PaymentTracking: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(reconciliationSummary?.total_payments_amount || 0).toFixed(3)}
+              {(reconciliationSummary?.total_amount || 0).toLocaleString()} ر.ق
             </div>
             <p className="text-xs text-muted-foreground">
               {reconciliationSummary?.total_completed_payments || 0} دفعة

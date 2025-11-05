@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - لوحة تحكم تأجير المركبات</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="fleetify_dashboard_theme.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif !important;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.6;
+        }
+        
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -250px;
+            right: -250px;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .animated-bg::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(251, 146, 60, 0.12) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: -200px;
+            left: -200px;
+            animation: float 15s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, -100px) rotate(90deg); }
+            50% { transform: translate(200px, 0) rotate(180deg); }
+            75% { transform: translate(100px, 100px) rotate(270deg); }
+        }
+        
+        /* Glass Card Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 48px rgba(31, 38, 135, 0.25);
+        }
+        
+        /* Stat Card Animations */
+        .stat-card {
+            animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Quick Action Buttons */
+        .quick-action-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .quick-action-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .quick-action-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Activity Item Animation */
+        .activity-item {
+            animation: slideInRight 0.4s ease-out backwards;
+        }
+        
+        .activity-item:nth-child(1) { animation-delay: 0.1s; }
+        .activity-item:nth-child(2) { animation-delay: 0.15s; }
+        .activity-item:nth-child(3) { animation-delay: 0.2s; }
+        .activity-item:nth-child(4) { animation-delay: 0.25s; }
+        .activity-item:nth-child(5) { animation-delay: 0.3s; }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Counter Animation */
+        .counter {
+            font-family: 'Geist Mono', 'Courier New', monospace;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Alert Badge Pulse */
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.15);
+            }
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        /* Progress Bar Animation */
+        @keyframes progressBar {
+            from { width: 0%; }
+        }
+        
+        .progress-bar {
+            animation: progressBar 1.5s ease-out forwards;
+        }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Notification Dot */
+        .notification-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50">
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    
+    <!-- Main Container -->
+    <div class="relative z-10 min-h-screen">
+        <!-- Header -->
+        <header class="glass-card rounded-none border-b sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <!-- Logo & Brand -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <i data-lucide="car" class="w-7 h-7 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">FleetifyApp</h1>
+                            <p class="text-sm text-gray-600">نظام إدارة تأجير المركبات</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="hidden md:flex flex-1 max-w-md mx-8">
+                        <div class="relative w-full">
+                            <input type="search" placeholder="بحث سريع... (Ctrl+K)" 
+                                   class="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                            <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-3">
+                        <!-- Notifications -->
+                        <button class="relative p-2.5 rounded-xl hover:bg-gray-100 transition-all">
+                            <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
+                            <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full notification-dot"></span>
+                        </button>
+                        
+                        <!-- Settings -->
+                        <button class="p-2.5 rounded-xl hover:bg-gray-100 transition-all">
+                            <i data-lucide="settings" class="w-6 h-6 text-gray-600"></i>
+                        </button>
+                        
+                        <!-- Profile -->
+                        <div class="flex items-center gap-3 pr-3 border-r border-gray-200">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-semibold text-gray-900">أحمد محمد</p>
+                                <p class="text-xs text-gray-500">مدير النظام</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                                أم
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Vehicles -->
+                <div class="glass-card rounded-2xl p-6 stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                            <i data-lucide="car" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                            ▲ 12%
+                        </span>
+                    </div>
+                    <h3 class="text-gray-600 text-sm font-medium mb-1">إجمالي المركبات</h3>
+                    <p class="text-3xl font-bold counter mb-1">245</p>
+                    <p class="text-xs text-gray-500">+15 مركبة هذا الشهر</p>
+                </div>
+                
+                <!-- Active Contracts -->
+                <div class="glass-card rounded-2xl p-6 stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                            ▲ 8%
+                        </span>
+                    </div>
+                    <h3 class="text-gray-600 text-sm font-medium mb-1">العقود النشطة</h3>
+                    <p class="text-3xl font-bold counter mb-1">189</p>
+                    <p class="text-xs text-gray-500">من أصل 245 مركبة</p>
+                </div>
+                
+                <!-- Total Customers -->
+                <div class="glass-card rounded-2xl p-6 stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                            ▲ 15%
+                        </span>
+                    </div>
+                    <h3 class="text-gray-600 text-sm font-medium mb-1">إجمالي العملاء</h3>
+                    <p class="text-3xl font-bold counter mb-1">312</p>
+                    <p class="text-xs text-gray-500">+28 عميل جديد</p>
+                </div>
+                
+                <!-- Monthly Revenue -->
+                <div class="glass-card rounded-2xl p-6 stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                            <i data-lucide="dollar-sign" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                            ▲ 22%
+                        </span>
+                    </div>
+                    <h3 class="text-gray-600 text-sm font-medium mb-1">الإيرادات الشهرية</h3>
+                    <p class="text-3xl font-bold counter mb-1">125,450</p>
+                    <p class="text-xs text-gray-500">ريال سعودي</p>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="glass-card rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i data-lucide="zap" class="w-5 h-5 text-orange-500"></i>
+                    إجراءات سريعة
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <button class="quick-action-btn bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                        <span class="text-sm font-semibold">عقد جديد</span>
+                    </button>
+                    <button class="quick-action-btn bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2">
+                        <i data-lucide="car" class="w-6 h-6"></i>
+                        <span class="text-sm font-semibold">إضافة مركبة</span>
+                    </button>
+                    <button class="quick-action-btn bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2">
+                        <i data-lucide="user-plus" class="w-6 h-6"></i>
+                        <span class="text-sm font-semibold">عميل جديد</span>
+                    </button>
+                    <button class="quick-action-btn bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2">
+                        <i data-lucide="credit-card" class="w-6 h-6"></i>
+                        <span class="text-sm font-semibold">تسجيل دفعة</span>
+                    </button>
+                    <button class="quick-action-btn bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 rounded-xl shadow-lg flex flex-col items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+                        <span class="text-sm font-semibold">تقرير مالي</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Charts & Analytics -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Revenue Chart -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-green-500"></i>
+                            الأداء المالي
+                        </h2>
+                        <select class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+                            <option>آخر 7 أيام</option>
+                            <option selected>آخر 30 يوم</option>
+                            <option>آخر 90 يوم</option>
+                            <option>السنة الحالية</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-100">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">معدل النمو</p>
+                            <p class="text-2xl font-bold text-green-600">▲ 22%</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">الربح الصافي</p>
+                            <p class="text-2xl font-bold text-blue-600">89,320 ر.س</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fleet Status -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-purple-500"></i>
+                            حالة الأسطول
+                        </h2>
+                        <span class="text-sm text-gray-600">معدل الإشغال: <strong class="text-blue-600">59.2%</strong></span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="fleetChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-gray-100">
+                        <div class="text-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-xs text-gray-600 mb-1">متاح</p>
+                            <p class="text-lg font-bold text-gray-900">85</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-xs text-gray-600 mb-1">مؤجر</p>
+                            <p class="text-lg font-bold text-gray-900">145</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-3 h-3 bg-orange-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-xs text-gray-600 mb-1">صيانة</p>
+                            <p class="text-lg font-bold text-gray-900">15</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analytics & Activities -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Contract Distribution -->
+                <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i data-lucide="bar-chart" class="w-5 h-5 text-indigo-500"></i>
+                        توزيع العقود
+                    </h2>
+                    <div class="chart-container">
+                        <canvas id="contractsChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">عقود شهرية</p>
+                            <p class="text-xl font-bold text-gray-900">45</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">عقود سنوية</p>
+                            <p class="text-xl font-bold text-gray-900">98</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">عقود مخصصة</p>
+                            <p class="text-xl font-bold text-gray-900">46</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activities -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i>
+                            النشاطات الأخيرة
+                        </h2>
+                        <button class="text-sm text-blue-600 hover:text-blue-700 font-medium">عرض الكل</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="activity-item flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 transition-all cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">عقد جديد</p>
+                                <p class="text-xs text-gray-500 truncate">مع العميل: أحمد محمد الصالح</p>
+                                <p class="text-xs text-gray-400 mt-1">منذ 5 دقائق</p>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 transition-all cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="dollar-sign" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">دفعة جديدة</p>
+                                <p class="text-xs text-gray-500 truncate">5,000 ر.س من فاطمة أحمد</p>
+                                <p class="text-xs text-gray-400 mt-1">منذ 15 دقيقة</p>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 transition-all cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="tool" class="w-5 h-5 text-orange-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">صيانة مركبة</p>
+                                <p class="text-xs text-gray-500 truncate">مركبة ABC-123 في الصيانة</p>
+                                <p class="text-xs text-gray-400 mt-1">منذ 30 دقيقة</p>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 transition-all cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">تنبيه: عقد قارب انتهاء</p>
+                                <p class="text-xs text-gray-500 truncate">عقد محمد خالد ينتهي خلال 3 أيام</p>
+                                <p class="text-xs text-gray-400 mt-1">منذ ساعة</p>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 transition-all cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="refresh-cw" class="w-5 h-5 text-purple-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">تجديد تأمين</p>
+                                <p class="text-xs text-gray-500 truncate">تم تجديد تأمين المركبة XYZ-789</p>
+                                <p class="text-xs text-gray-400 mt-1">منذ ساعتين</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-center">
+                        <p class="text-xs text-gray-500 flex items-center justify-center gap-1">
+                            <i data-lucide="clock" class="w-3 h-3"></i>
+                            آخر تحديث: منذ دقيقتين
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Important Alerts -->
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500"></i>
+                    التنبيهات الهامة
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                                <i data-lucide="calendar" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-orange-700">5</p>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-orange-900">عقود تنتهي خلال 7 أيام</p>
+                    </div>
+                    
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                                <i data-lucide="alert-circle" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-red-700">3</p>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-red-900">دفعات متأخرة</p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                <i data-lucide="tool" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-blue-700">8</p>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-blue-900">مركبات تحتاج صيانة دورية</p>
+                    </div>
+                    
+                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-purple-700">12</p>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-purple-900">فواتير قيد المراجعة</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+                datasets: [{
+                    label: 'الإيرادات',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' ر.س';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Fleet Status Chart
+        const fleetCtx = document.getElementById('fleetChart').getContext('2d');
+        new Chart(fleetCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['متاح', 'مؤجر', 'صيانة'],
+                datasets: [{
+                    data: [85, 145, 15],
+                    backgroundColor: [
+                        'rgb(34, 197, 94)',
+                        'rgb(59, 130, 246)',
+                        'rgb(251, 146, 60)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Contracts Distribution Chart
+        const contractsCtx = document.getElementById('contractsChart').getContext('2d');
+        new Chart(contractsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                datasets: [{
+                    label: 'عقود شهرية',
+                    data: [12, 19, 15, 17, 14, 18],
+                    backgroundColor: 'rgb(59, 130, 246)',
+                    borderRadius: 8
+                }, {
+                    label: 'عقود سنوية',
+                    data: [8, 11, 13, 15, 12, 16],
+                    backgroundColor: 'rgb(251, 146, 60)',
+                    borderRadius: 8
+                }, {
+                    label: 'عقود مخصصة',
+                    data: [5, 7, 9, 8, 10, 11],
+                    backgroundColor: 'rgb(168, 85, 247)',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Counter Animation
+        function animateCounter(element, target, duration = 1200) {
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target.toLocaleString('ar-SA');
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString('ar-SA');
+                }
+            }, 16);
+        }
+        
+        // Animate all counters on page load
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.counter').forEach((counter, index) => {
+                const value = parseInt(counter.textContent.replace(/,/g, ''));
+                setTimeout(() => {
+                    animateCounter(counter, value);
+                }, index * 100);
+            });
+        });
+        
+        // Keyboard Shortcut (Ctrl+K for search)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input[type="search"]').focus();
+            }
+        });
+    </script>
+</body>
+</html>

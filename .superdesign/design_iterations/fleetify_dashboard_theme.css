@@ -1,0 +1,264 @@
+/* 
+ * Fleetify Dashboard Theme - Modern Corporate Style
+ * نظام تأجير المركبات - ثيم احترافي حديث
+ * تاريخ الإنشاء: 2025
+ */
+
+:root {
+  /* ===== الألوان الأساسية (Primary Colors) ===== */
+  --background: oklch(0.98 0.005 240);           /* خلفية فاتحة جدًا مع لمسة زرقاء */
+  --foreground: oklch(0.15 0.01 240);            /* نص رئيسي داكن */
+  
+  /* ===== البطاقات والعناصر (Cards & Elements) ===== */
+  --card: oklch(1.0 0 0);                        /* بطاقات بيضاء نقية */
+  --card-foreground: oklch(0.15 0.01 240);       /* نص البطاقات */
+  --card-hover: oklch(0.985 0.01 240);           /* تأثير hover للبطاقات */
+  
+  /* ===== النوافذ المنبثقة (Popovers) ===== */
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0.01 240);
+  
+  /* ===== اللون الأساسي - أزرق احترافي (Primary - Professional Blue) ===== */
+  --primary: oklch(0.45 0.15 240);               /* أزرق داكن احترافي */
+  --primary-foreground: oklch(0.99 0 0);         /* أبيض للنصوص */
+  --primary-hover: oklch(0.40 0.17 240);         /* أغمق عند hover */
+  --primary-light: oklch(0.90 0.08 240);         /* أزرق فاتح للخلفيات */
+  
+  /* ===== اللون الثانوي - برتقالي حيوي (Secondary - Vibrant Orange) ===== */
+  --secondary: oklch(0.65 0.18 45);              /* برتقالي دافئ */
+  --secondary-foreground: oklch(0.99 0 0);
+  --secondary-hover: oklch(0.60 0.20 45);
+  --secondary-light: oklch(0.92 0.08 45);
+  
+  /* ===== اللون المكتوم (Muted) ===== */
+  --muted: oklch(0.96 0.005 240);                /* رمادي فاتح جدًا */
+  --muted-foreground: oklch(0.50 0.01 240);      /* رمادي متوسط */
+  
+  /* ===== اللون المميز (Accent) ===== */
+  --accent: oklch(0.55 0.20 200);                /* أزرق سماوي مشرق */
+  --accent-foreground: oklch(0.99 0 0);
+  --accent-light: oklch(0.93 0.10 200);
+  
+  /* ===== ألوان الحالات (Status Colors) ===== */
+  --success: oklch(0.55 0.18 145);               /* أخضر للنجاح */
+  --success-foreground: oklch(0.99 0 0);
+  --success-light: oklch(0.93 0.10 145);
+  
+  --warning: oklch(0.70 0.18 70);                /* أصفر برتقالي للتحذير */
+  --warning-foreground: oklch(0.15 0.01 70);
+  --warning-light: oklch(0.95 0.08 70);
+  
+  --destructive: oklch(0.55 0.22 25);            /* أحمر للخطر */
+  --destructive-foreground: oklch(0.99 0 0);
+  --destructive-light: oklch(0.94 0.10 25);
+  
+  --info: oklch(0.60 0.18 250);                  /* أزرق للمعلومات */
+  --info-foreground: oklch(0.99 0 0);
+  --info-light: oklch(0.93 0.10 250);
+  
+  /* ===== الحدود والإدخالات (Borders & Inputs) ===== */
+  --border: oklch(0.90 0.005 240);               /* حدود رمادية فاتحة */
+  --border-hover: oklch(0.75 0.01 240);          /* حدود أغمق عند hover */
+  --input: oklch(0.95 0.005 240);                /* خلفية حقول الإدخال */
+  --ring: oklch(0.45 0.15 240);                  /* حلقة التركيز */
+  
+  /* ===== الرسوم البيانية (Charts) ===== */
+  --chart-1: oklch(0.45 0.15 240);               /* أزرق */
+  --chart-2: oklch(0.65 0.18 45);                /* برتقالي */
+  --chart-3: oklch(0.55 0.18 145);               /* أخضر */
+  --chart-4: oklch(0.60 0.18 250);               /* أزرق فاتح */
+  --chart-5: oklch(0.55 0.20 300);               /* بنفسجي */
+  
+  /* ===== الشريط الجانبي (Sidebar) ===== */
+  --sidebar: oklch(0.97 0.005 240);
+  --sidebar-foreground: oklch(0.20 0.01 240);
+  --sidebar-primary: oklch(0.45 0.15 240);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.92 0.08 240);
+  --sidebar-accent-foreground: oklch(0.20 0.01 240);
+  --sidebar-border: oklch(0.90 0.005 240);
+  --sidebar-ring: oklch(0.45 0.15 240);
+  
+  /* ===== الخطوط (Fonts) ===== */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-mono: 'Geist Mono', 'Courier New', monospace;
+  --font-arabic: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+  
+  /* ===== الانحناءات (Border Radius) ===== */
+  --radius: 0.75rem;                             /* 12px */
+  --radius-sm: 0.5rem;                           /* 8px */
+  --radius-md: 0.75rem;                          /* 12px */
+  --radius-lg: 1rem;                             /* 16px */
+  --radius-xl: 1.25rem;                          /* 20px */
+  --radius-2xl: 1.5rem;                          /* 24px */
+  
+  /* ===== الظلال (Shadows) - Modern Soft Shadows ===== */
+  --shadow-2xs: 0 1px 2px 0px hsl(240 10% 10% / 0.04);
+  --shadow-xs: 0 1px 3px 0px hsl(240 10% 10% / 0.06);
+  --shadow-sm: 0 2px 4px -1px hsl(240 10% 10% / 0.08), 0 1px 2px 0px hsl(240 10% 10% / 0.04);
+  --shadow: 0 4px 6px -1px hsl(240 10% 10% / 0.10), 0 2px 4px -1px hsl(240 10% 10% / 0.06);
+  --shadow-md: 0 6px 12px -2px hsl(240 10% 10% / 0.12), 0 3px 6px -1px hsl(240 10% 10% / 0.08);
+  --shadow-lg: 0 10px 20px -3px hsl(240 10% 10% / 0.15), 0 4px 8px -2px hsl(240 10% 10% / 0.10);
+  --shadow-xl: 0 20px 30px -5px hsl(240 10% 10% / 0.20), 0 8px 12px -3px hsl(240 10% 10% / 0.12);
+  --shadow-2xl: 0 25px 40px -8px hsl(240 10% 10% / 0.25);
+  
+  /* ===== Glassmorphism Effects ===== */
+  --glass-bg: oklch(1.0 0 0 / 0.7);
+  --glass-border: oklch(0.95 0.005 240 / 0.3);
+  --glass-blur: 12px;
+  
+  /* ===== تباعد وتتبع (Spacing & Tracking) ===== */
+  --tracking-normal: -0.01em;
+  --tracking-wide: 0.02em;
+  --spacing: 0.25rem;
+  
+  /* ===== الحركة والانتقال (Motion & Transition) ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ===== Z-Index Layers ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ===== Dark Mode Support ===== */
+.dark {
+  --background: oklch(0.12 0.01 240);
+  --foreground: oklch(0.95 0.005 240);
+  
+  --card: oklch(0.15 0.01 240);
+  --card-foreground: oklch(0.95 0.005 240);
+  --card-hover: oklch(0.17 0.01 240);
+  
+  --primary: oklch(0.60 0.18 240);
+  --primary-hover: oklch(0.65 0.20 240);
+  --primary-light: oklch(0.25 0.10 240);
+  
+  --secondary: oklch(0.70 0.18 45);
+  --secondary-hover: oklch(0.75 0.20 45);
+  
+  --muted: oklch(0.20 0.01 240);
+  --muted-foreground: oklch(0.60 0.01 240);
+  
+  --border: oklch(0.25 0.01 240);
+  --border-hover: oklch(0.35 0.02 240);
+  --input: oklch(0.18 0.01 240);
+  
+  --shadow-sm: 0 2px 4px -1px hsl(240 10% 5% / 0.3);
+  --shadow: 0 4px 6px -1px hsl(240 10% 5% / 0.4);
+  --shadow-md: 0 6px 12px -2px hsl(240 10% 5% / 0.5);
+  --shadow-lg: 0 10px 20px -3px hsl(240 10% 5% / 0.6);
+}
+
+/* ===== أنماط الـ Utility Classes ===== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, 
+    oklch(0.45 0.15 240) 0%, 
+    oklch(0.55 0.18 250) 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, 
+    oklch(0.65 0.18 45) 0%, 
+    oklch(0.70 0.20 35) 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, 
+    oklch(0.55 0.18 145) 0%, 
+    oklch(0.60 0.20 155) 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, 
+    oklch(0.45 0.15 240) 0%, 
+    oklch(0.65 0.18 45) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== مثال على استخدام الظلال ===== */
+.card-elevated {
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--transition-base);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* ===== أنماط للإحصائيات والأرقام ===== */
+.stat-number {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: var(--tracking-normal);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-positive {
+  color: oklch(0.55 0.18 145);
+}
+
+.stat-negative {
+  color: oklch(0.55 0.22 25);
+}
+
+/* ===== أنماط الأزرار ===== */
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border-radius: var(--radius);
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.btn-secondary:hover {
+  background: var(--secondary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ===== Responsive Typography ===== */
+@media (max-width: 768px) {
+  :root {
+    --radius: 0.625rem;  /* أصغر قليلاً على الموبايل */
+    --radius-lg: 0.875rem;
+  }
+}
+

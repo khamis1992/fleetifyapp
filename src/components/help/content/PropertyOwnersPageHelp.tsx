@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "ملاك العقارات" (Property Owners)
+ * محتوى المساعدة لصفحة &quot;ملاك العقارات&quot; (Property Owners)
  * هذه الصفحة مخصصة لإدارة بيانات ملاك العقارات أو الأصول الثابتة التي تتعامل معها الشركة.
  * وهي جزء أساسي من نظام إدارة الأصول في Fleetify.
  */
@@ -80,7 +80,7 @@ export const PropertyOwnersPageHelpContent = () => (
           <HelpStep
             number={3}
             title="إجراء التعديلات"
-            description="قم بتحديث الحقول المطلوبة (مثل العنوان الجديد، أو رقم الهاتف المحدث). يمكنك أيضاً إضافة أو إزالة مستندات من قسم "المستندات"."
+            description="قم بتحديث الحقول المطلوبة (مثل العنوان الجديد، أو رقم الهاتف المحدث). يمكنك أيضاً إضافة أو إزالة مستندات من قسم &quot;المستندات&quot;."
           />
           <HelpStep
             number={4}
@@ -106,7 +106,7 @@ export const PropertyOwnersPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تحديد تفاصيل الربط"
-            description="اختر الأصل المطلوب (مثل &quot;مستودع الرياض - رقم 5")، وحدد <strong>تاريخ بداية الملكية/التعاقد</strong> وأي ملاحظات إضافية."
+            description=&quot;اختر الأصل المطلوب (مثل &quot;مستودع الرياض - رقم 5")، وحدد <strong>تاريخ بداية الملكية/التعاقد</strong> وأي ملاحظات إضافية."
           />
           <HelpStep
             number={4}

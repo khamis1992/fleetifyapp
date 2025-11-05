@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "أقساط المركبات" (Vehicle Installments)
+ * محتوى المساعدة لصفحة &quot;أقساط المركبات&quot; (Vehicle Installments)
  *
  * هذه الصفحة مخصصة لإدارة وتتبع جميع الأقساط المتعلقة بتمويل أو شراء المركبات في أسطول Fleetify.
  * توفر نظرة شاملة على حالة الأقساط، مواعيد الاستحقاق، والمبالغ المتبقية.

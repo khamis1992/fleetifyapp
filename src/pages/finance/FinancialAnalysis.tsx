@@ -91,7 +91,7 @@ const FinancialAnalysis = () => {
             <p className="text-muted-foreground">تحليل الأداء المالي والمؤشرات والنسب</p>
           </div>
         </div>
-        <Button disabled>
+        <Button onClick={() => window.location.reload()}>
           تحديث التحليل
         </Button>
       </div>
@@ -631,18 +631,7 @@ const FinancialAnalysis = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Under Development Notice */}
-      <Card dir="rtl">
-        <CardContent className="py-12">
-          <div className="text-center">
-            <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">نظام التحليل المالي قيد التطوير</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              نعمل حالياً على تطوير نظام التحليل المالي المتقدم مع الرسوم البيانية التفاعلية والتقارير التحليلية الشاملة.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Financial Analysis content is displayed in tabs above */}
     </div>
   )
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "المستأجرون" (Tenants) في تطبيق Fleetify.
+ * محتوى المساعدة لصفحة &quot;المستأجرون&quot; (Tenants) في تطبيق Fleetify.
  * تفترض هذه الصفحة إدارة المستأجرين/العملاء في بيئة متعددة المستأجرين (Multi-tenant SaaS).
  */
 export const TenantsPageHelpContent = () => (
@@ -55,12 +55,12 @@ export const TenantsPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تحديد خطة الاشتراك"
-            description="اختر خطة الاشتراك المناسبة (مثل &quot;الخطة الاحترافية"). سيحدد هذا الخيار الميزات المتاحة للمستأجر الجديد."
+            description=&quot;اختر خطة الاشتراك المناسبة (مثل &quot;الخطة الاحترافية"). سيحدد هذا الخيار الميزات المتاحة للمستأجر الجديد."
           />
           <HelpStep
             number={4}
             title="تكوين الإعدادات الأولية"
-            description="في قسم &quot;الإعدادات المتقدمة"، يمكنك تحديد <strong>المنطقة الزمنية الافتراضية</strong> و<strong>لغة الواجهة</strong> للمستأجر."
+            description=&quot;في قسم &quot;الإعدادات المتقدمة"، يمكنك تحديد <strong>المنطقة الزمنية الافتراضية</strong> و<strong>لغة الواجهة</strong> للمستأجر."
           />
           <HelpStep
             number={5}
@@ -87,7 +87,7 @@ export const TenantsPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تغيير الخطة"
-            description="في قسم <strong>إدارة الاشتراك</strong>، اختر الخطة الجديدة من القائمة المنسدلة (مثال: الترقية من "أساسي&quot; إلى &quot;مؤسسي")."
+            description="في قسم <strong>إدارة الاشتراك</strong>، اختر الخطة الجديدة من القائمة المنسدلة (مثال: الترقية من &quot;أساسي&quot; إلى &quot;مؤسسي")."
           />
           <HelpStep
             number={4}

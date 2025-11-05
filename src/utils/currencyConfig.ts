@@ -12,7 +12,7 @@ export const CURRENCY_CONFIGS: Record<string, CurrencyConfig> = {
     locale: 'ar-KW'
   },
   QAR: { 
-    fractionDigits: 0, 
+    fractionDigits: 2, 
     symbol: 'ر.ق',
     locale: 'ar-QA'
   },

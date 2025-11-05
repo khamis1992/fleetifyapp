@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 export const SettingsPageHelpContent = () => (
@@ -43,12 +43,12 @@ export const SettingsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى قسم المستخدمين"
-            description="من القائمة الجانبية للإعدادات، اختر &quot;إدارة المستخدمين&quot; أو &quot;الصلاحيات"."
+            description=&quot;من القائمة الجانبية للإعدادات، اختر &quot;إدارة المستخدمين&quot; أو &quot;الصلاحيات&quot;."
           />
           <HelpStep
             number={2}
             title="إضافة مستخدم جديد"
-            description="انقر على زر &quot;إضافة مستخدم جديد"، واملأ البيانات المطلوبة (الاسم، البريد الإلكتروني، كلمة المرور المبدئية)."
+            description=&quot;انقر على زر &quot;إضافة مستخدم جديد"، واملأ البيانات المطلوبة (الاسم، البريد الإلكتروني، كلمة المرور المبدئية)."
           />
           <HelpStep
             number={3}
@@ -58,7 +58,7 @@ export const SettingsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="حفظ التغييرات"
-            description="انقر على &quot;حفظ" لتفعيل حساب المستخدم. سيتم إرسال بريد إلكتروني للمستخدم ببيانات الدخول."
+            description=&quot;انقر على &quot;حفظ" لتفعيل حساب المستخدم. سيتم إرسال بريد إلكتروني للمستخدم ببيانات الدخول."
           />
         </div>
       </HelpSection>
@@ -74,7 +74,7 @@ export const SettingsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الانتقال إلى الإعدادات المالية"
-            description="في صفحة الإعدادات الرئيسية، اختر قسم "الإعدادات المالية"."
+            description="في صفحة الإعدادات الرئيسية، اختر قسم &quot;الإعدادات المالية&quot;."
           />
           <HelpStep
             number={2}
@@ -105,7 +105,7 @@ export const SettingsPageHelpContent = () => (
           <HelpStep
             number={2}
             title="إضافة أو تعديل عنصر"
-            description="لإضافة عنصر جديد، انقر على &quot;إضافة" وأدخل الاسم. لتعديل عنصر موجود، انقر على أيقونة القلم بجوار العنصر."
+            description=&quot;لإضافة عنصر جديد، انقر على &quot;إضافة" وأدخل الاسم. لتعديل عنصر موجود، انقر على أيقونة القلم بجوار العنصر."
           />
           <HelpStep
             number={3}

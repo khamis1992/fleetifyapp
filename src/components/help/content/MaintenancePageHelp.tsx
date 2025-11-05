@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 export const MaintenancePageHelpContent = () => (
@@ -40,7 +40,7 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى شاشة الجدولة"
-            description="من القائمة الرئيسية لصفحة الصيانة، اضغط على زر &quot;جدولة صيانة جديدة&quot; أو &quot;إضافة جدول وقائي"."
+            description=&quot;من القائمة الرئيسية لصفحة الصيانة، اضغط على زر &quot;جدولة صيانة جديدة&quot; أو &quot;إضافة جدول وقائي&quot;."
           />
           <HelpStep
             number={2}
@@ -50,7 +50,7 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={3}
             title="تعيين معايير التكرار"
-            description="حدد متى يجب أن تتكرر هذه الصيانة. يمكنك الاختيار بين: "كل [X] كيلومتر"، "كل [Y] يوم/شهر"، أو "عند وصول عداد المسافة إلى [Z]"."
+            description="حدد متى يجب أن تتكرر هذه الصيانة. يمكنك الاختيار بين: "كل [X] كيلومتر"، "كل [Y] يوم/شهر"، أو &quot;عند وصول عداد المسافة إلى [Z]&quot;."
           />
           <HelpStep
             number={4}
@@ -60,7 +60,7 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={5}
             title="حفظ وتفعيل الجدول"
-            description="اضغط على &quot;حفظ وتفعيل&quot;. سيقوم النظام تلقائيًا بإنشاء تنبيهات وأوامر عمل عند اقتراب موعد الصيانة."
+            description=&quot;اضغط على &quot;حفظ وتفعيل&quot;. سيقوم النظام تلقائيًا بإنشاء تنبيهات وأوامر عمل عند اقتراب موعد الصيانة."
           />
         </div>
       </HelpSection>
@@ -72,12 +72,12 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={1}
             title="بدء أمر عمل جديد"
-            description="من لوحة التحكم، اضغط على &quot;إنشاء أمر عمل جديد&quot; وحدد "إصلاح عطل"."
+            description=&quot;من لوحة التحكم، اضغط على &quot;إنشاء أمر عمل جديد&quot; وحدد &quot;إصلاح عطل&quot;."
           />
           <HelpStep
             number={2}
             title="إدخال تفاصيل العطل"
-            description="اختر المركبة، ووصف العطل بدقة (مثل: "صوت غريب في المحرك"، "عطل في نظام الفرامل"). حدد مستوى الأولوية (عاجل، متوسط، منخفض)."
+            description="اختر المركبة، ووصف العطل بدقة (مثل: &quot;صوت غريب في المحرك&quot;، "عطل في نظام الفرامل"). حدد مستوى الأولوية (عاجل، متوسط، منخفض)."
           />
           <HelpStep
             number={3}
@@ -87,7 +87,7 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={4}
             title="إضافة قطع الغيار والتكاليف"
-            description="أثناء سير العمل، يمكن للفني إضافة قطع الغيار المستخدمة وتكاليف العمالة في حقل "التكاليف&quot;. سيتم خصم القطع تلقائيًا من المخزون."
+            description="أثناء سير العمل، يمكن للفني إضافة قطع الغيار المستخدمة وتكاليف العمالة في حقل &quot;التكاليف&quot;. سيتم خصم القطع تلقائيًا من المخزون."
           />
           <HelpStep
             number={5}
@@ -104,12 +104,12 @@ export const MaintenancePageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى لوحة التقارير"
-            description="اضغط على تبويب "التقارير&quot; في أعلى صفحة الصيانة."
+            description="اضغط على تبويب &quot;التقارير&quot; في أعلى صفحة الصيانة."
           />
           <HelpStep
             number={2}
             title="تحليل مؤشرات الأداء الرئيسية (KPIs)"
-            description="راقب مؤشرات مثل: "إجمالي تكلفة الصيانة"، "متوسط وقت الإصلاح (MTTR)"، و "نسبة الصيانة الوقائية مقابل الصيانة التصحيحية". الهدف هو زيادة النسبة الوقائية."
+            description="راقب مؤشرات مثل: &quot;إجمالي تكلفة الصيانة&quot;، "متوسط وقت الإصلاح (MTTR)"، و &quot;نسبة الصيانة الوقائية مقابل الصيانة التصحيحية&quot;. الهدف هو زيادة النسبة الوقائية."
           />
           <HelpStep
             number={3}

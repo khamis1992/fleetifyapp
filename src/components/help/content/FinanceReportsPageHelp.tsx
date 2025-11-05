@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 export const FinanceReportsPageHelpContent = () => (
@@ -44,17 +44,17 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد الفترة الزمنية"
-            description="من قائمة الفلاتر، اختر &quot;الفترة الزمنية&quot; وحدد تاريخ البداية والنهاية للتقرير الذي ترغب في إنشائه (مثال: من 01/01/2024 إلى 31/12/2024)."
+            description=&quot;من قائمة الفلاتر، اختر &quot;الفترة الزمنية&quot; وحدد تاريخ البداية والنهاية للتقرير الذي ترغب في إنشائه (مثال: من 01/01/2024 إلى 31/12/2024)."
           />
           <HelpStep
             number={2}
             title="اختيار نوع التقرير"
-            description="تأكد من أن "نوع التقرير" المحدد هو "قائمة الدخل" (Income Statement)."
+            description="تأكد من أن "نوع التقرير" المحدد هو &quot;قائمة الدخل&quot; (Income Statement)."
           />
           <HelpStep
             number={3}
             title="تطبيق الفلاتر"
-            description="اضغط على زر &quot;تطبيق&quot; أو &quot;عرض التقرير" ليقوم النظام بمعالجة البيانات وعرض التقرير المالي."
+            description=&quot;اضغط على زر &quot;تطبيق&quot; أو &quot;عرض التقرير" ليقوم النظام بمعالجة البيانات وعرض التقرير المالي."
           />
           <HelpStep
             number={4}
@@ -72,12 +72,12 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى دفتر الأستاذ"
-            description="من قائمة التقارير، اختر &quot;دفتر الأستاذ العام" (General Ledger)."
+            description=&quot;من قائمة التقارير، اختر &quot;دفتر الأستاذ العام&quot; (General Ledger)."
           />
           <HelpStep
             number={2}
             title="تحديد الحساب"
-            description="استخدم فلتر &quot;الحساب&quot; للبحث عن حساب معين (مثل: "إيرادات الإيجار&quot; أو &quot;مصروفات الصيانة")."
+            description=&quot;استخدم فلتر &quot;الحساب&quot; للبحث عن حساب معين (مثل: &quot;إيرادات الإيجار&quot; أو &quot;مصروفات الصيانة")."
           />
           <HelpStep
             number={3}
@@ -87,7 +87,7 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={4}
             title="تصدير البيانات"
-            description="إذا كنت بحاجة إلى مراجعة خارجية، استخدم زر "تصدير إلى Excel&quot; في أعلى الصفحة."
+            description="إذا كنت بحاجة إلى مراجعة خارجية، استخدم زر &quot;تصدير إلى Excel&quot; في أعلى الصفحة."
           />
         </div>
       </HelpSection>
@@ -100,12 +100,12 @@ export const FinanceReportsPageHelpContent = () => (
           <HelpStep
             number={1}
             title="اختيار تقرير الربحية"
-            description="انتقل إلى قسم "تقارير الأداء&quot; واختر &quot;ربحية المركبات"."
+            description="انتقل إلى قسم &quot;تقارير الأداء&quot; واختر &quot;ربحية المركبات&quot;."
           />
           <HelpStep
             number={2}
             title="تحديد المركبة"
-            description="استخدم فلتر &quot;المركبة" لتحديد مركبة معينة برقم لوحتها أو رقم الشاسيه."
+            description=&quot;استخدم فلتر &quot;المركبة" لتحديد مركبة معينة برقم لوحتها أو رقم الشاسيه."
           />
           <HelpStep
             number={3}

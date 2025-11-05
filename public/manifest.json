@@ -15,49 +15,13 @@
   "categories": ["business", "productivity", "finance", "utilities"],
   "icons": [
     {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+      "src": "/icon-192.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -71,7 +35,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]
@@ -83,7 +47,7 @@
       "url": "/fleet",
       "icons": [
         {
-          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]
@@ -95,7 +59,7 @@
       "url": "/contracts",
       "icons": [
         {
-          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]
@@ -107,7 +71,7 @@
       "url": "/customers",
       "icons": [
         {
-          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]
@@ -119,7 +83,7 @@
       "url": "/finance",
       "icons": [
         {
-          "src": "/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]

@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة التفصيلي لصفحة "الفواتير" (Invoices) في تطبيق Fleetify.
+ * محتوى المساعدة التفصيلي لصفحة &quot;الفواتير&quot; (Invoices) في تطبيق Fleetify.
  * يهدف هذا المحتوى إلى توضيح كيفية إدارة الفواتير، إصدارها، تتبع حالتها، وتطبيق المدفوعات.
  */
 export const InvoicesPageHelpContent = () => (
@@ -63,7 +63,7 @@ export const InvoicesPageHelpContent = () => (
           type="number"
           items={[
             "<strong>البحث:</strong> أدخل رقم الفاتورة، اسم العميل، أو رقم العقد في شريط البحث.',
-            "<strong>تصفية حسب الحالة:</strong> اختر &quot;مدفوعة"، "مستحقة"، أو "متأخرة&quot; لعرض مجموعة محددة من الفواتير.',
+            &quot;<strong>تصفية حسب الحالة:</strong> اختر &quot;مدفوعة"، "مستحقة"، أو &quot;متأخرة&quot; لعرض مجموعة محددة من الفواتير.',
             "<strong>تصفية حسب التاريخ:</strong> حدد نطاقاً زمنياً (تاريخ الإصدار أو تاريخ الاستحقاق) لتضييق نطاق البحث.',
           ]}
         />
@@ -82,7 +82,7 @@ export const InvoicesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="بدء الإنشاء"
-            description="انقر على زر &quot;إصدار فاتورة جديدة&quot; (عادةً ما يكون في الزاوية العلوية)."
+            description=&quot;انقر على زر &quot;إصدار فاتورة جديدة&quot; (عادةً ما يكون في الزاوية العلوية)."
           />
           <HelpStep
             number={2}
@@ -102,7 +102,7 @@ export const InvoicesPageHelpContent = () => (
           <HelpStep
             number={5}
             title="مراجعة وحفظ"
-            description="راجع إجمالي المبلغ والبنود، ثم انقر على &quot;حفظ وإصدار" لإتمام العملية. يمكن إرسال الفاتورة للعميل مباشرة من شاشة المراجعة."
+            description=&quot;راجع إجمالي المبلغ والبنود، ثم انقر على &quot;حفظ وإصدار" لإتمام العملية. يمكن إرسال الفاتورة للعميل مباشرة من شاشة المراجعة."
           />
         </div>
       </HelpSection>
@@ -113,7 +113,7 @@ export const InvoicesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد الفاتورة"
-            description="ابحث عن الفاتورة المطلوبة في القائمة وانقر على أيقونة "تسجيل دفعة&quot; أو &quot;عرض التفاصيل"."
+            description="ابحث عن الفاتورة المطلوبة في القائمة وانقر على أيقونة &quot;تسجيل دفعة&quot; أو &quot;عرض التفاصيل&quot;."
           />
           <HelpStep
             number={2}
@@ -123,7 +123,7 @@ export const InvoicesPageHelpContent = () => (
           <HelpStep
             number={3}
             title="تطبيق الدفعة"
-            description="تأكد من أن المبلغ المتبقي المستحق قد تم تحديثه بشكل صحيح، ثم انقر على &quot;تطبيق الدفعة&quot;. سيتم تحديث حالة الفاتورة تلقائياً."
+            description=&quot;تأكد من أن المبلغ المتبقي المستحق قد تم تحديثه بشكل صحيح، ثم انقر على &quot;تطبيق الدفعة&quot;. سيتم تحديث حالة الفاتورة تلقائياً."
           />
         </div>
       </HelpSection>
@@ -134,7 +134,7 @@ export const InvoicesPageHelpContent = () => (
           <HelpStep
             number={1}
             title="تحديد الفواتير المتأخرة"
-            description="استخدم فلتر &quot;الحالة&quot; لعرض جميع الفواتير المتأخرة عن موعد استحقاقها."
+            description=&quot;استخدم فلتر &quot;الحالة&quot; لعرض جميع الفواتير المتأخرة عن موعد استحقاقها."
           />
           <HelpStep
             number={2}

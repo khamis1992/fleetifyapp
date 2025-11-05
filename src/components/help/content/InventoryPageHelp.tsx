@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
@@ -45,12 +45,12 @@ export const InventoryPageHelpContent = () => (
       <HelpSection title="1. كيفية إضافة صنف جديد إلى المخزون" icon="plus">
         <p>تأكد من إدخال جميع البيانات المطلوبة لضمان دقة سجلات المخزون.</p>
         <div className="space-y-4">
-          <HelpStep number={1} title="الوصول إلى نموذج الإضافة" description="انقر على زر &quot;إضافة صنف جديد&quot; الموجود في الزاوية العلوية اليمنى من الصفحة." />
+          <HelpStep number={1} title="الوصول إلى نموذج الإضافة" description=&quot;انقر على زر &quot;إضافة صنف جديد&quot; الموجود في الزاوية العلوية اليمنى من الصفحة." />
           <HelpStep number={2} title="إدخال البيانات الأساسية" description="أدخل اسم الصنف (مثال: إطار مقاس 205/55R16)، رمز الصنف (SKU)، والوصف التفصيلي." />
           <HelpStep number={3} title="تحديد وحدة القياس" description="اختر وحدة القياس المناسبة (مثال: قطعة، لتر، متر). وتحديد فئة الصنف (مثال: إطارات، زيوت، أدوات)." />
           <HelpStep number={4} title="تحديد أسعار التكلفة والبيع" description="أدخل سعر التكلفة للوحدة الواحدة. (اختياري: أدخل سعر البيع إذا كان الصنف يُباع)." />
           <HelpStep number={5} title="تحديد الحد الأدنى للطلب" description="أدخل الكمية التي يجب أن يتوقف عندها النظام لتنبيهك بضرورة إعادة الطلب (Reorder Point)." />
-          <HelpStep number={6} title="حفظ الصنف" description="انقر على زر &quot;حفظ&quot; لإضافة الصنف إلى قاعدة بيانات المخزون." />
+          <HelpStep number={6} title="حفظ الصنف" description=&quot;انقر على زر &quot;حفظ&quot; لإضافة الصنف إلى قاعدة بيانات المخزون." />
         </div>
       </HelpSection>
 
@@ -58,11 +58,11 @@ export const InventoryPageHelpContent = () => (
       <HelpSection title="2. كيفية تسجيل إخراج صنف (استخدام في صيانة)" icon="minus">
         <p>هذه العملية ضرورية لخصم الكميات المستخدمة من المخزون وتحديث سجلات التكلفة.</p>
         <div className="space-y-4">
-          <HelpStep number={1} title="بدء عملية الإخراج" description="من قائمة الصنف، اختر &quot;تسجيل حركة" ثم "إخراج/استخدام"." />
+          <HelpStep number={1} title="بدء عملية الإخراج" description=&quot;من قائمة الصنف، اختر &quot;تسجيل حركة" ثم &quot;إخراج/استخدام&quot;." />
           <HelpStep number={2} title="ربط الحركة بطلب صيانة" description="حدد رقم طلب الصيانة أو المركبة التي سيتم استخدام الصنف لها. هذا يضمن ربط التكلفة الصحيحة بالمركبة." />
           <HelpStep number={3} title="تحديد الكمية والموقع" description="أدخل الكمية التي سيتم إخراجها وحدد موقع التخزين الذي سيتم الخصم منه." />
           <HelpStep number={4} title="إضافة ملاحظات" description="أضف أي ملاحظات ضرورية (مثال: سبب الاستخدام، اسم الفني)." />
-          <HelpStep number={5} title="تأكيد الإخراج" description="انقر على &quot;تأكيد الإخراج" لخصم الكمية وتحديث رصيد المخزون." />
+          <HelpStep number={5} title="تأكيد الإخراج" description=&quot;انقر على &quot;تأكيد الإخراج" لخصم الكمية وتحديث رصيد المخزون." />
         </div>
       </HelpSection>
 
@@ -70,11 +70,11 @@ export const InventoryPageHelpContent = () => (
       <HelpSection title="3. كيفية إجراء جرد سريع للمخزون" icon="clipboard">
         <p>يساعد الجرد في مطابقة الكميات المسجلة مع الكميات الفعلية واكتشاف أي فروقات.</p>
         <div className="space-y-4">
-          <HelpStep number={1} title="الوصول إلى أداة الجرد" description="انتقل إلى تبويب "الجرد" أو انقر على زر &quot;بدء جرد جديد"." />
+          <HelpStep number={1} title="الوصول إلى أداة الجرد" description="انتقل إلى تبويب &quot;الجرد&quot; أو انقر على زر &quot;بدء جرد جديد&quot;.&quot; />
           <HelpStep number={2} title="تحديد نطاق الجرد" description="اختر المستودع أو فئة الأصناف التي سيتم جردها لتضييق نطاق العملية." />
           <HelpStep number={3} title="إدخال الكميات الفعلية" description="قم بإدخال الكمية الفعلية التي تم عدها لكل صنف في الحقل المخصص لذلك." />
           <HelpStep number={4} title="مراجعة الفروقات" description="سيقوم النظام تلقائيًا بحساب الفروقات بين الكمية المسجلة والكمية الفعلية." />
-          <HelpStep number={5} title="تسجيل التسويات" description="إذا كانت الفروقات مقبولة، انقر على &quot;تسجيل التسوية" لتحديث رصيد المخزون ليطابق الكمية الفعلية. (سيتم تسجيل قيد محاسبي للتسوية)." />
+          <HelpStep number={5} title="تسجيل التسويات" description=&quot;إذا كانت الفروقات مقبولة، انقر على &quot;تسجيل التسوية" لتحديث رصيد المخزون ليطابق الكمية الفعلية. (سيتم تسجيل قيد محاسبي للتسوية)." />
         </div>
       </HelpSection>
     </div>

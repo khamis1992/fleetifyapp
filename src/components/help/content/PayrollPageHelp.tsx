@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 export const PayrollPageHelpContent = () => (
@@ -46,7 +46,7 @@ export const PayrollPageHelpContent = () => (
           <HelpStep
             number={2}
             title="بدء عملية الحساب التلقائي"
-            description="اضغط على زر &quot;توليد كشوف الرواتب&quot;. سيقوم النظام تلقائياً بحساب الراتب الصافي لكل موظف بناءً على البيانات المسجلة (الأساسي، البدلات، الخصومات الثابتة، الحضور والغياب)."
+            description=&quot;اضغط على زر &quot;توليد كشوف الرواتب&quot;. سيقوم النظام تلقائياً بحساب الراتب الصافي لكل موظف بناءً على البيانات المسجلة (الأساسي، البدلات، الخصومات الثابتة، الحضور والغياب)."
           />
           <HelpStep
             number={3}
@@ -56,7 +56,7 @@ export const PayrollPageHelpContent = () => (
           <HelpStep
             number={4}
             title="اعتماد الكشوف"
-            description="بعد التأكد من دقة جميع البيانات، اضغط على زر &quot;اعتماد الرواتب&quot;. هذا الإجراء يثبت الكشوف ويجعلها جاهزة للدفع والترحيل المحاسبي."
+            description=&quot;بعد التأكد من دقة جميع البيانات، اضغط على زر &quot;اعتماد الرواتب&quot;. هذا الإجراء يثبت الكشوف ويجعلها جاهزة للدفع والترحيل المحاسبي."
           />
         </div>
       </HelpSection>
@@ -68,12 +68,12 @@ export const PayrollPageHelpContent = () => (
           <HelpStep
             number={1}
             title="الوصول إلى سجل السلف"
-            description="من القائمة الجانبية في صفحة الرواتب، اختر &quot;إدارة السلف والقروض"."
+            description=&quot;من القائمة الجانبية في صفحة الرواتب، اختر &quot;إدارة السلف والقروض&quot;."
           />
           <HelpStep
             number={2}
             title="إدخال بيانات السلفة"
-            description="اضغط على &quot;إضافة سلفة جديدة". حدد الموظف، مبلغ السلفة، وتاريخ منحها. يجب تحديد "طريقة الخصم" (مثلاً: خصم على 5 أشهر)."
+            description=&quot;اضغط على &quot;إضافة سلفة جديدة&quot;. حدد الموظف، مبلغ السلفة، وتاريخ منحها. يجب تحديد &quot;طريقة الخصم&quot; (مثلاً: خصم على 5 أشهر)."
           />
           <HelpStep
             number={3}

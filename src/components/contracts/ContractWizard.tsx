@@ -64,7 +64,7 @@ const ContractWizardContent: React.FC = () => {
     updateData
   } = useContractWizard()
 
-  const progress = ((currentStep + 1) / totalSteps) * 100
+  const progress = (currentStep / (totalSteps - 1)) * 100
   const CurrentStepComponent = stepComponents[currentStep]
 
   const handleNext = () => {
@@ -126,15 +126,17 @@ const ContractWizardContent: React.FC = () => {
               <Scan className="h-3 w-3" />
               مسح عقد
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fillTestData}
-              className="text-xs flex items-center gap-1"
-            >
-              <TestTube className="h-3 w-3" />
-              بيانات تجريبية
-            </Button>
+            {import.meta.env.DEV && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fillTestData}
+                className="text-xs flex items-center gap-1"
+              >
+                <TestTube className="h-3 w-3" />
+                بيانات تجريبية
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {isAutoSaving && (
@@ -191,15 +193,16 @@ const ContractWizardContent: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            السابق
-          </Button>
+          {currentStep > 0 && (
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              السابق
+            </Button>
+          )}
           
           <Button
             onClick={handleNext}

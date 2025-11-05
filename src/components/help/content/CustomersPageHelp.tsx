@@ -78,8 +78,8 @@ export const CustomersPageHelpContent = () => (
         <HelpList
           items={[
             'إجمالي العملاء: العدد الكلي لجميع العملاء في النظام',
-            'العملاء الأفراد: عدد العملاء من نوع "فرد"',
-            'العملاء المؤسسيين: عدد العملاء من نوع "شركة"',
+            'العملاء الأفراد: عدد العملاء من نوع &quot;فرد&quot;',
+            'العملاء المؤسسيين: عدد العملاء من نوع &quot;شركة&quot;',
             'القائمة السوداء: عدد العملاء المحظورين',
           ]}
         />
@@ -112,13 +112,13 @@ export const CustomersPageHelpContent = () => (
         <div className="space-y-4">
           <div>
             <h4 className="font-semibold mb-2">تصدير العملاء</h4>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700&quot;>
               انقر على زر &quot;تصدير" لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-2">استيراد العملاء</h4>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700&quot;>
               يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على &quot;استيراد" واتبع التعليمات.
             </p>
           </div>

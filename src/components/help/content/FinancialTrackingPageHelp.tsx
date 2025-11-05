@@ -2,7 +2,7 @@ import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
 /**
- * محتوى المساعدة لصفحة "التتبع المالي" (Financial Tracking)
+ * محتوى المساعدة لصفحة &quot;التتبع المالي&quot; (Financial Tracking)
  */
 export const FinancialTrackingPageHelpContent = () => (
   <>
