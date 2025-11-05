@@ -184,6 +184,19 @@
     * استخدام `invoice_date` (الصحيح) بدلاً من `issue_date`
   - تم تصحيح `20250112001000_create_automatic_journal_entries.sql` أيضاً
 
+- ✅ إصلاح خطأ `relation "expenses" does not exist`
+  - إزالة trigger وfunction للـ expenses لأن الجدول غير موجود
+  - الاحتفاظ بـ triggers للـ payments و invoices فقط
+  - إضافة ملاحظة توضيحية في الملف
+
+- ✅ إصلاح خطأ `column "account_number" does not exist`
+  - تبسيط INSERT لـ chart_of_accounts باستخدام DO block
+  - استخدام IF NOT EXISTS للتحقق من كل حساب
+  - إنشاء 4 حسابات أساسية فقط (Cash, AR, Tax, Revenue)
+  - إزالة حسابات المصروفات غير المستخدمة
+  - **استبدال `account_number` بـ `account_code` في كل مكان**
+  - **استبدال `asset/liability` بـ `assets/liabilities` (صيغة الجمع)**
+
 ---
 
 **تاريخ البدء:** 5 نوفمبر 2025  

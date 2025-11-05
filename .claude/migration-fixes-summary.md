@@ -76,6 +76,19 @@
 
 ---
 
+### 7. ❌ `relation "expenses" does not exist`
+**الملف:** `20250112001000_create_automatic_journal_entries.sql`
+
+**السبب:** جدول `expenses` غير موجود في قاعدة بيانات fleetifyapp-3
+
+**الحل:**
+- إزالة `create_expense_journal_entry()` function
+- إزالة `trg_expense_journal_entry` trigger
+- الاحتفاظ فقط بـ triggers للـ payments و invoices
+- إضافة ملاحظة توضيحية
+
+---
+
 ## ✅ ملفات Migration النهائية
 
 ### 1. `20250112000000_fix_payment_rls_policies.sql`
@@ -96,7 +109,7 @@
 **التحسينات:**
 - triggers للمدفوعات (payments)
 - triggers للفواتير (invoices)
-- triggers للمصروفات (expenses)
+- ~~triggers للمصروفات (expenses)~~ - تم إزالته (الجدول غير موجود)
 - إنشاء chart of accounts أساسي
 - استخدام أسماء أعمدة صحيحة (`invoice_date`, `status`)
 
