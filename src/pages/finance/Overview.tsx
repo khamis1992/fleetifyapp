@@ -17,7 +17,8 @@ import {
   Settings,
   BarChart3,
   Link as LinkIcon,
-  Shield
+  Shield,
+  Activity
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useFinancialSummary } from "@/hooks/useFinance";
