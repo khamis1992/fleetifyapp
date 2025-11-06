@@ -112,8 +112,16 @@ const CustomerDetailsPage = () => {
   const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
     queryKey: ['customer-details', customerId, companyId],
     queryFn: async () => {
-      if (!customerId || !companyId) {
-        throw new Error('معرف العميل أو الشركة مفقود');
+      console.log('🔍 [CustomerDetails] Fetching customer:', { customerId, companyId });
+      
+      if (!customerId) {
+        console.error('❌ [CustomerDetails] Customer ID is missing');
+        throw new Error('معرف العميل مفقود');
+      }
+
+      if (!companyId) {
+        console.error('❌ [CustomerDetails] Company ID is missing');
+        throw new Error('معرف الشركة مفقود - يرجى تسجيل الدخول مرة أخرى');
       }
 
       const { data, error } = await supabase
@@ -124,18 +132,28 @@ const CustomerDetailsPage = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching customer:', error);
-        throw error;
+        console.error('❌ [CustomerDetails] Error fetching customer:', {
+          error,
+          customerId,
+          companyId,
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        throw new Error(`خطأ في جلب بيانات العميل: ${error.message}`);
       }
       
       if (!data) {
+        console.error('❌ [CustomerDetails] Customer not found:', { customerId, companyId });
         throw new Error('العميل غير موجود');
       }
       
+      console.log('✅ [CustomerDetails] Customer fetched successfully:', data.id);
       return data;
     },
     enabled: !!customerId && !!companyId,
     retry: 1,
+    staleTime: 30 * 1000, // 30 seconds
   });
 
   // جلب عقود العميل
@@ -478,29 +496,68 @@ const CustomerDetailsPage = () => {
     return <PageSkeletonFallback />;
   }
 
+  // عرض رسالة خطأ إذا لم يكن هناك companyId
+  if (!companyId) {
+    console.error('❌ [CustomerDetailsPage] Company ID is missing');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full border border-gray-200 shadow-sm">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">خطأ في تحديد الشركة</h3>
+            <p className="text-gray-600 mb-4">
+              لم يتم العثور على معلومات الشركة. يرجى تسجيل الدخول مرة أخرى.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={handleBack} variant="outline">
+                العودة
+              </Button>
+              <Button onClick={() => window.location.href = '/auth'} className="bg-red-600 hover:bg-red-700">
+                تسجيل الدخول
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (customerError || !customer) {
     console.error('❌ [CustomerDetailsPage] Error or no customer:', {
       error: customerError,
+      errorMessage: customerError?.message,
+      errorDetails: customerError instanceof Error ? customerError.stack : customerError,
       hasCustomer: !!customer,
       customerId,
       companyId,
     });
     
+    // استخراج رسالة الخطأ
+    let errorMessage = 'لم يتم العثور على هذا العميل';
+    if (customerError) {
+      if (customerError instanceof Error) {
+        errorMessage = customerError.message;
+      } else if (typeof customerError === 'object' && 'message' in customerError) {
+        errorMessage = String(customerError.message);
+      }
+    }
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl p-6 max-w-md w-full border border-gray-200 shadow-sm">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">العميل غير موجود</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">خطأ في تحميل بيانات العميل</h3>
             <p className="text-gray-600 mb-4">
-              {customerError?.message || 'لم يتم العثور على هذا العميل'}
+              {errorMessage}
             </p>
             {!customerId && (
-              <p className="text-sm text-red-600 mb-2">معرف العميل مفقود</p>
+              <p className="text-sm text-red-600 mb-2">⚠️ معرف العميل مفقود</p>
             )}
-            {!companyId && (
-              <p className="text-sm text-red-600 mb-2">معرف الشركة مفقود</p>
-            )}
-            <Button onClick={handleBack} className="bg-red-600 hover:bg-red-700">
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg text-right">
+              <p className="text-xs text-gray-500 mb-1">تفاصيل تقنية:</p>
+              <p className="text-xs font-mono text-gray-600">Customer ID: {customerId || 'N/A'}</p>
+              <p className="text-xs font-mono text-gray-600">Company ID: {companyId || 'N/A'}</p>
+            </div>
+            <Button onClick={handleBack} className="bg-red-600 hover:bg-red-700 mt-4">
               العودة لصفحة العملاء
             </Button>
           </div>

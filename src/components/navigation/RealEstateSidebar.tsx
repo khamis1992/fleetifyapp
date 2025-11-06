@@ -251,7 +251,7 @@ const crmSubItems = [
   },
   {
     name: 'التواصل مع العملاء',
-    href: '/customers/communications',
+    href: '/customers/crm',
     icon: MessageSquare
   },
   {

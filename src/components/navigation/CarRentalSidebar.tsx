@@ -34,10 +34,6 @@ import {
   Wallet,
   Package,
   PhoneCall,
-  Mail,
-  UserPlus,
-  MessageSquare,
-  TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 import {
   Sidebar,
@@ -224,39 +220,6 @@ const hrSubItems = [
   }
 ];
 
-const crmSubItems = [
-  {
-    name: 'إدارة العلاقات (CRM)',
-    href: '/customers/crm',
-    icon: PhoneCall
-  },
-  {
-    name: 'العملاء المحتملين',
-    href: '/sales/leads',
-    icon: UserPlus
-  },
-  {
-    name: 'الفرص البيعية',
-    href: '/sales/opportunities',
-    icon: TrendingUpIcon
-  },
-  {
-    name: 'خط الأنابيب',
-    href: '/sales/pipeline',
-    icon: Activity
-  },
-  {
-    name: 'التواصل مع العملاء',
-    href: '/customers/communications',
-    icon: MessageSquare
-  },
-  {
-    name: 'تحليلات المبيعات',
-    href: '/sales/analytics',
-    icon: BarChart3
-  }
-];
-
 export function CarRentalSidebar() {
   const { signOut } = useAuth();
   const { state, isMobile } = useSidebar();
@@ -266,7 +229,6 @@ export function CarRentalSidebar() {
   const isFinanceActive = location.pathname.startsWith('/finance');
   const isHRActive = location.pathname.startsWith('/hr');
   const isFleetActive = location.pathname.startsWith('/fleet');
-  const isCRMActive = location.pathname.startsWith('/customers/crm') || location.pathname.startsWith('/sales');
 
   const handleSignOut = async () => {
     await signOut();
@@ -372,35 +334,14 @@ export function CarRentalSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* CRM Section with Submenu */}
+              {/* CRM - Customer Communications */}
               <SidebarMenuItem>
-                <Collapsible defaultOpen={isCRMActive}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="h-10">
-                      <PhoneCall className="h-4 w-4" />
-                      {(!collapsed || isMobile) && (
-                        <>
-                          <span className="font-medium">إدارة العلاقات (CRM)</span>
-                          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {crmSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.href}>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink to={subItem.href} className={getNavClassName}>
-                              <subItem.icon className="h-4 w-4" />
-                              {(!collapsed || isMobile) && <span>{subItem.name}</span>}
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </Collapsible>
+                <SidebarMenuButton asChild className="h-10">
+                  <NavLink to="/customers/crm" className={getNavClassName}>
+                    <PhoneCall className="h-4 w-4" />
+                    {(!collapsed || isMobile) && <span className="font-medium">التواصل مع العملاء</span>}
+                  </NavLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Contracts */}
