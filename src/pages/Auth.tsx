@@ -17,19 +17,21 @@ const Auth: React.FC = () => {
     }
   }, [user]);
 
-  // Safety timeout for loading state
+  // Safety timeout for loading state - reduced to 3s for better UX
   useEffect(() => {
     if (loading) {
       const timeout = setTimeout(() => {
-        console.warn('⚠️ [AUTH] Loading timeout reached');
+        console.warn('⚠️ [AUTH] Loading timeout reached - showing auth form anyway');
         setLoadingTimeout(true);
-      }, 5000);
+      }, 3000); // Reduced from 5s to 3s
       return () => clearTimeout(timeout);
     } else {
       setLoadingTimeout(false);
     }
   }, [loading]);
 
+  // Only show loading if we haven't timed out
+  // CRITICAL FIX: Always show auth form after timeout to prevent blank page
   if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-soft">
