@@ -40,6 +40,7 @@ import {
   HelpCircle,
   PlayCircle,
   MessageSquare,
+  PhoneCall,
   LucideIcon,
 } from 'lucide-react'
 
