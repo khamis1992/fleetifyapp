@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Tool, Wrench, TrendingUp, Clock } from 'lucide-react';
+import { AlertTriangle, Wrench, TrendingUp, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,7 +172,7 @@ export const FleetOperationsSection: React.FC = () => {
           </div>
           <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
             <div className="flex items-center gap-3">
-              <Tool className="w-5 h-5 text-orange-600" />
+              <Wrench className="w-5 h-5 text-orange-600" />
               <div>
                 <p className="font-semibold text-sm">ألتيما XYZ456</p>
                 <p className="text-xs text-gray-600">فحص دوري - غداً</p>
