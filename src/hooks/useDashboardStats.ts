@@ -76,11 +76,13 @@ export const useDashboardStats = () => {
         vehiclesCount = totalVehicles || 0;
 
         // Get active contracts count
+        // النظر في العقود النشطة: status = 'active' أو التاريخ لم ينتهي بعد
+        const today = new Date().toISOString().split('T')[0];
         const { count: activeContractsCount } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', user.profile.company_id)
-          .eq('status', 'active');
+          .or(`status.eq.active,and(status.neq.cancelled,status.neq.expired,end_date.gte.${today})`);
         contractsCount = activeContractsCount || 0;
 
         // Get total contracts count

@@ -822,15 +822,18 @@ export const useFinancialSummary = () => {
         .eq("account_type", "expenses")
         .eq("company_id", user?.profile?.company_id)
       
-      // Get pending transactions count
+      // Get pending transactions count (المعاملات المعلقة أو قيد المعالجة)
       const { count: pendingTransactions } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
-        .eq("status", "pending")
         .eq("company_id", user?.profile?.company_id)
+        .or("status.eq.pending,status.eq.processing,status.eq.in_progress")
       
-      const totalRevenue = revenueAccounts?.reduce((sum, acc) => sum + Number(acc.current_balance), 0) || 0
-      const totalExpenses = expenseAccounts?.reduce((sum, acc) => sum + Number(acc.current_balance), 0) || 0
+      // حساب الإيرادات كرقم موجب (طبيعة الحساب Credit تكون سالبة في current_balance)
+      const totalRevenue = Math.abs(revenueAccounts?.reduce((sum, acc) => sum + Number(acc.current_balance), 0) || 0)
+      // حساب المصروفات كرقم موجب (طبيعة الحساب Debit تكون موجبة في current_balance)
+      const totalExpenses = Math.abs(expenseAccounts?.reduce((sum, acc) => sum + Number(acc.current_balance), 0) || 0)
+      // صافي الدخل = الإيرادات - المصروفات
       const netIncome = totalRevenue - totalExpenses
       
       return {
