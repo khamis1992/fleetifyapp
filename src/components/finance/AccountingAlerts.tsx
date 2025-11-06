@@ -17,7 +17,7 @@ import {
   Activity
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useGeneralLedger } from "@/hooks/useGeneralLedger";
+import { useEnhancedJournalEntries } from "@/hooks/useGeneralLedger";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { differenceInDays, parseISO, format } from "date-fns";
@@ -68,7 +68,7 @@ const ALERT_CONFIG = {
 
 export function AccountingAlerts() {
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: journalEntries, isLoading } = useGeneralLedger.useEnhancedJournalEntries();
+  const { data: journalEntries, isLoading } = useEnhancedJournalEntries();
 
   // Analyze data and generate alerts
   const alerts = useMemo((): AccountingAlert[] => {
