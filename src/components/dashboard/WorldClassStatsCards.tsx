@@ -100,8 +100,8 @@ export const WorldClassStatsCards: React.FC = () => {
         title="إجمالي المركبات"
         value={stats?.totalVehicles || 0}
         change={stats?.vehiclesChange}
-        progress={77}
-        progressLabel="77% نشط"
+        progress={stats?.vehicleActivityRate || 0}
+        progressLabel={`${stats?.activeVehicles || 0} نشط`}
         icon={<Car className="w-7 h-7 text-white" />}
         gradient="from-red-500 to-red-600"
         delay={0}
@@ -112,8 +112,8 @@ export const WorldClassStatsCards: React.FC = () => {
         title="العقود النشطة"
         value={stats?.activeContracts || 0}
         change={stats?.contractsChange}
-        progress={85}
-        progressLabel="85% مكتمل"
+        progress={stats?.contractCompletionRate || 0}
+        progressLabel={`${stats?.contractCompletionRate || 0}% من الإجمالي`}
         icon={<FileText className="w-7 h-7 text-white" />}
         gradient="from-orange-500 to-orange-600"
         delay={0.1}
@@ -124,10 +124,10 @@ export const WorldClassStatsCards: React.FC = () => {
         title="إجمالي العملاء"
         value={stats?.totalCustomers || 0}
         change={stats?.customersChange}
-        progress={92}
-        progressLabel="92% رضا"
+        progress={stats?.customerSatisfactionRate || 0}
+        progressLabel={`${stats?.customerSatisfactionRate || 0}% رضا`}
         icon={<Users className="w-7 h-7 text-white" />}
-        gradient="from-emerald-500 to-emerald-600"
+        gradient="from-red-400 to-orange-500"
         delay={0.2}
       />
       
@@ -138,7 +138,7 @@ export const WorldClassStatsCards: React.FC = () => {
         change={stats?.revenueChange}
         progress={undefined}
         icon={<TrendingUp className="w-7 h-7 text-white" />}
-        gradient="from-blue-500 to-blue-600"
+        gradient="from-orange-600 to-red-600"
         delay={0.3}
       />
     </section>

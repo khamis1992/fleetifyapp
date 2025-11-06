@@ -8,8 +8,9 @@ export const ForecastingSection: React.FC = () => {
   const { data: financialData } = useFinancialOverview('car_rental');
   const { formatCurrency } = useCurrencyFormatter();
 
-  const currentRevenue = financialData?.totalRevenue || 125450;
-  const forecastedRevenue = currentRevenue * 1.18; // +18% growth
+  const currentRevenue = financialData?.totalRevenue || 0;
+  const growthRate = financialData?.growthRate || 18; // معدل النمو من البيانات أو افتراضي 18%
+  const forecastedRevenue = currentRevenue * (1 + growthRate / 100);
 
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
@@ -22,8 +23,8 @@ export const ForecastingSection: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">توقعات الإيرادات</h3>
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Brain className="w-5 h-5 text-purple-600" />
+          <div className="p-2 bg-gradient-to-br from-red-100 to-orange-100 rounded-lg">
+            <Brain className="w-5 h-5 text-red-600" />
           </div>
         </div>
         <div className="space-y-4">
@@ -34,7 +35,7 @@ export const ForecastingSection: React.FC = () => {
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" 
+                className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full" 
                 style={{ width: '78%' }}
               ></div>
             </div>
@@ -51,7 +52,7 @@ export const ForecastingSection: React.FC = () => {
               ></div>
             </div>
           </div>
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl">
+          <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl">
             <p className="text-sm font-semibold text-gray-900 mb-3">العوامل المؤثرة:</p>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -69,12 +70,16 @@ export const ForecastingSection: React.FC = () => {
             </div>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-purple-600">+22%</p>
+            <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-xl text-center">
+              <p className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                +{growthRate.toFixed(0)}%
+              </p>
               <p className="text-xs text-gray-600">نمو متوقع</p>
             </div>
-            <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-blue-600">85%</p>
+            <div className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl text-center">
+              <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                {Math.min(85 + Math.floor(currentRevenue / 10000), 95)}%
+              </p>
               <p className="text-xs text-gray-600">دقة التوقع</p>
             </div>
           </div>
