@@ -33,7 +33,7 @@ const Overview = () => {
       title: "لوحة التحكم المالية",
       description: "نظرة شاملة مع جميع المؤشرات الرئيسية",
       icon: BarChart3,
-      href: "/finance/accountant-dashboard",
+      path: "/finance/accountant-dashboard",
       gradient: "from-purple-500 to-pink-500",
       stats: `${financialSummary?.totalRevenue || 0} ريال`
     },
@@ -41,7 +41,7 @@ const Overview = () => {
       title: "التحليلات المالية المتقدمة",
       description: "النسب المالية (الربحية، السيولة، النشاط، المديونية)",
       icon: Activity,
-      href: "/finance/financial-ratios",
+      path: "/finance/financial-ratios",
       gradient: "from-indigo-500 to-purple-500",
       stats: "النسب والمؤشرات"
     },
@@ -49,7 +49,7 @@ const Overview = () => {
       title: "ربط الفواتير بالقيود",
       description: "تقرير شامل لربط الفواتير بالقيود المحاسبية",
       icon: LinkIcon,
-      href: "/finance/invoice-journal-report",
+      path: "/finance/invoice-journal-report",
       gradient: "from-cyan-500 to-blue-500",
       stats: "تتبع الربط"
     },
@@ -57,7 +57,7 @@ const Overview = () => {
       title: "سجل التدقيق الشامل",
       description: "تتبع كامل لجميع التعديلات المحاسبية (Audit Trail)",
       icon: Shield,
-      href: "/finance/audit-trail",
+      path: "/finance/audit-trail",
       gradient: "from-gray-600 to-gray-800",
       stats: "الأمان والتتبع"
     },
