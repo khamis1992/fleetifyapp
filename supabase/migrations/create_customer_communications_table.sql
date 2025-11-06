@@ -121,3 +121,4 @@ COMMENT ON COLUMN customer_communications.follow_up_scheduled IS 'Whether a foll
 COMMENT ON COLUMN customer_communications.follow_up_status IS 'Status of the scheduled follow-up';
 COMMENT ON COLUMN customer_communications.attachments IS 'JSON array of attachment URLs';
 
+

@@ -125,7 +125,11 @@
       "Bash(for:*)",
       "Bash(do sed -i 's/&quot;/\"\"/g' \"$f\")",
       "Bash(done)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npm ls:*)",
+      "Bash(nul)",
+      "Bash(npx eslint:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
