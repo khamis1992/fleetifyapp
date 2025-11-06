@@ -152,7 +152,7 @@ const Vendors = () => {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0.000 د.ك</div>
+            <div className="text-2xl font-bold">0.000 ر.ق</div>
             <p className="text-xs text-muted-foreground">إجمالي المديونية</p>
           </CardContent>
         </Card>
@@ -270,7 +270,7 @@ const Vendors = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {vendor.current_balance.toFixed(3)} د.ك
+                      {vendor.current_balance.toFixed(3)} ر.ق
                     </TableCell>
                     <TableCell>
                       <Badge variant={vendor.is_active ? "default" : "secondary"}>

@@ -343,7 +343,18 @@ export const useEnhancedFinancialReports = (
 
       const { data: journalLines, error: linesError } = await query;
 
-      if (linesError) throw linesError;
+      if (linesError) {
+        console.error('❌ [BALANCE_SHEET] Error fetching journal lines:', linesError);
+        throw linesError;
+      }
+
+      console.log('✅ [BALANCE_SHEET] Journal lines fetched:', {
+        count: journalLines?.length || 0,
+        sample: journalLines?.[0],
+        companyId,
+        startDate,
+        endDate
+      });
 
       // Calculate account balances from journal lines
       const accountBalances = new Map();
@@ -373,6 +384,17 @@ export const useEnhancedFinancialReports = (
         } else {
           current.balance = current.credit - current.debit;
         }
+      });
+
+      console.log('📊 [BALANCE_SHEET] Account balances calculated:', {
+        totalAccounts: accountBalances.size,
+        sampleBalances: Array.from(accountBalances.entries()).slice(0, 3).map(([id, data]) => ({
+          accountId: id,
+          account: data.account?.account_name,
+          debit: data.debit,
+          credit: data.credit,
+          balance: data.balance
+        }))
       });
 
       // Generate report based on type
@@ -465,10 +487,21 @@ export const useEnhancedFinancialReports = (
       }
 
       if (reportType === 'balance_sheet') {
+        console.log('🔍 [BALANCE_SHEET] Processing balance sheet report:', {
+          totalAccounts: accounts?.length,
+          accountBalancesSize: accountBalances.size
+        });
+
         const assetAccounts = accounts?.filter(acc => 
           acc.account_type === 'assets' && !acc.is_header
         ).map(acc => {
           const balance = accountBalances.get(acc.id);
+          console.log(`  💰 Asset: ${acc.account_name} (${acc.account_code})`, {
+            hasBalance: !!balance,
+            balance: balance?.balance || 0,
+            debit: balance?.debit || 0,
+            credit: balance?.credit || 0
+          });
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
@@ -511,6 +544,15 @@ export const useEnhancedFinancialReports = (
         const totalLiabilities = liabilityAccounts.reduce((sum, acc) => sum + acc.balance, 0);
         const totalEquity = equityAccounts.reduce((sum, acc) => sum + acc.balance, 0);
 
+        console.log('✅ [BALANCE_SHEET] Balance sheet calculated:', {
+          totalAssets,
+          totalLiabilities,
+          totalEquity,
+          assetAccountsCount: assetAccounts.length,
+          liabilityAccountsCount: liabilityAccounts.length,
+          equityAccountsCount: equityAccounts.length
+        });
+
         return {
           title: 'Balance Sheet',
           titleAr: 'الميزانية العمومية',
@@ -544,7 +586,8 @@ export const useEnhancedFinancialReports = (
 
       return null;
     },
-    enabled: !!companyId && !!endDate,
+    enabled: !!companyId, // إزالة شرط endDate لأن الميزانية يمكن عرضها بدون تواريخ
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 

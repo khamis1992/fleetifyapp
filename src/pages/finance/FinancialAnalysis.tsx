@@ -161,9 +161,9 @@ const FinancialAnalysis = () => {
                       <span className="font-semibold text-sm">{trend.name}</span>
                       {getTrendIcon(trend.trend)}
                     </div>
-                    <div className="text-lg font-bold">{trend.current.toFixed(3)} د.ك</div>
+                    <div className="text-lg font-bold">{trend.current.toFixed(3)} ر.ق</div>
                     <div className="text-xs text-muted-foreground">
-                      السابق: {trend.previous.toFixed(3)} د.ك
+                      السابق: {trend.previous.toFixed(3)} ر.ق
                     </div>
                     <div className={`text-xs mt-1 ${
                       trend.change > 0 ? 'text-green-600' : 
@@ -197,16 +197,16 @@ const FinancialAnalysis = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">إجمالي الإيرادات</span>
-                        <span className="font-bold">{analysisData?.incomeStatement.revenue.toFixed(3) || '0.000'} د.ك</span>
+                        <span className="font-bold">{analysisData?.incomeStatement.revenue.toFixed(3) || '0.000'} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">إجمالي المصروفات</span>
-                        <span className="font-bold">{analysisData?.incomeStatement.expenses.toFixed(3) || '0.000'} د.ك</span>
+                        <span className="font-bold">{analysisData?.incomeStatement.expenses.toFixed(3) || '0.000'} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الربح الصافي</span>
                         <span className={`font-bold ${(analysisData?.incomeStatement.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {analysisData?.incomeStatement.netIncome.toFixed(3) || '0.000'} د.ك
+                          {analysisData?.incomeStatement.netIncome.toFixed(3) || '0.000'} ر.ق
                         </span>
                       </div>
                     </div>
@@ -263,17 +263,17 @@ const FinancialAnalysis = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الميزانية المعتمدة</span>
-                        <span className="font-bold">{analysisData.budgetComparison.budgetedRevenue.toFixed(3)} د.ك</span>
+                        <span className="font-bold">{analysisData.budgetComparison.budgetedRevenue.toFixed(3)} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الإيرادات الفعلية</span>
-                        <span className="font-bold">{analysisData.budgetComparison.actualRevenue.toFixed(3)} د.ك</span>
+                        <span className="font-bold">{analysisData.budgetComparison.actualRevenue.toFixed(3)} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الانحراف</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${analysisData.budgetComparison.revenueVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {analysisData.budgetComparison.revenueVariance.toFixed(3)} د.ك
+                            {analysisData.budgetComparison.revenueVariance.toFixed(3)} ر.ق
                           </span>
                           <Badge variant={analysisData.budgetComparison.revenueVariancePercentage >= 0 ? "default" : "destructive"}>
                             {analysisData.budgetComparison.revenueVariancePercentage.toFixed(1)}%
@@ -296,17 +296,17 @@ const FinancialAnalysis = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الميزانية المعتمدة</span>
-                        <span className="font-bold">{analysisData.budgetComparison.budgetedExpenses.toFixed(3)} د.ك</span>
+                        <span className="font-bold">{analysisData.budgetComparison.budgetedExpenses.toFixed(3)} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">المصروفات الفعلية</span>
-                        <span className="font-bold">{analysisData.budgetComparison.actualExpenses.toFixed(3)} د.ك</span>
+                        <span className="font-bold">{analysisData.budgetComparison.actualExpenses.toFixed(3)} ر.ق</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">الانحراف</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${analysisData.budgetComparison.expenseVariance <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {analysisData.budgetComparison.expenseVariance.toFixed(3)} د.ك
+                            {analysisData.budgetComparison.expenseVariance.toFixed(3)} ر.ق
                           </span>
                           <Badge variant={analysisData.budgetComparison.expenseVariancePercentage <= 0 ? "default" : "destructive"}>
                             {analysisData.budgetComparison.expenseVariancePercentage.toFixed(1)}%
@@ -421,28 +421,28 @@ const FinancialAnalysis = () => {
                       <div className="p-4 border rounded-lg text-center">
                         <div className="text-sm text-muted-foreground mb-1">التدفق التشغيلي</div>
                         <div className={`text-lg font-bold ${advancedAnalytics.cashFlowAnalysis.operatingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {advancedAnalytics.cashFlowAnalysis.operatingCashFlow.toFixed(3)} د.ك
+                          {advancedAnalytics.cashFlowAnalysis.operatingCashFlow.toFixed(3)} ر.ق
                         </div>
                       </div>
                       
                       <div className="p-4 border rounded-lg text-center">
                         <div className="text-sm text-muted-foreground mb-1">التدفق الاستثماري</div>
                         <div className={`text-lg font-bold ${advancedAnalytics.cashFlowAnalysis.investingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {advancedAnalytics.cashFlowAnalysis.investingCashFlow.toFixed(3)} د.ك
+                          {advancedAnalytics.cashFlowAnalysis.investingCashFlow.toFixed(3)} ر.ق
                         </div>
                       </div>
                       
                       <div className="p-4 border rounded-lg text-center">
                         <div className="text-sm text-muted-foreground mb-1">التدفق التمويلي</div>
                         <div className={`text-lg font-bold ${advancedAnalytics.cashFlowAnalysis.financingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {advancedAnalytics.cashFlowAnalysis.financingCashFlow.toFixed(3)} د.ك
+                          {advancedAnalytics.cashFlowAnalysis.financingCashFlow.toFixed(3)} ر.ق
                         </div>
                       </div>
                       
                       <div className="p-4 border rounded-lg text-center bg-primary/5">
                         <div className="text-sm text-muted-foreground mb-1">صافي التدفق النقدي</div>
                         <div className={`text-lg font-bold ${advancedAnalytics.cashFlowAnalysis.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {advancedAnalytics.cashFlowAnalysis.netCashFlow.toFixed(3)} د.ك
+                          {advancedAnalytics.cashFlowAnalysis.netCashFlow.toFixed(3)} ر.ق
                         </div>
                       </div>
                     </div>
@@ -476,16 +476,16 @@ const FinancialAnalysis = () => {
                           <div className="grid grid-cols-3 gap-4 text-sm">
                             <div>
                               <div className="text-muted-foreground">الميزانية المعتمدة</div>
-                              <div className="font-bold">{center.budgetAmount.toFixed(3)} د.ك</div>
+                              <div className="font-bold">{center.budgetAmount.toFixed(3)} ر.ق</div>
                             </div>
                             <div>
                               <div className="text-muted-foreground">الإنفاق الفعلي</div>
-                              <div className="font-bold">{center.actualAmount.toFixed(3)} د.ك</div>
+                              <div className="font-bold">{center.actualAmount.toFixed(3)} ر.ق</div>
                             </div>
                             <div>
                               <div className="text-muted-foreground">الانحراف</div>
                               <div className={`font-bold ${center.variance <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {center.variance.toFixed(3)} د.ك ({center.variancePercentage.toFixed(1)}%)
+                                {center.variance.toFixed(3)} ر.ق ({center.variancePercentage.toFixed(1)}%)
                               </div>
                             </div>
                           </div>
@@ -534,21 +534,21 @@ const FinancialAnalysis = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">الإيرادات المتوقعة</span>
                           <span className="font-bold text-green-600">
-                            {forecast.revenue.toFixed(3)} د.ك
+                            {forecast.revenue.toFixed(3)} ر.ق
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">المصروفات المتوقعة</span>
                           <span className="font-bold text-red-600">
-                            {forecast.expenses.toFixed(3)} د.ك
+                            {forecast.expenses.toFixed(3)} ر.ق
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center pt-2 border-t">
                           <span className="text-sm font-medium">الربح المتوقع</span>
                           <span className={`font-bold ${forecast.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {forecast.netIncome.toFixed(3)} د.ك
+                            {forecast.netIncome.toFixed(3)} ر.ق
                           </span>
                         </div>
                       </div>
@@ -599,14 +599,14 @@ const FinancialAnalysis = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">العام الحالي</span>
                           <span className="font-bold">
-                            {comparison.currentYear.toFixed(3)} د.ك
+                            {comparison.currentYear.toFixed(3)} ر.ق
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">العام السابق</span>
                           <span className="font-bold">
-                            {comparison.previousYear.toFixed(3)} د.ك
+                            {comparison.previousYear.toFixed(3)} ر.ق
                           </span>
                         </div>
                         
@@ -614,7 +614,7 @@ const FinancialAnalysis = () => {
                           <span className="text-sm font-medium">التغيير</span>
                           <div className="flex items-center gap-2">
                             <span className={`font-bold ${comparison.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {comparison.change.toFixed(3)} د.ك
+                              {comparison.change.toFixed(3)} ر.ق
                             </span>
                             <Badge variant={comparison.changePercentage >= 0 ? "default" : "destructive"}>
                               {comparison.changePercentage.toFixed(1)}%

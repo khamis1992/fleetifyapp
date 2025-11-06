@@ -324,7 +324,7 @@ export const PaymentTracking: React.FC = () => {
               {reconciliationSummary?.pending_reconciliation || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {(reconciliationSummary?.pending_reconciliation_amount || 0).toFixed(3)} د.ك
+              {(reconciliationSummary?.pending_reconciliation_amount || 0).toFixed(3)} ر.ق
             </p>
           </CardContent>
         </Card>
@@ -501,7 +501,7 @@ export const PaymentTracking: React.FC = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">إجمالي المبلغ:</span>
-                            <span className="font-bold">{method.total_amount.toFixed(3)} د.ك</span>
+                            <span className="font-bold">{method.total_amount.toFixed(3)} ر.ق</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">عدد المعاملات:</span>
@@ -509,7 +509,7 @@ export const PaymentTracking: React.FC = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">متوسط المعاملة:</span>
-                            <span className="font-medium">{method.average_transaction.toFixed(3)} د.ك</span>
+                            <span className="font-medium">{method.average_transaction.toFixed(3)} ر.ق</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">معدل النجاح:</span>
@@ -639,15 +639,15 @@ export const PaymentTracking: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">مبلغ الدفعة:</span>
-                          <span className="font-bold text-green-600">{payment.amount.toFixed(3)} د.ك</span>
+                          <span className="font-bold text-green-600">{payment.amount.toFixed(3)} ر.ق</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">المدفوع حتى الآن:</span>
-                          <span className="font-medium">{payment.cumulative_paid.toFixed(3)} د.ك</span>
+                          <span className="font-medium">{payment.cumulative_paid.toFixed(3)} ر.ق</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">المتبقي:</span>
-                          <span className="font-medium text-red-600">{payment.remaining_balance.toFixed(3)} د.ك</span>
+                          <span className="font-medium text-red-600">{payment.remaining_balance.toFixed(3)} ر.ق</span>
                         </div>
                         <Progress 
                           value={(payment.cumulative_paid / payment.invoice_total) * 100} 

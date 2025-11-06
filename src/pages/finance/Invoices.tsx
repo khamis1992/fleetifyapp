@@ -584,7 +584,7 @@ const Invoices = () => {
                         {new Date(invoice.invoice_date).toLocaleDateString('en-GB')}
                       </TableCell>
                       <TableCell>
-                        {invoice.total_amount.toFixed(3)} د.ك
+                        {invoice.total_amount.toFixed(3)} ر.ق
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(invoice.status)}>

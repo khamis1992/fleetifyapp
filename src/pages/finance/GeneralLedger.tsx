@@ -159,7 +159,7 @@ export default function Ledger() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {financialSummary.total_assets.toFixed(3)} د.ك
+                {financialSummary.total_assets.toFixed(2)} ر.ق
               </div>
             </CardContent>
           </Card>
@@ -171,7 +171,7 @@ export default function Ledger() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                {financialSummary.total_liabilities.toFixed(3)} د.ك
+                {financialSummary.total_liabilities.toFixed(2)} ر.ق
               </div>
             </CardContent>
           </Card>
@@ -183,7 +183,7 @@ export default function Ledger() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {financialSummary.net_income.toFixed(3)} د.ك
+                {financialSummary.net_income.toFixed(3)} ر.ق
               </div>
             </CardContent>
           </Card>
@@ -272,10 +272,10 @@ export default function Ledger() {
                           name: balance.account_name
                         })}
                       >
-                        <TableCell className="font-medium">{balance.closing_balance.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-red-600">{balance.total_credits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-green-600">{balance.total_debits.toFixed(3)} د.ك</TableCell>
-                        <TableCell>{balance.opening_balance.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="font-medium">{balance.closing_balance.toFixed(3)} ر.ق</TableCell>
+                        <TableCell className="text-red-600">{balance.total_credits.toFixed(3)} ر.ق</TableCell>
+                        <TableCell className="text-green-600">{balance.total_debits.toFixed(3)} ر.ق</TableCell>
+                        <TableCell>{balance.opening_balance.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <Badge variant="outline">{balance.account_type}</Badge>
                         </TableCell>
@@ -323,10 +323,10 @@ export default function Ledger() {
                     {trialBalance?.map((item) => (
                       <TableRow key={item.account_id}>
                         <TableCell className="text-red-600 font-medium">
-                          {item.credit_balance > 0 ? `${item.credit_balance.toFixed(3)} د.ك` : '-'}
+                          {item.credit_balance > 0 ? `${item.credit_balance.toFixed(3)} ر.ق` : '-'}
                         </TableCell>
                         <TableCell className="text-green-600 font-medium">
-                          {item.debit_balance > 0 ? `${item.debit_balance.toFixed(3)} د.ك` : '-'}
+                          {item.debit_balance > 0 ? `${item.debit_balance.toFixed(3)} ر.ق` : '-'}
                         </TableCell>
                         <TableCell>{item.account_level}</TableCell>
                         <TableCell>
@@ -377,10 +377,10 @@ export default function Ledger() {
                       <TableRow key={center.cost_center_id}>
                         <TableCell>{center.entry_count}</TableCell>
                         <TableCell className={center.net_amount >= 0 ? "text-green-600" : "text-red-600"}>
-                          {center.net_amount.toFixed(3)} د.ك
+                          {center.net_amount.toFixed(3)} ر.ق
                         </TableCell>
-                        <TableCell className="text-red-600">{center.total_credits.toFixed(3)} د.ك</TableCell>
-                        <TableCell className="text-green-600">{center.total_debits.toFixed(3)} د.ك</TableCell>
+                        <TableCell className="text-red-600">{center.total_credits.toFixed(3)} ر.ق</TableCell>
+                        <TableCell className="text-green-600">{center.total_debits.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <div>
                             <div>{center.center_name}</div>
@@ -413,28 +413,28 @@ export default function Ledger() {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span>إجمالي الأصول:</span>
-                      <span className="font-medium">{financialSummary.total_assets.toFixed(3)} د.ك</span>
+                      <span className="font-medium">{financialSummary.total_assets.toFixed(3)} ر.ق</span>
                     </div>
                     <div className="flex justify-between">
                       <span>إجمالي الالتزامات:</span>
-                      <span className="font-medium">{financialSummary.total_liabilities.toFixed(3)} د.ك</span>
+                      <span className="font-medium">{financialSummary.total_liabilities.toFixed(3)} ر.ق</span>
                     </div>
                     <div className="flex justify-between">
                       <span>إجمالي حقوق الملكية:</span>
-                      <span className="font-medium">{financialSummary.total_equity.toFixed(3)} د.ك</span>
+                      <span className="font-medium">{financialSummary.total_equity.toFixed(3)} ر.ق</span>
                     </div>
                     <div className="flex justify-between">
                       <span>إجمالي الإيرادات:</span>
-                      <span className="font-medium text-green-600">{financialSummary.total_revenue.toFixed(3)} د.ك</span>
+                      <span className="font-medium text-green-600">{financialSummary.total_revenue.toFixed(3)} ر.ق</span>
                     </div>
                     <div className="flex justify-between">
                       <span>إجمالي المصروفات:</span>
-                      <span className="font-medium text-red-600">{financialSummary.total_expenses.toFixed(3)} د.ك</span>
+                      <span className="font-medium text-red-600">{financialSummary.total_expenses.toFixed(3)} ر.ق</span>
                     </div>
                     <div className="flex justify-between border-t pt-4">
                       <span className="font-bold">صافي الدخل:</span>
                       <span className={`font-bold ${financialSummary.net_income >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {financialSummary.net_income.toFixed(3)} د.ك
+                        {financialSummary.net_income.toFixed(3)} ر.ق
                       </span>
                     </div>
                   </div>

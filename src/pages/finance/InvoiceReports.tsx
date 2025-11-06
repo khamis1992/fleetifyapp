@@ -149,11 +149,11 @@ const InvoiceReports = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>{item.total_invoices}</TableCell>
-                        <TableCell>{item.total_amount.toFixed(3)} د.ك</TableCell>
-                        <TableCell>{item.budget_amount.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{item.total_amount.toFixed(3)} ر.ق</TableCell>
+                        <TableCell>{item.budget_amount.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <span className={item.variance_amount >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {item.variance_amount >= 0 ? '+' : ''}{item.variance_amount.toFixed(3)} د.ك
+                            {item.variance_amount >= 0 ? '+' : ''}{item.variance_amount.toFixed(3)} ر.ق
                           </span>
                         </TableCell>
                         <TableCell>
@@ -209,24 +209,24 @@ const InvoiceReports = () => {
                             month: 'long'
                           })}
                         </TableCell>
-                        <TableCell>{item.budgeted_sales.toFixed(3)} د.ك</TableCell>
-                        <TableCell>{item.actual_sales.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{item.budgeted_sales.toFixed(3)} ر.ق</TableCell>
+                        <TableCell>{item.actual_sales.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <span className={item.sales_variance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {item.sales_variance >= 0 ? '+' : ''}{item.sales_variance.toFixed(3)} د.ك
+                              {item.sales_variance >= 0 ? '+' : ''}{item.sales_variance.toFixed(3)} ر.ق
                             </span>
                             <Badge variant={getVarianceColor(item.sales_variance_percentage)}>
                               {item.sales_variance_percentage >= 0 ? '+' : ''}{item.sales_variance_percentage.toFixed(1)}%
                             </Badge>
                           </div>
                         </TableCell>
-                        <TableCell>{item.budgeted_purchases.toFixed(3)} د.ك</TableCell>
-                        <TableCell>{item.actual_purchases.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{item.budgeted_purchases.toFixed(3)} ر.ق</TableCell>
+                        <TableCell>{item.actual_purchases.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <span className={item.purchase_variance >= 0 ? 'text-red-600' : 'text-green-600'}>
-                              {item.purchase_variance >= 0 ? '+' : ''}{item.purchase_variance.toFixed(3)} د.ك
+                              {item.purchase_variance >= 0 ? '+' : ''}{item.purchase_variance.toFixed(3)} ر.ق
                             </span>
                             <Badge variant={getVarianceColor(-item.purchase_variance_percentage)}>
                               {item.purchase_variance_percentage >= 0 ? '+' : ''}{item.purchase_variance_percentage.toFixed(1)}%
@@ -285,15 +285,15 @@ const InvoiceReports = () => {
                             {asset.total_purchase_invoices} فاتورة
                           </Badge>
                         </TableCell>
-                        <TableCell>{asset.total_purchase_amount.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{asset.total_purchase_amount.toFixed(3)} ر.ق</TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {asset.maintenance_invoices} فاتورة
                           </Badge>
                         </TableCell>
-                        <TableCell>{asset.maintenance_amount.toFixed(3)} د.ك</TableCell>
+                        <TableCell>{asset.maintenance_amount.toFixed(3)} ر.ق</TableCell>
                         <TableCell className="font-medium">
-                          {asset.total_cost.toFixed(3)} د.ك
+                          {asset.total_cost.toFixed(3)} ر.ق
                         </TableCell>
                       </TableRow>
                     ))}

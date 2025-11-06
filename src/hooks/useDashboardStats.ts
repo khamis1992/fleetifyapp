@@ -30,7 +30,7 @@ export const useDashboardStats = () => {
   return useQuery({
     queryKey: ['dashboard-stats', user?.profile?.company_id],
     queryFn: async (): Promise<DashboardStats> => {
-      if (!user?.profile?.company_id || !moduleContext) {
+      if (!user?.profile?.company_id) {
         return {
           totalCustomers: 0,
           monthlyRevenue: 0,
@@ -39,8 +39,9 @@ export const useDashboardStats = () => {
         };
       }
 
-      const isVehiclesEnabled = moduleContext.activeModules.includes('vehicles');
-      const isPropertiesEnabled = moduleContext.activeModules.includes('properties');
+      // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
+      const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
+      const isPropertiesEnabled = moduleContext?.activeModules?.includes('properties') ?? false;
 
       let vehiclesCount = 0;
       let activeVehiclesCount = 0;

@@ -580,7 +580,7 @@ export default function Treasury() {
                            </div>
                          </TableCell>
                          <TableCell className={getTransactionColor(transaction.transaction_type)}>
-                           {transaction.transaction_type === 'deposit' ? '+' : '-'}{transaction.amount.toFixed(3)} د.ك
+                           {transaction.transaction_type === 'deposit' ? '+' : '-'}{transaction.amount.toFixed(3)} ر.ق
                          </TableCell>
                          <TableCell>{transaction.description}</TableCell>
                          <TableCell>
