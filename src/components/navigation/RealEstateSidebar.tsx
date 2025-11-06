@@ -250,11 +250,6 @@ const crmSubItems = [
     icon: Activity
   },
   {
-    name: 'التواصل مع العملاء',
-    href: '/customers/crm',
-    icon: MessageSquare
-  },
-  {
     name: 'تحليلات المبيعات',
     href: '/sales/analytics',
     icon: BarChart3

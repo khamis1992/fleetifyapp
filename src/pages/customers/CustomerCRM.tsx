@@ -1,12 +1,50 @@
-import React, { useState, useMemo } from 'react';
+/**
+ * صفحة متابعة العملاء - CRM Follow-up Page
+ * نظام شامل لإدارة المتابعات والاتصالات مع العملاء
+ * 
+ * @component CustomerCRM
+ */
+
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { useToast } from '@/components/ui/use-toast';
+import { formatDistanceToNow, differenceInDays, format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import {
+  Users,
+  PhoneCall,
+  Eye,
+  PlusCircle,
+  MoreHorizontal,
+  Phone,
+  MessageSquare,
+  FileText,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Bell,
+  TrendingUp,
+  CheckCircle,
+  CheckSquare,
+  Search,
+  Menu,
+  Smartphone,
+  X,
+  AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -14,251 +52,377 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { toast } from 'sonner';
-import {
-  Phone,
-  MessageSquare,
-  Users,
-  FileText,
-  Eye,
-  PlusCircle,
-  MoreHorizontal,
-  Search,
-  TrendingUp,
-  Bell,
-  CheckCircle,
-  Clock,
-  Smartphone,
-  Calendar,
-  AlertTriangle,
-  PhoneCall,
-} from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import type { CRMCustomer, CRMStats, CommunicationType, ActionType } from '@/types/crm';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-/**
- * صفحة إدارة علاقات العملاء (CRM)
- * نظام متكامل لتتبع التواصل مع العملاء والمتابعات
- */
+interface Customer {
+  id: string;
+  customer_code: string;
+  first_name_ar: string;
+  last_name_ar: string;
+  phone: string;
+  email?: string;
+  company_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface Contract {
+  id: string;
+  contract_number: string;
+  customer_id: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  monthly_amount: number;
+}
+
+interface FollowUp {
+  id: string;
+  customer_id: string;
+  note_type: 'phone' | 'message' | 'meeting' | 'general';
+  content: string;
+  created_at: string;
+  created_by: string;
+  is_important: boolean;
+}
+
+interface DashboardStats {
+  activeCustomers: number;
+  todayCalls: number;
+  pendingFollowUps: number;
+  completedThisMonth: number;
+}
+
 export default function CustomerCRM() {
-  const { selectedCompanyId } = useUnifiedCompanyAccess();
-  
-  // States
-  const [searchTerm, setSearchTerm] = useState('');
-  const [contractStatus, setContractStatus] = useState<string>('all');
-  const [lastContactPeriod, setLastContactPeriod] = useState<string>('all');
-  const [selectedCustomer, setSelectedCustomer] = useState<CRMCustomer | null>(null);
-  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
-  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
-  
-  // Form States
-  const [commType, setCommType] = useState<CommunicationType>('phone');
-  const [commDate, setCommDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [commTime, setCommTime] = useState(format(new Date(), 'HH:mm'));
-  const [notes, setNotes] = useState('');
-  const [actionRequired, setActionRequired] = useState<ActionType>('none');
-  const [scheduleFollowUp, setScheduleFollowUp] = useState(false);
-  const [followUpDate, setFollowUpDate] = useState('');
-  const [followUpTime, setFollowUpTime] = useState('');
+  const companyId = useCurrentCompanyId();
+  const { toast } = useToast();
 
-  // Fetch CRM Stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['crm-stats', selectedCompanyId],
-    queryFn: async (): Promise<CRMStats> => {
-      if (!selectedCompanyId) throw new Error('No company selected');
-      
-      // Get active contracts count
-      const { count: activeCount } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', selectedCompanyId)
-        .eq('status', 'active');
-      
-      return {
-        total_active_customers: activeCount || 0,
-        total_calls_today: 42, // TODO: Implement real data
-        pending_follow_ups: 18,
-        completed_this_month: 128,
-        expiring_contracts_count: 12,
-        high_priority_count: 5,
-      };
-    },
-    enabled: !!selectedCompanyId,
+  // State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<string>('7days');
+  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Form state
+  const [followUpForm, setFollowUpForm] = useState({
+    type: 'phone' as 'phone' | 'message' | 'meeting' | 'general',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    time: format(new Date(), 'HH:mm'),
+    notes: '',
+    actionRequired: '',
+    scheduleNext: false,
+    nextDate: '',
+    nextTime: '',
   });
 
-  // Fetch CRM Customers
-  const { data: customers = [], isLoading: customersLoading } = useQuery({
-    queryKey: ['crm-customers', selectedCompanyId],
-    queryFn: async (): Promise<CRMCustomer[]> => {
-      if (!selectedCompanyId) return [];
-      
-      // Get customers with active contracts
-      const { data: contracts, error } = await supabase
-        .from('contracts')
+  // Fetch customers with contracts
+  const { data: customers = [], isLoading: loadingCustomers } = useQuery({
+    queryKey: ['crm-customers', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+
+      const { data, error } = await supabase
+        .from('customers')
         .select(`
           id,
-          agreement_number,
-          start_date,
-          end_date,
-          status,
-          customer_id,
-          customers (
-            id,
-            code,
-            name,
-            phone,
-            email
-          )
+          customer_code,
+          first_name_ar,
+          last_name_ar,
+          phone,
+          email,
+          company_id,
+          is_active,
+          created_at
         `)
-        .eq('company_id', selectedCompanyId)
-        .in('status', ['active', 'pending'])
+        .eq('company_id', companyId)
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Transform to CRM customers
-      return contracts
-        .filter(contract => contract.customers)
-        .map((contract): CRMCustomer => {
-          const customer = contract.customers as any;
-          const endDate = contract.end_date ? new Date(contract.end_date) : null;
-          const today = new Date();
-          const daysUntilExpiry = endDate ? Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
-          
-          let contractStatus: 'active' | 'expiring_soon' | 'expired' = 'active';
-          if (daysUntilExpiry !== null) {
-            if (daysUntilExpiry < 0) contractStatus = 'expired';
-            else if (daysUntilExpiry <= 30) contractStatus = 'expiring_soon';
-          }
-
-          return {
-            id: customer.id,
-            code: customer.code,
-            name: customer.name,
-            phone: customer.phone,
-            email: customer.email,
-            has_active_contract: contract.status === 'active',
-            contract_number: contract.agreement_number,
-            contract_start_date: contract.start_date,
-            contract_end_date: contract.end_date,
-            contract_status: contractStatus,
-            days_until_expiry: daysUntilExpiry,
-            total_communications: 0, // TODO: Implement
-            pending_follow_ups: 0,
-            needs_follow_up: daysUntilExpiry !== null && daysUntilExpiry <= 10,
-            follow_up_reason: daysUntilExpiry !== null && daysUntilExpiry <= 10 ? 'العقد ينتهي قريباً' : undefined,
-            company_id: selectedCompanyId,
-          };
-        });
+      return data as Customer[];
     },
-    enabled: !!selectedCompanyId,
+    enabled: !!companyId,
   });
 
-  // Filter customers
+  // Fetch contracts for filtering
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['crm-contracts', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('id, contract_number, customer_id, status, start_date, end_date, monthly_amount')
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+      return data as Contract[];
+    },
+    enabled: !!companyId,
+  });
+
+  // Fetch follow-ups
+  const { data: followUps = [] } = useQuery({
+    queryKey: ['customer-follow-ups', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as FollowUp[];
+    },
+    enabled: !!companyId,
+  });
+
+  // Calculate dashboard stats
+  const stats: DashboardStats = useMemo(() => {
+    const activeCustomers = customers.filter(c => c.is_active).length;
+    const today = new Date();
+    const todayStart = new Date(today.setHours(0, 0, 0, 0));
+    
+    const todayCalls = followUps.filter(f => 
+      f.note_type === 'phone' && 
+      new Date(f.created_at) >= todayStart
+    ).length;
+
+    const pendingFollowUps = followUps.filter(f => f.is_important).length;
+    
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const completedThisMonth = followUps.filter(f => 
+      !f.is_important && 
+      new Date(f.created_at) >= firstDayOfMonth
+    ).length;
+
+    return {
+      activeCustomers,
+      todayCalls,
+      pendingFollowUps,
+      completedThisMonth,
+    };
+  }, [customers, followUps]);
+
+  // Filter and paginate customers
   const filteredCustomers = useMemo(() => {
-    return customers.filter(customer => {
-      // Search filter
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        if (!customer.name.toLowerCase().includes(search) && 
-            !customer.phone.includes(search) &&
-            !customer.contract_number?.toLowerCase().includes(search)) {
-          return false;
-        }
-      }
+    let filtered = customers;
 
-      // Contract status filter
-      if (contractStatus !== 'all' && customer.contract_status !== contractStatus) {
-        return false;
-      }
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(c =>
+        `${c.first_name_ar} ${c.last_name_ar}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.phone?.includes(searchTerm) ||
+        c.customer_code?.includes(searchTerm)
+      );
+    }
 
-      return true;
-    });
-  }, [customers, searchTerm, contractStatus]);
+    // Status filter
+    if (statusFilter !== 'all') {
+      const customerContracts = contracts.filter(ct => 
+        filtered.some(c => c.id === ct.customer_id)
+      );
 
-  // Handlers
-  const toggleCustomerDetails = (customerId: string) => {
-    setExpandedCustomers(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(customerId)) {
-        newSet.delete(customerId);
-      } else {
-        newSet.add(customerId);
+      if (statusFilter === 'active') {
+        const activeCustomerIds = customerContracts
+          .filter(ct => ct.status === 'active')
+          .map(ct => ct.customer_id);
+        filtered = filtered.filter(c => activeCustomerIds.includes(c.id));
+      } else if (statusFilter === 'expiring') {
+        const expiringCustomerIds = customerContracts
+          .filter(ct => {
+            const daysToExpiry = differenceInDays(new Date(ct.end_date), new Date());
+            return daysToExpiry > 0 && daysToExpiry <= 30;
+          })
+          .map(ct => ct.customer_id);
+        filtered = filtered.filter(c => expiringCustomerIds.includes(c.id));
+      } else if (statusFilter === 'expired') {
+        const expiredCustomerIds = customerContracts
+          .filter(ct => new Date(ct.end_date) < new Date())
+          .map(ct => ct.customer_id);
+        filtered = filtered.filter(c => expiredCustomerIds.includes(c.id));
       }
-      return newSet;
-    });
+    }
+
+    return filtered;
+  }, [customers, searchTerm, statusFilter, contracts]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Helper functions
+  const getCustomerInitials = (customer: Customer) => {
+    const first = customer.first_name_ar?.[0] || '';
+    const last = customer.last_name_ar?.[0] || '';
+    return `${first}${last}`.toUpperCase();
   };
 
-  const handleAddNote = async () => {
-    if (!selectedCustomer || !notes.trim()) {
-      toast.error('يرجى إدخال الملاحظات');
+  const getCustomerContract = (customerId: string) => {
+    return contracts.find(c => c.customer_id === customerId && c.status === 'active');
+  };
+
+  const getCustomerFollowUps = (customerId: string) => {
+    return followUps.filter(f => f.customer_id === customerId);
+  };
+
+  const getLastContactDays = (customerId: string) => {
+    const customerFollowUps = getCustomerFollowUps(customerId);
+    if (customerFollowUps.length === 0) return null;
+
+    const lastContact = new Date(customerFollowUps[0].created_at);
+    return differenceInDays(new Date(), lastContact);
+  };
+
+  const getContractStatus = (contract: Contract | undefined) => {
+    if (!contract) return { label: 'لا يوجد عقد', color: 'gray', dotColor: 'bg-gray-400' };
+
+    if (contract.status === 'active') {
+      const daysToExpiry = differenceInDays(new Date(contract.end_date), new Date());
+      if (daysToExpiry <= 30 && daysToExpiry > 0) {
+        return { label: 'قريب الانتهاء', color: 'yellow', dotColor: 'bg-yellow-400' };
+      }
+      return { label: 'عقد نشط', color: 'green', dotColor: 'bg-green-400' };
+    }
+
+    return { label: 'منتهي', color: 'red', dotColor: 'bg-red-400' };
+  };
+
+  const handleSaveFollowUp = async () => {
+    if (!selectedCustomer || !companyId) return;
+
+    if (!followUpForm.notes.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال الملاحظات',
+        variant: 'destructive',
+      });
       return;
     }
 
-    // TODO: Save to database
-    toast.success('تم حفظ المتابعة بنجاح');
-    setShowAddNoteModal(false);
-    resetForm();
-  };
+    try {
+      const { error } = await supabase.from('customer_notes').insert({
+        customer_id: selectedCustomer.id,
+        company_id: companyId,
+        note_type: followUpForm.type,
+        title: `متابعة ${followUpForm.type === 'phone' ? 'مكالمة' : followUpForm.type === 'message' ? 'رسالة' : followUpForm.type === 'meeting' ? 'اجتماع' : 'ملاحظة'}`,
+        content: followUpForm.notes,
+        is_important: followUpForm.actionRequired !== '',
+      });
 
-  const resetForm = () => {
-    setNotes('');
-    setActionRequired('none');
-    setScheduleFollowUp(false);
-    setFollowUpDate('');
-    setFollowUpTime('');
-  };
+      if (error) throw error;
 
-  const getStatusBadge = (status?: 'active' | 'expiring_soon' | 'expired') => {
-    switch (status) {
-      case 'active':
-        return <Badge variant="default" className="bg-green-100 text-green-700">عقد نشط</Badge>;
-      case 'expiring_soon':
-        return <Badge variant="default" className="bg-yellow-100 text-yellow-700">قريب الانتهاء</Badge>;
-      case 'expired':
-        return <Badge variant="default" className="bg-red-100 text-red-700">منتهي</Badge>;
-      default:
-        return null;
+      toast({
+        title: 'تم الحفظ',
+        description: 'تم حفظ المتابعة بنجاح',
+      });
+
+      setIsAddNoteOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error saving follow-up:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء حفظ المتابعة',
+        variant: 'destructive',
+      });
     }
   };
 
-  if (statsLoading || customersLoading) {
+  const resetForm = () => {
+    setFollowUpForm({
+      type: 'phone',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      time: format(new Date(), 'HH:mm'),
+      notes: '',
+      actionRequired: '',
+      scheduleNext: false,
+      nextDate: '',
+      nextTime: '',
+    });
+  };
+
+  const getFollowUpIcon = (type: string) => {
+    switch (type) {
+      case 'phone': return Phone;
+      case 'message': return MessageSquare;
+      case 'meeting': return Users;
+      default: return FileText;
+    }
+  };
+
+  const getFollowUpColor = (type: string) => {
+    switch (type) {
+      case 'phone': return 'bg-green-100 text-green-600';
+      case 'message': return 'bg-blue-100 text-blue-600';
+      case 'meeting': return 'bg-purple-100 text-purple-600';
+      default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  if (loadingCustomers) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl p-6 border border-gray-200 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">إدارة العملاء والمتابعات</h1>
-        <p className="text-muted-foreground">نظام إدارة علاقات العملاء (CRM)</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon">
+                <Menu className="w-6 h-6 text-gray-700" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
+                <p className="text-sm text-gray-500">نظام إدارة علاقات العملاء</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-6 h-6 text-gray-700" />
+                <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Stat Card 1 */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">العملاء النشطين</p>
-                <p className="text-3xl font-bold text-foreground">{stats?.total_active_customers || 0}</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">العملاء النشطين</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.activeCustomers}</p>
                 <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   +12% من الشهر الماضي
@@ -268,314 +432,479 @@ export default function CustomerCRM() {
                 <Users className="w-7 h-7 text-green-600" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          {/* Stat Card 2 */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">مكالمات اليوم</p>
-                <p className="text-3xl font-bold text-foreground">{stats?.total_calls_today || 0}</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">مكالمات اليوم</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.todayCalls}</p>
                 <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                   <Phone className="w-3 h-3" />
-                  15 متبقية
+                  {Math.max(0, 15 - stats.todayCalls)} متبقية
                 </p>
               </div>
               <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
                 <PhoneCall className="w-7 h-7 text-blue-600" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          {/* Stat Card 3 */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">متابعات معلقة</p>
-                <p className="text-3xl font-bold text-foreground">{stats?.pending_follow_ups || 0}</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">متابعات معلقة</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.pendingFollowUps}</p>
                 <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  5 عاجلة
+                  <AlertCircle className="w-3 h-3" />
+                  {Math.floor(stats.pendingFollowUps / 3)} عاجلة
                 </p>
               </div>
               <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
                 <Clock className="w-7 h-7 text-orange-600" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          {/* Stat Card 4 */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">مكتملة هذا الشهر</p>
-                <p className="text-3xl font-bold text-foreground">{stats?.completed_this_month || 0}</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">مكتملة هذا الشهر</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.completedThisMonth}</p>
                 <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
                   معدل إنجاز 94%
                 </p>
               </div>
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-7 h-7 text-green-600" />
+                <CheckSquare className="w-7 h-7 text-green-600" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Filters & Search */}
-      <Card>
-        <CardContent className="p-4">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Filters & Actions Bar */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search */}
-            <div className="flex-1 w-full lg:max-w-md relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="بحث عن عميل بالاسم أو رقم الجوال..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
+            <div className="flex-1 w-full lg:max-w-md">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="بحث عن عميل بالاسم أو رقم الجوال..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pr-10"
+                />
+              </div>
             </div>
 
-            {/* Filters */}
+            {/* Filters & Actions */}
             <div className="flex gap-3 w-full lg:w-auto">
-              <Select value={contractStatus} onValueChange={setContractStatus}>
-                <SelectTrigger className="w-full lg:w-[180px]">
-                  <SelectValue placeholder="حالة العقد" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الحالات</SelectItem>
                   <SelectItem value="active">عقود نشطة</SelectItem>
-                  <SelectItem value="expiring_soon">قريبة من الانتهاء</SelectItem>
+                  <SelectItem value="expiring">قريبة من الانتهاء</SelectItem>
                   <SelectItem value="expired">منتهية</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select value={lastContactPeriod} onValueChange={setLastContactPeriod}>
-                <SelectTrigger className="w-full lg:w-[180px]">
-                  <SelectValue placeholder="آخر اتصال" />
+              <Select value={timeFilter} onValueChange={setTimeFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="7days">آخر 7 أيام</SelectItem>
+                  <SelectItem value="30days">آخر 30 يوم</SelectItem>
+                  <SelectItem value="3months">آخر 3 أشهر</SelectItem>
                   <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="today">اليوم</SelectItem>
-                  <SelectItem value="week">آخر 7 أيام</SelectItem>
-                  <SelectItem value="month">آخر 30 يوم</SelectItem>
-                  <SelectItem value="more">أكثر من شهر</SelectItem>
                 </SelectContent>
               </Select>
 
               <Button
                 onClick={() => {
-                  setSelectedCustomer(filteredCustomers[0] || null);
-                  setShowAddNoteModal(true);
+                  setSelectedCustomer(paginatedCustomers[0]);
+                  setIsAddNoteOpen(true);
                 }}
-                className="gap-2"
+                className="bg-green-600 hover:bg-green-700"
               >
-                <PlusCircle className="w-5 h-5" />
+                <PlusCircle className="w-5 h-5 ml-2" />
                 متابعة جديدة
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Customers List */}
-      <div className="space-y-4">
-        {filteredCustomers.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium text-muted-foreground">لا يوجد عملاء نشطين</p>
-              <p className="text-sm text-muted-foreground mt-2">قم بإضافة عقد جديد لبدء التتبع</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredCustomers.map((customer, index) => (
-            <Card 
-              key={customer.id} 
-              className="hover:shadow-lg transition-all duration-300 animate-in slide-in-from-bottom"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <CardContent className="p-6">
-                {/* Customer Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    <Avatar className="h-14 w-14 bg-gradient-to-br from-blue-400 to-blue-600">
-                      <AvatarFallback className="text-white font-bold text-lg">
-                        {customer.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+        {/* Customers List */}
+        <div className="space-y-4">
+          {paginatedCustomers.map((customer, index) => {
+            const contract = getCustomerContract(customer.id);
+            const contractStatus = getContractStatus(contract);
+            const customerFollowUps = getCustomerFollowUps(customer.id);
+            const lastContactDays = getLastContactDays(customer.id);
+            const isExpanded = expandedCustomer === customer.id;
+            const daysToExpiry = contract ? differenceInDays(new Date(contract.end_date), new Date()) : null;
+            const needsUrgentFollowUp = lastContactDays && lastContactDays > 7 && daysToExpiry && daysToExpiry <= 10;
 
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-lg font-bold text-foreground">{customer.name}</h3>
-                        {getStatusBadge(customer.contract_status)}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Smartphone className="w-4 h-4" />
-                          <span className="font-mono">{customer.phone}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <FileText className="w-4 h-4" />
-                          عقد #{customer.contract_number}
-                        </span>
-                        {customer.contract_end_date && (
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4" />
-                            ينتهي في {format(new Date(customer.contract_end_date), 'dd MMMM yyyy', { locale: ar })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            return (
+              <div
+                key={customer.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-300 transition-all"
+                style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Avatar */}
+                      <Avatar className="w-14 h-14">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white font-bold text-lg">
+                          {getCustomerInitials(customer)}
+                        </AvatarFallback>
+                      </Avatar>
 
-                  <div className="text-left shrink-0">
-                    <p className="text-xs text-muted-foreground mb-1">آخر اتصال</p>
-                    <p className="text-sm font-semibold text-foreground">منذ 3 أيام</p>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 mb-4">
-                  <Button className="flex-1 gap-2 bg-green-600 hover:bg-green-700">
-                    <Phone className="w-4 h-4" />
-                    اتصال الآن
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    className="flex-1 gap-2"
-                    onClick={() => toggleCustomerDetails(customer.id)}
-                  >
-                    <Eye className="w-4 h-4" />
-                    عرض السجل
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => {
-                      setSelectedCustomer(customer);
-                      setShowAddNoteModal(true);
-                    }}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    إضافة ملاحظة
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                {/* Warning/Alert Messages */}
-                {customer.needs_follow_up && (
-                  <div className="bg-red-50 border-r-4 border-red-500 rounded-lg p-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                        <Bell className="w-5 h-5 text-red-600" />
-                      </div>
+                      {/* Info */}
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-red-900 mb-1">يحتاج متابعة عاجلة</p>
-                        <p className="text-sm text-red-700">
-                          {customer.follow_up_reason} - 
-                          {customer.days_until_expiry !== null && ` ينتهي خلال ${customer.days_until_expiry} يوم`}
-                        </p>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {customer.first_name_ar} {customer.last_name_ar}
+                          </h3>
+                          <Badge
+                            variant="secondary"
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              contractStatus.color === 'green'
+                                ? 'bg-green-100 text-green-700'
+                                : contractStatus.color === 'yellow'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : contractStatus.color === 'red'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${contractStatus.dotColor} inline-block ml-1.5`}></span>
+                            {contractStatus.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1.5">
+                            <Smartphone className="w-4 h-4" />
+                            <span className="font-mono" dir="ltr">{customer.phone}</span>
+                          </span>
+                          {contract && (
+                            <>
+                              <span className="flex items-center gap-1.5">
+                                <FileText className="w-4 h-4" />
+                                {contract.contract_number}
+                              </span>
+                              <span className={`flex items-center gap-1.5 ${daysToExpiry && daysToExpiry <= 30 ? 'text-orange-600' : ''}`}>
+                                <Calendar className="w-4 h-4" />
+                                ينتهي في {format(new Date(contract.end_date), 'd MMMM yyyy', { locale: ar })}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <Button size="sm" className="bg-red-600 hover:bg-red-700">
-                        اتصال الآن
-                      </Button>
+                    </div>
+
+                    {/* Last Contact */}
+                    <div className="text-left shrink-0">
+                      <p className="text-xs text-gray-500 mb-1">آخر اتصال</p>
+                      <p className={`text-sm font-semibold ${lastContactDays && lastContactDays > 5 ? 'text-red-600' : 'text-gray-900'}`}>
+                        {lastContactDays !== null ? `منذ ${lastContactDays} ${lastContactDays === 1 ? 'يوم' : 'أيام'}` : 'لا يوجد'}
+                      </p>
                     </div>
                   </div>
-                )}
 
-                {/* Expandable Timeline */}
-                {expandedCustomers.has(customer.id) && (
-                  <div className="mt-4 pt-4 border-t border-border animate-in slide-in-from-top duration-300">
-                    <h4 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      سجل المتابعات
-                    </h4>
-                    <p className="text-muted-foreground text-center py-8">
-                      لا توجد متابعات مسجلة. قم بإضافة أول متابعة.
-                    </p>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mb-4">
+                    <Button
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        window.location.href = `tel:${customer.phone}`;
+                      }}
+                    >
+                      <Phone className="w-4 h-4 ml-2" />
+                      اتصال الآن
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                      onClick={() => setExpandedCustomer(isExpanded ? null : customer.id)}
+                    >
+                      <Eye className="w-4 h-4 ml-2" />
+                      {isExpanded ? 'إخفاء السجل' : 'عرض السجل'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsAddNoteOpen(true);
+                      }}
+                    >
+                      <PlusCircle className="w-4 h-4 ml-2" />
+                      إضافة ملاحظة
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="w-5 h-5" />
+                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
+
+                  {/* Recent Activity Summary */}
+                  {customerFollowUps.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-green-600" />
+                        آخر المتابعات
+                      </h4>
+                      <div className="space-y-2">
+                        {customerFollowUps.slice(0, 2).map((followUp) => {
+                          const Icon = getFollowUpIcon(followUp.note_type);
+                          return (
+                            <div key={followUp.id} className="flex items-start gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getFollowUpColor(followUp.note_type)}`}>
+                                <Icon className="w-3 h-3" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    {format(new Date(followUp.created_at), 'yyyy-MM-dd')}:
+                                  </span>{' '}
+                                  {followUp.content?.slice(0, 100)}
+                                  {followUp.content && followUp.content.length > 100 ? '...' : ''}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Warning Alert for urgent follow-ups */}
+                  {needsUrgentFollowUp && (
+                    <div className="bg-red-50 border-r-4 border-red-500 rounded-lg p-4 mt-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                          <AlertTriangle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-red-900 mb-1">يحتاج متابعة عاجلة</p>
+                          <p className="text-sm text-red-700">
+                            لم يتم الاتصال منذ {lastContactDays} يوم - العقد ينتهي خلال {daysToExpiry} أيام
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setIsAddNoteOpen(true);
+                          }}
+                        >
+                          اتصال الآن
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Follow-up Alert */}
+                  {!needsUrgentFollowUp && customerFollowUps.some(f => f.is_important) && (
+                    <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4 mt-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                          <Bell className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-orange-900 mb-1">متابعة معلقة</p>
+                          <p className="text-sm text-orange-700">
+                            {customerFollowUps.find(f => f.is_important)?.content?.slice(0, 80)}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          تأكيد
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expandable Details - Timeline */}
+                  {isExpanded && (
+                    <div className="mt-4 border-t border-gray-200 pt-4 animate-in slide-in-from-top">
+                      <h4 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-green-600" />
+                        سجل المتابعات الكامل
+                      </h4>
+                      {customerFollowUps.length > 0 ? (
+                        <div className="space-y-4 relative">
+                          {/* Timeline Line */}
+                          <div className="absolute top-0 bottom-0 right-[15px] w-0.5 bg-gray-200"></div>
+
+                          {customerFollowUps.map((followUp) => {
+                            const Icon = getFollowUpIcon(followUp.note_type);
+                            const typeColor = followUp.note_type === 'phone' ? 'green' : followUp.note_type === 'message' ? 'blue' : followUp.note_type === 'meeting' ? 'purple' : 'gray';
+
+                            return (
+                              <div key={followUp.id} className="flex gap-4 relative hover:translate-x-2 transition-transform">
+                                <div className={`w-8 h-8 rounded-full bg-${typeColor}-600 flex items-center justify-center text-white shrink-0 relative z-10 shadow-sm`}>
+                                  <Icon className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-bold text-gray-900">
+                                        {followUp.note_type === 'phone' ? 'مكالمة هاتفية' : 
+                                         followUp.note_type === 'message' ? 'رسالة SMS' : 
+                                         followUp.note_type === 'meeting' ? 'اجتماع' : 'ملاحظة'}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                      {format(new Date(followUp.created_at), 'yyyy-MM-dd | HH:mm')}
+                                    </span>
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <p className="text-sm text-gray-800 mb-2"><strong>💬 الملاحظات:</strong></p>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{followUp.content}</p>
+                                  </div>
+                                  {followUp.is_important && (
+                                    <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
+                                      متابعة مهمة
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600 text-center py-8">سجل المتابعات فارغ. قم بإضافة أول متابعة.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              السابق
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={currentPage === page ? 'default' : 'outline'}
+                onClick={() => setCurrentPage(page)}
+                className={currentPage === page ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              التالي
+            </Button>
+          </div>
         )}
-      </div>
+      </main>
 
       {/* Add Note Modal */}
-      <Dialog open={showAddNoteModal} onOpenChange={setShowAddNoteModal}>
+      <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <PlusCircle className="w-6 h-6 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <PlusCircle className="w-6 h-6 text-green-600" />
               إضافة متابعة جديدة
             </DialogTitle>
+            <DialogDescription>
+              {selectedCustomer && `للعميل: ${selectedCustomer.first_name_ar} ${selectedCustomer.last_name_ar}`}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             {/* Communication Type */}
             <div>
-              <Label className="text-sm font-semibold mb-3 block">نوع المتابعة</Label>
-              <RadioGroup value={commType} onValueChange={(v) => setCommType(v as CommunicationType)}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { value: 'phone', label: 'مكالمة', icon: Phone },
-                    { value: 'message', label: 'رسالة', icon: MessageSquare },
-                    { value: 'meeting', label: 'اجتماع', icon: Users },
-                    { value: 'note', label: 'ملاحظة', icon: FileText },
-                  ].map(({ value, label, icon: Icon }) => (
-                    <Label
-                      key={value}
-                      className="relative flex items-center gap-3 p-4 border-2 border-border rounded-lg cursor-pointer hover:border-primary transition-colors"
-                    >
-                      <RadioGroupItem value={value} className="sr-only peer" />
-                      <div className="peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 absolute inset-0 border-2 rounded-lg transition-all" />
-                      <Icon className="w-5 h-5 text-muted-foreground relative z-10" />
-                      <span className="text-sm font-medium text-foreground relative z-10">{label}</span>
-                    </Label>
-                  ))}
-                </div>
-              </RadioGroup>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">نوع المتابعة</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: 'phone', icon: Phone, label: 'مكالمة' },
+                  { value: 'message', icon: MessageSquare, label: 'رسالة' },
+                  { value: 'meeting', icon: Users, label: 'اجتماع' },
+                  { value: 'general', icon: FileText, label: 'ملاحظة' },
+                ].map(({ value, icon: Icon, label }) => (
+                  <label
+                    key={value}
+                    className={`relative flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      followUpForm.type === value
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="commType"
+                      value={value}
+                      checked={followUpForm.type === value}
+                      onChange={(e) => setFollowUpForm(f => ({ ...f, type: e.target.value as any }))}
+                      className="sr-only"
+                    />
+                    <Icon className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">{label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="comm-date" className="text-sm font-semibold mb-2 block">التاريخ</Label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">التاريخ</label>
                 <Input
-                  id="comm-date"
                   type="date"
-                  value={commDate}
-                  onChange={(e) => setCommDate(e.target.value)}
+                  value={followUpForm.date}
+                  onChange={(e) => setFollowUpForm(f => ({ ...f, date: e.target.value }))}
                 />
               </div>
               <div>
-                <Label htmlFor="comm-time" className="text-sm font-semibold mb-2 block">الوقت</Label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">الوقت</label>
                 <Input
-                  id="comm-time"
                   type="time"
-                  value={commTime}
-                  onChange={(e) => setCommTime(e.target.value)}
+                  value={followUpForm.time}
+                  onChange={(e) => setFollowUpForm(f => ({ ...f, time: e.target.value }))}
                 />
               </div>
             </div>
 
             {/* Notes */}
             <div>
-              <Label htmlFor="notes" className="text-sm font-semibold mb-2 block">الملاحظات والتفاصيل</Label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">الملاحظات والتفاصيل</label>
               <Textarea
-                id="notes"
                 rows={6}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={followUpForm.notes}
+                onChange={(e) => setFollowUpForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="اكتب تفاصيل المتابعة هنا...&#10;&#10;مثال:&#10;- تم مناقشة تجديد العقد&#10;- العميل مهتم بترقية الباقة&#10;- طلب عرض سعر خاص"
                 className="resize-none"
               />
@@ -583,13 +912,16 @@ export default function CustomerCRM() {
 
             {/* Action Required */}
             <div>
-              <Label htmlFor="action" className="text-sm font-semibold mb-2 block">الإجراء المطلوب (اختياري)</Label>
-              <Select value={actionRequired} onValueChange={(v) => setActionRequired(v as ActionType)}>
-                <SelectTrigger id="action">
-                  <SelectValue placeholder="اختر إجراء..." />
+              <label className="block text-sm font-semibold text-gray-700 mb-2">الإجراء المطلوب (اختياري)</label>
+              <Select
+                value={followUpForm.actionRequired}
+                onValueChange={(value) => setFollowUpForm(f => ({ ...f, actionRequired: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الإجراء" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">لا يوجد</SelectItem>
+                  <SelectItem value="">لا يوجد</SelectItem>
                   <SelectItem value="quote">إعداد عرض سعر</SelectItem>
                   <SelectItem value="contract">تجهيز عقد جديد</SelectItem>
                   <SelectItem value="payment">متابعة الدفعة</SelectItem>
@@ -600,33 +932,34 @@ export default function CustomerCRM() {
             </div>
 
             {/* Schedule Follow-up */}
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <div className="flex items-center gap-3 mb-4">
-                <Checkbox
-                  id="schedule-followup"
-                  checked={scheduleFollowUp}
-                  onCheckedChange={(checked) => setScheduleFollowUp(checked as boolean)}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <label className="flex items-center gap-3 mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={followUpForm.scheduleNext}
+                  onChange={(e) => setFollowUpForm(f => ({ ...f, scheduleNext: e.target.checked }))}
+                  className="w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-2 focus:ring-green-500"
                 />
-                <Label htmlFor="schedule-followup" className="text-sm font-semibold cursor-pointer">
-                  جدولة متابعة قادمة
-                </Label>
-              </div>
-              {scheduleFollowUp && (
+                <span className="text-sm font-semibold text-gray-900">جدولة متابعة قادمة</span>
+              </label>
+              {followUpForm.scheduleNext && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="block text-xs font-medium text-muted-foreground mb-1">تاريخ المتابعة</Label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">تاريخ المتابعة</label>
                     <Input
                       type="date"
-                      value={followUpDate}
-                      onChange={(e) => setFollowUpDate(e.target.value)}
+                      value={followUpForm.nextDate}
+                      onChange={(e) => setFollowUpForm(f => ({ ...f, nextDate: e.target.value }))}
+                      className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="block text-xs font-medium text-muted-foreground mb-1">وقت المتابعة</Label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">وقت المتابعة</label>
                     <Input
                       type="time"
-                      value={followUpTime}
-                      onChange={(e) => setFollowUpTime(e.target.value)}
+                      value={followUpForm.nextTime}
+                      onChange={(e) => setFollowUpForm(f => ({ ...f, nextTime: e.target.value }))}
+                      className="text-sm"
                     />
                   </div>
                 </div>
@@ -634,11 +967,14 @@ export default function CustomerCRM() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddNoteModal(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsAddNoteOpen(false)}>
               إلغاء
             </Button>
-            <Button onClick={handleAddNote} className="gap-2">
+            <Button
+              onClick={handleSaveFollowUp}
+              className="bg-green-600 hover:bg-green-700"
+            >
               حفظ المتابعة
             </Button>
           </DialogFooter>
@@ -647,5 +983,3 @@ export default function CustomerCRM() {
     </div>
   );
 }
-
-

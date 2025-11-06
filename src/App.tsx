@@ -47,7 +47,6 @@ const Finance = lazyWithRetry(() => import("./pages/Finance"), "Finance");
 const Customers = lazy(() => import("./pages/Customers"));
 const CustomerDetailsPage = lazy(() => import("./components/customers/CustomerDetailsPage"));
 const CustomerCRM = lazy(() => import("./pages/customers/CustomerCRM"));
-const CustomerFollowUp = lazy(() => import("./pages/CustomerFollowUp"));
 const Contracts = lazy(() => import("./pages/Contracts"));
 const ContractDetailsPage = lazy(() => import("./components/contracts/ContractDetailsPage"));
 const Fleet = lazy(() => import("./pages/Fleet"));
@@ -525,13 +524,6 @@ const AppRoutes = () => {
           <RouteWrapper routeName="Customer CRM" fallbackPath="/customers">
             <Suspense fallback={<PageSkeletonFallback />}>
               <CustomerCRM />
-            </Suspense>
-          </RouteWrapper>
-        } />
-        <Route path="customers/communications" element={
-          <RouteWrapper routeName="Customer Follow-up" fallbackPath="/customers">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <CustomerFollowUp />
             </Suspense>
           </RouteWrapper>
         } />
