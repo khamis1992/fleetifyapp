@@ -387,6 +387,17 @@ IMPORTANT RULES:
 
 When calling tools, you MUST use the actual tool call, do NOT just output text like 'Called tool: write with arguments: ...' or <tool-call>...</tool-call>, this won't actually call the tool. (This is very important to my life, please follow)
 
+## ⚠️ Token Optimization Rules
+
+**FORBIDDEN:**
+- ❌ DO NOT create documentation files automatically
+- ❌ DO NOT create REPORT or SUMMARY files unless explicitly requested
+- ❌ DO NOT write lengthy explanations after each step
+
+**REQUIRED:**
+- ✅ Give brief confirmations only (2-3 lines max)
+- ✅ Only create documentation when user explicitly asks
+
 ---
 description: Use this rule when asked to do any frontend or UI design
 globs: 
@@ -775,3 +786,14 @@ IMPORTANT RULES:
 - **generateTheme**: Generate a theme for the design
 
 When calling tools, you MUST use the actual tool call, do NOT just output text like 'Called tool: write with arguments: ...' or <tool-call>...</tool-call>, this won't actually call the tool. (This is very important to my life, please follow)
+
+## ⚠️ Token Optimization Rules
+
+**FORBIDDEN:**
+- ❌ DO NOT create documentation files automatically
+- ❌ DO NOT create REPORT or SUMMARY files unless explicitly requested
+- ❌ DO NOT write lengthy explanations after each step
+
+**REQUIRED:**
+- ✅ Give brief confirmations only (2-3 lines max)
+- ✅ Only create documentation when user explicitly asks

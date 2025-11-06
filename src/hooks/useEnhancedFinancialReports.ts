@@ -303,20 +303,246 @@ export const useEnhancedFinancialReports = (
     queryFn: async () => {
       if (!companyId) return null;
 
-      // Mock financial report data for now
-      return {
-        title: reportType === 'income_statement' ? 'Income Statement' : 
-               reportType === 'balance_sheet' ? 'Balance Sheet' : 'Trial Balance',
-        titleAr: reportType === 'income_statement' ? 'قائمة الدخل' : 
-                 reportType === 'balance_sheet' ? 'الميزانية العمومية' : 'ميزان المراجعة',
-        sections: [],
-        totalDebits: 0,
-        totalCredits: 0,
-        netIncome: 0,
-        totalAssets: 0,
-        totalLiabilities: 0,
-        totalEquity: 0
-      };
+      // Fetch real accounting data from database
+      const { data: accounts, error: accountsError } = await supabase
+        .from('chart_of_accounts')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('account_code');
+
+      if (accountsError) throw accountsError;
+
+      // Fetch journal entry lines for the period
+      let query = supabase
+        .from('journal_entry_lines')
+        .select(`
+          *,
+          journal_entries!inner(
+            entry_date,
+            status,
+            company_id
+          ),
+          chart_of_accounts!account_id(
+            account_code,
+            account_name,
+            account_type,
+            account_level,
+            is_header
+          )
+        `)
+        .eq('journal_entries.company_id', companyId)
+        .eq('journal_entries.status', 'posted');
+
+      if (startDate) {
+        query = query.gte('journal_entries.entry_date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('journal_entries.entry_date', endDate);
+      }
+
+      const { data: journalLines, error: linesError } = await query;
+
+      if (linesError) throw linesError;
+
+      // Calculate account balances from journal lines
+      const accountBalances = new Map();
+      
+      journalLines?.forEach((line: any) => {
+        const accountId = line.account_id;
+        const debit = Number(line.debit_amount || 0);
+        const credit = Number(line.credit_amount || 0);
+        
+        if (!accountBalances.has(accountId)) {
+          accountBalances.set(accountId, {
+            debit: 0,
+            credit: 0,
+            balance: 0,
+            account: line.chart_of_accounts
+          });
+        }
+        
+        const current = accountBalances.get(accountId);
+        current.debit += debit;
+        current.credit += credit;
+        
+        // Calculate balance based on account type
+        const accountType = line.chart_of_accounts?.account_type;
+        if (['assets', 'expenses'].includes(accountType)) {
+          current.balance = current.debit - current.credit;
+        } else {
+          current.balance = current.credit - current.debit;
+        }
+      });
+
+      // Generate report based on type
+      if (reportType === 'trial_balance') {
+        const sections = accounts?.filter(acc => !acc.is_header).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: balance?.balance || 0,
+            debit: balance?.debit || 0,
+            credit: balance?.credit || 0
+          };
+        }) || [];
+
+        const totalDebits = sections.reduce((sum, acc) => sum + acc.debit, 0);
+        const totalCredits = sections.reduce((sum, acc) => sum + acc.credit, 0);
+
+        return {
+          title: 'Trial Balance',
+          titleAr: 'ميزان المراجعة',
+          sections: [{
+            title: 'All Accounts',
+            titleAr: 'جميع الحسابات',
+            accounts: sections,
+            subtotal: totalDebits
+          }],
+          totalDebits,
+          totalCredits
+        };
+      }
+
+      if (reportType === 'income_statement') {
+        const revenueAccounts = accounts?.filter(acc => 
+          acc.account_type === 'revenue' && !acc.is_header
+        ).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: Math.abs(balance?.balance || 0)
+          };
+        }) || [];
+
+        const expenseAccounts = accounts?.filter(acc => 
+          acc.account_type === 'expenses' && !acc.is_header
+        ).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: Math.abs(balance?.balance || 0)
+          };
+        }) || [];
+
+        const totalRevenue = revenueAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalExpenses = expenseAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        const netIncome = totalRevenue - totalExpenses;
+
+        return {
+          title: 'Income Statement',
+          titleAr: 'قائمة الدخل',
+          sections: [
+            {
+              title: 'Revenue',
+              titleAr: 'الإيرادات',
+              accounts: revenueAccounts,
+              subtotal: totalRevenue
+            },
+            {
+              title: 'Expenses',
+              titleAr: 'المصروفات',
+              accounts: expenseAccounts,
+              subtotal: totalExpenses
+            }
+          ],
+          totalDebits: totalExpenses,
+          totalCredits: totalRevenue,
+          netIncome
+        };
+      }
+
+      if (reportType === 'balance_sheet') {
+        const assetAccounts = accounts?.filter(acc => 
+          acc.account_type === 'assets' && !acc.is_header
+        ).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: Math.abs(balance?.balance || 0)
+          };
+        }) || [];
+
+        const liabilityAccounts = accounts?.filter(acc => 
+          acc.account_type === 'liabilities' && !acc.is_header
+        ).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: Math.abs(balance?.balance || 0)
+          };
+        }) || [];
+
+        const equityAccounts = accounts?.filter(acc => 
+          acc.account_type === 'equity' && !acc.is_header
+        ).map(acc => {
+          const balance = accountBalances.get(acc.id);
+          return {
+            accountCode: acc.account_code,
+            accountName: acc.account_name,
+            accountNameAr: acc.account_name,
+            accountLevel: acc.account_level,
+            isHeader: acc.is_header,
+            balance: Math.abs(balance?.balance || 0)
+          };
+        }) || [];
+
+        const totalAssets = assetAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalLiabilities = liabilityAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalEquity = equityAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+        return {
+          title: 'Balance Sheet',
+          titleAr: 'الميزانية العمومية',
+          sections: [
+            {
+              title: 'Assets',
+              titleAr: 'الأصول',
+              accounts: assetAccounts,
+              subtotal: totalAssets
+            },
+            {
+              title: 'Liabilities',
+              titleAr: 'الخصوم',
+              accounts: liabilityAccounts,
+              subtotal: totalLiabilities
+            },
+            {
+              title: 'Equity',
+              titleAr: 'حقوق الملكية',
+              accounts: equityAccounts,
+              subtotal: totalEquity
+            }
+          ],
+          totalAssets,
+          totalLiabilities,
+          totalEquity,
+          totalDebits: 0,
+          totalCredits: 0
+        };
+      }
+
+      return null;
     },
     enabled: !!companyId && !!endDate,
   });

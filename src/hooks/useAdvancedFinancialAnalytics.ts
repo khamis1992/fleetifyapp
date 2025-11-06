@@ -85,13 +85,13 @@ export const useAdvancedFinancialAnalytics = () => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ["advanced-financial-analytics", user?.id],
+    queryKey: ["advanced-financial-analytics", user?.profile?.company_id],
     queryFn: async (): Promise<AdvancedFinancialAnalytics> => {
-      if (!user?.user_metadata?.company_id) {
+      if (!user?.profile?.company_id) {
         return getEmptyAnalytics();
       }
 
-      const companyId = user.user_metadata.company_id;
+      const companyId = user.profile.company_id;
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -166,7 +166,7 @@ export const useAdvancedFinancialAnalytics = () => {
         financialHealthScore,
       };
     },
-    enabled: !!user?.user_metadata?.company_id,
+    enabled: !!user?.profile?.company_id,
   });
 };
 

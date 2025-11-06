@@ -5,12 +5,12 @@
  * @component CustomerCRM
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/components/ui/use-toast';
-import { formatDistanceToNow, differenceInDays, format } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
   Users,
@@ -29,7 +29,6 @@ import {
   CheckCircle,
   CheckSquare,
   Search,
-  Menu,
   Smartphone,
   X,
   AlertCircle,
@@ -45,6 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CallDialog } from '@/components/customers/CallDialog';
 import {
   Select,
   SelectContent,
@@ -98,9 +98,13 @@ export default function CustomerCRM() {
   const companyId = useCurrentCompanyId();
   const { toast } = useToast();
 
+  // ✅ Refs for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [smartFilter, setSmartFilter] = useState<string>('all'); // ✅ فلتر ذكي جديد
   const [timeFilter, setTimeFilter] = useState<string>('7days');
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
@@ -109,6 +113,10 @@ export default function CustomerCRM() {
   const itemsPerPage = 10;
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
+  
+  // ✅ Call Dialog State
+  const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const [callingCustomer, setCallingCustomer] = useState<Customer | null>(null);
 
   // Form state
   const [followUpForm, setFollowUpForm] = useState({
@@ -170,6 +178,23 @@ export default function CustomerCRM() {
 
       if (error) throw error;
       return data as Contract[];
+    },
+    enabled: !!companyId,
+  });
+
+  // ✅ Fetch invoices for payment status
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['crm-invoices', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, customer_id, total_amount, paid_amount, payment_status, due_date')
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!companyId,
   });
@@ -259,8 +284,36 @@ export default function CustomerCRM() {
       }
     }
 
+    // ✅ Smart Filter - الفلاتر الذكية
+    if (smartFilter !== 'all') {
+      if (smartFilter === 'urgent') {
+        // العملاء الذين لديهم متابعات مهمة (is_important = true)
+        const urgentCustomerIds = followUps
+          .filter(f => f.is_important)
+          .map(f => f.customer_id);
+        filtered = filtered.filter(c => urgentCustomerIds.includes(c.id));
+      } else if (smartFilter === 'needs_call') {
+        // العملاء الذين لم يتم الاتصال بهم خلال آخر 7 أيام
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const recentlyContactedIds = followUps
+          .filter(f => 
+            f.note_type === 'phone' && 
+            new Date(f.created_at) > sevenDaysAgo
+          )
+          .map(f => f.customer_id);
+        
+        filtered = filtered.filter(c => !recentlyContactedIds.includes(c.id));
+      } else if (smartFilter === 'never_contacted') {
+        // العملاء الذين لم يتم الاتصال بهم أبداً
+        const contactedCustomerIds = followUps.map(f => f.customer_id);
+        filtered = filtered.filter(c => !contactedCustomerIds.includes(c.id));
+      }
+    }
+
     return filtered;
-  }, [customers, searchTerm, statusFilter, contracts]);
+  }, [customers, searchTerm, statusFilter, smartFilter, contracts, followUps]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
@@ -306,53 +359,166 @@ export default function CustomerCRM() {
     return { label: 'منتهي', color: 'red', dotColor: 'bg-red-400' };
   };
 
-  // Auto-create call note when clicking "Call Now"
+  // ✅ Get payment status for a customer
+  const getPaymentStatus = (customerId: string) => {
+    const customerInvoices = invoices.filter(inv => inv.customer_id === customerId);
+    
+    if (customerInvoices.length === 0) {
+      return { label: 'لا توجد فواتير', color: 'gray', bgColor: 'bg-gray-100', textColor: 'text-gray-700', icon: '📝' };
+    }
+
+    // حساب إجمالي المبالغ
+    const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+    const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+    const totalRemaining = totalAmount - totalPaid;
+
+    // حساب الفواتير المتأخرة
+    const overdueInvoices = customerInvoices.filter(inv => {
+      if (inv.payment_status === 'paid') return false;
+      if (!inv.due_date) return false;
+      return new Date(inv.due_date) < new Date();
+    });
+
+    // تحديد الحالة
+    if (totalRemaining === 0) {
+      return { label: 'مسدد', color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-700', icon: '✅' };
+    }
+
+    if (overdueInvoices.length > 0) {
+      return { 
+        label: `متأخر (${overdueInvoices.length})`, 
+        color: 'red', 
+        bgColor: 'bg-red-100', 
+        textColor: 'text-red-700', 
+        icon: '⚠️',
+        amount: totalRemaining
+      };
+    }
+
+    return { 
+      label: 'مستحق', 
+      color: 'orange', 
+      bgColor: 'bg-orange-100', 
+      textColor: 'text-orange-700', 
+      icon: '💰',
+      amount: totalRemaining
+    };
+  };
+
+  // ✅ Open Call Dialog when clicking "Call Now"
   const handleCallNow = async (customer: Customer) => {
-    if (!companyId) return;
+    setCallingCustomer(customer);
+    setCallDialogOpen(true);
+  };
+
+  // ✅ Open WhatsApp chat with customer
+  const handleWhatsApp = (customer: Customer) => {
+    if (!customer.phone) {
+      toast({
+        title: 'خطأ',
+        description: 'لا يوجد رقم هاتف لهذا العميل',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // تنظيف رقم الهاتف (إزالة المسافات والرموز)
+    const cleanPhone = customer.phone.replace(/\D/g, '');
+    
+    // فتح واتساب في نافذة جديدة
+    const whatsappUrl = `https://wa.me/${cleanPhone}`;
+    window.open(whatsappUrl, '_blank');
+
+    toast({
+      title: '✅ تم فتح واتساب',
+      description: `جاري فتح محادثة مع ${customer.first_name_ar || 'العميل'}`,
+    });
+  };
+
+  // ✅ Save call details with status
+  const handleSaveCall = async (notes: string, status: 'answered' | 'no_answer' | 'busy') => {
+    if (!companyId || !callingCustomer) return;
 
     try {
-      // Create automatic note
-      const { data: newNote, error } = await supabase
+      const statusTexts = {
+        answered: '✅ تم الرد - ',
+        no_answer: '❌ لم يرد - ',
+        busy: '📵 مشغول - '
+      };
+
+      const finalNotes = `${statusTexts[status]}مكالمة في ${format(new Date(), 'dd/MM/yyyy')} الساعة ${format(new Date(), 'HH:mm')}\n\n${notes || 'لا توجد ملاحظات إضافية'}`;
+
+      const { error } = await supabase
         .from('customer_notes')
         .insert({
-          customer_id: customer.id,
+          customer_id: callingCustomer.id,
           company_id: companyId,
           note_type: 'phone',
-          title: 'مكالمة هاتفية',
-          content: `تم إجراء مكالمة هاتفية مع العميل في ${format(new Date(), 'dd/MM/yyyy')} الساعة ${format(new Date(), 'HH:mm')}\n\n[يرجى إضافة تفاصيل المكالمة والاتفاقات...]`,
-          is_important: true, // Mark as important so user remembers to edit it
-        })
-        .select()
-        .single();
+          title: status === 'answered' 
+            ? 'مكالمة هاتفية' 
+            : (status === 'no_answer' ? 'محاولة اتصال - لم يرد' : 'محاولة اتصال - مشغول'),
+          content: finalNotes,
+          is_important: status !== 'answered', // Only mark as important if not answered
+        });
 
       if (error) throw error;
 
-      // Initiate the phone call
-      window.location.href = `tel:${customer.phone}`;
-
-      // Show toast with edit option
       toast({
-        title: '✅ تم تسجيل المكالمة',
-        description: 'تم إنشاء ملاحظة تلقائية. يرجى إضافة تفاصيل المكالمة.',
-        action: (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setEditingNoteId(newNote.id);
-              setEditingNoteContent(newNote.content);
-              setExpandedCustomer(customer.id);
-            }}
-          >
-            تعديل الآن
-          </Button>
-        ),
+        title: status === 'answered' ? '✅ تم حفظ المكالمة' : '⚠️ تم تسجيل المحاولة',
+        description: status === 'answered' 
+          ? 'تم حفظ تفاصيل المكالمة بنجاح'
+          : 'سيتم تذكيرك بالمحاولة مرة أخرى',
       });
     } catch (error) {
-      console.error('Error creating call note:', error);
+      console.error('Error saving call:', error);
       toast({
         title: 'خطأ',
-        description: 'حدث خطأ أثناء تسجيل المكالمة',
+        description: 'حدث خطأ أثناء حفظ المكالمة',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // ✅ Quick update follow-up status (mark as completed)
+  const handleQuickUpdateFollowUp = async (followUpId: string, action: 'complete' | 'postpone' | 'urgent') => {
+    try {
+      if (action === 'complete') {
+        // تحديث is_important إلى false (مكتملة)
+        const { error } = await supabase
+          .from('customer_notes')
+          .update({ 
+            is_important: false,
+            content: (await supabase.from('customer_notes').select('content').eq('id', followUpId).single()).data?.content + '\n\n✅ تم التحديث في ' + format(new Date(), 'dd/MM/yyyy HH:mm')
+          })
+          .eq('id', followUpId);
+
+        if (error) throw error;
+
+        toast({
+          title: '✅ تم التحديث',
+          description: 'تم وضع علامة مكتمل على المتابعة',
+        });
+      } else if (action === 'postpone') {
+        // تأجيل لمدة 3 أيام
+        const { error } = await supabase
+          .from('customer_notes')
+          .update({ 
+            content: (await supabase.from('customer_notes').select('content').eq('id', followUpId).single()).data?.content + '\n\n⏰ تم التأجيل لمدة 3 أيام - ' + format(new Date(), 'dd/MM/yyyy HH:mm')
+          })
+          .eq('id', followUpId);
+
+        if (error) throw error;
+
+        toast({
+          title: '⏰ تم التأجيل',
+          description: 'سيتم تذكيرك بعد 3 أيام',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating follow-up:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء تحديث المتابعة',
         variant: 'destructive',
       });
     }
@@ -469,6 +635,90 @@ export default function CustomerCRM() {
     }
   };
 
+  // ✅ Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // تجاهل الاختصارات إذا كان المستخدم يكتب في حقل نصي
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      // "/" - Focus on search (unless already typing)
+      if (e.key === '/' && !isTyping) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        toast({
+          title: '🔍 البحث',
+          description: 'اكتب للبحث عن عميل',
+          duration: 1500,
+        });
+        return;
+      }
+
+      // إذا كان المستخدم يكتب، لا تنفذ باقي الاختصارات
+      if (isTyping) return;
+
+      // "N" - New Note (Add note for first customer)
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        if (paginatedCustomers.length > 0) {
+          setSelectedCustomer(paginatedCustomers[0]);
+          setIsAddNoteOpen(true);
+          toast({
+            title: '📝 ملاحظة جديدة',
+            description: 'إضافة ملاحظة للعميل الأول',
+            duration: 1500,
+          });
+        }
+        return;
+      }
+
+      // "C" - Call first customer
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        if (paginatedCustomers.length > 0) {
+          handleCallNow(paginatedCustomers[0]);
+          toast({
+            title: '📞 مكالمة',
+            description: 'اتصال بالعميل الأول',
+            duration: 1500,
+          });
+        }
+        return;
+      }
+
+      // "J" - Next page
+      if (e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+          setCurrentPage(prev => prev + 1);
+          toast({
+            title: '⬇️ الصفحة التالية',
+            description: `صفحة ${currentPage + 1} من ${totalPages}`,
+            duration: 1500,
+          });
+        }
+        return;
+      }
+
+      // "K" - Previous page
+      if (e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        if (currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+          toast({
+            title: '⬆️ الصفحة السابقة',
+            description: `صفحة ${currentPage - 1} من ${totalPages}`,
+            duration: 1500,
+          });
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [paginatedCustomers, currentPage, totalPages]);
+
   if (loadingCustomers) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -492,8 +742,30 @@ export default function CustomerCRM() {
       {/* Page Title */}
       <div className="bg-white border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-2xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
-          <p className="text-sm text-gray-500 mt-1">نظام إدارة علاقات العملاء (CRM)</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
+              <p className="text-sm text-gray-500 mt-1">نظام إدارة علاقات العملاء (CRM)</p>
+            </div>
+            
+            {/* ✅ Keyboard Shortcuts Indicator */}
+            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg px-4 py-2">
+              <span className="text-xs font-semibold text-gray-700">⌨️ اختصارات لوحة المفاتيح:</span>
+              <div className="flex gap-2 text-xs">
+                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-mono">/</kbd>
+                <span className="text-gray-500">بحث</span>
+                <span className="text-gray-300">|</span>
+                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-mono">N</kbd>
+                <span className="text-gray-500">ملاحظة</span>
+                <span className="text-gray-300">|</span>
+                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-mono">C</kbd>
+                <span className="text-gray-500">اتصال</span>
+                <span className="text-gray-300">|</span>
+                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-mono">J/K</kbd>
+                <span className="text-gray-500">تنقل</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -580,8 +852,9 @@ export default function CustomerCRM() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
+                  ref={searchInputRef}
                   type="text"
-                  placeholder="بحث عن عميل بالاسم أو رقم الجوال..."
+                  placeholder="بحث عن عميل بالاسم أو رقم الجوال... (اضغط / للبحث)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pr-10"
@@ -590,7 +863,7 @@ export default function CustomerCRM() {
             </div>
 
             {/* Filters & Actions */}
-            <div className="flex gap-3 w-full lg:w-auto">
+            <div className="flex gap-3 w-full lg:w-auto flex-wrap">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
@@ -600,6 +873,39 @@ export default function CustomerCRM() {
                   <SelectItem value="active">عقود نشطة</SelectItem>
                   <SelectItem value="expiring">قريبة من الانتهاء</SelectItem>
                   <SelectItem value="expired">منتهية</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* ✅ Smart Filter - الفلتر الذكي */}
+              <Select value={smartFilter} onValueChange={setSmartFilter}>
+                <SelectTrigger className="w-48 border-blue-200 bg-blue-50/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <span className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      جميع العملاء
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="urgent">
+                    <span className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <span className="font-semibold text-red-600">🔥 عاجل</span>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="needs_call">
+                    <span className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-orange-600" />
+                      <span className="font-semibold text-orange-600">📞 يحتاج اتصال</span>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="never_contacted">
+                    <span className="flex items-center gap-2">
+                      <PhoneCall className="w-4 h-4 text-gray-600" />
+                      <span className="font-semibold text-gray-600">🆕 لم يتصل به</span>
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -658,9 +964,9 @@ export default function CustomerCRM() {
 
                       {/* Info */}
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="text-lg font-bold text-gray-900">
-                            {customer.first_name_ar} {customer.last_name_ar}
+                            {customer.first_name_ar || 'عميل'} {customer.last_name_ar || customer.customer_code}
                           </h3>
                           <Badge
                             variant="secondary"
@@ -677,6 +983,25 @@ export default function CustomerCRM() {
                             <span className={`w-2 h-2 rounded-full ${contractStatus.dotColor} inline-block ml-1.5`}></span>
                             {contractStatus.label}
                           </Badge>
+                          
+                          {/* ✅ Payment Status Badge */}
+                          {(() => {
+                            const paymentStatus = getPaymentStatus(customer.id);
+                            return (
+                              <Badge
+                                variant="secondary"
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${paymentStatus.bgColor} ${paymentStatus.textColor}`}
+                              >
+                                <span className="ml-1.5">{paymentStatus.icon}</span>
+                                {paymentStatus.label}
+                                {paymentStatus.amount && paymentStatus.amount > 0 && (
+                                  <span className="mr-1.5 font-bold">
+                                    {paymentStatus.amount.toFixed(2)} ريال
+                                  </span>
+                                )}
+                              </Badge>
+                            );
+                          })()}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1.5">
@@ -709,17 +1034,27 @@ export default function CustomerCRM() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 mb-4">
+                  <div className="flex gap-2 mb-4 flex-wrap">
                     <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 min-w-[140px] bg-green-600 hover:bg-green-700"
                       onClick={() => handleCallNow(customer)}
                     >
                       <Phone className="w-4 h-4 ml-2" />
                       اتصال الآن
                     </Button>
+                    
+                    {/* ✅ WhatsApp Button */}
+                    <Button
+                      className="flex-1 min-w-[140px] bg-[#25D366] hover:bg-[#20BA5A] text-white"
+                      onClick={() => handleWhatsApp(customer)}
+                    >
+                      <MessageSquare className="w-4 h-4 ml-2" />
+                      واتساب
+                    </Button>
+                    
                     <Button
                       variant="outline"
-                      className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                      className="flex-1 min-w-[140px] border-blue-600 text-blue-600 hover:bg-blue-50"
                       onClick={() => setExpandedCustomer(isExpanded ? null : customer.id)}
                     >
                       <Eye className="w-4 h-4 ml-2" />
@@ -727,7 +1062,7 @@ export default function CustomerCRM() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50"
+                      className="flex-1 min-w-[140px] border-orange-500 text-orange-600 hover:bg-orange-50"
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setIsAddNoteOpen(true);
@@ -741,7 +1076,7 @@ export default function CustomerCRM() {
                     </Button>
                   </div>
 
-                  {/* Recent Activity Summary */}
+                  {/* ✅ Recent Activity Summary - الملاحظات المكتملة فقط */}
                   {customerFollowUps.length > 0 && (
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -749,25 +1084,105 @@ export default function CustomerCRM() {
                         آخر المتابعات
                       </h4>
                       <div className="space-y-2">
-                        {customerFollowUps.slice(0, 2).map((followUp) => {
-                          const Icon = getFollowUpIcon(followUp.note_type);
-                          return (
-                            <div key={followUp.id} className="flex items-start gap-3">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getFollowUpColor(followUp.note_type)}`}>
-                                <Icon className="w-3 h-3" />
+                        {/* ✅ فلترة الملاحظات المكتملة فقط (is_important = false) */}
+                        {customerFollowUps
+                          .filter(f => !f.is_important)
+                          .slice(0, 2)
+                          .map((followUp) => {
+                            const Icon = getFollowUpIcon(followUp.note_type);
+                            return (
+                              <div key={followUp.id} className="flex items-start gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getFollowUpColor(followUp.note_type)}`}>
+                                  <Icon className="w-3 h-3" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-700">
+                                    <span className="font-semibold">
+                                      {format(new Date(followUp.created_at), 'yyyy-MM-dd')}:
+                                    </span>{' '}
+                                    {followUp.content?.slice(0, 100)}
+                                    {followUp.content && followUp.content.length > 100 ? '...' : ''}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    {format(new Date(followUp.created_at), 'yyyy-MM-dd')}:
-                                  </span>{' '}
-                                  {followUp.content?.slice(0, 100)}
-                                  {followUp.content && followUp.content.length > 100 ? '...' : ''}
-                                </p>
+                            );
+                          })}
+                        
+                        {/* ✅ رسالة إذا لم توجد متابعات مكتملة */}
+                        {customerFollowUps.filter(f => !f.is_important).length === 0 && (
+                          <div className="text-center py-4 text-gray-500 text-sm">
+                            <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p>لا توجد متابعات مكتملة بعد</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ✅ تنبيه للملاحظات غير المكتملة مع أزرار تحديث سريعة */}
+                  {customerFollowUps.filter(f => f.is_important).length > 0 && (
+                    <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4 mt-3 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-orange-900">
+                            {customerFollowUps.filter(f => f.is_important).length} متابعة تحتاج تحديث
+                          </p>
+                          <p className="text-xs text-orange-700">
+                            يرجى إكمال تفاصيل المكالمات السابقة
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-500 text-orange-600 hover:bg-orange-100"
+                          onClick={() => setExpandedCustomer(customer.id)}
+                        >
+                          <Eye className="w-4 h-4 ml-1" />
+                          عرض الكل
+                        </Button>
+                      </div>
+                      
+                      {/* ✅ قائمة المتابعات المعلقة مع أزرار تحديث سريعة */}
+                      <div className="space-y-2">
+                        {customerFollowUps
+                          .filter(f => f.is_important)
+                          .slice(0, 2)
+                          .map((followUp) => (
+                            <div key={followUp.id} className="bg-white rounded-lg p-3 border border-orange-200">
+                              <div className="flex items-start gap-2">
+                                <Clock className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-gray-700 line-clamp-2">
+                                    {followUp.content}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {format(new Date(followUp.created_at), 'dd/MM/yyyy HH:mm')}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-green-600 hover:bg-green-100"
+                                    onClick={() => handleQuickUpdateFollowUp(followUp.id, 'complete')}
+                                    title="وضع علامة مكتمل"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
+                                    onClick={() => handleQuickUpdateFollowUp(followUp.id, 'postpone')}
+                                    title="تأجيل 3 أيام"
+                                  >
+                                    <Clock className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          );
-                        })}
+                          ))}
                       </div>
                     </div>
                   )}
@@ -1123,6 +1538,17 @@ export default function CustomerCRM() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ✅ Call Dialog - نافذة المكالمة التفاعلية */}
+      {callingCustomer && (
+        <CallDialog
+          open={callDialogOpen}
+          onOpenChange={setCallDialogOpen}
+          customerName={`${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim() || 'عميل'}
+          customerPhone={callingCustomer.phone || ''}
+          onSaveCall={handleSaveCall}
+        />
+      )}
     </div>
   );
 }
