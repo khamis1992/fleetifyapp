@@ -177,7 +177,7 @@ export function useInvoiceJournalDetails(invoiceId: string | null) {
         `)
         .eq('company_id', companyId)
         .or(`reference_invoice_id.eq.${invoiceId},invoice_id.eq.${invoiceId}`)
-        .single();
+        .maybeSingle();
 
       if (journalError && journalError.code !== 'PGRST116') throw journalError;
 
@@ -186,4 +186,3 @@ export function useInvoiceJournalDetails(invoiceId: string | null) {
     enabled: !!invoiceId && !!companyId
   });
 }
-
