@@ -52,6 +52,12 @@ export const useDashboardStats = () => {
       let previousMonthCustomers = 0;
       let previousMonthRevenue = 0;
 
+      // حساب تواريخ الشهر السابق للاستخدام في المقارنات
+      const previousMonth = new Date();
+      previousMonth.setMonth(previousMonth.getMonth() - 1);
+      const firstDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
+      const lastDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
+
       // Get vehicles data only if vehicles module is enabled
       if (isVehiclesEnabled) {
         // Get active vehicles
@@ -86,11 +92,6 @@ export const useDashboardStats = () => {
         totalContractsCount = allContractsCount || 0;
 
         // Get previous month contracts for comparison
-        const previousMonth = new Date();
-        previousMonth.setMonth(previousMonth.getMonth() - 1);
-        const firstDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
-        const lastDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
-
         const { count: prevMonthContracts } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
@@ -125,11 +126,6 @@ export const useDashboardStats = () => {
         .eq('is_active', true);
 
       // Get previous month customers for comparison
-      const previousMonth = new Date();
-      previousMonth.setMonth(previousMonth.getMonth() - 1);
-      const firstDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
-      const lastDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
-
       const { count: prevMonthCustomers } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
@@ -148,7 +144,7 @@ export const useDashboardStats = () => {
       
       let monthlyRevenue = 0;
       let propertyRevenue = 0;
-      let previousMonthRevenue = 0;
+      // previousMonthRevenue معرف بالفعل في السطر 53
 
       // Vehicle rental revenue (if vehicles module enabled)
       // حساب إجمالي الإيجار الشهري لجميع العقود النشطة في الشهر الحالي
