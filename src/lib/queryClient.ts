@@ -1,192 +1,108 @@
-import { QueryClient } from '@tanstack/react-query';
-
 /**
- * Optimized Query Client Configuration
- * Implements caching strategies for better performance
+ * React Query Client Configuration
+ * 
+ * Centralized React Query configuration.
+ * Optimized for FleetifyApp's needs.
  */
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Stale time: How long until data is considered stale (5 minutes)
-      staleTime: 5 * 60 * 1000,
-      
-      // Cache time: How long to keep unused data in cache (10 minutes)
-      gcTime: 10 * 60 * 1000,
-      
-      // Retry failed requests (3 attempts with exponential backoff)
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      
-      // Refetch on window focus (good for real-time data)
-      refetchOnWindowFocus: true,
-      
-      // Don't refetch on mount if data is still fresh
-      refetchOnMount: false,
-      
-      // Refetch on reconnect
-      refetchOnReconnect: true,
-      
-      // Suspend queries while offline
-      networkMode: 'online',
-    },
-    mutations: {
-      // Retry failed mutations once
-      retry: 1,
-      
-      // Network mode for mutations
-      networkMode: 'online',
-    },
+import { QueryClient } from '@tanstack/react-query';
+import { logger } from './logger';
+import { toast } from 'sonner';
+
+/**
+ * Default query options
+ */
+const defaultOptions = {
+  queries: {
+    // Cache configuration
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is considered fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep unused data in cache (formerly cacheTime)
+    
+    // Retry configuration
+    retry: 1, // Retry failed requests once
+    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    
+    // Refetch configuration
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: true, // Refetch when reconnecting
+    refetchOnMount: true, // Refetch on component mount
+    
+    // Error handling
+    throwOnError: false, // Handle errors via onError callbacks
   },
+  
+  mutations: {
+    // Retry configuration for mutations
+    retry: 0, // Don't retry mutations by default
+    
+    // Error handling
+    onError: (error: Error) => {
+      logger.error('Mutation error:', error);
+      toast.error('حدث خطأ', {
+        description: error.message
+      });
+    }
+  }
+};
+
+/**
+ * Create and configure the Query Client
+ */
+export const queryClient = new QueryClient({
+  defaultOptions,
+  logger: {
+    log: (message) => logger.debug(message),
+    warn: (message) => logger.warn(message),
+    error: (message) => logger.error(message)
+  }
 });
 
 /**
- * Cache key configuration for different data types
- * Organized by domain for better cache management
+ * Query key factories
+ * Use these for consistent query keys across the app
  */
-export const cacheKeys = {
-  // Financial data (frequent updates)
-  finance: {
-    overview: (companyId: string) => ['financial-overview', companyId],
-    metrics: (companyId: string) => ['financial-metrics', companyId],
-    alerts: (companyId: string) => ['financial-alerts', companyId],
-    payments: (companyId: string) => ['payments', companyId],
-    invoices: (companyId: string) => ['invoices', companyId],
-    accounts: (companyId: string) => ['accounts', companyId],
-  },
-  
-  // Legal AI data (moderate updates)
-  legal: {
-    consultations: (companyId: string) => ['legal-consultations', companyId],
-    documents: (companyId: string) => ['legal-documents', companyId],
-    cases: (companyId: string) => ['legal-cases', companyId],
-    stats: (companyId: string) => ['legal-stats', companyId],
-    customerHistory: (customerId: string) => ['legal-customer-history', customerId],
-  },
-  
-  // Fleet data (moderate updates)
-  fleet: {
-    vehicles: (companyId: string) => ['vehicles', companyId],
-    maintenance: (companyId: string) => ['maintenance', companyId],
-    violations: (companyId: string) => ['traffic-violations', companyId],
-    permits: (companyId: string) => ['dispatch-permits', companyId],
-  },
-  
-  // Contract data (infrequent updates)
+export const queryKeys = {
+  // Contracts
   contracts: {
-    all: (companyId: string) => ['contracts', companyId],
-    active: (companyId: string) => ['contracts', 'active', companyId],
-    byCustomer: (customerId: string) => ['contracts', 'customer', customerId],
-    details: (contractId: string) => ['contract', contractId],
+    all: (companyId?: string) => ['contracts', companyId] as const,
+    detail: (id: string) => ['contract', id] as const,
+    byCustomer: (customerId: string) => ['contracts', 'customer', customerId] as const,
+    stats: (companyId: string) => ['contract-stats', companyId] as const,
   },
   
-  // Customer data (infrequent updates)
+  // Payments
+  payments: {
+    all: (companyId?: string) => ['payments', companyId] as const,
+    detail: (id: string) => ['payment', id] as const,
+    byContract: (contractId: string) => ['payments', 'contract', contractId] as const,
+    unmatched: (companyId: string) => ['payments', 'unmatched', companyId] as const,
+    matches: (paymentId: string) => ['payment-matches', paymentId] as const,
+  },
+  
+  // Invoices
+  invoices: {
+    all: (companyId?: string) => ['invoices', companyId] as const,
+    detail: (id: string) => ['invoice', id] as const,
+    pending: (companyId: string) => ['invoices', 'pending', companyId] as const,
+    overdue: (companyId: string) => ['invoices', 'overdue', companyId] as const,
+  },
+  
+  // Customers
   customers: {
-    all: (companyId: string) => ['customers', companyId],
-    details: (customerId: string) => ['customer', customerId],
-    financial: (customerId: string) => ['customer-financial', customerId],
+    all: (companyId?: string) => ['customers', companyId] as const,
+    detail: (id: string) => ['customer', id] as const,
   },
   
-  // Static/rarely changing data (long cache)
-  static: {
-    banks: (companyId: string) => ['banks', companyId],
-    costCenters: (companyId: string) => ['cost-centers', companyId],
-    accounts: (companyId: string) => ['chart-of-accounts', companyId],
-    settings: (companyId: string) => ['company-settings', companyId],
+  // Vehicles
+  vehicles: {
+    all: (companyId?: string) => ['vehicles', companyId] as const,
+    detail: (id: string) => ['vehicle', id] as const,
+    available: (companyId: string) => ['vehicles', 'available', companyId] as const,
   },
   
-  // User/auth data (session-based)
-  auth: {
-    user: ['current-user'],
-    profile: (userId: string) => ['user-profile', userId],
-    permissions: (userId: string) => ['user-permissions', userId],
-  },
-};
-
-/**
- * Stale time configuration by data type
- * Optimized for different update frequencies
- */
-export const staleTimeConfig = {
-  // Real-time data (30 seconds)
-  realtime: 30 * 1000,
-  
-  // Frequently updated (5 minutes)
-  frequent: 5 * 60 * 1000,
-  
-  // Moderate updates (15 minutes)
-  moderate: 15 * 60 * 1000,
-  
-  // Infrequent updates (1 hour)
-  infrequent: 60 * 60 * 1000,
-  
-  // Static data (24 hours)
-  static: 24 * 60 * 60 * 1000,
-  
-  // Never stale (infinity)
-  infinite: Infinity,
-};
-
-/**
- * Prefetch important queries on app load
- * Improves perceived performance
- */
-export const prefetchCriticalQueries = async (companyId: string) => {
-  if (!companyId) return;
-  
-  // Prefetch financial overview (most accessed)
-  await queryClient.prefetchQuery({
-    queryKey: cacheKeys.finance.overview(companyId),
-    staleTime: staleTimeConfig.frequent,
-  });
-  
-  // Prefetch static data
-  await queryClient.prefetchQuery({
-    queryKey: cacheKeys.static.banks(companyId),
-    staleTime: staleTimeConfig.static,
-  });
-  
-  await queryClient.prefetchQuery({
-    queryKey: cacheKeys.static.costCenters(companyId),
-    staleTime: staleTimeConfig.static,
-  });
-};
-
-/**
- * Invalidate related queries
- * Use after mutations to keep data fresh
- */
-export const invalidateFinancialQueries = (companyId: string) => {
-  queryClient.invalidateQueries({ queryKey: cacheKeys.finance.overview(companyId) });
-  queryClient.invalidateQueries({ queryKey: cacheKeys.finance.metrics(companyId) });
-  queryClient.invalidateQueries({ queryKey: cacheKeys.finance.alerts(companyId) });
-};
-
-export const invalidateLegalQueries = (companyId: string) => {
-  queryClient.invalidateQueries({ queryKey: cacheKeys.legal.consultations(companyId) });
-  queryClient.invalidateQueries({ queryKey: cacheKeys.legal.stats(companyId) });
-};
-
-export const invalidateContractQueries = (companyId: string) => {
-  queryClient.invalidateQueries({ queryKey: cacheKeys.contracts.all(companyId) });
-  queryClient.invalidateQueries({ queryKey: cacheKeys.contracts.active(companyId) });
-};
-
-/**
- * Clear cache on logout
- */
-export const clearAllCache = () => {
-  queryClient.clear();
-};
-
-/**
- * Get cache statistics
- */
-export const getCacheStats = () => {
-  const cache = queryClient.getQueryCache();
-  return {
-    totalQueries: cache.getAll().length,
-    activeQueries: cache.getAll().filter(q => q.state.fetchStatus === 'fetching').length,
-    staleQueries: cache.getAll().filter(q => q.isStale()).length,
-  };
+  // Approvals
+  approvals: {
+    pending: (userId: string) => ['pending-approvals', userId] as const,
+    all: (companyId: string) => ['approvals', companyId] as const,
+  }
 };

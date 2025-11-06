@@ -10,6 +10,10 @@ import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHea
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
 import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
 import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
+import { WorldClassStatsCards } from '@/components/dashboard/WorldClassStatsCards';
+import { FinancialAnalyticsSection } from '@/components/dashboard/FinancialAnalyticsSection';
+import { FleetOperationsSection } from '@/components/dashboard/FleetOperationsSection';
+import { ForecastingSection } from '@/components/dashboard/ForecastingSection';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -90,14 +94,20 @@ const CarRentalDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
+        {/* World-Class Stats Cards */}
+        <WorldClassStatsCards />
+
         {/* Quick Actions Panel */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <QuickActionsDashboard />
-        </motion.div>
+        <QuickActionsDashboard />
+
+        {/* Financial Analytics Section */}
+        <FinancialAnalyticsSection />
+
+        {/* Fleet Operations Section */}
+        <FleetOperationsSection />
+
+        {/* Forecasting & Calendar Section */}
+        <ForecastingSection />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

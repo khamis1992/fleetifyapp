@@ -255,53 +255,184 @@ const QuickActionsDashboard: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Primary Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-border/50">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    className="p-2 rounded-lg bg-primary/10 text-primary"
-                    whileHover={{ scale: 1.05, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  >
-                    <Zap size={20} />
-                  </motion.div>
-                  <div>
-                    <CardTitle className="text-lg">إجراءات سريعة</CardTitle>
-                    <p className="text-sm text-muted-foreground">العمليات الأكثر استخداماً</p>
+      {/* Quick Actions Grid */}
+      <motion.section 
+        className="mb-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="glass-card rounded-3xl p-8 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl"></div>
+          </div>
+          
+          {/* Header */}
+          <div className="relative mb-8">
+            <div className="text-center">
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">ابدأ بسرعة</h3>
+              <p className="text-gray-600 text-lg">اختر إجراء لتنفيذه بنقرة واحدة</p>
+            </div>
+          </div>
+          
+          {/* Actions Grid */}
+          {availableQuickActions.length > 0 ? (
+            <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* عقد جديد */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[2])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 hover:from-red-500 hover:to-red-600 border border-red-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <FileText className="w-7 h-7 text-red-600 group-hover:text-red-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">عقد جديد</span>
                   </div>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  <Clock size={10} className="ml-1" />
-                  موفر للوقت
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {availableQuickActions.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableQuickActions.map((action, index) => (
-                    <ActionButton key={action.id} action={action} index={index} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>لا توجد إجراءات متاحة</p>
-                  <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-red-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+              
+              {/* إضافة مركبة */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[1])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-500 hover:to-orange-600 border border-orange-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <Car className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">إضافة مركبة</span>
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+              
+              {/* عميل جديد */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[0])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-rose-100 hover:from-red-400 hover:to-rose-500 border border-rose-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <Users className="w-7 h-7 text-rose-600 group-hover:text-rose-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">عميل جديد</span>
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-rose-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+              
+              {/* تسجيل دفعة */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[3])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 hover:from-amber-500 hover:to-yellow-600 border border-amber-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <DollarSign className="w-7 h-7 text-amber-600 group-hover:text-amber-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">تسجيل دفعة</span>
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-amber-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+              
+              {/* الحاسبة المالية */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[4])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-pink-100 hover:from-red-600 hover:to-pink-600 border border-pink-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <Calculator className="w-7 h-7 text-pink-600 group-hover:text-pink-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">الحاسبة المالية</span>
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-pink-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+              
+              {/* البحث المتقدم */}
+              <motion.div 
+                className="group relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+                whileHover={{ y: -4 }}
+              >
+                <button 
+                  onClick={() => handleActionClick(quickActions[5])}
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-red-100 hover:from-orange-600 hover:to-red-600 border border-orange-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                      <Search className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
+                    </div>
+                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">البحث المتقدم</span>
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                </button>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <Clock size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-semibold mb-2">لا توجد إجراءات متاحة</p>
+              <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
+            </div>
+          )}
+          
+          {/* Keyboard Shortcuts Hint */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              <span className="inline-flex items-center gap-1">
+                <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">K</kbd>
+                <span className="mr-2">لفتح قائمة الإجراءات السريعة</span>
+              </span>
+            </p>
+          </div>
+        </div>
+      </motion.section>
 
       {/* Customer Creation Dialog */}
       <EnhancedCustomerDialog
