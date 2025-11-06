@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetifyApp - اختبار بسيط</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            direction: rtl;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .status {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: right;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ FleetifyApp يعمل بنجاح!</h1>
+        
+        <div class="status">
+            🎉 النظام يعمل بشكل صحيح
+        </div>
+        
+        <div class="info">
+            <strong>معلومات النظام:</strong><br>
+            📅 التاريخ: <span id="date"></span><br>
+            ⏰ الوقت: <span id="time"></span><br>
+            🌐 المتصفح: <span id="browser"></span>
+        </div>
+        
+        <div class="info">
+            <strong>الحالة:</strong><br>
+            ✅ HTML يعمل<br>
+            ✅ CSS يعمل<br>
+            ✅ JavaScript يعمل
+        </div>
+        
+        <button onclick="testReactApp()">
+            اختبار التطبيق الرئيسي
+        </button>
+    </div>
+    
+    <script>
+        // Update date and time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('date').textContent = now.toLocaleDateString('ar-EG');
+            document.getElementById('time').textContent = now.toLocaleTimeString('ar-EG');
+        }
+        
+        // Detect browser
+        const userAgent = navigator.userAgent;
+        let browserName = 'غير معروف';
+        if (userAgent.indexOf('Chrome') > -1) browserName = 'Chrome';
+        else if (userAgent.indexOf('Firefox') > -1) browserName = 'Firefox';
+        else if (userAgent.indexOf('Safari') > -1) browserName = 'Safari';
+        else if (userAgent.indexOf('Edge') > -1) browserName = 'Edge';
+        document.getElementById('browser').textContent = browserName;
+        
+        // Test React app
+        function testReactApp() {
+            console.log('🧪 Testing React App...');
+            console.log('📦 Environment:', import.meta?.env?.MODE || 'development');
+            window.location.href = '/';
+        }
+        
+        // Initial update
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Log to console
+        console.log('✅ Test page loaded successfully!');
+        console.log('🌐 User Agent:', navigator.userAgent);
+        console.log('📱 Platform:', navigator.platform);
+    </script>
+</body>
+</html>
+

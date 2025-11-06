@@ -191,15 +191,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // CRITICAL DEBUG: Log environment and initialization state
   console.log('🚀 [APP] App.tsx loaded');
-  console.log('📦 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-  console.log('🔑 Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-  console.log('🌍 Environment:', import.meta.env.MODE);
-  console.log('🚀 [APP] App component rendering');
-  
-  // State to catch any initialization errors
-  const [initError, setInitError] = React.useState<Error | null>(null);
   
   React.useEffect(() => {
     console.log('🚀 [APP] App component mounted');
@@ -242,119 +234,34 @@ const App = () => {
     };
   }, []);
 
-  // CRITICAL: If there's an initialization error, display it prominently
-  if (initError) {
-    return (
-      <div style={{
-        padding: '20px',
-        background: '#fff',
-        color: '#dc2626',
-        fontFamily: 'monospace',
-        minHeight: '100vh',
-        direction: 'ltr'
+  return (
+    <ErrorBoundary>
+      <BrowserRouter future={{ 
+        v7_startTransition: true,
+        v7_relativeSplatPath: true 
       }}>
-        <h1 style={{ fontSize: '24px', marginBottom: '20px', color: '#991b1b' }}>
-          ❌ App Initialization Error
-        </h1>
-        <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-          <strong>Error Message:</strong>
-          <pre style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>{initError.toString()}</pre>
-        </div>
-        {initError.stack && (
-          <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px' }}>
-            <strong>Stack Trace:</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', marginTop: '10px', fontSize: '12px' }}>{initError.stack}</pre>
-          </div>
-        )}
-        <button 
-          onClick={() => window.location.reload()} 
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            background: '#dc2626',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          Reload Page
-        </button>
-      </div>
-    );
-  }
-
-  // Wrap the entire app in a try-catch to catch runtime errors
-  try {
-    return (
-      <ErrorBoundary>
-        <BrowserRouter future={{ 
-          v7_startTransition: true,
-          v7_relativeSplatPath: true 
-        }}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <AuthProvider>
-                  <CompanyContextProvider>
-                    <FABProvider>
-                      <MobileOptimizationProvider>
-                        <PWAInstallPrompt />
-                        <CommandPalette />
-                        <SimpleToaster />
-                        <AppRoutes />
-                      </MobileOptimizationProvider>
-                    </FABProvider>
-                  </CompanyContextProvider>
-                </AuthProvider>
-              </TooltipProvider>
-              {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-            </QueryClientProvider>
-          </ThemeProvider>
-        </BrowserRouter>
-      </ErrorBoundary>
-    );
-  } catch (error) {
-    console.error('🔴 [APP] Caught error during render:', error);
-    return (
-      <div style={{
-        padding: '20px',
-        background: '#fff',
-        color: '#dc2626',
-        fontFamily: 'monospace',
-        minHeight: '100vh',
-        direction: 'ltr'
-      }}>
-        <h1 style={{ fontSize: '24px', marginBottom: '20px', color: '#991b1b' }}>
-          ❌ App Render Error
-        </h1>
-        <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-          <strong>Error Message:</strong>
-          <pre style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>{String(error)}</pre>
-        </div>
-        {error instanceof Error && error.stack && (
-          <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '8px' }}>
-            <strong>Stack Trace:</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', marginTop: '10px', fontSize: '12px' }}>{error.stack}</pre>
-          </div>
-        )}
-        <button 
-          onClick={() => window.location.reload()} 
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            background: '#dc2626',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          Reload Page
-        </button>
-      </div>
-    );
-  }
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <AuthProvider>
+                <CompanyContextProvider>
+                  <FABProvider>
+                    <MobileOptimizationProvider>
+                      <PWAInstallPrompt />
+                      <CommandPalette />
+                      <SimpleToaster />
+                      <AppRoutes />
+                    </MobileOptimizationProvider>
+                  </FABProvider>
+                </CompanyContextProvider>
+              </AuthProvider>
+            </TooltipProvider>
+            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+          </QueryClientProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
+  )
 };
 
 const AppRoutes = () => {
