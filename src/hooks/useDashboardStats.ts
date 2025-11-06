@@ -60,13 +60,12 @@ export const useDashboardStats = () => {
 
       // Get vehicles data only if vehicles module is enabled
       if (isVehiclesEnabled) {
-        // Get active vehicles
+        // Get active vehicles (all vehicles with is_active = true, not just available)
         const { count: activeVehicles } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', user.profile.company_id)
-          .eq('is_active', true)
-          .eq('status', 'available');
+          .eq('is_active', true);
         activeVehiclesCount = activeVehicles || 0;
 
         // Get total vehicles
@@ -235,8 +234,9 @@ export const useDashboardStats = () => {
         : 0;
 
       // Calculate activity rates
-      const vehicleActivityRate = vehiclesCount > 0
-        ? Math.round((activeVehiclesCount / vehiclesCount) * 100)
+      // vehicleActivityRate = نسبة المركبات المؤجرة من إجمالي المركبات النشطة
+      const vehicleActivityRate = activeVehiclesCount > 0
+        ? Math.round((contractsCount / activeVehiclesCount) * 100)
         : 0;
 
       const contractCompletionRate = totalContractsCount > 0

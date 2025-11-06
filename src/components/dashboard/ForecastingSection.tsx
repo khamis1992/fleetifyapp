@@ -69,18 +69,12 @@ export const ForecastingSection: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 gap-4">
             <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-xl text-center">
               <p className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                 +{growthRate.toFixed(0)}%
               </p>
-              <p className="text-xs text-gray-600">نمو متوقع</p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl text-center">
-              <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                {Math.min(85 + Math.floor(currentRevenue / 10000), 95)}%
-              </p>
-              <p className="text-xs text-gray-600">دقة التوقع</p>
+              <p className="text-xs text-gray-600">نمو متوقع (تقديري)</p>
             </div>
           </div>
         </div>

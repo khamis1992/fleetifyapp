@@ -120,7 +120,7 @@ export const authService = {
             )
           `)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to handle cases where profile doesn't exist
         
         const employeeQuery = supabase
           .from('employees')

@@ -233,18 +233,51 @@ const seedDemoData = async (userId: string) => {
       companyId = newCompany.id;
     }
 
-    // Update user profile with company
-    const { error: profileError } = await supabase
+    // Check if profile exists
+    const { data: existingProfile, error: profileCheckError } = await supabase
       .from('profiles')
-      .update({
-        company_id: companyId,
-        role: 'company_admin',
-        is_demo_user: true,
-      })
-      .eq('id', userId);
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
 
-    if (profileError) {
-      console.error('Error updating demo profile:', profileError);
+    if (profileCheckError) {
+      console.error('Error checking profile:', profileCheckError);
+    }
+
+    // Create or update user profile with company
+    if (existingProfile) {
+      // Update existing profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          company_id: companyId,
+          role: 'company_admin',
+          is_demo_user: true,
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error updating demo profile:', profileError);
+      } else {
+        console.log('✅ Demo profile updated successfully');
+      }
+    } else {
+      // Create new profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          company_id: companyId,
+          role: 'company_admin',
+          is_demo_user: true,
+          full_name: 'Demo User',
+        });
+
+      if (profileError) {
+        console.error('Error creating demo profile:', profileError);
+      } else {
+        console.log('✅ Demo profile created successfully');
+      }
     }
 
     // Seed sample data (vehicles, customers, etc.)

@@ -107,6 +107,8 @@ export default function CustomerCRM() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
 
   // Form state
   const [followUpForm, setFollowUpForm] = useState({
@@ -120,12 +122,13 @@ export default function CustomerCRM() {
     nextTime: '',
   });
 
-  // Fetch customers with contracts
+  // Fetch customers with active contracts only
   const { data: customers = [], isLoading: loadingCustomers } = useQuery({
     queryKey: ['crm-customers', companyId],
     queryFn: async () => {
       if (!companyId) return [];
 
+      // Get customers who have active contracts
       const { data, error } = await supabase
         .from('customers')
         .select(`
@@ -137,10 +140,15 @@ export default function CustomerCRM() {
           email,
           company_id,
           is_active,
-          created_at
+          created_at,
+          contracts!inner (
+            id,
+            status
+          )
         `)
         .eq('company_id', companyId)
         .eq('is_active', true)
+        .eq('contracts.status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -298,6 +306,97 @@ export default function CustomerCRM() {
     return { label: 'منتهي', color: 'red', dotColor: 'bg-red-400' };
   };
 
+  // Auto-create call note when clicking "Call Now"
+  const handleCallNow = async (customer: Customer) => {
+    if (!companyId) return;
+
+    try {
+      // Create automatic note
+      const { data: newNote, error } = await supabase
+        .from('customer_notes')
+        .insert({
+          customer_id: customer.id,
+          company_id: companyId,
+          note_type: 'phone',
+          title: 'مكالمة هاتفية',
+          content: `تم إجراء مكالمة هاتفية مع العميل في ${format(new Date(), 'dd/MM/yyyy')} الساعة ${format(new Date(), 'HH:mm')}\n\n[يرجى إضافة تفاصيل المكالمة والاتفاقات...]`,
+          is_important: true, // Mark as important so user remembers to edit it
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Initiate the phone call
+      window.location.href = `tel:${customer.phone}`;
+
+      // Show toast with edit option
+      toast({
+        title: '✅ تم تسجيل المكالمة',
+        description: 'تم إنشاء ملاحظة تلقائية. يرجى إضافة تفاصيل المكالمة.',
+        action: (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingNoteId(newNote.id);
+              setEditingNoteContent(newNote.content);
+              setExpandedCustomer(customer.id);
+            }}
+          >
+            تعديل الآن
+          </Button>
+        ),
+      });
+    } catch (error) {
+      console.error('Error creating call note:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء تسجيل المكالمة',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Update existing note
+  const handleUpdateNote = async (noteId: string, newContent: string) => {
+    if (!newContent.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال محتوى الملاحظة',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('customer_notes')
+        .update({
+          content: newContent,
+          is_important: false, // Remove importance flag after editing
+        })
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      toast({
+        title: '✅ تم التحديث',
+        description: 'تم تحديث الملاحظة بنجاح',
+      });
+
+      setEditingNoteId(null);
+      setEditingNoteContent('');
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء تحديث الملاحظة',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleSaveFollowUp = async () => {
     if (!selectedCustomer || !companyId) return;
 
@@ -390,29 +489,13 @@ export default function CustomerCRM() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon">
-                <Menu className="w-6 h-6 text-gray-700" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
-                <p className="text-sm text-gray-500">نظام إدارة علاقات العملاء</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-6 h-6 text-gray-700" />
-                <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </Button>
-            </div>
-          </div>
+      {/* Page Title */}
+      <div className="bg-white border-b border-gray-200 mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-2xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
+          <p className="text-sm text-gray-500 mt-1">نظام إدارة علاقات العملاء (CRM)</p>
         </div>
-      </header>
+      </div>
 
       {/* Stats Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -629,9 +712,7 @@ export default function CustomerCRM() {
                   <div className="flex gap-3 mb-4">
                     <Button
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        window.location.href = `tel:${customer.phone}`;
-                      }}
+                      onClick={() => handleCallNow(customer)}
                     >
                       <Phone className="w-4 h-4 ml-2" />
                       اتصال الآن
@@ -756,6 +837,7 @@ export default function CustomerCRM() {
                           {customerFollowUps.map((followUp) => {
                             const Icon = getFollowUpIcon(followUp.note_type);
                             const typeColor = followUp.note_type === 'phone' ? 'green' : followUp.note_type === 'message' ? 'blue' : followUp.note_type === 'meeting' ? 'purple' : 'gray';
+                            const isEditing = editingNoteId === followUp.id;
 
                             return (
                               <div key={followUp.id} className="flex gap-4 relative hover:translate-x-2 transition-transform">
@@ -770,20 +852,81 @@ export default function CustomerCRM() {
                                          followUp.note_type === 'message' ? 'رسالة SMS' : 
                                          followUp.note_type === 'meeting' ? 'اجتماع' : 'ملاحظة'}
                                       </span>
+                                      {followUp.is_important && (
+                                        <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200 text-xs">
+                                          يحتاج تعديل
+                                        </Badge>
+                                      )}
                                     </div>
-                                    <span className="text-xs text-gray-500">
-                                      {format(new Date(followUp.created_at), 'yyyy-MM-dd | HH:mm')}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">
+                                        {format(new Date(followUp.created_at), 'yyyy-MM-dd | HH:mm')}
+                                      </span>
+                                      {!isEditing ? (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            setEditingNoteId(followUp.id);
+                                            setEditingNoteContent(followUp.content);
+                                          }}
+                                          className="h-7 px-2"
+                                        >
+                                          <FileText className="w-3 h-3 ml-1" />
+                                          تعديل
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          className="h-7 px-2"
+                                        >
+                                          <X className="w-3 h-3 ml-1" />
+                                          إلغاء
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                     <p className="text-sm text-gray-800 mb-2"><strong>💬 الملاحظات:</strong></p>
-                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{followUp.content}</p>
+                                    {!isEditing ? (
+                                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{followUp.content}</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        <Textarea
+                                          rows={5}
+                                          value={editingNoteContent}
+                                          onChange={(e) => setEditingNoteContent(e.target.value)}
+                                          className="text-sm resize-none"
+                                          placeholder="أضف تفاصيل المكالمة..."
+                                        />
+                                        <div className="flex gap-2 justify-end">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setEditingNoteId(null);
+                                              setEditingNoteContent('');
+                                            }}
+                                          >
+                                            إلغاء
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => handleUpdateNote(followUp.id, editingNoteContent)}
+                                          >
+                                            <CheckCircle className="w-3 h-3 ml-1" />
+                                            حفظ التعديلات
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                  {followUp.is_important && (
-                                    <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                                      متابعة مهمة
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
                             );

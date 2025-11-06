@@ -132,18 +132,18 @@ export const FleetOperationsSection: React.FC = () => {
         <div className="grid grid-cols-3 gap-3 mt-6">
           <div className="text-center p-3 rounded-xl bg-emerald-50">
             <div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto mb-2"></div>
-            <p className="text-xl font-bold text-emerald-700">{fleetStatus?.available || 85}</p>
+            <p className="text-xl font-bold text-emerald-700">{fleetStatus?.available || 0}</p>
             <p className="text-xs text-gray-600">متاح</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-red-50">
             <div className="w-3 h-3 bg-red-600 rounded-full mx-auto mb-2"></div>
-            <p className="text-xl font-bold text-red-700">{fleetStatus?.rented || 145}</p>
+            <p className="text-xl font-bold text-red-700">{fleetStatus?.rented || 0}</p>
             <p className="text-xs text-gray-600">مؤجر</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-orange-50">
             <div className="w-3 h-3 bg-orange-500 rounded-full mx-auto mb-2"></div>
             <p className="text-xl font-bold text-orange-700">
-              {(fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0) || 15}
+              {(fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0)}
             </p>
             <p className="text-xs text-gray-600">صيانة</p>
           </div>
@@ -246,15 +246,23 @@ export const FleetOperationsSection: React.FC = () => {
         <div className="space-y-3 mt-6">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <span className="text-sm text-gray-600">معدل الإشغال</span>
-            <span className="font-bold text-gray-900">77.2%</span>
+            <span className="font-bold text-gray-900">{occupancyRate}%</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">العائد اليومي</span>
-            <span className="font-bold text-gray-900">512 ر.س</span>
+            <span className="text-sm text-gray-600">المركبات المؤجرة</span>
+            <span className="font-bold text-gray-900">{fleetStatus?.rented || 0}</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <span className="text-sm text-gray-600">كفاءة الأسطول</span>
-            <span className="font-bold text-emerald-600">ممتاز</span>
+            <span className={`font-bold ${
+              occupancyRate >= 70 ? 'text-emerald-600' :
+              occupancyRate >= 50 ? 'text-blue-600' :
+              occupancyRate >= 30 ? 'text-yellow-600' : 'text-gray-600'
+            }`}>
+              {occupancyRate >= 70 ? 'ممتاز' :
+               occupancyRate >= 50 ? 'جيد' :
+               occupancyRate >= 30 ? 'متوسط' : 'منخفض'}
+            </span>
           </div>
         </div>
       </motion.div>

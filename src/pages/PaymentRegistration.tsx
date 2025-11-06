@@ -69,7 +69,11 @@ const PaymentRegistration = () => {
   }, [companyId]);
 
   const fetchActiveContracts = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.warn('⚠️ [PaymentRegistration] No company ID - skipping fetch');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -261,6 +265,28 @@ const PaymentRegistration = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">جاري تحميل العقود النشطة...</p>
         </div>
+      </div>
+    );
+  }
+
+  // معالجة حالة عدم وجود معرف الشركة
+  if (!companyId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="p-4 bg-destructive/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">لا يوجد ارتباط بشركة</h2>
+            <p className="text-muted-foreground mb-6">
+              حسابك غير مرتبط بأي شركة. يرجى التواصل مع المسؤول لإضافتك إلى شركة.
+            </p>
+            <Button onClick={() => window.location.href = '/dashboard'} className="w-full">
+              العودة إلى لوحة التحكم
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
