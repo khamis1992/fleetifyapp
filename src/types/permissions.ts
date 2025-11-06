@@ -214,6 +214,63 @@ export const PERMISSIONS: Permission[] = [
     category: PERMISSION_CATEGORIES[1],
     level: 'write'
   },
+  // Journal Entry Workflow Permissions
+  {
+    id: 'finance.journal.create_draft',
+    name: 'Create Draft Journal Entries',
+    description: 'Create journal entries in draft status',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.journal.submit_for_review',
+    name: 'Submit Journal Entries for Review',
+    description: 'Submit draft journal entries for review',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.journal.review',
+    name: 'Review Journal Entries',
+    description: 'Review and approve/reject journal entries',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.approve',
+    name: 'Approve Journal Entries',
+    description: 'Approve reviewed journal entries',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.post',
+    name: 'Post Journal Entries',
+    description: 'Post approved journal entries to ledger',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.reverse',
+    name: 'Reverse Posted Journal Entries',
+    description: 'Reverse posted journal entries',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.cancel',
+    name: 'Cancel Journal Entries',
+    description: 'Cancel journal entries at any stage',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
+    id: 'finance.journal.view_all_statuses',
+    name: 'View All Journal Entry Statuses',
+    description: 'View journal entries in all workflow statuses',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'read'
+  },
   {
     id: 'finance.treasury.view',
     name: 'View Treasury',

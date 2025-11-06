@@ -2,19 +2,22 @@ import { useState, useEffect } from "react";
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  DollarSign, 
-  Receipt, 
-  CreditCard, 
-  TrendingUp, 
-  Building, 
+import {
+  DollarSign,
+  Receipt,
+  CreditCard,
+  TrendingUp,
+  Building,
   Calculator,
   FileText,
   PieChart,
   Target,
   Banknote,
   BookOpen,
-  Settings
+  Settings,
+  BarChart3,
+  Link as LinkIcon,
+  Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useFinancialSummary } from "@/hooks/useFinance";
@@ -25,6 +28,38 @@ const Overview = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary();
   
   const modules = [
+    {
+      title: "لوحة التحكم المالية",
+      description: "نظرة شاملة مع جميع المؤشرات الرئيسية",
+      icon: BarChart3,
+      href: "/finance/accountant-dashboard",
+      gradient: "from-purple-500 to-pink-500",
+      stats: `${financialSummary?.totalRevenue || 0} ريال`
+    },
+    {
+      title: "التحليلات المالية المتقدمة",
+      description: "النسب المالية (الربحية، السيولة، النشاط، المديونية)",
+      icon: Activity,
+      href: "/finance/financial-ratios",
+      gradient: "from-indigo-500 to-purple-500",
+      stats: "النسب والمؤشرات"
+    },
+    {
+      title: "ربط الفواتير بالقيود",
+      description: "تقرير شامل لربط الفواتير بالقيود المحاسبية",
+      icon: LinkIcon,
+      href: "/finance/invoice-journal-report",
+      gradient: "from-cyan-500 to-blue-500",
+      stats: "تتبع الربط"
+    },
+    {
+      title: "سجل التدقيق الشامل",
+      description: "تتبع كامل لجميع التعديلات المحاسبية (Audit Trail)",
+      icon: Shield,
+      href: "/finance/audit-trail",
+      gradient: "from-gray-600 to-gray-800",
+      stats: "الأمان والتتبع"
+    },
     {
       title: "دليل الحسابات",
       titleEn: "Chart of Accounts",

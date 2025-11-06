@@ -7,6 +7,12 @@ import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/compo
 
 // Lazy load all finance sub-modules with retry for better reliability
 const Overview = lazyWithRetry(() => import("./finance/Overview"), "Overview");
+const AccountantDashboard = lazyWithRetry(() => import("./finance/AccountantDashboard"), "AccountantDashboard");
+const AlertsPage = lazyWithRetry(() => import("./finance/AlertsPage"), "AlertsPage");
+const JournalPermissions = lazyWithRetry(() => import("./finance/JournalPermissions"), "JournalPermissions");
+const FinancialRatios = lazyWithRetry(() => import("./finance/FinancialRatios"), "FinancialRatios");
+const InvoiceJournalReport = lazyWithRetry(() => import("./finance/InvoiceJournalReport"), "InvoiceJournalReport");
+const AuditTrailPage = lazyWithRetry(() => import("./finance/AuditTrailPage"), "AuditTrailPage");
 const ChartOfAccounts = lazyWithRetry(() => import("./finance/ChartOfAccounts"), "ChartOfAccounts");
 const GeneralLedger = lazyWithRetry(() => import("./finance/GeneralLedger"), "GeneralLedger");
 const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
@@ -52,6 +58,66 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Overview />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="accountant-dashboard" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AccountantDashboard />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="alerts" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AlertsPage />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="journal-permissions" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <JournalPermissions />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="financial-ratios" 
+        element={
+          <ProtectedFinanceRoute permission="finance.reports.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinancialRatios />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="invoice-journal-report" 
+        element={
+          <ProtectedFinanceRoute permission="finance.reports.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <InvoiceJournalReport />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="audit-trail" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AuditTrailPage />
             </Suspense>
           </ProtectedFinanceRoute>
         } 

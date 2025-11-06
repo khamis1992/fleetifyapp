@@ -29,6 +29,10 @@ import { CashFlowReport } from "@/components/finance/CashFlowReport"
 import { PayablesReport } from "@/components/finance/PayablesReport"
 import { ReceivablesReport } from "@/components/finance/ReceivablesReport"
 import { PayrollReportsPanel } from "@/components/finance/PayrollReportsPanel"
+import { TrialBalanceReport } from "@/components/finance/TrialBalanceReport"
+import { IncomeStatementReport } from "@/components/finance/IncomeStatementReport"
+import { BalanceSheetReport } from "@/components/finance/BalanceSheetReport"
+import { CashFlowStatementReport } from "@/components/finance/CashFlowStatementReport"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -321,16 +325,36 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-12">
+          <TabsTrigger value="trial-balance">ميزان المراجعة</TabsTrigger>
+          <TabsTrigger value="income-statement-enhanced">قائمة الدخل</TabsTrigger>
+          <TabsTrigger value="balance-sheet-enhanced">قائمة المركز المالي</TabsTrigger>
+          <TabsTrigger value="cash-flow-enhanced">التدفقات النقدية</TabsTrigger>
           <TabsTrigger value="enhanced">التقارير المحسّنة</TabsTrigger>
           <TabsTrigger value="payroll">الرواتب</TabsTrigger>
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="receivables">المدينة</TabsTrigger>
           <TabsTrigger value="payables">الدائنة</TabsTrigger>
-          <TabsTrigger value="cash-flow">التدفقات النقدية</TabsTrigger>
-          <TabsTrigger value="income-statement">قائمة الدخل</TabsTrigger>
-          <TabsTrigger value="balance-sheet">الميزانية</TabsTrigger>
+          <TabsTrigger value="cash-flow">التدفقات (قديم)</TabsTrigger>
+          <TabsTrigger value="income-statement">قائمة الدخل (قديم)</TabsTrigger>
+          <TabsTrigger value="balance-sheet">الميزانية (قديم)</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="trial-balance" className="space-y-6">
+          <TrialBalanceReport />
+        </TabsContent>
+
+        <TabsContent value="income-statement-enhanced" className="space-y-6">
+          <IncomeStatementReport />
+        </TabsContent>
+
+        <TabsContent value="balance-sheet-enhanced" className="space-y-6">
+          <BalanceSheetReport />
+        </TabsContent>
+
+        <TabsContent value="cash-flow-enhanced" className="space-y-6">
+          <CashFlowStatementReport />
+        </TabsContent>
 
         <TabsContent value="enhanced" className="space-y-6">
           <EnhancedFinancialReportsViewer />
