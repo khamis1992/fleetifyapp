@@ -66,12 +66,12 @@ export default defineConfig(({ mode }) => ({
     ],
     force: true,
     esbuildOptions: {
-      target: 'es2020',
+      target: 'es2022',
       mainFields: ['module', 'browser', 'main'],
     },
   },
   build: {
-    target: 'es2020',
+    target: 'es2022',
     minify: 'terser',
     outDir: 'dist',
     assetsDir: 'assets',
