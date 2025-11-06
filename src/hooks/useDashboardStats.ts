@@ -62,28 +62,42 @@ export const useDashboardStats = () => {
       // Get vehicles data only if vehicles module is enabled
       if (isVehiclesEnabled) {
         // Get active vehicles (all vehicles with is_active = true, not just available)
-        const { count: activeVehicles } = await supabase
+        const { count: activeVehicles, error: activeVehiclesError } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', user.profile.company_id)
           .eq('is_active', true);
+        
+        if (activeVehiclesError) {
+          console.error('Error fetching active vehicles:', activeVehiclesError);
+        }
         activeVehiclesCount = activeVehicles || 0;
 
         // Get total vehicles
-        const { count: totalVehicles } = await supabase
+        const { count: totalVehicles, error: totalVehiclesError } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', user.profile.company_id);
+        
+        if (totalVehiclesError) {
+          console.error('Error fetching total vehicles:', totalVehiclesError);
+        }
         vehiclesCount = totalVehicles || 0;
 
         // Get active contracts count
-        // النظر في العقود النشطة: status = 'active' أو التاريخ لم ينتهي بعد
+        // العقود النشطة: status = 'active' فقط لتجنب التعقيدات
         const today = new Date().toISOString().split('T')[0];
-        const { count: activeContractsCount } = await supabase
+        const { count: activeContractsCount, error: contractsError } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', user.profile.company_id)
-          .or(`status.eq.active,and(status.neq.cancelled,status.neq.expired,end_date.gte.${today})`);
+          .eq('status', 'active');
+        
+        // تسجيل الخطأ إن وجد
+        if (contractsError) {
+          console.error('Error fetching active contracts:', contractsError);
+        }
+        
         contractsCount = activeContractsCount || 0;
 
         // Get total contracts count

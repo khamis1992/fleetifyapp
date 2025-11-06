@@ -27,19 +27,24 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { UnifiedPaymentUpload } from "@/components/finance/payment-upload/UnifiedPaymentUpload";
 import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDeletePaymentsDialog";
 import { ProfessionalPaymentSystem } from "@/components/finance/ProfessionalPaymentSystem";
-
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 import { HelpIcon } from '@/components/help/HelpIcon';
+
 const Payments = () => {
+  // حالة البحث والتصفية
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
+  
+  // حالة النماذج والنوافذ
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isUnifiedUploadOpen, setIsUnifiedUploadOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isProfessionalSystemOpen, setIsProfessionalSystemOpen] = useState(false);
+  
+  // حالة نطاق التاريخ
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""

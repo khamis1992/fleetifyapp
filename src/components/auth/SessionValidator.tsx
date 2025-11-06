@@ -32,7 +32,8 @@ export const SessionValidator: React.FC<SessionValidatorProps> = ({ children }) 
   }
 
   // Show session error if there's an authentication issue
-  if (sessionError || (!user || !session)) {
+  // Only show error if loading is complete AND there's actually an error or missing session
+  if (!loading && (sessionError || (!user || !session))) {
     return (
       <Card className="border-destructive max-w-md mx-auto mt-8">
         <CardHeader>
