@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { 
   Link as LinkIcon, 
-  LinkOff, 
+  Unlink, 
   FileText, 
   CheckCircle,
   AlertCircle,
@@ -246,7 +246,7 @@ export function InvoiceJournalLinkingReport() {
                         </Badge>
                       ) : (
                         <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                          <LinkOff className="h-3 w-3 mr-1" />
+                          <Unlink className="h-3 w-3 mr-1" />
                           غير مربوطة
                         </Badge>
                       )}
