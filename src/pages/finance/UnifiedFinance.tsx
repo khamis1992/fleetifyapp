@@ -11,15 +11,15 @@ import {
 
 // Import existing components
 import Overview from './Overview';
-import { UnifiedPayments } from '@/components/finance/UnifiedPayments';
+import UnifiedPayments from './UnifiedPayments';
 import Invoices from './Invoices';
 import Deposits from './Deposits';
 import PurchaseOrders from './PurchaseOrders';
 import GeneralLedger from './GeneralLedger';
 import JournalEntries from './JournalEntries';
-import { ChartOfAccountsManager } from '@/components/finance/ChartOfAccountsManager';
+import ChartOfAccounts from './ChartOfAccounts';
 import Treasury from './Treasury';
-import { PaymentTrackingDashboard } from '@/components/finance/PaymentTrackingDashboard';
+import PaymentTracking from './PaymentTracking';
 import Vendors from './Vendors';
 import VendorCategories from './VendorCategories';
 
@@ -124,7 +124,7 @@ const UnifiedFinance: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="chart-of-accounts">
-              <ChartOfAccountsManager />
+              <ChartOfAccounts />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -142,7 +142,7 @@ const UnifiedFinance: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="payment-tracking">
-              <PaymentTrackingDashboard />
+              <PaymentTracking />
             </TabsContent>
           </Tabs>
         </TabsContent>
