@@ -47,6 +47,7 @@ const UnifiedFinancialDashboard = lazyWithRetry(() => import("./finance/UnifiedF
 const UnifiedReports = lazyWithRetry(() => import("./finance/UnifiedReports"), "UnifiedReports");
 const UnifiedPayments = lazyWithRetry(() => import("./finance/UnifiedPayments"), "UnifiedPayments");
 const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
+const UnifiedFinance = lazyWithRetry(() => import("./finance/UnifiedFinance"), "UnifiedFinance");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -62,6 +63,16 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Overview />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="unified" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <UnifiedFinance />
             </Suspense>
           </ProtectedFinanceRoute>
         } 

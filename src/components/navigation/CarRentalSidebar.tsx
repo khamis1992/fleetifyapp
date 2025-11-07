@@ -34,6 +34,7 @@ import {
   Wallet,
   Package,
   PhoneCall,
+  LayoutDashboard,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -65,69 +66,22 @@ const navigationItems = [
 
 const financeSubItems = [
   {
-    name: 'دليل الحسابات',
-    href: '/finance/chart-of-accounts',
-    icon: BookOpen
-  },
-  {
-    name: 'ربط الحسابات',
-    href: '/finance/account-mappings',
-    icon: Link
-  },
-  {
-    name: 'دفتر الأستاذ',
-    href: '/finance/ledger',
-    icon: Calculator
-  },
-  {
-    name: 'الخزينة والبنوك',
-    href: '/finance/treasury',
-    icon: Landmark
-  },
-  {
-    name: 'الفواتير',
-    href: '/finance/invoices',
-    icon: Receipt
-  },
-  {
-    name: 'المدفوعات',
-    href: '/finance/payments',
-    icon: CreditCard
-  },
-  {
-    name: 'تتبع المدفوعات',
-    href: '/financial-tracking',
-    icon: Wallet
-  },
-  {
-    name: 'الموازنات',
-    href: '/finance/budgets',
-    icon: Target
-  },
-  {
-    name: 'مراكز التكلفة',
-    href: '/finance/cost-centers',
-    icon: MapPin
-  },
-  {
-    name: 'الأصول الثابتة',
-    href: '/finance/assets',
-    icon: Building
-  },
-  {
-    name: 'الموردين',
-    href: '/finance/vendors',
-    icon: Building
-  },
-  {
-    name: 'التحليل المالي',
-    href: '/finance/analysis',
-    icon: PieChart
+    name: 'المالية الموحدة',
+    href: '/finance/unified',
+    icon: LayoutDashboard,
+    description: 'جميع العمليات المالية اليومية'
   },
   {
     name: 'التقارير المالية',
     href: '/finance/reports',
-    icon: FileText
+    icon: FileText,
+    description: 'جميع التقارير والتحليلات المالية'
+  },
+  {
+    name: 'الإعدادات المالية',
+    href: '/finance/settings',
+    icon: Settings,
+    description: 'إعدادات النظام المالي والصلاحيات'
   },
 ];
 
