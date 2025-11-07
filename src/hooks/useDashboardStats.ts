@@ -28,9 +28,9 @@ export const useDashboardStats = () => {
   const { moduleContext } = useModuleConfig();
   
   return useQuery({
-    queryKey: ['dashboard-stats', user?.profile?.company_id],
+    queryKey: ['dashboard-stats', user?.id],
     queryFn: async (): Promise<DashboardStats> => {
-      if (!user?.profile?.company_id) {
+      if (!user?.id) {
         return {
           totalCustomers: 0,
           monthlyRevenue: 0,
@@ -38,6 +38,25 @@ export const useDashboardStats = () => {
           revenueChange: '+0%'
         };
       }
+
+      // جلب company_id من جدول profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        console.error('Error fetching company_id from profiles:', profileError);
+        return {
+          totalCustomers: 0,
+          monthlyRevenue: 0,
+          customersChange: '+0',
+          revenueChange: '+0%'
+        };
+      }
+
+      const company_id = profileData.company_id;
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
@@ -65,7 +84,7 @@ export const useDashboardStats = () => {
         const { count: activeVehicles, error: activeVehiclesError } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('is_active', true);
         
         if (activeVehiclesError) {
@@ -77,7 +96,7 @@ export const useDashboardStats = () => {
         const { count: totalVehicles, error: totalVehiclesError } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id);
+          .eq('company_id', company_id);
         
         if (totalVehiclesError) {
           console.error('Error fetching total vehicles:', totalVehiclesError);
@@ -90,7 +109,7 @@ export const useDashboardStats = () => {
         const { count: activeContractsCount, error: contractsError } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('status', 'active');
         
         // تسجيل الخطأ إن وجد
@@ -104,14 +123,14 @@ export const useDashboardStats = () => {
         const { count: allContractsCount } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id);
+          .eq('company_id', company_id);
         totalContractsCount = allContractsCount || 0;
 
         // Get previous month contracts for comparison
         const { count: prevMonthContracts } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .gte('created_at', firstDayPrevMonth.toISOString())
           .lte('created_at', lastDayPrevMonth.toISOString());
         previousMonthContracts = prevMonthContracts || 0;
@@ -122,14 +141,14 @@ export const useDashboardStats = () => {
         const { count: propCount } = await supabase
           .from('properties')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('is_active', true);
         propertiesCount = propCount || 0;
 
         const { count: ownersCount } = await supabase
           .from('property_owners')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('is_active', true);
         propertyOwnersCount = ownersCount || 0;
       }
@@ -138,14 +157,14 @@ export const useDashboardStats = () => {
       const { count: customersCount } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', company_id)
         .eq('is_active', true);
 
       // Get previous month customers for comparison
       const { count: prevMonthCustomers } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', company_id)
         .gte('created_at', firstDayPrevMonth.toISOString())
         .lte('created_at', lastDayPrevMonth.toISOString());
       previousMonthCustomers = prevMonthCustomers || 0;
@@ -168,7 +187,7 @@ export const useDashboardStats = () => {
         const { data: monthlyContracts } = await supabase
           .from('contracts')
           .select('monthly_amount, status, start_date, end_date')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('status', 'active')
           .lte('start_date', lastDayOfMonth.toISOString().split('T')[0]);
 
@@ -186,7 +205,7 @@ export const useDashboardStats = () => {
         const { data: prevMonthContracts } = await supabase
           .from('contracts')
           .select('monthly_amount, status, start_date, end_date')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('status', 'active')
           .lte('start_date', lastDayOfPrevMonth.toISOString().split('T')[0]);
 
@@ -204,7 +223,7 @@ export const useDashboardStats = () => {
         const { data: propertyContracts } = await supabase
           .from('property_contracts')
           .select('rental_amount, status, start_date, end_date')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('status', 'active')
           .lte('start_date', lastDayOfMonth.toISOString().split('T')[0]);
 
@@ -221,7 +240,7 @@ export const useDashboardStats = () => {
         const { data: prevPropertyContracts } = await supabase
           .from('property_contracts')
           .select('rental_amount, status, start_date, end_date')
-          .eq('company_id', user.profile.company_id)
+          .eq('company_id', company_id)
           .eq('status', 'active')
           .lte('start_date', lastDayOfPrevMonth.toISOString().split('T')[0]);
 
