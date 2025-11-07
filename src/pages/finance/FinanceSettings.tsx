@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { AccountMappings } from '@/components/finance/AccountMappings';
-import { AuditTrail } from '@/components/finance/AuditTrail';
+import { AuditTrailViewer } from '@/components/finance/AuditTrailViewer';
 
 const FinanceSettings = () => {
   const [activeTab, setActiveTab] = useState('mappings');
@@ -114,7 +114,7 @@ const FinanceSettings = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <AuditTrail />
+                  <AuditTrailViewer />
                 </CardContent>
               </Card>
             </TabsContent>
