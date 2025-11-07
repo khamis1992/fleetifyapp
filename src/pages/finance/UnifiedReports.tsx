@@ -16,7 +16,7 @@ import { BalanceSheet } from '@/components/finance/reports/BalanceSheet';
 import { IncomeStatement } from '@/components/finance/reports/IncomeStatement';
 import { CashFlowStatement } from '@/components/finance/reports/CashFlowStatement';
 import { FinancialRatios } from '@/components/finance/reports/FinancialRatios';
-import { InvoiceJournalReport } from '@/components/finance/InvoiceJournalReport';
+import { InvoiceJournalLinkingReport } from '@/components/finance/InvoiceJournalLinkingReport';
 
 const UnifiedReports = () => {
   const [activeTab, setActiveTab] = useState('balance-sheet');
@@ -161,7 +161,7 @@ const UnifiedReports = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InvoiceJournalReport />
+                  <InvoiceJournalLinkingReport />
                 </CardContent>
               </Card>
             </TabsContent>
