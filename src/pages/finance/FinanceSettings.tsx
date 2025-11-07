@@ -11,7 +11,8 @@ import {
   Users
 } from 'lucide-react';
 import { HelpIcon } from '@/components/help/HelpIcon';
-import { AccountMappings } from '@/components/finance/AccountMappings';
+import { AccountMappingSettings } from '@/components/finance/AccountMappingSettings';
+import { EssentialAccountMappingsManager } from '@/components/finance/EssentialAccountMappingsManager';
 import { AuditTrailViewer } from '@/components/finance/AuditTrailViewer';
 
 const FinanceSettings = () => {
@@ -78,7 +79,10 @@ const FinanceSettings = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <AccountMappings />
+                  <div className="space-y-6">
+                    <EssentialAccountMappingsManager />
+                    <AccountMappingSettings />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
