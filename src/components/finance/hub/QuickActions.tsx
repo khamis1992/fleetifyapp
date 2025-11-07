@@ -46,6 +46,15 @@ export const QuickActions: React.FC = () => {
     },
     {
       icon: FileText,
+      label: 'الفواتير',
+      description: 'عرض وإدارة جميع الفواتير',
+      action: () => navigate('/finance/invoices'),
+      hotkey: 'Alt+I',
+      variant: 'primary',
+      roles: ['cashier', 'accountant', 'manager', 'admin'],
+    },
+    {
+      icon: FileText,
       label: 'إيصال سريع',
       description: 'طباعة إيصال مباشرة',
       action: () => navigate('/finance/cash-receipt'),

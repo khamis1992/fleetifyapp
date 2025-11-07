@@ -13,7 +13,22 @@ import {
   CheckCircle,
   Clock,
   ArrowUpRight,
+  MoreHorizontal,
+  Calculator,
+  BookOpen,
+  Landmark,
+  Building,
+  Target,
+  Settings,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { QuickActions } from '@/components/finance/hub/QuickActions';
 import { UniversalSearch } from '@/components/finance/hub/UniversalSearch';
 import { ActivityTimeline } from '@/components/finance/hub/ActivityTimeline';
@@ -293,47 +308,119 @@ const FinanceHub: React.FC = () => {
         <ActivityTimeline />
       </motion.div>
 
-      {/* Quick Links */}
+      {/* Essential Quick Links - 4 Most Used */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">روابط سريعة</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">الوصول السريع</h3>
+            <span className="text-xs text-muted-foreground">
+              الأكثر استخداماً
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {/* 4 Most Used Modules */}
             <Button
               variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+              className="h-auto py-6 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/invoices')}
+            >
+              <FileText className="w-6 h-6" />
+              <span className="text-sm font-medium">الفواتير</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/payments')}
+            >
+              <DollarSign className="w-6 h-6" />
+              <span className="text-sm font-medium">المدفوعات</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/ledger')}
+            >
+              <Calculator className="w-6 h-6" />
+              <span className="text-sm font-medium">دفتر الأستاذ</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
               onClick={() => navigate('/finance/reports')}
             >
-              <FileText className="w-5 h-5" />
-              <span className="text-xs">التقارير</span>
+              <FileText className="w-6 h-6" />
+              <span className="text-sm font-medium">التقارير</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-              onClick={() => navigate('/finance/chart-of-accounts')}
-            >
-              <FileText className="w-5 h-5" />
-              <span className="text-xs">دليل الحسابات</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-              onClick={() => navigate('/finance/treasury')}
-            >
-              <DollarSign className="w-5 h-5" />
-              <span className="text-xs">الخزينة</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-              onClick={() => navigate('/finance/settings')}
-            >
-              <FileText className="w-5 h-5" />
-              <span className="text-xs">الإعدادات</span>
-            </Button>
+
+            {/* More Options Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-auto py-6 flex flex-col items-center justify-center gap-2"
+                >
+                  <MoreHorizontal className="w-6 h-6" />
+                  <span className="text-sm font-medium">المزيد...</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>الوحدات الإضافية</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/chart-of-accounts')}>
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  دليل الحسابات
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/journal-entries')}>
+                  <Calculator className="w-4 h-4 mr-2" />
+                  القيود اليومية
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/treasury')}>
+                  <Landmark className="w-4 h-4 mr-2" />
+                  الخزينة والبنوك
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>الإدارة</DropdownMenuLabel>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/vendors')}>
+                  <Building className="w-4 h-4 mr-2" />
+                  الموردين
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/cost-centers')}>
+                  <Target className="w-4 h-4 mr-2" />
+                  مراكز التكلفة
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/budgets')}>
+                  <Target className="w-4 h-4 mr-2" />
+                  الموازنات
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/assets')}>
+                  <Building className="w-4 h-4 mr-2" />
+                  الأصول الثابتة
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem onClick={() => navigate('/finance/settings')}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  الإعدادات
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </Card>
       </motion.div>

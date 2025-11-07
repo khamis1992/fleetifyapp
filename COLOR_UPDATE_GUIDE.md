@@ -328,3 +328,4 @@ bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent
 
 **هذا النظام مستوحى من شركات عالمية رائدة مثل Apple و Tesla لخلق تجربة فاخرة واحترافية** 🚀
 
+

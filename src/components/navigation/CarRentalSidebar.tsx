@@ -64,44 +64,27 @@ const navigationItems = [
   },
 ];
 
+// القائمة المبسطة - 3 عناصر فقط
 const financeSubItems = [
   {
     name: 'المركز المالي',
     href: '/finance/hub',
     icon: LayoutDashboard,
-    description: 'المركز الرئيسي للعمليات المالية'
+    description: 'نقطة الانطلاق الرئيسية - جميع العمليات من هنا'
   },
   {
-    name: 'المالية الموحدة',
-    href: '/finance/unified',
-    icon: LayoutDashboard,
-    description: 'جميع العمليات المالية اليومية'
-  },
-  {
-    name: 'التقارير المالية',
+    name: 'التقارير',
     href: '/finance/reports',
     icon: FileText,
     description: 'جميع التقارير والتحليلات المالية'
   },
   {
-    name: 'الإعدادات المالية',
+    name: 'الإعدادات',
     href: '/finance/settings',
     icon: Settings,
-    description: 'إعدادات النظام المالي والصلاحيات'
+    description: 'إعدادات النظام المالي (Admin فقط)',
+    requiresAdmin: true
   },
-];
-
-const financeSettingsItems = [
-  {
-    name: 'معالج النظام المحاسبي',
-    href: '/finance/accounting-wizard',
-    icon: Zap
-  },
-  {
-    name: 'تحليل النظام المالي الذكي',
-    href: '/finance/settings/financial-system-analysis',
-    icon: Activity
-  }
 ];
 
 const fleetSubItems = [
@@ -342,38 +325,7 @@ export function CarRentalSidebar() {
                           </SidebarMenuSubItem>
                         ))}
                         
-                        {/* Finance Settings - Admin and Super Admin */}
-                        <AdminOnly hideIfNoAccess>
-                          <SidebarMenuSubItem>
-                            <Collapsible>
-                              <CollapsibleTrigger asChild>
-                                <SidebarMenuSubButton>
-                                  <Settings className="h-4 w-4" />
-                                  {(!collapsed || isMobile) && (
-                                    <>
-                                      <span>إعدادات المالية</span>
-                                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                                    </>
-                                  )}
-                                </SidebarMenuSubButton>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent>
-                                <SidebarMenuSub>
-                                  {financeSettingsItems.map((settingItem) => (
-                                    <SidebarMenuSubItem key={settingItem.href}>
-                                      <SidebarMenuSubButton asChild>
-                                        <NavLink to={settingItem.href} className={getNavClassName}>
-                                          <settingItem.icon className="h-3 w-3" />
-                                          {(!collapsed || isMobile) && <span className="text-xs">{settingItem.name}</span>}
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                  ))}
-                                </SidebarMenuSub>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          </SidebarMenuSubItem>
-                        </AdminOnly>
+                        {/* Finance Settings moved to /finance/settings */}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </Collapsible>

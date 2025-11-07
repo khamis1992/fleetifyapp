@@ -109,85 +109,27 @@ const contractsSubItems = [
   }
 ];
 
+// القائمة المبسطة - 3 عناصر فقط
 const financeSubItems = [
   {
-    name: 'دليل الحسابات',
-    href: '/finance/chart-of-accounts',
-    icon: BookOpen
+    name: 'المركز المالي',
+    href: '/finance/hub',
+    icon: LayoutDashboard,
+    description: 'نقطة الانطلاق الرئيسية - جميع العمليات من هنا'
   },
   {
-    name: 'ربط الحسابات',
-    href: '/finance/account-mappings',
-    icon: Link
-  },
-  {
-    name: 'دفتر الأستاذ',
-    href: '/finance/ledger',
-    icon: Calculator
-  },
-  {
-    name: 'الخزينة والبنوك',
-    href: '/finance/treasury',
-    icon: Landmark
-  },
-  {
-    name: 'الفواتير',
-    href: '/finance/invoices',
-    icon: Receipt
-  },
-  {
-    name: 'المدفوعات',
-    href: '/finance/payments',
-    icon: CreditCard
-  },
-  {
-    name: 'تتبع المدفوعات',
-    href: '/financial-tracking',
-    icon: Wallet
-  },
-  {
-    name: 'الموازنات',
-    href: '/finance/budgets',
-    icon: Target
-  },
-  {
-    name: 'مراكز التكلفة',
-    href: '/finance/cost-centers',
-    icon: MapPin
-  },
-  {
-    name: 'الأصول الثابتة',
-    href: '/finance/assets',
-    icon: Building
-  },
-  {
-    name: 'الموردين',
-    href: '/finance/vendors',
-    icon: Building
-  },
-  {
-    name: 'التحليل المالي',
-    href: '/finance/analysis',
-    icon: PieChart
-  },
-  {
-    name: 'التقارير المالية',
+    name: 'التقارير',
     href: '/finance/reports',
-    icon: FileText
+    icon: FileText,
+    description: 'جميع التقارير والتحليلات المالية'
   },
   {
-    name: 'إدارة الودائع',
-    href: '/finance/deposits',
-    icon: Wallet
-  }
-];
-
-const financeSettingsItems = [
-  {
-    name: 'معالج النظام المحاسبي',
-    href: '/finance/accounting-wizard',
-    icon: Zap
-  }
+    name: 'الإعدادات',
+    href: '/finance/settings',
+    icon: Settings,
+    description: 'إعدادات النظام المالي',
+    requiresAdmin: true
+  },
 ];
 
 const hrSubItems = [
@@ -464,38 +406,7 @@ export function RealEstateSidebar() {
                           </SidebarMenuSubItem>
                         ))}
                         
-                        {/* Finance Settings - Admin and Super Admin */}
-                        <AdminOnly hideIfNoAccess>
-                          <SidebarMenuSubItem>
-                            <Collapsible>
-                              <CollapsibleTrigger asChild>
-                                <SidebarMenuSubButton>
-                                  <Settings className="h-4 w-4" />
-                                  {(!collapsed || isMobile) && (
-                                    <>
-                                      <span>إعدادات المالية</span>
-                                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                                    </>
-                                  )}
-                                </SidebarMenuSubButton>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent>
-                                <SidebarMenuSub>
-                                  {financeSettingsItems.map((settingItem) => (
-                                    <SidebarMenuSubItem key={settingItem.href}>
-                                      <SidebarMenuSubButton asChild>
-                                        <NavLink to={settingItem.href} className={getNavClassName}>
-                                          <settingItem.icon className="h-3 w-3" />
-                                          {(!collapsed || isMobile) && <span className="text-xs">{settingItem.name}</span>}
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                  ))}
-                                </SidebarMenuSub>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          </SidebarMenuSubItem>
-                        </AdminOnly>
+                        {/* Finance Settings moved to /finance/settings */}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </Collapsible>

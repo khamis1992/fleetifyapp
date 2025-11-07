@@ -21,8 +21,8 @@ const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
 const Invoices = lazyWithRetry(() => import("./finance/Invoices"), "Invoices");
-const Payments = lazyWithRetry(() => import("./finance/Payments"), "Payments");
-const PaymentsDashboard = lazyWithRetry(() => import("./finance/PaymentsDashboard"), "PaymentsDashboard");
+// Unified Payments - دمج Payments + PaymentsDashboard + UnifiedPayments
+const PaymentsComplete = lazyWithRetry(() => import("./finance/PaymentsComplete"), "PaymentsComplete");
 const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
 const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
@@ -94,16 +94,8 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="unified" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedFinance />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      {/* Redirect unified to hub */}
+      <Route path="unified" element={<Navigate to="/finance/hub" replace />} />
       <Route 
         path="accountant-dashboard" 
         element={
@@ -236,26 +228,20 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      {/* Payments - Unified (دمج Payments + PaymentsDashboard + UnifiedPayments) */}
       <Route
         path="payments"
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Suspense fallback={<PageSkeletonFallback />}>
-              <Payments />
+              <PaymentsComplete />
             </Suspense>
           </ProtectedFinanceRoute>
         }
       />
-      <Route
-        path="payments-dashboard"
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <PaymentsDashboard />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        }
-      />
+      {/* Redirect old routes to unified payments */}
+      <Route path="payments-dashboard" element={<Navigate to="/finance/payments" replace />} />
+      <Route path="unified-payments" element={<Navigate to="/finance/payments" replace />} />
       <Route
         path="journal-entries" 
         element={

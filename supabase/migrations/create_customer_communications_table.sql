@@ -122,3 +122,4 @@ COMMENT ON COLUMN customer_communications.follow_up_status IS 'Status of the sch
 COMMENT ON COLUMN customer_communications.attachments IS 'JSON array of attachment URLs';
 
 
+
