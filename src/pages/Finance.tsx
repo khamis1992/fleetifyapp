@@ -43,6 +43,10 @@ const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), 
 const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
 const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
 const MonthlyRentTracking = lazyWithRetry(() => import("./finance/MonthlyRentTracking"), "MonthlyRentTracking");
+const UnifiedFinancialDashboard = lazyWithRetry(() => import("./finance/UnifiedFinancialDashboard"), "UnifiedFinancialDashboard");
+const UnifiedReports = lazyWithRetry(() => import("./finance/UnifiedReports"), "UnifiedReports");
+const UnifiedPayments = lazyWithRetry(() => import("./finance/UnifiedPayments"), "UnifiedPayments");
+const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -434,6 +438,47 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.accounts.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <FinancialSystemAnalysis />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      {/* Unified Finance Modules */}
+      <Route 
+        path="unified-dashboard" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <UnifiedFinancialDashboard />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="unified-reports" 
+        element={
+          <ProtectedFinanceRoute permission="finance.reports.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <UnifiedReports />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="unified-payments" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <UnifiedPayments />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      <Route 
+        path="settings" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinanceSettings />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
