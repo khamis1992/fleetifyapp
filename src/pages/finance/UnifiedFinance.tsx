@@ -11,7 +11,7 @@ import {
 
 // Import existing components
 import Overview from './Overview';
-import UnifiedPayments from './UnifiedPayments';
+import PaymentsComplete from './PaymentsComplete';
 import Invoices from './Invoices';
 import Deposits from './Deposits';
 import PurchaseOrders from './PurchaseOrders';
@@ -93,7 +93,7 @@ const UnifiedFinance: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="payments">
-              <UnifiedPayments />
+              <PaymentsComplete />
             </TabsContent>
 
             <TabsContent value="deposits">
