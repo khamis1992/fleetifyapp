@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyContextProvider } from "@/contexts/CompanyContext";
 import { FABProvider } from "@/contexts/FABContext";
+import { FinanceProvider } from "@/contexts/FinanceContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { ResponsiveDashboardLayout } from "@/components/layouts/ResponsiveDashboardLayout";
 import { SuperAdminLayout } from "@/components/layouts/SuperAdminLayout";
@@ -246,14 +247,16 @@ const App = () => {
             <TooltipProvider>
               <AuthProvider>
                 <CompanyContextProvider>
-                  <FABProvider>
-                    <MobileOptimizationProvider>
-                      <PWAInstallPrompt />
-                      <CommandPalette />
-                      <SimpleToaster />
-                      <AppRoutes />
-                    </MobileOptimizationProvider>
-                  </FABProvider>
+                  <FinanceProvider>
+                    <FABProvider>
+                      <MobileOptimizationProvider>
+                        <PWAInstallPrompt />
+                        <CommandPalette />
+                        <SimpleToaster />
+                        <AppRoutes />
+                      </MobileOptimizationProvider>
+                    </FABProvider>
+                  </FinanceProvider>
                 </CompanyContextProvider>
               </AuthProvider>
             </TooltipProvider>

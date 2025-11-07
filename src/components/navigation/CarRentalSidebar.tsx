@@ -66,6 +66,12 @@ const navigationItems = [
 
 const financeSubItems = [
   {
+    name: 'المركز المالي',
+    href: '/finance/hub',
+    icon: LayoutDashboard,
+    description: 'المركز الرئيسي للعمليات المالية'
+  },
+  {
     name: 'المالية الموحدة',
     href: '/finance/unified',
     icon: LayoutDashboard,

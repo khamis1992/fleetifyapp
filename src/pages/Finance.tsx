@@ -6,6 +6,8 @@ import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
 
 // Lazy load all finance sub-modules with retry for better reliability
+const FinanceHub = lazyWithRetry(() => import("./finance/FinanceHub"), "FinanceHub");
+const ReceivePaymentWorkflow = lazyWithRetry(() => import("./finance/operations/ReceivePaymentWorkflow"), "ReceivePaymentWorkflow");
 const Overview = lazyWithRetry(() => import("./finance/Overview"), "Overview");
 const AccountantDashboard = lazyWithRetry(() => import("./finance/AccountantDashboard"), "AccountantDashboard");
 const AlertsPage = lazyWithRetry(() => import("./finance/AlertsPage"), "AlertsPage");
@@ -55,8 +57,33 @@ const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
 const Finance = () => {
   return (
     <Routes>
-      {/* Redirect from /finance to /finance/overview */}
-      <Route index element={<Navigate to="/finance/overview" replace />} />
+      {/* Redirect from /finance to Finance Hub */}
+      <Route index element={<Navigate to="/finance/hub" replace />} />
+      
+      {/* Finance Hub - New Unified Interface */}
+      <Route 
+        path="hub" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <FinanceHub />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
+      {/* Workflows */}
+      <Route 
+        path="operations/receive-payment" 
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.create">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ReceivePaymentWorkflow />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+      
       <Route 
         path="overview" 
         element={

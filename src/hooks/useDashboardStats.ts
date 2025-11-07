@@ -40,14 +40,17 @@ export const useDashboardStats = () => {
       }
 
       // جلب company_id من جدول profiles
+      console.log('🔍 [DASHBOARD_STATS] Fetching company_id for user:', user.id);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
         .single();
 
+      console.log('📊 [DASHBOARD_STATS] Profile data:', { profileData, profileError });
+
       if (profileError || !profileData?.company_id) {
-        console.error('Error fetching company_id from profiles:', profileError);
+        console.error('❌ [DASHBOARD_STATS] Error fetching company_id from profiles:', profileError);
         return {
           totalCustomers: 0,
           monthlyRevenue: 0,
@@ -57,6 +60,7 @@ export const useDashboardStats = () => {
       }
 
       const company_id = profileData.company_id;
+      console.log('✅ [DASHBOARD_STATS] Using company_id:', company_id);
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
@@ -103,6 +107,11 @@ export const useDashboardStats = () => {
         }
         vehiclesCount = totalVehicles || 0;
 
+        console.log('🚗 [DASHBOARD_STATS] Vehicles:', { 
+          total: vehiclesCount, 
+          active: activeVehiclesCount 
+        });
+
         // Get active contracts count
         // العقود النشطة: status = 'active' فقط لتجنب التعقيدات
         const today = new Date().toISOString().split('T')[0];
@@ -118,6 +127,11 @@ export const useDashboardStats = () => {
         }
         
         contractsCount = activeContractsCount || 0;
+
+        console.log('📄 [DASHBOARD_STATS] Contracts:', { 
+          active: contractsCount, 
+          error: contractsError 
+        });
 
         // Get total contracts count
         const { count: allContractsCount } = await supabase
@@ -154,11 +168,13 @@ export const useDashboardStats = () => {
       }
 
       // Get customers count
-      const { count: customersCount } = await supabase
+      const { count: customersCount, error: customersError } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', company_id)
         .eq('is_active', true);
+
+      console.log('👥 [DASHBOARD_STATS] Customers:', { customersCount, customersError });
 
       // Get previous month customers for comparison
       const { count: prevMonthCustomers } = await supabase
@@ -200,6 +216,11 @@ export const useDashboardStats = () => {
         }) || [];
 
         monthlyRevenue = activeInMonth.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0);
+
+        console.log('💰 [DASHBOARD_STATS] Monthly Revenue:', { 
+          monthlyRevenue, 
+          activeContracts: activeInMonth.length 
+        });
 
         // حساب إيرادات الشهر السابق للمقارنة
         const { data: prevMonthContracts } = await supabase
@@ -313,9 +334,11 @@ export const useDashboardStats = () => {
         stats.propertiesChange = '+0';
       }
 
+      console.log('✅ [DASHBOARD_STATS] Final stats:', stats);
       return stats;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1
   });
 };
