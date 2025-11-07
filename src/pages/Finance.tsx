@@ -152,6 +152,8 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      {/* Redirect cash-bank to treasury */}
+      <Route path="cash-bank" element={<Navigate to="/finance/treasury" replace />} />
       <Route 
         path="treasury" 
         element={

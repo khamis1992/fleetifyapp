@@ -477,53 +477,42 @@ export const useBalanceSheet = () => {
 
       if (error) throw error
 
-      // Check if accounts have zero balances
-      const hasBalances = accounts?.some(acc => Number(acc.current_balance) !== 0)
-      
-      if (!hasBalances && accounts) {
-        // Calculate balances from transactions
-        // Get cash from payments
-        const { data: payments } = await supabase
-          .from("payments")
-          .select("amount")
-          .eq("company_id", user.profile.company_id)
-          .eq("payment_status", "completed")
+      // Calculate balances from journal entry lines
+      const { data: entryLines, error: linesError } = await supabase
+        .from("journal_entry_lines")
+        .select(`
+          account_id,
+          debit_amount,
+          credit_amount,
+          journal_entries!inner(status, company_id)
+        `)
+        .eq("journal_entries.company_id", user.profile.company_id)
+        .eq("journal_entries.status", "posted")
 
-        const cashBalance = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0
-
-        // Get receivables from unpaid invoices
-        const { data: unpaidInvoices } = await supabase
-          .from("invoices")
-          .select("total_amount")
-          .eq("company_id", user.profile.company_id)
-          .neq("payment_status", "paid")
-
-        const receivablesBalance = unpaidInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0
-
-        // Get vehicle assets
-        const { data: vehicles } = await supabase
-          .from("vehicles")
-          .select("purchase_price")
-          .eq("company_id", user.profile.company_id)
-          .eq("status", "active")
-
-        const vehicleAssets = vehicles?.reduce((sum, v) => sum + Number(v.purchase_price || 0), 0) || 0
-
-        // Update account balances in memory
-        accounts.forEach(account => {
-          if (account.account_code === '1101') { // Cash
-            account.current_balance = cashBalance
-          } else if (account.account_code === '1201') { // Receivables
-            account.current_balance = receivablesBalance
-          } else if (account.account_code === '1501') { // Vehicles
-            account.current_balance = vehicleAssets
-          } else if (account.account_code === '3101') { // Capital/Equity
-            // Calculate equity as assets - liabilities
-            const totalAssets = cashBalance + receivablesBalance + vehicleAssets
-            account.current_balance = totalAssets
-          }
-        })
+      if (linesError) {
+        console.error("Error fetching journal entry lines:", linesError)
       }
+
+      // Calculate balance for each account from journal entries
+      const accountBalances = new Map<string, number>()
+      
+      entryLines?.forEach(line => {
+        const currentBalance = accountBalances.get(line.account_id) || 0
+        const debit = Number(line.debit_amount) || 0
+        const credit = Number(line.credit_amount) || 0
+        accountBalances.set(line.account_id, currentBalance + debit - credit)
+      })
+
+      // Update account balances from journal entries
+      accounts?.forEach(account => {
+        const calculatedBalance = accountBalances.get(account.id) || 0
+        // For liabilities and equity, credit increases balance (so we negate)
+        if (account.account_type === 'liabilities' || account.account_type === 'equity') {
+          account.current_balance = -calculatedBalance
+        } else {
+          account.current_balance = calculatedBalance
+        }
+      })
 
       return accounts?.reduce((acc, account) => {
         if (!acc[account.account_type]) {
@@ -563,59 +552,47 @@ export const useIncomeStatement = () => {
 
       if (error) throw error
 
-      // Check if accounts have zero balances
-      const hasBalances = accounts?.some(acc => Number(acc.current_balance) !== 0)
-      
-      if (!hasBalances && accounts) {
-        // Calculate revenue from actual transactions
-        // Get revenue from payments
-        const { data: payments } = await supabase
-          .from("payments")
-          .select("amount")
-          .eq("company_id", user.profile.company_id)
-          .eq("payment_status", "completed")
-          .gte("payment_date", `${currentYear}-01-01`)
-          .lte("payment_date", `${currentYear}-12-31`)
+      // Calculate balances from journal entry lines
+      const { data: entryLines, error: linesError } = await supabase
+        .from("journal_entry_lines")
+        .select(`
+          account_id,
+          debit_amount,
+          credit_amount,
+          journal_entries!inner(status, company_id, entry_date)
+        `)
+        .eq("journal_entries.company_id", user.profile.company_id)
+        .eq("journal_entries.status", "posted")
+        .gte("journal_entries.entry_date", `${currentYear}-01-01`)
+        .lte("journal_entries.entry_date", `${currentYear}-12-31`)
 
-        const paymentRevenue = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0
-
-        // Get revenue from paid invoices
-        const { data: paidInvoices } = await supabase
-          .from("invoices")
-          .select("total_amount")
-          .eq("company_id", user.profile.company_id)
-          .eq("payment_status", "paid")
-          .gte("invoice_date", `${currentYear}-01-01`)
-          .lte("invoice_date", `${currentYear}-12-31`)
-
-        const invoiceRevenue = paidInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0
-
-        // Use the higher value to avoid double counting
-        const totalRevenue = Math.max(paymentRevenue, invoiceRevenue)
-
-        // Calculate expenses from actual transactions
-        // Get maintenance expenses
-        const { data: maintenanceExpenses } = await supabase
-          .from("maintenance_records")
-          .select("cost")
-          .eq("company_id", user.profile.company_id)
-          .gte("maintenance_date", `${currentYear}-01-01`)
-          .lte("maintenance_date", `${currentYear}-12-31`)
-
-        const maintenanceCost = maintenanceExpenses?.reduce((sum, exp) => sum + Number(exp.cost || 0), 0) || 0
-
-        // Update account balances in memory
-        accounts.forEach(account => {
-          if (account.account_type === 'revenue' && account.account_code === '4101') { // Main revenue
-            account.current_balance = totalRevenue
-          } else if (account.account_type === 'expenses' && account.account_code === '5201') { // Maintenance
-            account.current_balance = maintenanceCost
-          } else if (account.account_type === 'expenses' && account.account_code === '5101') { // Operating expenses
-            // Estimate operating expenses as 30% of revenue if no data
-            account.current_balance = totalRevenue > 0 ? totalRevenue * 0.3 : 0
-          }
-        })
+      if (linesError) {
+        console.error("Error fetching journal entry lines:", linesError)
       }
+
+      // Calculate balance for each account from journal entries
+      const accountBalances = new Map<string, number>()
+      
+      entryLines?.forEach(line => {
+        const currentBalance = accountBalances.get(line.account_id) || 0
+        const debit = Number(line.debit_amount) || 0
+        const credit = Number(line.credit_amount) || 0
+        // For revenue: credit increases, debit decreases
+        // For expenses: debit increases, credit decreases
+        accountBalances.set(line.account_id, currentBalance + credit - debit)
+      })
+
+      // Update account balances from journal entries
+      accounts?.forEach(account => {
+        const calculatedBalance = accountBalances.get(account.id) || 0
+        // For revenue, credit increases balance (positive)
+        // For expenses, debit increases balance (so we negate)
+        if (account.account_type === 'revenue') {
+          account.current_balance = calculatedBalance
+        } else if (account.account_type === 'expenses') {
+          account.current_balance = -calculatedBalance
+        }
+      })
 
       return accounts?.reduce((acc, account) => {
         if (!acc[account.account_type]) {
