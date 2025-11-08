@@ -114,7 +114,6 @@ export const useContractsData = (filters: any = {}) => {
       pageSize: filters?.pageSize,
       companyId: filter?.company_id,
       status: filters?.status,
-      search: filters?.search,
       contract_type: filters?.contract_type,
       customer_id: filters?.customer_id,
       cost_center_id: filters?.cost_center_id
@@ -281,6 +280,7 @@ export const useContractsData = (filters: any = {}) => {
       }
     },
     enabled: !!user?.id && !!filter?.company_id,
+    keepPreviousData: true,
     retry: 1,
     staleTime: 1 * 60 * 1000, // البيانات صالحة لمدة دقيقة - تمنع إعادة الجلب المتكررة
     gcTime: 5 * 60 * 1000, // Cache لمدة 5 دقائق
