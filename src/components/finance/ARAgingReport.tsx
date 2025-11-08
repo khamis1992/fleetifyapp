@@ -39,6 +39,8 @@ import {
   Mail
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { getCurrencyConfig } from '@/utils/currencyConfig';
 
 interface ARSummary {
   total_customers_with_ar: number;
@@ -151,8 +153,6 @@ export const ARAgingReport: React.FC = () => {
         ['Generated:', new Date().toLocaleString()],
         [],
         ['Total Customers with AR:', summary?.total_customers_with_ar || 0],
-import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
-import { getCurrencyConfig } from '@/utils/currencyConfig';
 
 const formatCurrencyWithCode = (amount: number, currency: string) => {
   return `${amount.toFixed(getCurrencyConfig(currency).fractionDigits)} ${currency}`;
