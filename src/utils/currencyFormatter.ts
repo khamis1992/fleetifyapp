@@ -1,15 +1,19 @@
-export const formatCurrency = (amount: number | string, currency: string = 'KWD'): string => {
+import { getCurrencyConfig } from './currencyConfig';
+
+export const formatCurrency = (amount: number | string, currency: string = 'QAR'): string => {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
   if (isNaN(numAmount)) {
-    return '0.000 KWD';
+    const config = getCurrencyConfig(currency);
+    return `0.${'0'.repeat(config.fractionDigits)} ${currency}`;
   }
 
-  return new Intl.NumberFormat('ar-KW', {
+  const config = getCurrencyConfig(currency);
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: config.fractionDigits,
+    maximumFractionDigits: config.fractionDigits,
   }).format(numAmount);
 };
 

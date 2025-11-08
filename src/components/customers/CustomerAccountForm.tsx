@@ -19,7 +19,7 @@ const formSchema = z.object({
   account_id: z.string().min(1, 'يجب اختيار الحساب المحاسبي'),
   account_type_id: z.string().min(1, 'يجب اختيار نوع الحساب'),
   is_default: z.boolean().default(false),
-  currency: z.string().default('KWD'),
+  currency: z.string().default('QAR'),
   credit_limit: z.coerce.number().min(0).optional(),
   account_purpose: z.string().optional(),
 });
@@ -48,7 +48,7 @@ export const CustomerAccountForm: React.FC<CustomerAccountFormProps> = ({
       account_id: account?.account_id || '',
       account_type_id: account?.account_type_id || '',
       is_default: account?.is_default || false,
-      currency: account?.currency || 'KWD',
+      currency: account?.currency || 'QAR',
       credit_limit: account?.credit_limit || undefined,
       account_purpose: account?.account_purpose || '',
     },
@@ -152,7 +152,7 @@ export const CustomerAccountForm: React.FC<CustomerAccountFormProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="KWD">KWD - دينار كويتي</SelectItem>
+                  <SelectItem value="QAR">QAR - ريال قطري</SelectItem>
                   <SelectItem value="USD">USD - دولار أمريكي</SelectItem>
                   <SelectItem value="EUR">EUR - يورو</SelectItem>
                 </SelectContent>

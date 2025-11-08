@@ -77,7 +77,7 @@ const ResponsiveTable = () => {
           <tr>
             <td className="hidden sm:table-cell">CNT-001</td>
             <td>Ahmed Mohamed</td>
-            <td className="hidden md:table-cell">1,500 KWD</td>
+            <td className="hidden md:table-cell">1,500 QAR</td>
             <td className="hidden lg:table-cell">2025-10-21</td>
             <td>
               <button className="text-xs sm:text-sm">View</button>

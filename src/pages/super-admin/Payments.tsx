@@ -148,6 +148,7 @@ const SuperAdminPayments: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                         <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
                         <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                         <SelectItem value="EUR">يورو (EUR)</SelectItem>

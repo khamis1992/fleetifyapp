@@ -82,10 +82,10 @@ export const useGenerateLegalWarning = () => {
         .eq('id', profile.company_id)
         .single();
       
-      // Get company currency with fallback to KWD
-      const companyCurrency = (company?.currency || 'KWD').toUpperCase();
-      const currencyName = CURRENCY_NAMES[companyCurrency] || CURRENCY_NAMES['KWD'];
-      const currencyLocale = CURRENCY_LOCALES[companyCurrency] || CURRENCY_LOCALES['KWD'];
+      // Get company currency with fallback to QAR
+      const companyCurrency = (company?.currency || 'QAR').toUpperCase();
+      const currencyName = CURRENCY_NAMES[companyCurrency] || CURRENCY_NAMES['QAR'];
+      const currencyLocale = CURRENCY_LOCALES[companyCurrency] || CURRENCY_LOCALES['QAR'];
 
       // Generate document number
       const docNumberPrefix = 'WRN';

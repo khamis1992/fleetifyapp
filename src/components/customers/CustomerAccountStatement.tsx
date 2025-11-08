@@ -25,13 +25,16 @@ import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
+import { getCurrencyConfig } from '@/utils/currencyConfig';
+
 // Professional currency formatting for accounting
-const formatCurrency = (amount: number, currency: string = 'KWD') => {
-  return new Intl.NumberFormat('ar-KW', {
+const formatCurrency = (amount: number, currency: string = 'QAR') => {
+  const config = getCurrencyConfig(currency);
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: config.fractionDigits,
+    maximumFractionDigits: config.fractionDigits,
   }).format(amount);
 };
 
@@ -53,7 +56,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   const [dateTo, setDateTo] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [companyCurrency, setCompanyCurrency] = useState<string>('KWD'); // Default to KWD
+  const [companyCurrency, setCompanyCurrency] = useState<string>('QAR'); // Default to QAR
 
   // Fetch company currency
   useEffect(() => {
@@ -69,13 +72,13 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
           .single();
 
         if (profile && profile.companies) {
-          const currency = (profile.companies as any).currency || 'KWD';
+          const currency = (profile.companies as any).currency || 'QAR';
           setCompanyCurrency(currency);
           console.log('✅ Company currency loaded:', currency);
         }
       } catch (error) {
         console.error('Failed to fetch company currency:', error);
-        // Keep default KWD
+        // Keep default QAR
       }
     };
 

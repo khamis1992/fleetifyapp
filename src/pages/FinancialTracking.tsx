@@ -1228,7 +1228,7 @@ const FinancialTrackingInner: React.FC = () => {
               description: description,
               notes: invoiceNotes,
               payment_terms: 'مدفوع',
-              currency: 'KWD'
+              currency: 'QAR'
             })
             .select('id, invoice_number')
             .single();

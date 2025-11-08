@@ -241,9 +241,15 @@ export const AccountsListWithActions: React.FC<AccountsListWithActionsProps> = (
                     <TableCell className="text-center font-mono text-sm">
                       {account.current_balance ? 
                         new Intl.NumberFormat('ar-KW', {
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { getCurrencyConfig } from '@/utils/currencyConfig';
+
+// Get currency from hook
+const { currency: companyCurrency } = useCompanyCurrency();
+
                           style: 'currency',
-                          currency: 'KWD',
-                          minimumFractionDigits: 3
+                          currency: companyCurrency,
+                          minimumFractionDigits: getCurrencyConfig(companyCurrency).fractionDigits
                         }).format(account.current_balance) : 
                         '0.000'
                       }

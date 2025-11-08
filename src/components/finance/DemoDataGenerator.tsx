@@ -107,11 +107,13 @@ export const DemoDataGenerator: React.FC = () => {
   ];
 
   // بيانات الحسابات البنكية الوهمية
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+
   const demoBankAccounts = [
-    { bank_name: 'البنك الوطني الكويتي', account_number: '1234567890', currency: 'KWD', opening_balance: 50000 },
-    { bank_name: 'بنك الخليج', account_number: '0987654321', currency: 'KWD', opening_balance: 30000 },
-    { bank_name: 'بنك بوبيان', account_number: '1357924680', currency: 'KWD', opening_balance: 25000 },
-    { bank_name: 'البنك التجاري الكويتي', account_number: '2468013579', currency: 'USD', opening_balance: 15000 }
+    { bank_name: 'البنك الوطني القطري', account_number: '1234567890', currency: 'QAR', opening_balance: 50000 },
+    { bank_name: 'بنك الخليج', account_number: '0987654321', currency: 'QAR', opening_balance: 30000 },
+    { bank_name: 'بنك بوبيان', account_number: '1357924680', currency: 'QAR', opening_balance: 25000 },
+    { bank_name: 'البنك التجاري القطري', account_number: '2468013579', currency: 'QAR', opening_balance: 15000 }
   ];
 
   const generateDemoData = async () => {

@@ -5,13 +5,16 @@ import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, AlertCircle, CreditCard } from 'lucide-react';
 import { CustomerAccount } from '@/types/customerAccount';
 
+import { getCurrencyConfig } from '@/utils/currencyConfig';
+
 // Utility function to format currency
-const formatCurrency = (amount: number, currency: string = 'KWD') => {
-  return new Intl.NumberFormat('ar-KW', {
+const formatCurrency = (amount: number, currency: string = 'QAR') => {
+  const config = getCurrencyConfig(currency);
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: config.fractionDigits,
+    maximumFractionDigits: config.fractionDigits,
   }).format(amount);
 };
 

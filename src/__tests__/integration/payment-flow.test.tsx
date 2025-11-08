@@ -87,7 +87,7 @@ vi.mock('@/hooks/useActiveContracts', () => ({
 
 vi.mock('@/hooks/useCompanyCurrency', () => ({
   useCompanyCurrency: () => ({
-    currency: 'KWD'
+    currency: 'QAR'
   })
 }));
 

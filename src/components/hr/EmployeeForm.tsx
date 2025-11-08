@@ -125,7 +125,7 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
     if (hrSettings && hrSettings.daily_working_hours && hrSettings.working_days_per_week) {
       // Example: minimum wage calculation based on working hours
       const monthlyHours = hrSettings.daily_working_hours * hrSettings.working_days_per_week * 4.33;
-      return Math.round(monthlyHours * 3); // 3 KWD per hour as example minimum
+      return Math.round(monthlyHours * 3); // 3 QAR per hour as example minimum
     }
     return 300; // Default minimum salary
   };

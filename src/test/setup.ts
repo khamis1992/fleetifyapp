@@ -167,10 +167,10 @@ vi.mock('@/hooks/useFinance', () => ({
 // Mock currency formatter hook
 vi.mock('@/hooks/useCurrencyFormatter', () => ({
   useCurrencyFormatter: () => ({
-    formatCurrency: (amount: number) => `${amount.toLocaleString('ar-KW')} KWD`,
-    formatNumber: (num: number) => num.toLocaleString('ar-KW'),
-    currency: 'KWD',
-    locale: 'ar-KW',
+    formatCurrency: (amount: number) => `${amount.toLocaleString('ar-QA')} QAR`,
+    formatNumber: (num: number) => num.toLocaleString('ar-QA'),
+    currency: 'QAR',
+    locale: 'ar-QA',
   }),
 }));
 

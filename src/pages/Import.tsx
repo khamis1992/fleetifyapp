@@ -254,7 +254,7 @@ const ImportInner: React.FC = () => {
                   : parseFloat(row.amount) || 0,
                 payment_status: row.payment_status || 'completed',
                 transaction_type: row.transaction_type || (row.customer_id ? 'customer_payment' : 'vendor_payment'),
-                currency: row.currency || 'KWD'
+                currency: row.currency || 'QAR'
               };
 
               if (processedPayment.amount <= 0) {

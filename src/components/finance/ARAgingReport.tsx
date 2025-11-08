@@ -151,12 +151,22 @@ export const ARAgingReport: React.FC = () => {
         ['Generated:', new Date().toLocaleString()],
         [],
         ['Total Customers with AR:', summary?.total_customers_with_ar || 0],
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { getCurrencyConfig } from '@/utils/currencyConfig';
+
+const formatCurrencyWithCode = (amount: number, currency: string) => {
+  return `${amount.toFixed(getCurrencyConfig(currency).fractionDigits)} ${currency}`;
+};
+
+// Get currency from hook
+const { currency: companyCurrency } = useCompanyCurrency();
+
         ['Total Outstanding Invoices:', summary?.total_outstanding_invoices || 0],
-        ['Total AR Amount:', `${(summary?.total_ar_amount || 0).toFixed(3)} KWD`],
+        ['Total AR Amount:', formatCurrencyWithCode(summary?.total_ar_amount || 0, companyCurrency)],
         ['Average Days Overdue:', Math.round(summary?.avg_days_overdue || 0)],
         [],
-        ['Aging Category', 'Amount (KWD)', 'Percentage'],
-        ['Current', (summary?.current_total || 0).toFixed(3), `${summary?.current_percentage || 0}%`],
+        ['Aging Category', `Amount (${companyCurrency})`, 'Percentage'],
+        ['Current', (summary?.current_total || 0).toFixed(getCurrencyConfig(companyCurrency).fractionDigits), `${summary?.current_percentage || 0}%`],
         ['1-30 Days', (summary?.days_1_30_total || 0).toFixed(3), `${summary?.days_1_30_percentage || 0}%`],
         ['31-60 Days', (summary?.days_31_60_total || 0).toFixed(3), `${summary?.days_31_60_percentage || 0}%`],
         ['61-90 Days', (summary?.days_61_90_total || 0).toFixed(3), `${summary?.days_61_90_percentage || 0}%`],

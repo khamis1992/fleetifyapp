@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { NoticeVariables } from './NoticeTemplateManager';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { getCurrencyConfig } from '@/utils/currencyConfig';
 
 interface NoticeAutoFillerProps {
   companyId: string;
@@ -26,6 +28,10 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
   const [deadlineDays, setDeadlineDays] = useState('7');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<Record<string, boolean>>({});
+
+  // Get currency from hook
+  const { currency: companyCurrency } = useCompanyCurrency();
+  const currencyConfig = getCurrencyConfig(companyCurrency);
 
   // Fetch customers
   const { data: customers } = useQuery({
@@ -120,8 +126,8 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
         invoiceNumbers: selectedInvoices.map((inv) => inv.invoice_number),
         invoiceDates: selectedInvoices.map((inv) => inv.invoice_date),
         invoiceAmounts: selectedInvoices.map((inv) => inv.total_amount || 0),
-        invoiceCurrency: 'KWD',
-        invoiceCurrencyAr: 'دينار كويتي',
+        invoiceCurrency: companyCurrency,
+        invoiceCurrencyAr: currencyConfig ? getCurrencyConfig(companyCurrency).symbol : 'دينار كويتي',
         totalRent,
         lateFees: Math.round(lateFees),
         courtFees: Math.round(totalDebt * 0.01),
@@ -214,7 +220,7 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
                       {new Date(invoice.invoice_date).toLocaleDateString('ar-KW')}
                     </div>
                     <div className="text-xs font-semibold mt-1">
-                      {invoice.total_amount?.toLocaleString('ar-KW')} KWD
+                      {invoice.total_amount?.toLocaleString(currencyConfig.locale)} ${companyCurrency}
                     </div>
                   </button>
                 ))}
@@ -231,7 +237,7 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">المجموع</div>
-                <div className="text-2xl font-bold">{stats.totalAmount.toLocaleString('ar-KW')}</div>
+                <div className="text-2xl font-bold">{stats.totalAmount.toLocaleString(currencyConfig.locale)}</div>
               </div>
             </div>
           )}

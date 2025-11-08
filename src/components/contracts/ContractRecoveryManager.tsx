@@ -5,14 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertTriangle, FileText, CheckCircle, Loader2 } from 'lucide-react'
 import { useContractRecovery } from '@/hooks/useContractRecovery'
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency'
+import { getCurrencyConfig } from '@/utils/currencyConfig'
 import { cn } from '@/lib/utils'
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('ar-KW', {
+  const { currency } = useCompanyCurrency();
+  const currencyConfig = getCurrencyConfig(currency);
+  
+  return new Intl.NumberFormat(currencyConfig.locale, {
     style: 'currency',
-    currency: 'KWD',
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3
+    currency: currency,
+    minimumFractionDigits: currencyConfig.fractionDigits,
+    maximumFractionDigits: currencyConfig.fractionDigits,
   }).format(amount)
 }
 

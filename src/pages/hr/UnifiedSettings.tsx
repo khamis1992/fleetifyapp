@@ -116,7 +116,7 @@ export default function UnifiedSettings() {
   const calculateMonthlySalaryExample = () => {
     if (!formData.daily_working_hours || !formData.working_days_per_week) return 0;
     const monthlyHours = formData.daily_working_hours * formData.working_days_per_week * 4.33;
-    return Math.round(monthlyHours * 3); // 3 KWD per hour as example
+    return Math.round(monthlyHours * 3); // 3 QAR per hour as example
   };
 
   const getIntegrationStatus = () => {

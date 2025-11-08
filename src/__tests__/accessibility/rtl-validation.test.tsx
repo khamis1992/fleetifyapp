@@ -89,7 +89,7 @@ const MixedContentComponent = () => {
     <RTLContainer>
       <div>
         <p>العقد رقم CNT-001</p>
-        <p>المبلغ: 1,500 KWD</p>
+        <p>المبلغ: 1,500 QAR</p>
         <p>Email: customer@example.com</p>
         <p>الهاتف: +965 12345678</p>
       </div>
@@ -311,7 +311,7 @@ describe('Arabic RTL Validation Tests', () => {
     it('should handle mixed Arabic and numbers', () => {
       renderWithProviders(<MixedContentComponent />);
 
-      expect(screen.getByText(/المبلغ: 1,500 KWD/)).toBeInTheDocument();
+      expect(screen.getByText(/المبلغ: 1,500 QAR/)).toBeInTheDocument();
     });
 
     it('should handle email addresses in RTL context', () => {

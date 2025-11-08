@@ -442,7 +442,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                           <SelectValue placeholder="اختر العملة" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
+                          <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                           <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                           <SelectItem value="EUR">يورو (EUR)</SelectItem>
                           <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>

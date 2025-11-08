@@ -448,7 +448,7 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="KWD">دينار كويتي (KWD)</SelectItem>
+                    <SelectItem value="QAR">ريال قطري (QAR)</SelectItem>
                     <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                     <SelectItem value="EUR">يورو (EUR)</SelectItem>
                   </SelectContent>
