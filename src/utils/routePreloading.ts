@@ -36,7 +36,7 @@ export const criticalRoutes: RoutePreloadConfig[] = [
   { path: '/finance/chart-of-accounts', importFn: () => import('@/pages/finance/ChartOfAccounts'), priority: 'medium' },
   { path: '/finance/general-ledger', importFn: () => import('@/pages/finance/GeneralLedger'), priority: 'medium' },
   { path: '/finance/invoices', importFn: () => import('@/pages/finance/Invoices'), priority: 'medium' },
-  { path: '/finance/payments', importFn: () => import('@/pages/finance/Payments'), priority: 'medium' },
+  { path: '/finance/payments', importFn: () => import('@/pages/finance/PaymentsUnified'), priority: 'medium' },
 ];
 
 /**

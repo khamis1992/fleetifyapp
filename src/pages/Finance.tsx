@@ -23,6 +23,8 @@ const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCe
 const Invoices = lazyWithRetry(() => import("./finance/Invoices"), "Invoices");
 const Payments = lazyWithRetry(() => import("./finance/Payments"), "Payments");
 const PaymentsDashboard = lazyWithRetry(() => import("./finance/PaymentsDashboard"), "PaymentsDashboard");
+// ⭐ NEW: Unified Payments - دمج 3 صفحات في واحدة
+const PaymentsUnified = lazyWithRetry(() => import("./finance/PaymentsUnified"), "PaymentsUnified");
 const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
 const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
@@ -236,8 +238,20 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      {/* ⭐ NEW: Unified Payments Page (replaces 3 old pages) */}
       <Route
         path="payments"
+        element={
+          <ProtectedFinanceRoute permission="finance.payments.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <PaymentsUnified />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        }
+      />
+      {/* Keep old routes as backup (can be removed later) */}
+      <Route
+        path="payments-old"
         element={
           <ProtectedFinanceRoute permission="finance.payments.view">
             <Suspense fallback={<PageSkeletonFallback />}>
