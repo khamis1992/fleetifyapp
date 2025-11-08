@@ -80,9 +80,6 @@ export const usePermissionCheck = (permissionId: string) => {
       }
 
       // Extract data from the parallel query results
-      const rolesData = rolesResult.data || [];
-      const permissionsData = permissionsResult.data || [];
-      const employeeData = employeeResult.data;
 
       if (!employeeData) {
         return { hasPermission: false, reason: 'لا توجد بيانات موظف مرتبطة بهذا المستخدم' };

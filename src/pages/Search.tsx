@@ -68,29 +68,15 @@ const useSearchDebug = () => {
     lastError: null
   });
 
-  // Expose debug state globally for testing
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).searchDebugState = searchDebug;
-    }
-  }, [searchDebug]);
-
-// Debug state for troubleshooting
-const useSearchDebug = () => {
-  const [searchDebug, setSearchDebug] = useState<SearchDebugState>({
-    searchTerm: '',
-    searchType: '',
-    resultsCount: 0,
-    isLoading: false,
-    lastError: null
-  });
-
 // Expose debug state globally for testing
 useEffect(() => {
   if (typeof window !== 'undefined') {
     (window as any).searchDebugState = searchDebug;
   }
 }, [searchDebug]);
+
+return searchDebug;
+};
 
 const SearchInner: React.FC = () => {
   const navigate = useNavigate();
