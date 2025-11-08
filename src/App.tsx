@@ -29,6 +29,8 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { logNavigation, logServiceWorkerStatus, clearDiagnostics } from "@/utils/pageLoadDiagnostics";
+import { PageLoadDebugger } from "@/components/debug/PageLoadDebugger";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -254,6 +256,7 @@ const App = () => {
                         <CommandPalette />
                         <SimpleToaster />
                         <AppRoutes />
+                        {import.meta.env.DEV && <PageLoadDebugger />}
                       </MobileOptimizationProvider>
                     </FABProvider>
                   </FinanceProvider>
@@ -278,6 +281,9 @@ const AppRoutes = () => {
   React.useEffect(() => {
     console.log('🧭 [ROUTES] Location changed to:', location.pathname);
     preloadRelatedRoutes(location.pathname);
+    
+    // Log navigation for diagnostics
+    logNavigation(location.pathname, document.referrer, 'push');
   }, [location.pathname]);
 
   // Log navigation for debugging (only in development)
@@ -286,6 +292,22 @@ const AppRoutes = () => {
       console.log(`🧭 Navigation: ${location.pathname} (visit #${visitCount})`);
     }
   }, [location.pathname, visitCount]);
+
+  // Log service worker status
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      logServiceWorkerStatus(location.pathname, 'active', navigator.serviceWorker.controller.scriptURL);
+    } else if ('serviceWorker' in navigator) {
+      logServiceWorkerStatus(location.pathname, 'inactive');
+    }
+  }, [location.pathname]);
+
+  // Clear diagnostics on first load
+  React.useEffect(() => {
+    if (visitCount === 1) {
+      clearDiagnostics();
+    }
+  }, [visitCount]);
 
   return (
     <Routes key={location.pathname}>

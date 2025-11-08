@@ -6,6 +6,7 @@ import { BusinessType, ModuleName, ModuleSettings, ModuleContext } from '@/types
 import { MODULE_REGISTRY, BUSINESS_TYPE_MODULES } from '@/modules/moduleRegistry';
 import { useEffect, useMemo, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { logQueryStatus, logError } from '@/utils/pageLoadDiagnostics';
 
 /**
  * Hook for fetching module configuration for the current company
@@ -34,12 +35,14 @@ export const useModuleConfig = () => {
   logger.debug('🔧 [MODULE_CONFIG] Company ID:', companyId, 'User company:', user?.company?.id, 'Is Browse Mode:', isBrowsingMode);
 
   // جلب بيانات الشركة
-  const { data: company, refetch: refetchCompany } = useQuery({
+  const { data: company, refetch: refetchCompany, isLoading: isCompanyLoading, error: companyError, status: companyStatus } = useQuery({
     queryKey: ['company', companyId],
     queryFn: async () => {
       if (!companyId) return null;
       
       logger.debug('🔧 [MODULE_CONFIG] Fetching company data for:', companyId);
+      logQueryStatus('/dashboard', ['company', companyId], 'fetching');
+      
       const { data, error } = await supabase
         .from('companies')
         .select('id, name, business_type, active_modules, industry_config, custom_branding')
@@ -48,9 +51,13 @@ export const useModuleConfig = () => {
 
       if (error) {
         logger.error('🔧 [MODULE_CONFIG] Error fetching company:', error);
+        logQueryStatus('/dashboard', ['company', companyId], 'error', null, error);
+        logError('/dashboard', error, 'company_query');
         throw error;
       }
+      
       logger.debug('🔧 [MODULE_CONFIG] Company data fetched:', data);
+      logQueryStatus('/dashboard', ['company', companyId], 'success', data);
       return data;
     },
     enabled: !!companyId,

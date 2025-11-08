@@ -12,6 +12,7 @@ import { WhatsNewModal } from '@/components/features';
 import { useWhatsNew } from '@/hooks/useWhatsNew';
 import { PageHelp } from "@/components/help";
 import { DashboardPageHelpContent } from "@/components/help/content";
+import { logComponentLifecycle, logQueryStatus, logError } from '@/utils/pageLoadDiagnostics';
 
 const DashboardInner: React.FC = () => {
   // Get all needed data from a single hook to avoid hook ordering issues
@@ -20,6 +21,20 @@ const DashboardInner: React.FC = () => {
   const [timeoutReached, setTimeoutReached] = useState(false);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCompanyIdRef = useRef<string>();
+
+  // Log component lifecycle
+  useEffect(() => {
+    logComponentLifecycle('/dashboard', 'DashboardInner', 'mount', {
+      hasModuleContext: !!moduleContext,
+      hasCompany: !!company,
+      businessType: company?.business_type,
+      isLoading: moduleLoading
+    });
+    
+    return () => {
+      logComponentLifecycle('/dashboard', 'DashboardInner', 'unmount');
+    };
+  }, []);
 
   // What's New feature
   const { isModalOpen, openModal, closeModal, changelog, unreadCount, markAsViewed, hasNewUpdates } = useWhatsNew();
@@ -57,6 +72,7 @@ const DashboardInner: React.FC = () => {
   useEffect(() => {
     if (!moduleLoading && !company?.business_type) {
       console.error('🚨 [DASHBOARD] No business type found:', { company, moduleContext });
+      logError('/dashboard', new Error('No business type found'), 'module_config');
     }
   }, [moduleLoading, company, moduleContext]);
 
