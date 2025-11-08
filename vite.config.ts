@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => ({
       'recharts'
     ],
     exclude: [
-      'lucide-react',
+      
       '@radix-ui/react-separator',
       '@radix-ui/react-collapsible'
     ],
