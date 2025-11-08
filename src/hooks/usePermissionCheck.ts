@@ -12,49 +12,84 @@ interface UserPermissionData {
 
 export const usePermissionCheck = (permissionId: string) => {
   const { user } = useAuth();
-
+  
   return useQuery({
     queryKey: ['user-permission-check', user?.id, permissionId],
     queryFn: async (): Promise<{ hasPermission: boolean; reason?: string; employee_id?: string }> => {
+      const startTime = Date.now();
+      console.log('🚀 [PERF] Starting permission check for:', permissionId);
+      
       if (!user?.id) {
         return { hasPermission: false, reason: 'غير مسجل الدخول' };
       }
 
-      // Get user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
+      // OPTIMIZATION: Execute permission queries in parallel for better performance
+      const [rolesResult, permissionsResult, employeeResult] = await Promise.all([
+        // Get user roles
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id),
+        
+        // Get user permissions
+        supabase
+          .from('user_permissions')
+          .select('permission_id')
+          .eq('user_id', user.id)
+          .eq('granted', true),
+          
+        // Get employee data with company information
+        supabase
+          .from('employees')
+          .select('id, company_id, account_status, has_system_access')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle()
+      ]);
+
+      const rolesData = rolesResult.data || [];
+      const permissionsData = permissionsResult.data || [];
+      const employeeData = employeeResult.data;
+
+      // Check for errors
+      const rolesError = rolesResult.error;
+      const permissionsError = permissionsResult.error;
+      const employeeError = employeeResult.error;
 
       if (rolesError) {
         console.error('Error fetching user roles:', rolesError);
         return { hasPermission: false, reason: 'خطأ في جلب صلاحيات المستخدم' };
       }
 
-      // Get user permissions
-      const { data: permissionsData, error: permissionsError } = await supabase
-        .from('user_permissions')
-        .select('permission_id')
-        .eq('user_id', user.id)
-        .eq('granted', true);
-
       if (permissionsError) {
         console.error('Error fetching user permissions:', permissionsError);
         return { hasPermission: false, reason: 'خطأ في جلب صلاحيات المستخدم' };
       }
 
-      // Get employee data with company information
-      const { data: employeeData, error: employeeError } = await supabase
-        .from('employees')
-        .select('id, company_id, account_status, has_system_access')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
       if (employeeError) {
         console.error('Error fetching employee data:', employeeError);
         return { hasPermission: false, reason: 'خطأ في جلب بيانات الموظف' };
       }
+
+      const queryTime = Date.now() - startTime;
+      console.log('🚀 [PERF] Combined permission query completed in:', queryTime, 'ms');
+
+      if (rolesError || permissionsError || employeeError) {
+        console.error('Error fetching permission data:', { rolesError, permissionsError, employeeError });
+        return { hasPermission: false, reason: 'خطأ في جلب صلاحيات المستخدم' };
+      }
+
+      // Extract data from the parallel query results
+      const rolesData = rolesResult.data || [];
+      const permissionsData = permissionsResult.data || [];
+      const employeeData = employeeResult.data;
+
+      if (!employeeData) {
+        return { hasPermission: false, reason: 'لا توجد بيانات موظف مرتبطة بهذا المستخدم' };
+      }
+
+      const totalTime = Date.now() - startTime;
+      console.log('🚀 [PERF] Total permission check completed in:', totalTime, 'ms');
 
       // Check if user has employee record
       if (!employeeData) {
@@ -117,6 +152,8 @@ export const usePermissionCheck = (permissionId: string) => {
       return { hasPermission: true, employee_id: employeeData.id };
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to reduce database calls
+    retry: 1, // Reduce retry attempts
   });
 };
 

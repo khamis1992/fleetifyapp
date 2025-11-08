@@ -118,13 +118,13 @@ export const ProtectedFinanceRoute: React.FC<ProtectedFinanceRouteProps> = ({
     }
   };
 
-  // تحميل البيانات
-  const isLoading = !user || 
-                   !companyId || 
-                   moduleLoading || 
-                   permissionCheck.isLoading;
-
-  if (isLoading) {
+  // تحميل البيانات - تحسين الأداء: لا ننتظر كل التحميلات
+  const hasBasicAuth = !!user && !!companyId;
+  const hasAllPermissions = !moduleLoading && !permissionCheck.isLoading && (permissionCheck.data?.hasPermission || hasCompanyAdminAccess);
+  const isLoading = !hasBasicAuth || moduleLoading || permissionCheck.isLoading;
+ 
+  // عرض محتوى مؤقت أثناء التحقق من الصلاحيات للمستخدمين ذوي الخبرة
+  if (isLoading && !hasBasicAuth) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -132,23 +132,8 @@ export const ProtectedFinanceRoute: React.FC<ProtectedFinanceRouteProps> = ({
             <LoadingSpinner size="lg" />
             <div className="text-center space-y-2">
               <h3 className="font-medium">جاري التحقق من الصلاحيات...</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${diagnostics.userLoaded ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  تسجيل الدخول
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${diagnostics.companyLoaded ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  بيانات الشركة
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${diagnostics.moduleChecked ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  الوحدة المحاسبية
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${diagnostics.permissionChecked ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  الصلاحيات
-                </div>
+              <div className="text-sm text-muted-foreground">
+                يتم تحميل بياناتك. قد يستغرق هذا بضع ثوانٍ في المرة الأولى.
               </div>
             </div>
           </CardContent>

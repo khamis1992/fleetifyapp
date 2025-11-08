@@ -283,7 +283,7 @@ const SearchInner: React.FC = () => {
   }, [debouncedSearch, selectedType, companyId, isSystemLevel]);
 
   const getTypeIcon = (type: string) => {
-    const typeConfig = searchTypes.find(t => t.value === type);
+    const typeConfig = searchTypes.find(type => type.value === type);
     return typeConfig?.icon || SearchIcon;
   };
 
@@ -490,7 +490,7 @@ const SearchInner: React.FC = () => {
                                       </p>
                                     </div>
                                     <Badge className={getTypeColor(result.type)}>
-                                      {searchTypes.find(t => t.value === result.type)?.label}
+                                      {searchTypes.find(type => type.value === result.type)?.label}
                                     </Badge>
                                   </div>
                                   <p className="text-sm text-muted-foreground mb-2">
@@ -501,9 +501,10 @@ const SearchInner: React.FC = () => {
                                     انقر للعرض
                                   </div>
                                 </div>
-                              </CardContent>
+                              </div>
+                            </CardContent>
                             </Card>
-                        </motion.div>
+                          </motion.div>
                       );
                     })}
                   </div>
@@ -522,7 +523,7 @@ const Search: React.FC = () => {
     <ErrorBoundary>
       <SearchInner />
     </ErrorBoundary>
-  )
+  );
 };
 
 export default Search;

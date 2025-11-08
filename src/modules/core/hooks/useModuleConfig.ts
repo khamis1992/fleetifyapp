@@ -54,11 +54,11 @@ export const useModuleConfig = () => {
       return data;
     },
     enabled: !!companyId,
-    staleTime: isBrowsingMode ? 30 * 1000 : 5 * 60 * 1000, // 30s cache in browse mode
+    staleTime: isBrowsingMode ? 30 * 1000 : 10 * 60 * 1000, // 10s cache for better performance
     refetchOnWindowFocus: false, // Disable automatic refetch on focus
     refetchOnMount: false, // Don't always refetch on mount
     gcTime: isBrowsingMode ? 2 * 60 * 1000 : 5 * 60 * 1000, // 2min garbage collection in browse mode
-    retry: 2 // Limit retries
+    retry: 1 // Reduce retries for better performance
   });
 
   // جلب إعدادات الوحدات
