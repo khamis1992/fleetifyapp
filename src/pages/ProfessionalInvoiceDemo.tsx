@@ -4,6 +4,34 @@ import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
+// DEBUG: Add console logs to diagnose blank page
+console.log('🔍 [DEMO] ProfessionalInvoiceDemo component rendering');
+console.log('🔍 [DEMO] Invoice data:', {
+  id: "inv_12345",
+  invoice_number: "INV-2025-001",
+  invoice_date: "2025-01-15",
+  invoice_type: "sales",
+  status: "paid",
+  currency: "QAR",
+  subtotal: 300.000,
+  tax_amount: 15.000,
+  discount_amount: 0,
+  total_amount: 315.000,
+  terms: "الدفع خلال 30 يوماً من تاريخ الفاتورة",
+  notes: "شكراً لثقتكم في خدماتنا",
+  customer_name: "شركة النور التجارية",
+  items: [
+    {
+      id: 1,
+      description: 'خدمة استشارية شهرية',
+      quantity: 2,
+      unit_price: 150.000,
+      tax_rate: 5,
+      total: 315.000
+    }
+  ]
+});
+
 const ProfessionalInvoiceDemo = () => {
   // Sample invoice data for demonstration
   const sampleInvoice = {

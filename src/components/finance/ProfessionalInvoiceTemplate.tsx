@@ -18,7 +18,16 @@ import {
 } from "lucide-react";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
+// @ts-ignore - html2pdf.js doesn't have proper types
 import html2pdf from "html2pdf.js";
+
+// DEBUG: Add component-level diagnostics
+console.log('🔍 [TEMPLATE] ProfessionalInvoiceTemplate component loading');
+console.log('🔍 [TEMPLATE] Checking imports:', {
+  useCurrencyFormatter: !!useCurrencyFormatter,
+  useCompanyCurrency: !!useCompanyCurrency,
+  html2pdf: !!html2pdf
+});
 
 interface ProfessionalInvoiceTemplateProps {
   invoice: any;
