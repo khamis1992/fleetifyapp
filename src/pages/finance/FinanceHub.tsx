@@ -13,6 +13,13 @@ import {
   CheckCircle,
   Clock,
   ArrowUpRight,
+  CreditCard,
+  Calculator,
+  BookOpen,
+  Landmark,
+  Target,
+  Building,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { QuickActions } from '@/components/finance/hub/QuickActions';
 import { UniversalSearch } from '@/components/finance/hub/UniversalSearch';
@@ -293,45 +300,109 @@ const FinanceHub: React.FC = () => {
         <ActivityTimeline />
       </motion.div>
 
-      {/* Quick Links */}
+      {/* Quick Links - All Finance Modules */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">روابط سريعة</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <h3 className="text-lg font-semibold mb-4">جميع الأقسام المالية</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <Button
               variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-              onClick={() => navigate('/finance/reports')}
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/invoices')}
             >
               <FileText className="w-5 h-5" />
-              <span className="text-xs">التقارير</span>
+              <span className="text-xs">الفواتير</span>
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/payments')}
+            >
+              <CreditCard className="w-5 h-5" />
+              <span className="text-xs">المدفوعات</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
               onClick={() => navigate('/finance/chart-of-accounts')}
             >
-              <FileText className="w-5 h-5" />
+              <BookOpen className="w-5 h-5" />
               <span className="text-xs">دليل الحسابات</span>
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/ledger')}
+            >
+              <Calculator className="w-5 h-5" />
+              <span className="text-xs">دفتر الأستاذ</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
               onClick={() => navigate('/finance/treasury')}
             >
-              <DollarSign className="w-5 h-5" />
+              <Landmark className="w-5 h-5" />
               <span className="text-xs">الخزينة</span>
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/reports')}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span className="text-xs">التقارير</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/cost-centers')}
+            >
+              <Target className="w-5 h-5" />
+              <span className="text-xs font-medium">مراكز التكلفة</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/vendors')}
+            >
+              <Building className="w-5 h-5" />
+              <span className="text-xs">الموردون</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/budgets')}
+            >
+              <Target className="w-5 h-5" />
+              <span className="text-xs">الموازنات</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/assets')}
+            >
+              <Building className="w-5 h-5" />
+              <span className="text-xs">الأصول الثابتة</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              onClick={() => navigate('/finance/journal-entries')}
+            >
+              <Calculator className="w-5 h-5" />
+              <span className="text-xs">القيود اليومية</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
               onClick={() => navigate('/finance/settings')}
             >
-              <FileText className="w-5 h-5" />
+              <SettingsIcon className="w-5 h-5" />
               <span className="text-xs">الإعدادات</span>
             </Button>
           </div>
