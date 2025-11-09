@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,6 +32,7 @@ import {
   Smartphone,
   X,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,7 @@ interface DashboardStats {
 export default function CustomerCRM() {
   const companyId = useCurrentCompanyId();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // ✅ Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +115,8 @@ export default function CustomerCRM() {
   const itemsPerPage = 10;
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   
   // ✅ Call Dialog State
   const [callDialogOpen, setCallDialogOpen] = useState(false);
@@ -431,7 +435,11 @@ export default function CustomerCRM() {
 
     toast({
       title: '✅ تم فتح واتساب',
-      description: `جاري فتح محادثة مع ${customer.first_name_ar || 'العميل'}`,
+      description: `جاري فتح محادثة مع ${
+        customer.first_name_ar && customer.last_name_ar
+          ? `${customer.first_name_ar} ${customer.last_name_ar}`
+          : customer.first_name_ar || customer.last_name_ar || customer.customer_code || 'العميل'
+      }`,
     });
   };
 
@@ -558,6 +566,38 @@ export default function CustomerCRM() {
       toast({
         title: 'خطأ',
         description: 'حدث خطأ أثناء تحديث الملاحظة',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Delete note function
+  const handleDeleteNote = async (noteId: string) => {
+    if (!companyId) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      // Invalidate cache to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['customer-follow-ups', companyId] });
+
+      toast({
+        title: '✅ تم الحذف',
+        description: 'تم حذف الملاحظة بنجاح',
+      });
+
+      setDeleteConfirmOpen(false);
+      setNoteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء حذف الملاحظة',
         variant: 'destructive',
       });
     }
@@ -966,7 +1006,10 @@ export default function CustomerCRM() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="text-lg font-bold text-gray-900">
-                            {customer.first_name_ar || 'عميل'} {customer.last_name_ar || customer.customer_code}
+                            {customer.first_name_ar && customer.last_name_ar
+                              ? `${customer.first_name_ar} ${customer.last_name_ar}`
+                              : customer.first_name_ar || customer.last_name_ar || customer.customer_code
+                            }
                           </h3>
                           <Badge
                             variant="secondary"
@@ -1291,18 +1334,33 @@ export default function CustomerCRM() {
                                           تعديل
                                         </Button>
                                       ) : (
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => {
-                                            setEditingNoteId(null);
-                                            setEditingNoteContent('');
-                                          }}
-                                          className="h-7 px-2"
-                                        >
-                                          <X className="w-3 h-3 ml-1" />
-                                          إلغاء
-                                        </Button>
+                                        <div className="flex gap-1">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setEditingNoteId(null);
+                                              setEditingNoteContent('');
+                                            }}
+                                            className="h-7 px-2"
+                                          >
+                                            <X className="w-3 h-3 ml-1" />
+                                            إلغاء
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setNoteToDelete(followUp.id);
+                                              setDeleteConfirmOpen(true);
+                                            }}
+                                            className="h-7 px-2 text-red-600 hover:bg-red-100"
+                                            title="حذف الملاحظة"
+                                          >
+                                            <Trash2 className="w-3 h-3 ml-1" />
+                                            حذف
+                                          </Button>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
@@ -1398,7 +1456,11 @@ export default function CustomerCRM() {
               إضافة متابعة جديدة
             </DialogTitle>
             <DialogDescription>
-              {selectedCustomer && `للعميل: ${selectedCustomer.first_name_ar} ${selectedCustomer.last_name_ar}`}
+              {selectedCustomer && `للعميل: ${
+                selectedCustomer.first_name_ar && selectedCustomer.last_name_ar
+                  ? `${selectedCustomer.first_name_ar} ${selectedCustomer.last_name_ar}`
+                  : selectedCustomer.first_name_ar || selectedCustomer.last_name_ar || selectedCustomer.customer_code
+              }`}
             </DialogDescription>
           </DialogHeader>
 
@@ -1544,11 +1606,50 @@ export default function CustomerCRM() {
         <CallDialog
           open={callDialogOpen}
           onOpenChange={setCallDialogOpen}
-          customerName={`${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim() || 'عميل'}
+          customerName={
+            callingCustomer.first_name_ar && callingCustomer.last_name_ar
+              ? `${callingCustomer.first_name_ar} ${callingCustomer.last_name_ar}`
+              : callingCustomer.first_name_ar || callingCustomer.last_name_ar || callingCustomer.customer_code || 'عميل'
+          }
           customerPhone={callingCustomer.phone || ''}
           onSaveCall={handleSaveCall}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              تأكيد الحذف
+            </DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف هذه الملاحظة؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setNoteToDelete(null);
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => noteToDelete && handleDeleteNote(noteToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="w-4 h-4 ml-2" />
+              حذف الملاحظة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
