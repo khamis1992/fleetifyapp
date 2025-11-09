@@ -236,7 +236,7 @@ const PaymentRegistration = () => {
       )
     );
 
-    toast.success(`تم حذف الدفعة للعميل: ${contract.customerName}`);
+    toast.success(`تم حذف الملاحظة للعميل: ${contract.customerName}`);
   };
 
   // حفظ جميع الدفعات
@@ -480,12 +480,12 @@ const PaymentRegistration = () => {
                               <CheckCircle className="w-4 h-4 mr-1" />
                               تأكيد
                             </Button>
-                            {contract.status === 'paid' && (
+                            {contract.notes.trim() && (
                               <Button
                                 size="sm"
                                 onClick={() => deletePayment(contract.contractId)}
                                 className="bg-destructive hover:bg-destructive/90"
-                                title="حذف الدفعة"
+                                title="حذف الملاحظة"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
