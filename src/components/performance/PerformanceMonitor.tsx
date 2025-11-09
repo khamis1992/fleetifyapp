@@ -1,466 +1,424 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
-import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
-import {
-  Activity,
-  Smartphone,
-  Monitor,
-  Tablet,
-  Wifi,
-  Battery,
-  MemoryStick,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle,
-  Settings,
-  Download,
-  Upload
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { performanceLogger, PerformanceLog } from '@/lib/performanceLogger';
+import { getGlobalPerformanceMetrics, getPerformanceSummary, clearAllPerformanceMetrics, QueryPerformanceMetrics } from '@/hooks/usePerformanceMonitor';
 
 interface PerformanceMonitorProps {
-  showDetailed?: boolean;
+  className?: string;
+  showDetailedLogs?: boolean;
+  maxLogEntries?: number;
 }
 
-export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ 
-  showDetailed = false 
+interface CacheStatistics {
+  hitRate: number;
+  totalHits: number;
+  totalMisses: number;
+  totalOperations: number;
+}
+
+interface SlowOperation {
+  id: string;
+  type: PerformanceLog['type'];
+  operation: string;
+  duration: number;
+  timestamp: number;
+  level: PerformanceLog['level'];
+}
+
+/**
+ * PerformanceMonitor component - Real-time performance monitoring dashboard
+ * 
+ * Features:
+ * - Real-time performance metrics display
+ * - Visual indicators for slow queries and navigation
+ * - Cache statistics with hit/miss rates
+ * - Log clearing and metrics reset functionality
+ * - Integration with existing performance monitoring system
+ */
+export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
+  className = '',
+  showDetailedLogs = true,
+  maxLogEntries = 50
 }) => {
-  const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint();
-  const { 
-    getPerformanceReport, 
-    memoryUsage, 
-    config, 
-    updateConfig 
-  } = usePerformanceOptimization();
-  
-  const [performanceData, setPerformanceData] = useState<any>(null);
-  const [connectionInfo, setConnectionInfo] = useState<any>(null);
-  const [deviceInfo, setDeviceInfo] = useState<any>(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [metrics, setMetrics] = useState(getGlobalPerformanceMetrics());
+  const [logs, setLogs] = useState(performanceLogger.exportLogs());
+  const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'query' | 'navigation' | 'cache' | 'render' | 'network'>('all');
+  const [refreshInterval, setRefreshInterval] = useState(2000);
 
+  // Update metrics and logs
+  const updateData = useCallback(() => {
+    setMetrics(getGlobalPerformanceMetrics());
+    setLogs(performanceLogger.exportLogs().slice(-maxLogEntries));
+  }, [maxLogEntries]);
+
+  // Real-time updates
   useEffect(() => {
-    const updatePerformanceData = () => {
-      const report = getPerformanceReport();
-      setPerformanceData(report);
-    };
+    if (!isRealTimeEnabled) return;
 
-    const detectConnection = () => {
-      const connection = (navigator as any).connection || 
-                        (navigator as any).mozConnection || 
-                        (navigator as any).webkitConnection;
-      
-      if (connection) {
-        setConnectionInfo({
-          effectiveType: connection.effectiveType,
-          downlink: connection.downlink,
-          rtt: connection.rtt,
-          saveData: connection.saveData
-        });
-      }
-    };
-
-    const detectDevice = () => {
-      setDeviceInfo({
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        cores: navigator.hardwareConcurrency || 'Unknown',
-        memory: (navigator as any).deviceMemory || 'Unknown',
-        pixelRatio: window.devicePixelRatio,
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight
-        }
-      });
-    };
-
-    updatePerformanceData();
-    detectConnection();
-    detectDevice();
-
-    const interval = setInterval(updatePerformanceData, 2000);
+    const interval = setInterval(updateData, refreshInterval);
     return () => clearInterval(interval);
-  }, [getPerformanceReport]);
+  }, [isRealTimeEnabled, refreshInterval, updateData]);
 
-  const getDeviceIcon = () => {
-    if (isMobile) return <Smartphone className="h-4 w-4" />;
-    if (isTablet) return <Tablet className="h-4 w-4" />;
-    return <Monitor className="h-4 w-4" />;
-  };
+  // Initial data load
+  useEffect(() => {
+    updateData();
+  }, [updateData]);
 
-  const getDeviceType = () => {
-    if (isMobile) return 'Mobile';
-    if (isTablet) return 'Tablet';
-    return 'Desktop';
-  };
+  // Calculate cache statistics
+  const cacheStats = useMemo(() => {
+    const metricsArray = Array.from(metrics.values());
+    const totalHits = metricsArray.reduce((sum, m) => sum + m.cacheHits, 0);
+    const totalMisses = metricsArray.reduce((sum, m) => sum + m.cacheMisses, 0);
+    const totalOperations = totalHits + totalMisses;
+    const hitRate = totalOperations > 0 ? totalHits / totalOperations : 0;
 
-  const getMemoryStatus = () => {
-    if (memoryUsage < 50) return { status: 'good', color: 'bg-green-500', icon: CheckCircle };
-    if (memoryUsage < 80) return { status: 'warning', color: 'bg-yellow-500', icon: AlertTriangle };
-    return { status: 'critical', color: 'bg-red-500', icon: AlertTriangle };
-  };
+    return {
+      hitRate,
+      totalHits,
+      totalMisses,
+      totalOperations
+    };
+  }, [metrics]);
 
-  const getConnectionStatus = () => {
-    if (!connectionInfo) return { status: 'unknown', color: 'bg-gray-500', text: 'Unknown' };
-    
-    const { effectiveType } = connectionInfo;
-    if (effectiveType === '4g') return { status: 'excellent', color: 'bg-green-500', text: '4G' };
-    if (effectiveType === '3g') return { status: 'good', color: 'bg-yellow-500', text: '3G' };
-    if (effectiveType === '2g' || effectiveType === 'slow-2g') {
-      return { status: 'poor', color: 'bg-red-500', text: '2G' };
-    }
-    return { status: 'good', color: 'bg-blue-500', text: effectiveType?.toUpperCase() || 'WiFi' };
-  };
-
-  const optimizePerformance = async () => {
-    setIsOptimizing(true);
-    
-    try {
-      // Auto-optimize based on current conditions
-      const optimizedConfig = {
-        ...config,
-        enableLazyLoading: true,
-        imageOptimization: true,
-        enableVirtualization: memoryUsage > 60,
-        maxConcurrentImages: memoryUsage > 80 ? 2 : memoryUsage > 60 ? 3 : 5,
-        prefetchCriticalResources: memoryUsage < 70
-      };
-
-      // Additional mobile optimizations
-      if (isMobile) {
-        optimizedConfig.maxConcurrentImages = Math.min(optimizedConfig.maxConcurrentImages, 3);
-        
-        // Reduce quality on slow connections
-        if (connectionInfo?.effectiveType === '2g' || connectionInfo?.effectiveType === 'slow-2g') {
-          optimizedConfig.maxConcurrentImages = 1;
-        }
+  // Get slow operations for visual indicators
+  const slowOperations = useMemo(() => {
+    const filteredLogs = logs.filter(log => {
+      if (selectedFilter !== 'all') {
+        return log.type === selectedFilter;
       }
+      return true;
+    });
 
-      updateConfig(optimizedConfig);
-      
-      // Clear some caches if memory usage is high
-      if (memoryUsage > 80 && 'caches' in window) {
-        const cacheNames = await caches.keys();
-        const dynamicCaches = cacheNames.filter(name => name.includes('dynamic'));
-        
-        for (const cacheName of dynamicCaches) {
-          const cache = await caches.open(cacheName);
-          const keys = await cache.keys();
-          // Remove half of the cached items
-          const keysToDelete = keys.slice(0, Math.floor(keys.length / 2));
-          await Promise.all(keysToDelete.map(key => cache.delete(key)));
+    return filteredLogs
+      .filter(log => {
+        // Define slow thresholds based on operation type
+        switch (log.type) {
+          case 'query':
+            return log.duration > 1000; // > 1s for queries
+          case 'navigation':
+            return log.duration > 500; // > 500ms for navigation
+          case 'render':
+            return log.duration > 100; // > 100ms for renders
+          case 'cache':
+            return log.duration > 50; // > 50ms for cache operations
+          case 'network':
+            return log.duration > 2000; // > 2s for network
+          default:
+            return false;
         }
-      }
-      
-      console.log('🚀 Performance optimized successfully');
-    } catch (error) {
-      console.error('❌ Error optimizing performance:', error);
-    } finally {
-      setIsOptimizing(false);
+      })
+      .map(log => ({
+        id: `${log.timestamp}-${log.operation}`,
+        type: log.type,
+        operation: log.operation,
+        duration: log.duration,
+        timestamp: log.timestamp,
+        level: log.level
+      }))
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10); // Show top 10 slow operations
+  }, [logs, selectedFilter]);
+
+  // Clear all performance data
+  const handleClearAll = useCallback(() => {
+    clearAllPerformanceMetrics();
+    performanceLogger.clear();
+    updateData();
+  }, [updateData]);
+
+  // Clear logs only
+  const handleClearLogs = useCallback(() => {
+    performanceLogger.clear();
+    updateData();
+  }, [updateData]);
+
+  // Get performance level color
+  const getPerformanceColor = useCallback((level) => {
+    switch (level) {
+      case 'error':
+        return 'text-red-600 bg-red-50';
+      case 'warn':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'info':
+      default:
+        return 'text-green-600 bg-green-50';
     }
-  };
+  }, []);
 
-  const memoryStatus = getMemoryStatus();
-  const connectionStatus = getConnectionStatus();
+  // Get operation type icon
+  const getOperationIcon = useCallback((type) => {
+    switch (type) {
+      case 'query':
+        return '🔍';
+      case 'navigation':
+        return '🧭';
+      case 'cache':
+        return '💾';
+      case 'render':
+        return '🎨';
+      case 'network':
+        return '🌐';
+      default:
+        return '📊';
+    }
+  }, []);
 
-  if (!showDetailed) {
-    // Compact view for mobile/embedded usage
-    return (
-      <Card className="w-full">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Performance
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              {getDeviceIcon()}
-              <Badge variant="secondary" className="text-xs">
-                {getDeviceType()}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Memory</span>
-            <div className="flex items-center gap-2">
-              <Progress value={memoryUsage} className="w-20 h-2" />
-              <span className="text-xs font-medium">{memoryUsage.toFixed(1)}%</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Connection</span>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs ${connectionStatus.color} text-white`}
-            >
-              {connectionStatus.text}
-            </Badge>
-          </div>
-          
-          {memoryUsage > 70 && (
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={optimizePerformance}
-              disabled={isOptimizing}
-              className="w-full"
-            >
-              <Zap className="h-3 w-3 mr-2" />
-              {isOptimizing ? 'Optimizing...' : 'Optimize Performance'}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+  // Format duration with appropriate unit
+  const formatDuration = useCallback((duration) => {
+    if (duration < 1000) {
+      return `${duration}ms`;
+    }
+    return `${(duration / 1000).toFixed(2)}s`;
+  }, []);
 
-  // Detailed view
+  const metricsArray = Array.from(metrics.values());
+  const totalQueries = metricsArray.reduce((sum, m) => sum + m.executionCount, 0);
+  const slowQueriesCount = metricsArray.filter(m => m.isSlowQuery).length;
+  const avgExecutionTime = metricsArray.length > 0 
+    ? metricsArray.reduce((sum, m) => sum + m.averageTime, 0) / metricsArray.length 
+    : 0;
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Memory Usage */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <MemoryStick className="h-4 w-4" />
-              Memory Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{memoryUsage.toFixed(1)}%</span>
-                <memoryStatus.icon className={`h-5 w-5 text-white p-1 rounded ${memoryStatus.color}`} />
-              </div>
-              <Progress value={memoryUsage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {memoryStatus.status === 'good' && 'Healthy Memory'}
-                {memoryStatus.status === 'warning' && 'Moderate Usage'}
-                {memoryStatus.status === 'critical' && 'High Usage'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+    <div className={`performance-monitor ${className}`}>
+      {/* Header with Controls */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Performance Monitor</h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsRealTimeEnabled(!isRealTimeEnabled)}
+              className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isRealTimeEnabled 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
+                  : 'bg-gray-500 text-white hover:bg-gray-600'
+              }`}
+            >
+              {isRealTimeEnabled ? '🟢 Live' : '⏸️ Paused'}
+            </button>
+            <button
+              onClick={updateData}
+              className="px-3 py-2 bg-blue-500 text-white rounded text-sm font-medium hover:bg-blue-600 transition-colors"
+            >
+              🔄 Refresh
+            </button>
+            <button
+              onClick={handleClearLogs}
+              className="px-3 py-2 bg-yellow-500 text-white rounded text-sm font-medium hover:bg-yellow-600 transition-colors"
+            >
+              🗑️ Clear Logs
+            </button>
+            <button
+              onClick={handleClearAll}
+              className="px-3 py-2 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600 transition-colors"
+            >
+              🗑️ Reset All
+            </button>
+          </div>
+        </div>
 
-        {/* Device Type */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              {getDeviceIcon()}
-              Device Type
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">{getDeviceType()}</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>{deviceInfo?.viewport?.width}×{deviceInfo?.viewport?.height}</div>
-                <div>{deviceInfo?.cores} cores</div>
-                {deviceInfo?.memory !== 'Unknown' && (
-                  <div>{deviceInfo?.memory}GB RAM</div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Connection Status */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Wifi className="h-4 w-4" />
-              Connection Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Badge 
-                variant="secondary" 
-                className={`${connectionStatus.color} text-white`}
-              >
-                {connectionStatus.text}
-              </Badge>
-              {connectionInfo && (
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div className="flex justify-between">
-                    <span>Speed:</span>
-                    <span>{connectionInfo.downlink} Mbps</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Latency:</span>
-                    <span>{connectionInfo.rtt}ms</span>
-                  </div>
-                  {connectionInfo.saveData && (
-                    <div className="text-orange-600">Data Saver Active</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Performance Score */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Performance Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {performanceData ? Math.round(100 - memoryUsage / 2) : '--'}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                out of 100 points
-              </div>
-              <Button 
-                size="sm" 
-                onClick={optimizePerformance}
-                disabled={isOptimizing}
-                className="w-full"
-              >
-                <Zap className="h-3 w-3 mr-2" />
-                {isOptimizing ? 'Optimizing...' : 'Optimize'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Refresh Interval Control */}
+        <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <span>Refresh Interval:</span>
+          <select
+            value={refreshInterval}
+            onChange={(e) => setRefreshInterval(Number(e.target.value))}
+            className="border rounded px-2 py-1"
+            disabled={!isRealTimeEnabled}
+          >
+            <option value={1000}>1s</option>
+            <option value={2000}>2s</option>
+            <option value={5000}>5s</option>
+            <option value={10000}>10s</option>
+          </select>
+          <span>Last updated: {new Date().toLocaleTimeString()}</span>
+        </div>
       </div>
 
-      {/* Performance Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Performance Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="metrics" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="metrics">Metrics</TabsTrigger>
-              <TabsTrigger value="config">Settings</TabsTrigger>
-              <TabsTrigger value="network">Network</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="metrics" className="space-y-4">
-              {performanceData && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {performanceData.navigationTiming && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Load Times</h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span>DOM Content Loaded:</span>
-                          <span>{performanceData.navigationTiming.domContentLoaded}ms</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Load Complete:</span>
-                          <span>{performanceData.navigationTiming.loadComplete}ms</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>First Byte:</span>
-                          <span>{performanceData.navigationTiming.firstByte}ms</span>
-                        </div>
-                      </div>
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-gray-800">{totalQueries}</div>
+              <div className="text-sm text-gray-600">Total Queries</div>
+            </div>
+            <div className="text-3xl">🔍</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-gray-800">{slowQueriesCount}</div>
+              <div className="text-sm text-gray-600">Slow Queries</div>
+            </div>
+            <div className="text-3xl">🐌</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-gray-800">{formatDuration(avgExecutionTime)}</div>
+              <div className="text-sm text-gray-600">Avg Execution</div>
+            </div>
+            <div className="text-3xl">⚡</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-gray-800">{(cacheStats.hitRate * 100).toFixed(1)}%</div>
+              <div className="text-sm text-gray-600">Cache Hit Rate</div>
+            </div>
+            <div className="text-3xl">💾</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cache Statistics */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">Cache Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-xl font-bold text-green-600">{cacheStats.totalHits.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Cache Hits</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-red-600">{cacheStats.totalMisses.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Cache Misses</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-blue-600">{cacheStats.totalOperations.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Total Operations</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-xl font-bold ${
+              cacheStats.hitRate >= 0.8 ? 'text-green-600' : 
+              cacheStats.hitRate >= 0.5 ? 'text-yellow-600' : 'text-red-600'
+            }`}>
+              {cacheStats.hitRate >= 0.8 ? 'Excellent' : 
+               cacheStats.hitRate >= 0.5 ? 'Good' : 'Poor'}
+            </div>
+            <div className="text-sm text-gray-600">Performance</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Slow Operations Visual Indicators */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-gray-800">Slow Operations</h3>
+          <select
+            value={selectedFilter}
+            onChange={(e) => setSelectedFilter(e.target.value)}
+            className="border rounded px-3 py-1 text-sm"
+          >
+            <option value="all">All Types</option>
+            <option value="query">Queries</option>
+            <option value="navigation">Navigation</option>
+            <option value="cache">Cache</option>
+            <option value="render">Render</option>
+            <option value="network">Network</option>
+          </select>
+        </div>
+
+        {slowOperations.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-2">✅</div>
+            <div>No slow operations detected</div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {slowOperations.map((operation) => (
+              <div
+                key={operation.id}
+                className={`flex items-center justify-between p-3 rounded-lg border-l-4 ${getPerformanceColor(operation.level)}`}
+                style={{ borderLeftWidth: '4px' }}
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{getOperationIcon(operation.type)}</span>
+                  <div>
+                    <div className="font-medium text-gray-800">{operation.operation}</div>
+                    <div className="text-sm text-gray-600">
+                      {operation.type.charAt(0).toUpperCase() + operation.type.slice(1)} • {new Date(operation.timestamp).toLocaleTimeString()}
                     </div>
-                  )}
-                  
-                  {performanceData.paintMetrics && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Paint Metrics</h4>
-                      <div className="space-y-1 text-sm">
-                        {Object.entries(performanceData.paintMetrics).map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <span>{key}:</span>
-                            <span>{(value as number).toFixed(1)}ms</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="config" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Optimization Settings</h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Lazy Loading:</span>
-                      <Badge variant={config.enableLazyLoading ? "default" : "secondary"}>
-                        {config.enableLazyLoading ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Image Optimization:</span>
-                      <Badge variant={config.imageOptimization ? "default" : "secondary"}>
-                        {config.imageOptimization ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Virtualization:</span>
-                      <Badge variant={config.enableVirtualization ? "default" : "secondary"}>
-                        {config.enableVirtualization ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Max Concurrent Images:</span>
-                      <span>{config.maxConcurrentImages}</span>
-                    </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-gray-800">{formatDuration(operation.duration)}</div>
+                  <div className={`text-xs px-2 py-1 rounded ${
+                    operation.level === 'error' ? 'bg-red-100 text-red-700' :
+                    operation.level === 'warn' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-green-100 text-green-700'
+                  }`}>
+                    {operation.level.toUpperCase()}
                   </div>
                 </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="network" className="space-y-4">
-              {connectionInfo ? (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Network Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span>Connection Type:</span>
-                        <span>{connectionInfo.effectiveType?.toUpperCase()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Download Speed:</span>
-                        <span>{connectionInfo.downlink} Mbps</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Response Time:</span>
-                        <span>{connectionInfo.rtt}ms</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span>Data Saver:</span>
-                        <Badge variant={connectionInfo.saveData ? "destructive" : "default"}>
-                          {connectionInfo.saveData ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">Network information not available</p>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Detailed Logs */}
+      {showDetailedLogs && (
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Recent Logs</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium text-gray-700">Time</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-700">Type</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-700">Operation</th>
+                  <th className="px-4 py-2 text-center font-medium text-gray-700">Duration</th>
+                  <th className="px-4 py-2 text-center font-medium text-gray-700">Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.slice(-20).map((log, index) => (
+                  <tr key={`${log.timestamp}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-4 py-2 text-xs text-gray-600">
+                      {new Date(log.timestamp).toLocaleTimeString()}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="inline-flex items-center space-x-1">
+                        <span>{getOperationIcon(log.type)}</span>
+                        <span>{log.type}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 font-mono text-xs">{log.operation}</td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`font-medium ${
+                        log.duration > 1000 ? 'text-red-600' :
+                        log.duration > 500 ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {formatDuration(log.duration)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`text-xs px-2 py-1 rounded ${getPerformanceColor(log.level)}`}>
+                        {log.level.toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Summary */}
+      <div className="bg-gray-100 rounded-lg p-4 mt-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Performance Summary</h3>
+        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+          {getPerformanceSummary()}
+        </pre>
+      </div>
     </div>
   );
 };

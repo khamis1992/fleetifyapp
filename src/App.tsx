@@ -165,29 +165,109 @@ const FinanceHelp = lazy(() => import("./pages/help/FinanceHelp"));
 const CollectionsHelp = lazy(() => import("./pages/help/CollectionsHelp"));
 const FleetHelp = lazy(() => import("./pages/help/FleetHelp"));
 
-// Create a stable QueryClient instance to persist across navigation
+// Create a stable QueryClient instance to persist across navigation with performance monitoring integration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // CRITICAL FIX: Refetch on mount to ensure fresh data on navigation
-      refetchOnMount: 'always',      // ALWAYS refetch when component mounts (fixed navigation issue)
+      // PERFORMANCE FIX: Optimized caching for better performance
+      refetchOnMount: false,         // Don't refetch on mount - use cache instead
       refetchOnWindowFocus: false,   // Don't refetch when switching browser tabs
       refetchOnReconnect: true,      // Refetch when internet reconnects
       
-      // Cache configuration - Keep data fresh but allow refetch
-      staleTime: 0,                  // Data becomes stale immediately (ensures fresh data on navigation)
-      gcTime: 30 * 60 * 1000,        // Keep unused data in cache for 30 minutes
+      // Cache configuration - Balanced freshness and performance
+      staleTime: 5 * 60 * 1000,    // 5 minutes cache for frequently accessed data
+      gcTime: 10 * 60 * 1000,        // Keep unused data in cache for 10 minutes
       
-      // Retry configuration - Fail fast
-      retry: 1,                     // Only retry failed queries once
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Retry configuration - More resilient
+      retry: 2,                     // Retry failed queries twice
+      retryDelay: (attemptIndex: number) => Math.min(1000 * 1.5 ** attemptIndex, 5000),
       
       // Network mode - Use cache even when offline
       networkMode: 'online',        // Only fetch when online
+      
+      // Performance monitoring callbacks for critical queries
+      onSuccess: (data: any, query: any) => {
+        // Log successful query completion for performance tracking
+        const queryKey = query.queryKey;
+        const executionTime = Date.now() - (query.state.dataUpdatedAt || Date.now());
+        
+        performanceLogger.logQuery(
+          Array.isArray(queryKey) ? queryKey.join('.') : String(queryKey),
+          executionTime,
+          {
+            status: 'success',
+            cacheHit: query.state.isFetching === false && query.state.dataUpdatedAt > 0,
+            dataReceived: !!data
+          }
+        );
+      },
+      onError: (error: any, query: any) => {
+        // Log query errors for performance analysis
+        const queryKey = query.queryKey;
+        const executionTime = Date.now() - (query.state.dataUpdatedAt || Date.now());
+        
+        performanceLogger.logQuery(
+          Array.isArray(queryKey) ? queryKey.join('.') : String(queryKey),
+          executionTime,
+          {
+            status: 'error',
+            error: error
+          }
+        );
+      },
+      onSettled: (data: any, error: any, query: any) => {
+        // Log query completion (success or error) for performance metrics
+        const queryKey = query.queryKey;
+        const executionTime = Date.now() - (query.state.dataUpdatedAt || Date.now());
+        
+        performanceLogger.logQuery(
+          Array.isArray(queryKey) ? queryKey.join('.') : String(queryKey),
+          executionTime,
+          {
+            status: 'settled',
+            success: !error,
+            hasData: !!data
+          }
+        );
+      }
     },
     mutations: {
       retry: 1,                     // Retry mutations once
       networkMode: 'online',        // Only mutate when online
+      
+      // Performance monitoring for mutations
+      onMutate: (variables: any) => {
+        performanceLogger.logNetwork(
+          'mutation_start',
+          0,
+          {
+            operation: 'mutation',
+            variables
+          }
+        );
+      },
+      onSuccess: (data: any, variables: any, context: any) => {
+        performanceLogger.logNetwork(
+          'mutation_success',
+          0,
+          {
+            operation: 'mutation',
+            variables,
+            success: true
+          }
+        );
+      },
+      onError: (error: any, variables: any, context: any) => {
+        performanceLogger.logNetwork(
+          'mutation_error',
+          0,
+          {
+            operation: 'mutation',
+            variables,
+            error: error
+          }
+        );
+      }
     }
   }
 });
