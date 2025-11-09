@@ -220,11 +220,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             if (event === 'SIGNED_IN' && session?.user) {
+              console.log('🔍 [AUTH_CONTEXT] SIGNED_IN event received - session:', session.user.email);
               setSession(session);
               
               try {
+                console.log('🔍 [AUTH_CONTEXT] Fetching current user profile...');
                 const authUser = await authService.getCurrentUser();
                 if (mountedRef.current && authUser) {
+                  console.log('🔍 [AUTH_CONTEXT] Setting user state with full profile:', authUser.email);
                   setUser(authUser);
                   cacheUser(authUser); // 🚀 Save to cache
                   setSessionError(null);
@@ -232,6 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               } catch (error) {
                 console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
                 if (mountedRef.current) {
+                  console.log('🔍 [AUTH_CONTEXT] Setting user state with basic user:', session.user.email);
                   setUser(session.user as AuthUser);
                   setSessionError('خطأ في تحميل بيانات المستخدم');
                 }
@@ -327,9 +331,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔍 [AUTH_CONTEXT] signIn called with email:', email);
     const result = await authService.signIn(email, password);
+    console.log('🔍 [AUTH_CONTEXT] authService.signIn completed with error:', result.error);
 
     if (!result.error) {
+      console.log('🔍 [AUTH_CONTEXT] Login successful - setting up logging timeout');
       // MEMORY LEAK FIX: Clear existing timeout before creating new one
       if (logTimeoutRef.current) {
         clearTimeout(logTimeoutRef.current);

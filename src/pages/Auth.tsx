@@ -11,6 +11,7 @@ const Auth: React.FC = () => {
 
   // Prevent redirect loop in development
   useEffect(() => {
+    console.log('🔍 [AUTH_PAGE] useEffect triggered - user:', !!user, 'hasRedirected:', hasRedirected.current);
     if (user && !hasRedirected.current) {
       hasRedirected.current = true;
       console.log('✅ [AUTH] User authenticated, redirecting to dashboard');
@@ -44,8 +45,10 @@ const Auth: React.FC = () => {
   }
 
   if (user && hasRedirected.current) {
-    console.log('✅ [AUTH] Redirecting authenticated user to dashboard');
+    console.log('✅ [AUTH] Redirecting authenticated user to dashboard - user:', user.email);
     return <Navigate to="/dashboard" replace />;
+  } else if (user && !hasRedirected.current) {
+    console.log('⚠️ [AUTH] User exists but hasRedirected is false - should redirect in next render');
   }
 
   return <AuthForm />;

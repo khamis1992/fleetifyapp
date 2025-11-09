@@ -41,30 +41,69 @@ export const useDashboardStats = () => {
 
       // جلب company_id من جدول profiles
       console.log('🔍 [DASHBOARD_STATS] Fetching company_id for user:', user.id);
+      
+      // First, let's check what's in the profiles table for this user
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      console.log('🔍 [DASHBOARD_STATS] All profiles for user:', { allProfiles, allProfilesError });
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       console.log('📊 [DASHBOARD_STATS] Profile data:', { profileData, profileError });
 
       if (profileError || !profileData?.company_id) {
         console.error('❌ [DASHBOARD_STATS] Error fetching company_id from profiles:', profileError);
-        return {
-          totalCustomers: 0,
-          monthlyRevenue: 0,
-          customersChange: '+0',
-          revenueChange: '+0%'
-        };
+        console.error('❌ [DASHBOARD_STATS] Profile data exists:', !!profileData);
+        console.error('❌ [DASHBOARD_STATS] Company_id exists:', !!profileData?.company_id);
+        console.error('❌ [DASHBOARD_STATS] Full profile error details:', {
+          message: profileError?.message,
+          details: profileError?.details,
+          hint: profileError?.hint,
+          code: profileError?.code
+        });
+        
+        // Try fallback to employees table
+        console.log('🔄 [DASHBOARD_STATS] Trying fallback to employees table...');
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        console.log('🔄 [DASHBOARD_STATS] Employee data:', { employeeData, employeeError });
+        
+        if (employeeError || !employeeData?.company_id) {
+          console.error('❌ [DASHBOARD_STATS] No company_id found in profiles or employees tables');
+          return {
+            totalCustomers: 0,
+            monthlyRevenue: 0,
+            customersChange: '+0',
+            revenueChange: '+0%'
+          };
+        }
+        
+        var company_id = employeeData.company_id;
+        console.log('✅ [DASHBOARD_STATS] Using company_id from employees:', company_id);
+      } else {
+        var company_id = profileData.company_id;
+        console.log('✅ [DASHBOARD_STATS] Using company_id from profiles:', company_id);
       }
-
-      const company_id = profileData.company_id;
-      console.log('✅ [DASHBOARD_STATS] Using company_id:', company_id);
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
       const isPropertiesEnabled = moduleContext?.activeModules?.includes('properties') ?? false;
+      
+      console.log('🔧 [DASHBOARD_STATS] Module context:', { moduleContext });
+      console.log('🔧 [DASHBOARD_STATS] Vehicles enabled:', isVehiclesEnabled);
+      console.log('🔧 [DASHBOARD_STATS] Properties enabled:', isPropertiesEnabled);
 
       let vehiclesCount = 0;
       let activeVehiclesCount = 0;
@@ -84,12 +123,25 @@ export const useDashboardStats = () => {
 
       // Get vehicles data only if vehicles module is enabled
       if (isVehiclesEnabled) {
+        console.log('🚗 [DASHBOARD_STATS] Fetching vehicles for company:', company_id);
+        
+        // First, let's check what vehicles exist for this company
+        const { data: allVehicles, error: allVehiclesError } = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('company_id', company_id)
+          .limit(5);
+        
+        console.log('🚗 [DASHBOARD_STATS] Sample vehicles:', { allVehicles, allVehiclesError });
+        
         // Get active vehicles (all vehicles with is_active = true, not just available)
         const { count: activeVehicles, error: activeVehiclesError } = await supabase
           .from('vehicles')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', company_id)
           .eq('is_active', true);
+        
+        console.log('🚗 [DASHBOARD_STATS] Active vehicles query:', { activeVehicles, activeVehiclesError });
         
         if (activeVehiclesError) {
           console.error('Error fetching active vehicles:', activeVehiclesError);
@@ -168,13 +220,24 @@ export const useDashboardStats = () => {
       }
 
       // Get customers count
+      console.log('👥 [DASHBOARD_STATS] Fetching customers for company:', company_id);
+      
+      // First, let's check what customers exist for this company
+      const { data: sampleCustomers, error: sampleCustomersError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('company_id', company_id)
+        .limit(5);
+      
+      console.log('👥 [DASHBOARD_STATS] Sample customers:', { sampleCustomers, sampleCustomersError });
+      
       const { count: customersCount, error: customersError } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', company_id)
         .eq('is_active', true);
 
-      console.log('👥 [DASHBOARD_STATS] Customers:', { customersCount, customersError });
+      console.log('👥 [DASHBOARD_STATS] Customers count query:', { customersCount, customersError });
 
       // Get previous month customers for comparison
       const { count: prevMonthCustomers } = await supabase
@@ -228,11 +291,11 @@ export const useDashboardStats = () => {
           .select('monthly_amount, status, start_date, end_date')
           .eq('company_id', company_id)
           .eq('status', 'active')
-          .lte('start_date', lastDayOfPrevMonth.toISOString().split('T')[0]);
+          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]);
 
         const activeInPrevMonth = prevMonthContracts?.filter(contract => {
           if (!contract.end_date) return true;
-          return new Date(contract.end_date) >= firstDayOfPrevMonth;
+          return new Date(contract.end_date) >= firstDayPrevMonth;
         }) || [];
 
         previousMonthRevenue = activeInPrevMonth.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0);
@@ -263,11 +326,11 @@ export const useDashboardStats = () => {
           .select('rental_amount, status, start_date, end_date')
           .eq('company_id', company_id)
           .eq('status', 'active')
-          .lte('start_date', lastDayOfPrevMonth.toISOString().split('T')[0]);
+          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]);
 
         const prevActiveInMonth = prevPropertyContracts?.filter(contract => {
           if (!contract.end_date) return true;
-          return new Date(contract.end_date) >= firstDayOfPrevMonth;
+          return new Date(contract.end_date) >= firstDayPrevMonth;
         }) || [];
 
         const prevPropertyRevenue = prevActiveInMonth.reduce((sum, contract) => sum + (contract.rental_amount || 0), 0);
@@ -275,9 +338,9 @@ export const useDashboardStats = () => {
       }
 
       // Calculate changes
-      const customersChange = customersCount - previousMonthCustomers;
-      const customersChangePercent = previousMonthCustomers > 0 
-        ? Math.round((customersChange / previousMonthCustomers) * 100) 
+      const customersChange = (customersCount || 0) - previousMonthCustomers;
+      const customersChangePercent = previousMonthCustomers > 0
+        ? Math.round((customersChange / previousMonthCustomers) * 100)
         : 0;
 
       const contractsChange = contractsCount - previousMonthContracts;
@@ -301,8 +364,8 @@ export const useDashboardStats = () => {
         : 0;
 
       // Customer satisfaction rate (based on active customers)
-      const customerSatisfactionRate = customersCount > 0
-        ? Math.min(Math.round((customersCount / (customersCount + 10)) * 100), 95)
+      const customerSatisfactionRate = (customersCount || 0) > 0
+        ? Math.min(Math.round(((customersCount || 0) / ((customersCount || 0) + 10)) * 100), 95)
         : 0;
 
       // Build response based on enabled modules

@@ -32,10 +32,21 @@ export const AuthForm: FC = () => {
 
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
+    console.log('🔍 [AUTH_FORM] Login button clicked - START');
+    console.log('🔍 [AUTH_FORM] Current isLoading state:', isLoading);
+    
+    if (isLoading) {
+      console.warn('⚠️ [AUTH_FORM] Login clicked while already loading - IGNORING');
+      return;
+    }
+    
     setIsLoading(true);
+    console.log('🔍 [AUTH_FORM] isLoading set to true');
 
     try {
+      console.log('🔍 [AUTH_FORM] Calling signIn with email:', formData.email);
       const { error } = await signIn(formData.email, formData.password);
+      console.log('🔍 [AUTH_FORM] signIn completed with error:', error);
       
       if (error) {
         let errorMessage = 'خطأ في تسجيل الدخول';
