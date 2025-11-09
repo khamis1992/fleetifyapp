@@ -27,7 +27,8 @@ import {
   CreditCard,
   Calendar,
   AlertCircle,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { PageHelp } from "@/components/help";
 import { PaymentRegistrationPageHelpContent } from "@/components/help/content";
@@ -222,6 +223,20 @@ const PaymentRegistration = () => {
     );
 
     toast.success(`تم تسجيل الدفعة للعميل: ${contract.customerName}`);
+  };
+
+  // حذف الدفعة
+  const deletePayment = (contractId: string) => {
+    const contract = contracts.find(c => c.contractId === contractId);
+    if (!contract) return;
+
+    setContracts(prev =>
+      prev.map(c =>
+        c.contractId === contractId ? { ...c, notes: '', status: 'pending' } : c
+      )
+    );
+
+    toast.success(`تم حذف الدفعة للعميل: ${contract.customerName}`);
   };
 
   // حفظ جميع الدفعات
@@ -455,15 +470,27 @@ const PaymentRegistration = () => {
                           </Badge>
                         </td>
                         <td className="p-4">
-                          <Button
-                            size="sm"
-                            onClick={() => confirmPayment(contract.contractId)}
-                            disabled={!contract.notes.trim() || contract.status === 'paid'}
-                            className="bg-success hover:bg-success/90"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            تأكيد
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => confirmPayment(contract.contractId)}
+                              disabled={!contract.notes.trim() || contract.status === 'paid'}
+                              className="bg-success hover:bg-success/90"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              تأكيد
+                            </Button>
+                            {contract.status === 'paid' && (
+                              <Button
+                                size="sm"
+                                onClick={() => deletePayment(contract.contractId)}
+                                className="bg-destructive hover:bg-destructive/90"
+                                title="حذف الدفعة"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -557,4 +584,3 @@ const PaymentRegistration = () => {
 };
 
 export default PaymentRegistration;
-
