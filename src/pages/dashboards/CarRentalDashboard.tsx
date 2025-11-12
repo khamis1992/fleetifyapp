@@ -5,6 +5,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCompanyContext } from '@/contexts/CompanyContext';
 import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
 import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
@@ -27,6 +28,7 @@ const CarRentalDashboard: React.FC = () => {
   const { exitBrowseMode } = useCompanyContext();
   const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
   const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('car_rental');
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
 
   // Command Palette State
@@ -47,14 +49,15 @@ const CarRentalDashboard: React.FC = () => {
     },
   });
 
-  // Convert financial overview data
-  const smartMetricsData = financialOverview ? {
-    totalRevenue: financialOverview.totalRevenue || 0,
-    monthlyRevenue: financialOverview.monthlyTrend?.[financialOverview.monthlyTrend.length - 1]?.revenue || 0,
-    totalProfit: financialOverview.netIncome || 0,
-    profitMargin: financialOverview.profitMargin || 0,
-    monthlyGrowth: 0,
-    activeContracts: 0,
+  // Convert dashboard stats data for SmartMetricsPanel
+  // استخدام useDashboardStats لضمان توحيد مصدر البيانات مع بقية البطاقات
+  const smartMetricsData = dashboardStats ? {
+    totalRevenue: dashboardStats.monthlyRevenue || 0,
+    monthlyRevenue: dashboardStats.monthlyRevenue || 0,
+    totalProfit: financialOverview?.netIncome || 0,
+    profitMargin: financialOverview?.profitMargin || 0,
+    monthlyGrowth: parseFloat(dashboardStats.revenueChange?.replace(/[^0-9.-]/g, '') || '0'),
+    activeContracts: dashboardStats.activeContracts || 0,
     pendingPayments: 0,
     overduePayments: 0,
   } : undefined;
@@ -132,7 +135,7 @@ const CarRentalDashboard: React.FC = () => {
           >
             <SmartMetricsPanel
               financialData={smartMetricsData}
-              loading={financialLoading}
+              loading={statsLoading}
             />
           </motion.div>
         </div>
