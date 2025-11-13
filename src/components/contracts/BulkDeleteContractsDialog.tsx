@@ -21,6 +21,7 @@ import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 interface BulkDeleteContractsDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
   
   const { companyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
   const { bulkDeleteContracts, progress, resetProgress } = useBulkDeleteContracts();
+  const { logAudit } = useAuditLog();
   
   const actualCompanyId = targetCompanyId || companyId;
   const companyName = isBrowsingMode && browsedCompany ? browsedCompany.name : 'الشركة الحالية';
@@ -103,10 +105,35 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
     setStep('processing');
     try {
       await bulkDeleteContracts.mutateAsync(actualCompanyId);
+      
+      // Log audit trail
+      await logAudit({
+        action: 'DELETE',
+        resource_type: 'contract',
+        entity_name: `Bulk delete all contracts for ${companyName}`,
+        changes_summary: `Deleted ${contractsInfo?.total || 0} contracts`,
+        metadata: {
+          company_id: actualCompanyId,
+          total_deleted: contractsInfo?.total || 0,
+          unique_customers: contractsInfo?.uniqueCustomers || 0,
+        },
+        severity: 'critical',
+      });
+      
       setStep('completed');
     } catch (error) {
       setStep('warning');
       console.error('Bulk delete failed:', error);
+      
+      // Log failed attempt
+      await logAudit({
+        action: 'DELETE',
+        resource_type: 'contract',
+        entity_name: `Failed bulk delete for ${companyName}`,
+        status: 'failed',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        severity: 'high',
+      });
     }
   };
 

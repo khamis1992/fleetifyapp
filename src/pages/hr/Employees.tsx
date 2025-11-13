@@ -20,6 +20,7 @@ import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 import { PageHelp } from "@/components/help";
 import { EmployeesPageHelpContent } from "@/components/help/content";
+import { useAuditLog } from '@/hooks/useAuditLog';
 interface Employee {
   id: string;
   company_id: string;
@@ -54,6 +55,7 @@ export default function Employees() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 const { user } = useAuth();
+  const { logAudit } = useAuditLog();
  
    const { formatCurrency } = useCurrencyFormatter();
 
@@ -377,8 +379,24 @@ const { user } = useAuth();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
+      
+      // Log audit trail
+      await logAudit({
+        action: 'DELETE',
+        resource_type: 'employee',
+        resource_id: data.id,
+        entity_name: `${data.first_name} ${data.last_name}`,
+        changes_summary: `Deactivated employee: ${data.employee_number}`,
+        metadata: {
+          employee_number: data.employee_number,
+          position: data.position,
+          department: data.department,
+        },
+        severity: 'high',
+      });
+      
       setIsDeleteDialogOpen(false);
       setSelectedEmployee(null);
       toast({

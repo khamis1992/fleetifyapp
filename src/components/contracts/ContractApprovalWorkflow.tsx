@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 interface ContractApprovalWorkflowProps {
   open: boolean;
@@ -52,6 +53,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
   const [comment, setComment] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { formatCurrency } = useCurrencyFormatter();
+  const { logAudit } = useAuditLog();
 
   // Fetch real approval workflow steps
   const { data: approvalSteps, isLoading } = useQuery({
@@ -157,9 +159,27 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
 
       return { action, newContractStatus };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['contract-approval-steps'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      
+      // Log audit trail
+      await logAudit({
+        action: data.action === 'approve' ? 'APPROVE' : 'REJECT',
+        resource_type: 'contract',
+        resource_id: contract.id,
+        entity_name: contract.contract_number,
+        changes_summary: `${data.action === 'approve' ? 'Approved' : 'Rejected'} contract ${contract.contract_number}`,
+        old_values: { status: contract.status },
+        new_values: { status: data.newContractStatus },
+        metadata: {
+          contract_number: contract.contract_number,
+          customer_name: contract.customer_name,
+          comments: comment,
+        },
+        notes: comment,
+        severity: 'high',
+      });
       
       toast.success(
         data.action === 'approve' 

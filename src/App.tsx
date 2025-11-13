@@ -79,6 +79,7 @@ const LandingManagement = lazy(() => import("./pages/super-admin/LandingManageme
 const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
 const AdvancedSettings = lazy(() => import("./pages/AdvancedSettings"));
+const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const ElectronicSignatureSettings = lazy(() => import("./pages/settings/ElectronicSignatureSettings"));
 
@@ -488,6 +489,13 @@ const AppRoutes = () => {
           <Suspense fallback={<PageSkeletonFallback />}>
             <AdvancedSettings />
           </Suspense>
+        } />
+        <Route path="audit-logs" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AuditLogsPage />
+            </Suspense>
+          </AdminRoute>
         } />
         <Route path="settings/electronic-signature" element={
           <AdminRoute>
