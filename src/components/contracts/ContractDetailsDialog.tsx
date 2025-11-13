@@ -34,6 +34,7 @@ import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog'
 import { LateFinesTab } from './LateFinesTab';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { OfficialContractView } from './OfficialContractView';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -73,6 +74,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   const [isEditing, setIsEditing] = React.useState(false);
   const [editData, setEditData] = React.useState<Partial<Contract>>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
+  const { companyId } = useUnifiedCompanyAccess();
 
   // Payment and preview dialog state
   const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
@@ -107,6 +109,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('customers')
         .select('*')
         .eq('id', contract.customer_id)
+        .eq('company_id', companyId)
         .single();
       return data;
     },
@@ -132,6 +135,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('vehicles')
         .select('*')
         .eq('id', contract.vehicle_id)
+        .eq('company_id', companyId)
         .single();
       
       if (error) {
@@ -153,6 +157,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('chart_of_accounts')
         .select('*')
         .eq('id', contract.account_id)
+        .eq('company_id', companyId)
         .single();
       return data;
     },
@@ -167,6 +172,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .from('invoices')
         .select('*')
         .eq('contract_id', contract.id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
       return data || [];
     },
@@ -227,7 +233,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       const { error } = await supabase
         .from('contracts')
         .update(editData)
-        .eq('id', contract.id);
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 

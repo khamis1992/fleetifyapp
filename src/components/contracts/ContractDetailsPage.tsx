@@ -158,6 +158,7 @@ const ContractDetailsPage = () => {
         .from('invoices')
         .select('*')
         .eq('contract_id', contract.id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -1845,6 +1846,7 @@ const ActivityLogTab = ({ contractId }: ActivityLogTabProps) => {
           profile:profiles!user_id(full_name)
         `)
         .eq('contract_id', contractId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(20);
 
