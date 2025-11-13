@@ -1,12 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createAuditLog } from './useAuditLog';
 
 export const useDeleteContract = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (contractId: string) => {
+      // Get contract details before deletion for audit log
+      const { data: contractData } = await supabase
+        .from('contracts')
+        .select('contract_number, status, customer_id, customers(first_name, last_name, company_name)')
+        .eq('id', contractId)
+        .single();
+      
       // First, delete related records that might reference this contract
       
       // Delete vehicle condition reports
@@ -69,11 +77,33 @@ export const useDeleteContract = () => {
         throw error;
       }
 
-      return contractId;
+      return { contractId, contractData };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract-statistics'] });
+      
+      // Log audit trail
+      const customerName = result.contractData?.customers
+        ? result.contractData.customers.company_name || 
+          `${result.contractData.customers.first_name} ${result.contractData.customers.last_name}`
+        : 'Unknown';
+      
+      await createAuditLog(
+        'DELETE',
+        'contract',
+        result.contractId,
+        result.contractData?.contract_number,
+        {
+          old_values: {
+            status: result.contractData?.status,
+            customer_name: customerName,
+          },
+          changes_summary: `Deleted contract ${result.contractData?.contract_number}`,
+          severity: 'critical',
+        }
+      );
+      
       toast.success('تم حذف العقد بنجاح');
     },
     onError: (error: unknown) => {

@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useCurrentCompanyId } from "./useUnifiedCompanyAccess";
 import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration";
+import { createAuditLog } from "@/hooks/useAuditLog";
 import { useVehicleStatusUpdate } from "@/hooks/useVehicleStatusIntegration";
 import { queryKeys } from "@/utils/queryKeys";
 
@@ -264,17 +265,52 @@ export const useDeleteVehicle = () => {
   
   return useMutation({
     mutationFn: async (vehicleId: string) => {
+      // Get vehicle details before deletion for audit log
+      const { data: vehicleData } = await supabase
+        .from("vehicles")
+        .select('plate_number, make, model, year, vin')
+        .eq("id", vehicleId)
+        .single()
+      
       const { error } = await supabase
         .from("vehicles")
         .update({ is_active: false })
         .eq("id", vehicleId)
 
       if (error) throw error
+      
+      return { vehicleId, vehicleData }
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
+      
+      // Log audit trail
+      const vehicleName = `${result.vehicleData?.make} ${result.vehicleData?.model} (${result.vehicleData?.plate_number})`
+      
+      await createAuditLog(
+        'DELETE',
+        'vehicle',
+        result.vehicleId,
+        vehicleName,
+        {
+          old_values: {
+            plate_number: result.vehicleData?.plate_number,
+            make: result.vehicleData?.make,
+            model: result.vehicleData?.model,
+            year: result.vehicleData?.year,
+            vin: result.vehicleData?.vin,
+            is_active: true,
+          },
+          new_values: {
+            is_active: false,
+          },
+          changes_summary: `Deactivated vehicle ${vehicleName}`,
+          severity: 'high',
+        }
+      )
+      
       toast({
         title: "تم بنجاح",
         description: "تم تعطيل المركبة بنجاح",

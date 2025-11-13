@@ -38,6 +38,7 @@ import { HelpIcon } from '@/components/help/HelpIcon';
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
+import { createAuditLog } from "@/hooks/useAuditLog"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 
 // Auto Invoice Generation Tab
@@ -100,6 +101,13 @@ const Invoices = () => {
   // Delete invoice mutation
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
+      // Get invoice details before deletion for audit log
+      const { data: invoiceData } = await supabase
+        .from('invoices')
+        .select('invoice_number, invoice_type, total_amount, payment_status, customer_id, customers(first_name, last_name, company_name)')
+        .eq('id', invoiceId)
+        .single()
+      
       // Check if invoice has related payments
       const { data: payments } = await supabase
         .from('payments')
@@ -138,10 +146,35 @@ const Invoices = () => {
 
       if (error) throw error
 
-      return invoiceId
+      return { invoiceId, invoiceData }
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['invoices', companyId] })
+      
+      // Log audit trail
+      const customerName = result.invoiceData?.customers
+        ? result.invoiceData.customers.company_name || 
+          `${result.invoiceData.customers.first_name} ${result.invoiceData.customers.last_name}`
+        : 'Unknown'
+      
+      await createAuditLog(
+        'DELETE',
+        'invoice',
+        result.invoiceId,
+        result.invoiceData?.invoice_number,
+        {
+          old_values: {
+            invoice_number: result.invoiceData?.invoice_number,
+            invoice_type: result.invoiceData?.invoice_type,
+            total_amount: result.invoiceData?.total_amount,
+            payment_status: result.invoiceData?.payment_status,
+            customer_name: customerName,
+          },
+          changes_summary: `Deleted invoice ${result.invoiceData?.invoice_number}`,
+          severity: 'high',
+        }
+      )
+      
       toast.success('تم حذف الفاتورة بنجاح')
       setDeleteDialogOpen(false)
       setInvoiceToDelete(null)

@@ -21,6 +21,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { createAuditLog } from '@/hooks/useAuditLog';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   Plus,
@@ -509,6 +510,13 @@ const Customers = () => {
   // Delete customer mutation
   const deleteCustomerMutation = useMutation({
     mutationFn: async (customerId: string) => {
+      // Get customer details before deletion for audit log
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('customer_number, first_name, last_name, company_name, customer_type, email')
+        .eq('id', customerId)
+        .single();
+      
       // Check for dependencies - contracts
       const { data: contracts } = await supabase
         .from('contracts')
@@ -547,10 +555,32 @@ const Customers = () => {
 
       if (error) throw error;
 
-      return customerId;
+      return { customerId, customerData };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
+      
+      // Log audit trail
+      const customerName = result.customerData?.customer_type === 'individual'
+        ? `${result.customerData.first_name} ${result.customerData.last_name}`
+        : result.customerData?.company_name || 'Unknown';
+      
+      await createAuditLog(
+        'DELETE',
+        'customer',
+        result.customerId,
+        customerName,
+        {
+          old_values: {
+            customer_number: result.customerData?.customer_number,
+            customer_type: result.customerData?.customer_type,
+            email: result.customerData?.email,
+          },
+          changes_summary: `Deleted customer ${customerName}`,
+          severity: 'high',
+        }
+      );
+      
       toast.success('تم حذف العميل بنجاح');
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);

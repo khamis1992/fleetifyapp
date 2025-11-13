@@ -164,6 +164,28 @@ const { user } = useAuth();
     onSuccess: async ({ employee, employeeData }) => {
       queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
       
+      // Log audit trail
+      await logAudit({
+        action: 'CREATE',
+        resource_type: 'employee',
+        resource_id: employee.id,
+        entity_name: `${employee.first_name} ${employee.last_name}`,
+        changes_summary: `Created new employee: ${employee.employee_number}`,
+        new_values: {
+          employee_number: employee.employee_number,
+          position: employee.position,
+          department: employee.department,
+          basic_salary: employee.basic_salary,
+        },
+        metadata: {
+          employee_number: employee.employee_number,
+          position: employee.position,
+          department: employee.department,
+          create_account: employeeData.createAccount || false,
+        },
+        severity: 'medium',
+      });
+      
       // If account creation is requested, create account after employee is added
       if (employeeData.createAccount && employeeData.accountEmail && employeeData.accountRoles) {
         setIsCreatingAccount(true);

@@ -24,6 +24,7 @@ import {
   CreateContractVehicleReturnData 
 } from '@/hooks/useContractVehicleReturn';
 import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 interface ContractCancellationDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   const approveVehicleReturn = useApproveContractVehicleReturn();
   const rejectVehicleReturn = useRejectContractVehicleReturn();
   const updateContractStatus = useUpdateContractStatus();
+  const { logAudit } = useAuditLog();
 
   React.useEffect(() => {
     if (vehicleReturn) {
@@ -101,9 +103,38 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
         status: 'cancelled',
         reason: 'Contract cancelled after vehicle return approval'
       });
+      
+      // Log audit trail
+      await logAudit({
+        action: 'CANCEL',
+        resource_type: 'contract',
+        resource_id: contract.id,
+        entity_name: contract.contract_number,
+        changes_summary: `Cancelled contract ${contract.contract_number}`,
+        old_values: { status: contract.status },
+        new_values: { status: 'cancelled' },
+        metadata: {
+          contract_number: contract.contract_number,
+          customer_name: contract.customer_name,
+          reason: 'Contract cancelled after vehicle return approval',
+        },
+        severity: 'high',
+      });
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Error cancelling contract:', error);
+      
+      // Log failed attempt
+      await logAudit({
+        action: 'CANCEL',
+        resource_type: 'contract',
+        resource_id: contract.id,
+        entity_name: contract.contract_number,
+        status: 'failed',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        severity: 'high',
+      });
     }
   };
 
