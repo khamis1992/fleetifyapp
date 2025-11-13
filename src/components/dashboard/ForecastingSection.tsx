@@ -20,15 +20,15 @@ export const ForecastingSection: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return null;
 
+      // Use local date to avoid timezone issues
       const today = new Date();
-      const currentDay = today.getDate();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-
-      // Get contracts for the current week (7 days)
+      today.setHours(0, 0, 0, 0); // Reset time to midnight
+      
+      // Get contracts for the current week (7 days: -3 to +3)
       const weekDays = [];
       for (let i = -3; i <= 3; i++) {
-        const date = new Date(currentYear, currentMonth, currentDay + i);
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
 
         // Count active contracts for this day
@@ -53,6 +53,7 @@ export const ForecastingSection: React.FC = () => {
 
         weekDays.push({
           date: date.getDate(),
+          fullDate: date, // Store full date object
           isToday: i === 0,
           occupancyRate,
           contractsCount: contracts?.length || 0
