@@ -75,14 +75,14 @@ useEffect(() => {
   }
 }, [searchDebug]);
 
-return searchDebug;
+return { searchDebug, setSearchDebug };
 };
 
 const SearchInner: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { companyId, isSystemLevel } = useUnifiedCompanyAccess();
-  const { searchDebug } = useSearchDebug();
+  const { searchDebug, setSearchDebug } = useSearchDebug();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
