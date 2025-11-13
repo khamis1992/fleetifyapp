@@ -16,8 +16,17 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { PageHelp } from "@/components/help";
 import { UsersPageHelpContent } from "@/components/help/content";
+import { SuperAdminGuard } from '@/components/auth/RoleGuard';
 
 const SuperAdminUsers: React.FC = () => {
+  return (
+    <SuperAdminGuard>
+      <SuperAdminUsersContent />
+    </SuperAdminGuard>
+  );
+};
+
+const SuperAdminUsersContent: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string>('all');

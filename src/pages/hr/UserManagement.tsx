@@ -24,6 +24,7 @@ import ApprovalWorkflow from '@/components/hr/permissions/ApprovalWorkflow';
 import SmartPermissionSuggestions from '@/components/hr/permissions/SmartPermissionSuggestions';
 import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPermissions';
 import { UserRole } from '@/types/permissions';
+import { AdminGuard } from '@/components/auth/RoleGuard';
 
 // Type definitions
 interface EmployeeWithAccess {
@@ -43,6 +44,14 @@ interface EmployeeWithAccess {
 }
 
 export default function UserManagement() {
+  return (
+    <AdminGuard>
+      <UserManagementContent />
+    </AdminGuard>
+  );
+}
+
+function UserManagementContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

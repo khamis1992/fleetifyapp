@@ -5,10 +5,12 @@ import {
 } from 'lucide-react';
 import { CompanyBrandingSettings } from '@/components/settings/CompanyBrandingSettings';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { SuperAdminGuard } from '@/components/auth/RoleGuard';
 
 export default function AdvancedSettings() {
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl" dir="rtl">
+    <SuperAdminGuard>
+      <div className="container mx-auto py-6 px-4 max-w-7xl" dir="rtl">
       <div className="space-y-6">
         <Breadcrumbs />
         
@@ -44,5 +46,6 @@ export default function AdvancedSettings() {
         </Card>
       </div>
     </div>
+    </SuperAdminGuard>
   );
 }
