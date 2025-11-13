@@ -175,6 +175,7 @@ const CustomerDetailsPage = () => {
           )
         `)
         .eq('customer_id', customerId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -193,6 +194,7 @@ const CustomerDetailsPage = () => {
         .from('payments')
         .select('*')
         .eq('customer_id', customerId)
+        .eq('company_id', companyId)
         .order('payment_date', { ascending: false })
         .limit(10);
 
@@ -318,7 +320,8 @@ const CustomerDetailsPage = () => {
       const { error } = await supabase
         .from('customers')
         .delete()
-        .eq('id', customerId);
+        .eq('id', customerId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 
@@ -350,7 +353,8 @@ const CustomerDetailsPage = () => {
       const { error } = await supabase
         .from('customers')
         .update({ is_active: false })
-        .eq('id', customerId);
+        .eq('id', customerId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
 

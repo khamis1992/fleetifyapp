@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -60,6 +61,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
   const downloadDocument = useDownloadContractDocument();
+  const { companyId } = useUnifiedCompanyAccess();
   
   // Enhanced document saving with progress tracking
   const { 
@@ -81,6 +83,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
         .from('vehicle_condition_reports')
         .select('*')
         .eq('id', selectedReportId)
+        .eq('company_id', companyId)
         .maybeSingle();
       
       if (reportError) throw reportError;
@@ -93,6 +96,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           .from('vehicles')
           .select('plate_number, make, model, year')
           .eq('id', reportData.vehicle_id)
+          .eq('company_id', companyId)
           .maybeSingle();
         
         if (!vehicleError) {
@@ -192,6 +196,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
             )
           `)
           .eq('id', contractId)
+          .eq('company_id', companyId)
           .single();
 
         if (error) {
@@ -212,6 +217,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
             .from('vehicles')
             .select('make, model, year, plate_number')
             .eq('id', contractData.vehicle_id)
+            .eq('company_id', companyId)
             .maybeSingle();
           
           if (vehicleData) {
@@ -227,6 +233,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           .from('contract_documents')
           .select('condition_report_id')
           .eq('contract_id', contractId)
+          .eq('company_id', companyId)
           .eq('document_type', 'condition_report')
           .not('condition_report_id', 'is', null)
           .limit(1);
@@ -238,6 +245,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
               .from('vehicle_condition_reports')
               .select('*')
               .eq('id', reportId)
+              .eq('company_id', companyId)
               .maybeSingle();
             
             if (reportData) {
