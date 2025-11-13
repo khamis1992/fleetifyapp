@@ -16,7 +16,7 @@ export const ForecastingSection: React.FC = () => {
 
   // Fetch real booking calendar data
   const { data: calendarData } = useQuery({
-    queryKey: ['booking-calendar', user?.profile?.company_id],
+    queryKey: ['booking-calendar-v2', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return null;
 
@@ -66,7 +66,7 @@ export const ForecastingSection: React.FC = () => {
 
   // Calculate real growth factors
   const { data: growthFactors } = useQuery({
-    queryKey: ['growth-factors', user?.profile?.company_id],
+    queryKey: ['growth-factors-v2', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return null;
 
