@@ -82,6 +82,7 @@ export const useDashboardStats = () => {
       let previousMonthContracts = 0;
       let previousMonthCustomers = 0;
       let previousMonthRevenue = 0;
+      let previousMonthVehicles = 0;
 
       // حساب تواريخ الشهر السابق للاستخدام في المقارنات
       const previousMonth = new Date();
@@ -114,6 +115,14 @@ export const useDashboardStats = () => {
         }
         vehiclesCount = totalVehicles || 0;
 
+        // Get previous month total vehicles for comparison
+        const { count: prevMonthVehicles } = await supabase
+          .from('vehicles')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', company_id)
+          .lte('created_at', lastDayPrevMonth.toISOString());
+        previousMonthVehicles = prevMonthVehicles || 0;
+
         // Get active contracts count
         // العقود النشطة: status = 'active' فقط لتجنب التعقيدات
         const today = new Date().toISOString().split('T')[0];
@@ -137,14 +146,15 @@ export const useDashboardStats = () => {
           .eq('company_id', company_id);
         totalContractsCount = allContractsCount || 0;
 
-        // Get previous month contracts for comparison
-        const { count: prevMonthContracts } = await supabase
+        // Get previous month active contracts for comparison (not just created in that month)
+        const { count: prevMonthActiveContracts } = await supabase
           .from('contracts')
           .select('*', { count: 'exact', head: true })
           .eq('company_id', company_id)
-          .gte('created_at', firstDayPrevMonth.toISOString())
-          .lte('created_at', lastDayPrevMonth.toISOString());
-        previousMonthContracts = prevMonthContracts || 0;
+          .eq('status', 'active')
+          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0])
+          .or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`);
+        previousMonthContracts = prevMonthActiveContracts || 0;
       }
 
       // Get properties data only if properties module is enabled
@@ -171,14 +181,14 @@ export const useDashboardStats = () => {
         .eq('company_id', company_id)
         .eq('is_active', true);
 
-      // Get previous month customers for comparison
-      const { count: prevMonthCustomers } = await supabase
+      // Get previous month total customers for comparison (not just created in that month)
+      const { count: prevMonthTotalCustomers } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', company_id)
-        .gte('created_at', firstDayPrevMonth.toISOString())
+        .eq('is_active', true)
         .lte('created_at', lastDayPrevMonth.toISOString());
-      previousMonthCustomers = prevMonthCustomers || 0;
+      previousMonthCustomers = prevMonthTotalCustomers || 0;
 
       // Get monthly revenue from different sources based on enabled modules
       const currentMonth = new Date();
@@ -290,10 +300,30 @@ export const useDashboardStats = () => {
         ? Math.round((contractsCount / totalContractsCount) * 100)
         : 0;
 
-      // Customer satisfaction rate (based on active customers)
-      const customerSatisfactionRate = (customersCount || 0) > 0
-        ? Math.min(Math.round(((customersCount || 0) / ((customersCount || 0) + 10)) * 100), 95)
-        : 0;
+      // Customer satisfaction rate (based on repeat customers)
+      // Calculate based on customers who have more than one contract (repeat customers)
+      let customerSatisfactionRate = 0;
+      if (isVehiclesEnabled && (customersCount || 0) > 0) {
+        const { data: repeatCustomersData } = await supabase
+          .from('contracts')
+          .select('customer_id')
+          .eq('company_id', company_id);
+        
+        // Count unique customers with more than one contract
+        const customerContractCounts = repeatCustomersData?.reduce((acc, contract) => {
+          acc[contract.customer_id] = (acc[contract.customer_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {};
+        
+        const repeatCustomersCount = Object.values(customerContractCounts).filter(count => count > 1).length;
+        
+        // Calculate satisfaction rate based on repeat customers (more realistic)
+        // Cap at 95% to be conservative
+        customerSatisfactionRate = Math.min(
+          Math.round((repeatCustomersCount / (customersCount || 1)) * 100),
+          95
+        );
+      }
 
       // Build response based on enabled modules
       const stats: DashboardStats = {
@@ -310,7 +340,15 @@ export const useDashboardStats = () => {
         stats.activeVehicles = activeVehiclesCount;
         stats.activeContracts = contractsCount;
         stats.totalContracts = totalContractsCount;
-        stats.vehiclesChange = '+0%';
+        
+        // Calculate vehicles change percentage
+        const vehiclesChange = vehiclesCount - previousMonthVehicles;
+        const vehiclesChangePercent = previousMonthVehicles > 0
+          ? Math.round((vehiclesChange / previousMonthVehicles) * 100)
+          : 0;
+        stats.vehiclesChange = vehiclesChangePercent > 0 
+          ? `+${vehiclesChangePercent}%` 
+          : `${vehiclesChangePercent}%`;
         stats.contractsChange = contractsChangePercent > 0 ? `+${contractsChangePercent}%` : `${contractsChangePercent}%`;
         stats.vehicleActivityRate = vehicleActivityRate;
         stats.contractCompletionRate = contractCompletionRate;

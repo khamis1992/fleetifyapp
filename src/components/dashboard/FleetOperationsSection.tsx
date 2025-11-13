@@ -56,13 +56,14 @@ export const FleetOperationsSection: React.FC = () => {
   const fleetChartData = [
     { name: 'متاح', value: fleetStatus?.available || 0, color: '#22c55e' },
     { name: 'مؤجر', value: fleetStatus?.rented || 0, color: '#dc2626' },
+    { name: 'محجوز', value: fleetStatus?.reserved || 0, color: '#3b82f6' },
     { name: 'صيانة', value: (fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0), color: '#fb923c' },
   ];
 
-  const COLORS = ['#22c55e', '#dc2626', '#fb923c'];
+  const COLORS = ['#22c55e', '#dc2626', '#3b82f6', '#fb923c'];
 
   // Calculate total vehicles for occupancy percentage
-  const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) + (fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0);
+  const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) + (fleetStatus?.reserved || 0) + (fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0);
   const occupancyRate = totalVehicles > 0 ? Math.round((fleetStatus?.rented || 0) / totalVehicles * 100) : 0;
 
   // Vehicle Performance Data - Generate realistic data based on actual occupancy

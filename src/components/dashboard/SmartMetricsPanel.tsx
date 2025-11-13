@@ -85,7 +85,7 @@ const SmartMetricsPanel: React.FC<SmartMetricsPanelProps> = React.memo(({
       actionRoute: '/finance/reports'
     },
     {
-      label: 'إجمالي الأرباح',
+      label: 'الأرباح الصافية',
       value: formatCurrency(financialData.totalProfit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       change: financialData.profitMargin || 0,
       positive: (financialData.profitMargin || 0) > 0,
