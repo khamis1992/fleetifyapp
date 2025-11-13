@@ -238,6 +238,23 @@ export const InvoiceApprovalWorkflow: React.FC<InvoiceApprovalWorkflowProps> = (
 
       if (historyError) throw historyError;
 
+      // Log audit trail
+      await logAudit({
+        action: 'REJECT',
+        resource_type: 'invoice',
+        resource_id: invoice.id,
+        entity_name: invoice.invoice_number,
+        changes_summary: `Rejected invoice ${invoice.invoice_number}`,
+        old_values: { status: invoice.status },
+        new_values: { status: 'rejected', rejected_at: new Date().toISOString() },
+        metadata: {
+          invoice_number: invoice.invoice_number,
+          total_amount: invoice.total_amount,
+          rejection_reason: rejectionReason,
+        },
+        severity: 'high',
+      });
+
       toast({
         title: '❌ تم رفض الفاتورة',
         description: 'يجب تعديلها قبل الإرسال',

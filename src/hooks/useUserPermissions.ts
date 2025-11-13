@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/permissions';
 import { useToast } from '@/hooks/use-toast';
+import { createAuditLog } from '@/hooks/useAuditLog';
 
 export interface UserPermission {
   id: string;
@@ -81,9 +82,31 @@ export const useUpdateUserPermissions = () => {
         if (error) throw error;
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
+      
+      // Log audit trail
+      const grantedPermissions = variables.permissions.filter(p => p.granted).map(p => p.permissionId);
+      await createAuditLog(
+        'UPDATE',
+        'user_permission',
+        variables.userId,
+        variables.userId,
+        {
+          new_values: {
+            permissions: grantedPermissions,
+            permission_count: grantedPermissions.length,
+          },
+          changes_summary: `Updated permissions for user ${variables.userId}`,
+          metadata: {
+            granted_count: grantedPermissions.length,
+            revoked_count: variables.permissions.filter(p => !p.granted).length,
+          },
+          severity: 'critical',
+        }
+      );
+      
       toast({
         title: "Success",
         description: "User permissions updated successfully",
@@ -146,9 +169,30 @@ export const useUpdateUserRoles = () => {
 
       console.log('Roles updated successfully');
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['employees-with-access'] });
+      
+      // Log audit trail
+      await createAuditLog(
+        'UPDATE',
+        'user_role',
+        variables.userId,
+        variables.userId,
+        {
+          new_values: {
+            roles: variables.roles,
+            role_count: variables.roles.length,
+          },
+          changes_summary: `Updated roles for user ${variables.userId}`,
+          metadata: {
+            roles: variables.roles.join(', '),
+            role_count: variables.roles.length,
+          },
+          severity: 'critical',
+        }
+      );
+      
       toast({
         title: "Success",
         description: "User roles updated successfully",

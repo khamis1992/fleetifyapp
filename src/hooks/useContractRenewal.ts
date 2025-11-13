@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { createAuditLog } from '@/hooks/useAuditLog';
 
 interface ContractRenewalData {
   contract_id: string;
@@ -94,11 +95,39 @@ export const useRenewContract = () => {
       
       if (updateError) throw updateError;
       
-      return newContract;
+      return { newContract, originalContract };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["expiring-contracts"] });
+      
+      // Log audit trail
+      await createAuditLog(
+        'UPDATE',
+        'contract',
+        result.originalContract.id,
+        result.originalContract.contract_number,
+        {
+          old_values: {
+            status: 'active',
+            end_date: result.originalContract.end_date,
+          },
+          new_values: {
+            status: 'renewed',
+            new_contract_id: result.newContract.id,
+            new_contract_number: result.newContract.contract_number,
+            new_end_date: result.newContract.end_date,
+          },
+          changes_summary: `Renewed contract ${result.originalContract.contract_number} to ${result.newContract.contract_number}`,
+          metadata: {
+            original_contract: result.originalContract.contract_number,
+            new_contract: result.newContract.contract_number,
+            new_amount: result.newContract.contract_amount,
+          },
+          severity: 'high',
+        }
+      );
+      
       toast.success("تم تجديد العقد بنجاح");
     },
     onError: (error) => {
@@ -209,7 +238,7 @@ export const useUpdateContractStatus = () => {
       // Get contract details first to check if it has a vehicle
       const { data: contractData, error: contractError } = await supabase
         .from("contracts")
-        .select("vehicle_id")
+        .select("contract_number, vehicle_id, status as old_status")
         .eq("id", contractId)
         .single();
       
@@ -237,10 +266,34 @@ export const useUpdateContractStatus = () => {
         }
       }
       
-      return data;
+      return { data, contractData };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      
+      // Log audit trail
+      await createAuditLog(
+        'UPDATE',
+        'contract',
+        variables.contractId,
+        result.contractData.contract_number,
+        {
+          old_values: {
+            status: result.contractData.old_status,
+          },
+          new_values: {
+            status: variables.status,
+          },
+          changes_summary: `Updated contract ${result.contractData.contract_number} status to ${variables.status}`,
+          metadata: {
+            contract_number: result.contractData.contract_number,
+            reason: variables.reason,
+            vehicle_released: variables.status === 'cancelled' && !!result.contractData.vehicle_id,
+          },
+          severity: 'high',
+        }
+      );
+      
       const statusText = variables.status === 'suspended' ? 'تعليق' : 
                         variables.status === 'cancelled' ? 'إلغاء' : 'تفعيل';
       toast.success(`تم ${statusText} العقد بنجاح`);

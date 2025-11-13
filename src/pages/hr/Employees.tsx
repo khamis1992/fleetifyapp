@@ -252,6 +252,26 @@ const { user } = useAuth();
         setShowAccountDialog(true);
         setIsDialogOpen(false);
 
+        // Log audit trail for account creation
+        await logAudit({
+          action: 'CREATE',
+          resource_type: 'user_account',
+          resource_id: result.user_id || employee.id,
+          entity_name: employeeData.accountEmail,
+          changes_summary: `Created user account for ${employee.first_name} ${employee.last_name}`,
+          new_values: {
+            email: employeeData.accountEmail,
+            roles: employeeData.accountRoles,
+            employee_id: employee.id,
+          },
+          metadata: {
+            employee_name: `${employee.first_name} ${employee.last_name}`,
+            roles: employeeData.accountRoles?.join(', '),
+            creation_method: 'direct',
+          },
+          severity: 'critical',
+        });
+
         toast({
           title: 'تم إضافة الموظف وإنشاء الحساب بنجاح',
           description: 'تم إنشاء حساب النظام بكلمة مرور مؤقتة',

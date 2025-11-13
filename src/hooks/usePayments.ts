@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/hooks/useAuditLog';
 
 export interface Payment {
   id: string;
@@ -265,9 +266,35 @@ export const useCreatePayment = () => {
       
       return payment;
     },
-    onSuccess: () => {
+    onSuccess: async (payment) => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      
+      // Log audit trail
+      await createAuditLog(
+        'CREATE',
+        'payment',
+        payment.id,
+        payment.payment_number,
+        {
+          new_values: {
+            payment_number: payment.payment_number,
+            amount: payment.amount,
+            payment_method: payment.payment_method,
+            payment_type: payment.payment_type,
+            payment_date: payment.payment_date,
+            invoice_id: payment.invoice_id,
+          },
+          changes_summary: `Created payment ${payment.payment_number}`,
+          metadata: {
+            amount: payment.amount,
+            payment_method: payment.payment_method,
+            invoice_linked: !!payment.invoice_id,
+          },
+          severity: 'medium',
+        }
+      );
+      
       toast({
         title: "تم تسجيل الدفع بنجاح",
         description: "تم تحديث حالة الفاتورة",
@@ -392,11 +419,36 @@ export const useDeletePayment = () => {
       
       if (deleteError) throw deleteError;
       
-      return paymentId;
+      return { paymentId, payment };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      
+      // Log audit trail
+      await createAuditLog(
+        'DELETE',
+        'payment',
+        result.paymentId,
+        result.payment.payment_number || result.paymentId,
+        {
+          old_values: {
+            payment_number: result.payment.payment_number,
+            amount: result.payment.amount,
+            payment_method: result.payment.payment_method,
+            payment_date: result.payment.payment_date,
+            invoice_id: result.payment.invoice_id,
+          },
+          changes_summary: `Deleted payment ${result.payment.payment_number || result.paymentId}`,
+          metadata: {
+            amount: result.payment.amount,
+            payment_method: result.payment.payment_method,
+            invoice_linked: !!result.payment.invoice_id,
+          },
+          severity: 'high',
+        }
+      );
+      
       toast({
         title: "تم حذف الدفع بنجاح",
         description: "تم تحديث حالة الفاتورة",

@@ -593,6 +593,13 @@ const Customers = () => {
   // Toggle blacklist mutation
   const toggleBlacklistMutation = useMutation({
     mutationFn: async ({ customerId, isBlacklisted }: { customerId: string; isBlacklisted: boolean }) => {
+      // Get customer details before update
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('customer_number, first_name, last_name, company_name, customer_type')
+        .eq('id', customerId)
+        .single();
+      
       const { error } = await supabase
         .from('customers')
         .update({ is_blacklisted: !isBlacklisted })
@@ -600,10 +607,35 @@ const Customers = () => {
 
       if (error) throw error;
 
-      return { customerId, newStatus: !isBlacklisted };
+      return { customerId, newStatus: !isBlacklisted, customerData };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers', companyId] });
+      
+      // Log audit trail
+      const customerName = data.customerData?.customer_type === 'individual'
+        ? `${data.customerData.first_name} ${data.customerData.last_name}`
+        : data.customerData?.company_name || 'Unknown';
+      
+      await createAuditLog(
+        'UPDATE',
+        'customer',
+        data.customerId,
+        customerName,
+        {
+          old_values: { is_blacklisted: !data.newStatus },
+          new_values: { is_blacklisted: data.newStatus },
+          changes_summary: data.newStatus 
+            ? `Added customer ${customerName} to blacklist`
+            : `Removed customer ${customerName} from blacklist`,
+          metadata: {
+            customer_number: data.customerData?.customer_number,
+            action: data.newStatus ? 'blacklist' : 'whitelist',
+          },
+          severity: 'high',
+        }
+      );
+      
       toast.success(data.newStatus ? 'تم إضافة العميل للقائمة السوداء' : 'تم إزالة العميل من القائمة السوداء');
     },
     onError: (error: any) => {

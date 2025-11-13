@@ -187,6 +187,31 @@ export const useCreateVehicle = () => {
         }
       });
       
+      // Log audit trail
+      await createAuditLog(
+        'CREATE',
+        'vehicle',
+        data.id,
+        data.plate_number,
+        {
+          new_values: {
+            plate_number: data.plate_number,
+            make: data.make,
+            model: data.model,
+            year: data.year,
+            status: data.status,
+            vehicle_type: data.vehicle_type,
+          },
+          changes_summary: `Created vehicle ${data.plate_number}`,
+          metadata: {
+            make: data.make,
+            model: data.model,
+            year: data.year,
+          },
+          severity: 'medium',
+        }
+      );
+      
       return data
     },
     onSuccess: (data) => {
@@ -229,6 +254,13 @@ export const useUpdateVehicle = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Vehicle> & { id: string }) => {
+      // Get old data before update
+      const { data: oldData } = await supabase
+        .from("vehicles")
+        .select('plate_number, status, make, model')
+        .eq("id", id)
+        .single()
+      
       const { data, error } = await supabase
         .from("vehicles")
         .update(updateData)
@@ -237,12 +269,36 @@ export const useUpdateVehicle = () => {
         .single()
 
       if (error) throw error
-      return data
+      return { data, oldData }
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
+      
+      // Log audit trail
+      await createAuditLog(
+        'UPDATE',
+        'vehicle',
+        result.data.id,
+        result.data.plate_number,
+        {
+          old_values: {
+            status: result.oldData?.status,
+          },
+          new_values: {
+            status: result.data.status,
+          },
+          changes_summary: `Updated vehicle ${result.data.plate_number}`,
+          metadata: {
+            make: result.data.make,
+            model: result.data.model,
+            status_changed: result.oldData?.status !== result.data.status,
+          },
+          severity: 'medium',
+        }
+      );
+      
       toast({
         title: "Success",
         description: "Vehicle updated successfully",
@@ -537,6 +593,31 @@ export const useCreateVehicleMaintenance = () => {
       } catch (error) {
         console.error('Failed to create journal entry for maintenance:', error);
       }
+      
+      // Log audit trail
+      await createAuditLog(
+        'CREATE',
+        'maintenance',
+        data.id,
+        data.maintenance_number,
+        {
+          new_values: {
+            maintenance_number: data.maintenance_number,
+            vehicle_id: data.vehicle_id,
+            maintenance_type: data.maintenance_type,
+            estimated_cost: data.estimated_cost,
+            scheduled_date: data.scheduled_date,
+          },
+          changes_summary: `Created maintenance ${data.maintenance_number}`,
+          metadata: {
+            maintenance_type: data.maintenance_type,
+            estimated_cost: data.estimated_cost,
+            description: data.description,
+          },
+          severity: 'medium',
+        }
+      )
+      
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
         title: "نجح",
@@ -552,6 +633,13 @@ export const useUpdateVehicleMaintenance = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<VehicleMaintenance> & { id: string }) => {
+      // Get old data before update
+      const { data: oldData } = await supabase
+        .from("vehicle_maintenance")
+        .select('maintenance_number, status, estimated_cost, actual_cost')
+        .eq("id", id)
+        .single()
+      
       const { data, error } = await supabase
         .from("vehicle_maintenance")
         .update(updateData)
@@ -560,11 +648,37 @@ export const useUpdateVehicleMaintenance = () => {
         .single()
 
       if (error) throw error
-      return data
+      return { data, oldData }
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
+      
+      // Log audit trail
+      await createAuditLog(
+        'UPDATE',
+        'maintenance',
+        result.data.id,
+        result.data.maintenance_number,
+        {
+          old_values: {
+            status: result.oldData?.status,
+            estimated_cost: result.oldData?.estimated_cost,
+            actual_cost: result.oldData?.actual_cost,
+          },
+          new_values: {
+            status: result.data.status,
+            estimated_cost: result.data.estimated_cost,
+            actual_cost: result.data.actual_cost,
+          },
+          changes_summary: `Updated maintenance ${result.data.maintenance_number}`,
+          metadata: {
+            maintenance_type: result.data.maintenance_type,
+          },
+          severity: 'medium',
+        }
+      )
+      
       toast({
         title: "نجح",
         description: "تم تحديث طلب الصيانة بنجاح",
@@ -583,7 +697,7 @@ export const useDeleteVehicleMaintenance = () => {
       // Get maintenance record first to check vehicle status
       const { data: maintenance, error: fetchError } = await supabase
         .from("vehicle_maintenance")
-        .select("vehicle_id, status")
+        .select("maintenance_number, vehicle_id, status, maintenance_type, estimated_cost")
         .eq("id", maintenanceId)
         .single()
 
@@ -633,12 +747,35 @@ export const useDeleteVehicleMaintenance = () => {
         }
       }
 
-      return { success: true }
+      return { success: true, maintenanceId, maintenance }
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.maintenance() })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: ['maintenance-vehicles'] })
+      
+      // Log audit trail
+      await createAuditLog(
+        'DELETE',
+        'maintenance',
+        result.maintenanceId,
+        result.maintenance.maintenance_number,
+        {
+          old_values: {
+            maintenance_number: result.maintenance.maintenance_number,
+            vehicle_id: result.maintenance.vehicle_id,
+            status: result.maintenance.status,
+            maintenance_type: result.maintenance.maintenance_type,
+            estimated_cost: result.maintenance.estimated_cost,
+          },
+          changes_summary: `Deleted maintenance ${result.maintenance.maintenance_number}`,
+          metadata: {
+            maintenance_type: result.maintenance.maintenance_type,
+          },
+          severity: 'high',
+        }
+      )
+      
       toast({
         title: "تم بنجاح",
         description: "تم حذف طلب الصيانة بنجاح",
