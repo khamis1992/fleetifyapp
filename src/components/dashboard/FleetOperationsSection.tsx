@@ -52,6 +52,50 @@ export const FleetOperationsSection: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   });
 
+  // Fetch upcoming maintenance
+  const { data: upcomingMaintenance, isLoading: maintenanceLoading } = useQuery({
+    queryKey: ['upcoming-maintenance', user?.profile?.company_id],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return [];
+
+      const { data, error } = await supabase
+        .from('maintenance_records')
+        .select(`
+          id,
+          maintenance_type,
+          scheduled_date,
+          status,
+          vehicles (license_plate)
+        `)
+        .eq('company_id', user.profile.company_id)
+        .gte('scheduled_date', new Date().toISOString())
+        .order('scheduled_date', { ascending: true })
+        .limit(3);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.profile?.company_id,
+  });
+
+  // Fetch total maintenance count
+  const { data: totalMaintenanceCount } = useQuery({
+    queryKey: ['total-maintenance-count', user?.profile?.company_id],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return 0;
+
+      const { count, error } = await supabase
+        .from('maintenance_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', user.profile.company_id)
+        .gte('scheduled_date', new Date().toISOString());
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user?.profile?.company_id,
+  });
+
   // Fleet Status Chart Data - Using real data from database
   const fleetChartData = [
     { name: 'متاح', value: fleetStatus?.available || 0, color: '#22c55e' },
@@ -77,7 +121,7 @@ export const FleetOperationsSection: React.FC = () => {
     { day: 'السبت', occupancy: Math.min(occupancyRate + 7, 100) },
   ];
 
-  if (isLoading) {
+  if (isLoading || maintenanceLoading) {
     return (
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         {[1, 2, 3].map((i) => (
@@ -160,43 +204,53 @@ export const FleetOperationsSection: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-gray-900">جدول الصيانة</h3>
-          <span className="badge-premium badge-warning">
-            <Clock className="w-3.5 h-3.5" />
-            8 قريباً
-          </span>
+          {totalMaintenanceCount && totalMaintenanceCount > 0 && (
+            <span className="badge-premium badge-warning">
+              <Clock className="w-3.5 h-3.5" />
+              {totalMaintenanceCount} قريباً
+            </span>
+          )}
         </div>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="font-semibold text-sm">كامري ABC123</p>
-                <p className="text-xs text-gray-600">تغيير زيت - متأخر 3 أيام</p>
-              </div>
+          {upcomingMaintenance && upcomingMaintenance.length > 0 ? (
+            upcomingMaintenance.map((maintenance: any) => {
+              const daysUntil = Math.ceil((new Date(maintenance.scheduled_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+              const isOverdue = daysUntil < 0;
+              const isUrgent = daysUntil <= 1 && daysUntil >= 0;
+              
+              const bgColor = isOverdue ? 'bg-red-50' : isUrgent ? 'bg-orange-50' : 'bg-yellow-50';
+              const iconColor = isOverdue ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-yellow-600';
+              const Icon = isOverdue ? AlertTriangle : Wrench;
+              
+              return (
+                <div key={maintenance.id} className={`flex items-center justify-between p-3 ${bgColor} rounded-lg`}>
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                    <div>
+                      <p className="font-semibold text-sm">{maintenance.vehicles?.license_plate || 'غير محدد'}</p>
+                      <p className="text-xs text-gray-600">
+                        {maintenance.maintenance_type} - 
+                        {isOverdue ? ` متأخر ${Math.abs(daysUntil)} ${Math.abs(daysUntil) === 1 ? 'يوم' : 'أيام'}` :
+                         isUrgent ? ' غداً' :
+                         ` بعد ${daysUntil} ${daysUntil === 1 ? 'يوم' : 'أيام'}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Wrench className="w-12 h-12 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">لا توجد صيانات قادمة</p>
             </div>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Wrench className="w-5 h-5 text-orange-600" />
-              <div>
-                <p className="font-semibold text-sm">ألتيما XYZ456</p>
-                <p className="text-xs text-gray-600">فحص دوري - غداً</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Wrench className="w-5 h-5 text-yellow-600" />
-              <div>
-                <p className="font-semibold text-sm">أكورد DEF789</p>
-                <p className="text-xs text-gray-600">تبديل إطارات - بعد 5 أيام</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-        <button className="w-full mt-4 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
-          عرض جميع الصيانات (15)
-        </button>
+        {upcomingMaintenance && upcomingMaintenance.length > 0 && (
+          <button className="w-full mt-4 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
+            عرض جميع الصيانات ({totalMaintenanceCount || 0})
+          </button>
+        )}
       </motion.div>
 
       {/* Vehicle Performance Metrics */}
@@ -270,4 +324,3 @@ export const FleetOperationsSection: React.FC = () => {
     </section>
   );
 };
-
