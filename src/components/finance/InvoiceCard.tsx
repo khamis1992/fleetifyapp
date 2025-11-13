@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 interface InvoiceCardProps {
   invoice: any;
@@ -69,23 +70,27 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
               <Eye className="h-4 w-4" />
             </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEdit}
-              title="تعديل الفاتورة"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
+            <PermissionGuard permissions={['edit_invoices']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onEdit}
+                title="تعديل الفاتورة"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </PermissionGuard>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDelete}
-              title="حذف الفاتورة"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <PermissionGuard permissions={['delete_invoices']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDelete}
+                title="حذف الفاتورة"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </PermissionGuard>
           </div>
 
           {/* Right side - Invoice details */}

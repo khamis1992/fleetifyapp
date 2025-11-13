@@ -10,6 +10,7 @@ import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus 
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { MaintenanceForm } from "./MaintenanceForm"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { useRolePermissions } from "@/hooks/useRolePermissions"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -58,6 +59,11 @@ export function MaintenanceList() {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
   const { data: maintenanceRecords, isLoading } = useVehicleMaintenance()
   const { formatCurrency } = useCurrencyFormatter()
+  const { hasPermission } = useRolePermissions()
+  
+  const canCreate = hasPermission('create_maintenance')
+  const canEdit = hasPermission('edit_maintenance')
+  const canDelete = hasPermission('delete_maintenance')
 
   const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
   const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
@@ -142,16 +148,18 @@ export function MaintenanceList() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem>View Details</DropdownMenuItem>
-                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                  {maintenance.status === 'pending' && (
+                  {canEdit && <DropdownMenuItem>Edit</DropdownMenuItem>}
+                  {maintenance.status === 'pending' && canEdit && (
                     <DropdownMenuItem>Start Maintenance</DropdownMenuItem>
                   )}
-                  {maintenance.status === 'in_progress' && (
+                  {maintenance.status === 'in_progress' && canEdit && (
                     <DropdownMenuItem>Complete</DropdownMenuItem>
                   )}
-                  <DropdownMenuItem className="text-destructive">
-                    Cancel
-                  </DropdownMenuItem>
+                  {canDelete && (
+                    <DropdownMenuItem className="text-destructive">
+                      Cancel
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -170,10 +178,12 @@ export function MaintenanceList() {
             Schedule and track vehicle maintenance
           </p>
         </div>
-        <Button onClick={() => setShowMaintenanceForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Schedule Maintenance
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowMaintenanceForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Maintenance
+          </Button>
+        )}
       </div>
 
       {/* Overview Cards */}
@@ -310,13 +320,15 @@ export function MaintenanceList() {
                 <div className="text-center py-8">
                   <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No maintenance records found</p>
-                  <Button 
-                    className="mt-4" 
-                    onClick={() => setShowMaintenanceForm(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Schedule First Maintenance
-                  </Button>
+                  {canCreate && (
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => setShowMaintenanceForm(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Schedule First Maintenance
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>

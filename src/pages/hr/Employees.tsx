@@ -21,6 +21,7 @@ import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 import { PageHelp } from "@/components/help";
 import { EmployeesPageHelpContent } from "@/components/help/content";
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 interface Employee {
   id: string;
   company_id: string;
@@ -48,6 +49,10 @@ export default function Employees() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const { hasPermission } = useRolePermissions();
+  
+  const canEdit = hasPermission('edit_employees');
+  const canDelete = hasPermission('delete_employees');
   const [accountData, setAccountData] = useState<any>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
@@ -604,22 +609,26 @@ const { user } = useAuth();
                       >
                         <DollarSign className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditEmployee(employee)}
-                        disabled={updateEmployeeMutation.isPending}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteEmployee(employee)}
-                        disabled={deleteEmployeeMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditEmployee(employee)}
+                          disabled={updateEmployeeMutation.isPending}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteEmployee(employee)}
+                          disabled={deleteEmployeeMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

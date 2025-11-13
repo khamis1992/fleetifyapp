@@ -23,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { createAuditLog } from '@/hooks/useAuditLog';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import {
   Plus,
   Search,
@@ -96,6 +97,10 @@ const Customers = () => {
   const navigate = useNavigate();
   const { isMobile } = useSimpleBreakpoint();
   const { hasFullCompanyControl, companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = useRolePermissions();
+  
+  const canEdit = hasPermission('edit_customers');
+  const canDelete = hasPermission('delete_customers');
   const parentRef = useRef<HTMLDivElement>(null);
   
   // State management
@@ -823,6 +828,8 @@ const Customers = () => {
                       onEdit={() => handleEditCustomer(customer)}
                       onDelete={() => handleDeleteCustomer(customer)}
                       onToggleBlacklist={() => handleToggleBlacklist(customer)}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
                     />
                   </div>
                 );

@@ -8,6 +8,7 @@ import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
 import { Vehicle } from "@/hooks/useVehicles"
 import { VehicleForm } from "./VehicleForm"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { useRolePermissions } from "@/hooks/useRolePermissions"
 
 interface VehicleCardProps {
   vehicle: Vehicle
@@ -38,9 +39,13 @@ const statusLabels = {
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const navigate = useNavigate()
   const [showEditForm, setShowEditForm] = useState(false)
+  const { hasPermission } = useRolePermissions()
 
   const status = vehicle.status || 'available'
   const { formatCurrency } = useCurrencyFormatter()
+  
+  const canEdit = hasPermission('edit_vehicles')
+  const canDelete = hasPermission('delete_vehicles')
   
   const handleViewDetails = () => {
     navigate(`/fleet/vehicles/${vehicle.id}`)
@@ -70,20 +75,24 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                     <Eye className="h-4 w-4 mr-2" />
                     عرض التفاصيل
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowEditForm(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    تعديل المركبة
-                  </DropdownMenuItem>
+                  {canEdit && (
+                    <DropdownMenuItem onClick={() => setShowEditForm(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      تعديل المركبة
+                    </DropdownMenuItem>
+                  )}
                   {status === 'available' && (
                     <DropdownMenuItem onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicle.id}`)}>
                       <Wrench className="h-4 w-4 mr-2" />
                       جدولة الصيانة
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    إلغاء التفعيل
-                  </DropdownMenuItem>
+                  {canDelete && (
+                    <DropdownMenuItem className="text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      إلغاء التفعيل
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
