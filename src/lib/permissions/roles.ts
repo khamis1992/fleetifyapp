@@ -1,0 +1,501 @@
+/**
+ * نظام الأدوار والصلاحيات - FleetifyApp
+ * 
+ * يحدد هذا الملف جميع الأدوار والصلاحيات المتاحة في النظام
+ * ويوفر الدوال المساعدة للتحقق من الصلاحيات
+ * 
+ * @module permissions/roles
+ */
+
+/**
+ * الأدوار المتاحة في النظام (متوافق مع قاعدة البيانات)
+ */
+export enum UserRole {
+  SUPER_ADMIN = 'super_admin',
+  COMPANY_ADMIN = 'company_admin', // مدير الشركة
+  MANAGER = 'manager',
+  ACCOUNTANT = 'accountant', // محاسب
+  FLEET_MANAGER = 'fleet_manager', // مدير الأسطول
+  SALES_AGENT = 'sales_agent', // موظف مبيعات
+  EMPLOYEE = 'employee',
+}
+
+/**
+ * الصلاحيات المتاحة في النظام
+ */
+export enum Permission {
+  // صلاحيات إدارة المستخدمين
+  MANAGE_USERS = 'manage_users',
+  VIEW_USERS = 'view_users',
+  CREATE_USER = 'create_user',
+  EDIT_USER = 'edit_user',
+  DELETE_USER = 'delete_user',
+  ASSIGN_ROLES = 'assign_roles',
+  
+  // صلاحيات إدارة الشركات (Super Admin فقط)
+  MANAGE_COMPANIES = 'manage_companies',
+  VIEW_ALL_COMPANIES = 'view_all_companies',
+  CREATE_COMPANY = 'create_company',
+  EDIT_COMPANY = 'edit_company',
+  DELETE_COMPANY = 'delete_company',
+  
+  // صلاحيات المالية
+  MANAGE_FINANCE = 'manage_finance',
+  VIEW_FINANCE = 'view_finance',
+  CREATE_INVOICE = 'create_invoice',
+  EDIT_INVOICE = 'edit_invoice',
+  DELETE_INVOICE = 'delete_invoice',
+  APPROVE_INVOICE = 'approve_invoice',
+  CREATE_PAYMENT = 'create_payment',
+  EDIT_PAYMENT = 'edit_payment',
+  DELETE_PAYMENT = 'delete_payment',
+  APPROVE_PAYMENT = 'approve_payment',
+  VIEW_REPORTS = 'view_reports',
+  EXPORT_REPORTS = 'export_reports',
+  MANAGE_CHART_OF_ACCOUNTS = 'manage_chart_of_accounts',
+  MANAGE_JOURNAL_ENTRIES = 'manage_journal_entries',
+  
+  // صلاحيات العقود
+  MANAGE_CONTRACTS = 'manage_contracts',
+  VIEW_CONTRACTS = 'view_contracts',
+  CREATE_CONTRACT = 'create_contract',
+  EDIT_CONTRACT = 'edit_contract',
+  DELETE_CONTRACT = 'delete_contract',
+  APPROVE_CONTRACT = 'approve_contract',
+  TERMINATE_CONTRACT = 'terminate_contract',
+  
+  // صلاحيات المركبات
+  MANAGE_VEHICLES = 'manage_vehicles',
+  VIEW_VEHICLES = 'view_vehicles',
+  CREATE_VEHICLE = 'create_vehicle',
+  EDIT_VEHICLE = 'edit_vehicle',
+  DELETE_VEHICLE = 'delete_vehicle',
+  MANAGE_MAINTENANCE = 'manage_maintenance',
+  
+  // صلاحيات العملاء
+  MANAGE_CUSTOMERS = 'manage_customers',
+  VIEW_CUSTOMERS = 'view_customers',
+  CREATE_CUSTOMER = 'create_customer',
+  EDIT_CUSTOMER = 'edit_customer',
+  DELETE_CUSTOMER = 'delete_customer',
+  ARCHIVE_CUSTOMER = 'archive_customer',
+  
+  // صلاحيات الموظفين
+  MANAGE_EMPLOYEES = 'manage_employees',
+  VIEW_EMPLOYEES = 'view_employees',
+  CREATE_EMPLOYEE = 'create_employee',
+  EDIT_EMPLOYEE = 'edit_employee',
+  DELETE_EMPLOYEE = 'delete_employee',
+  
+  // صلاحيات القضايا القانونية
+  MANAGE_LEGAL_CASES = 'manage_legal_cases',
+  VIEW_LEGAL_CASES = 'view_legal_cases',
+  CREATE_LEGAL_CASE = 'create_legal_case',
+  EDIT_LEGAL_CASE = 'edit_legal_case',
+  DELETE_LEGAL_CASE = 'delete_legal_case',
+  
+  // صلاحيات الإعدادات
+  MANAGE_SETTINGS = 'manage_settings',
+  VIEW_SETTINGS = 'view_settings',
+  EDIT_COMPANY_SETTINGS = 'edit_company_settings',
+  EDIT_SYSTEM_SETTINGS = 'edit_system_settings',
+  
+  // صلاحيات الأصول الثابتة
+  MANAGE_ASSETS = 'manage_assets',
+  VIEW_ASSETS = 'view_assets',
+  CREATE_ASSET = 'create_asset',
+  EDIT_ASSET = 'edit_asset',
+  DELETE_ASSET = 'delete_asset',
+  
+  // صلاحيات المستندات
+  MANAGE_DOCUMENTS = 'manage_documents',
+  VIEW_DOCUMENTS = 'view_documents',
+  UPLOAD_DOCUMENT = 'upload_document',
+  DELETE_DOCUMENT = 'delete_document',
+  DOWNLOAD_DOCUMENT = 'download_document',
+}
+
+/**
+ * خريطة الصلاحيات لكل دور
+ */
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  // Super Admin: جميع الصلاحيات
+  [UserRole.SUPER_ADMIN]: Object.values(Permission),
+  
+  // مدير الشركة: جميع الصلاحيات ضمن الشركة (ما عدا إدارة الشركات)
+  [UserRole.COMPANY_ADMIN]: [
+    // إدارة المستخدمين
+    Permission.MANAGE_USERS,
+    Permission.VIEW_USERS,
+    Permission.CREATE_USER,
+    Permission.EDIT_USER,
+    Permission.DELETE_USER,
+    Permission.ASSIGN_ROLES,
+    
+    // المالية
+    Permission.MANAGE_FINANCE,
+    Permission.VIEW_FINANCE,
+    Permission.CREATE_INVOICE,
+    Permission.EDIT_INVOICE,
+    Permission.DELETE_INVOICE,
+    Permission.APPROVE_INVOICE,
+    Permission.CREATE_PAYMENT,
+    Permission.EDIT_PAYMENT,
+    Permission.DELETE_PAYMENT,
+    Permission.APPROVE_PAYMENT,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    Permission.MANAGE_CHART_OF_ACCOUNTS,
+    Permission.MANAGE_JOURNAL_ENTRIES,
+    
+    // العقود
+    Permission.MANAGE_CONTRACTS,
+    Permission.VIEW_CONTRACTS,
+    Permission.CREATE_CONTRACT,
+    Permission.EDIT_CONTRACT,
+    Permission.DELETE_CONTRACT,
+    Permission.APPROVE_CONTRACT,
+    Permission.TERMINATE_CONTRACT,
+    
+    // المركبات
+    Permission.MANAGE_VEHICLES,
+    Permission.VIEW_VEHICLES,
+    Permission.CREATE_VEHICLE,
+    Permission.EDIT_VEHICLE,
+    Permission.DELETE_VEHICLE,
+    Permission.MANAGE_MAINTENANCE,
+    
+    // العملاء
+    Permission.MANAGE_CUSTOMERS,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMER,
+    Permission.EDIT_CUSTOMER,
+    Permission.DELETE_CUSTOMER,
+    Permission.ARCHIVE_CUSTOMER,
+    
+    // الموظفين
+    Permission.MANAGE_EMPLOYEES,
+    Permission.VIEW_EMPLOYEES,
+    Permission.CREATE_EMPLOYEE,
+    Permission.EDIT_EMPLOYEE,
+    Permission.DELETE_EMPLOYEE,
+    
+    // القضايا القانونية
+    Permission.MANAGE_LEGAL_CASES,
+    Permission.VIEW_LEGAL_CASES,
+    Permission.CREATE_LEGAL_CASE,
+    Permission.EDIT_LEGAL_CASE,
+    Permission.DELETE_LEGAL_CASE,
+    
+    // الإعدادات
+    Permission.MANAGE_SETTINGS,
+    Permission.VIEW_SETTINGS,
+    Permission.EDIT_COMPANY_SETTINGS,
+    
+    // الأصول
+    Permission.MANAGE_ASSETS,
+    Permission.VIEW_ASSETS,
+    Permission.CREATE_ASSET,
+    Permission.EDIT_ASSET,
+    Permission.DELETE_ASSET,
+    
+    // المستندات
+    Permission.MANAGE_DOCUMENTS,
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENT,
+    Permission.DELETE_DOCUMENT,
+    Permission.DOWNLOAD_DOCUMENT,
+  ],
+  
+  // المدير: صلاحيات محدودة (قراءة + عمليات محددة)
+  [UserRole.MANAGER]: [
+    // عرض المستخدمين فقط
+    Permission.VIEW_USERS,
+    
+    // المالية (قراءة + إنشاء/تعديل)
+    Permission.VIEW_FINANCE,
+    Permission.CREATE_INVOICE,
+    Permission.EDIT_INVOICE,
+    Permission.CREATE_PAYMENT,
+    Permission.EDIT_PAYMENT,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    
+    // العقود (قراءة + إنشاء/تعديل)
+    Permission.VIEW_CONTRACTS,
+    Permission.CREATE_CONTRACT,
+    Permission.EDIT_CONTRACT,
+    
+    // المركبات (قراءة + إنشاء/تعديل)
+    Permission.VIEW_VEHICLES,
+    Permission.CREATE_VEHICLE,
+    Permission.EDIT_VEHICLE,
+    Permission.MANAGE_MAINTENANCE,
+    
+    // العملاء (قراءة + إنشاء/تعديل)
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMER,
+    Permission.EDIT_CUSTOMER,
+    
+    // الموظفين (قراءة فقط)
+    Permission.VIEW_EMPLOYEES,
+    
+    // القضايا القانونية (قراءة + إنشاء/تعديل)
+    Permission.VIEW_LEGAL_CASES,
+    Permission.CREATE_LEGAL_CASE,
+    Permission.EDIT_LEGAL_CASE,
+    
+    // الإعدادات (قراءة فقط)
+    Permission.VIEW_SETTINGS,
+    
+    // الأصول (قراءة + إنشاء/تعديل)
+    Permission.VIEW_ASSETS,
+    Permission.CREATE_ASSET,
+    Permission.EDIT_ASSET,
+    
+    // المستندات
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENT,
+    Permission.DOWNLOAD_DOCUMENT,
+  ],
+  
+  // المحاسب: صلاحيات مالية كاملة
+  [UserRole.ACCOUNTANT]: [
+    // المالية (كاملة)
+    Permission.MANAGE_FINANCE,
+    Permission.VIEW_FINANCE,
+    Permission.CREATE_INVOICE,
+    Permission.EDIT_INVOICE,
+    Permission.DELETE_INVOICE,
+    Permission.APPROVE_INVOICE,
+    Permission.CREATE_PAYMENT,
+    Permission.EDIT_PAYMENT,
+    Permission.DELETE_PAYMENT,
+    Permission.APPROVE_PAYMENT,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    Permission.MANAGE_CHART_OF_ACCOUNTS,
+    Permission.MANAGE_JOURNAL_ENTRIES,
+    
+    // العقود (قراءة فقط)
+    Permission.VIEW_CONTRACTS,
+    
+    // العملاء (قراءة فقط)
+    Permission.VIEW_CUSTOMERS,
+    
+    // المستندات
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENT,
+    Permission.DOWNLOAD_DOCUMENT,
+  ],
+  
+  // مدير الأسطول: صلاحيات المركبات والصيانة
+  [UserRole.FLEET_MANAGER]: [
+    // المركبات (كاملة)
+    Permission.MANAGE_VEHICLES,
+    Permission.VIEW_VEHICLES,
+    Permission.CREATE_VEHICLE,
+    Permission.EDIT_VEHICLE,
+    Permission.DELETE_VEHICLE,
+    Permission.MANAGE_MAINTENANCE,
+    
+    // العقود (قراءة + إنشاء/تعديل)
+    Permission.VIEW_CONTRACTS,
+    Permission.CREATE_CONTRACT,
+    Permission.EDIT_CONTRACT,
+    
+    // العملاء (قراءة فقط)
+    Permission.VIEW_CUSTOMERS,
+    
+    // الأصول (كاملة)
+    Permission.MANAGE_ASSETS,
+    Permission.VIEW_ASSETS,
+    Permission.CREATE_ASSET,
+    Permission.EDIT_ASSET,
+    Permission.DELETE_ASSET,
+    
+    // المستندات
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENT,
+    Permission.DOWNLOAD_DOCUMENT,
+    
+    // التقارير
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+  ],
+  
+  // موظف المبيعات: صلاحيات العملاء والعقود
+  [UserRole.SALES_AGENT]: [
+    // العملاء (كاملة)
+    Permission.MANAGE_CUSTOMERS,
+    Permission.VIEW_CUSTOMERS,
+    Permission.CREATE_CUSTOMER,
+    Permission.EDIT_CUSTOMER,
+    Permission.ARCHIVE_CUSTOMER,
+    
+    // العقود (قراءة + إنشاء/تعديل)
+    Permission.VIEW_CONTRACTS,
+    Permission.CREATE_CONTRACT,
+    Permission.EDIT_CONTRACT,
+    
+    // المركبات (قراءة فقط)
+    Permission.VIEW_VEHICLES,
+    
+    // المستندات
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENT,
+    Permission.DOWNLOAD_DOCUMENT,
+    
+    // التقارير
+    Permission.VIEW_REPORTS,
+  ],
+  
+  // الموظف: صلاحيات محدودة جداً (قراءة فقط في معظم الحالات)
+  [UserRole.EMPLOYEE]: [
+    // المالية (قراءة فقط)
+    Permission.VIEW_FINANCE,
+    Permission.VIEW_REPORTS,
+    
+    // العقود (قراءة فقط)
+    Permission.VIEW_CONTRACTS,
+    
+    // المركبات (قراءة فقط)
+    Permission.VIEW_VEHICLES,
+    
+    // العملاء (قراءة فقط)
+    Permission.VIEW_CUSTOMERS,
+    
+    // الموظفين (قراءة فقط)
+    Permission.VIEW_EMPLOYEES,
+    
+    // القضايا القانونية (قراءة فقط)
+    Permission.VIEW_LEGAL_CASES,
+    
+    // الأصول (قراءة فقط)
+    Permission.VIEW_ASSETS,
+    
+    // المستندات (قراءة + تحميل)
+    Permission.VIEW_DOCUMENTS,
+    Permission.DOWNLOAD_DOCUMENT,
+  ],
+};
+
+/**
+ * التحقق من أن الدور يملك صلاحية معينة
+ */
+export function roleHasPermission(role: UserRole, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
+}
+
+/**
+ * التحقق من أن الدور يملك جميع الصلاحيات المطلوبة
+ */
+export function roleHasAllPermissions(role: UserRole, permissions: Permission[]): boolean {
+  return permissions.every(permission => roleHasPermission(role, permission));
+}
+
+/**
+ * التحقق من أن الدور يملك أي من الصلاحيات المطلوبة
+ */
+export function roleHasAnyPermission(role: UserRole, permissions: Permission[]): boolean {
+  return permissions.some(permission => roleHasPermission(role, permission));
+}
+
+/**
+ * الحصول على جميع الصلاحيات لدور معين
+ */
+export function getRolePermissions(role: UserRole): Permission[] {
+  return ROLE_PERMISSIONS[role] ?? [];
+}
+
+/**
+ * الحصول على اسم الدور بالعربية
+ */
+export function getRoleDisplayName(role: UserRole): string {
+  const roleNames: Record<UserRole, string> = {
+    [UserRole.SUPER_ADMIN]: 'مدير النظام',
+    [UserRole.COMPANY_ADMIN]: 'مدير الشركة',
+    [UserRole.MANAGER]: 'مدير',
+    [UserRole.ACCOUNTANT]: 'محاسب',
+    [UserRole.FLEET_MANAGER]: 'مدير الأسطول',
+    [UserRole.SALES_AGENT]: 'موظف مبيعات',
+    [UserRole.EMPLOYEE]: 'موظف',
+  };
+  return roleNames[role] ?? role;
+}
+
+/**
+ * الحصول على وصف الدور بالعربية
+ */
+export function getRoleDescription(role: UserRole): string {
+  const roleDescriptions: Record<UserRole, string> = {
+    [UserRole.SUPER_ADMIN]: 'صلاحيات كاملة على جميع الشركات والنظام',
+    [UserRole.COMPANY_ADMIN]: 'صلاحيات كاملة على الشركة المحددة',
+    [UserRole.MANAGER]: 'صلاحيات محدودة للعمليات اليومية',
+    [UserRole.ACCOUNTANT]: 'صلاحيات مالية كاملة',
+    [UserRole.FLEET_MANAGER]: 'إدارة الأسطول والمركبات',
+    [UserRole.SALES_AGENT]: 'إدارة العملاء والعقود',
+    [UserRole.EMPLOYEE]: 'صلاحيات قراءة فقط',
+  };
+  return roleDescriptions[role] ?? '';
+}
+
+/**
+ * الحصول على اسم الصلاحية بالعربية
+ */
+export function getPermissionDisplayName(permission: Permission): string {
+  const permissionNames: Partial<Record<Permission, string>> = {
+    // إدارة المستخدمين
+    [Permission.MANAGE_USERS]: 'إدارة المستخدمين',
+    [Permission.VIEW_USERS]: 'عرض المستخدمين',
+    [Permission.CREATE_USER]: 'إنشاء مستخدم',
+    [Permission.EDIT_USER]: 'تعديل مستخدم',
+    [Permission.DELETE_USER]: 'حذف مستخدم',
+    [Permission.ASSIGN_ROLES]: 'تعيين الأدوار',
+    
+    // إدارة الشركات
+    [Permission.MANAGE_COMPANIES]: 'إدارة الشركات',
+    [Permission.VIEW_ALL_COMPANIES]: 'عرض جميع الشركات',
+    [Permission.CREATE_COMPANY]: 'إنشاء شركة',
+    [Permission.EDIT_COMPANY]: 'تعديل شركة',
+    [Permission.DELETE_COMPANY]: 'حذف شركة',
+    
+    // المالية
+    [Permission.MANAGE_FINANCE]: 'إدارة المالية',
+    [Permission.VIEW_FINANCE]: 'عرض المالية',
+    [Permission.CREATE_INVOICE]: 'إنشاء فاتورة',
+    [Permission.EDIT_INVOICE]: 'تعديل فاتورة',
+    [Permission.DELETE_INVOICE]: 'حذف فاتورة',
+    [Permission.APPROVE_INVOICE]: 'اعتماد فاتورة',
+    [Permission.CREATE_PAYMENT]: 'إنشاء دفعة',
+    [Permission.EDIT_PAYMENT]: 'تعديل دفعة',
+    [Permission.DELETE_PAYMENT]: 'حذف دفعة',
+    [Permission.APPROVE_PAYMENT]: 'اعتماد دفعة',
+    
+    // العقود
+    [Permission.MANAGE_CONTRACTS]: 'إدارة العقود',
+    [Permission.VIEW_CONTRACTS]: 'عرض العقود',
+    [Permission.CREATE_CONTRACT]: 'إنشاء عقد',
+    [Permission.EDIT_CONTRACT]: 'تعديل عقد',
+    [Permission.DELETE_CONTRACT]: 'حذف عقد',
+    [Permission.APPROVE_CONTRACT]: 'اعتماد عقد',
+    [Permission.TERMINATE_CONTRACT]: 'إنهاء عقد',
+    
+    // المركبات
+    [Permission.MANAGE_VEHICLES]: 'إدارة المركبات',
+    [Permission.VIEW_VEHICLES]: 'عرض المركبات',
+    [Permission.CREATE_VEHICLE]: 'إضافة مركبة',
+    [Permission.EDIT_VEHICLE]: 'تعديل مركبة',
+    [Permission.DELETE_VEHICLE]: 'حذف مركبة',
+    
+    // العملاء
+    [Permission.MANAGE_CUSTOMERS]: 'إدارة العملاء',
+    [Permission.VIEW_CUSTOMERS]: 'عرض العملاء',
+    [Permission.CREATE_CUSTOMER]: 'إضافة عميل',
+    [Permission.EDIT_CUSTOMER]: 'تعديل عميل',
+    [Permission.DELETE_CUSTOMER]: 'حذف عميل',
+    [Permission.ARCHIVE_CUSTOMER]: 'أرشفة عميل',
+  };
+  
+  return permissionNames[permission] ?? permission;
+}
