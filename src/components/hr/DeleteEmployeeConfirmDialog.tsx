@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 interface DeleteEmployeeConfirmDialogProps {
   open: boolean;
@@ -41,13 +42,15 @@ export default function DeleteEmployeeConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>إلغاء</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {isLoading ? 'جاري الحذف...' : 'حذف الموظف'}
-          </AlertDialogAction>
+          <PermissionGuard permission="DELETE_EMPLOYEE">
+            <AlertDialogAction 
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isLoading ? 'جاري الحذف...' : 'حذف الموظف'}
+            </AlertDialogAction>
+          </PermissionGuard>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

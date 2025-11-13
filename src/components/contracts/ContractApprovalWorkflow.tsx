@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -368,22 +369,26 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                 </div>
 
                 <div className="flex gap-3">
-                  <Button
-                    onClick={() => handleApproval('approve')}
-                    disabled={isSubmitting || !comment.trim()}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    موافقة
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleApproval('reject')}
-                    disabled={isSubmitting || !comment.trim()}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    رفض
-                  </Button>
+                  <PermissionGuard permission="APPROVE_CONTRACT">
+                    <Button
+                      onClick={() => handleApproval('approve')}
+                      disabled={isSubmitting || !comment.trim()}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      موافقة
+                    </Button>
+                  </PermissionGuard>
+                  <PermissionGuard permission="APPROVE_CONTRACT">
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleApproval('reject')}
+                      disabled={isSubmitting || !comment.trim()}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      رفض
+                    </Button>
+                  </PermissionGuard>
                 </div>
               </CardContent>
             </Card>

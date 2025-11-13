@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useBulkDeleteContracts } from '@/hooks/useBulkDeleteContracts';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -337,19 +338,21 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Button variant="outline" onClick={handleClose}>
                 إلغاء
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleConfirmDelete}
-                disabled={
-                  !isConfirmationValid || 
-                  isLoadingInfo || 
-                  !contractsInfo?.total || 
-                  !!contractsError
-                }
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                حذف جميع العقود
-              </Button>
+              <PermissionGuard permission="DELETE_CONTRACT">
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                  disabled={
+                    !isConfirmationValid || 
+                    isLoadingInfo || 
+                    !contractsInfo?.total || 
+                    !!contractsError
+                  }
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  حذف جميع العقود
+                </Button>
+              </PermissionGuard>
             </>
           )}
           

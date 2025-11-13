@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car, FileEdit, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Card, CardContent } from '@/components/ui/card';
 import { NativeCard, NativeCardContent } from '@/components/ui/native';
 import { Badge } from '@/components/ui/badge';
@@ -259,24 +260,28 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               </Button>
             )}
             {showCancelButton && contract.status === 'active' && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => onCancelContract?.(contract)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                إلغاء
-              </Button>
+              <PermissionGuard permission="CANCEL_CONTRACT">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => onCancelContract?.(contract)}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  إلغاء
+                </Button>
+              </PermissionGuard>
             )}
             {showDeleteButton && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => onDeleteContract?.(contract)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                حذف
-              </Button>
+              <PermissionGuard permission="DELETE_CONTRACT">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => onDeleteContract?.(contract)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  حذف
+                </Button>
+              </PermissionGuard>
             )}
           </div>
         </div>
