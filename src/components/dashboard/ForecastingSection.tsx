@@ -131,6 +131,11 @@ export const ForecastingSection: React.FC = () => {
   const growthRate = growthFactors ? (growthFactors.seasonal + growthFactors.newContracts + growthFactors.maintenance) : revenueChangePercent;
   const forecastedRevenue = currentRevenue * (1 + growthRate / 100);
 
+  // Calculate progress bar percentages based on max revenue
+  const maxRevenue = Math.max(currentRevenue, forecastedRevenue, 1); // Avoid division by zero
+  const currentRevenuePercent = Math.round((currentRevenue / maxRevenue) * 100);
+  const forecastedRevenuePercent = Math.round((forecastedRevenue / maxRevenue) * 100);
+
   // Calculate week summary from calendar data
   const weekSummary = calendarData ? {
     avgOccupancy: Math.round(calendarData.reduce((sum, day) => sum + day.occupancyRate, 0) / calendarData.length),
@@ -161,7 +166,7 @@ export const ForecastingSection: React.FC = () => {
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full" 
-                style={{ width: '78%' }}
+                style={{ width: `${currentRevenuePercent}%` }}
               ></div>
             </div>
           </div>
@@ -173,7 +178,7 @@ export const ForecastingSection: React.FC = () => {
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full animate-pulse" 
-                style={{ width: '92%' }}
+                style={{ width: `${forecastedRevenuePercent}%` }}
               ></div>
             </div>
           </div>
