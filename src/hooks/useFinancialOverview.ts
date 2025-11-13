@@ -105,8 +105,8 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
       const netIncome = totalRevenue - totalExpenses;
       const profitMargin = totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0;
 
-      // Simplified monthly trend (last 3 months only)
-      const monthlyTrend = generateSimpleMonthlyTrend(totalRevenue, totalExpenses);
+      // Get real monthly trend data
+      const monthlyTrend = await generateRealMonthlyTrend(companyId, activityFilter);
 
       // Simplified revenue by source
       const revenueBySource = calculateRevenueBySource(carRentalRevenueTotal, propertyRevenueTotal, activityFilter);
@@ -152,7 +152,71 @@ export const useFinancialOverview = (activityFilter?: 'car_rental' | 'real_estat
   });
 };
 
-// Simplified monthly trend generation
+// Real monthly trend generation from database
+async function generateRealMonthlyTrend(companyId: string, activityFilter?: 'car_rental' | 'real_estate' | 'all') {
+  const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const currentDate = new Date();
+  const trend = [];
+  
+  // Generate last 6 months with real data from database
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+    const monthName = months[date.getMonth()];
+    
+    // Get revenue for this month
+    let monthRevenue = 0;
+    
+    if (!activityFilter || activityFilter === 'all' || activityFilter === 'car_rental') {
+      const { data: carRentalPayments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('company_id', companyId)
+        .eq('payment_method', 'received')
+        .eq('payment_status', 'completed')
+        .gte('payment_date', monthStart)
+        .lte('payment_date', monthEnd);
+      
+      monthRevenue += carRentalPayments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    }
+    
+    if (!activityFilter || activityFilter === 'all' || activityFilter === 'real_estate') {
+      const { data: propertyPayments } = await supabase
+        .from('property_payments')
+        .select('amount')
+        .eq('company_id', companyId)
+        .eq('status', 'paid')
+        .gte('payment_date', monthStart)
+        .lte('payment_date', monthEnd);
+      
+      monthRevenue += propertyPayments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    }
+    
+    // Get expenses for this month
+    const { data: expensePayments } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('company_id', companyId)
+      .eq('payment_method', 'made')
+      .eq('payment_status', 'completed')
+      .gte('payment_date', monthStart)
+      .lte('payment_date', monthEnd);
+    
+    const monthExpenses = expensePayments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    
+    trend.push({
+      month: monthName,
+      revenue: monthRevenue,
+      expenses: monthExpenses,
+      profit: monthRevenue - monthExpenses
+    });
+  }
+  
+  return trend;
+}
+
+// Simplified monthly trend generation (fallback)
 function generateSimpleMonthlyTrend(totalRevenue: number, totalExpenses: number) {
   const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const currentDate = new Date();
