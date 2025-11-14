@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, Trash2, Calculator } from 'lucide-react'
 import { UnifiedAccountSelector } from '@/components/ui/unified-account-selector'
-import { useCreateJournalEntry } from '@/hooks/useFinance'
+import { useCreateJournalEntry } from '@/hooks/finance/useJournalEntries'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts'
 import { useQuery } from '@tanstack/react-query'
