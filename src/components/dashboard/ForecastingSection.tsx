@@ -126,10 +126,10 @@ export const ForecastingSection: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   });
 
-  const currentRevenue = dashboardStats?.monthlyRevenue || 0;
+  const currentRevenue = Math.round(dashboardStats?.monthlyRevenue || 0);
   const revenueChangePercent = parseFloat(dashboardStats?.revenueChange?.replace(/[^0-9.-]/g, '') || '0');
   const growthRate = growthFactors ? (growthFactors.seasonal + growthFactors.newContracts + growthFactors.maintenance) : revenueChangePercent;
-  const forecastedRevenue = currentRevenue * (1 + growthRate / 100);
+  const forecastedRevenue = Math.round(currentRevenue * (1 + growthRate / 100));
 
   // Calculate progress bar percentages based on max revenue
   const maxRevenue = Math.max(currentRevenue, forecastedRevenue, 1); // Avoid division by zero
@@ -161,7 +161,7 @@ export const ForecastingSection: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">الشهر الحالي</span>
-              <span className="text-lg font-bold text-gray-900">{formatCurrency(currentRevenue)}</span>
+              <span className="text-lg font-bold text-gray-900">{formatCurrency(currentRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
@@ -173,7 +173,7 @@ export const ForecastingSection: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">توقع الشهر القادم</span>
-              <span className="text-lg font-bold text-emerald-600">{formatCurrency(forecastedRevenue)}</span>
+              <span className="text-lg font-bold text-emerald-600">{formatCurrency(forecastedRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
