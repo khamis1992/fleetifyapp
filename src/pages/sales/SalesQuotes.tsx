@@ -11,11 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSalesQuotes, useCreateSalesQuote, useUpdateSalesQuote, useDeleteSalesQuote, useGenerateQuoteNumber, type SalesQuote } from "@/hooks/useSalesQuotes";
+import { useQuotePDFGenerator } from "@/hooks/useQuotePDFGenerator";
+import { useQuoteToContract } from "@/hooks/useQuoteToContract";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { FileText, Plus, Search, Edit, Trash2, Eye, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { FileText, Plus, Search, Edit, Trash2, Eye, Send, CheckCircle, XCircle, Clock, Download, FileCheck } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 const SalesQuotes = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("all");
@@ -32,6 +36,8 @@ const SalesQuotes = () => {
   const createQuote = useCreateSalesQuote();
   const updateQuote = useUpdateSalesQuote();
   const deleteQuote = useDeleteSalesQuote();
+  const { generateQuotePDF, isGenerating } = useQuotePDFGenerator();
+  const { convertQuoteToContract, canConvertToContract, isConverting } = useQuoteToContract();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -106,6 +112,34 @@ const SalesQuotes = () => {
   const handleViewDetails = (quote: SalesQuote) => {
     setSelectedQuote(quote);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleConvertToContract = async (quote: SalesQuote) => {
+    // Check if quote can be converted
+    const { canConvert, reason } = canConvertToContract(quote);
+    if (!canConvert) {
+      toast({
+        title: 'غير ممكن',
+        description: reason,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // For now, we'll need to prompt user to select a vehicle
+    // In a real implementation, this would open a dialog to select vehicle and rental options
+    // For demo purposes, we'll show a message
+    toast({
+      title: 'تحويل لعقد',
+      description: 'يرجى اختيار المركبة وتفاصيل الإيجار. سيتم إضافة نافذة حوارية للتحويل.',
+    });
+
+    // TODO: Open dialog to select vehicle and rental options
+    // const result = await convertQuoteToContract(quote.id, vehicleId, rentalOptions);
+    // if (result.success) {
+    //   // Navigate to contract page
+    //   window.location.href = `/contracts/${result.contractId}`;
+    // }
   };
 
   const resetForm = () => {
@@ -482,13 +516,36 @@ const SalesQuotes = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleViewDetails(quote)}
+                              title="عرض التفاصيل"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => generateQuotePDF(quote.id)}
+                              disabled={isGenerating}
+                              title="تنزيل PDF"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            {quote.status === 'accepted' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleConvertToContract(quote)}
+                                disabled={isConverting}
+                                title="تحويل لعقد"
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <FileCheck className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEditQuote(quote)}
+                              title="تعديل"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
