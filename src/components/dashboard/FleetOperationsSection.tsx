@@ -68,9 +68,9 @@ export const FleetOperationsSection: React.FC = () => {
           vehicles (license_plate)
         `)
         .eq('company_id', user.profile.company_id)
-        .gte('scheduled_date', new Date().toISOString())
+        .in('status', ['pending', 'in_progress', 'scheduled'])
         .order('scheduled_date', { ascending: true })
-        .limit(3);
+        .limit(5);
 
       if (error) throw error;
       return data || [];
@@ -88,7 +88,7 @@ export const FleetOperationsSection: React.FC = () => {
         .from('maintenance_records')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', user.profile.company_id)
-        .gte('scheduled_date', new Date().toISOString());
+        .in('status', ['pending', 'in_progress', 'scheduled']);
 
       if (error) throw error;
       return count || 0;
