@@ -1,8 +1,9 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { createJournalEntryForRentalPayment, deleteJournalEntryForRentalPayment } from './useRentalPaymentJournalIntegration';
@@ -396,12 +397,30 @@ export const useCustomerPaymentTotals = (customerId?: string) => {
 export const useCreateRentalReceipt = () => {
   const queryClient = useQueryClient();
   const { companyId, user } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (receipt: Omit<RentalPaymentReceipt, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'created_by'>) => {
+      // Permission check
+      if (!hasPermission('rental_payments:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء إيصالات الإيجار');
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'create' },
+        });
+        throw error;
+      }
+
       if (!companyId) {
         throw new Error('Company ID is required');
       }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Creating rental receipt',
+          level: 'info',
+          data: { companyId, customerId: receipt.customer_id },
+        });
 
       console.log('Creating rental receipt with notes support...');
       
@@ -431,8 +450,23 @@ export const useCreateRentalReceipt = () => {
         throw error;
       }
 
-      console.log('✅ Receipt created successfully');
-      return data as RentalPaymentReceipt;
+        console.log('✅ Receipt created successfully');
+        
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Rental receipt created successfully',
+          level: 'info',
+          data: { receiptId: data.id },
+        });
+        
+        return data as RentalPaymentReceipt;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'create' },
+          extra: { receipt },
+        });
+        throw error;
+      }
     },
     onSuccess: async (data) => {
       // Invalidate relevant queries with correct keys
@@ -488,9 +522,27 @@ export const useCreateRentalReceipt = () => {
 export const useUpdateRentalReceipt = () => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<RentalPaymentReceipt> }) => {
+      // Permission check
+      if (!hasPermission('rental_payments:update')) {
+        const error = new Error('ليس لديك صلاحية لتحديث إيصالات الإيجار');
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'update' },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Updating rental receipt',
+          level: 'info',
+          data: { companyId, receiptId: id },
+        });
+
       const { data, error } = await supabase
         .from('rental_payment_receipts')
         .update(updates)
@@ -503,7 +555,20 @@ export const useUpdateRentalReceipt = () => {
         throw error;
       }
 
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Rental receipt updated successfully',
+          level: 'info',
+        });
+
       return data as RentalPaymentReceipt;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'update' },
+          extra: { receiptId: id, updates },
+        });
+        throw error;
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });
@@ -524,9 +589,27 @@ export const useUpdateRentalReceipt = () => {
 export const useDeleteRentalReceipt = () => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Permission check
+      if (!hasPermission('rental_payments:delete')) {
+        const error = new Error('ليس لديك صلاحية لحذف إيصالات الإيجار');
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'delete' },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Deleting rental receipt',
+          level: 'info',
+          data: { companyId, receiptId: id },
+        });
+
       const { error } = await supabase
         .from('rental_payment_receipts')
         .delete()
@@ -537,7 +620,20 @@ export const useDeleteRentalReceipt = () => {
         throw error;
       }
 
+        Sentry.addBreadcrumb({
+          category: 'rental_payments',
+          message: 'Rental receipt deleted successfully',
+          level: 'info',
+        });
+
       return id;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'rental_payments', action: 'delete' },
+          extra: { receiptId: id },
+        });
+        throw error;
+      }
     },
     onSuccess: async (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['rental-receipts', companyId] });

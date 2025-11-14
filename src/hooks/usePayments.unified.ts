@@ -1435,3 +1435,389 @@ export const useDeletePayment = () => {
     },
   });
 };
+
+// ============================================================================
+// GET SINGLE PAYMENT
+// ============================================================================
+
+/**
+ * Get a single payment by ID
+ * 
+ * ✅ Improvements over old version:
+ * - Permission checks
+ * - Better error handling
+ * - Sentry tracking
+ * 
+ * @param paymentId - Payment ID
+ * @returns Query for single payment
+ */
+export const usePayment = (paymentId: string) => {
+  const { hasPermission } = usePermissions();
+
+  return useQuery({
+    queryKey: paymentKeys.detail(paymentId),
+    queryFn: async () => {
+      // Permission check
+      if (!hasPermission('payments:read')) {
+        const error = new Error('ليس لديك صلاحية لعرض المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_single',
+            component: 'usePayment.unified',
+          },
+          extra: { paymentId },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'get_payment',
+          message: 'Fetching single payment',
+          level: 'info',
+          data: { paymentId },
+        });
+
+        const { data, error } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('id', paymentId)
+          .single();
+
+        if (error) {
+          Sentry.captureException(error, {
+            tags: {
+              feature: 'payments',
+              action: 'read_single',
+              component: 'usePayment.unified',
+            },
+            extra: { paymentId },
+          });
+          throw new Error(`خطأ في جلب الدفع: ${error.message}`);
+        }
+
+        return data;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_single',
+            component: 'usePayment.unified',
+            errorType: 'unexpected',
+          },
+          extra: { paymentId },
+        });
+        throw error;
+      }
+    },
+    enabled: !!paymentId,
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
+  });
+};
+
+// ============================================================================
+// ADVANCED PAYMENT OPERATIONS (from data/usePayments.ts)
+// ============================================================================
+
+/**
+ * Get payment with full details
+ * 
+ * Note: Uses paymentService which may have additional logic
+ * 
+ * @param id - Payment ID
+ * @returns Query for payment with details
+ */
+export function usePaymentWithDetails(id: string) {
+  const { hasPermission } = usePermissions();
+
+  return useQuery({
+    queryKey: ['payment-with-details', id],
+    queryFn: async () => {
+      // Permission check
+      if (!hasPermission('payments:read')) {
+        const error = new Error('ليس لديك صلاحية لعرض المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_with_details',
+            component: 'usePaymentWithDetails.unified',
+          },
+          extra: { id },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'get_payment_details',
+          message: 'Fetching payment with details',
+          level: 'info',
+          data: { id },
+        });
+
+        // Import paymentService dynamically to avoid circular dependencies
+        const { paymentService } = await import('@/services');
+        return await paymentService.getPaymentWithDetails(id);
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_with_details',
+            component: 'usePaymentWithDetails.unified',
+          },
+          extra: { id },
+        });
+        throw error;
+      }
+    },
+    enabled: !!id,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Get unmatched payments (not linked to invoices/contracts)
+ * 
+ * @param companyId - Company ID (optional)
+ * @returns Query for unmatched payments
+ */
+export function useUnmatchedPayments(companyId?: string) {
+  const { hasPermission } = usePermissions();
+  const { companyId: contextCompanyId } = useUnifiedCompanyAccess();
+  const finalCompanyId = companyId || contextCompanyId;
+
+  return useQuery({
+    queryKey: paymentKeys.unmatched(finalCompanyId!),
+    queryFn: async () => {
+      if (!finalCompanyId) throw new Error('No company access');
+
+      // Permission check
+      if (!hasPermission('payments:read')) {
+        const error = new Error('ليس لديك صلاحية لعرض المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_unmatched',
+            component: 'useUnmatchedPayments.unified',
+          },
+          extra: { companyId: finalCompanyId },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'get_unmatched_payments',
+          message: 'Fetching unmatched payments',
+          level: 'info',
+          data: { companyId: finalCompanyId },
+        });
+
+        const { paymentService } = await import('@/services');
+        return await paymentService.getUnmatchedPayments(finalCompanyId);
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'read_unmatched',
+            component: 'useUnmatchedPayments.unified',
+          },
+          extra: { companyId: finalCompanyId },
+        });
+        throw error;
+      }
+    },
+    enabled: !!finalCompanyId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Get payment matching suggestions (AI-powered)
+ * 
+ * @param paymentId - Payment ID
+ * @returns Query for matching suggestions
+ */
+export function usePaymentMatchSuggestions(paymentId: string) {
+  const { hasPermission } = usePermissions();
+
+  return useQuery({
+    queryKey: paymentKeys.matches(paymentId),
+    queryFn: async () => {
+      // Permission check
+      if (!hasPermission('payments:read')) {
+        const error = new Error('ليس لديك صلاحية لعرض المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'get_match_suggestions',
+            component: 'usePaymentMatchSuggestions.unified',
+          },
+          extra: { paymentId },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'get_match_suggestions',
+          message: 'Finding payment match suggestions',
+          level: 'info',
+          data: { paymentId },
+        });
+
+        const { paymentService } = await import('@/services');
+        const payment = await paymentService.getById(paymentId);
+        if (!payment) throw new Error('Payment not found');
+        
+        return await paymentService.findMatchingSuggestions(payment);
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'get_match_suggestions',
+            component: 'usePaymentMatchSuggestions.unified',
+          },
+          extra: { paymentId },
+        });
+        throw error;
+      }
+    },
+    enabled: !!paymentId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Get payment statistics
+ * 
+ * @param companyId - Company ID
+ * @param startDate - Start date (optional)
+ * @param endDate - End date (optional)
+ * @returns Query for payment stats
+ */
+export function usePaymentStats(companyId: string, startDate?: string, endDate?: string) {
+  const { hasPermission } = usePermissions();
+
+  return useQuery({
+    queryKey: ['payment-stats', companyId, startDate, endDate],
+    queryFn: async () => {
+      // Permission check
+      if (!hasPermission('payments:read')) {
+        const error = new Error('ليس لديك صلاحية لعرض إحصائيات المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'get_stats',
+            component: 'usePaymentStats.unified',
+          },
+          extra: { companyId, startDate, endDate },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'get_payment_stats',
+          message: 'Fetching payment statistics',
+          level: 'info',
+          data: { companyId, startDate, endDate },
+        });
+
+        const { paymentService } = await import('@/services');
+        return await paymentService.getPaymentStats(companyId, startDate, endDate);
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'get_stats',
+            component: 'usePaymentStats.unified',
+          },
+          extra: { companyId, startDate, endDate },
+        });
+        throw error;
+      }
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes for stats
+  });
+}
+
+/**
+ * Match payment to invoice or contract
+ * 
+ * @returns Mutation for matching payment
+ */
+export function useMatchPayment() {
+  const { hasPermission } = usePermissions();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (variables: {
+      paymentId: string;
+      targetType: 'invoice' | 'contract';
+      targetId: string;
+    }) => {
+      // Permission check
+      if (!hasPermission('payments:update')) {
+        const error = new Error('ليس لديك صلاحية لربط المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'match',
+            component: 'useMatchPayment.unified',
+          },
+          extra: variables,
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'match_payment',
+          message: 'Matching payment to target',
+          level: 'info',
+          data: variables,
+        });
+
+        const { paymentService } = await import('@/services');
+        const result = await paymentService.matchPayment(
+          variables.paymentId,
+          variables.targetType,
+          variables.targetId
+        );
+
+        return result;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'match',
+            component: 'useMatchPayment.unified',
+          },
+          extra: variables,
+        });
+        throw error;
+      }
+    },
+    
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('✅ تم ربط الدفعة بنجاح', {
+          description: `الثقة: ${result.confidence}%`,
+        });
+
+        queryClient.invalidateQueries({ queryKey: paymentKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      }
+    },
+    
+    onError: (error: Error) => {
+      toast.error('خطأ في ربط الدفعة', {
+        description: error.message,
+      });
+    },
+  });
+}
