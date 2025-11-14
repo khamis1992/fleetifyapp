@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { usePermissions } from './usePermissions';
+import * as Sentry from '@sentry/react';
 
 export interface VendorPayment {
   id: string;
@@ -128,11 +130,42 @@ export const useVendorPaymentsByVendor = (vendorId?: string) => {
 
 export const useCreateVendorPayment = () => {
   const queryClient = useQueryClient();
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, user } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (data: CreateVendorPaymentData) => {
-      if (!companyId) throw new Error('Company ID is required');
+      // Permission check
+      if (!hasPermission('vendor_payments:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء دفعات الموردين');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'create',
+            component: 'useCreateVendorPayment'
+          },
+          extra: { userId: user?.id, companyId }
+        });
+        throw error;
+      }
+
+      if (!companyId) throw new Error('معرف الشركة مطلوب');
+
+      // Validation
+      if (!data.amount || data.amount <= 0) {
+        throw new Error('المبلغ يجب أن يكون أكبر من صفر');
+      }
+
+      if (!data.vendor_id) {
+        throw new Error('معرف المورد مطلوب');
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Creating vendor payment',
+        level: 'info',
+        data: { vendorId: data.vendor_id, amount: data.amount, companyId }
+      });
 
       // Generate payment number
       const { data: paymentNumber, error: numberError } = await supabase
@@ -160,7 +193,47 @@ export const useCreateVendorPayment = () => {
         .select()
         .single();
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        Sentry.captureException(paymentError, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'create',
+            component: 'useCreateVendorPayment',
+            step: 'insert_payment'
+          },
+          extra: { userId: user?.id, companyId, paymentData: data }
+        });
+        throw paymentError;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Vendor payment created successfully',
+        level: 'info',
+        data: { paymentId: payment.id, paymentNumber: payment.payment_number }
+      });
+
+      // Safe audit logging
+      try {
+        await supabase.from('audit_log').insert({
+          action: 'create_vendor_payment',
+          table_name: 'vendor_payments',
+          record_id: payment.id,
+          new_values: payment,
+          user_id: user?.id,
+          company_id: companyId
+        });
+      } catch (auditError) {
+        // Log audit error but don't fail the operation
+        Sentry.captureException(auditError, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'audit_log',
+            severity: 'low'
+          },
+          extra: { paymentId: payment.id }
+        });
+      }
 
       return payment;
     },
@@ -177,15 +250,82 @@ export const useCreateVendorPayment = () => {
 
 export const useUpdateVendorPayment = () => {
   const queryClient = useQueryClient();
+  const { companyId, user } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateVendorPaymentData }) => {
+      // Permission check
+      if (!hasPermission('vendor_payments:update')) {
+        const error = new Error('ليس لديك صلاحية لتعديل دفعات الموردين');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'update',
+            component: 'useUpdateVendorPayment'
+          },
+          extra: { userId: user?.id, companyId, paymentId: id }
+        });
+        throw error;
+      }
+
+      // Validation
+      if (data.amount !== undefined && data.amount <= 0) {
+        throw new Error('المبلغ يجب أن يكون أكبر من صفر');
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Updating vendor payment',
+        level: 'info',
+        data: { paymentId: id, updateData: data, companyId }
+      });
+
       const { error } = await supabase
         .from('vendor_payments')
         .update(data)
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'update',
+            component: 'useUpdateVendorPayment',
+            step: 'update_payment'
+          },
+          extra: { userId: user?.id, companyId, paymentId: id, updateData: data }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Vendor payment updated successfully',
+        level: 'info',
+        data: { paymentId: id }
+      });
+
+      // Safe audit logging
+      try {
+        await supabase.from('audit_log').insert({
+          action: 'update_vendor_payment',
+          table_name: 'vendor_payments',
+          record_id: id,
+          new_values: data,
+          user_id: user?.id,
+          company_id: companyId
+        });
+      } catch (auditError) {
+        Sentry.captureException(auditError, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'audit_log',
+            severity: 'low'
+          },
+          extra: { paymentId: id }
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-payments'] });
@@ -200,15 +340,76 @@ export const useUpdateVendorPayment = () => {
 
 export const useDeleteVendorPayment = () => {
   const queryClient = useQueryClient();
+  const { companyId, user } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Permission check
+      if (!hasPermission('vendor_payments:delete')) {
+        const error = new Error('ليس لديك صلاحية لحذف دفعات الموردين');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'delete',
+            component: 'useDeleteVendorPayment'
+          },
+          extra: { userId: user?.id, companyId, paymentId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Deleting vendor payment',
+        level: 'info',
+        data: { paymentId: id, companyId }
+      });
+
       const { error } = await supabase
         .from('vendor_payments')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'delete',
+            component: 'useDeleteVendorPayment',
+            step: 'delete_payment'
+          },
+          extra: { userId: user?.id, companyId, paymentId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'vendor_payments',
+        message: 'Vendor payment deleted successfully',
+        level: 'info',
+        data: { paymentId: id }
+      });
+
+      // Safe audit logging
+      try {
+        await supabase.from('audit_log').insert({
+          action: 'delete_vendor_payment',
+          table_name: 'vendor_payments',
+          record_id: id,
+          user_id: user?.id,
+          company_id: companyId
+        });
+      } catch (auditError) {
+        Sentry.captureException(auditError, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'audit_log',
+            severity: 'low'
+          },
+          extra: { paymentId: id }
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-payments'] });
