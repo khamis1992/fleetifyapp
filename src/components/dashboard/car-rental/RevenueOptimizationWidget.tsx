@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Trophy } from 'lucide-react';
 import { useContracts } from '@/hooks/useContracts';
 import { useVehicles } from '@/hooks/useVehicles';
-import { usePayments } from '@/hooks/usePayments';
+import { usePayments } from '@/hooks/usePayments.unified';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';

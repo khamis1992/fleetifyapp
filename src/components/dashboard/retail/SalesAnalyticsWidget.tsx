@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useSalesOrders } from '@/hooks/useSalesOrders';
-import { usePayments } from '@/hooks/usePayments';
+import { usePayments } from '@/hooks/usePayments.unified';
 import { ShoppingCart, TrendingUp, TrendingDown, DollarSign, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {

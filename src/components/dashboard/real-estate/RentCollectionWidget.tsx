@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { useRealEstateDashboardStats } from '@/hooks/useRealEstateDashboardStats';
-import { usePayments } from '@/hooks/usePayments';
+import { usePayments } from '@/hooks/usePayments.unified';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
