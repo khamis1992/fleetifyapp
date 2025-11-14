@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useCreatePayment } from '@/hooks/usePayments';
+import { useCreatePayment } from '@/hooks/usePayments.unified';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';

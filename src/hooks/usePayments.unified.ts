@@ -315,3 +315,316 @@ export const usePayments = (filters?: PaymentFilters) => {
  * LEARNINGS:
  * - TBD after first deployment
  */
+
+// ============================================================================
+// Create Payment
+// ============================================================================
+
+export interface CreatePaymentData {
+  payment_type: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'online_transfer';
+  payment_method: 'received' | 'made';
+  amount: number;
+  payment_date: string;
+  reference_number?: string;
+  notes?: string;
+  customer_id?: string;
+  vendor_id?: string;
+  invoice_id?: string;
+  contract_id?: string;
+  late_fine_amount?: number;
+  late_fine_status?: 'none' | 'paid' | 'waived' | 'pending';
+  late_fine_type?: 'none' | 'separate_payment' | 'included_with_payment' | 'waived';
+  late_fine_waiver_reason?: string;
+}
+
+/**
+ * Create a new payment
+ * 
+ * ✅ Improvements over old version:
+ * - Permission checks before creation
+ * - Sentry error tracking
+ * - Better error messages
+ * - Validation before submission
+ * - Proper audit logging
+ * - Automatic invoice update
+ * 
+ * @returns Mutation for creating payments
+ */
+export const useCreatePayment = () => {
+  const queryClient = useQueryClient();
+  const { user, companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
+  
+  return useMutation({
+    mutationFn: async (paymentData: CreatePaymentData) => {
+      // Permission check
+      if (!hasPermission('payments:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء مدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'create',
+            component: 'useCreatePayment.unified'
+          },
+          extra: { userId: user?.id, companyId }
+        });
+        throw error;
+      }
+
+      // Validation
+      if (!paymentData.amount || paymentData.amount <= 0) {
+        throw new Error('المبلغ يجب أن يكون أكبر من صفر');
+      }
+
+      if (!paymentData.payment_type) {
+        throw new Error('نوع الدفع مطلوب');
+      }
+
+      if (!paymentData.payment_method) {
+        throw new Error('طريقة الدفع مطلوبة');
+      }
+
+      try {
+        // Get company_id from invoice if available, otherwise from user
+        let targetCompanyId: string | undefined;
+        
+        if (paymentData.invoice_id) {
+          // Get company_id from invoice
+          const { data: invoice, error: invoiceError } = await supabase
+            .from("invoices")
+            .select("company_id")
+            .eq("id", paymentData.invoice_id)
+            .single();
+          
+          if (invoiceError) {
+            Sentry.captureException(invoiceError, {
+              tags: {
+                feature: 'payments',
+                action: 'create',
+                component: 'useCreatePayment.unified',
+                step: 'fetch_invoice'
+              },
+              extra: { 
+                userId: user?.id, 
+                invoiceId: paymentData.invoice_id 
+              }
+            });
+            throw new Error('خطأ في جلب بيانات الفاتورة');
+          }
+          
+          if (invoice?.company_id) {
+            targetCompanyId = invoice.company_id;
+          }
+        }
+        
+        // Use companyId from useUnifiedCompanyAccess as fallback
+        if (!targetCompanyId) {
+          targetCompanyId = companyId || user?.profile?.company_id;
+        }
+        
+        if (!targetCompanyId || !user?.id) {
+          throw new Error('بيانات المستخدم والشركة مطلوبة');
+        }
+        
+        // Generate payment number
+        const { data: existingPayments, error: fetchError } = await supabase
+          .from("payments")
+          .select("payment_number")
+          .eq("company_id", targetCompanyId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        
+        if (fetchError) {
+          Sentry.captureException(fetchError, {
+            tags: {
+              feature: 'payments',
+              action: 'create',
+              component: 'useCreatePayment.unified',
+              step: 'generate_number'
+            },
+            extra: { userId: user?.id, companyId: targetCompanyId }
+          });
+          throw new Error('خطأ في توليد رقم الدفع');
+        }
+        
+        let newNumber = 1;
+        if (existingPayments && existingPayments.length > 0) {
+          const lastNumber = existingPayments[0]?.payment_number || "PAY-0000";
+          const numberPart = lastNumber.split('-')[1];
+          newNumber = parseInt(numberPart) + 1;
+        }
+        const paymentNumber = `PAY-${newNumber.toString().padStart(4, '0')}`;
+        
+        // Create payment
+        const { data: payment, error: paymentError } = await supabase
+          .from("payments")
+          .insert({
+            ...paymentData,
+            payment_number: paymentNumber,
+            company_id: targetCompanyId,
+            payment_status: 'completed',
+            transaction_type: paymentData.customer_id ? 'receipt' : 'payment',
+            created_by: user.id
+          })
+          .select()
+          .single();
+        
+        if (paymentError) {
+          Sentry.captureException(paymentError, {
+            tags: {
+              feature: 'payments',
+              action: 'create',
+              component: 'useCreatePayment.unified',
+              step: 'insert_payment'
+            },
+            extra: { 
+              userId: user?.id, 
+              companyId: targetCompanyId,
+              paymentData 
+            }
+          });
+          throw new Error(`خطأ في إنشاء الدفع: ${paymentError.message}`);
+        }
+        
+        // If this is a payment for an invoice, update the invoice
+        if (paymentData.invoice_id) {
+          // Get current invoice data
+          const { data: invoice, error: invoiceError } = await supabase
+            .from("invoices")
+            .select("total_amount, paid_amount, balance_due")
+            .eq("id", paymentData.invoice_id)
+            .single();
+            
+          if (invoiceError) {
+            Sentry.captureException(invoiceError, {
+              tags: {
+                feature: 'payments',
+                action: 'create',
+                component: 'useCreatePayment.unified',
+                step: 'fetch_invoice_for_update'
+              },
+              extra: { 
+                userId: user?.id, 
+                invoiceId: paymentData.invoice_id 
+              }
+            });
+            throw new Error('خطأ في جلب بيانات الفاتورة للتحديث');
+          }
+          
+          const newPaidAmount = (invoice.paid_amount || 0) + paymentData.amount;
+          const newBalanceDue = (invoice.total_amount || 0) - newPaidAmount;
+          
+          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
+          if (newPaidAmount >= (invoice.total_amount || 0)) {
+            newPaymentStatus = 'paid';
+          } else if (newPaidAmount > 0) {
+            newPaymentStatus = 'partial';
+          } else {
+            newPaymentStatus = 'unpaid';
+          }
+          
+          // Update invoice
+          const { error: updateError } = await supabase
+            .from("invoices")
+            .update({
+              paid_amount: newPaidAmount,
+              balance_due: Math.max(0, newBalanceDue),
+              payment_status: newPaymentStatus,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", paymentData.invoice_id);
+            
+          if (updateError) {
+            Sentry.captureException(updateError, {
+              tags: {
+                feature: 'payments',
+                action: 'create',
+                component: 'useCreatePayment.unified',
+                step: 'update_invoice'
+              },
+              extra: { 
+                userId: user?.id, 
+                invoiceId: paymentData.invoice_id,
+                newPaidAmount,
+                newBalanceDue,
+                newPaymentStatus
+              }
+            });
+            throw new Error('خطأ في تحديث الفاتورة');
+          }
+        }
+        
+        return payment;
+      } catch (error) {
+        // Log unexpected errors
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'create',
+            component: 'useCreatePayment.unified',
+            errorType: 'unexpected'
+          },
+          extra: { 
+            userId: user?.id, 
+            companyId,
+            paymentData 
+          }
+        });
+        throw error;
+      }
+    },
+    onSuccess: async (payment) => {
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      
+      // Log audit trail (import createAuditLog if needed)
+      try {
+        const { createAuditLog } = await import('@/hooks/useAuditLog');
+        await createAuditLog(
+          'CREATE',
+          'payment',
+          payment.id,
+          payment.payment_number,
+          {
+            new_values: {
+              payment_number: payment.payment_number,
+              amount: payment.amount,
+              payment_method: payment.payment_method,
+              payment_type: payment.payment_type,
+              payment_date: payment.payment_date,
+              invoice_id: payment.invoice_id,
+            },
+            changes_summary: `تم إنشاء دفع ${payment.payment_number}`,
+            metadata: {
+              amount: payment.amount,
+              payment_method: payment.payment_method,
+              invoice_linked: !!payment.invoice_id,
+            },
+            severity: 'medium',
+          }
+        );
+      } catch (auditError) {
+        // Don't fail the whole operation if audit logging fails
+        Sentry.captureException(auditError, {
+          tags: {
+            feature: 'payments',
+            action: 'create',
+            component: 'useCreatePayment.unified',
+            step: 'audit_log'
+          },
+          extra: { paymentId: payment.id }
+        });
+      }
+      
+      toast.success("تم تسجيل الدفع بنجاح", {
+        description: "تم تحديث حالة الفاتورة"
+      });
+    },
+    onError: (error: Error) => {
+      toast.error("خطأ في تسجيل الدفع", {
+        description: error.message
+      });
+    }
+  });
+};
