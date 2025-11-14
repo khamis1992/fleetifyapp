@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
+import * as Sentry from '@sentry/react';
 import { smartPaymentLinker, type SmartLinkingResult } from '@/utils/smartPaymentLinker';
 import { paymentAllocationEngine, type AllocationResult } from '@/utils/paymentAllocationEngine';
 import { accountingIntegration, type JournalEntryData } from '@/utils/accountingIntegration';
@@ -59,6 +62,8 @@ export interface PendingPayment {
 
 export const useProfessionalPaymentSystem = (companyId: string) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLinkingAll, setIsLinkingAll] = useState(false);
@@ -230,6 +235,27 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
   // Smart linking mutation
   const smartLinkingMutation = useMutation({
     mutationFn: async ({ paymentId }: { paymentId: string }) => {
+      // Permission check
+      if (!hasPermission('payments:update')) {
+        const error = new Error('ليس لديك صلاحية لربط المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'professional_payment_system',
+            action: 'smart_linking',
+            component: 'smartLinkingMutation'
+          },
+          extra: { userId: user?.id, companyId, paymentId }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'professional_payment_system',
+        message: 'Starting smart linking process',
+        level: 'info',
+        data: { paymentId, companyId }
+      });
+
       logger.debug('Starting smart linking process', { paymentId });
       const payment = await supabase.from('payments').select('*').eq('id', paymentId).single();
       if (payment.error) throw payment.error;
@@ -237,6 +263,13 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     },
     onSuccess: (result: SmartLinkingResult, { paymentId }) => {
       if (result.success) {
+        Sentry.addBreadcrumb({
+          category: 'professional_payment_system',
+          message: 'Smart linking completed successfully',
+          level: 'info',
+          data: { paymentId, confidence: result.confidence }
+        });
+
         toast({
           title: 'تم الربط بنجاح',
           description: `تم ربط الدفعة بأفضل عقد مطابق`,
@@ -265,6 +298,16 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     },
     onError: (error) => {
       logger.error('Smart linking failed', error);
+      Sentry.captureException(error, {
+        tags: {
+          feature: 'professional_payment_system',
+          action: 'smart_linking',
+          component: 'smartLinkingMutation',
+          step: 'error'
+        },
+        extra: { userId: user?.id, companyId }
+      });
+
       toast({
         title: 'خطأ في الربط الذكي',
         description: 'حدث خطأ أثناء محاولة ربط المدفوعة',
@@ -283,11 +326,39 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       paymentMethod: string;
       companyId: string;
     }) => {
+      // Permission check
+      if (!hasPermission('payments:update')) {
+        const error = new Error('ليس لديك صلاحية لتوزيع المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'professional_payment_system',
+            action: 'allocation',
+            component: 'allocationMutation'
+          },
+          extra: { userId: user?.id, companyId, paymentId: paymentData.id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'professional_payment_system',
+        message: 'Starting payment allocation',
+        level: 'info',
+        data: { paymentId: paymentData.id, amount: paymentData.amount }
+      });
+
       logger.debug('Starting payment allocation', { paymentId: paymentData.id });
       return await paymentAllocationEngine.allocatePayment(paymentData);
     },
     onSuccess: (result: AllocationResult, paymentData) => {
       if (result.success) {
+        Sentry.addBreadcrumb({
+          category: 'professional_payment_system',
+          message: 'Payment allocation completed successfully',
+          level: 'info',
+          data: { paymentId: paymentData.id, allocationsCount: result.allocations.length }
+        });
+
         toast({
           title: 'تم توزيع المدفوعة',
           description: `تم توزيع المبلغ على ${result.allocations.length} حساب`,
@@ -307,6 +378,16 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     },
     onError: (error) => {
       logger.error('Payment allocation failed', error);
+      Sentry.captureException(error, {
+        tags: {
+          feature: 'professional_payment_system',
+          action: 'allocation',
+          component: 'allocationMutation',
+          step: 'error'
+        },
+        extra: { userId: user?.id, companyId }
+      });
+
       toast({
         title: 'خطأ في التوزيع',
         description: 'حدث خطأ أثناء توزيع المدفوعة',
@@ -318,11 +399,39 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
   // Journal entry creation mutation
   const journalEntryMutation = useMutation({
     mutationFn: async (entryData: JournalEntryData) => {
+      // Permission check
+      if (!hasPermission('journal_entries:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء قيود محاسبية');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'professional_payment_system',
+            action: 'create_journal_entry',
+            component: 'journalEntryMutation'
+          },
+          extra: { userId: user?.id, companyId, entryNumber: entryData.entryNumber }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'professional_payment_system',
+        message: 'Creating journal entry',
+        level: 'info',
+        data: { entryNumber: entryData.entryNumber, totalAmount: entryData.totalAmount }
+      });
+
       logger.debug('Creating journal entry', { entryNumber: entryData.entryNumber });
       return await accountingIntegration.createJournalEntry(entryData, companyId);
     },
     onSuccess: (result, entryData) => {
       if (result.success) {
+        Sentry.addBreadcrumb({
+          category: 'professional_payment_system',
+          message: 'Journal entry created successfully',
+          level: 'info',
+          data: { journalEntryNumber: result.journalEntryNumber, entryId: result.journalEntryId }
+        });
+
         toast({
           title: 'تم إنشاء القيد المحاسبي',
           description: `القيد رقم: ${result.journalEntryNumber}`,
@@ -350,6 +459,16 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
     },
     onError: (error) => {
       logger.error('Journal entry creation failed', error);
+      Sentry.captureException(error, {
+        tags: {
+          feature: 'professional_payment_system',
+          action: 'create_journal_entry',
+          component: 'journalEntryMutation',
+          step: 'error'
+        },
+        extra: { userId: user?.id, companyId }
+      });
+
       toast({
         title: 'خطأ في القيد المحاسبي',
         description: 'حدث خطأ أثناء إنشاء القيد المحاسبي',
