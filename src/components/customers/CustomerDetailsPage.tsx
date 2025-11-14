@@ -375,7 +375,7 @@ const CustomerDetailsPage = () => {
     }
   }, [customerId, companyId, queryClient, toast]);
 
-  const handleGenerateReport = useCallback(() => {
+  const handleGenerateReport = useCallback(async () => {
     if (!customer) return;
     
     // إنشاء تقرير PDF بسيط
