@@ -666,12 +666,13 @@ export const useBulkDeletePayments = () => {
 
   return useMutation({
     mutationFn: async (options: BulkDeleteOptions = {}): Promise<BulkDeleteResult> => {
-      const transaction = Sentry.startTransaction({
-        op: 'bulk_delete_payments',
-        name: 'Bulk Delete Payments',
-      });
-
       try {
+        // Track bulk delete operation
+        Sentry.addBreadcrumb({
+          category: 'payments',
+          message: 'Starting bulk delete payments operation',
+          level: 'info',
+        });
         // ============================================================================
         // PERMISSION CHECK
         // ============================================================================
@@ -770,7 +771,7 @@ export const useBulkDeletePayments = () => {
             message: 'No payments found to delete',
             level: 'info',
           });
-          transaction.finish();
+
           return { deletedCount: 0, processedInvoices: 0 };
         }
 
@@ -929,13 +930,11 @@ export const useBulkDeletePayments = () => {
           data: { deletedCount, processedInvoices },
         });
 
-        transaction.setStatus('ok');
-        transaction.finish();
+
 
         return { deletedCount, processedInvoices };
       } catch (error) {
-        transaction.setStatus('internal_error');
-        transaction.finish();
+
 
         Sentry.captureException(error, {
           tags: { feature: 'bulk_delete_payments', step: 'general_error' },

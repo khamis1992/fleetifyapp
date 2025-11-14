@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export interface TrafficViolationPayment {
   id: string;
@@ -115,9 +117,26 @@ export function useAllTrafficViolationPayments() {
 // Hook لإنشاء دفعة جديدة
 export function useCreateTrafficViolationPayment() {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (data: CreateTrafficViolationPaymentData) => {
+      // Permission check
+      if (!hasPermission('traffic_payments:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء دفعات المخالفات المرورية');
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'create' },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Creating traffic violation payment',
+          level: 'info',
+          data: { violationId: data.traffic_violation_id, amount: data.amount },
+        });
       // الحصول على company_id من المستخدم الحالي
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
@@ -167,7 +186,20 @@ export function useCreateTrafficViolationPayment() {
         throw error;
       }
 
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Traffic violation payment created successfully',
+          level: 'info',
+        });
+
       return payment;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'create' },
+          extra: { data },
+        });
+        throw error;
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
@@ -185,9 +217,26 @@ export function useCreateTrafficViolationPayment() {
 // Hook لتحديث دفعة
 export function useUpdateTrafficViolationPayment() {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async ({ id, ...updateData }: { id: string } & Partial<CreateTrafficViolationPaymentData>) => {
+      // Permission check
+      if (!hasPermission('traffic_payments:update')) {
+        const error = new Error('ليس لديك صلاحية لتحديث دفعات المخالفات المرورية');
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'update' },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Updating traffic violation payment',
+          level: 'info',
+          data: { paymentId: id },
+        });
       const { data: payment, error } = await supabase
         .from('traffic_violation_payments')
         .update(updateData)
@@ -200,7 +249,20 @@ export function useUpdateTrafficViolationPayment() {
         throw error;
       }
 
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Traffic violation payment updated successfully',
+          level: 'info',
+        });
+
       return payment;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'update' },
+          extra: { paymentId: id, updateData },
+        });
+        throw error;
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
@@ -218,9 +280,26 @@ export function useUpdateTrafficViolationPayment() {
 // Hook لحذف دفعة
 export function useDeleteTrafficViolationPayment() {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Permission check
+      if (!hasPermission('traffic_payments:delete')) {
+        const error = new Error('ليس لديك صلاحية لحذف دفعات المخالفات المرورية');
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'delete' },
+        });
+        throw error;
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Deleting traffic violation payment',
+          level: 'info',
+          data: { paymentId: id },
+        });
       const { error } = await supabase
         .from('traffic_violation_payments')
         .delete()
@@ -231,7 +310,20 @@ export function useDeleteTrafficViolationPayment() {
         throw error;
       }
 
+        Sentry.addBreadcrumb({
+          category: 'traffic_payments',
+          message: 'Traffic violation payment deleted successfully',
+          level: 'info',
+        });
+
       return id;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { feature: 'traffic_payments', action: 'delete' },
+          extra: { paymentId: id },
+        });
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
