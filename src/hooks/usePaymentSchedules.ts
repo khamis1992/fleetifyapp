@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import * as Sentry from '@sentry/react';
 import { 
   PaymentSchedule, 
   PaymentScheduleCreationData, 
@@ -93,11 +95,32 @@ export const usePaymentSchedules = (filters?: {
 // Hook to create payment schedules for a contract with automatic invoice generation
 export const useCreatePaymentSchedules = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateScheduleRequest) => {
-      console.log('Creating payment schedules with invoices for contract:', data.contract_id);
+      // Permission check
+      if (!hasPermission('payment_schedules:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء جداول الدفع');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'create',
+            component: 'useCreatePaymentSchedules'
+          },
+          extra: { userId: user?.id, contractId: data.contract_id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Creating payment schedules with invoices',
+        level: 'info',
+        data: { contractId: data.contract_id, installmentPlan: data.installment_plan }
+      });
       
       // Validate input data
       if (!data.contract_id) {
@@ -123,7 +146,15 @@ export const useCreatePaymentSchedules = () => {
       );
 
       if (error) {
-        console.error('Error creating payment schedules with invoices:', error);
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'create',
+            component: 'useCreatePaymentSchedules',
+            step: 'rpc_call'
+          },
+          extra: { userId: user?.id, contractId: data.contract_id, requestData: data }
+        });
         
         // Provide more user-friendly error messages
         let errorMessage = 'Failed to create payment schedules';
@@ -145,7 +176,13 @@ export const useCreatePaymentSchedules = () => {
         throw new Error('No payment schedules were created');
       }
 
-      console.log('Payment schedules and invoices created successfully:', result);
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Payment schedules and invoices created successfully',
+        level: 'info',
+        data: { scheduleCount: result.length, contractId: data.contract_id }
+      });
+
       return result;
     },
     onSuccess: (result, variables) => {
@@ -188,11 +225,33 @@ export const useCreatePaymentSchedules = () => {
 export const useCreatePaymentSchedule = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: PaymentScheduleCreationData) => {
+      // Permission check
+      if (!hasPermission('payment_schedules:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء دفعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'create_single',
+            component: 'useCreatePaymentSchedule'
+          },
+          extra: { userId: user?.id, contractId: data.contract_id }
+        });
+        throw error;
+      }
+
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Creating single payment schedule',
+        level: 'info',
+        data: { contractId: data.contract_id, amount: data.amount }
+      });
 
       // Get user's company_id
       const { data: profile } = await supabase
@@ -213,7 +272,25 @@ export const useCreatePaymentSchedule = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'create_single',
+            component: 'useCreatePaymentSchedule',
+            step: 'insert'
+          },
+          extra: { userId: user?.id, contractId: data.contract_id, scheduleData: data }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Payment schedule created successfully',
+        level: 'info',
+        data: { scheduleId: result.id, contractId: data.contract_id }
+      });
 
       return result as PaymentSchedule;
     },
@@ -244,10 +321,32 @@ export const useCreatePaymentSchedule = () => {
 // Hook to update a payment schedule
 export const useUpdatePaymentSchedule = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PaymentScheduleUpdateData }) => {
+      // Permission check
+      if (!hasPermission('payment_schedules:update')) {
+        const error = new Error('ليس لديك صلاحية لتعديل جداول الدفع');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'update',
+            component: 'useUpdatePaymentSchedule'
+          },
+          extra: { userId: user?.id, scheduleId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Updating payment schedule',
+        level: 'info',
+        data: { scheduleId: id, updateData: data }
+      });
       const { data: result, error } = await supabase
         .from('contract_payment_schedules')
         .update(data)
@@ -255,7 +354,25 @@ export const useUpdatePaymentSchedule = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'update',
+            component: 'useUpdatePaymentSchedule',
+            step: 'update'
+          },
+          extra: { userId: user?.id, scheduleId: id, updateData: data }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Payment schedule updated successfully',
+        level: 'info',
+        data: { scheduleId: id }
+      });
 
       return result as PaymentSchedule;
     },
@@ -281,16 +398,56 @@ export const useUpdatePaymentSchedule = () => {
 // Hook to delete a payment schedule
 export const useDeletePaymentSchedule = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Permission check
+      if (!hasPermission('payment_schedules:delete')) {
+        const error = new Error('ليس لديك صلاحية لحذف جداول الدفع');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'delete',
+            component: 'useDeletePaymentSchedule'
+          },
+          extra: { userId: user?.id, scheduleId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Deleting payment schedule',
+        level: 'info',
+        data: { scheduleId: id }
+      });
       const { error } = await supabase
         .from('contract_payment_schedules')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'delete',
+            component: 'useDeletePaymentSchedule',
+            step: 'delete'
+          },
+          extra: { userId: user?.id, scheduleId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Payment schedule deleted successfully',
+        level: 'info',
+        data: { scheduleId: id }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
@@ -314,6 +471,8 @@ export const useDeletePaymentSchedule = () => {
 // Hook to mark payment as paid
 export const useMarkPaymentAsPaid = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -326,6 +485,26 @@ export const useMarkPaymentAsPaid = () => {
       paidAmount: number; 
       paidDate: string; 
     }) => {
+      // Permission check
+      if (!hasPermission('payment_schedules:update')) {
+        const error = new Error('ليس لديك صلاحية لتسجيل الدفعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'mark_paid',
+            component: 'useMarkPaymentAsPaid'
+          },
+          extra: { userId: user?.id, scheduleId: id }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Marking payment as paid',
+        level: 'info',
+        data: { scheduleId: id, paidAmount, paidDate }
+      });
       const { data: schedule } = await supabase
         .from('contract_payment_schedules')
         .select('amount')
@@ -347,7 +526,25 @@ export const useMarkPaymentAsPaid = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'mark_paid',
+            component: 'useMarkPaymentAsPaid',
+            step: 'update'
+          },
+          extra: { userId: user?.id, scheduleId: id, paidAmount, paidDate }
+        });
+        throw error;
+      }
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Payment marked as paid successfully',
+        level: 'info',
+        data: { scheduleId: id, status, paidAmount }
+      });
 
       return result as PaymentSchedule;
     },
