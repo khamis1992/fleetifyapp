@@ -74,32 +74,11 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
   // Build tree structure from filtered accounts data
   const treeData = useMemo(() => {
-    console.log('🔍 [MAIN_TREE_DEBUG] Building tree with accounts:', filteredAccounts?.length || 0);
-    
     if (!filteredAccounts || filteredAccounts.length === 0) {
-      console.log('🔍 [MAIN_TREE_DEBUG] No accounts data provided');
       return [];
     }
     
-    // تحليل المستويات في البيانات المستلمة
-    const levelDistribution = new Map<number, number>();
-    accounts.forEach(acc => {
-      const level = acc.account_level || 1;
-      levelDistribution.set(level, (levelDistribution.get(level) || 0) + 1);
-    });
-    console.log('🔍 [MAIN_TREE_DEBUG] Level distribution in received data:', Object.fromEntries(levelDistribution));
-    
-    // عرض حسابات المستوى 4
-    const level4Accounts = accounts.filter(acc => acc.account_level === 4);
-    console.log('🔍 [MAIN_TREE_DEBUG] Level 4 accounts in tree data:', level4Accounts.length);
-    if (level4Accounts.length > 0) {
-      console.log('🔍 [MAIN_TREE_DEBUG] Level 4 accounts details:', level4Accounts.map(acc => ({
-        code: acc.account_code,
-        name: acc.account_name,
-        parent_id: acc.parent_account_id,
-        active: acc.is_active
-      })));
-    }
+
 
     // Create nodes from filtered accounts data
     const nodes: AccountNode[] = filteredAccounts.map(account => ({
@@ -136,16 +115,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       if (node.parentId && nodeMap.has(node.parentId)) {
         const parent = nodeMap.get(node.parentId)!;
         parent.children.push(node);
-        console.log(`🔍 [MAIN_TREE_DEBUG] Linked ${node.accountCode} (level ${node.level}) to parent ${parent.accountCode} (level ${parent.level})`);
       } else {
         rootNodes.push(node);
-        console.log(`🔍 [MAIN_TREE_DEBUG] ${node.accountCode} (level ${node.level}) is a root node - parentId: ${node.parentId}`);
-        
-        // تسجيل خاص للمستوى 4 الذي يظهر كـ root
-        if (node.level === 4) {
-          console.error(`🔍 [MAIN_TREE_DEBUG] ❌ CRITICAL: Level 4 account ${node.accountCode} is appearing as root! parentId: ${node.parentId}`);
-          console.error(`🔍 [MAIN_TREE_DEBUG] Available parent IDs in nodeMap:`, Array.from(nodeMap.keys()).slice(0, 10));
-        }
       }
     });
 

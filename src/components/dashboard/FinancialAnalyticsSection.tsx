@@ -67,16 +67,20 @@ export const FinancialAnalyticsSection: React.FC = () => {
           .in('customer_id', customerIds.length > 0 ? customerIds : ['none'])
           .eq('company_id', user.profile.company_id);
 
-        const returningCount = new Set(
-          contractsData?.filter((c, idx, arr) => 
-            arr.findIndex(x => x.customer_id === c.customer_id) !== idx
-          ).map(c => c.customer_id)
-        ).size;
+        // Count customers with more than one contract (returning customers)
+        const customerContractCounts = new Map<string, number>();
+        contractsData?.forEach(contract => {
+          const count = customerContractCounts.get(contract.customer_id) || 0;
+          customerContractCounts.set(contract.customer_id, count + 1);
+        });
+        
+        const returningCount = Array.from(customerContractCounts.values())
+          .filter(count => count > 1).length;
 
         weeklyData.push({
           week: `الأسبوع ${5 - i}`,
           new: customersInWeek.length,
-          returning: returningCount || Math.floor(customersInWeek.length * 0.3) // Fallback estimate
+          returning: returningCount
         });
       }
 
@@ -85,53 +89,90 @@ export const FinancialAnalyticsSection: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   });
 
-  const isLoading = financialLoading || statsLoading || customersLoading;
+  const isLoading = financialLoading || statsLoading || customersLoading || revenueLoading;
 
   // Revenue Chart Data from real financial data
   const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   
-  // Transform data based on selected time period
-  const getRevenueData = () => {
-    if (!financialData?.monthlyTrend) return [];
-    
-    if (timePeriod === 'monthly') {
-      return financialData.monthlyTrend.map((item) => ({
-        period: monthNames[new Date(item.month).getMonth()] || item.month,
-        revenue: item.revenue || 0
-      }));
-    } else if (timePeriod === 'weekly') {
-      // Group monthly data into weeks (approximate)
-      const weeklyData = [];
-      const totalRevenue = financialData.monthlyTrend.reduce((sum, item) => sum + (item.revenue || 0), 0);
-      const avgWeeklyRevenue = totalRevenue / 24; // Approximate 24 weeks in 6 months
-      
-      for (let i = 0; i < 8; i++) {
-        weeklyData.push({
-          period: `الأسبوع ${i + 1}`,
-          revenue: avgWeeklyRevenue * (0.8 + Math.random() * 0.4) // Add some variation
-        });
+  // Fetch real revenue data based on time period
+  const { data: revenueByPeriod, isLoading: revenueLoading } = useQuery({
+    queryKey: ['revenue-by-period', user?.profile?.company_id, timePeriod],
+    queryFn: async () => {
+      if (!user?.profile?.company_id) return [];
+
+      const now = new Date();
+      let startDate: Date;
+      let groupBy: string;
+
+      if (timePeriod === 'daily') {
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
+        groupBy = 'day';
+      } else if (timePeriod === 'weekly') {
+        startDate = new Date(now.getTime() - 8 * 7 * 24 * 60 * 60 * 1000); // Last 8 weeks
+        groupBy = 'week';
+      } else {
+        startDate = new Date(now.getTime() - 6 * 30 * 24 * 60 * 60 * 1000); // Last 6 months
+        groupBy = 'month';
       }
-      return weeklyData;
-    } else {
-      // Daily data (last 30 days)
-      const dailyData = [];
-      const totalRevenue = financialData.monthlyTrend.reduce((sum, item) => sum + (item.revenue || 0), 0);
-      const avgDailyRevenue = totalRevenue / 180; // Approximate 180 days in 6 months
-      
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        dailyData.push({
-          period: `${date.getDate()}/${date.getMonth() + 1}`,
-          revenue: avgDailyRevenue * (0.7 + Math.random() * 0.6) // Add variation
-        });
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount, payment_date')
+        .eq('company_id', user.profile.company_id)
+        .eq('status', 'completed')
+        .gte('payment_date', startDate.toISOString())
+        .order('payment_date', { ascending: true });
+
+      if (error) throw error;
+
+      // Group data by period
+      const grouped = new Map<string, number>();
+
+      data?.forEach(payment => {
+        const date = new Date(payment.payment_date);
+        let key: string;
+
+        if (groupBy === 'day') {
+          key = `${date.getDate()}/${date.getMonth() + 1}`;
+        } else if (groupBy === 'week') {
+          const weekNum = Math.floor((now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          key = `الأسبوع ${8 - weekNum}`;
+        } else {
+          key = monthNames[date.getMonth()];
+        }
+
+        grouped.set(key, (grouped.get(key) || 0) + (payment.amount || 0));
+      });
+
+      // Convert to array and fill missing periods with 0
+      const result = [];
+      if (groupBy === 'day') {
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const key = `${date.getDate()}/${date.getMonth() + 1}`;
+          result.push({ period: key, revenue: grouped.get(key) || 0 });
+        }
+      } else if (groupBy === 'week') {
+        for (let i = 1; i <= 8; i++) {
+          const key = `الأسبوع ${i}`;
+          result.push({ period: key, revenue: grouped.get(key) || 0 });
+        }
+      } else {
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now);
+          date.setMonth(now.getMonth() - i);
+          const key = monthNames[date.getMonth()];
+          result.push({ period: key, revenue: grouped.get(key) || 0 });
+        }
       }
-      return dailyData;
-    }
-  };
+
+      return result;
+    },
+    enabled: !!user?.profile?.company_id,
+  });
   
-  const revenueData = getRevenueData();
+  const revenueData = revenueByPeriod || [];
 
   // Use real customer data from database
   const customerData = customersWeeklyData || [];

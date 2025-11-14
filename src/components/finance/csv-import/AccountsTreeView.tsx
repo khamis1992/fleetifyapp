@@ -47,22 +47,11 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
   // Build tree structure from processed data
   const treeData = useMemo(() => {
-    console.log('🔍 [TREE_DEBUG] Building tree with data:', data);
-    console.log('🔍 [TREE_DEBUG] Data length:', data?.length);
-    
     if (!data || data.length === 0) return [];
 
     // Create nodes from processed data
     const nodes: AccountNode[] = data.map(account => {
       const error = errorMap.get(account.account_code);
-
-      // تسجيل للتأكد من البيانات
-      console.log(`🔍 [TREE_DEBUG] Processing account ${account.account_code}:`, {
-        account_level: account.account_level,
-        parent_account_code: account.parent_account_code,
-        account_name: account.account_name_ar || account.account_name,
-        fullAccount: account
-      });
 
       return {
         accountCode: account.account_code,
@@ -76,12 +65,6 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
         rowNumber: error?.rowNumber || account._rowNumber
       };
     });
-
-    console.log('🔍 [TREE_DEBUG] Created nodes:', nodes.map(node => ({
-      accountCode: node.accountCode,
-      level: node.level,
-      parentCode: node.parentCode
-    })));
 
     // Sort nodes by account code to ensure proper hierarchy
     nodes.sort((a, b) => {
@@ -102,10 +85,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       if (node.parentCode && nodeMap.has(node.parentCode)) {
         const parent = nodeMap.get(node.parentCode)!;
         parent.children.push(node);
-        console.log(`🔍 [TREE_DEBUG] Linked ${node.accountCode} to parent ${node.parentCode}`);
       } else {
         rootNodes.push(node);
-        console.log(`🔍 [TREE_DEBUG] ${node.accountCode} is a root node (parent: ${node.parentCode})`);
       }
     });
 
@@ -122,12 +103,6 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     };
 
     sortChildren(rootNodes);
-    
-    console.log('🔍 [TREE_DEBUG] Final tree structure:', rootNodes.map(node => ({
-      accountCode: node.accountCode,
-      level: node.level,
-      childrenCount: node.children.length
-    })));
     
     return rootNodes;
   }, [data, errorMap]);

@@ -101,12 +101,12 @@ export const NoticeAutoFiller: React.FC<NoticeAutoFillerProps> = ({
         : `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim();
 
       const variables: NoticeVariables = {
-        companyName: 'Fleetify',
-        companyNameAr: 'فليتفاي',
-        companyAddress: 'Kuwait',
-        companyPhone: '+965-XXXX-XXXX',
-        companyEmail: 'info@fleetify.com',
-        commercialRegNo: 'N/A',
+        companyName: 'شركة العراف لتأجير السيارات',
+        companyNameAr: 'شركة العراف لتأجير السيارات ذ.م.م',
+        companyAddress: 'أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2',
+        companyPhone: '+974-XXXX-XXXX', // TODO: Add to company settings
+        companyEmail: 'info@alaraf.online',
+        commercialRegNo: '179973',
         customerName,
         customerType: selectedCustomer.customer_type === 'corporate' ? 'company' : 'individual',
         customerAddress: selectedCustomer.address || '',

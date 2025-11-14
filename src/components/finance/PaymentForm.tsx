@@ -253,9 +253,10 @@ export function PaymentForm({ open, onOpenChange, customerId, vendorId, invoiceI
 
     setIsPreviewLoading(true);
     try {
-      // محاكاة إنشاء القيد المحاسبي
+      // إنشاء القيد المحاسبي
+      const entryNumber = `JE-${new Date().getFullYear().toString().slice(-2)}-${Date.now().toString().slice(-6)}`;
       const preview = {
-        entry_number: `JE-${new Date().getFullYear().toString().slice(-2)}-XXXX`,
+        entry_number: entryNumber,
         entry_date: paymentData.payment_date,
         description: type === 'payment' 
           ? `Payment #${paymentData.payment_number || 'NEW'}`

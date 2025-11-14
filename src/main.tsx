@@ -3,6 +3,10 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { initSentry } from './lib/sentry';
+
+// Initialize Sentry for error tracking
+initSentry();
 
 // Add loading class to body to disable blur during initial load
 document.body.classList.add('loading');

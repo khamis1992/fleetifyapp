@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { format, addMonths, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
+import { toHijri, toHijriWithMonthName } from '@/lib/hijriDate';
 
 interface AlarafOfficialContractCompleteProps {
   contract: Contract & {
@@ -79,7 +80,8 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
 
   // التاريخ الحالي
   const today = contract.contract_date ? new Date(contract.contract_date) : new Date();
-  const todayHijri = format(today, 'yyyy/MM/dd'); // TODO: تحويل للهجري
+  const todayHijri = toHijri(today); // تحويل فعلي للهجري
+  const todayHijriFormatted = toHijriWithMonthName(today); // مع اسم الشهر بالعربي
   const todayGregorian = format(today, 'yyyy/MM/dd');
   const todayDay = format(today, 'EEEE', { locale: ar });
 

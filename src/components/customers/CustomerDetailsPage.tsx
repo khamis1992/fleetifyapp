@@ -389,13 +389,37 @@ const CustomerDetailsPage = () => {
     
     console.log('Report data:', reportData);
     
+    if (!customerId) {
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم العثور على معرف العميل',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
-      title: 'إنشاء تقرير',
-      description: 'سيتم تنزيل التقرير قريباً',
+      title: 'جاري إنشاء التقرير',
+      description: 'يرجى الانتظار...',
     });
-    
-    // TODO: إضافة مكتبة PDF لإنشاء التقرير الفعلي
-  }, [customer, customerName, stats, formattedContracts, formattedPayments, toast]);
+
+    // Generate PDF report using the hook
+    const { generateCustomerReport } = await import('@/hooks/useCustomerPDFReport');
+    const result = await generateCustomerReport(customerId);
+
+    if (result.success) {
+      toast({
+        title: 'تم إنشاء التقرير',
+        description: `تم تنزيل ${result.fileName}`,
+      });
+    } else {
+      toast({
+        title: 'فشل إنشاء التقرير',
+        description: result.error || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    }
+  }, [customerId, toast]);
 
   // معالج رفع المستندات
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {

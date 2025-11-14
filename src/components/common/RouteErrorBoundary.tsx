@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Home, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { captureException, addBreadcrumb } from '@/lib/sentry';
 
 interface RouteErrorBoundaryProps {
   children: ReactNode;
@@ -68,15 +69,28 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
   }
 
   logErrorToService = (error: Error, errorInfo: React.ErrorInfo) => {
-    // TODO: Integrate with error tracking service (Sentry, LogRocket, etc.)
-    const errorLog = {
+    // Log error to Sentry with context
+    const errorContext = {
       route: this.props.routeName,
-      message: error.message,
-      stack: error.stack,
       componentStack: errorInfo.componentStack,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
+      errorCount: this.state.errorCount + 1,
     };
+    
+    // Add breadcrumb for debugging
+    addBreadcrumb({
+      message: `Error in route: ${this.props.routeName || 'Unknown'}`,
+      category: 'error',
+      level: 'error',
+      data: {
+        errorMessage: error.message,
+        route: this.props.routeName,
+      },
+    });
+    
+    // Capture exception in Sentry
+    captureException(error, errorContext);
 
     // For now, log to console in dev
     if (import.meta.env.DEV) {
