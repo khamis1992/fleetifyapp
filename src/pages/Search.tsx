@@ -297,8 +297,7 @@ const SearchInner: React.FC = () => {
   };
 
   // Debug panel for troubleshooting
-  const SearchDebugPanel = () => {
-    const { searchDebug } = useSearchDebug();
+  const SearchDebugPanel = ({ searchDebug, setSearchDebug }: { searchDebug: SearchDebugState, setSearchDebug: React.Dispatch<React.SetStateAction<SearchDebugState>> }) => {
     
     return (
       <Card className="mb-4 p-4 bg-yellow-50 border-yellow-200">
@@ -335,7 +334,7 @@ const SearchInner: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Debug Panel */}
-      <SearchDebugPanel />
+      <SearchDebugPanel searchDebug={searchDebug} setSearchDebug={setSearchDebug} />
       
       {/* رأس الصفحة */}
       <motion.div
