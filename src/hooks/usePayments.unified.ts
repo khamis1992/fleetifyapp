@@ -974,3 +974,464 @@ export const useBulkDeletePayments = () => {
     },
   });
 };
+
+// ============================================================================
+// UPDATE PAYMENT
+// ============================================================================
+
+export interface UpdatePaymentData extends Partial<CreatePaymentData> {
+  payment_status?: 'pending' | 'completed' | 'failed' | 'cancelled' | 'cleared' | 'bounced';
+}
+
+/**
+ * Update an existing payment
+ * 
+ * ✅ Improvements over old version:
+ * - Permission checks before update
+ * - Sentry error tracking
+ * - Better validation
+ * - Safe audit logging
+ * - Uses sonner toast
+ * 
+ * @returns Mutation for updating payments
+ */
+export const useUpdatePayment = () => {
+  const queryClient = useQueryClient();
+  const { user, companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      paymentData,
+    }: {
+      paymentId: string;
+      paymentData: UpdatePaymentData;
+    }) => {
+      // ============================================================================
+      // PERMISSION CHECK
+      // ============================================================================
+      if (!hasPermission('payments:update')) {
+        const error = new Error('ليس لديك صلاحية لتحديث المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'update',
+            component: 'useUpdatePayment.unified',
+          },
+          extra: { userId: user?.id, companyId, paymentId },
+        });
+        throw error;
+      }
+
+      // ============================================================================
+      // VALIDATION
+      // ============================================================================
+      if (!paymentId) {
+        throw new Error('معرف الدفع مطلوب');
+      }
+
+      if (!companyId) {
+        throw new Error('معرف الشركة مطلوب');
+      }
+
+      // Validate amount if provided
+      if (paymentData.amount !== undefined && paymentData.amount <= 0) {
+        throw new Error('المبلغ يجب أن يكون أكبر من صفر');
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'update_payment',
+          message: 'Starting payment update',
+          level: 'info',
+          data: { paymentId, companyId },
+        });
+
+        // ============================================================================
+        // UPDATE PAYMENT
+        // ============================================================================
+        const { data, error } = await supabase
+          .from('payments')
+          .update({
+            ...paymentData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', paymentId)
+          .eq('company_id', companyId)
+          .select()
+          .single();
+
+        if (error) {
+          Sentry.captureException(error, {
+            tags: {
+              feature: 'payments',
+              action: 'update',
+              component: 'useUpdatePayment.unified',
+              step: 'update_payment',
+            },
+            extra: { paymentId, companyId, paymentData },
+          });
+          throw new Error(`خطأ في تحديث الدفع: ${error.message}`);
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'update_payment',
+          message: 'Payment updated successfully',
+          level: 'info',
+          data: { paymentId },
+        });
+
+        // ============================================================================
+        // AUDIT LOG (Safe - doesn't fail the operation)
+        // ============================================================================
+        try {
+          const { createAuditLog } = await import('@/hooks/useAuditLog');
+          await createAuditLog(
+            'UPDATE',
+            'payment',
+            paymentId,
+            data.payment_number || paymentId,
+            {
+              new_values: paymentData,
+              changes_summary: `تم تحديث دفع ${data.payment_number}`,
+              metadata: {
+                updated_fields: Object.keys(paymentData),
+                payment_number: data.payment_number,
+              },
+              severity: 'medium',
+            }
+          );
+        } catch (auditError) {
+          Sentry.captureException(auditError, {
+            tags: {
+              feature: 'payments',
+              action: 'update',
+              component: 'useUpdatePayment.unified',
+              step: 'audit_log',
+            },
+            level: 'warning',
+          });
+          // Don't throw - audit log failure shouldn't fail the operation
+        }
+
+        return data;
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'update',
+            component: 'useUpdatePayment.unified',
+            errorType: 'unexpected',
+          },
+          extra: { paymentId, companyId, paymentData },
+        });
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+
+      toast.success('تم تحديث الدفع بنجاح');
+
+      Sentry.addBreadcrumb({
+        category: 'update_payment',
+        message: 'Payment update completed successfully',
+        level: 'info',
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('خطأ في تحديث الدفع', {
+        description: error.message,
+      });
+
+      Sentry.captureException(error, {
+        tags: {
+          feature: 'payments',
+          action: 'update',
+          component: 'useUpdatePayment.unified',
+          step: 'mutation_error',
+        },
+      });
+    },
+  });
+};
+
+// ============================================================================
+// DELETE PAYMENT
+// ============================================================================
+
+/**
+ * Delete a payment and reverse invoice changes
+ * 
+ * ✅ Improvements over old version:
+ * - Permission checks before deletion
+ * - Sentry error tracking
+ * - Better error handling
+ * - Safe audit logging
+ * - Uses sonner toast
+ * - Reverses invoice payment status
+ * 
+ * @returns Mutation for deleting payments
+ */
+export const useDeletePayment = () => {
+  const queryClient = useQueryClient();
+  const { user, companyId } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      // ============================================================================
+      // PERMISSION CHECK
+      // ============================================================================
+      if (!hasPermission('payments:delete')) {
+        const error = new Error('ليس لديك صلاحية لحذف المدفوعات');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'delete',
+            component: 'useDeletePayment.unified',
+          },
+          extra: { userId: user?.id, companyId, paymentId },
+        });
+        throw error;
+      }
+
+      // ============================================================================
+      // VALIDATION
+      // ============================================================================
+      if (!paymentId) {
+        throw new Error('معرف الدفع مطلوب');
+      }
+
+      if (!companyId) {
+        throw new Error('معرف الشركة مطلوب');
+      }
+
+      try {
+        Sentry.addBreadcrumb({
+          category: 'delete_payment',
+          message: 'Starting payment deletion',
+          level: 'info',
+          data: { paymentId, companyId },
+        });
+
+        // ============================================================================
+        // FETCH PAYMENT DATA
+        // ============================================================================
+        const { data: payment, error: fetchError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('id', paymentId)
+          .eq('company_id', companyId)
+          .single();
+
+        if (fetchError) {
+          Sentry.captureException(fetchError, {
+            tags: {
+              feature: 'payments',
+              action: 'delete',
+              component: 'useDeletePayment.unified',
+              step: 'fetch_payment',
+            },
+            extra: { paymentId, companyId },
+          });
+          throw new Error(`خطأ في جلب بيانات الدفع: ${fetchError.message}`);
+        }
+
+        if (!payment) {
+          throw new Error('الدفع غير موجود');
+        }
+
+        // ============================================================================
+        // REVERSE INVOICE PAYMENT
+        // ============================================================================
+        if (payment.invoice_id) {
+          Sentry.addBreadcrumb({
+            category: 'delete_payment',
+            message: 'Reversing invoice payment',
+            level: 'info',
+            data: { invoiceId: payment.invoice_id },
+          });
+
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .select('total_amount, paid_amount')
+            .eq('id', payment.invoice_id)
+            .single();
+
+          if (invoiceError) {
+            Sentry.captureException(invoiceError, {
+              tags: {
+                feature: 'payments',
+                action: 'delete',
+                component: 'useDeletePayment.unified',
+                step: 'fetch_invoice',
+              },
+              extra: { invoiceId: payment.invoice_id },
+            });
+            throw new Error(`خطأ في جلب بيانات الفاتورة: ${invoiceError.message}`);
+          }
+
+          const newPaidAmount = Math.max(0, (invoice.paid_amount || 0) - payment.amount);
+          const newBalanceDue = (invoice.total_amount || 0) - newPaidAmount;
+
+          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
+          if (newPaidAmount >= (invoice.total_amount || 0)) {
+            newPaymentStatus = 'paid';
+          } else if (newPaidAmount > 0) {
+            newPaymentStatus = 'partial';
+          } else {
+            newPaymentStatus = 'unpaid';
+          }
+
+          // Update invoice
+          const { error: updateError } = await supabase
+            .from('invoices')
+            .update({
+              paid_amount: newPaidAmount,
+              balance_due: Math.max(0, newBalanceDue),
+              payment_status: newPaymentStatus,
+            })
+            .eq('id', payment.invoice_id);
+
+          if (updateError) {
+            Sentry.captureException(updateError, {
+              tags: {
+                feature: 'payments',
+                action: 'delete',
+                component: 'useDeletePayment.unified',
+                step: 'update_invoice',
+              },
+              extra: {
+                invoiceId: payment.invoice_id,
+                newPaidAmount,
+                newBalanceDue,
+                newPaymentStatus,
+              },
+            });
+            throw new Error(`خطأ في تحديث الفاتورة: ${updateError.message}`);
+          }
+
+          Sentry.addBreadcrumb({
+            category: 'delete_payment',
+            message: 'Invoice payment reversed successfully',
+            level: 'info',
+            data: { invoiceId: payment.invoice_id, newPaymentStatus },
+          });
+        }
+
+        // ============================================================================
+        // DELETE PAYMENT
+        // ============================================================================
+        const { error: deleteError } = await supabase
+          .from('payments')
+          .delete()
+          .eq('id', paymentId)
+          .eq('company_id', companyId);
+
+        if (deleteError) {
+          Sentry.captureException(deleteError, {
+            tags: {
+              feature: 'payments',
+              action: 'delete',
+              component: 'useDeletePayment.unified',
+              step: 'delete_payment',
+            },
+            extra: { paymentId, companyId },
+          });
+          throw new Error(`خطأ في حذف الدفع: ${deleteError.message}`);
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'delete_payment',
+          message: 'Payment deleted successfully',
+          level: 'info',
+          data: { paymentId },
+        });
+
+        return { paymentId, payment };
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payments',
+            action: 'delete',
+            component: 'useDeletePayment.unified',
+            errorType: 'unexpected',
+          },
+          extra: { paymentId, companyId },
+        });
+        throw error;
+      }
+    },
+    onSuccess: async (result) => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+
+      // ============================================================================
+      // AUDIT LOG (Safe - doesn't fail the operation)
+      // ============================================================================
+      try {
+        const { createAuditLog } = await import('@/hooks/useAuditLog');
+        await createAuditLog(
+          'DELETE',
+          'payment',
+          result.paymentId,
+          result.payment.payment_number || result.paymentId,
+          {
+            old_values: {
+              payment_number: result.payment.payment_number,
+              amount: result.payment.amount,
+              payment_method: result.payment.payment_method,
+              payment_date: result.payment.payment_date,
+              invoice_id: result.payment.invoice_id,
+            },
+            changes_summary: `تم حذف دفع ${result.payment.payment_number || result.paymentId}`,
+            metadata: {
+              amount: result.payment.amount,
+              payment_method: result.payment.payment_method,
+              invoice_linked: !!result.payment.invoice_id,
+            },
+            severity: 'high',
+          }
+        );
+      } catch (auditError) {
+        Sentry.captureException(auditError, {
+          tags: {
+            feature: 'payments',
+            action: 'delete',
+            component: 'useDeletePayment.unified',
+            step: 'audit_log',
+          },
+          level: 'warning',
+        });
+        // Don't throw - audit log failure shouldn't fail the operation
+      }
+
+      toast.success('تم حذف الدفع بنجاح', {
+        description: 'تم تحديث حالة الفاتورة',
+      });
+
+      Sentry.addBreadcrumb({
+        category: 'delete_payment',
+        message: 'Payment deletion completed successfully',
+        level: 'info',
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('خطأ في حذف الدفع', {
+        description: error.message,
+      });
+
+      Sentry.captureException(error, {
+        tags: {
+          feature: 'payments',
+          action: 'delete',
+          component: 'useDeletePayment.unified',
+          step: 'mutation_error',
+        },
+      });
+    },
+  });
+};
