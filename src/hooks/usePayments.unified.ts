@@ -628,3 +628,349 @@ export const useCreatePayment = () => {
     }
   });
 };
+
+// ============================================================================
+// BULK DELETE PAYMENTS
+// ============================================================================
+
+interface BulkDeleteOptions {
+  deleteAll?: boolean;
+  onlyUnlinked?: boolean;
+  startDate?: string;
+  endDate?: string;
+  paymentType?: string;
+  paymentMethod?: string;
+}
+
+interface BulkDeleteResult {
+  deletedCount: number;
+  processedInvoices: number;
+}
+
+/**
+ * Bulk delete payments with filters
+ * 
+ * ✅ Improvements over old version:
+ * - Permission checks before deletion
+ * - Sentry transaction tracking
+ * - Better error handling
+ * - Safe audit logging (doesn't fail operation)
+ * - Uses sonner toast
+ * 
+ * @returns Mutation for bulk deleting payments
+ */
+export const useBulkDeletePayments = () => {
+  const queryClient = useQueryClient();
+  const { user, companyId: effectiveCompanyId, browsedCompany, isBrowsingMode } = useUnifiedCompanyAccess();
+  const { hasPermission } = usePermissions();
+
+  return useMutation({
+    mutationFn: async (options: BulkDeleteOptions = {}): Promise<BulkDeleteResult> => {
+      const transaction = Sentry.startTransaction({
+        op: 'bulk_delete_payments',
+        name: 'Bulk Delete Payments',
+      });
+
+      try {
+        // ============================================================================
+        // PERMISSION CHECK
+        // ============================================================================
+        if (!hasPermission('payments:delete')) {
+          const error = new Error('ليس لديك صلاحية لحذف المدفوعات');
+          Sentry.captureException(error, {
+            tags: { feature: 'bulk_delete_payments', step: 'permission_check' },
+            extra: { userId: user?.id, effectiveCompanyId },
+          });
+          throw error;
+        }
+
+        // ============================================================================
+        // VALIDATION
+        // ============================================================================
+        if (!effectiveCompanyId) {
+          const error = new Error('Company ID is required');
+          Sentry.captureException(error, {
+            tags: { feature: 'bulk_delete_payments', step: 'validation' },
+          });
+          throw error;
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'bulk_delete_payments',
+          message: 'Starting bulk delete operation',
+          level: 'info',
+          data: {
+            options,
+            effectiveCompanyId,
+            isBrowsingMode,
+            browsedCompany: browsedCompany?.name,
+          },
+        });
+
+        // ============================================================================
+        // BUILD QUERY
+        // ============================================================================
+        let query = supabase
+          .from('payments')
+          .select('*')
+          .eq('company_id', effectiveCompanyId);
+
+        // Handle deleteAll - ignore all filters when true
+        if (options.deleteAll) {
+          Sentry.addBreadcrumb({
+            category: 'bulk_delete_payments',
+            message: 'Delete all mode enabled - ignoring filters',
+            level: 'warning',
+          });
+        } else {
+          // Apply filters only if deleteAll is not true
+          if (options.onlyUnlinked) {
+            query = query.is('invoice_id', null).is('contract_id', null);
+          }
+
+          if (options.startDate) {
+            query = query.gte('payment_date', options.startDate);
+          }
+
+          if (options.endDate) {
+            query = query.lte('payment_date', options.endDate);
+          }
+
+          if (options.paymentType && options.paymentType !== 'all') {
+            query = query.eq('payment_type', options.paymentType);
+          }
+
+          if (options.paymentMethod && options.paymentMethod !== 'all') {
+            query = query.eq('payment_method', options.paymentMethod);
+          }
+        }
+
+        // ============================================================================
+        // FETCH PAYMENTS TO DELETE
+        // ============================================================================
+        const fetchSpan = transaction.startChild({
+          op: 'db.query',
+          description: 'Fetch payments to delete',
+        });
+
+        const { data: paymentsToDelete, error: fetchError } = await query;
+        fetchSpan.finish();
+
+        if (fetchError) {
+          Sentry.captureException(fetchError, {
+            tags: { feature: 'bulk_delete_payments', step: 'fetch_payments' },
+            extra: { effectiveCompanyId, options },
+          });
+          throw fetchError;
+        }
+
+        if (!paymentsToDelete || paymentsToDelete.length === 0) {
+          Sentry.addBreadcrumb({
+            category: 'bulk_delete_payments',
+            message: 'No payments found to delete',
+            level: 'info',
+          });
+          transaction.finish();
+          return { deletedCount: 0, processedInvoices: 0 };
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'bulk_delete_payments',
+          message: `Found ${paymentsToDelete.length} payments to delete`,
+          level: 'info',
+        });
+
+        // ============================================================================
+        // PROCESS LINKED INVOICES
+        // ============================================================================
+        let processedInvoices = 0;
+        const invoicesToUpdate = new Map();
+
+        const invoiceSpan = transaction.startChild({
+          op: 'process',
+          description: 'Process linked invoices',
+        });
+
+        // Process linked invoices first
+        for (const payment of paymentsToDelete) {
+          if (payment.invoice_id) {
+            if (!invoicesToUpdate.has(payment.invoice_id)) {
+              const { data: invoice, error: invoiceError } = await supabase
+                .from('invoices')
+                .select('total_amount, paid_amount')
+                .eq('id', payment.invoice_id)
+                .single();
+
+              if (!invoiceError && invoice) {
+                invoicesToUpdate.set(payment.invoice_id, {
+                  ...invoice,
+                  paymentsToReverse: [],
+                });
+              }
+            }
+
+            if (invoicesToUpdate.has(payment.invoice_id)) {
+              invoicesToUpdate.get(payment.invoice_id).paymentsToReverse.push(payment.amount);
+            }
+          }
+        }
+
+        // Update invoices
+        for (const [invoiceId, invoiceData] of invoicesToUpdate) {
+          const totalToReverse = invoiceData.paymentsToReverse.reduce(
+            (sum: number, amount: number) => sum + amount,
+            0
+          );
+          const newPaidAmount = Math.max(0, (invoiceData.paid_amount || 0) - totalToReverse);
+          const newBalanceDue = (invoiceData.total_amount || 0) - newPaidAmount;
+
+          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
+          if (newPaidAmount >= (invoiceData.total_amount || 0)) {
+            newPaymentStatus = 'paid';
+          } else if (newPaidAmount > 0) {
+            newPaymentStatus = 'partial';
+          } else {
+            newPaymentStatus = 'unpaid';
+          }
+
+          const { error: updateError } = await supabase
+            .from('invoices')
+            .update({
+              paid_amount: newPaidAmount,
+              balance_due: Math.max(0, newBalanceDue),
+              payment_status: newPaymentStatus,
+            })
+            .eq('id', invoiceId);
+
+          if (updateError) {
+            Sentry.captureException(updateError, {
+              tags: { feature: 'bulk_delete_payments', step: 'update_invoice' },
+              extra: { invoiceId, newPaidAmount, newBalanceDue, newPaymentStatus },
+            });
+            // Continue with other invoices
+          } else {
+            processedInvoices++;
+          }
+        }
+
+        invoiceSpan.finish();
+
+        // ============================================================================
+        // DELETE PAYMENTS IN BATCHES
+        // ============================================================================
+        const deleteSpan = transaction.startChild({
+          op: 'db.delete',
+          description: 'Delete payments in batches',
+        });
+
+        const batchSize = 100;
+        let deletedCount = 0;
+        const totalToDelete = paymentsToDelete.length;
+
+        for (let i = 0; i < paymentsToDelete.length; i += batchSize) {
+          const batch = paymentsToDelete.slice(i, i + batchSize);
+          const ids = batch.map((p) => p.id);
+
+          const { error: deleteError, count } = await supabase
+            .from('payments')
+            .delete({ count: 'exact' })
+            .in('id', ids)
+            .eq('company_id', effectiveCompanyId);
+
+          if (deleteError) {
+            Sentry.captureException(deleteError, {
+              tags: { feature: 'bulk_delete_payments', step: 'delete_batch' },
+              extra: { batchNumber: Math.floor(i / batchSize) + 1, batchSize: batch.length },
+            });
+            throw deleteError;
+          }
+
+          const actualDeleted = count || batch.length;
+          deletedCount += actualDeleted;
+        }
+
+        deleteSpan.finish();
+
+        // ============================================================================
+        // AUDIT LOG (Safe - doesn't fail the operation)
+        // ============================================================================
+        try {
+          const { createAuditLog } = await import('@/hooks/useAuditLog');
+          await createAuditLog(
+            'DELETE_BULK',
+            'payment',
+            null,
+            `Bulk delete: ${deletedCount} payments`,
+            {
+              new_values: null,
+              old_values: null,
+              changes_summary: `تم حذف ${deletedCount} دفع وتحديث ${processedInvoices} فاتورة`,
+              metadata: {
+                deletedCount,
+                processedInvoices,
+                options,
+                totalToDelete,
+              },
+              severity: 'high',
+            }
+          );
+        } catch (auditError) {
+          Sentry.captureException(auditError, {
+            tags: { feature: 'bulk_delete_payments', step: 'audit_log' },
+            level: 'warning',
+          });
+          // Don't throw - audit log failure shouldn't fail the operation
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'bulk_delete_payments',
+          message: `Successfully deleted ${deletedCount} payments`,
+          level: 'info',
+          data: { deletedCount, processedInvoices },
+        });
+
+        transaction.setStatus('ok');
+        transaction.finish();
+
+        return { deletedCount, processedInvoices };
+      } catch (error) {
+        transaction.setStatus('internal_error');
+        transaction.finish();
+
+        Sentry.captureException(error, {
+          tags: { feature: 'bulk_delete_payments', step: 'general_error' },
+          extra: { options, effectiveCompanyId },
+        });
+
+        throw error;
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      
+      toast.success(
+        `تم حذف ${result.deletedCount} دفع وتحديث ${result.processedInvoices} فاتورة`,
+        {
+          description: 'تم حذف المدفوعات بنجاح',
+        }
+      );
+
+      Sentry.addBreadcrumb({
+        category: 'bulk_delete_payments',
+        message: 'Bulk delete completed successfully',
+        level: 'info',
+        data: result,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('خطأ في حذف المدفوعات', {
+        description: error.message,
+      });
+
+      Sentry.captureException(error, {
+        tags: { feature: 'bulk_delete_payments', step: 'mutation_error' },
+      });
+    },
+  });
+};
