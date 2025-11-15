@@ -1,35 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCompanyContext } from '@/contexts/CompanyContext';
-import { useOptimizedRecentActivities } from '@/hooks/useOptimizedRecentActivities';
-import { useFinancialOverview } from '@/hooks/useFinancialOverview';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import ProfessionalBackground from '@/components/dashboard/ProfessionalBackground';
 import EnhancedDashboardHeader from '@/components/dashboard/EnhancedDashboardHeader';
-import QuickActionsDashboard from '@/components/dashboard/QuickActionsDashboard';
-import EnhancedActivityFeed from '@/components/dashboard/EnhancedActivityFeed';
-import SmartMetricsPanel from '@/components/dashboard/SmartMetricsPanel';
-import { WorldClassStatsCards } from '@/components/dashboard/WorldClassStatsCards';
-import { FinancialAnalyticsSection } from '@/components/dashboard/FinancialAnalyticsSection';
-import { FleetOperationsSection } from '@/components/dashboard/FleetOperationsSection';
-import { ForecastingSection } from '@/components/dashboard/ForecastingSection';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { CommandPalette } from '@/components/command-palette';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
-import { SystemLogsDebugger } from '@/components/dashboard/SystemLogsDebugger';
 
+// Lazy load heavy components
+const WorldClassStatsCards = lazy(() => import('@/components/dashboard/WorldClassStatsCards').then(m => ({ default: m.WorldClassStatsCards })));
+const QuickActionsDashboard = lazy(() => import('@/components/dashboard/QuickActionsDashboard'));
+const FinancialAnalyticsSection = lazy(() => import('@/components/dashboard/FinancialAnalyticsSection').then(m => ({ default: m.FinancialAnalyticsSection })));
+const FleetOperationsSection = lazy(() => import('@/components/dashboard/FleetOperationsSection').then(m => ({ default: m.FleetOperationsSection })));
+const ForecastingSection = lazy(() => import('@/components/dashboard/ForecastingSection').then(m => ({ default: m.ForecastingSection })));
+const DashboardActivitySection = lazy(() => import('@/components/dashboard/DashboardActivitySection'));
+const WelcomeTour = lazy(() => import('@/components/onboarding/WelcomeTour').then(m => ({ default: m.WelcomeTour })));
+const SystemLogsDebugger = lazy(() => import('@/components/dashboard/SystemLogsDebugger').then(m => ({ default: m.SystemLogsDebugger })));
+
+// Loading fallback component
+const SectionLoader: React.FC = () => (
+  <div className="glass-card rounded-2xl p-6 animate-pulse">
+    <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
+    <div className="space-y-3">
+      <div className="h-4 bg-gray-200 rounded"></div>
+      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+    </div>
+  </div>
+);
 
 const CarRentalDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isBrowsingMode, browsedCompany } = useUnifiedCompanyAccess();
   const { exitBrowseMode } = useCompanyContext();
-  const { data: recentActivities, isLoading: activitiesLoading } = useOptimizedRecentActivities();
-  const { data: financialOverview, isLoading: financialLoading } = useFinancialOverview('car_rental');
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
-  const { formatCurrency } = useCurrencyFormatter();
 
   // Command Palette State
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -38,46 +42,14 @@ const CarRentalDashboard: React.FC = () => {
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setIsCommandPaletteOpen(true),
     onOpenSearch: () => {
-      // Focus search input if exists
       const searchInput = document.querySelector<HTMLInputElement>('input[type="search"]');
       searchInput?.focus();
     },
     onExport: () => {
-      // Trigger export button if exists
       const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export"]');
       exportButton?.click();
     },
   });
-
-  // Convert dashboard stats data for SmartMetricsPanel
-  // استخدام useDashboardStats لضمان توحيد مصدر البيانات مع بقية البطاقات
-  const smartMetricsData = dashboardStats ? {
-    totalRevenue: dashboardStats.monthlyRevenue || 0,
-    monthlyRevenue: dashboardStats.monthlyRevenue || 0,
-    totalProfit: financialOverview?.netIncome || 0,
-    profitMargin: financialOverview?.profitMargin || 0,
-    monthlyGrowth: parseFloat(dashboardStats.revenueChange?.replace(/[^0-9.-]/g, '') || '0'),
-    activeContracts: dashboardStats.activeContracts || 0,
-    pendingPayments: 0,
-    overduePayments: 0,
-  } : undefined;
-
-  // Convert activities to enhanced format
-  const enhancedActivities = recentActivities?.slice(0, 10).map((activity, index) => ({
-    id: activity.id || `activity-${index}`,
-    type: 'system' as const,
-    title: activity.description || 'نشاط جديد',
-    description: activity.description || 'لا يوجد وصف',
-    user: 'النظام',
-    timestamp: new Date(activity.created_at || new Date()),
-    status: 'info' as const,
-    metadata: {
-      'نوع العملية': activity.description || 'غير محدد',
-      'الوقت': new Date(activity.created_at || new Date()).toLocaleString('ar-SA')
-    }
-  })) || [];
-
-
 
   return (
     <>
@@ -97,56 +69,58 @@ const CarRentalDashboard: React.FC = () => {
           onExitBrowseMode={exitBrowseMode}
         />
 
-        {/* World-Class Stats Cards */}
-        <WorldClassStatsCards />
+        {/* World-Class Stats Cards - Lazy Loaded */}
+        <Suspense fallback={
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="glass-card rounded-2xl p-6 animate-pulse">
+                <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </section>
+        }>
+          <WorldClassStatsCards />
+        </Suspense>
 
-        {/* Quick Actions Panel */}
-        <QuickActionsDashboard />
+        {/* Quick Actions Panel - Lazy Loaded */}
+        <Suspense fallback={<SectionLoader />}>
+          <QuickActionsDashboard />
+        </Suspense>
 
-        {/* Financial Analytics Section */}
-        <FinancialAnalyticsSection />
+        {/* Financial Analytics Section - Lazy Loaded */}
+        <Suspense fallback={<SectionLoader />}>
+          <FinancialAnalyticsSection />
+        </Suspense>
 
-        {/* Fleet Operations Section */}
-        <FleetOperationsSection />
+        {/* Fleet Operations Section - Lazy Loaded */}
+        <Suspense fallback={<SectionLoader />}>
+          <FleetOperationsSection />
+        </Suspense>
 
-        {/* Forecasting & Calendar Section */}
-        <ForecastingSection />
+        {/* Forecasting & Calendar Section - Lazy Loaded */}
+        <Suspense fallback={<SectionLoader />}>
+          <ForecastingSection />
+        </Suspense>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Enhanced Activity Feed */}
-          <div className="xl:col-span-2">
-            <EnhancedActivityFeed
-              activities={enhancedActivities}
-              loading={activitiesLoading}
-              title="النشاطات الأخيرة"
-              onRefresh={() => window.location.reload()}
-              showFilters={true}
-            />
-          </div>
-
-          {/* Enhanced Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="space-y-6"
-            data-tour="dashboard-metrics"
-          >
-            <SmartMetricsPanel
-              financialData={smartMetricsData}
-              loading={statsLoading}
-            />
-          </motion.div>
-        </div>
-
+        {/* Activity Section - Lazy Loaded */}
+        <Suspense fallback={<SectionLoader />}>
+          <DashboardActivitySection />
+        </Suspense>
       </div>
 
-      {/* Welcome Tour for New Users (K1 Fix #004) */}
-      <WelcomeTour />
+      {/* Welcome Tour for New Users - Lazy Loaded */}
+      <Suspense fallback={null}>
+        <WelcomeTour />
+      </Suspense>
 
-      {/* System Logs Debugger - للمطورين فقط */}
-      {import.meta.env.DEV && <SystemLogsDebugger />}
+      {/* System Logs Debugger - للمطورين فقط - Lazy Loaded */}
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <SystemLogsDebugger />
+        </Suspense>
+      )}
     </>
   );
 };

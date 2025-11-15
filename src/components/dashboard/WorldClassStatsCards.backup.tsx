@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Car, FileText, Users, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -15,8 +15,7 @@ interface StatCardProps {
   delay: number;
 }
 
-// Memoized StatCard component to prevent unnecessary re-renders
-const StatCard = React.memo<StatCardProps>(({
+const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   change,
@@ -74,67 +73,11 @@ const StatCard = React.memo<StatCardProps>(({
       </div>
     </motion.div>
   );
-});
-
-StatCard.displayName = 'StatCard';
+};
 
 export const WorldClassStatsCards: React.FC = () => {
   const { data: stats, isLoading } = useDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
-
-  // Memoize formatted revenue to prevent recalculation on every render
-  const formattedRevenue = useMemo(() => {
-    if (!stats?.monthlyRevenue) return '0';
-    try {
-      return formatCurrency(stats.monthlyRevenue).replace('.00', '');
-    } catch (error) {
-      console.error('[WorldClassStatsCards] Error formatting currency:', error);
-      return '0';
-    }
-  }, [stats?.monthlyRevenue, formatCurrency]);
-
-  // Memoize card data to prevent recreation on every render
-  const cardData = useMemo(() => [
-    {
-      title: "إجمالي المركبات",
-      value: stats?.totalVehicles || 0,
-      change: stats?.vehiclesChange,
-      progress: stats?.vehicleActivityRate || 0,
-      progressLabel: `${stats?.activeVehicles || 0} نشط`,
-      icon: <Car className="w-7 h-7 text-white" />,
-      gradient: "from-red-500 to-red-600",
-      delay: 0
-    },
-    {
-      title: "العقود النشطة",
-      value: stats?.activeContracts || 0,
-      change: stats?.contractsChange,
-      progress: stats?.contractCompletionRate || 0,
-      progressLabel: `${stats?.contractCompletionRate || 0}% من الإجمالي`,
-      icon: <FileText className="w-7 h-7 text-white" />,
-      gradient: "from-orange-500 to-orange-600",
-      delay: 0.1
-    },
-    {
-      title: "إجمالي العملاء",
-      value: stats?.totalCustomers || 0,
-      change: stats?.customersChange,
-      progress: stats?.customerSatisfactionRate || 0,
-      progressLabel: `${stats?.customerSatisfactionRate || 0}% رضا`,
-      icon: <Users className="w-7 h-7 text-white" />,
-      gradient: "from-red-400 to-orange-500",
-      delay: 0.2
-    },
-    {
-      title: "الإيرادات الشهرية",
-      value: formattedRevenue,
-      change: stats?.revenueChange,
-      progress: undefined,
-      icon: <TrendingUp className="w-7 h-7 text-white" />,
-      gradient: "from-orange-600 to-red-600",
-      delay: 0.3
-    }
-  ], [stats, formattedRevenue]);
 
   if (isLoading) {
     return (
@@ -152,9 +95,53 @@ export const WorldClassStatsCards: React.FC = () => {
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {cardData.map((card, index) => (
-        <StatCard key={index} {...card} />
-      ))}
+      {/* Total Vehicles */}
+      <StatCard
+        title="إجمالي المركبات"
+        value={stats?.totalVehicles || 0}
+        change={stats?.vehiclesChange}
+        progress={stats?.vehicleActivityRate || 0}
+        progressLabel={`${stats?.activeVehicles || 0} نشط`}
+        icon={<Car className="w-7 h-7 text-white" />}
+        gradient="from-red-500 to-red-600"
+        delay={0}
+      />
+      
+      {/* Active Contracts */}
+      <StatCard
+        title="العقود النشطة"
+        value={stats?.activeContracts || 0}
+        change={stats?.contractsChange}
+        progress={stats?.contractCompletionRate || 0}
+        progressLabel={`${stats?.contractCompletionRate || 0}% من الإجمالي`}
+        icon={<FileText className="w-7 h-7 text-white" />}
+        gradient="from-orange-500 to-orange-600"
+        delay={0.1}
+      />
+      
+      {/* Total Customers */}
+      <StatCard
+        title="إجمالي العملاء"
+        value={stats?.totalCustomers || 0}
+        change={stats?.customersChange}
+        progress={stats?.customerSatisfactionRate || 0}
+        progressLabel={`${stats?.customerSatisfactionRate || 0}% رضا`}
+        icon={<Users className="w-7 h-7 text-white" />}
+        gradient="from-red-400 to-orange-500"
+        delay={0.2}
+      />
+      
+      {/* Monthly Revenue */}
+      <StatCard
+        title="الإيرادات الشهرية"
+        value={formatCurrency(stats?.monthlyRevenue || 0).replace('.00', '')}
+        change={stats?.revenueChange}
+        progress={undefined}
+        icon={<TrendingUp className="w-7 h-7 text-white" />}
+        gradient="from-orange-600 to-red-600"
+        delay={0.3}
+      />
     </section>
   );
 };
+
