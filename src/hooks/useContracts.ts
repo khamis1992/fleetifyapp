@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import * as Sentry from '@sentry/react'
-import { CACHE_TIERS } from '@/utils/cacheConfig'
 
 export interface Contract {
   id: string;
