@@ -72,7 +72,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'es2022',
-    minify: 'terser',
+    minify: false, // Temporarily disabled for debugging
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
