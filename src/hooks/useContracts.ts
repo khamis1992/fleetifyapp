@@ -152,7 +152,8 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
       return contractsWithPayments
     },
     enabled: !!targetCompanyId,
-    ...CACHE_TIERS.SEMI_STATIC, // Phase 7: Strategic caching for contracts
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     retryDelay: 1000
   })
@@ -257,7 +258,8 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       return contractsWithPayments
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
-    ...CACHE_TIERS.SEMI_STATIC, // Phase 7: Strategic caching
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     retryDelay: 1000
   })
