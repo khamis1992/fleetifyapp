@@ -105,11 +105,19 @@ export const MaintenanceScheduleWidget: React.FC = () => {
     return counts;
   }, [maintenanceSchedule]);
 
-  // Get items for display (overdue and due soon only, limit to 5)
+  // Get items for display (prioritize overdue and due soon, but show all if needed, limit to 5)
   const displayItems = React.useMemo(() => {
-    return maintenanceSchedule
-      .filter((item) => item.urgency === 'overdue' || item.urgency === 'due_soon')
-      .slice(0, 5);
+    // First try to show overdue and due_soon items
+    const urgentItems = maintenanceSchedule
+      .filter((item) => item.urgency === 'overdue' || item.urgency === 'due_soon');
+    
+    // If we have urgent items, show them (max 5)
+    if (urgentItems.length > 0) {
+      return urgentItems.slice(0, 5);
+    }
+    
+    // Otherwise, show on_schedule items (max 5)
+    return maintenanceSchedule.slice(0, 5);
   }, [maintenanceSchedule]);
 
   // Prepare export data
