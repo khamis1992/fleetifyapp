@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +28,8 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
   
   return useQuery({
     queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }),
-    queryFn: async ({ signal }) => { // ✅ Extract signal from query context
+    queryFn: async ({ signal }) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" }); // ✅ Extract signal from query context
       if (!companyId) return []
       
       let query = supabase
@@ -70,7 +72,8 @@ export const useAvailableVehicles = () => {
   
   return useQuery({
     queryKey: queryKeys.vehicles.available(companyId),
-    queryFn: async ({ signal }) => { // ✅ Extract signal from query context
+    queryFn: async ({ signal }) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" }); // ✅ Extract signal from query context
       if (!companyId) return []
       
       const { data, error } = await supabase
@@ -105,6 +108,7 @@ export const useCreateVehicle = () => {
   
   return useMutation({
     mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       console.log("🚗 [USE_CREATE_VEHICLE] Starting vehicle creation");
       console.log("📋 [USE_CREATE_VEHICLE] Input data:", vehicleData);
       
@@ -215,6 +219,7 @@ export const useCreateVehicle = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       console.log("🎉 [USE_CREATE_VEHICLE] Success callback triggered for vehicle:", data.plate_number);
       console.log("🔄 [USE_CREATE_VEHICLE] Invalidating vehicle queries...");
       
@@ -254,6 +259,7 @@ export const useUpdateVehicle = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Vehicle> & { id: string }) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get old data before update
       const { data: oldData } = await supabase
         .from("vehicles")
@@ -321,6 +327,7 @@ export const useDeleteVehicle = () => {
   
   return useMutation({
     mutationFn: async (vehicleId: string) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get vehicle details before deletion for audit log
       const { data: vehicleData } = await supabase
         .from("vehicles")
@@ -388,6 +395,7 @@ export const useVehiclePricing = (vehicleId: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.pricing(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_pricing")
         .select("*")
@@ -407,6 +415,7 @@ export const useCreateVehiclePricing = () => {
   
   return useMutation({
     mutationFn: async (pricingData: Omit<VehiclePricing, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_pricing")
         .insert([pricingData])
@@ -417,6 +426,7 @@ export const useCreateVehiclePricing = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.pricing(data.vehicle_id) })
       toast({
         title: "Success",
@@ -431,6 +441,7 @@ export const useVehicleInsurance = (vehicleId: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.insurance(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_insurance")
         .select("*")
@@ -451,6 +462,7 @@ export const useCreateVehicleInsurance = () => {
   
   return useMutation({
     mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_insurance")
         .insert([insuranceData])
@@ -461,6 +473,7 @@ export const useCreateVehicleInsurance = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.insurance(data.vehicle_id) })
       toast({
         title: "Success",
@@ -482,6 +495,7 @@ export const useVehicleMaintenance = (vehicleId?: string, options?: {
   return useQuery({
     queryKey: queryKeys.vehicles.maintenance(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.profile?.company_id) return []
       
       let query = supabase
@@ -536,6 +550,7 @@ export const useCreateVehicleMaintenance = () => {
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.id) return null;
       const { data } = await supabase
         .from('profiles')
@@ -549,6 +564,7 @@ export const useCreateVehicleMaintenance = () => {
   
   return useMutation({
     mutationFn: async (maintenanceData: Omit<VehicleMaintenance, 'id' | 'created_at' | 'updated_at' | 'maintenance_number'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Generate maintenance number
       const { data: maintenanceNumber, error: numberError } = await supabase
         .rpc('generate_maintenance_number', { company_id_param: maintenanceData.company_id })
@@ -633,6 +649,7 @@ export const useUpdateVehicleMaintenance = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<VehicleMaintenance> & { id: string }) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get old data before update
       const { data: oldData } = await supabase
         .from("vehicle_maintenance")
@@ -694,6 +711,7 @@ export const useDeleteVehicleMaintenance = () => {
   
   return useMutation({
     mutationFn: async ({ maintenanceId, vehicleId }: { maintenanceId: string; vehicleId?: string }) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       // Get maintenance record first to check vehicle status
       const { data: maintenance, error: fetchError } = await supabase
         .from("vehicle_maintenance")
@@ -801,6 +819,7 @@ export const useProcessVehicleDepreciation = () => {
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.id) return null;
       const { data } = await supabase
         .from('profiles')
@@ -814,6 +833,7 @@ export const useProcessVehicleDepreciation = () => {
 
   return useMutation({
     mutationFn: async (date?: string) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       if (!profile?.company_id) {
         throw new Error('Company ID not found');
       }
@@ -827,6 +847,7 @@ export const useProcessVehicleDepreciation = () => {
       return data
     },
     onSuccess: (processedCount) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: ["fixed-assets"] })
       queryClient.invalidateQueries({ queryKey: ["depreciation-records"] })
@@ -852,6 +873,7 @@ export const useAvailableVehiclesForContracts = (companyId?: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.availableForContracts(companyId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       log.info('vehicles', 'fetch_available_for_contracts', `استعلام المركبات للشركة ${companyId}`, {
         resource_type: 'vehicle',
         metadata: { companyId, timestamp: Date.now() }
@@ -958,6 +980,7 @@ export const useFleetAnalytics = (companyId?: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.fleetAnalytics(companyId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!companyId) throw new Error("Company ID is required")
 
       console.log("Starting fleet analytics fetch for company:", companyId)
@@ -1108,6 +1131,7 @@ export const useOdometerReadings = (vehicleId?: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.odometerReadings(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.profile?.company_id) return []
       
       let query = supabase
@@ -1138,6 +1162,7 @@ export const useCreateOdometerReading = () => {
   
   return useMutation({
     mutationFn: async (readingData: Omit<OdometerReading, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("odometer_readings")
         .insert([readingData])
@@ -1148,6 +1173,7 @@ export const useCreateOdometerReading = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
@@ -1165,6 +1191,7 @@ export const useVehicleInspections = (vehicleId?: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.inspections(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.profile?.company_id) return []
       
       let query = supabase
@@ -1195,6 +1222,7 @@ export const useCreateVehicleInspection = () => {
   
   return useMutation({
     mutationFn: async (inspectionData: Omit<VehicleInspection, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_inspections")
         .insert([inspectionData])
@@ -1205,6 +1233,7 @@ export const useCreateVehicleInspection = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({
@@ -1225,6 +1254,7 @@ export const useVehicleActivityLog = (vehicleId?: string) => {
   return useQuery({
     queryKey: queryKeys.vehicles.activityLog(vehicleId),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" });
       if (!user?.profile?.company_id) return []
       
       let query = supabase
@@ -1256,6 +1286,7 @@ export const useCreateVehicleActivity = () => {
   
   return useMutation({
     mutationFn: async (activityData: Omit<VehicleActivityLog, 'id' | 'created_at' | 'updated_at'>) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
       const { data, error } = await supabase
         .from("vehicle_activity_log")
         .insert([activityData])
@@ -1266,6 +1297,7 @@ export const useCreateVehicleActivity = () => {
       return data
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Operation completed successfully", level: "info" });
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
       toast({

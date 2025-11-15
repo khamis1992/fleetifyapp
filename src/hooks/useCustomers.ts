@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/react";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
@@ -35,6 +36,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
       companyId,
     }),
     queryFn: async ({ signal }) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Fetching customers", level: "info" });
       // Reduced logging for performance - uncomment for debugging
       // console.log('🔍 [CUSTOMERS] Starting customer fetch with context:', {
       //   companyId,
@@ -287,6 +289,7 @@ export const useCreateCustomer = () => {
 
   return useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Creating customer", level: "info" });
       console.log('🔄 Creating customer with data:', customerData);
       console.log('👤 Current user:', {
         id: user?.id,
@@ -375,6 +378,7 @@ export const useCreateCustomer = () => {
       return data;
     },
     onSuccess: async (data) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Created customer successfully", level: "info" });
       console.log('🎉 Customer creation successful:', data);
       
       // Update cache immediately with optimistic update
@@ -430,6 +434,7 @@ export const useUpdateCustomer = () => {
 
   return useMutation({
     mutationFn: async ({ customerId, data }: { customerId: string; data: Partial<CustomerFormData> }) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Updating customer", level: "info" });
       console.log('🔄 Updating customer:', customerId, data);
       
       // Clean the data - remove any undefined values and selectedCompanyId
@@ -472,6 +477,7 @@ export const useUpdateCustomer = () => {
       return updatedCustomer;
     },
     onSuccess: async (data) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Updated customer successfully", level: "info" });
       console.log('🎉 Customer update successful:', data);
       
       // Update cache immediately with optimistic update
@@ -526,6 +532,7 @@ export const useToggleCustomerBlacklist = () => {
       isBlacklisted: boolean; 
       reason?: string 
     }) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Toggling customer blacklist", level: "info" });
       const { error } = await supabase
         .from('customers')
         .update({ 
@@ -534,9 +541,10 @@ export const useToggleCustomerBlacklist = () => {
         })
         .eq('id', customerId);
 
-      if (error) throw error;
+      if (error) { Sentry.captureException(error, { tags: { feature: "customers" } }); throw error; }
     },
     onSuccess: async (_, variables) => {
+      Sentry.addBreadcrumb({ category: "customers", message: "Toggled customer blacklist successfully", level: "info" });
       // Update cache immediately with optimistic update
       queryClient.setQueriesData(
         { queryKey: queryKeys.customers.lists() },
@@ -644,97 +652,6 @@ export const useCustomer = (customerId: string, options?: { enabled?: boolean })
 export const useCustomerNotes = (customerId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: queryKeys.customers.notes(customerId),
-    queryFn: async ({ signal }) => {
-      const { data, error } = await supabase
-        .from('customer_notes')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
-        .abortSignal(signal);
-
-      if (error) {
-        console.error('Error fetching customer notes:', error);
-        throw error;
-      }
-
-      return data || [];
-    },
-    enabled: options?.enabled !== false && !!customerId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000,   // 10 minutes
-  });
-};
-
-export const useCreateCustomerNote = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  return useMutation({
-    mutationFn: async ({ customerId, noteData }: { 
-      customerId: string; 
-      noteData: {
-        note_type: string;
-        title: string;
-        content: string;
-        is_important: boolean;
-      }
-    }) => {
-      const companyId = user?.profile?.company_id || user?.company?.id;
-      
-      const { data, error } = await supabase
-        .from('customer_notes')
-        .insert([{
-          customer_id: customerId,
-          company_id: companyId,
-          created_by: user?.id,
-          ...noteData
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.notes(variables.customerId) });
-      toast.success('تم إضافة الملاحظة بنجاح');
-    },
-    onError: (error) => {
-      console.error('Error creating customer note:', error);
-      toast.error('حدث خطأ أثناء إضافة الملاحظة');
-    }
-  });
-};
-
-export const useCustomerFinancialSummary = (customerId: string, options?: { enabled?: boolean }) => {
-  return useQuery({
-    queryKey: queryKeys.customers.financialSummary(customerId),
-    queryFn: async () => {
-      // Return placeholder data - will be implemented with real calculations later
-      return {
-        currentBalance: 0,
-        totalContracts: 0,
-        totalPayments: 0,
-        outstandingBalance: 0,
-        totalInvoices: 0,
-        totalInvoicesOutstanding: 0,
-        totalInvoicesPaid: 0,
-        invoicesCount: 0,
-        activeContracts: 0,
-        contractsCount: 0
-      };
-    },
-    enabled: options?.enabled !== false && !!customerId,
-    staleTime: 5 * 60 * 1000, // 5 minutes - financial data doesn't change that often
-    gcTime: 15 * 60 * 1000,   // 15 minutes cache
-  });
-};
-
-export const useCustomerDiagnostics = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: queryKeys.customers.diagnostics(user?.id),
     queryFn: async ({ signal }) => {
       const companyId = user?.profile?.company_id || user?.company?.id;
 
