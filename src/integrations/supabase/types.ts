@@ -12733,6 +12733,10 @@ export type Database = {
           | { account_type_code_param: string; company_id_param: string }
         Returns: string
       }
+      get_dashboard_stats: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       get_payment_analytics: {
         Args: {
           company_id_param: string
