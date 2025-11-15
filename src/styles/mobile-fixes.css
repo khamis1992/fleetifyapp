@@ -220,13 +220,28 @@
   }
   
   /* ==========================================
-     12. OVERFLOW - Prevent horizontal scroll
+     12. OVERFLOW - Prevent horizontal scroll only
      ========================================== */
   
   body,
   html {
     overflow-x: hidden;
+    overflow-y: auto;
     max-width: 100vw;
+  }
+  
+  /* Ensure main content areas can scroll */
+  main {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix for pages with fixed height */
+  [class*="min-h-screen"],
+  [class*="h-screen"] {
+    min-height: 100vh;
+    height: auto;
   }
   
   /* ==========================================
