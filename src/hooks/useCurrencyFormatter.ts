@@ -25,7 +25,7 @@ export const useCurrencyFormatter = () => {
   }, [currency, locale, currencyConfig.fractionDigits]);
 
   const formatCurrency = (amount: number, opts?: FormatOptions) => {
-    let formatted: string;
+    let formatted: string = '';
     
     if (opts) {
       const targetCurrency = opts.currency || currency;
