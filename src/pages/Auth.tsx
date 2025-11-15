@@ -6,17 +6,17 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const Auth: React.FC = () => {
   const { user, loading } = useAuth();
-  const hasRedirected = useRef(false);
+  const [hasRedirected, setHasRedirected] = React.useState(false);
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
 
   // Prevent redirect loop in development
   useEffect(() => {
-    console.log('🔍 [AUTH_PAGE] useEffect triggered - user:', !!user, 'hasRedirected:', hasRedirected.current);
-    if (user && !hasRedirected.current) {
-      hasRedirected.current = true;
+    console.log('🔍 [AUTH_PAGE] useEffect triggered - user:', !!user, 'hasRedirected:', hasRedirected);
+    if (user && !hasRedirected) {
+      setHasRedirected(true);
       console.log('✅ [AUTH] User authenticated, redirecting to dashboard');
     }
-  }, [user]);
+  }, [user, hasRedirected]);
 
   // Safety timeout for loading state - reduced to 3s for better UX
   useEffect(() => {
@@ -44,10 +44,10 @@ const Auth: React.FC = () => {
     );
   }
 
-  if (user && hasRedirected.current) {
+  if (user && hasRedirected) {
     console.log('✅ [AUTH] Redirecting authenticated user to dashboard - user:', user.email);
     return <Navigate to="/dashboard" replace />;
-  } else if (user && !hasRedirected.current) {
+  } else if (user && !hasRedirected) {
     console.log('⚠️ [AUTH] User exists but hasRedirected is false - should redirect in next render');
   }
 
