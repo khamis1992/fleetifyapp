@@ -1,6 +1,6 @@
 /**
- * Native-Like Mobile Experience for Specific Pages
- * iOS/Android inspired design for Customers and CRM pages
+ * Native-Like Mobile Experience for Customers and CRM Pages
+ * iOS/Android inspired design
  */
 
 @media (max-width: 768px) {
@@ -9,401 +9,234 @@
      CUSTOMERS PAGE - Native Mobile Experience
      ========================================== */
   
-  /* Page container */
-  [data-page="customers"],
-  .customers-page {
-    background: #f5f5f7;
+  /* Page background */
+  [data-page="customers"] {
+    background: #f5f5f7 !important;
     min-height: 100vh;
   }
   
-  /* Header section */
-  [data-page="customers"] header,
-  .customers-page header {
-    background: white;
-    padding: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.95);
-  }
-  
-  /* Search bar - iOS style */
-  [data-page="customers"] input[type="search"],
-  .customers-page input[type="search"] {
-    background: rgba(0, 0, 0, 0.06);
-    border: none;
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-size: 16px;
-    width: 100%;
+  /* Search input - iOS style */
+  [data-page="customers"] input[type="search"] {
+    background: rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 16px !important;
+    font-size: 16px !important;
     transition: background 0.2s;
   }
   
-  [data-page="customers"] input[type="search"]:focus,
-  .customers-page input[type="search"]:focus {
-    background: rgba(0, 0, 0, 0.08);
-    outline: none;
+  [data-page="customers"] input[type="search"]:focus {
+    background: rgba(0, 0, 0, 0.08) !important;
+    outline: none !important;
+    ring: none !important;
   }
   
   /* Customer cards - Native style */
-  [data-page="customers"] .customer-card,
-  .customers-page .customer-card,
   .mobile-customer-card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: white !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
   }
   
-  [data-page="customers"] .customer-card:active,
-  .customers-page .customer-card:active,
   .mobile-customer-card:active {
-    transform: scale(0.98);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  }
-  
-  /* Customer avatar */
-  [data-page="customers"] .customer-avatar,
-  .customers-page .customer-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 18px;
+    transform: scale(0.98) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
   }
   
   /* Customer name */
-  [data-page="customers"] .customer-name,
-  .customers-page .customer-name {
-    font-size: 17px;
-    font-weight: 600;
-    color: #1d1d1f;
-    margin-bottom: 4px;
+  .customer-name {
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    color: #1d1d1f !important;
   }
   
-  /* Customer details */
-  [data-page="customers"] .customer-detail,
-  .customers-page .customer-detail {
-    font-size: 14px;
-    color: #86868b;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
+  /* Stats cards - iOS style */
+  [data-page="customers"] .grid > div > div {
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
   
-  /* Action buttons */
-  [data-page="customers"] .customer-actions,
-  .customers-page .customer-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
+  /* Buttons - Touch friendly */
+  [data-page="customers"] button {
+    min-height: 44px !important;
+    border-radius: 10px !important;
+    transition: all 0.2s !important;
   }
   
-  [data-page="customers"] .customer-actions button,
-  .customers-page .customer-actions button {
-    flex: 1;
-    min-height: 36px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    background: white;
-    transition: all 0.2s;
-  }
-  
-  [data-page="customers"] .customer-actions button:active,
-  .customers-page .customer-actions button:active {
-    transform: scale(0.96);
-    background: rgba(0, 0, 0, 0.04);
-  }
-  
-  /* Floating action button */
-  [data-page="customers"] .fab,
-  .customers-page .fab {
-    position: fixed;
-    bottom: 80px;
-    left: 16px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    z-index: 20;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  
-  [data-page="customers"] .fab:active,
-  .customers-page .fab:active {
-    transform: scale(0.92);
-  }
-  
-  /* Table wrapper - hide on mobile, show cards instead */
-  [data-page="customers"] table,
-  .customers-page table {
-    display: none;
-  }
-  
-  /* Stats cards */
-  [data-page="customers"] .stats-card,
-  .customers-page .stats-card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  }
-  
-  [data-page="customers"] .stats-card .stat-value,
-  .customers-page .stats-card .stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1d1d1f;
-    margin-bottom: 4px;
-  }
-  
-  [data-page="customers"] .stats-card .stat-label,
-  .customers-page .stats-card .stat-label {
-    font-size: 14px;
-    color: #86868b;
+  [data-page="customers"] button:active {
+    transform: scale(0.96) !important;
   }
   
   /* ==========================================
      CRM PAGE - Native Mobile Experience
      ========================================== */
   
-  /* Page container */
-  [data-page="crm"],
-  .crm-page {
-    background: #f5f5f7;
+  [data-page="crm"] {
+    background: #f5f5f7 !important;
     min-height: 100vh;
   }
   
-  /* CRM Header */
-  [data-page="crm"] header,
-  .crm-page header {
-    background: white;
-    padding: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.95);
+  /* CRM cards */
+  [data-page="crm"] .followup-card {
+    background: white !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    border-left: 4px solid #667eea !important;
   }
   
-  /* CRM Follow-up cards */
-  [data-page="crm"] .followup-card,
-  .crm-page .followup-card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #667eea;
+  /* Priority colors */
+  [data-page="crm"] .priority-high {
+    border-left-color: #ff3b30 !important;
   }
   
-  /* Priority indicator */
-  [data-page="crm"] .priority-high,
-  .crm-page .priority-high {
-    border-left-color: #ff3b30;
+  [data-page="crm"] .priority-medium {
+    border-left-color: #ff9500 !important;
   }
   
-  [data-page="crm"] .priority-medium,
-  .crm-page .priority-medium {
-    border-left-color: #ff9500;
+  [data-page="crm"] .priority-low {
+    border-left-color: #34c759 !important;
   }
   
-  [data-page="crm"] .priority-low,
-  .crm-page .priority-low {
-    border-left-color: #34c759;
-  }
-  
-  /* Call button - iOS style */
-  [data-page="crm"] .call-button,
-  .crm-page .call-button {
-    background: #34c759;
-    color: white;
-    border-radius: 10px;
-    padding: 12px 20px;
-    font-weight: 600;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  /* Call button */
+  [data-page="crm"] .call-button {
+    background: #34c759 !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 12px 20px !important;
+    font-weight: 600 !important;
+    border: none !important;
     width: 100%;
-    margin-top: 12px;
-    transition: all 0.2s;
+    transition: all 0.2s !important;
   }
   
-  [data-page="crm"] .call-button:active,
-  .crm-page .call-button:active {
-    transform: scale(0.96);
-    background: #2fb84d;
+  [data-page="crm"] .call-button:active {
+    transform: scale(0.96) !important;
+    background: #2fb84d !important;
   }
   
   /* ==========================================
-     GENERAL MOBILE ENHANCEMENTS
+     GENERAL ENHANCEMENTS
      ========================================== */
   
-  /* Section headers */
-  .section-header-mobile {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1d1d1f;
-    margin: 20px 0 12px 0;
-    padding: 0 16px;
+  /* Smooth scrolling */
+  [data-page="customers"],
+  [data-page="crm"] {
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* List separator */
-  .list-separator {
-    height: 1px;
-    background: rgba(0, 0, 0, 0.08);
-    margin: 8px 0;
+  /* Card hover effects */
+  [data-page="customers"] > div > div,
+  [data-page="crm"] > div > div {
+    transition: transform 0.2s ease-out;
   }
   
-  /* Badge - iOS style */
-  .badge-mobile {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(0, 0, 0, 0.06);
-    color: #1d1d1f;
+  /* Typography improvements */
+  [data-page="customers"] h1,
+  [data-page="crm"] h1 {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: #1d1d1f !important;
   }
   
-  .badge-mobile.success {
-    background: rgba(52, 199, 89, 0.15);
-    color: #34c759;
+  [data-page="customers"] h2,
+  [data-page="crm"] h2 {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    color: #1d1d1f !important;
   }
   
-  .badge-mobile.warning {
-    background: rgba(255, 149, 0, 0.15);
-    color: #ff9500;
+  /* Badge styling */
+  [data-page="customers"] .badge,
+  [data-page="crm"] .badge {
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
   }
   
-  .badge-mobile.danger {
-    background: rgba(255, 59, 48, 0.15);
-    color: #ff3b30;
+  /* Dropdown menus - iOS style */
+  [data-page="customers"] [role="menu"],
+  [data-page="crm"] [role="menu"] {
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
   
-  /* Pull to refresh indicator */
-  .pull-refresh-indicator {
-    position: absolute;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: top 0.3s;
+  /* Menu items */
+  [data-page="customers"] [role="menuitem"],
+  [data-page="crm"] [role="menuitem"] {
+    border-radius: 8px !important;
+    margin: 2px 4px !important;
+    min-height: 44px !important;
   }
   
-  .pull-refresh-indicator.pulling {
-    top: 10px;
+  /* Icons */
+  [data-page="customers"] svg,
+  [data-page="crm"] svg {
+    flex-shrink: 0;
   }
   
-  /* Empty state */
-  .empty-state-mobile {
+  /* Loading states */
+  [data-page="customers"] .animate-pulse,
+  [data-page="crm"] .animate-pulse {
+    border-radius: 12px !important;
+  }
+  
+  /* Empty states */
+  [data-page="customers"] .empty-state,
+  [data-page="crm"] .empty-state {
+    padding: 60px 20px !important;
     text-align: center;
-    padding: 60px 20px;
   }
   
-  .empty-state-mobile .icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 20px;
-    opacity: 0.3;
+  /* Spacing adjustments */
+  [data-page="customers"] .space-y-6 > * + *,
+  [data-page="crm"] .space-y-6 > * + * {
+    margin-top: 16px !important;
   }
   
-  .empty-state-mobile .title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1d1d1f;
-    margin-bottom: 8px;
+  [data-page="customers"] .space-y-4 > * + *,
+  [data-page="crm"] .space-y-4 > * + * {
+    margin-top: 12px !important;
   }
   
-  .empty-state-mobile .description {
-    font-size: 15px;
-    color: #86868b;
-    line-height: 1.5;
+  /* Grid improvements */
+  [data-page="customers"] .grid,
+  [data-page="crm"] .grid {
+    gap: 12px !important;
   }
   
-  /* Loading skeleton */
-  .skeleton-mobile {
-    background: linear-gradient(
-      90deg,
-      rgba(0, 0, 0, 0.04) 0%,
-      rgba(0, 0, 0, 0.08) 50%,
-      rgba(0, 0, 0, 0.04) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 8px;
+  /* Input focus states */
+  [data-page="customers"] input:focus,
+  [data-page="crm"] input:focus,
+  [data-page="customers"] select:focus,
+  [data-page="crm"] select:focus {
+    ring-width: 0 !important;
+    ring-offset-width: 0 !important;
+    border-color: rgba(102, 126, 234, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
   }
   
-  @keyframes skeleton-loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
+  /* Remove default focus rings */
+  [data-page="customers"] *:focus-visible,
+  [data-page="crm"] *:focus-visible {
+    outline: none !important;
   }
   
-  /* Swipe actions */
-  .swipe-actions {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-    transform: translateX(-100%);
-    transition: transform 0.3s;
-  }
-  
-  .swipe-actions.visible {
-    transform: translateX(0);
-  }
-  
-  .swipe-action {
-    width: 60px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-  }
-  
-  .swipe-action.delete {
-    background: #ff3b30;
-  }
-  
-  .swipe-action.edit {
-    background: #007aff;
+  /* Touch feedback for all interactive elements */
+  [data-page="customers"] button:active,
+  [data-page="customers"] a:active,
+  [data-page="crm"] button:active,
+  [data-page="crm"] a:active {
+    opacity: 0.7;
+    transition: opacity 0.1s;
   }
 }

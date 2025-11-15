@@ -723,7 +723,7 @@ const Customers = () => {
         <PageCustomizer
           pageId="customers-page"
         >
-          <div className="space-y-6 p-4">
+          <div className="space-y-6 p-4" data-page="customers">
           {/* Mobile Header */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">العملاء</h1>
@@ -748,6 +748,7 @@ const Customers = () => {
             <div className="relative">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
+                type="search"
                 placeholder="البحث عن العملاء..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

@@ -27,7 +27,7 @@ export const MobileCustomerCard: React.FC<MobileCustomerCardProps> = ({
   canDelete = false
 }) => {
   return (
-    <Card className="hover:shadow-lg transition-all duration-200 border-border/50 active:scale-[0.98] touch-manipulation">
+    <Card className="mobile-customer-card hover:shadow-lg transition-all duration-200 border-border/50 active:scale-[0.98] touch-manipulation bg-white rounded-xl shadow-sm mb-3">
       <CardContent className="p-4 space-y-3">
         {/* Header with customer info and actions */}
         <div className="flex items-start justify-between gap-3">
@@ -45,7 +45,7 @@ export const MobileCustomerCard: React.FC<MobileCustomerCardProps> = ({
                 <CustomerDisplayName 
                   customer={customer} 
                   showBadges={false}
-                  className="font-semibold text-base leading-tight"
+                  className="customer-name font-semibold text-base leading-tight"
                 />
                 {customer.is_blacklisted && (
                   <Badge variant="destructive" className="text-xs">
