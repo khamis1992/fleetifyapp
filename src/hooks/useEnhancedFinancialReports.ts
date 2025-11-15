@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
@@ -33,6 +34,7 @@ export const useEnhancedCustomerFinancialSummary = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['enhanced-customer-financial-summary', customerId]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
       // Get customer basic info
@@ -83,6 +85,7 @@ export const useCustomerFinancialSummary = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['customer-financial-summary', customerId]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
       // Mock data for now
@@ -118,6 +121,7 @@ export const useCustomersWithAging = () => {
   return useQuery({
     queryKey: getQueryKey(['customers-with-aging']),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return [];
 
       // Mock data for now
@@ -164,6 +168,7 @@ export const usePaymentAllocations = (paymentId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['payment-allocations', paymentId]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !paymentId) return [];
 
       // Mock data for now
@@ -243,6 +248,7 @@ export const useFinancialObligationsWithDetails = (filters?: {
   return useQuery({
     queryKey: getQueryKey(['financial-obligations-with-details', JSON.stringify(filters)]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return [];
 
       // Mock data for now
@@ -301,6 +307,7 @@ export const useEnhancedFinancialReports = (
   return useQuery({
     queryKey: getQueryKey(['enhanced-financial-reports', reportType, startDate, endDate]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId) return null;
 
       // Fetch real accounting data from database
@@ -598,6 +605,7 @@ export const useDetailedCustomerEnhancedData = (customerId?: string) => {
   return useQuery({
     queryKey: getQueryKey(['detailed-customer-enhanced-data', customerId]),
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
       if (!companyId || !customerId) return null;
 
       // Return mock data for now

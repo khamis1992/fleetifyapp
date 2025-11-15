@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +62,7 @@ export const useCreateVehicleInsurance = () => {
 
   return useMutation({
     mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+      Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) {
         throw new Error('Company ID is required');
       }
@@ -82,6 +84,7 @@ export const useCreateVehicleInsurance = () => {
       return data;
     },
     onSuccess: (data) => {
+      Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
       toast({
         title: "تم إضافة التأمين",
@@ -105,6 +108,7 @@ export const useUpdateVehicleInsurance = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<VehicleInsurance> }) => {
+      Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Mutation started", level: "info" });
       const { data: result, error } = await supabase
         .from('vehicle_insurance')
         .update(data)
@@ -120,6 +124,7 @@ export const useUpdateVehicleInsurance = () => {
       return result;
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
       toast({
         title: "تم تحديث التأمين",

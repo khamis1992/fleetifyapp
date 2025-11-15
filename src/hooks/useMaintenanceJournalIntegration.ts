@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import * as Sentry from "@sentry/react";
 import { useToast } from '@/hooks/use-toast';
 
 /**

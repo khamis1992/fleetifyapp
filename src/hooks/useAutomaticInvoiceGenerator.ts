@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { toast } from 'sonner';

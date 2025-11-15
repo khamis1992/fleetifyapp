@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -203,7 +204,7 @@ export const useInvoiceScanner = (options: UseInvoiceScannerOptions = {}) => {
         user_feedback: feedback
       });
 
-      if (error) throw error;
+      if (error) { Sentry.captureException(error, { tags: { feature: "invoicescanner" } }); throw error; }
 
       // Update local scan history
       setScanHistory(prev => 

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
@@ -52,6 +53,7 @@ export const useChartOfAccounts = () => {
   return useQuery({
     queryKey: ["chartOfAccounts", companyId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       console.log('🔍 [CHART_OF_ACCOUNTS] Fetching with filter:', filter)
       
       if (authError) {
@@ -124,6 +126,7 @@ export const useCreateAccount = () => {
       description?: string
       current_balance?: number
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       // Validation
       if (!accountData.account_code.trim()) {
         throw new Error("كود الحساب مطلوب")
@@ -197,6 +200,7 @@ export const useCreateAccount = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
       toast.success("تم إنشاء الحساب بنجاح")
     },
@@ -225,6 +229,7 @@ export const useUpdateAccount = () => {
       current_balance?: number
       is_active?: boolean
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       const { data, error } = await supabase
         .from("chart_of_accounts")
         .update(accountData)
@@ -236,6 +241,7 @@ export const useUpdateAccount = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
       toast.success("تم تحديث الحساب بنجاح")
     },
@@ -250,6 +256,7 @@ export const useDeleteAccount = () => {
   
   return useMutation({
     mutationFn: async (accountId: string) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       console.log('🗑️ [FINANCE] Deleting account:', accountId);
       
       // Use the new soft delete function
@@ -265,6 +272,7 @@ export const useDeleteAccount = () => {
       return data; // Returns true for hard delete, false for soft delete
     },
     onSuccess: (wasHardDeleted) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] })
       toast.success(
         wasHardDeleted 
@@ -286,6 +294,7 @@ export const useJournalEntries = (filters?: { status?: string; dateFrom?: string
   return useQuery({
     queryKey: ["journalEntries", user?.profile?.company_id, filters],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       let query = supabase
         .from("journal_entries")
         .select("*")
@@ -314,6 +323,7 @@ export const useJournalEntryLines = (journalEntryId: string) => {
   return useQuery({
     queryKey: ["journalEntryLines", journalEntryId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       const { data, error } = await supabase
         .from("journal_entry_lines")
         .select(`
@@ -357,6 +367,7 @@ export const useCreateJournalEntry = () => {
         credit_amount?: number
       }[]
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
       // UUID sanitization function for main entry fields
@@ -493,6 +504,7 @@ export const useCreateJournalEntry = () => {
       return entry
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["journalEntries"] })
       toast.success("تم إنشاء القيد المحاسبي بنجاح")
     },
@@ -524,6 +536,7 @@ export const useInvoices = (filters?: { type?: string; status?: string }) => {
   return useQuery({
     queryKey: ["invoices", user?.profile?.company_id, filters],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       let query = supabase
         .from("invoices")
         .select("*")
@@ -568,6 +581,7 @@ export const useCreateInvoice = () => {
       terms?: string
       contract_id?: string
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
       const { data, error } = await supabase
@@ -601,6 +615,7 @@ export const useCreateInvoice = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["invoices"] })
       toast.success("تم إنشاء الفاتورة بنجاح")
     },
@@ -638,6 +653,7 @@ export const useUpdateInvoice = () => {
         fixed_asset_id?: string
       }
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
 
       const updateData: Record<string, unknown> = {
@@ -677,6 +693,7 @@ export const useUpdateInvoice = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["invoices"] })
       toast.success("تم تحديث الفاتورة بنجاح")
     },
@@ -693,6 +710,7 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
   return useQuery({
     queryKey: ["payments", companyId, filters],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       console.log('🔍 [PAYMENTS] Starting fetch with filters:', filters)
       
       if (!user?.id) {
@@ -804,6 +822,7 @@ export const useFinancialSummary = () => {
   return useQuery({
     queryKey: ["financialSummary", user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       // Get current month data
       const currentMonth = new Date().toISOString().slice(0, 7) + '-01'
       const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10)
@@ -852,12 +871,13 @@ export const useDefaultChartOfAccounts = () => {
   return useQuery({
     queryKey: ['default-chart-of-accounts'],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       const { data, error } = await supabase
         .from('default_chart_of_accounts')
         .select('*')
         .order('account_level, sort_order, account_code');
 
-      if (error) throw error;
+      if (error) { Sentry.captureException(error, { tags: { feature: "finance" } }); throw error; }
       return data;
     },
   });
@@ -869,13 +889,15 @@ export const useCopyDefaultAccounts = () => {
 
   return useMutation({
     mutationFn: async (companyId: string) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       const { error } = await supabase.rpc('copy_default_accounts_to_company', {
         target_company_id: companyId
       });
 
-      if (error) throw error;
+      if (error) { Sentry.captureException(error, { tags: { feature: "finance" } }); throw error; }
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
       toast.success('تم نسخ دليل الحسابات الافتراضي بنجاح');
     },
@@ -893,6 +915,7 @@ export const useCleanupInactiveAccounts = () => {
 
   return useMutation({
     mutationFn: async (daysOld: number = 30) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) throw new Error("Company ID is required");
       
       const { data, error } = await supabase.rpc('cleanup_inactive_accounts', {
@@ -900,10 +923,11 @@ export const useCleanupInactiveAccounts = () => {
         days_old: daysOld
       });
 
-      if (error) throw error;
+      if (error) { Sentry.captureException(error, { tags: { feature: "finance" } }); throw error; }
       return data; // Returns count of deleted accounts
     },
     onSuccess: (deletedCount) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
       toast.success(`تم حذف ${deletedCount} حساب غير نشط من قاعدة البيانات`);
     },
@@ -932,6 +956,7 @@ export const useCreateCostCenter = () => {
       budget_amount?: number
       actual_amount?: number
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) throw new Error("Company ID is required")
       
       const { data, error } = await supabase
@@ -948,6 +973,7 @@ export const useCreateCostCenter = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["costCenters"] })
       toast.success("تم إنشاء مركز التكلفة بنجاح")
     },
@@ -972,6 +998,7 @@ export const useUpdateCostCenter = () => {
       actual_amount?: number
       is_active?: boolean
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) throw new Error("Company ID is required")
       
       const { data, error } = await supabase
@@ -986,6 +1013,7 @@ export const useUpdateCostCenter = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["costCenters"] })
       toast.success("تم تحديث مركز التكلفة بنجاح")
     },
@@ -1001,6 +1029,7 @@ export const useDeleteCostCenter = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) throw new Error("Company ID is required")
       
       const { data, error } = await supabase
@@ -1015,6 +1044,7 @@ export const useDeleteCostCenter = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["costCenters"] })
       toast.success("تم حذف مركز التكلفة بنجاح")
     },
@@ -1032,6 +1062,7 @@ export const useFixedAssets = () => {
   return useQuery({
     queryKey: ["fixedAssets", companyId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       if (!companyId) {
         throw new Error("Company ID is required")
       }
@@ -1072,6 +1103,7 @@ export const useCreateFixedAsset = () => {
       depreciation_account_id?: string
       notes?: string
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id) throw new Error("Company ID is required")
       
       const bookValue = assetData.purchase_cost - (assetData.salvage_value || 0)
@@ -1094,6 +1126,7 @@ export const useCreateFixedAsset = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
       toast.success("تم إنشاء الأصل الثابت بنجاح")
     },
@@ -1125,6 +1158,7 @@ export const useUpdateFixedAsset = () => {
       depreciation_account_id?: string
       notes?: string
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       const updateData: Record<string, unknown> = { ...assetData }
 
       // Recalculate book value if purchase cost or salvage value changed
@@ -1153,6 +1187,7 @@ export const useUpdateFixedAsset = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
       toast.success("تم تحديث الأصل الثابت بنجاح")
     },
@@ -1167,6 +1202,7 @@ export const useDeleteFixedAsset = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       const { error } = await supabase
         .from("fixed_assets")
         .update({ is_active: false })
@@ -1175,6 +1211,7 @@ export const useDeleteFixedAsset = () => {
       if (error) throw error
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["fixedAssets"] })
       toast.success("تم حذف الأصل الثابت بنجاح")
     },
@@ -1191,6 +1228,7 @@ export const useBudgets = () => {
   return useQuery({
     queryKey: ["budgets", user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       const { data, error } = await supabase
         .from("budgets")
         .select("*")
@@ -1216,6 +1254,7 @@ export const useCreateBudget = () => {
       total_expenses?: number
       notes?: string
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
       const netIncome = (budgetData.total_revenue || 0) - (budgetData.total_expenses || 0)
@@ -1236,6 +1275,7 @@ export const useCreateBudget = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["budgets"] })
       toast.success("تم إنشاء الموازنة بنجاح")
     },
@@ -1259,6 +1299,7 @@ export const useUpdateBudget = () => {
       notes?: string
       status?: 'draft' | 'approved' | 'active' | 'closed'
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
       const netIncome = (data.total_revenue || 0) - (data.total_expenses || 0)
@@ -1284,6 +1325,7 @@ export const useUpdateBudget = () => {
       return updatedBudget
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["budgets"] })
       toast.success("تم تحديث الموازنة بنجاح")
     },
@@ -1300,6 +1342,7 @@ export const useBankTransactions = () => {
   return useQuery({
     queryKey: ["bankTransactions", user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Fetching data", level: "info" });
       const { data, error } = await supabase
         .from("bank_transactions")
         .select(`
@@ -1333,6 +1376,7 @@ export const useCreateBankTransaction = () => {
       counterpart_bank_id?: string
       status?: 'pending' | 'completed' | 'cancelled'
     }) => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Mutation started", level: "info" });
       if (!user?.profile?.company_id || !user?.id) throw new Error("User data is required")
       
       const { data, error } = await supabase
@@ -1350,6 +1394,7 @@ export const useCreateBankTransaction = () => {
       return data
     },
     onSuccess: () => {
+      Sentry.addBreadcrumb({ category: "finance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ["bankTransactions"] })
       toast.success("تم إنشاء الحركة البنكية بنجاح")
     },

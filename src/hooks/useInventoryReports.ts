@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -248,6 +249,7 @@ export const useInventoryValuationSummary = () => {
   return useQuery({
     queryKey: ['inventory-valuation-summary', user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "inventoryreports", message: "Fetching data", level: "info" });
       if (!user?.profile?.company_id) {
         return null;
       }
@@ -313,6 +315,7 @@ export const useInventoryAgingSummary = () => {
   return useQuery({
     queryKey: ['inventory-aging-summary', user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "inventoryreports", message: "Fetching data", level: "info" });
       if (!user?.profile?.company_id) {
         return [];
       }
@@ -351,6 +354,7 @@ export const useInventoryTurnoverSummary = () => {
   return useQuery({
     queryKey: ['inventory-turnover-summary', user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "inventoryreports", message: "Fetching data", level: "info" });
       if (!user?.profile?.company_id) {
         return [];
       }
@@ -389,6 +393,7 @@ export const useStockAlertSummary = () => {
   return useQuery({
     queryKey: ['inventory-alert-summary', user?.profile?.company_id],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: "inventoryreports", message: "Fetching data", level: "info" });
       if (!user?.profile?.company_id) {
         return [];
       }
