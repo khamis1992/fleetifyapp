@@ -1,0 +1,409 @@
+/**
+ * Native-Like Mobile Experience for Specific Pages
+ * iOS/Android inspired design for Customers and CRM pages
+ */
+
+@media (max-width: 768px) {
+  
+  /* ==========================================
+     CUSTOMERS PAGE - Native Mobile Experience
+     ========================================== */
+  
+  /* Page container */
+  [data-page="customers"],
+  .customers-page {
+    background: #f5f5f7;
+    min-height: 100vh;
+  }
+  
+  /* Header section */
+  [data-page="customers"] header,
+  .customers-page header {
+    background: white;
+    padding: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  /* Search bar - iOS style */
+  [data-page="customers"] input[type="search"],
+  .customers-page input[type="search"] {
+    background: rgba(0, 0, 0, 0.06);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 16px;
+    width: 100%;
+    transition: background 0.2s;
+  }
+  
+  [data-page="customers"] input[type="search"]:focus,
+  .customers-page input[type="search"]:focus {
+    background: rgba(0, 0, 0, 0.08);
+    outline: none;
+  }
+  
+  /* Customer cards - Native style */
+  [data-page="customers"] .customer-card,
+  .customers-page .customer-card,
+  .mobile-customer-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  [data-page="customers"] .customer-card:active,
+  .customers-page .customer-card:active,
+  .mobile-customer-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Customer avatar */
+  [data-page="customers"] .customer-avatar,
+  .customers-page .customer-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 18px;
+  }
+  
+  /* Customer name */
+  [data-page="customers"] .customer-name,
+  .customers-page .customer-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 4px;
+  }
+  
+  /* Customer details */
+  [data-page="customers"] .customer-detail,
+  .customers-page .customer-detail {
+    font-size: 14px;
+    color: #86868b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  
+  /* Action buttons */
+  [data-page="customers"] .customer-actions,
+  .customers-page .customer-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  [data-page="customers"] .customer-actions button,
+  .customers-page .customer-actions button {
+    flex: 1;
+    min-height: 36px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: white;
+    transition: all 0.2s;
+  }
+  
+  [data-page="customers"] .customer-actions button:active,
+  .customers-page .customer-actions button:active {
+    transform: scale(0.96);
+    background: rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Floating action button */
+  [data-page="customers"] .fab,
+  .customers-page .fab {
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    z-index: 20;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  [data-page="customers"] .fab:active,
+  .customers-page .fab:active {
+    transform: scale(0.92);
+  }
+  
+  /* Table wrapper - hide on mobile, show cards instead */
+  [data-page="customers"] table,
+  .customers-page table {
+    display: none;
+  }
+  
+  /* Stats cards */
+  [data-page="customers"] .stats-card,
+  .customers-page .stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  [data-page="customers"] .stats-card .stat-value,
+  .customers-page .stats-card .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1d1d1f;
+    margin-bottom: 4px;
+  }
+  
+  [data-page="customers"] .stats-card .stat-label,
+  .customers-page .stats-card .stat-label {
+    font-size: 14px;
+    color: #86868b;
+  }
+  
+  /* ==========================================
+     CRM PAGE - Native Mobile Experience
+     ========================================== */
+  
+  /* Page container */
+  [data-page="crm"],
+  .crm-page {
+    background: #f5f5f7;
+    min-height: 100vh;
+  }
+  
+  /* CRM Header */
+  [data-page="crm"] header,
+  .crm-page header {
+    background: white;
+    padding: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  /* CRM Follow-up cards */
+  [data-page="crm"] .followup-card,
+  .crm-page .followup-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #667eea;
+  }
+  
+  /* Priority indicator */
+  [data-page="crm"] .priority-high,
+  .crm-page .priority-high {
+    border-left-color: #ff3b30;
+  }
+  
+  [data-page="crm"] .priority-medium,
+  .crm-page .priority-medium {
+    border-left-color: #ff9500;
+  }
+  
+  [data-page="crm"] .priority-low,
+  .crm-page .priority-low {
+    border-left-color: #34c759;
+  }
+  
+  /* Call button - iOS style */
+  [data-page="crm"] .call-button,
+  .crm-page .call-button {
+    background: #34c759;
+    color: white;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-weight: 600;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  
+  [data-page="crm"] .call-button:active,
+  .crm-page .call-button:active {
+    transform: scale(0.96);
+    background: #2fb84d;
+  }
+  
+  /* ==========================================
+     GENERAL MOBILE ENHANCEMENTS
+     ========================================== */
+  
+  /* Section headers */
+  .section-header-mobile {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1d1d1f;
+    margin: 20px 0 12px 0;
+    padding: 0 16px;
+  }
+  
+  /* List separator */
+  .list-separator {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 8px 0;
+  }
+  
+  /* Badge - iOS style */
+  .badge-mobile {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.06);
+    color: #1d1d1f;
+  }
+  
+  .badge-mobile.success {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+  }
+  
+  .badge-mobile.warning {
+    background: rgba(255, 149, 0, 0.15);
+    color: #ff9500;
+  }
+  
+  .badge-mobile.danger {
+    background: rgba(255, 59, 48, 0.15);
+    color: #ff3b30;
+  }
+  
+  /* Pull to refresh indicator */
+  .pull-refresh-indicator {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: top 0.3s;
+  }
+  
+  .pull-refresh-indicator.pulling {
+    top: 10px;
+  }
+  
+  /* Empty state */
+  .empty-state-mobile {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  
+  .empty-state-mobile .icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    opacity: 0.3;
+  }
+  
+  .empty-state-mobile .title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 8px;
+  }
+  
+  .empty-state-mobile .description {
+    font-size: 15px;
+    color: #86868b;
+    line-height: 1.5;
+  }
+  
+  /* Loading skeleton */
+  .skeleton-mobile {
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.04) 0%,
+      rgba(0, 0, 0, 0.08) 50%,
+      rgba(0, 0, 0, 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+  
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  
+  /* Swipe actions */
+  .swipe-actions {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+  }
+  
+  .swipe-actions.visible {
+    transform: translateX(0);
+  }
+  
+  .swipe-action {
+    width: 60px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+  }
+  
+  .swipe-action.delete {
+    background: #ff3b30;
+  }
+  
+  .swipe-action.edit {
+    background: #007aff;
+  }
+}
