@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
+import * as Sentry from '@sentry/react'
 
 export interface Contract {
   id: string;
@@ -61,6 +62,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
   return useQuery({
     queryKey: getQueryKey(["contracts"], [targetCompanyId, customerId, vehicleId]),
     queryFn: async ({ signal }) => {
+      Sentry.addBreadcrumb({ category: 'contracts', message: 'Fetching contracts', level: 'info', data: { targetCompanyId, customerId, vehicleId } });
       if (!targetCompanyId) {
         throw new Error("No company access available")
       }
@@ -109,11 +111,13 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
 
       if (error) {
         console.error("Error fetching contracts:", error)
+        Sentry.captureException(error, { tags: { feature: 'contracts', action: 'fetch_contracts' } });
         throw error
       }
 
       // Optimized: Fetch all payments in a single query instead of N+1
       if (!data || data.length === 0) {
+        Sentry.addBreadcrumb({ category: 'contracts', message: 'No contracts found', level: 'info' });
         return []
       }
 
@@ -144,6 +148,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
       }))
 
+      Sentry.addBreadcrumb({ category: 'contracts', message: 'Contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });
       return contractsWithPayments
     },
     enabled: !!targetCompanyId,
@@ -163,6 +168,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
   return useQuery({
     queryKey: getQueryKey(["active-contracts"], [customerId, vendorId, targetCompanyId]),
     queryFn: async ({ signal }): Promise<Contract[]> => {
+      Sentry.addBreadcrumb({ category: 'contracts', message: 'Fetching active contracts', level: 'info', data: { targetCompanyId, customerId, vendorId } });
       if (!targetCompanyId) {
         throw new Error("No company access available")
       }
@@ -211,11 +217,13 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
 
       if (error) {
         console.error("Error fetching contracts:", error)
+        Sentry.captureException(error, { tags: { feature: 'contracts', action: 'fetch_contracts' } });
         throw error
       }
 
       // Optimized: Fetch all payments in a single query instead of N+1
       if (!data || data.length === 0) {
+        Sentry.addBreadcrumb({ category: 'contracts', message: 'No contracts found', level: 'info' });
         return []
       }
 
@@ -246,6 +254,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
       }))
 
+      Sentry.addBreadcrumb({ category: 'contracts', message: 'Active contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });
       return contractsWithPayments
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
