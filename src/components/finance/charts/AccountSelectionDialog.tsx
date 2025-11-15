@@ -45,7 +45,7 @@ export const AccountSelectionDialog: React.FC<AccountSelectionDialogProps> = ({
   const allAccounts = useMemo(() => accounts, [accounts]);
 
   // Reset selection when dialog closes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!open) {
       setSelectedAccountIds(new Set());
       setSearchTerm('');

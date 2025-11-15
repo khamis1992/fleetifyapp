@@ -68,7 +68,7 @@ export function TenantForm({ tenant, onSubmit, onCancel, isLoading, initialData 
   });
 
   // Update form when initialData changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialData) {
       form.reset({
         full_name: initialData.full_name || "",

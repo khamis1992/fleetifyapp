@@ -22,7 +22,7 @@ interface VendorPerformance {
 export const VendorPerformanceWidget: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: vendorPerformance, isLoading } = useQuery({
     queryKey: ['vendor-performance-top', user?.profile?.company_id],
@@ -73,7 +73,7 @@ export const VendorPerformanceWidget: React.FC = () => {
   };
 
   // Prepare export data
-  const exportData = useMemo(() => {
+  const exportData = React.useMemo(() => {
     return vendorPerformance?.map(vendor => ({
       'المورد': vendor.vendor_name_ar || vendor.vendor_name,
       'التقييم': vendor.average_rating.toFixed(1),

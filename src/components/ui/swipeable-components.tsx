@@ -52,7 +52,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({
   } = usePullToRefresh(onRefresh || (() => {}), 100)
 
   // Combine refs
-  const combinedRef = useCallback((node: HTMLDivElement) => {
+  const combinedRef = React.useCallback((node: HTMLDivElement) => {
     if (swipeRef.current !== node) {
       ;(swipeRef as any).current = node
     }

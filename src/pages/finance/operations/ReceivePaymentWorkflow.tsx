@@ -28,7 +28,7 @@ const SelectCustomerStep: React.FC<WorkflowStepProps> = ({ data, onUpdate }) => 
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchCustomers = async () => {
       if (!user?.id) return;
 

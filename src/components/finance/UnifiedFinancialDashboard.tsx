@@ -111,7 +111,7 @@ export const UnifiedFinancialDashboard = () => {
   
   const { data: overview, isLoading, error } = useEnhancedFinancialOverview(companyId);
   
-  useEffect(() => {
+  React.useEffect(() => {
     if (error) {
       console.error('[UnifiedFinancialDashboard] Error loading financial data:', error);
     }

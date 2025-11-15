@@ -17,8 +17,8 @@ import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip
 type TimePeriod = 'today' | 'week' | 'month';
 
 export const RentalAnalyticsWidget: React.FC = () => {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [timePeriod, setTimePeriod] = React.useState<TimePeriod>('month');
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
@@ -27,7 +27,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   const isLoading = contractsLoading || vehiclesLoading || paymentsLoading;
 
   // Filter contracts by business_type = 'car_rental' and time period
-  const rentalContracts = useMemo(() => {
+  const rentalContracts = React.useMemo(() => {
     if (!contracts) return [];
 
     const now = new Date();
@@ -56,7 +56,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [contracts, timePeriod]);
 
   // Calculate fleet utilization rate
-  const utilizationRate = useMemo(() => {
+  const utilizationRate = React.useMemo(() => {
     if (!vehicles || vehicles.length === 0) return 0;
 
     const rentedCount = vehicles.filter(v => v.status === 'rented').length;
@@ -64,7 +64,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [vehicles]);
 
   // Calculate average rental duration
-  const avgRentalDuration = useMemo(() => {
+  const avgRentalDuration = React.useMemo(() => {
     if (rentalContracts.length === 0) return 0;
 
     const totalDays = rentalContracts.reduce((sum, contract) => {
@@ -78,7 +78,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [rentalContracts]);
 
   // Calculate revenue per vehicle per day
-  const revenuePerVehiclePerDay = useMemo(() => {
+  const revenuePerVehiclePerDay = React.useMemo(() => {
     if (!vehicles || vehicles.length === 0 || !payments) return 0;
 
     // Filter payments for the selected period
@@ -107,7 +107,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [vehicles, payments, timePeriod]);
 
   // Most popular vehicle types
-  const popularVehicleTypes = useMemo(() => {
+  const popularVehicleTypes = React.useMemo(() => {
     if (!rentalContracts || !vehicles) return [];
 
     const typeCounts: Record<string, number> = {};
@@ -126,7 +126,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [rentalContracts, vehicles]);
 
   // Calculate trend data for chart (last 7 days)
-  const trendData = useMemo(() => {
+  const trendData = React.useMemo(() => {
     if (!contracts || !vehicles) return [];
 
     const data = [];
@@ -158,7 +158,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [contracts, vehicles]);
 
   // Calculate comparison to previous period
-  const utilizationChange = useMemo(() => {
+  const utilizationChange = React.useMemo(() => {
     if (trendData.length < 2) return 0;
     const current = trendData[trendData.length - 1].utilization;
     const previous = trendData[0].utilization;
@@ -166,7 +166,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
   }, [trendData]);
 
   // Prepare export data
-  const exportData = useMemo(() => {
+  const exportData = React.useMemo(() => {
     return [
       { المؤشر: 'معدل الاستخدام', القيمة: `${utilizationRate}%` },
       { المؤشر: 'متوسط مدة التأجير', القيمة: `${avgRentalDuration} يوم` },

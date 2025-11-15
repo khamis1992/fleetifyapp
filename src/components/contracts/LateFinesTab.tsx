@@ -28,10 +28,10 @@ export const LateFinesTab: React.FC<LateFinesTabProps> = ({ contract }) => {
   const { formatCurrency } = useCurrencyFormatter();
   const { data: lateFineSettings, isLoading } = useLateFineSettings();
   const { mutate: calculateFines, isPending: isCalculating } = useCalculateLateFines();
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
 
   // حساب الغرامة للعقد الحالي
-  const fineCalculation = useMemo(() => {
+  const fineCalculation = React.useMemo(() => {
     if (!contract || !lateFineSettings) return null;
     return calculateLateFine(
       contract.contract_amount,

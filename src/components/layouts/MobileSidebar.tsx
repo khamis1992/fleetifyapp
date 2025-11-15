@@ -41,7 +41,7 @@ export function MobileSidebar() {
     );
 
   // Filter navigation items based on module context and permissions
-  const filteredNavigationItems = useMemo(() => {
+  const filteredNavigationItems = React.useMemo(() => {
     return PRIMARY_NAVIGATION.filter((section) => {
       // Check permissions
       if (section.requiresSuperAdmin && !hasGlobalAccess) return false;

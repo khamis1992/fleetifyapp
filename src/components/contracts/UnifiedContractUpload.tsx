@@ -18,8 +18,8 @@ interface UnifiedContractUploadProps {
 }
 
 export function UnifiedContractUpload({ open, onOpenChange, onUploadComplete }: UnifiedContractUploadProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'results'>('upload');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [currentStep, setCurrentStep] = React.useState<'upload' | 'processing' | 'results'>('upload');
   
   const { 
     uploadContracts,

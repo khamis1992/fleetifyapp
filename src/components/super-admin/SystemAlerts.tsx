@@ -14,7 +14,7 @@ interface Alert {
 }
 
 export const SystemAlerts: React.FC = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([
+  const [alerts, setAlerts] = React.useState<Alert[]>([
     {
       id: '1',
       type: 'warning',

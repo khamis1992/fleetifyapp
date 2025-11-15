@@ -32,11 +32,11 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
   onExport,
   conditionReportId
 }) => {
-  const [showDialog, setShowDialog] = useState(false);
-  const [selectedPoint, setSelectedPoint] = useState<DamagePoint | null>(null);
-  const [pendingPoint, setPendingPoint] = useState<{x: number, y: number} | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const diagramRef = useRef<HTMLDivElement>(null);
+  const [showDialog, setShowDialog] = React.useState(false);
+  const [selectedPoint, setSelectedPoint] = React.useState<DamagePoint | null>(null);
+  const [pendingPoint, setPendingPoint] = React.useState<{x: number, y: number} | null>(null);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const diagramRef = React.useRef<HTMLDivElement>(null);
   const { exportDamageReport, isExporting: isExportingReport } = useDamageReportExport();
 
   const handleDiagramClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -57,7 +57,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
     setShowDialog(true);
   };
 
-  const exportDiagram = useCallback(async () => {
+  const exportDiagram = React.useCallback(async () => {
     if (!diagramRef.current || !onExport) return;
     
     setIsExporting(true);
@@ -372,9 +372,9 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
   onDelete,
   onCancel
 }) => {
-  const [severity, setSeverity] = useState<'minor' | 'moderate' | 'severe'>(point?.severity || 'minor');
-  const [description, setDescription] = useState(point?.description || '');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [severity, setSeverity] = React.useState<'minor' | 'moderate' | 'severe'>(point?.severity || 'minor');
+  const [description, setDescription] = React.useState(point?.description || '');
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
 
   // Smart damage suggestions based on location on the vehicle
   const getDamageSuggestions = () => {

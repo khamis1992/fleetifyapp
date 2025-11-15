@@ -50,8 +50,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comment, setComment] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { formatCurrency } = useCurrencyFormatter();
   const { logAudit } = useAuditLog();
 

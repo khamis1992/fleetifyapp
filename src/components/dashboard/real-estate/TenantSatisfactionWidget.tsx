@@ -13,7 +13,7 @@ import { EmptyStateCompact } from '@/components/ui/EmptyState';
 import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const TenantSatisfactionWidget: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
 
@@ -138,7 +138,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
   };
 
   // Prepare export data
-  const exportData = useMemo(() => [
+  const exportData = React.useMemo(() => [
     { المؤشر: 'معدل الرضا العام', القيمة: satisfactionScore.toFixed(1) },
     { المؤشر: 'متوسط وقت الاستجابة', القيمة: `${avgResponseTime} يوم` },
     { المؤشر: 'التقييم', القيمة: getSatisfactionLabel(satisfactionScore) },

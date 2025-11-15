@@ -17,7 +17,7 @@ interface Hero195Props {
 }
 
 export function Hero195({ className }: Hero195Props) {
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = React.useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

@@ -68,7 +68,7 @@ const NativeButton = React.forwardRef<HTMLButtonElement, NativeButtonProps>(
     ...props 
   }, ref) => {
     const { vibrate } = useHapticFeedback()
-    const [isPressed, setIsPressed] = useState(false)
+    const [isPressed, setIsPressed] = React.useState(false)
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (loading || disabled) return

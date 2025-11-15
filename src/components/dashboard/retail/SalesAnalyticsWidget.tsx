@@ -33,7 +33,7 @@ interface SalesAnalyticsWidgetProps {
 export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Get today's date range
   const today = new Date();
@@ -161,7 +161,7 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
     };
   }, [todaySales, yesterdaySales, payments, todayStart, todayEnd, yesterdayStart, yesterdayEnd, weekStart, monthStart]);
 
-  const exportData = useMemo(() =>
+  const exportData = React.useMemo(() =>
     analytics.hourlySales.map(item => ({
       'الساعة': item.hour,
       'الإيرادات': item.revenue,

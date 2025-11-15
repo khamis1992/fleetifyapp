@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ export const FinancialAnalyticsSection: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   
   // State for time period filter
-  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [timePeriod, setTimePeriod] = React.useState<'daily' | 'weekly' | 'monthly'>('monthly');
 
   // Fetch real customer data grouped by week
   const { data: customersWeeklyData, isLoading: customersLoading } = useQuery({

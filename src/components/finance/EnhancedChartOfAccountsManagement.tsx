@@ -73,7 +73,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const [isSystemCompany, setIsSystemCompany] = useState<boolean>(false);
   
-  useEffect(() => {
+  React.useEffect(() => {
     const checkCompanyType = async () => {
       if (!companyId) return;
 

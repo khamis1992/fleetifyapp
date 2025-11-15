@@ -58,7 +58,7 @@ export const QuickPurchaseOrderButton: React.FC<QuickPurchaseOrderButtonProps> =
   const createPO = useCreatePOFromLowStock();
 
   // Initialize form when dialog opens
-  useEffect(() => {
+  React.useEffect(() => {
     if (isOpen && item) {
       // Set default quantity to reorder quantity or min stock level
       setQuantity(item.reorder_quantity || item.min_stock_level || 1);

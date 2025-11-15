@@ -267,7 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Safety timeout to prevent infinite loading (reduced to 2 seconds since we load basic user immediately)
-  useEffect(() => {
+  React.useEffect(() => {
     mountedRef.current = true;
     
     console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');

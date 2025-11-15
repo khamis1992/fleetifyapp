@@ -125,7 +125,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   });
 
   // تحديث القيم عند تغيير البيانات الأولية
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialData) {
       Object.keys(initialData).forEach((key) => {
         const value = initialData[key as keyof PropertyFormData];

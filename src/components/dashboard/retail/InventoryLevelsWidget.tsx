@@ -28,7 +28,7 @@ interface InventoryLevelsWidgetProps {
 export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: inventoryItems = [], isLoading: loadingInventory } = useInventoryItems({
     is_active: true
@@ -130,7 +130,7 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
     };
   }, [inventoryItems, salesOrders]);
 
-  const exportData = useMemo(() =>
+  const exportData = React.useMemo(() =>
     analytics.categoryData.map(item => ({
       'الفئة': item.name,
       'القيمة': item.value

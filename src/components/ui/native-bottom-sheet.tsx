@@ -75,7 +75,7 @@ const NativeBottomSheetContent = React.forwardRef<
   const y = useMotionValue(0)
   const opacity = useTransform(y, [0, closeThreshold], [1, 0.5])
   
-  const [isDragging, setIsDragging] = useState(false)
+  const [isDragging, setIsDragging] = React.useState(false)
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsDragging(false)

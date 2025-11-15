@@ -71,8 +71,8 @@ const ResponsiveTable = React.forwardRef<HTMLTableElement, ResponsiveTableProps>
     ...props 
   }, ref) => {
     const { isMobile, isTablet } = useSimpleBreakpoint()
-    const [currentPage, setCurrentPage] = useState(1)
-    const [sortConfig, setSortConfig] = useState<{
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [sortConfig, setSortConfig] = React.useState<{
       key: string
       direction: 'asc' | 'desc'
     } | null>(null)
@@ -81,13 +81,13 @@ const ResponsiveTable = React.forwardRef<HTMLTableElement, ResponsiveTableProps>
     const shouldUseCardView = isMobile || cardView
 
     // Filter visible columns for tablet/desktop
-    const visibleColumns = useMemo(() => {
+    const visibleColumns = React.useMemo(() => {
       if (shouldUseCardView) return columns
       return columns.filter(col => !col.mobileHidden || !isMobile)
     }, [columns, shouldUseCardView, isMobile])
 
     // Sort data if sortConfig is set
-    const sortedData = useMemo(() => {
+    const sortedData = React.useMemo(() => {
       if (!sortConfig) return data
       
       return [...data].sort((a, b) => {

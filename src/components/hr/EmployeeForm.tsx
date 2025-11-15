@@ -145,7 +145,7 @@ export default function EmployeeForm({ onSubmit, isLoading, initialData }: Emplo
   });
 
   // Reset form when initialData changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialData) {
       form.reset({
         basic_salary: 0,

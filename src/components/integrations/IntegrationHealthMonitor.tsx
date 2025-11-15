@@ -34,7 +34,7 @@ interface IntegrationHealth {
 export const IntegrationHealthMonitor: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   // Check integration health
   const { data: healthStatus, isLoading, refetch } = useQuery({
@@ -153,7 +153,7 @@ export const IntegrationHealthMonitor: React.FC = () => {
   });
 
   // Calculate overall health
-  const overallHealth = useMemo(() => {
+  const overallHealth = React.useMemo(() => {
     if (!healthStatus || healthStatus.length === 0) return 'unknown';
 
     const errorCount = healthStatus.filter((check) => check.status === 'error').length;

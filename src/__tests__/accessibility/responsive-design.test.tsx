@@ -14,7 +14,7 @@ import React from 'react';
 
 // Mock responsive components
 const ResponsiveNavigation = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   return (
     <nav>

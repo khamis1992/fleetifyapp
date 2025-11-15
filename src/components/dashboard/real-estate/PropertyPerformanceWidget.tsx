@@ -14,7 +14,7 @@ type SortField = 'propertyName' | 'occupancyRate' | 'monthlyRent' | 'maintenance
 type SortDirection = 'asc' | 'desc';
 
 export const PropertyPerformanceWidget: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: reportsData, isLoading } = usePropertyReports();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
@@ -105,7 +105,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
   const propertyTypes = ['all', ...new Set(properties.map(p => p.propertyType))];
 
   // Prepare export data
-  const exportData = useMemo(() => [
+  const exportData = React.useMemo(() => [
     { المؤشر: 'متوسط العائد على الاستثمار', القيمة: `${avgROI.toFixed(1)}%` },
     { المؤشر: 'متوسط هامش الربح', القيمة: `${avgProfitMargin.toFixed(1)}%` },
     ...sortedProperties.map(p => ({

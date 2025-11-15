@@ -12,7 +12,7 @@ import { EmptyStateCompact } from '@/components/ui/EmptyState';
 import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const VacancyAnalysisWidget: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { data: stats, isLoading } = useRealEstateDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
   };
 
   // Prepare export data
-  const exportData = useMemo(() => [
+  const exportData = React.useMemo(() => [
     { المؤشر: 'معدل الشغور الحالي', القيمة: `${vacancyRate.toFixed(1)}%`, 'عدد الوحدات': vacantCount },
     { المؤشر: 'متوسط وقت التأجير', القيمة: `${avgTimeToFill} يوم` },
     { المؤشر: 'إيراد ضائع شهرياً', القيمة: formatCurrency(lostRevenuePerMonth) },

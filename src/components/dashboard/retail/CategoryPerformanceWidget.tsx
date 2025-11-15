@@ -32,7 +32,7 @@ interface CategoryPerformanceWidgetProps {
 export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading: loadingSales } = useSalesOrders({
     status: 'completed'
@@ -144,7 +144,7 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
     };
   }, [salesOrders, inventoryItems]);
 
-  const exportData = useMemo(() =>
+  const exportData = React.useMemo(() =>
     analytics.categories.map(item => ({
       'الفئة': item.name,
       'الإيرادات': item.revenue,

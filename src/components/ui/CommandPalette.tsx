@@ -66,10 +66,10 @@ export const CommandPalette: React.FC = () => {
     themeCommands,
   } = useCommandPalette();
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = React.useState('');
 
   // Filter commands based on search
-  const filteredCommands = useMemo(() => {
+  const filteredCommands = React.useMemo(() => {
     if (!search) return allCommands;
 
     const lowerSearch = search.toLowerCase();
@@ -82,7 +82,7 @@ export const CommandPalette: React.FC = () => {
   }, [search, allCommands]);
 
   // Group filtered commands by category
-  const groupedCommands = useMemo(() => {
+  const groupedCommands = React.useMemo(() => {
     const groups: Record<string, typeof filteredCommands> = {};
     filteredCommands.forEach((cmd) => {
       const category = cmd.category || 'أخرى';
@@ -95,7 +95,7 @@ export const CommandPalette: React.FC = () => {
   }, [filteredCommands]);
 
   // Get recent page commands
-  const recentCommands = useMemo(() => {
+  const recentCommands = React.useMemo(() => {
     return recentPages
       .map((path) => navigationCommands.find((cmd) => cmd.action.toString().includes(path)))
       .filter(Boolean)

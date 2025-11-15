@@ -72,7 +72,7 @@ export const PropertyOwnerForm: React.FC<PropertyOwnerFormProps> = ({
   });
 
   // Update form when initialData changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialData) {
       form.reset({
         full_name: initialData.full_name || '',

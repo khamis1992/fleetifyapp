@@ -28,7 +28,7 @@ interface CustomerInsightsWidgetProps {
 export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ className }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers({
     includeInactive: false
@@ -177,7 +177,7 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
     };
   }, [customers, salesOrders]);
 
-  const exportData = useMemo(() =>
+  const exportData = React.useMemo(() =>
     analytics.topCustomers.map(item => ({
       'اسم العميل': item.customerName,
       'إجمالي الإنفاق': item.totalSpent,

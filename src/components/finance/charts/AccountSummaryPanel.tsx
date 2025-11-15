@@ -34,7 +34,7 @@ export const AccountSummaryPanel: React.FC<AccountSummaryPanelProps> = ({
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
   
-  const stats = useMemo(() => {
+  const stats = React.useMemo(() => {
     const activeAccounts = accounts.filter(acc => acc.is_active);
     const inactiveAccounts = accounts.filter(acc => !acc.is_active);
     const systemAccounts = accounts.filter(acc => acc.is_system);

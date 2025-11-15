@@ -58,7 +58,7 @@ export function PaymentPreviewDialog({
   const [balanceHandling, setBalanceHandling] = useState<'ignore' | 'record_debt' | 'create_invoice'>('ignore');
 
   // Show diagnostic information if no valid items
-  useEffect(() => {
+  React.useEffect(() => {
     if (items.length === 0) {
       console.log('⚠️ لا توجد عناصر في معاينة المدفوعات');
     } else {

@@ -84,7 +84,7 @@ export const useScrollRestoration = (enabled = true) => {
  */
 export const useNavigationTransition = () => {
   const location = useLocation();
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isTransitioning, setIsTransitioning] = React.useState(false);
   const transitionTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {

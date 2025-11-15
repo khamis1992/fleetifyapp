@@ -50,7 +50,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
-  const actionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load recent commands from localStorage
   useEffect(() => {
@@ -271,7 +271,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   ];
 
   // Filter commands based on search
-  const filteredCommands = useMemo(() => {
+  const filteredCommands = React.useMemo(() => {
     if (!search) return commands;
 
     const searchLower = search.toLowerCase();
@@ -284,7 +284,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   }, [search]);
 
   // Group commands by category
-  const groupedCommands = useMemo(() => {
+  const groupedCommands = React.useMemo(() => {
     const groups: Record<string, CommandItem[]> = {};
 
     filteredCommands.forEach((cmd) => {
@@ -298,7 +298,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   }, [filteredCommands]);
 
   // Get recent commands
-  const recentCommandsList = useMemo(() => {
+  const recentCommandsList = React.useMemo(() => {
     return recentCommands
       .map((id) => commands.find((cmd) => cmd.id === id))
       .filter((cmd): cmd is CommandItem => cmd !== undefined)

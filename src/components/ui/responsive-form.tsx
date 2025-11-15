@@ -67,7 +67,7 @@ const ResponsiveForm = React.forwardRef<HTMLFormElement, ResponsiveFormProps>(
     const { isMobile, isTablet } = useSimpleBreakpoint()
 
     // Determine responsive layout
-    const responsiveLayout = useMemo(() => {
+    const responsiveLayout = React.useMemo(() => {
       if (layout === 'adaptive') {
         if (isMobile) return 'single'
         if (isTablet) return 'double'
@@ -77,7 +77,7 @@ const ResponsiveForm = React.forwardRef<HTMLFormElement, ResponsiveFormProps>(
     }, [layout, isMobile, isTablet])
 
     // Determine responsive density
-    const responsiveDensity = useMemo(() => {
+    const responsiveDensity = React.useMemo(() => {
       if (isMobile && density === 'spacious') return 'comfortable'
       if (isMobile && density === 'comfortable') return 'compact'
       return density
@@ -187,10 +187,10 @@ export const ResponsiveFormSection = React.forwardRef<
   ...props 
 }, ref) => {
   const { isMobile, isTablet } = useSimpleBreakpoint()
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const [isOpen, setIsOpen] = React.useState(defaultOpen)
 
   // Responsive column calculation
-  const responsiveColumns = useMemo(() => {
+  const responsiveColumns = React.useMemo(() => {
     if (!columns) return undefined
     if (isMobile) return 1
     if (isTablet && columns > 2) return 2

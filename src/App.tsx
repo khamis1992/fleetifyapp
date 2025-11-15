@@ -278,7 +278,7 @@ const queryClient = new QueryClient({
 const App = () => {
   console.log('🚀 [APP] App.tsx loaded');
   
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('🚀 [APP] App component mounted');
     
     // Ensure loading class is removed when app is fully mounted
@@ -358,13 +358,13 @@ const AppRoutes = () => {
   console.log('🧭 [ROUTES] Current path:', location.pathname);
 
   // Preload related routes when location changes
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('🧭 [ROUTES] Location changed to:', location.pathname);
     preloadRelatedRoutes(location.pathname);
   }, [location.pathname]);
 
   // Log navigation for debugging (only in development)
-  useEffect(() => {
+  React.useEffect(() => {
     if (import.meta.env.DEV) {
       console.log(`🧭 Navigation: ${location.pathname} (visit #${visitCount})`);
     }

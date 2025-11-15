@@ -43,7 +43,7 @@ export const DemoDataGenerator: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
 
   // التحقق من نوع الشركة عند تحميل المكون
-  useEffect(() => {
+  React.useEffect(() => {
     const checkCompanyType = async () => {
       if (!companyId) return;
 

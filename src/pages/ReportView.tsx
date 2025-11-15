@@ -146,7 +146,7 @@ export default function ReportView() {
   };
 
   // Set page title
-  useEffect(() => {
+  React.useEffect(() => {
     if (reportId && moduleType) {
       document.title = `${getReportTitle(reportId, moduleType)} - التقارير`;
     }

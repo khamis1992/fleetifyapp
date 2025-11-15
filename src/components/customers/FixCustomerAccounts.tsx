@@ -139,7 +139,7 @@ export const FixCustomerAccounts: React.FC = () => {
     return customer.company_name || 'عميل غير محدد';
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchCustomersWithoutAccounts();
   }, [companyId]);
 

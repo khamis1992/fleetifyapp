@@ -40,7 +40,7 @@ const setupLovableErrorHandling = () => {
       
       // Attempt to reload if React is completely broken
       // But only if not already reloading and only in production
-      if (!window.React || typeof window.useState !== 'function') {
+      if (!window.React || typeof window.React.useState !== 'function') {
         const reloadKey = 'lovable_reload_attempted';
         const hasReloaded = sessionStorage.getItem(reloadKey);
         
@@ -73,8 +73,8 @@ const setupLovableReact = () => {
   console.log('🔧 Lovable: React setup complete', {
     version: React.version,
     hooks: {
-      useState: typeof useState !== 'undefined',
-      useEffect: typeof useEffect !== 'undefined',
+      useState: typeof React.useState !== 'undefined',
+      useEffect: typeof React.useEffect !== 'undefined',
     },
     global: typeof (window as any).React !== 'undefined'
   });

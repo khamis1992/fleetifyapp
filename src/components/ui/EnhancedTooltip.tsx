@@ -42,7 +42,7 @@ export const EnhancedTooltip: React.FC<EnhancedTooltipProps> = ({
   className,
   interactive = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   // If KPI definition is provided, render enhanced KPI tooltip
   if (kpi) {

@@ -29,9 +29,9 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   disabled = false
 }) => {
   const { companyId, browsedCompany, isBrowsingMode, isAuthenticating, authError } = useUnifiedCompanyAccess();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-  const [tenantFormOpen, setTenantFormOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const [tenantFormOpen, setTenantFormOpen] = React.useState(false);
   
   // Use debounced search like the tenant page
   const debouncedSearch = useDebounce(searchValue, 300);

@@ -9,14 +9,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 const ForcePasswordChangeDialog: React.FC = () => {
   const { user } = useAuth();
-  const requiresChange = useMemo(() => {
+  const requiresChange = React.useMemo(() => {
     const meta = user?.user_metadata?.requires_password_change;
     return meta === true || meta === 'true' || meta === 1;
   }, [user]);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+  const [completed, setCompleted] = React.useState(false);
   const { toast } = useToast();
 
   if (!requiresChange || completed) return null;

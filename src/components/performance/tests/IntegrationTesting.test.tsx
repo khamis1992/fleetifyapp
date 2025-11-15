@@ -29,8 +29,8 @@ jest.mock('@/hooks/usePerformanceMonitor', () => ({
 
 // Mock user workflow component
 const MockUserWorkflow: React.FC<{ userRole: string }> = ({ userRole }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const [performanceData, setPerformanceData] = React.useState<any[]>([]);
 
   const workflowSteps = [
     { name: 'Login', action: () => mockPerformanceLogger.logNavigation('login', 200) },
@@ -45,7 +45,7 @@ const MockUserWorkflow: React.FC<{ userRole: string }> = ({ userRole }) => {
     { name: 'Load Fleet Data', action: () => mockPerformanceLogger.logQuery('fleet-data', 380) },
   ];
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentStep < workflowSteps.length) {
       const step = workflowSteps[currentStep];
       const startTime = Date.now();

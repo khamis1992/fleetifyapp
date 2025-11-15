@@ -58,7 +58,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   onSuccess
 }) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = React.useState(false);
   const { currency: companyCurrency } = useCompanyCurrency();
 
   const {
@@ -94,7 +94,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     }
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (company && open) {
       // Reset form with company data
       reset({

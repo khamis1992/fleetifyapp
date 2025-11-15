@@ -63,7 +63,7 @@ export const MobileInput = forwardRef<HTMLInputElement, MobileInputProps>(
     const config = customConfig || getInputConfig(fieldType);
 
     // Internal validation state
-    const [internalError, setInternalError] = useState<string | undefined>();
+    const [internalError, setInternalError] = React.useState<string | undefined>();
 
     // Handle input change with validation
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

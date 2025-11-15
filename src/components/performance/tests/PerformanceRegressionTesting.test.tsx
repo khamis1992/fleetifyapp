@@ -29,8 +29,8 @@ jest.mock('@/hooks/usePerformanceMonitor', () => ({
 
 // Performance regression test component
 const PerformanceRegressionTest: React.FC<{ testScenario: string }> = ({ testScenario }) => {
-  const [testResults, setTestResults] = useState<any[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
+  const [testResults, setTestResults] = React.useState<any[]>([]);
+  const [isRunning, setIsRunning] = React.useState(false);
 
   const runPerformanceTest = async () => {
     setIsRunning(true);

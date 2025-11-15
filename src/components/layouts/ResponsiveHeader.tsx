@@ -36,7 +36,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useSimpleBreakpoint();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
 
   const handleSignOut = async () => {
     try {

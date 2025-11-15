@@ -524,15 +524,15 @@ interface CustomerInfoStepProps {
 }
 
 const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormData }) => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [customerCases, setCustomerCases] = useState<any[]>([]);
-  const [loadingCases, setLoadingCases] = useState(false);
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [customerCases, setCustomerCases] = React.useState<any[]>([]);
+  const [loadingCases, setLoadingCases] = React.useState(false);
 
   // Fetch customers from database
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchCustomers = async () => {
       try {
         setLoading(true);
@@ -557,7 +557,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
   }, []);
 
   // Auto-extract customer from selected invoices
-  useEffect(() => {
+  React.useEffect(() => {
     const extractCustomerFromInvoices = async () => {
       if (formData.selected_invoices.length > 0 && !formData.customer_id) {
         try {
@@ -605,7 +605,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
   };
 
   // Filter customers based on search term
-  useEffect(() => {
+  React.useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredCustomers(customers);
       return;
@@ -868,7 +868,7 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
   formData,
   setFormData,
 }) => {
-  const [dragActive, setDragActive] = useState(false);
+  const [dragActive, setDragActive] = React.useState(false);
 
   const evidenceCategories = [
     { value: 'contract', label: 'Contracts' },

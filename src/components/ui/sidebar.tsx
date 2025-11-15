@@ -67,13 +67,13 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const { isMobile } = useSimpleBreakpoint()
-    const [openMobile, setOpenMobile] = useState(false)
+    const [openMobile, setOpenMobile] = React.useState(false)
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = useState(defaultOpen)
+    const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
-    const setOpen = useCallback(
+    const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
         if (setOpenProp) {
@@ -89,14 +89,14 @@ const SidebarProvider = React.forwardRef<
     )
 
     // Helper to toggle the sidebar.
-    const toggleSidebar = useCallback(() => {
+    const toggleSidebar = React.useCallback(() => {
       return isMobile
         ? setOpenMobile((open) => !open)
         : setOpen((open) => !open)
     }, [isMobile, setOpen, setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
-    useEffect(() => {
+    React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (
           event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
@@ -115,7 +115,7 @@ const SidebarProvider = React.forwardRef<
     // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed"
 
-    const contextValue = useMemo<SidebarContext>(
+    const contextValue = React.useMemo<SidebarContext>(
       () => ({
         state,
         open,
@@ -651,7 +651,7 @@ const SidebarMenuSkeleton = React.forwardRef<
   }
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
-  const width = useMemo(() => {
+  const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`
   }, [])
 

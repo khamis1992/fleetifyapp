@@ -245,7 +245,7 @@ export const CustomerVehicleStep: React.FC = () => {
   const { validation, isValidating, debouncedValidation } = useContractValidation()
   
   // Trigger validation when customer or vehicle changes
-  useEffect(() => {
+  React.useEffect(() => {
     // Validate if we have meaningful data to validate (customer or vehicle)
     if ((data.customer_id || data.vehicle_id || data.contract_number) && 
         data.start_date && 
@@ -262,7 +262,7 @@ export const CustomerVehicleStep: React.FC = () => {
   }, [data.customer_id, data.vehicle_id, data.contract_number, data.start_date, data.end_date, data.contract_type, debouncedValidation])
 
   // Add a separate effect for contract number validation
-  useEffect(() => {
+  React.useEffect(() => {
     if (data.contract_number) {
       debouncedValidation({
         customer_id: data.customer_id,
@@ -293,7 +293,7 @@ export const CustomerVehicleStep: React.FC = () => {
   const isLoadingVehicles = allVehiclesLoading || (data.start_date && data.end_date ? vehiclesLoading : false)
   
   // Debug logging for vehicle loading
-  useEffect(() => {
+  React.useEffect(() => {
     console.log("🚗 [CustomerVehicleStep] Vehicle loading state:", {
       companyId,
       allVehiclesCount: allAvailableVehicles?.length || 0,
@@ -459,7 +459,7 @@ export const DatesStep: React.FC = () => {
   }
   
   // تطبيق نوع المدة المناسب بناءً على نوع العقد
-  useEffect(() => {
+  React.useEffect(() => {
     if (data.contract_type) {
       const isMonthlyContract = data.contract_type === 'monthly_rental'
       const isYearlyContract = data.contract_type === 'yearly_rental'
@@ -506,7 +506,7 @@ export const DatesStep: React.FC = () => {
   }, [data.contract_type])
   
   // Trigger validation when dates change
-  useEffect(() => {
+  React.useEffect(() => {
     // Only validate if we have all required data including valid contract amount
     if (data.start_date && 
         data.end_date && 
@@ -744,7 +744,7 @@ export const FinancialStep: React.FC = () => {
   const [isCustomAmount, setIsCustomAmount] = useState(false)
   
   // Trigger validation when amounts change
-  useEffect(() => {
+  React.useEffect(() => {
     // Only validate if we have complete data for meaningful validation
     if (data.contract_amount && 
         data.contract_amount > 0 && 
@@ -771,7 +771,7 @@ export const FinancialStep: React.FC = () => {
   const template = useTemplateByType(data.contract_type || '')
   
   // Apply customer account only if no template account exists
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('[FINANCIAL_STEP] Effect triggered:', {
       customerLinkedAccounts,
       hasAccounts: customerLinkedAccounts?.length > 0,
@@ -824,7 +824,7 @@ export const FinancialStep: React.FC = () => {
   })
 
   // Auto-update financial calculations with proper tracking
-  useEffect(() => {
+  React.useEffect(() => {
     // Only auto-update if custom amount is not enabled
     if (!isCustomAmount && calculations && selectedVehicle && totalRentalDays > 0) {
       const newData = {
@@ -1229,14 +1229,14 @@ export const ReviewStep: React.FC = () => {
   const { data, updateData, hasDuplicates, setHasDuplicates, setForceCreate } = useContractWizard()
   const { validation, isValidating, validateContract } = useContractValidation()
   const { generateAllSuggestions } = useSmartSuggestions()
-  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [suggestions, setSuggestions] = React.useState<any[]>([])
   const { formatCurrency } = useCurrencyFormatter()
   
   // Get customer data
   const { data: customer } = useCustomer(data.customer_id || '')
   
   // Final validation and suggestions on component mount
-  useEffect(() => {
+  React.useEffect(() => {
     const runValidationAndSuggestions = async () => {
       await validateContract({
         customer_id: data.customer_id,
@@ -1262,7 +1262,7 @@ export const ReviewStep: React.FC = () => {
   }, [data, validateContract, generateAllSuggestions, user?.profile?.company_id])
 
   // Validation logic
-  useEffect(() => {
+  React.useEffect(() => {
     const validateData = () => {
       const errors: string[] = []
       

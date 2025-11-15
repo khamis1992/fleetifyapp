@@ -21,10 +21,10 @@ interface VehicleStatusCount {
 export const FleetAvailabilityWidget: React.FC = () => {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useVehicles();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Calculate vehicle counts by status
-  const statusCounts = useMemo(() => {
+  const statusCounts = React.useMemo(() => {
     if (!vehicles) return [];
 
     const counts: Record<string, number> = {
@@ -80,7 +80,7 @@ export const FleetAvailabilityWidget: React.FC = () => {
   }, [vehicles]);
 
   // Calculate vehicle type breakdown
-  const typeBreakdown = useMemo(() => {
+  const typeBreakdown = React.useMemo(() => {
     if (!vehicles) return [];
 
     const types: Record<string, number> = {};
@@ -97,7 +97,7 @@ export const FleetAvailabilityWidget: React.FC = () => {
   }, [vehicles]);
 
   // Calculate availability percentage
-  const availabilityPercentage = useMemo(() => {
+  const availabilityPercentage = React.useMemo(() => {
     if (!vehicles || vehicles.length === 0) return 0;
 
     const availableVehicles = vehicles.filter(v => 
@@ -109,7 +109,7 @@ export const FleetAvailabilityWidget: React.FC = () => {
   const totalVehicles = vehicles?.length || 0;
 
   // Prepare export data - MUST be before any conditional returns (React Rules of Hooks)
-  const exportData = useMemo(() => {
+  const exportData = React.useMemo(() => {
     if (!statusCounts || statusCounts.length === 0) return [];
     return statusCounts.map(status => ({
       الحالة: status.label,

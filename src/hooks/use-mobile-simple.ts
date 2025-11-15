@@ -9,15 +9,15 @@ export interface SimpleBreakpoint {
 
 export function useSimpleBreakpoint(): SimpleBreakpoint {
   // Default breakpoint (SSR-safe)
-  const [breakpoint, setBreakpoint] = useState<SimpleBreakpoint>({
+  const [breakpoint, setBreakpoint] = React.useState<SimpleBreakpoint>({
     isMobile: true,
     isTablet: false,
     isDesktop: false
   })
 
-  const lastCategoryRef = useRef<'mobile' | 'tablet' | 'desktop' | null>(null)
+  const lastCategoryRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null)
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (typeof window === 'undefined') return
 
     const compute = (): SimpleBreakpoint => {

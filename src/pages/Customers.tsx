@@ -131,7 +131,7 @@ const Customers = () => {
   const { data: customersResult, isLoading, error, refetch } = useCustomers(filters);
   
   // Log errors for debugging
-  useEffect(() => {
+  React.useEffect(() => {
     if (error) {
       console.error('❌ [Customers] Error fetching customers:', {
         error,
@@ -144,7 +144,7 @@ const Customers = () => {
   }, [error, filters]);
   
   // Extract pagination data and customers array
-  const customers = useMemo(() => {
+  const customers = React.useMemo(() => {
     // Handle new pagination structure from useEnhancedCustomers
     if (customersResult && typeof customersResult === 'object' && 'data' in customersResult) {
       return Array.isArray(customersResult.data) ? customersResult.data : [];
@@ -193,7 +193,7 @@ const Customers = () => {
   
   const finalContractCounts = contractCountsData || {};
 
-  const totalCustomersInDB = useMemo(() => {
+  const totalCustomersInDB = React.useMemo(() => {
     // Use 'total' property from useEnhancedCustomers hook
     if (customersResult && typeof customersResult === 'object' && 'total' in customersResult) {
       return customersResult.total || 0;
@@ -203,29 +203,29 @@ const Customers = () => {
 
   // Calculate approximate counts from loaded data for instant display
   // This provides immediate feedback while accurate counts load in background
-  const approximateIndividualCount = useMemo(() => {
+  const approximateIndividualCount = React.useMemo(() => {
     if (customerType === 'all') {
       return customers.filter(c => c.customer_type === 'individual').length;
     }
     return customerType === 'individual' ? customers.length : 0;
   }, [customers, customerType]);
 
-  const approximateCorporateCount = useMemo(() => {
+  const approximateCorporateCount = React.useMemo(() => {
     if (customerType === 'all') {
       return customers.filter(c => c.customer_type === 'corporate').length;
     }
     return customerType === 'corporate' ? customers.length : 0;
   }, [customers, customerType]);
 
-  const approximateBlacklistedCount = useMemo(() => {
+  const approximateBlacklistedCount = React.useMemo(() => {
     return customers.filter(c => c.is_blacklisted).length;
   }, [customers]);
 
   // Fetch accurate counts in background (these load after initial render for better performance)
   // Delay count queries to improve initial page load speed
-  const [shouldFetchCounts, setShouldFetchCounts] = useState(false);
+  const [shouldFetchCounts, setShouldFetchCounts] = React.useState(false);
   
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isLoading && customersResult && totalCustomersInDB > 0) {
       // Delay count queries by 500ms to let main data render first
       const timer = setTimeout(() => {

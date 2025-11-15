@@ -25,7 +25,7 @@ interface PropertyContract {
 }
 
 export const LeaseExpiryWidget: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const navigate = useNavigate();
 
@@ -104,7 +104,7 @@ export const LeaseExpiryWidget: React.FC = () => {
   };
 
   // Prepare export data
-  const exportData = useMemo(() => [
+  const exportData = React.useMemo(() => [
     { المؤشر: 'عقود تنتهي هذا الشهر', القيمة: expiringThisMonth.length },
     { المؤشر: 'عقود تنتهي في 3 أشهر', القيمة: expiringNext3Months.length },
     { المؤشر: 'عقود تنتهي في 6 أشهر', القيمة: expiringNext6Months.length },

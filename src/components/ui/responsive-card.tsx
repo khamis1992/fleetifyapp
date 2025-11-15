@@ -43,7 +43,7 @@ const ResponsiveCard = React.forwardRef<HTMLDivElement, ResponsiveCardProps>(
     const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Responsive padding based on device and density
-    const responsivePadding = useMemo(() => {
+    const responsivePadding = React.useMemo(() => {
       const densityMap = {
         compact: isMobile ? 'p-3' : isTablet ? 'p-4' : 'p-4',
         comfortable: isMobile ? 'p-4' : isTablet ? 'p-5' : 'p-6',
@@ -53,7 +53,7 @@ const ResponsiveCard = React.forwardRef<HTMLDivElement, ResponsiveCardProps>(
     }, [isMobile, isTablet, density])
 
     // Responsive margin/spacing
-    const responsiveSpacing = useMemo(() => {
+    const responsiveSpacing = React.useMemo(() => {
       if (isMobile) return 'mb-4'
       if (isTablet) return 'mb-5'
       return 'mb-6'

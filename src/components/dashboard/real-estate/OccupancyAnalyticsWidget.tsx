@@ -13,7 +13,7 @@ import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip
 export const OccupancyAnalyticsWidget: React.FC = () => {
   const { data: stats, isLoading } = useRealEstateDashboardStats();
   const navigate = useNavigate();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   if (isLoading) {
     return <WidgetSkeleton hasChart hasStats statCount={3} />;
@@ -61,7 +61,7 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
   const avgVacancyDuration = vacantUnits > 0 ? Math.round(30 + Math.random() * 60) : 0;
 
   // Prepare export data
-  const exportData = useMemo(() => [
+  const exportData = React.useMemo(() => [
     { 'المؤشر': 'إجمالي الوحدات', 'القيمة': totalUnits },
     { 'المؤشر': 'الوحدات المؤجرة', 'القيمة': occupiedUnits },
     { 'المؤشر': 'الوحدات الشاغرة', 'القيمة': vacantUnits },

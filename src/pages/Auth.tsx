@@ -6,8 +6,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const Auth: React.FC = () => {
   const { user, loading } = useAuth();
-  const [hasRedirected, setHasRedirected] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [hasRedirected, setHasRedirected] = React.useState(false);
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
 
   // Prevent redirect loop in development
   useEffect(() => {

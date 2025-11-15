@@ -37,7 +37,7 @@ export function CustomerAccountSettings() {
     }
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (settings) {
       reset(settings);
     }

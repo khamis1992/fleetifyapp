@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,9 @@ export const SalesPipelineWidget: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const { data: metrics, isLoading: metricsLoading } = useSalesPipelineMetrics();
   const { data: opportunities, isLoading: opportunitiesLoading } = useSalesOpportunities({ is_active: true });
-  const [drillDownOpen, setDrillDownOpen] = useState(false);
-  const [drillDownLevel, setDrillDownLevel] = useState(0);
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [drillDownOpen, setDrillDownOpen] = React.useState(false);
+  const [drillDownLevel, setDrillDownLevel] = React.useState(0);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const isLoading = metricsLoading || opportunitiesLoading;
 
@@ -80,7 +80,7 @@ export const SalesPipelineWidget: React.FC = () => {
   };
 
   // Prepare export data
-  const exportData = useMemo(() => {
+  const exportData = React.useMemo(() => {
     return chartData.map(item => ({
       'المرحلة': item.stage,
       'عدد الفرص': item.count,
