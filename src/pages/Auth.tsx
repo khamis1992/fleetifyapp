@@ -44,11 +44,9 @@ const Auth: React.FC = () => {
     );
   }
 
-  if (user && hasRedirected) {
+  if (user) {
     console.log('✅ [AUTH] Redirecting authenticated user to dashboard - user:', user.email);
     return <Navigate to="/dashboard" replace />;
-  } else if (user && !hasRedirected) {
-    console.log('⚠️ [AUTH] User exists but hasRedirected is false - should redirect in next render');
   }
 
   return <AuthForm />;
