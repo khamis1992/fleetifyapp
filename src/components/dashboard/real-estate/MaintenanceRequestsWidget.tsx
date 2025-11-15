@@ -43,7 +43,7 @@ const STATUS_COLORS = {
 };
 
 export const MaintenanceRequestsWidget: React.FC = () => {
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
   const { companyId, filter, hasGlobalAccess } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
   const navigate = useNavigate();
@@ -144,7 +144,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
     .slice(0, 3);
 
   // Prepare export data
-  const exportData = React.useMemo(() => [
+  const exportData = useMemo(() => [
     { المؤشر: 'طلبات مفتوحة', القيمة: openRequests },
     { المؤشر: 'طلبات مكتملة', القيمة: completedRequests },
     { المؤشر: 'إجمالي الطلبات', القيمة: totalRequests },

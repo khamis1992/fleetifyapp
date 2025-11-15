@@ -39,10 +39,10 @@ export const MobileNavigation: React.FC = () => {
   const { data: badges } = useNavBadges();
   const { vibrate } = useHapticFeedback();
 
-  const [showQuickActions, setShowQuickActions] = React.useState(false);
-  const [activeNavItem, setActiveNavItem] = React.useState<string | null>(null);
-  const longPressTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const touchStartTimeRef = React.useRef<number>(0);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [activeNavItem, setActiveNavItem] = useState<string | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -52,7 +52,7 @@ export const MobileNavigation: React.FC = () => {
   };
 
   // Generate navigation items based on PRIMARY_NAVIGATION and enabled modules
-  const navigationItems = React.useMemo(() => {
+  const navigationItems = useMemo(() => {
     if (isLoading || !moduleContext || !moduleContext.activeModules || !Array.isArray(moduleContext.activeModules)) return [];
 
     // Map PRIMARY_NAVIGATION to mobile bottom nav items
@@ -102,7 +102,7 @@ export const MobileNavigation: React.FC = () => {
   }, [moduleContext, isLoading, hasCompanyAdminAccess, hasGlobalAccess]);
 
   // Get quick actions based on current nav item
-  const getQuickActions = React.useCallback((href: string): QuickAction[] => {
+  const getQuickActions = useCallback((href: string): QuickAction[] => {
     switch (href) {
       case '/dashboard':
         return [
@@ -237,7 +237,7 @@ export const MobileNavigation: React.FC = () => {
   }, [navigate]);
 
   // Handle long press start
-  const handlePressStart = React.useCallback((href: string) => {
+  const handlePressStart = useCallback((href: string) => {
     touchStartTimeRef.current = Date.now();
 
     longPressTimerRef.current = setTimeout(() => {
@@ -251,7 +251,7 @@ export const MobileNavigation: React.FC = () => {
   }, [getQuickActions, vibrate]);
 
   // Handle long press end
-  const handlePressEnd = React.useCallback(() => {
+  const handlePressEnd = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -259,20 +259,20 @@ export const MobileNavigation: React.FC = () => {
   }, []);
 
   // Close quick actions menu
-  const handleCloseQuickActions = React.useCallback(() => {
+  const handleCloseQuickActions = useCallback(() => {
     setShowQuickActions(false);
     setActiveNavItem(null);
   }, []);
 
   // Handle quick action click
-  const handleQuickActionClick = React.useCallback((action: QuickAction) => {
+  const handleQuickActionClick = useCallback((action: QuickAction) => {
     vibrate('light');
     action.onClick();
     handleCloseQuickActions();
   }, [vibrate, handleCloseQuickActions]);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);

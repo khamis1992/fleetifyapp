@@ -26,7 +26,7 @@ export const ParentAccountSelector: React.FC<ParentAccountSelectorProps> = ({
   className
 }) => {
   const { data: accounts, isLoading } = useChartOfAccounts();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   // Filter to show all active accounts as potential parents with hierarchy validation
   const parentAccounts = accounts?.filter(account => 

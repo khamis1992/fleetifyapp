@@ -96,12 +96,12 @@ export const CompanyBrandingSettings = () => {
     previewChanges 
   } = useCompanyBranding();
 
-  const [localSettings, setLocalSettings] = React.useState(settings);
-  const [isPreviewMode, setIsPreviewMode] = React.useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [localSettings, setLocalSettings] = useState(settings);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLocalSettings(settings);
     setHasUnsavedChanges(false);
   }, [settings]);

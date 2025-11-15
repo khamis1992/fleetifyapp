@@ -13,7 +13,7 @@ import { formatLocationError } from '@/lib/attendanceUtils';
 export const HeaderAttendanceButton: React.FC = () => {
   const { user } = useAuth();
   const { getCurrentLocation, clockIn, clockOut } = useAttendance();
-  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Check attendance permission
   const { data: permissionCheck, isLoading: isCheckingPermission } = usePermissionCheck('attendance.clock_in');

@@ -81,7 +81,7 @@ const ResponsiveDialogContent = React.forwardRef<
   const { isMobile, isTablet } = useSimpleBreakpoint()
 
   // Determine responsive behavior
-  const responsiveSide = React.useMemo(() => {
+  const responsiveSide = useMemo(() => {
     if (isMobile) {
       if (mobileFullScreen) return "center"
       if (mobileFromBottom) return "bottom"
@@ -90,7 +90,7 @@ const ResponsiveDialogContent = React.forwardRef<
     return side
   }, [isMobile, mobileFullScreen, mobileFromBottom, side])
 
-  const responsiveSize = React.useMemo(() => {
+  const responsiveSize = useMemo(() => {
     if (isMobile && mobileFullScreen) return "screen"
     if (isMobile) return "full"
     if (isTablet && size === "xl") return "lg"

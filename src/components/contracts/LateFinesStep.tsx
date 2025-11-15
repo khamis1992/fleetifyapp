@@ -19,7 +19,7 @@ export const LateFinesStep: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
   // إعدادات الغرامة للعقد الحالي (تبدأ من الإعدادات العامة)
-  const fineSettings = React.useMemo(() => ({
+  const fineSettings = useMemo(() => ({
     is_active: data.late_fines_enabled ?? globalSettings?.is_active ?? false,
     fine_type: data.late_fine_type ?? globalSettings?.fine_type ?? 'percentage',
     fine_rate: data.late_fine_rate ?? globalSettings?.fine_rate ?? 0,

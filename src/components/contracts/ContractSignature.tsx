@@ -78,7 +78,7 @@ export const ContractSignature: React.FC<ContractSignatureProps> = ({
     setHasSigned(false)
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (signature && canvasRef.current) {
       const canvas = canvasRef.current
       const ctx = canvas.getContext('2d')

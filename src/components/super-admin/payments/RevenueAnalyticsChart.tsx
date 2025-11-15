@@ -9,8 +9,8 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export const RevenueAnalyticsChart: React.FC = () => {
   const { data: analytics, isLoading } = useSubscriptionsAnalytics();
-  const [chartType, setChartType] = React.useState<'revenue' | 'subscriptions'>('revenue');
-  const [period, setPeriod] = React.useState<'month' | 'quarter' | 'year'>('month');
+  const [chartType, setChartType] = useState<'revenue' | 'subscriptions'>('revenue');
+  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
   const { formatCurrency } = useCurrencyFormatter();
 
   if (isLoading) {

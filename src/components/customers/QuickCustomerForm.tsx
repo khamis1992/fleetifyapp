@@ -39,7 +39,7 @@ export const QuickCustomerForm: React.FC<QuickCustomerFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Reset form when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setFormData({ name: '', phone: '' });
       setErrors({});

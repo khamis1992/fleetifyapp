@@ -31,7 +31,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: vehicles } = useVehicles();
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Fetch all insurance records
   const { data: insuranceRecords, isLoading: insuranceLoading } = useQuery({
@@ -54,7 +54,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   const isLoading = insuranceLoading;
 
   // Build alerts from insurance and vehicle data
-  const alerts = React.useMemo(() => {
+  const alerts = useMemo(() => {
     if (!vehicles || !insuranceRecords) return [];
 
     const alertsList: DocumentAlert[] = [];
@@ -155,7 +155,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   }, [vehicles, insuranceRecords]);
 
   // Count alerts by urgency
-  const urgencyCounts = React.useMemo(() => {
+  const urgencyCounts = useMemo(() => {
     const counts = {
       critical: 0,
       warning: 0,
@@ -170,7 +170,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
   }, [alerts]);
 
   // Prepare export data
-  const exportData = React.useMemo(() =>
+  const exportData = useMemo(() =>
     alerts.map(alert => ({
       'رقم اللوحة': alert.vehicleName.split(' - ')[0],
       'المركبة': alert.vehicleName,

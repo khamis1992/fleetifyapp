@@ -36,10 +36,10 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   showLinkAction = false,
   onLinkToExisting
 }) => {
-  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
-  const [showInlineWarning, setShowInlineWarning] = React.useState(false);
-  const [forceProceed, setForceProceed] = React.useState(false);
-  const [dismissedExactMatch, setDismissedExactMatch] = React.useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showInlineWarning, setShowInlineWarning] = useState(false);
+  const [forceProceed, setForceProceed] = useState(false);
+  const [dismissedExactMatch, setDismissedExactMatch] = useState(false);
 
   // Debounce the contract data to avoid too many API calls
   const debouncedContractData = useDebounce(contractData, 500);
@@ -83,7 +83,7 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   };
 
   // Handle improved duplicate check (inline suggestions)
-  React.useEffect(() => {
+  useEffect(() => {
     if (useInlineSuggestions && improvedCheck) {
       console.log('🔄 [CONTRACT_DUPLICATE_CHECK_INLINE] Results:', {
         improvedCheck,
@@ -111,7 +111,7 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   }, [improvedCheck, onDuplicateDetected, forceProceed, dismissedExactMatch, useInlineSuggestions]);
 
   // Handle old duplicate check for backward compatibility
-  React.useEffect(() => {
+  useEffect(() => {
     if (!useInlineSuggestions && duplicateCheck) {
       console.log('🔄 [CONTRACT_DUPLICATE_CHECK_MODAL] Duplicate check result changed:', {
         duplicateCheck,
@@ -137,7 +137,7 @@ export const ContractFormWithDuplicateCheck: React.FC<ContractFormWithDuplicateC
   }, [duplicateCheck, onDuplicateDetected, forceProceed, useInlineSuggestions]);
 
   // Reset forceProceed when contract data changes
-  React.useEffect(() => {
+  useEffect(() => {
     setForceProceed(false);
     setDismissedExactMatch(false);
   }, [debouncedContractData]);

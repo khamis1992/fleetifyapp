@@ -27,9 +27,9 @@ interface TimelineItem {
 }
 
 export const RentalTimelineWidget: React.FC = () => {
-  const [dateRange, setDateRange] = React.useState<DateRange>('this_week');
-  const [currentWeekOffset, setCurrentWeekOffset] = React.useState(0);
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const [dateRange, setDateRange] = useState<DateRange>('this_week');
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
@@ -37,7 +37,7 @@ export const RentalTimelineWidget: React.FC = () => {
   const isLoading = contractsLoading || vehiclesLoading;
 
   // Calculate date range based on selection
-  const { startDate, endDate } = React.useMemo(() => {
+  const { startDate, endDate } = useMemo(() => {
     const today = new Date();
     let start: Date;
     let end: Date;
@@ -64,7 +64,7 @@ export const RentalTimelineWidget: React.FC = () => {
   }, [dateRange, currentWeekOffset]);
 
   // Build timeline data
-  const timelineData = React.useMemo(() => {
+  const timelineData = useMemo(() => {
     if (!contracts || !vehicles) return [];
 
     const timeline: Record<string, TimelineItem[]> = {};
@@ -123,12 +123,12 @@ export const RentalTimelineWidget: React.FC = () => {
   }, [contracts, vehicles, startDate, endDate]);
 
   // Get vehicles for display (limit to 8 for readability)
-  const displayVehicles = React.useMemo(() => {
+  const displayVehicles = useMemo(() => {
     return vehicles?.slice(0, 8) || [];
   }, [vehicles]);
 
   // Prepare export data
-  const exportData = React.useMemo(() => {
+  const exportData = useMemo(() => {
     const data: any[] = [];
     vehicles?.forEach((vehicle) => {
       const rentals = timelineData[vehicle.id] || [];

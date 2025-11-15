@@ -20,7 +20,7 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
   onOpenChange,
   contract
 }) => {
-  const [statusData, setStatusData] = React.useState({
+  const [statusData, setStatusData] = useState({
     status: contract?.status || 'active',
     reason: ''
   });

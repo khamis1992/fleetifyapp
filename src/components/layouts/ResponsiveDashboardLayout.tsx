@@ -24,11 +24,11 @@ export const ResponsiveDashboardLayout: React.FC = () => {
   const navigate = useNavigate();
 
   // Memoize callbacks to prevent unnecessary re-renders
-  const handleMenuToggle = React.useCallback(() => {
+  const handleMenuToggle = useCallback(() => {
     setSidebarOpen(prev => !prev);
   }, []);
 
-  const handleSidebarOpenChange = React.useCallback((open: boolean) => {
+  const handleSidebarOpenChange = useCallback((open: boolean) => {
     setSidebarOpen(open);
   }, []);
 

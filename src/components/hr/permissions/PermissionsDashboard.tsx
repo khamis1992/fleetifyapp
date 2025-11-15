@@ -114,7 +114,7 @@ export default function PermissionsDashboard() {
   });
 
   // Calculate statistics
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     if (!usersData) return null;
 
     const roleDistribution: Record<UserRole, number> = {

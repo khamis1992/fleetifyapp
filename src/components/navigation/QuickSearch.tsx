@@ -237,7 +237,7 @@ export const QuickSearch: React.FC = () => {
     navigate(path);
   };
 
-  const runCommand = React.useCallback((command: () => unknown) => {
+  const runCommand = useCallback((command: () => unknown) => {
     setOpen(false);
     command();
   }, []);

@@ -57,7 +57,7 @@ const ResponsiveGrid = React.forwardRef<HTMLDivElement, ResponsiveGridProps>(
     const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Custom adaptive columns logic
-    const adaptiveGridClass = React.useMemo(() => {
+    const adaptiveGridClass = useMemo(() => {
       if (!adaptive || (!mobileColumns && !tabletColumns && !desktopColumns)) {
         return ""
       }
@@ -80,7 +80,7 @@ const ResponsiveGrid = React.forwardRef<HTMLDivElement, ResponsiveGridProps>(
     }, [adaptive, mobileColumns, tabletColumns, desktopColumns])
 
     // Responsive gap adjustments
-    const responsiveGap = React.useMemo(() => {
+    const responsiveGap = useMemo(() => {
       if (isMobile) {
         return gap === 'lg' ? 'gap-3' : gap === 'xl' ? 'gap-4' : 'gap-2'
       }

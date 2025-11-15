@@ -19,7 +19,7 @@ export const TestRunner: React.FC = () => {
   const [refreshInterval, setRefreshInterval] = useState(5000);
 
   // Auto-refresh health monitoring
-  React.useEffect(() => {
+  useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {

@@ -71,21 +71,21 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   onCreateInvoice,
   onAmendContract
 }) => {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [editData, setEditData] = React.useState<Partial<Contract>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<Contract>>({});
   const { formatCurrency, currency } = useCurrencyFormatter();
   const { companyId } = useUnifiedCompanyAccess();
 
   // Payment and preview dialog state
-  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
-  const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
   // Invoice generation state
-  const [isGeneratingInvoices, setIsGeneratingInvoices] = React.useState(false);
+  const [isGeneratingInvoices, setIsGeneratingInvoices] = useState(false);
 
   // Update editData when contract changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (contract) {
       setEditData({
         contract_type: contract.contract_type || '',
@@ -313,7 +313,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   };
 
   // Enhanced vehicle data handling - use contract.vehicle if available, otherwise fetch separately
-  const vehicleData = React.useMemo(() => {
+  const vehicleData = useMemo(() => {
     // First check if vehicle data is already embedded in the contract
     if (contract?.vehicle) {
       return contract.vehicle;
@@ -352,7 +352,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   }, [contract, vehicle]);
 
   // Log contract data for debugging
-  React.useEffect(() => {
+  useEffect(() => {
     if (contract) {
       console.log('🔍 [CONTRACT_DETAILS] Contract data received:', {
         id: contract.id,

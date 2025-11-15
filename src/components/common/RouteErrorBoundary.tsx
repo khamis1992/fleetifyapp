@@ -161,7 +161,7 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const errorType = React.useMemo(() => {
+  const errorType = useMemo(() => {
     if (!error) return 'unknown';
     
     const message = error.message.toLowerCase();
@@ -238,7 +238,7 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
   };
 
   // Auto-reload for chunk errors (only once)
-  React.useEffect(() => {
+  useEffect(() => {
     if (errorType === 'chunk_load' && errorCount === 1) {
       const timer = setTimeout(() => {
         console.log('🔄 Auto-reloading due to chunk error...');

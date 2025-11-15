@@ -54,8 +54,8 @@ export function ExpandableTabs({
   activeColor = "text-primary",
   onChange,
 }: ExpandableTabsProps) {
-  const [selected, setSelected] = React.useState<number | null>(null);
-  const outsideClickRef = React.useRef(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const outsideClickRef = useRef(null);
 
   useOnClickOutside(outsideClickRef, () => {
     setSelected(null);

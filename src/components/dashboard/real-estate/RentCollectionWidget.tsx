@@ -13,7 +13,7 @@ import { EmptyStateCompact } from '@/components/ui/EmptyState';
 import { EnhancedTooltip, kpiDefinitions } from '@/components/ui/EnhancedTooltip';
 
 export const RentCollectionWidget: React.FC = () => {
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
   const { data: stats, isLoading: statsLoading } = useRealEstateDashboardStats();
   const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
@@ -96,7 +96,7 @@ export const RentCollectionWidget: React.FC = () => {
   ];
 
   // Prepare export data
-  const exportData = React.useMemo(() => [
+  const exportData = useMemo(() => [
     { المؤشر: 'إيجارات محصلة', القيمة: formatCurrency(rentCollected) },
     { المؤشر: 'إيجارات متأخرة', القيمة: formatCurrency(outstandingRent) },
     { المؤشر: 'معدل التحصيل', القيمة: `${collectionRate.toFixed(1)}%` },

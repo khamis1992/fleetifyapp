@@ -18,7 +18,7 @@ export const NumberDisplay: React.FC<NumberDisplayProps> = ({
   forceEnglishDigits = true,
   children 
 }) => {
-  const displayValue = React.useMemo(() => {
+  const displayValue = useMemo(() => {
     if (typeof value === 'number') {
       return value.toString();
     }

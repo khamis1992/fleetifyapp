@@ -35,7 +35,7 @@ export class ReactInitializer extends Component<ReactInitializerProps, ReactInit
       }
 
       // التحقق من توفر hooks
-      if (typeof React.useState !== 'function') {
+      if (typeof useState !== 'function') {
         throw new Error('React hooks are not available');
       }
 
@@ -48,8 +48,8 @@ export class ReactInitializer extends Component<ReactInitializerProps, ReactInit
       console.log('🔧 ReactInitializer: React is ready', {
         version: React.version,
         hooks: {
-          useState: typeof React.useState,
-          useEffect: typeof React.useEffect,
+          useState: typeof useState,
+          useEffect: typeof useEffect,
           useContext: typeof React.useContext
         }
       });

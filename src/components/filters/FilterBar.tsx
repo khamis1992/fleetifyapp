@@ -137,7 +137,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   position = 'top',
   variant = 'default'
 }) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // ============================================================================
   // Computed Values

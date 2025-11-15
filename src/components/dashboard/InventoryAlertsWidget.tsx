@@ -14,7 +14,7 @@ export const InventoryAlertsWidget: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems();
   const { data: allItems, isLoading: allItemsLoading } = useInventoryItems({ is_active: true });
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const isLoading = lowStockLoading || allItemsLoading;
 
@@ -40,7 +40,7 @@ export const InventoryAlertsWidget: React.FC = () => {
   const statusText = getStatusText();
 
   // Prepare export data
-  const exportData = React.useMemo(() => {
+  const exportData = useMemo(() => {
     return lowStockItems?.map(item => ({
       'الصنف': item.item_name_ar || item.item_name || 'صنف',
       'الكمية الحالية': item.current_quantity || 0,

@@ -31,11 +31,11 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
   onValidate,
   isValidating = false
 }) => {
-  const [issues, setIssues] = React.useState<DataIssue[]>([])
-  const [autoCorrections, setAutoCorrections] = React.useState<Partial<ContractCreationData>>({})
+  const [issues, setIssues] = useState<DataIssue[]>([])
+  const [autoCorrections, setAutoCorrections] = useState<Partial<ContractCreationData>>({})
 
   // Validate contract data and detect issues
-  React.useEffect(() => {
+  useEffect(() => {
     const detectedIssues: DataIssue[] = []
     const corrections: Partial<ContractCreationData> = {}
 

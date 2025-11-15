@@ -27,7 +27,7 @@ interface ContractInvoiceGeneratorProps {
 }
 
 export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> = ({ contract }) => {
-  const [selectedPeriod, setSelectedPeriod] = React.useState('monthly')
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly')
   const queryClient = useQueryClient()
 
   const { formatCurrency } = useCurrencyFormatter()

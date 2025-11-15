@@ -103,7 +103,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   });
 
   // Pre-fill form if existing return exists
-  React.useEffect(() => {
+  useEffect(() => {
     if (existingReturn) {
       form.reset({
         return_odometer_reading: existingReturn.return_odometer_reading || undefined,

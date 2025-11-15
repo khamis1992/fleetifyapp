@@ -103,7 +103,7 @@ export const MaintenanceAccountMappingDialog: React.FC<MaintenanceAccountMapping
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (mapping) {
       form.reset({
         maintenance_type: mapping.maintenance_type,

@@ -31,7 +31,7 @@ export interface NativeCardProps extends Omit<HTMLMotionProps<"div">, "onClick">
 
 const NativeCard = React.forwardRef<HTMLDivElement, NativeCardProps>(
   ({ className, pressable = false, variant = "default", onClick, ripple = true, children, ...props }, ref) => {
-    const [isPressed, setIsPressed] = React.useState(false)
+    const [isPressed, setIsPressed] = useState(false)
 
     const handlePress = () => {
       if (pressable || onClick) {

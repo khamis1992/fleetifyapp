@@ -16,11 +16,11 @@ const PWA_DISMISSED_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 const SHOW_PROMPT_DELAY = 30000; // 30 seconds - less aggressive
 
 export const PWAInstallPrompt: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallPrompt, setShowInstallPrompt] = React.useState(false);
-  const [isInstalled, setIsInstalled] = React.useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;

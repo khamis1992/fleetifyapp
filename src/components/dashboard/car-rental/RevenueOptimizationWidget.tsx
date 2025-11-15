@@ -27,7 +27,7 @@ interface VehicleRevenue {
 }
 
 export const RevenueOptimizationWidget: React.FC = () => {
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
   const { data: contracts, isLoading: contractsLoading } = useContracts();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
   const { data: payments, isLoading: paymentsLoading } = usePayments();
@@ -42,7 +42,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
   const previousMonthEnd = endOfMonth(addMonths(new Date(), -1));
 
   // Calculate revenue per vehicle
-  const vehicleRevenueData = React.useMemo(() => {
+  const vehicleRevenueData = useMemo(() => {
     if (!vehicles || !contracts || !payments) return [];
 
     const revenueMap: Record<string, VehicleRevenue> = {};
@@ -91,7 +91,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
   }, [vehicles, contracts, payments]);
 
   // Calculate revenue by vehicle type
-  const revenueByType = React.useMemo(() => {
+  const revenueByType = useMemo(() => {
     const typeMap: Record<string, number> = {};
 
     vehicleRevenueData.forEach((v) => {
@@ -104,7 +104,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
   }, [vehicleRevenueData]);
 
   // Calculate current vs previous month revenue
-  const revenueComparison = React.useMemo(() => {
+  const revenueComparison = useMemo(() => {
     if (!payments) return { current: 0, previous: 0, change: 0, changePercent: 0 };
 
     const currentMonthRevenue = payments
@@ -133,19 +133,19 @@ export const RevenueOptimizationWidget: React.FC = () => {
   }, [payments, currentMonthStart, currentMonthEnd, previousMonthStart, previousMonthEnd]);
 
   // Get top 5 revenue generators
-  const topRevenueVehicles = React.useMemo(() => {
+  const topRevenueVehicles = useMemo(() => {
     return vehicleRevenueData
       .filter((v) => v.totalRevenue > 0)
       .slice(0, 5);
   }, [vehicleRevenueData]);
 
   // Get underutilized vehicles
-  const underutilizedVehicles = React.useMemo(() => {
+  const underutilizedVehicles = useMemo(() => {
     return vehicleRevenueData.filter((v) => v.isUnderutilized).slice(0, 3);
   }, [vehicleRevenueData]);
 
   // Calculate potential revenue from idle vehicles
-  const potentialRevenue = React.useMemo(() => {
+  const potentialRevenue = useMemo(() => {
     const idleVehicles = vehicleRevenueData.filter((v) => v.utilizationRate < 50);
     const avgRevenuePerDay = vehicleRevenueData.reduce((sum, v) => sum + v.revenuePerDay, 0) / vehicleRevenueData.length || 0;
     const totalIdleDays = idleVehicles.reduce((sum, v) => sum + (90 - (90 * v.utilizationRate / 100)), 0);
@@ -154,7 +154,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
   }, [vehicleRevenueData]);
 
   // Prepare export data
-  const exportData = React.useMemo(() =>
+  const exportData = useMemo(() =>
     vehicleRevenueData.map(v => ({
       'المركبة': v.vehicleName,
       'النوع': v.vehicleType,

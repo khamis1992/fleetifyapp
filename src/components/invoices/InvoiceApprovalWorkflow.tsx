@@ -66,7 +66,7 @@ export const InvoiceApprovalWorkflow: React.FC<InvoiceApprovalWorkflowProps> = (
   const needsApproval = invoice?.total_amount > HIGH_VALUE_THRESHOLD;
 
   // Load approval history
-  React.useEffect(() => {
+  useEffect(() => {
     if (open && invoice?.id) {
       loadApprovalHistory();
     }

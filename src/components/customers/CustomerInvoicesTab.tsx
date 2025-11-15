@@ -26,9 +26,9 @@ export const CustomerInvoicesTab = ({ customerId, onCreateInvoice }: CustomerInv
   const { toast } = useToast();
   
   // Payment and preview dialog state
-  const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null);
-  const [isPayDialogOpen, setIsPayDialogOpen] = React.useState(false);
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
   // Handlers for invoice actions
   const handlePreview = (invoice: any) => {

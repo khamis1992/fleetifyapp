@@ -21,7 +21,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   onOpenChange,
   contract
 }) => {
-  const [renewalData, setRenewalData] = React.useState({
+  const [renewalData, setRenewalData] = useState({
     new_end_date: '',
     new_amount: 0,
     renewal_terms: ''
@@ -32,7 +32,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
   const { formatCurrency, currency } = useCurrencyFormatter();
 
   // Reset form when contract changes or dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (contract && open) {
       setRenewalData({
         new_end_date: calculateSuggestedEndDate(),

@@ -22,8 +22,8 @@ interface ReportFiltersProps {
 }
 
 export function ReportFilters({ moduleType, filters, onFiltersChange }: ReportFiltersProps) {
-  const [startDate, setStartDate] = React.useState<Date>();
-  const [endDate, setEndDate] = React.useState<Date>();
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   const handleDateChange = (type: 'start' | 'end', date: Date | undefined) => {
     if (type === 'start') {

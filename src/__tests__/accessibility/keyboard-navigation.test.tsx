@@ -403,7 +403,7 @@ describe('Keyboard Navigation Tests', () => {
 
     it('should restore focus after modal closes', async () => {
       const TriggerButton = () => {
-        const [isOpen, setIsOpen] = React.useState(false);
+        const [isOpen, setIsOpen] = useState(false);
 
         return (
           <div>
@@ -465,7 +465,7 @@ describe('Keyboard Navigation Tests', () => {
       const handleShortcut = vi.fn();
 
       const ComponentWithShortcut = () => {
-        React.useEffect(() => {
+        useEffect(() => {
           const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey && e.key === 'n') {
               e.preventDefault();
@@ -492,7 +492,7 @@ describe('Keyboard Navigation Tests', () => {
   describe('Accessible Dropdowns', () => {
     it('should open dropdown with Enter or Space', async () => {
       const TestDropdown = () => {
-        const [isOpen, setIsOpen] = React.useState(false);
+        const [isOpen, setIsOpen] = useState(false);
 
         return (
           <div>
@@ -554,7 +554,7 @@ describe('Keyboard Navigation Tests', () => {
   describe('Tooltip Accessibility', () => {
     it('should show tooltip on focus', async () => {
       const TestTooltip = () => {
-        const [showTooltip, setShowTooltip] = React.useState(false);
+        const [showTooltip, setShowTooltip] = useState(false);
 
         return (
           <div>

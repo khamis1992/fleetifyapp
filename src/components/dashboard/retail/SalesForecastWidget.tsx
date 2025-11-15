@@ -28,7 +28,7 @@ interface SalesForecastWidgetProps {
 
 export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ className }) => {
   const { formatCurrency } = useCurrencyFormatter();
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading } = useSalesOrders({
     status: 'completed'
@@ -204,7 +204,7 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
     };
   }, [salesOrders]);
 
-  const exportData = React.useMemo(() =>
+  const exportData = useMemo(() =>
     analytics.forecastData.map(item => ({
       'التاريخ': item.date,
       'المبيعات الفعلية': item.actual || 0,

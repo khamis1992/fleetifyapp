@@ -52,13 +52,13 @@ const defaultConditionItems: ConditionItem[] = [
 
 export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }: VehicleConditionWizardStepProps) {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [overallCondition, setOverallCondition] = React.useState<'excellent' | 'good' | 'fair' | 'poor'>('good');
-  const [mileage, setMileage] = React.useState<number>(0);
-  const [fuelLevel, setFuelLevel] = React.useState<number>(100);
-  const [notes, setNotes] = React.useState('');
-  const [conditionItems, setConditionItems] = React.useState<ConditionItem[]>(defaultConditionItems);
-  const [damagePoints, setDamagePoints] = React.useState<DamagePoint[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [overallCondition, setOverallCondition] = useState<'excellent' | 'good' | 'fair' | 'poor'>('good');
+  const [mileage, setMileage] = useState<number>(0);
+  const [fuelLevel, setFuelLevel] = useState<number>(100);
+  const [notes, setNotes] = useState('');
+  const [conditionItems, setConditionItems] = useState<ConditionItem[]>(defaultConditionItems);
+  const [damagePoints, setDamagePoints] = useState<DamagePoint[]>([]);
 
   // Smart notes generation based on damage points
   const generateAutomaticNotes = (damages: DamagePoint[]) => {

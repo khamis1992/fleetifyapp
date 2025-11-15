@@ -37,7 +37,7 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const { data: inventoryItems = [], isLoading: loadingInventory } = useInventoryItems({
     is_active: true
@@ -154,7 +154,7 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
     };
   }, [inventoryItems, salesOrders]);
 
-  const exportData = React.useMemo(() =>
+  const exportData = useMemo(() =>
     recommendations.items.map(item => ({
       'اسم المنتج': item.itemName,
       'رمز المنتج': item.itemCode,

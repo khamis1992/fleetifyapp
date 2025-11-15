@@ -22,8 +22,8 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
   enableRealTimeCheck = true,
   excludeCustomerId
 }) => {
-  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
-  const [showInlineWarning, setShowInlineWarning] = React.useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showInlineWarning, setShowInlineWarning] = useState(false);
 
   // Debounce the customer data to avoid too many API calls
   const debouncedCustomerData = useDebounce(customerData, 500);
@@ -34,7 +34,7 @@ export const CustomerFormWithDuplicateCheck: React.FC<CustomerFormWithDuplicateC
     excludeCustomerId
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('🔄 [DUPLICATE_CHECK_UI] Duplicate check result changed:', {
       duplicateCheck,
       hasDuplicates: duplicateCheck?.has_duplicates,

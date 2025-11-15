@@ -138,7 +138,7 @@ export const CreateAccountsForExistingCustomers: React.FC = () => {
       : customer.company_name;
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchCustomersWithoutAccounts();
   }, [companyId]);
 

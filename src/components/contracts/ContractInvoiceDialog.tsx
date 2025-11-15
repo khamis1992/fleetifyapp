@@ -30,8 +30,8 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [paymentScheduleCreated, setPaymentScheduleCreated] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentScheduleCreated, setPaymentScheduleCreated] = useState(false);
   
   const { formatCurrency, currency } = useCurrencyFormatter();
   
@@ -42,7 +42,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     return formatMonthlyPaymentDescription(dueDate, contract?.contract_number || '');
   };
 
-  const [invoiceData, setInvoiceData] = React.useState({
+  const [invoiceData, setInvoiceData] = useState({
     invoice_type: 'sales',
     invoice_date: new Date().toISOString().slice(0, 10),
     due_date: '',

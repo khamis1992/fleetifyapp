@@ -27,13 +27,13 @@ interface MaintenanceItem {
 export const MaintenanceScheduleWidget: React.FC = () => {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useVehicles();
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Calculate maintenance schedule based on last_maintenance_date
   // Assuming maintenance is due every 90 days (3 months)
   const MAINTENANCE_INTERVAL_DAYS = 90;
 
-  const maintenanceSchedule = React.useMemo(() => {
+  const maintenanceSchedule = useMemo(() => {
     if (!vehicles) return [];
 
     const schedule: MaintenanceItem[] = [];
@@ -91,7 +91,7 @@ export const MaintenanceScheduleWidget: React.FC = () => {
   }, [vehicles]);
 
   // Count by urgency
-  const urgencyCounts = React.useMemo(() => {
+  const urgencyCounts = useMemo(() => {
     const counts = {
       overdue: 0,
       due_soon: 0,
@@ -106,14 +106,14 @@ export const MaintenanceScheduleWidget: React.FC = () => {
   }, [maintenanceSchedule]);
 
   // Get items for display (overdue and due soon only, limit to 5)
-  const displayItems = React.useMemo(() => {
+  const displayItems = useMemo(() => {
     return maintenanceSchedule
       .filter((item) => item.urgency === 'overdue' || item.urgency === 'due_soon')
       .slice(0, 5);
   }, [maintenanceSchedule]);
 
   // Prepare export data
-  const exportData = React.useMemo(() =>
+  const exportData = useMemo(() =>
     maintenanceSchedule.map(item => ({
       'رقم اللوحة': item.plateNumber,
       'الطراز': `${item.make} ${item.model}`,

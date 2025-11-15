@@ -31,7 +31,7 @@ const MockNavigationComponent: React.FC<{ onNavigate: () => void }> = ({ onNavig
 
 // Mock page component
 const MockPageComponent: React.FC<{ pageName: string }> = ({ pageName }) => {
-  React.useEffect(() => {
+  useEffect(() => {
     const startTime = Date.now();
     
     // Simulate page load time

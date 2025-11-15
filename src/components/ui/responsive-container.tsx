@@ -53,7 +53,7 @@ const ResponsiveContainer = React.forwardRef<HTMLDivElement, ResponsiveContainer
     const { isMobile, isTablet, isDesktop } = useSimpleBreakpoint()
     
     // Responsive padding based on device
-    const responsivePadding = React.useMemo(() => {
+    const responsivePadding = useMemo(() => {
       if (padding === 'none') return 'px-0'
       
       const paddingMap = {

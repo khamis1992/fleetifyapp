@@ -56,7 +56,7 @@ export function ParallaxRecentActivities({ activities, loading }: ParallaxRecent
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
   // إضافة معلومات الشركة الحالية للتأكد من عدم التداخل
-  const companyInfo = React.useMemo(() => {
+  const companyInfo = useMemo(() => {
     return {
       id: companyId,
       name: 'الشركة الحالية',

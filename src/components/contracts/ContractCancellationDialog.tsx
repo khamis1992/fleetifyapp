@@ -37,9 +37,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   onOpenChange,
   contract
 }) => {
-  const [currentStep, setCurrentStep] = React.useState<'vehicle-return' | 'approval' | 'cancellation'>('vehicle-return');
-  const [rejectionReason, setRejectionReason] = React.useState('');
-  const [showComparisonReport, setShowComparisonReport] = React.useState(false);
+  const [currentStep, setCurrentStep] = useState<'vehicle-return' | 'approval' | 'cancellation'>('vehicle-return');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showComparisonReport, setShowComparisonReport] = useState(false);
   
   const { data: vehicleReturn, isLoading: isLoadingReturn } = useContractVehicleReturnByContract(contract?.id);
   const { data: comparison, isLoading: comparisonLoading } = useVehicleConditionComparison(contract?.id);
@@ -49,7 +49,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   const updateContractStatus = useUpdateContractStatus();
   const { logAudit } = useAuditLog();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (vehicleReturn) {
       if (vehicleReturn.status === 'approved') {
         setCurrentStep('cancellation');

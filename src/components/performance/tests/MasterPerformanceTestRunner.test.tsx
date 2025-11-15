@@ -38,10 +38,10 @@ jest.mock('@/utils/performanceValidation', () => ({
 
 // Master test runner component
 const MasterPerformanceTestRunner: React.FC = () => {
-  const [testResults, setTestResults] = React.useState<any[]>([]);
-  const [isRunning, setIsRunning] = React.useState(false);
-  const [currentSuite, setCurrentSuite] = React.useState('');
-  const [overallProgress, setOverallProgress] = React.useState(0);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentSuite, setCurrentSuite] = useState('');
+  const [overallProgress, setOverallProgress] = useState(0);
 
   const testSuites = [
     {

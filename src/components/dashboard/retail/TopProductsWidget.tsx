@@ -42,7 +42,7 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
   const { formatCurrency } = useCurrencyFormatter();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [viewMode, setViewMode] = useState<'revenue' | 'quantity'>('revenue');
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const { data: salesOrders = [], isLoading: loadingSales } = useSalesOrders({
     status: 'completed'
@@ -207,7 +207,7 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
     };
   }, [salesOrders, inventoryItems, timePeriod]);
 
-  const exportData = React.useMemo(() => {
+  const exportData = useMemo(() => {
     const displayData = viewMode === 'revenue' ? analytics.topByRevenue : analytics.topByQuantity;
     return displayData.map(item => ({
       'اسم المنتج': item.itemName,

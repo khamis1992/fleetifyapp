@@ -50,13 +50,13 @@ const documentTypes = [
 ];
 
 export function ContractDocuments({ contractId }: ContractDocumentsProps) {
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedReportId, setSelectedReportId] = React.useState<string | null>(null);
-  const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
-  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = React.useState<any>(null);
-  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [documentToDelete, setDocumentToDelete] = React.useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState<any>(null);
+  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const { data: documents = [], isLoading } = useContractDocuments(contractId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
