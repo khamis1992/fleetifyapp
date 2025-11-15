@@ -146,28 +146,8 @@ export const ForecastingSection: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   });
 
-  // Use real calendar data if available, otherwise use sample data
-  const today = new Date();
-  const calendarData = calendarDataRaw && calendarDataRaw.length > 0 
-    ? calendarDataRaw 
-    : Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(today);
-        date.setDate(today.getDate() + (i - 3));
-        // Generate realistic occupancy rates (higher on weekends)
-        const dayOfWeek = date.getDay();
-        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
-        const baseRate = isWeekend ? 60 : 40;
-        const variation = Math.floor(Math.random() * 20) - 10;
-        const occupancyRate = Math.max(30, Math.min(90, baseRate + variation));
-        
-        return {
-          date: date.getDate(),
-          fullDate: date,
-          isToday: i === 3,
-          occupancyRate,
-          contractsCount: Math.floor(occupancyRate * (dashboardStats?.activeContracts || 104) / 100)
-        };
-      });
+  // Use real calendar data from database
+  const calendarData = calendarDataRaw || [];
 
   const currentRevenue = Math.round(dashboardStats?.monthlyRevenue || 0);
   const revenueChangePercent = parseFloat(dashboardStats?.revenueChange?.replace(/[^0-9.-]/g, '') || '0');

@@ -114,20 +114,52 @@ export const FinancialAnalyticsSection: React.FC = () => {
         groupBy = 'month';
       }
 
-      const { data, error } = await supabase
+      // Fetch payments (revenue)
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select('amount, payment_date')
+        .select('amount, payment_date, contract_id')
         .eq('company_id', user.profile.company_id)
         .eq('status', 'completed')
         .gte('payment_date', startDate.toISOString())
         .order('payment_date', { ascending: true });
 
-      if (error) throw error;
+      if (paymentsError) throw paymentsError;
 
-      // Group data by period
-      const grouped = new Map<string, number>();
+      // Fetch contracts with vehicles to calculate costs
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_amount,
+          monthly_amount,
+          start_date,
+          end_date,
+          vehicles (
+            purchase_price,
+            depreciation_rate
+          )
+        `)
+        .eq('company_id', user.profile.company_id)
+        .in('status', ['active', 'expired'])
+        .gte('start_date', startDate.toISOString());
 
-      data?.forEach(payment => {
+      if (contractsError) throw contractsError;
+
+      // Fetch maintenance costs
+      const { data: maintenanceData, error: maintenanceError } = await supabase
+        .from('maintenance_records')
+        .select('cost, maintenance_date, vehicle_id')
+        .eq('company_id', user.profile.company_id)
+        .gte('maintenance_date', startDate.toISOString());
+
+      if (maintenanceError) console.error('Maintenance error:', maintenanceError);
+
+      // Group revenue and costs by period
+      const revenueGrouped = new Map<string, number>();
+      const costsGrouped = new Map<string, number>();
+
+      // Process payments (revenue)
+      paymentsData?.forEach(payment => {
         const date = new Date(payment.payment_date);
         let key: string;
 
@@ -140,7 +172,46 @@ export const FinancialAnalyticsSection: React.FC = () => {
           key = monthNames[date.getMonth()];
         }
 
-        grouped.set(key, (grouped.get(key) || 0) + (payment.amount || 0));
+        revenueGrouped.set(key, (revenueGrouped.get(key) || 0) + (payment.amount || 0));
+      });
+
+      // Process contracts (depreciation costs)
+      contractsData?.forEach(contract => {
+        const date = new Date(contract.start_date);
+        let key: string;
+
+        if (groupBy === 'day') {
+          key = `${date.getDate()}/${date.getMonth() + 1}`;
+        } else if (groupBy === 'week') {
+          const weekNum = Math.floor((now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          key = `الأسبوع ${8 - weekNum}`;
+        } else {
+          key = monthNames[date.getMonth()];
+        }
+
+        // Calculate depreciation cost
+        const vehicle = contract.vehicles as any;
+        if (vehicle && vehicle.purchase_price && vehicle.depreciation_rate) {
+          const monthlyDepreciation = (vehicle.purchase_price * vehicle.depreciation_rate / 100) / 12;
+          costsGrouped.set(key, (costsGrouped.get(key) || 0) + monthlyDepreciation);
+        }
+      });
+
+      // Process maintenance costs
+      maintenanceData?.forEach(maintenance => {
+        const date = new Date(maintenance.maintenance_date);
+        let key: string;
+
+        if (groupBy === 'day') {
+          key = `${date.getDate()}/${date.getMonth() + 1}`;
+        } else if (groupBy === 'week') {
+          const weekNum = Math.floor((now.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          key = `الأسبوع ${8 - weekNum}`;
+        } else {
+          key = monthNames[date.getMonth()];
+        }
+
+        costsGrouped.set(key, (costsGrouped.get(key) || 0) + (maintenance.cost || 0));
       });
 
       // Convert to array and fill missing periods with 0
@@ -149,19 +220,25 @@ export const FinancialAnalyticsSection: React.FC = () => {
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           const key = `${date.getDate()}/${date.getMonth() + 1}`;
-          result.push({ period: key, revenue: grouped.get(key) || 0 });
+          const revenue = revenueGrouped.get(key) || 0;
+          const costs = costsGrouped.get(key) || 0;
+          result.push({ period: key, revenue, profit: revenue - costs });
         }
       } else if (groupBy === 'week') {
         for (let i = 1; i <= 8; i++) {
           const key = `الأسبوع ${i}`;
-          result.push({ period: key, revenue: grouped.get(key) || 0 });
+          const revenue = revenueGrouped.get(key) || 0;
+          const costs = costsGrouped.get(key) || 0;
+          result.push({ period: key, revenue, profit: revenue - costs });
         }
       } else {
         for (let i = 5; i >= 0; i--) {
           const date = new Date(now);
           date.setMonth(now.getMonth() - i);
           const key = monthNames[date.getMonth()];
-          result.push({ period: key, revenue: grouped.get(key) || 0 });
+          const revenue = revenueGrouped.get(key) || 0;
+          const costs = costsGrouped.get(key) || 0;
+          result.push({ period: key, revenue, profit: revenue - costs });
         }
       }
 
@@ -172,17 +249,8 @@ export const FinancialAnalyticsSection: React.FC = () => {
   
   const isLoading = financialLoading || statsLoading || customersLoading || revenueLoading;
   
-  // Use real data if available, otherwise use sample data for visualization
-  const revenueData = revenueByPeriod && revenueByPeriod.length > 0 
-    ? revenueByPeriod 
-    : [
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth() - 5] : 'الأسبوع 1', revenue: 45000 },
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth() - 4] : 'الأسبوع 2', revenue: 52000 },
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth() - 3] : 'الأسبوع 3', revenue: 48000 },
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth() - 2] : 'الأسبوع 4', revenue: 61000 },
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth() - 1] : 'الأسبوع 5', revenue: 55000 },
-        { period: timePeriod === 'monthly' ? monthNames[new Date().getMonth()] : 'الأسبوع 6', revenue: dashboardStats?.monthlyRevenue || 167150 },
-      ];
+  // Use real data from database (revenue and profit calculated from contracts and maintenance)
+  const revenueData = revenueByPeriod || [];
 
   // Use real customer data from database
   const customerData = customersWeeklyData || [];
