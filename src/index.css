@@ -1,6 +1,5 @@
 /* Native Mobile App Styles - Import must be first */
 @import './styles/native-mobile.css';
-@import './styles/mobile-responsive-fixes.css';
 
 @tailwind base;
 @tailwind components;
