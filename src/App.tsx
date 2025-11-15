@@ -180,9 +180,9 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000,    // 5 minutes cache for frequently accessed data
       gcTime: 10 * 60 * 1000,        // Keep unused data in cache for 10 minutes
       
-      // Retry configuration - More resilient
-      retry: 2,                     // Retry failed queries twice
-      retryDelay: (attemptIndex: number) => Math.min(1000 * 1.5 ** attemptIndex, 5000),
+      // Retry configuration - More resilient (Phase 7 Enhanced)
+      retry: 3,                     // Retry failed queries 3 times for better reliability
+      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff: 1s, 2s, 4s, max 10s
       
       // Network mode - Use cache even when offline
       networkMode: 'online',        // Only fetch when online
@@ -234,7 +234,8 @@ const queryClient = new QueryClient({
       }
     },
     mutations: {
-      retry: 1,                     // Retry mutations once
+      retry: 2,                     // Retry mutations twice for critical operations (Phase 7 Enhanced)
+      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 8000), // Exponential backoff for mutations
       networkMode: 'online',        // Only mutate when online
       
       // Performance monitoring for mutations

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess'
 import * as Sentry from '@sentry/react'
+import { CACHE_TIERS } from '@/utils/cacheConfig'
 
 export interface Contract {
   id: string;
@@ -152,8 +153,7 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
       return contractsWithPayments
     },
     enabled: !!targetCompanyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    ...CACHE_TIERS.SEMI_STATIC, // Phase 7: Strategic caching for contracts
     retry: 2,
     retryDelay: 1000
   })
@@ -258,8 +258,7 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
       return contractsWithPayments
     },
     enabled: !!targetCompanyId && !!(customerId || vendorId),
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    ...CACHE_TIERS.SEMI_STATIC, // Phase 7: Strategic caching
     retry: 2,
     retryDelay: 1000
   })
