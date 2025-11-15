@@ -40,6 +40,8 @@ export const useDashboardStats = () => {
       }
 
       // جلب company_id من جدول profiles
+      let company_id: string;
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
@@ -64,9 +66,9 @@ export const useDashboardStats = () => {
           };
         }
         
-        var company_id = employeeData.company_id;
+        company_id = employeeData.company_id;
       } else {
-        var company_id = profileData.company_id;
+        company_id = profileData.company_id;
       }
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
