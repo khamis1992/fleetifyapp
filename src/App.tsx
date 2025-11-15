@@ -866,6 +866,13 @@ const AppRoutes = () => {
             </Suspense>
           </AdminRoute>
         } />
+        <Route path="legal-cases" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <LegalCasesTracking />
+            </Suspense>
+          </AdminRoute>
+        } />
         <Route path="legal/defaulters" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
