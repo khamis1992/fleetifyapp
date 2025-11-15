@@ -89,8 +89,6 @@ export const FinancialAnalyticsSection: React.FC = () => {
     enabled: !!user?.profile?.company_id,
   });
 
-  const isLoading = financialLoading || statsLoading || customersLoading || revenueLoading;
-
   // Revenue Chart Data from real financial data
   const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -171,6 +169,8 @@ export const FinancialAnalyticsSection: React.FC = () => {
     },
     enabled: !!user?.profile?.company_id,
   });
+  
+  const isLoading = financialLoading || statsLoading || customersLoading || revenueLoading;
   
   const revenueData = revenueByPeriod || [];
 
