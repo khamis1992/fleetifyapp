@@ -59,23 +59,26 @@ export const FinancialAnalyticsSection: React.FC = () => {
           return createdAt >= weekStart && createdAt < weekEnd;
         }) || [];
 
-        // Calculate returning customers (customers who have more than one contract)
+        // Calculate returning customers (customers who had contracts before this week)
         const customerIds = customersInWeek.map(c => c.id);
-        const { data: contractsData } = await supabase
-          .from('contracts')
-          .select('customer_id')
-          .in('customer_id', customerIds.length > 0 ? customerIds : ['none'])
-          .eq('company_id', user.profile.company_id);
-
-        // Count customers with more than one contract (returning customers)
-        const customerContractCounts = new Map<string, number>();
-        contractsData?.forEach(contract => {
-          const count = customerContractCounts.get(contract.customer_id) || 0;
-          customerContractCounts.set(contract.customer_id, count + 1);
-        });
+        let returningCount = 0;
         
-        const returningCount = Array.from(customerContractCounts.values())
-          .filter(count => count > 1).length;
+        if (customerIds.length > 0) {
+          // For each customer in this week, check if they had contracts before this week
+          for (const customerId of customerIds) {
+            const { data: previousContracts } = await supabase
+              .from('contracts')
+              .select('id')
+              .eq('customer_id', customerId)
+              .eq('company_id', user.profile.company_id)
+              .lt('created_at', weekStart.toISOString())
+              .limit(1);
+            
+            if (previousContracts && previousContracts.length > 0) {
+              returningCount++;
+            }
+          }
+        }
 
         weeklyData.push({
           week: `الأسبوع ${5 - i}`,
