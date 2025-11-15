@@ -63,6 +63,7 @@ export const useVendorPayments = () => {
   return useQuery({
     queryKey: ['vendor-payments', companyId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'vendor_payments', message: 'Fetching vendor payments', level: 'info', data: { companyId } });
       if (!companyId) throw new Error('Company ID is required');
 
       const { data, error } = await supabase
@@ -88,7 +89,11 @@ export const useVendorPayments = () => {
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, { tags: { feature: 'vendor_payments', action: 'fetch_payments', component: 'useVendorPayments' }, extra: { companyId } });
+        throw error;
+      }
+      Sentry.addBreadcrumb({ category: 'vendor_payments', message: 'Vendor payments fetched', level: 'info', data: { count: data?.length || 0 } });
       return data as VendorPayment[];
     },
     enabled: !!companyId,
@@ -102,6 +107,7 @@ export const useVendorPaymentsByVendor = (vendorId?: string) => {
   return useQuery({
     queryKey: ['vendor-payments', companyId, vendorId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'vendor_payments', message: 'Fetching vendor payments by vendor', level: 'info', data: { companyId, vendorId } });
       if (!companyId || !vendorId) throw new Error('Company ID and vendor ID are required');
 
       const { data, error } = await supabase
@@ -120,8 +126,11 @@ export const useVendorPaymentsByVendor = (vendorId?: string) => {
         .eq('company_id', companyId)
         .eq('vendor_id', vendorId)
         .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      if (error) {
+        Sentry.captureException(error, { tags: { feature: 'vendor_payments', action: 'fetch_payments_by_vendor', component: 'useVendorPaymentsByVendor' }, extra: { companyId, vendorId } });
+        throw error;
+      }
+      Sentry.addBreadcrumb({ category: 'vendor_payments', message: 'Vendor payments by vendor fetched', level: 'info', data: { count: data?.length || 0 } });
       return data as VendorPayment[];
     },
     enabled: !!companyId && !!vendorId,

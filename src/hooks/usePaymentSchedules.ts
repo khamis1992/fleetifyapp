@@ -19,6 +19,7 @@ export const useContractPaymentSchedules = (contractId: string) => {
   return useQuery({
     queryKey: ['payment-schedules', contractId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Fetching contract payment schedules', level: 'info', data: { contractId } });
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       const { data, error } = await supabase
@@ -27,8 +28,11 @@ export const useContractPaymentSchedules = (contractId: string) => {
         .eq('contract_id', contractId)
         .order('installment_number', { ascending: true });
 
-      if (error) throw error;
-
+      if (error) {
+        Sentry.captureException(error, { tags: { feature: 'payment_schedules', action: 'fetch_contract_schedules', component: 'useContractPaymentSchedules' }, extra: { contractId } });
+        throw error;
+      }
+      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Contract payment schedules fetched', level: 'info', data: { count: data?.length || 0 } });
       return data as PaymentSchedule[];
     },
     enabled: !!user?.id && !!contractId,
@@ -46,6 +50,7 @@ export const usePaymentSchedules = (filters?: {
   return useQuery({
     queryKey: ['payment-schedules', filters],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Fetching payment schedules', level: 'info', data: { filters } });
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
       let query = supabase
@@ -84,8 +89,11 @@ export const usePaymentSchedules = (filters?: {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-
+      if (error) {
+        Sentry.captureException(error, { tags: { feature: 'payment_schedules', action: 'fetch_schedules', component: 'usePaymentSchedules' }, extra: { filters } });
+        throw error;
+      }
+      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Payment schedules fetched', level: 'info', data: { count: data?.length || 0 } });
       return data as any[];
     },
     enabled: !!user?.id,

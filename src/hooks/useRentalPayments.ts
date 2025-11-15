@@ -185,6 +185,13 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
   return useQuery({
     queryKey: ['rental-receipts', companyId, customerId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Fetching rental payment receipts',
+        level: 'info',
+        data: { companyId, customerId }
+      });
+
       if (!companyId) {
         throw new Error('Company ID is required');
       }
@@ -226,8 +233,23 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
 
       if (error) {
         console.error('❌ Error fetching rental receipts:', error);
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'rental_payments',
+            action: 'fetch_receipts',
+            component: 'useRentalPaymentReceipts'
+          },
+          extra: { companyId, customerId }
+        });
         throw error;
       }
+
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Rental payment receipts fetched successfully',
+        level: 'info',
+        data: { count: data?.length || 0 }
+      });
 
       return (data || []) as RentalPaymentReceipt[];
     },
@@ -246,6 +268,13 @@ export const useAllRentalPaymentReceipts = () => {
   return useQuery({
     queryKey: ['all-rental-receipts', companyId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Fetching all rental payment receipts',
+        level: 'info',
+        data: { companyId }
+      });
+
       if (!companyId) {
         throw new Error('Company ID is required');
       }
@@ -281,8 +310,23 @@ export const useAllRentalPaymentReceipts = () => {
 
       if (error) {
         console.error('❌ Error fetching all rental receipts:', error);
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'rental_payments',
+            action: 'fetch_all_receipts',
+            component: 'useAllRentalPaymentReceipts'
+          },
+          extra: { companyId }
+        });
         throw error;
       }
+
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'All rental payment receipts fetched successfully',
+        level: 'info',
+        data: { count: data?.length || 0 }
+      });
 
       return (data || []) as RentalPaymentReceipt[];
     },
@@ -302,6 +346,13 @@ export const useCustomersWithRental = (searchTerm?: string) => {
   return useQuery({
     queryKey: ['customers-with-rental', companyId, searchTerm],
     queryFn: async () => {
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Fetching customers with rental',
+        level: 'info',
+        data: { companyId, hasSearch: !!searchTerm }
+      });
+
       if (!companyId) {
         throw new Error('Company ID is required');
       }
@@ -334,6 +385,14 @@ export const useCustomersWithRental = (searchTerm?: string) => {
 
       if (error) {
         console.error('❌ Error fetching customers with rental:', error);
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'rental_payments',
+            action: 'fetch_customers_with_rental',
+            component: 'useCustomersWithRental'
+          },
+          extra: { companyId, searchTerm }
+        });
         throw error;
       }
 
@@ -353,6 +412,13 @@ export const useCustomersWithRental = (searchTerm?: string) => {
         };
       });
 
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Customers with rental fetched successfully',
+        level: 'info',
+        data: { count: customers.length }
+      });
+
       return customers;
     },
     enabled: !!companyId,
@@ -369,6 +435,13 @@ export const useCustomerPaymentTotals = (customerId?: string) => {
   return useQuery({
     queryKey: ['customer-payment-totals', companyId, customerId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Fetching customer payment totals',
+        level: 'info',
+        data: { companyId, customerId }
+      });
+
       if (!companyId || !customerId) {
         return null;
       }
@@ -381,8 +454,22 @@ export const useCustomerPaymentTotals = (customerId?: string) => {
 
       if (error) {
         console.error('❌ Error fetching customer totals:', error);
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'rental_payments',
+            action: 'fetch_payment_totals',
+            component: 'useCustomerPaymentTotals'
+          },
+          extra: { companyId, customerId }
+        });
         throw error;
       }
+
+      Sentry.addBreadcrumb({
+        category: 'rental_payments',
+        message: 'Customer payment totals fetched successfully',
+        level: 'info'
+      });
 
       return data?.[0] as CustomerPaymentTotals;
     },
@@ -673,6 +760,7 @@ export const useCustomerOutstandingBalance = (customerId?: string) => {
   return useQuery({
     queryKey: ['customer-outstanding-balance', companyId, customerId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Fetching customer outstanding balance', level: 'info', data: { companyId, customerId } });
       if (!companyId || !customerId) {
         return null;
       }
@@ -685,9 +773,10 @@ export const useCustomerOutstandingBalance = (customerId?: string) => {
 
       if (error) {
         console.error('❌ Error fetching outstanding balance:', error);
+        Sentry.captureException(error, { tags: { feature: 'rental_payments', action: 'fetch_outstanding_balance', component: 'useCustomerOutstandingBalance' }, extra: { companyId, customerId } });
         throw error;
       }
-
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Outstanding balance fetched', level: 'info' });
       return data?.[0] as CustomerOutstandingBalance;
     },
     enabled: !!companyId && !!customerId,
@@ -704,6 +793,7 @@ export const useCustomerUnpaidMonths = (customerId?: string) => {
   return useQuery({
     queryKey: ['customer-unpaid-months', companyId, customerId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Fetching customer unpaid months', level: 'info', data: { companyId, customerId } });
       if (!companyId || !customerId) {
         return [];
       }
@@ -716,9 +806,10 @@ export const useCustomerUnpaidMonths = (customerId?: string) => {
 
       if (error) {
         console.error('❌ Error fetching unpaid months:', error);
+        Sentry.captureException(error, { tags: { feature: 'rental_payments', action: 'fetch_unpaid_months', component: 'useCustomerUnpaidMonths' }, extra: { companyId, customerId } });
         throw error;
       }
-
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Unpaid months fetched', level: 'info', data: { count: data?.length || 0 } });
       return (data || []) as UnpaidMonth[];
     },
     enabled: !!companyId && !!customerId,
@@ -735,8 +826,9 @@ export const useAllCustomersOutstandingBalance = () => {
   return useQuery({
     queryKey: ['all-customers-outstanding-balance', companyId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Fetching all customers outstanding balance', level: 'info', data: { companyId } });
       if (!companyId) {
-        throw new Error('Company ID is required');
+        return [];Error('Company ID is required');
       }
 
       const { data, error } = await supabase
@@ -746,9 +838,10 @@ export const useAllCustomersOutstandingBalance = () => {
 
       if (error) {
         console.error('❌ Error fetching all customers outstanding balance:', error);
+        Sentry.captureException(error, { tags: { feature: 'rental_payments', action: 'fetch_all_outstanding', component: 'useAllCustomersOutstandingBalance' }, extra: { companyId } });
         throw error;
       }
-
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'All customers outstanding balance fetched', level: 'info', data: { count: data?.length || 0 } });
       return (data || []) as CustomerBalanceSummary[];
     },
     enabled: !!companyId,
@@ -776,6 +869,7 @@ export const useCustomerVehicles = (customerId?: string) => {
   return useQuery({
     queryKey: ['customer-vehicles', companyId, customerId],
     queryFn: async () => {
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Fetching customer vehicles', level: 'info', data: { companyId, customerId } });
       if (!companyId || !customerId) {
         return [];
       }
@@ -815,6 +909,7 @@ export const useCustomerVehicles = (customerId?: string) => {
 
       if (vehiclesError) {
         console.error('❌ Error fetching vehicles:', vehiclesError);
+        Sentry.captureException(vehiclesError, { tags: { feature: 'rental_payments', action: 'fetch_customer_vehicles', component: 'useCustomerVehicles' }, extra: { companyId, customerId } });
         throw vehiclesError;
       }
 
@@ -842,6 +937,7 @@ export const useCustomerVehicles = (customerId?: string) => {
         })
         .filter((v: any) => v !== null) as CustomerVehicle[];
 
+      Sentry.addBreadcrumb({ category: 'rental_payments', message: 'Customer vehicles fetched', level: 'info', data: { count: vehicles.length } });
       return vehicles;
     },
     enabled: !!companyId && !!customerId,
