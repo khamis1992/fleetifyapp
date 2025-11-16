@@ -99,105 +99,57 @@ export const useDashboardStats = () => {
       const firstDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
       const lastDayPrevMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0);
 
-      // Get vehicles data only if vehicles module is enabled
+      // ⚡ PERFORMANCE OPTIMIZATION: Run all count queries in parallel
+      const countQueries = [];
+      
+      // Vehicles queries (if enabled)
       if (isVehiclesEnabled) {
-        // Get active vehicles (all vehicles with is_active = true, not just available)
-        const { count: activeVehicles, error: activeVehiclesError } = await supabase
-          .from('vehicles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .eq('is_active', true);
-        
-        if (activeVehiclesError) {
-          console.error('Error fetching active vehicles:', activeVehiclesError);
-        }
-        activeVehiclesCount = activeVehicles || 0;
-
-        // Get total vehicles
-        const { count: totalVehicles, error: totalVehiclesError } = await supabase
-          .from('vehicles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id);
-        
-        if (totalVehiclesError) {
-          console.error('Error fetching total vehicles:', totalVehiclesError);
-        }
-        vehiclesCount = totalVehicles || 0;
-
-        // Get previous month total vehicles for comparison
-        const { count: prevMonthVehicles } = await supabase
-          .from('vehicles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .lte('created_at', lastDayPrevMonth.toISOString());
-        previousMonthVehicles = prevMonthVehicles || 0;
-
-        // Get active contracts count
-        // العقود النشطة: status = 'active' فقط لتجنب التعقيدات
-        const today = new Date().toISOString().split('T')[0];
-        const { count: activeContractsCount, error: contractsError } = await supabase
-          .from('contracts')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .eq('status', 'active');
-        
-        // تسجيل الخطأ إن وجد
-        if (contractsError) {
-          console.error('Error fetching active contracts:', contractsError);
-        }
-        
-        contractsCount = activeContractsCount || 0;
-
-        // Get total contracts count
-        const { count: allContractsCount } = await supabase
-          .from('contracts')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id);
-        totalContractsCount = allContractsCount || 0;
-
-        // Get previous month active contracts for comparison (not just created in that month)
-        const { count: prevMonthActiveContracts } = await supabase
-          .from('contracts')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .eq('status', 'active')
-          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0])
-          .or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`);
-        previousMonthContracts = prevMonthActiveContracts || 0;
+        countQueries.push(
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]).or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`)
+        );
       }
-
-      // Get properties data only if properties module is enabled
+      
+      // Properties queries (if enabled)
       if (isPropertiesEnabled) {
-        const { count: propCount } = await supabase
-          .from('properties')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .eq('is_active', true);
-        propertiesCount = propCount || 0;
-
-        const { count: ownersCount } = await supabase
-          .from('property_owners')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', company_id)
-          .eq('is_active', true);
-        propertyOwnersCount = ownersCount || 0;
+        countQueries.push(
+          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          supabase.from('property_owners').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true)
+        );
       }
-
-      // Get customers count
-      const { count: customersCount, error: customersError } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', company_id)
-        .eq('is_active', true);
-
-      // Get previous month total customers for comparison (not just created in that month)
-      const { count: prevMonthTotalCustomers } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .lte('created_at', lastDayPrevMonth.toISOString());
-      previousMonthCustomers = prevMonthTotalCustomers || 0;
+      
+      // Customers queries (always run)
+      countQueries.push(
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).lte('created_at', lastDayPrevMonth.toISOString())
+      );
+      
+      // Execute all count queries in parallel
+      const results = await Promise.all(countQueries);
+      
+      // Parse results based on which modules are enabled
+      let resultIndex = 0;
+      
+      if (isVehiclesEnabled) {
+        activeVehiclesCount = results[resultIndex++].count || 0;
+        vehiclesCount = results[resultIndex++].count || 0;
+        previousMonthVehicles = results[resultIndex++].count || 0;
+        contractsCount = results[resultIndex++].count || 0;
+        totalContractsCount = results[resultIndex++].count || 0;
+        previousMonthContracts = results[resultIndex++].count || 0;
+      }
+      
+      if (isPropertiesEnabled) {
+        propertiesCount = results[resultIndex++].count || 0;
+        propertyOwnersCount = results[resultIndex++].count || 0;
+      }
+      
+      const customersCount = results[resultIndex++].count || 0;
+      previousMonthCustomers = results[resultIndex++].count || 0;
 
       // Get monthly revenue from different sources based on enabled modules
       const currentMonth = new Date();
