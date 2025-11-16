@@ -227,7 +227,7 @@ export const LegalCasesTracking: React.FC = () => {
                 className="inline-flex items-center gap-2 hover:border-primary transition-all hover:shadow-md"
               >
                 <Zap className="w-4 h-4" />
-                Auto-Create Setup
+                إعداد الإنشاء التلقائي
               </Button>
               <Button 
                 onClick={() => setShowCaseWizard(true)}
@@ -698,6 +698,7 @@ export const LegalCasesTracking: React.FC = () => {
       <AutoCreateCaseTriggersConfig
         open={showTriggersConfig}
         onOpenChange={setShowTriggersConfig}
+        companyId={companyId || ''}
         onSave={(config) => {
           console.log('Auto-create config saved:', config);
         }}

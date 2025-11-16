@@ -1,5 +1,6 @@
 /**
  * Auto-Create Case Triggers Configuration
+ * محفزات الإنشاء التلقائي للقضايا القانونية
  * 
  * Configure automatic legal case creation based on:
  * - Invoice overdue > X days (configurable)
@@ -25,6 +26,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { autoCreateTriggersTranslations as t } from './translations/autoCreateTriggers';
+import { useLegalCaseAutoTriggers } from '@/hooks/useLegalCaseAutoTriggers';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface AutoCreateTriggerConfig {
   enable_overdue_invoice_trigger: boolean;
@@ -44,47 +48,58 @@ interface AutoCreateTriggerConfig {
 interface AutoCreateCaseTriggersConfigProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  companyId: string;
   onSave?: (config: AutoCreateTriggerConfig) => void;
 }
 
 const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> = ({
   open,
   onOpenChange,
+  companyId,
   onSave,
 }) => {
+  const { config: savedConfig, isLoading, saveConfig } = useLegalCaseAutoTriggers(companyId);
   const [config, setConfig] = useState<AutoCreateTriggerConfig>({
     enable_overdue_invoice_trigger: true,
     overdue_days_threshold: 21,
-    
     enable_overdue_amount_trigger: true,
     overdue_amount_threshold: 15000,
-    
     enable_broken_promises_trigger: true,
     broken_promises_count: 3,
-    
     auto_case_priority: 'high',
     auto_case_type: 'payment_collection',
     notify_on_auto_create: true,
   });
 
-  const handleSave = () => {
+  // Load saved config when dialog opens
+  React.useEffect(() => {
+    if (open && savedConfig) {
+      setConfig(savedConfig);
+    }
+  }, [open, savedConfig]);
+
+  const handleSave = async () => {
     // Validate thresholds
     if (config.overdue_days_threshold < 1) {
-      toast.error('Overdue days must be at least 1');
+      toast.error(t.messages.errorDays);
       return;
     }
     if (config.overdue_amount_threshold < 100) {
-      toast.error('Overdue amount must be at least 100');
+      toast.error(t.messages.errorAmount);
       return;
     }
     if (config.broken_promises_count < 1) {
-      toast.error('Broken promises count must be at least 1');
+      toast.error(t.messages.errorPromises);
       return;
     }
 
-    onSave?.(config);
-    toast.success('Auto-create triggers configured successfully');
-    onOpenChange(false);
+    try {
+      await saveConfig.mutateAsync(config);
+      onSave?.(config);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving config:', error);
+    }
   };
 
   const countEnabledTriggers = [
@@ -99,10 +114,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-500" />
-            Auto-Create Legal Case Triggers
+            {t.dialog.title}
           </DialogTitle>
           <DialogDescription>
-            Configure automatic creation of legal cases based on customer behavior and payment status
+            {t.dialog.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,7 +125,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>{countEnabledTriggers} trigger(s) enabled.</strong> Legal cases will be automatically created when these conditions are met.
+              <strong>{t.alert.enabledCount(countEnabledTriggers)}</strong> {t.alert.description}
             </AlertDescription>
           </Alert>
 
@@ -129,26 +144,27 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                         })
                       }
                     />
-                    Invoice Overdue by Days
+                    {t.triggers.overdueInvoice.title}
                   </CardTitle>
                   <CardDescription>
-                    Auto-create case when invoice is overdue for X days
+                    {t.triggers.overdueInvoice.description}
                   </CardDescription>
                 </div>
                 {config.enable_overdue_invoice_trigger && (
-                  <Badge className="bg-green-600">Enabled</Badge>
+                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="overdue_days" className="text-sm font-semibold mb-2 block">
-                  Number of Days Overdue *
+                  {t.triggers.overdueInvoice.label} *
                 </Label>
                 <Input
                   id="overdue_days"
                   type="number"
                   min="1"
+                  max="365"
                   value={config.overdue_days_threshold}
                   onChange={(e) =>
                     setConfig({
@@ -157,9 +173,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                     })
                   }
                   disabled={!config.enable_overdue_invoice_trigger}
+                  placeholder={t.triggers.overdueInvoice.placeholder}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Example: If set to 21, a case will be created when invoice is 21+ days overdue
+                  {t.triggers.overdueInvoice.example}
                 </p>
               </div>
             </CardContent>
@@ -180,21 +197,21 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                         })
                       }
                     />
-                    Total Overdue Amount Threshold
+                    {t.triggers.overdueAmount.title}
                   </CardTitle>
                   <CardDescription>
-                    Auto-create case when customer's total overdue amount exceeds threshold
+                    {t.triggers.overdueAmount.description}
                   </CardDescription>
                 </div>
                 {config.enable_overdue_amount_trigger && (
-                  <Badge className="bg-green-600">Enabled</Badge>
+                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="overdue_amount" className="text-sm font-semibold mb-2 block">
-                  Overdue Amount Threshold (Currency Units) *
+                  {t.triggers.overdueAmount.label} *
                 </Label>
                 <Input
                   id="overdue_amount"
@@ -209,9 +226,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                     })
                   }
                   disabled={!config.enable_overdue_amount_trigger}
+                  placeholder={t.triggers.overdueAmount.placeholder}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Example: If set to 15,000, a case will be created when total overdue reaches or exceeds 15,000
+                  {t.triggers.overdueAmount.example}
                 </p>
               </div>
             </CardContent>
@@ -232,21 +250,21 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                         })
                       }
                     />
-                    Broken Payment Promises
+                    {t.triggers.brokenPromises.title}
                   </CardTitle>
                   <CardDescription>
-                    Auto-create case when customer breaks X payment promises
+                    {t.triggers.brokenPromises.description}
                   </CardDescription>
                 </div>
                 {config.enable_broken_promises_trigger && (
-                  <Badge className="bg-green-600">Enabled</Badge>
+                  <Badge className="bg-green-600">{t.badges.enabled}</Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="broken_promises" className="text-sm font-semibold mb-2 block">
-                  Number of Broken Promises *
+                  {t.triggers.brokenPromises.label} *
                 </Label>
                 <Input
                   id="broken_promises"
@@ -261,9 +279,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                     })
                   }
                   disabled={!config.enable_broken_promises_trigger}
+                  placeholder={t.triggers.brokenPromises.placeholder}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Example: If set to 3, a case will be created when customer breaks 3+ promises
+                  {t.triggers.brokenPromises.example}
                 </p>
               </div>
             </CardContent>
@@ -272,15 +291,15 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           {/* Default Case Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Default Case Settings</CardTitle>
+              <CardTitle className="text-base">{t.settings.title}</CardTitle>
               <CardDescription>
-                These settings will be used for auto-created cases
+                {t.settings.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="auto_priority" className="text-sm font-semibold mb-2 block">
-                  Default Priority for Auto-Created Cases
+                  {t.settings.priority.label}
                 </Label>
                 <select
                   id="auto_priority"
@@ -293,10 +312,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   }
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                  <option value="low">{t.settings.priority.options.low}</option>
+                  <option value="medium">{t.settings.priority.options.medium}</option>
+                  <option value="high">{t.settings.priority.options.high}</option>
+                  <option value="urgent">{t.settings.priority.options.urgent}</option>
                 </select>
               </div>
 
@@ -312,9 +331,9 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                   id="notify_toggle"
                 />
                 <Label htmlFor="notify_toggle" className="flex-1 cursor-pointer">
-                  <div className="font-medium">Send Notification</div>
+                  <div className="font-medium">{t.settings.notify.title}</div>
                   <div className="text-sm text-muted-foreground">
-                    Notify legal team when case is auto-created
+                    {t.settings.notify.description}
                   </div>
                 </Label>
               </div>
@@ -324,19 +343,19 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           {/* Summary */}
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-6 space-y-2">
-              <h4 className="font-medium text-blue-900">Configuration Summary</h4>
+              <h4 className="font-medium text-blue-900">{t.summary.title}</h4>
               <ul className="space-y-1 text-sm text-blue-800">
                 {config.enable_overdue_invoice_trigger && (
-                  <li>✓ Create case when invoice is {config.overdue_days_threshold}+ days overdue</li>
+                  <li>{t.summary.overdueInvoice(config.overdue_days_threshold)}</li>
                 )}
                 {config.enable_overdue_amount_trigger && (
-                  <li>✓ Create case when total overdue ≥ {config.overdue_amount_threshold}</li>
+                  <li>{t.summary.overdueAmount(config.overdue_amount_threshold)}</li>
                 )}
                 {config.enable_broken_promises_trigger && (
-                  <li>✓ Create case when {config.broken_promises_count}+ promises are broken</li>
+                  <li>{t.summary.brokenPromises(config.broken_promises_count)}</li>
                 )}
                 {countEnabledTriggers === 0 && (
-                  <li className="text-blue-600">No triggers enabled - auto-create is disabled</li>
+                  <li className="text-blue-600">{t.summary.noTriggers}</li>
                 )}
               </ul>
             </CardContent>
@@ -345,10 +364,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t.buttons.cancel}
           </Button>
           <Button onClick={handleSave}>
-            Save Configuration
+            {t.buttons.save}
           </Button>
         </DialogFooter>
       </DialogContent>
