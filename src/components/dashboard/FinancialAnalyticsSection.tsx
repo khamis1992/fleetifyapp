@@ -333,7 +333,13 @@ export const FinancialAnalyticsSection: React.FC = () => {
                   backgroundColor: 'rgba(0, 0, 0, 0.8)',
                   border: 'none',
                   borderRadius: '8px',
-                  color: 'white'
+                  color: '#ffffff'
+                }}
+                itemStyle={{
+                  color: '#ffffff'
+                }}
+                labelStyle={{
+                  color: '#ffffff'
                 }}
                 formatter={(value: any) => [formatCurrency(value), 'الإيرادات']}
               />
@@ -406,7 +412,13 @@ export const FinancialAnalyticsSection: React.FC = () => {
                   backgroundColor: 'rgba(0, 0, 0, 0.8)',
                   border: 'none',
                   borderRadius: '8px',
-                  color: 'white'
+                  color: '#ffffff'
+                }}
+                itemStyle={{
+                  color: '#ffffff'
+                }}
+                labelStyle={{
+                  color: '#ffffff'
                 }}
               />
               <Legend 

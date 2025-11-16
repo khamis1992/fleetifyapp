@@ -168,7 +168,13 @@ export const FleetOperationsSection: React.FC = () => {
                   backgroundColor: 'rgba(0, 0, 0, 0.8)',
                   border: 'none',
                   borderRadius: '8px',
-                  color: 'white'
+                  color: '#ffffff'
+                }}
+                itemStyle={{
+                  color: '#ffffff'
+                }}
+                labelStyle={{
+                  color: '#ffffff'
                 }}
               />
             </PieChart>
