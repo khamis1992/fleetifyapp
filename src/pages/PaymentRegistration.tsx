@@ -842,7 +842,6 @@ const PaymentRegistration = () => {
                       </div>
                     </th>
                     <th className="p-4 text-right text-sm font-semibold">طريقة الدفع</th>
-                    <th className="p-4 text-right text-sm font-semibold">تسجيل الدفعة</th>
                     <th 
                       className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => {
@@ -867,7 +866,7 @@ const PaymentRegistration = () => {
                 <tbody>
                   {filteredContracts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-12 text-center">
+                      <td colSpan={8} className="p-12 text-center">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">
                           {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
