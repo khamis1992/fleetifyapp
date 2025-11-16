@@ -49,6 +49,8 @@ export const useDashboardStats = () => {
         .single();
 
       if (profileError || !profileData?.company_id) {
+        console.warn('[useDashboardStats] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+        
         // Try fallback to employees table
         const { data: employeeData, error: employeeError } = await supabase
           .from('employees')
@@ -58,6 +60,9 @@ export const useDashboardStats = () => {
           .single();
         
         if (employeeError || !employeeData?.company_id) {
+          console.error('[useDashboardStats] No company_id found in employees either', { employeeError, user_id: user.id });
+          
+          // Return empty stats instead of throwing error
           return {
             totalCustomers: 0,
             monthlyRevenue: 0,
@@ -67,8 +72,10 @@ export const useDashboardStats = () => {
         }
         
         company_id = employeeData.company_id;
+        console.log('[useDashboardStats] Found company_id from employees table:', company_id);
       } else {
         company_id = profileData.company_id;
+        console.log('[useDashboardStats] Found company_id from profiles table:', company_id);
       }
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد

@@ -79,7 +79,7 @@ const StatCard = React.memo<StatCardProps>(({
 StatCard.displayName = 'StatCard';
 
 export const WorldClassStatsCards: React.FC = () => {
-  const { data: stats, isLoading } = useDashboardStats();
+  const { data: stats, isLoading, error } = useDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
 
   // Memoize formatted revenue to prevent recalculation on every render
@@ -148,6 +148,12 @@ export const WorldClassStatsCards: React.FC = () => {
         ))}
       </section>
     );
+  }
+  
+  // Show stats even if there's an error (with default values)
+  if (error) {
+    console.error('[WorldClassStatsCards] Error loading stats:', error);
+    // Continue to render with empty/default stats
   }
 
   return (
