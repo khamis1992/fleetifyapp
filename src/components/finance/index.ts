@@ -19,6 +19,8 @@ export { EnhancedChartOfAccountsManagement } from './EnhancedChartOfAccountsMana
 export { CustomerAccountSelector } from './CustomerAccountSelector';
 export { EnhancedCustomerAccountSelector } from './EnhancedCustomerAccountSelector';
 export { CashReceiptVoucher } from './CashReceiptVoucher';
+export { UnifiedPrintableDocument } from './UnifiedPrintableDocument';
+export type { PrintableDocumentData } from './UnifiedPrintableDocument';
 export { PaymentPreviewDialog } from './PaymentPreviewDialog';
 export { ProfessionalInvoiceTemplate } from './ProfessionalInvoiceTemplate';
 export { RedesignedJournalEntryCard } from './RedesignedJournalEntryCard';

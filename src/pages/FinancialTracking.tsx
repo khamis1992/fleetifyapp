@@ -48,6 +48,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQueryClient } from '@tanstack/react-query';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { financialHelpContent } from '@/data/helpContent';
+import { printDocument, convertReceiptToPrintable } from '@/utils/printHelper';
 
 const DELAY_FINE_PER_DAY = 120; // QAR
 const MAX_FINE_PER_MONTH = 3000; // QAR
@@ -699,199 +700,17 @@ const FinancialTrackingInner: React.FC = () => {
   };
 
   /**
-   * Print receipt for a specific payment
+   * Print receipt for a specific payment using unified template
    */
   const printReceipt = (receipt: RentalPaymentReceipt) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('الرجاء السماح بالنوافذ المنبثقة للطباعة');
-      return;
+    try {
+      const printableData = convertReceiptToPrintable(receipt);
+      printDocument(printableData);
+      toast.success('تم فتح نافذة الطباعة');
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('حدث خطأ أثناء الطباعة');
     }
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html dir="rtl">
-      <head>
-        <meta charset="UTF-8">
-        <title>إيصال دفع - ${receipt.customer_name}</title>
-        <style>
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            direction: rtl;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .header h1 {
-            margin: 0;
-            color: #333;
-          }
-          .header p {
-            margin: 5px 0;
-            color: #666;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-          }
-          .info-item {
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 5px;
-          }
-          .info-item label {
-            display: block;
-            font-weight: bold;
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 5px;
-          }
-          .info-item value {
-            display: block;
-            font-size: 16px;
-            color: #333;
-          }
-          .summary {
-            border-top: 2px solid #333;
-            padding-top: 20px;
-            margin-top: 30px;
-          }
-          .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-          }
-          .summary-row.total {
-            font-weight: bold;
-            font-size: 18px;
-            border-bottom: 2px solid #333;
-            margin-top: 10px;
-          }
-          .fine-badge {
-            background: #fee;
-            color: #c00;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-          }
-          .footer {
-            margin-top: 50px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
-          }
-          @media print {
-            body {
-              padding: 0;
-            }
-            .no-print {
-              display: none;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>🚗 نظام تتبع المدفوعات</h1>
-          <p>إيصال دفع إيجار سيارة</p>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-item">
-            <label>اسم العميل</label>
-            <value>${receipt.customer_name}</value>
-          </div>
-          <div class="info-item">
-            <label>رقم الإيصال</label>
-            <value>${(receipt as any).receipt_number || receipt.id.substring(0, 8)}</value>
-          </div>
-          <div class="info-item">
-            <label>طريقة الدفع</label>
-            <value>${
-              (receipt as any).payment_method === 'cash' ? 'نقداً' :
-              (receipt as any).payment_method === 'bank_transfer' ? 'تحويل بنكي' :
-              (receipt as any).payment_method === 'check' ? 'شيك' :
-              (receipt as any).payment_method === 'credit_card' ? 'بطاقة ائتمان' :
-              (receipt as any).payment_method === 'debit_card' ? 'بطاقة مدين' :
-              'غير محدد'
-            }</value>
-          </div>
-          ${(receipt as any).reference_number ? `
-          <div class="info-item">
-            <label>رقم المرجع</label>
-            <value>${(receipt as any).reference_number}</value>
-          </div>
-          ` : ''}
-          <div class="info-item">
-            <label>الشهر</label>
-            <value>${receipt.month}</value>
-          </div>
-          <div class="info-item">
-            <label>تاريخ الدفع</label>
-            <value>${receipt.payment_date && !isNaN(new Date(receipt.payment_date).getTime()) 
-              ? format(new Date(receipt.payment_date), 'dd MMMM yyyy', { locale: ar })
-              : 'تاريخ غير متاح'
-            }</value>
-          </div>
-        </div>
-
-        <div class="summary">
-          <div class="summary-row">
-            <span>الإيجار الشهري</span>
-            <span>${(receipt.rent_amount || 0).toLocaleString('ar-QA')} ريال</span>
-          </div>
-          ${receipt.fine > 0 ? `
-          <div class="summary-row">
-            <span>غرامة التأخير</span>
-            <span class="fine-badge">${(receipt.fine || 0).toLocaleString('ar-QA')} ريال</span>
-          </div>
-          ` : ''}
-          <div class="summary-row total">
-            <span>الإجمالي المدفوع</span>
-            <span>${(receipt.total_paid || 0).toLocaleString('ar-QA')} ريال</span>
-          </div>
-        </div>
-
-        ${receipt.fine > 0 ? `
-        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 20px;">
-          <p style="margin: 0; color: #856404;">
-            <strong>⚠️ ملاحظة:</strong> تم احتساب غرامة تأخير بسبب الدفع بعد موعد الاستحقاق (يوم 1 من الشهر).
-          </p>
-        </div>
-        ` : ''}
-
-        <div class="footer">
-          <p>تم الطباعة بتاريخ: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
-          <p>هذا الإيصال تم إنشاؤه آلياً من نظام تتبع المدفوعات</p>
-        </div>
-
-        <div class="no-print" style="text-align: center; margin-top: 30px;">
-          <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
-            🖨️ طباعة
-          </button>
-          <button onclick="window.close()" style="padding: 10px 30px; font-size: 16px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 5px; margin-right: 10px;">
-            إغلاق
-          </button>
-        </div>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    toast.success('تم فتح نافذة الطباعة');
   };
 
   /**
