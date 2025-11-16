@@ -58,13 +58,15 @@ export const FleetOperationsSection: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
 
-      const { data, error } = await supabase
+      // Get scheduled maintenance records
+      const { data: scheduledMaintenance, error: maintenanceError } = await supabase
         .from('maintenance_records')
         .select(`
           id,
           maintenance_type,
           scheduled_date,
           status,
+          vehicle_id,
           vehicles (license_plate)
         `)
         .eq('company_id', user.profile.company_id)
@@ -72,8 +74,42 @@ export const FleetOperationsSection: React.FC = () => {
         .order('scheduled_date', { ascending: true })
         .limit(5);
 
-      if (error) throw error;
-      return data || [];
+      if (maintenanceError) console.error('Error fetching scheduled maintenance:', maintenanceError);
+
+      // Get vehicles currently in maintenance status (not in scheduled records)
+      const { data: vehiclesInMaintenance, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('id, license_plate, status')
+        .eq('company_id', user.profile.company_id)
+        .in('status', ['maintenance', 'out_of_service'])
+        .eq('is_active', true);
+
+      if (vehiclesError) console.error('Error fetching vehicles in maintenance:', vehiclesError);
+
+      // Combine both lists
+      const combined = [];
+      
+      // Add scheduled maintenance
+      if (scheduledMaintenance && scheduledMaintenance.length > 0) {
+        combined.push(...scheduledMaintenance);
+      }
+      
+      // Add vehicles in maintenance that don't have scheduled records
+      if (vehiclesInMaintenance && vehiclesInMaintenance.length > 0) {
+        const scheduledVehicleIds = new Set(scheduledMaintenance?.map(m => m.vehicle_id) || []);
+        const unscheduledVehicles = vehiclesInMaintenance
+          .filter(v => !scheduledVehicleIds.has(v.id))
+          .map(v => ({
+            id: `vehicle-${v.id}`,
+            maintenance_type: v.status === 'out_of_service' ? 'خارج الخدمة' : 'صيانة جارية',
+            scheduled_date: new Date().toISOString(), // Current date
+            status: 'in_progress',
+            vehicles: { license_plate: v.license_plate }
+          }));
+        combined.push(...unscheduledVehicles);
+      }
+      
+      return combined.slice(0, 5); // Limit to 5 items
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -84,14 +120,26 @@ export const FleetOperationsSection: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return 0;
 
-      const { count, error } = await supabase
+      // Count scheduled maintenance records
+      const { count: scheduledCount, error: scheduledError } = await supabase
         .from('maintenance_records')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', user.profile.company_id)
         .in('status', ['pending', 'in_progress', 'scheduled']);
 
-      if (error) throw error;
-      return count || 0;
+      if (scheduledError) console.error('Error counting scheduled maintenance:', scheduledError);
+
+      // Count vehicles in maintenance status
+      const { count: vehiclesCount, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', user.profile.company_id)
+        .in('status', ['maintenance', 'out_of_service'])
+        .eq('is_active', true);
+
+      if (vehiclesError) console.error('Error counting vehicles in maintenance:', vehiclesError);
+
+      return (scheduledCount || 0) + (vehiclesCount || 0);
     },
     enabled: !!user?.profile?.company_id,
   });
