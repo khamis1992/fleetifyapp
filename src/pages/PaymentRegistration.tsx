@@ -43,6 +43,8 @@ interface ActiveContract {
   monthlyPayment: number;
   notes: string;
   status: 'pending' | 'paid';
+  paymentMonth: string; // Format: YYYY-MM
+  paymentMethod: string; // cash, bank_transfer, check, etc.
 }
 
 interface PaymentAnalysis {
@@ -107,6 +109,9 @@ const PaymentRegistration = () => {
 
       if (error) throw error;
 
+      // Get current month in YYYY-MM format
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
       const formattedContracts: ActiveContract[] = (data || []).map((contract: any) => ({
         contractId: contract.contract_number || contract.id,
         customerId: contract.customer_id,
@@ -118,7 +123,9 @@ const PaymentRegistration = () => {
         color: contract.vehicle?.color || 'white',
         monthlyPayment: contract.monthly_amount || 0,
         notes: '',
-        status: 'pending'
+        status: 'pending',
+        paymentMonth: currentMonth, // Default to current month
+        paymentMethod: 'cash' // Default payment method
       }));
 
       setContracts(formattedContracts);
@@ -241,17 +248,49 @@ const PaymentRegistration = () => {
 
   // حفظ جميع الدفعات
   const saveAllPayments = async () => {
-    const payments = contracts.filter(c => c.status === 'paid' && c.notes);
+    const paymentsToSave = contracts.filter(c => c.status === 'paid' && c.notes);
 
-    if (payments.length === 0) {
+    if (paymentsToSave.length === 0) {
       toast.error('لا توجد دفعات لحفظها!');
       return;
     }
 
+    if (!companyId) {
+      toast.error('لم يتم العثور على معرف الشركة');
+      return;
+    }
+
     try {
-      // هنا يمكن إضافة الكود لحفظ الدفعات في قاعدة البيانات
-      console.log('Saving payments:', payments);
-      toast.success(`تم حفظ ${payments.length} دفعة بنجاح!`);
+      // Prepare payment records for database
+      const paymentRecords = paymentsToSave.map(payment => ({
+        company_id: companyId,
+        contract_id: payment.contractId,
+        customer_id: payment.customerId,
+        amount: payment.monthlyPayment,
+        payment_date: `${payment.paymentMonth}-01`, // First day of selected month
+        payment_method: payment.paymentMethod,
+        payment_type: 'rental_payment',
+        payment_status: 'completed',
+        notes: payment.notes,
+        transaction_type: 'inflow' as const
+      }));
+
+      // Insert payments into database
+      const { data, error } = await supabase
+        .from('payments')
+        .insert(paymentRecords)
+        .select();
+
+      if (error) throw error;
+
+      toast.success(`تم حفظ ${paymentsToSave.length} دفعة بنجاح!`);
+      
+      // Reset saved payments
+      setContracts(prev =>
+        prev.map(c =>
+          c.status === 'paid' ? { ...c, status: 'pending' as const, notes: '' } : c
+        )
+      );
     } catch (error) {
       console.error('Error saving payments:', error);
       toast.error('فشل في حفظ بعض الدفعات');
@@ -415,6 +454,8 @@ const PaymentRegistration = () => {
                     <th className="p-4 text-right text-sm font-semibold">رقم المركبة</th>
                     <th className="p-4 text-right text-sm font-semibold">رقم الجوال</th>
                     <th className="p-4 text-right text-sm font-semibold">القسط الشهري</th>
+                    <th className="p-4 text-right text-sm font-semibold">الشهر</th>
+                    <th className="p-4 text-right text-sm font-semibold">طريقة الدفع</th>
                     <th className="p-4 text-right text-sm font-semibold">تسجيل الدفعة</th>
                     <th className="p-4 text-right text-sm font-semibold">الحالة</th>
                     <th className="p-4 text-right text-sm font-semibold">إجراء</th>
@@ -423,7 +464,7 @@ const PaymentRegistration = () => {
                 <tbody>
                   {filteredContracts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-12 text-center">
+                      <td colSpan={9} className="p-12 text-center">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">
                           {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
@@ -438,6 +479,39 @@ const PaymentRegistration = () => {
                         <td className="p-4 font-mono text-sm text-muted-foreground">{contract.phone}</td>
                         <td className="p-4 font-mono font-semibold text-success">
                           {contract.monthlyPayment.toLocaleString('ar-SA')} ر.ق
+                        </td>
+                        <td className="p-4">
+                          <input
+                            type="month"
+                            value={contract.paymentMonth}
+                            onChange={(e) => setContracts(prev =>
+                              prev.map(c =>
+                                c.contractId === contract.contractId
+                                  ? { ...c, paymentMonth: e.target.value }
+                                  : c
+                              )
+                            )}
+                            className="w-full p-2 border rounded-md text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          />
+                        </td>
+                        <td className="p-4">
+                          <select
+                            value={contract.paymentMethod}
+                            onChange={(e) => setContracts(prev =>
+                              prev.map(c =>
+                                c.contractId === contract.contractId
+                                  ? { ...c, paymentMethod: e.target.value }
+                                  : c
+                              )
+                            )}
+                            className="w-full p-2 border rounded-md text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          >
+                            <option value="cash">نقدي</option>
+                            <option value="bank_transfer">تحويل بنكي</option>
+                            <option value="check">شيك</option>
+                            <option value="credit_card">بطاقة ائتمان</option>
+                            <option value="other">أخرى</option>
+                          </select>
                         </td>
                         <td className="p-4">
                           <textarea
