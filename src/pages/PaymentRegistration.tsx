@@ -40,7 +40,11 @@ interface ActiveContract {
   phone: string;
   vehicleNumber: string;
   color: string;
-  monthlyPayment: number;
+  monthlyPayment: number; // القسط الشهري المستحق
+  amountPaid: number; // المبلغ المدفوع فعلياً
+  remainingAmount: number; // المبلغ المتبقي
+  daysOverdue: number; // عدد أيام التأخير
+  lateFeeAmount: number; // مبلغ الغرامة
   notes: string;
   status: 'pending' | 'paid';
   paymentMonth: string; // Format: YYYY-MM
@@ -112,21 +116,29 @@ const PaymentRegistration = () => {
       // Get current month in YYYY-MM format
       const currentMonth = new Date().toISOString().slice(0, 7);
       
-      const formattedContracts: ActiveContract[] = (data || []).map((contract: any) => ({
-        contractId: contract.contract_number || contract.id,
-        customerId: contract.customer_id,
-        customerName: contract.customers?.customer_type === 'corporate'
-          ? (contract.customers?.company_name_ar || contract.customers?.company_name || '')
-          : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim(),
-        phone: contract.customers?.phone || '',
-        vehicleNumber: contract.vehicle?.plate_number || 'غير محدد',
-        color: contract.vehicle?.color || 'white',
-        monthlyPayment: contract.monthly_amount || 0,
-        notes: '',
-        status: 'pending',
-        paymentMonth: currentMonth, // Default to current month
-        paymentMethod: 'cash' // Default payment method
-      }));
+      const formattedContracts: ActiveContract[] = (data || []).map((contract: any) => {
+        const monthlyPayment = contract.monthly_amount || 0;
+        
+        return {
+          contractId: contract.contract_number || contract.id,
+          customerId: contract.customer_id,
+          customerName: contract.customers?.customer_type === 'corporate'
+            ? (contract.customers?.company_name_ar || contract.customers?.company_name || '')
+            : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim(),
+          phone: contract.customers?.phone || '',
+          vehicleNumber: contract.vehicle?.plate_number || 'غير محدد',
+          color: contract.vehicle?.color || 'white',
+          monthlyPayment: monthlyPayment,
+          amountPaid: monthlyPayment, // Default to full amount
+          remainingAmount: 0, // Will be calculated
+          daysOverdue: 0, // Will be calculated
+          lateFeeAmount: 0, // Will be calculated
+          notes: '',
+          status: 'pending',
+          paymentMonth: currentMonth, // Default to current month
+          paymentMethod: 'cash' // Default payment method
+        };
+      });
 
       setContracts(formattedContracts);
     } catch (error) {
@@ -135,6 +147,57 @@ const PaymentRegistration = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calculate late fee: 120 SAR/day, max 3000 SAR/month
+  const calculateLateFee = (paymentMonth: string): { daysOverdue: number; lateFeeAmount: number } => {
+    const dueDate = new Date(`${paymentMonth}-01`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    const daysOverdue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    if (daysOverdue === 0) {
+      return { daysOverdue: 0, lateFeeAmount: 0 };
+    }
+    
+    // 120 SAR per day
+    const dailyFee = 120;
+    let lateFeeAmount = daysOverdue * dailyFee;
+    
+    // Max 3000 SAR per month
+    const maxFee = 3000;
+    if (lateFeeAmount > maxFee) {
+      lateFeeAmount = maxFee;
+    }
+    
+    return { daysOverdue, lateFeeAmount };
+  };
+
+  // Update payment calculations when amount or month changes
+  const updatePaymentCalculations = (contractId: string, updates: Partial<ActiveContract>) => {
+    setContracts(prev =>
+      prev.map(c => {
+        if (c.contractId !== contractId) return c;
+        
+        const updated = { ...c, ...updates };
+        
+        // Recalculate late fee if month changed
+        if (updates.paymentMonth) {
+          const { daysOverdue, lateFeeAmount } = calculateLateFee(updates.paymentMonth);
+          updated.daysOverdue = daysOverdue;
+          updated.lateFeeAmount = lateFeeAmount;
+        }
+        
+        // Recalculate remaining amount if amount paid changed
+        if (updates.amountPaid !== undefined) {
+          updated.remainingAmount = updated.monthlyPayment - updated.amountPaid;
+        }
+        
+        return updated;
+      })
+    );
   };
 
   // تحليل النص بالذكاء الاصطناعي
@@ -268,14 +331,20 @@ const PaymentRegistration = () => {
         company_id: companyId,
         contract_id: payment.contractId,
         customer_id: payment.customerId,
-        amount: payment.monthlyPayment,
+        amount: payment.amountPaid + payment.lateFeeAmount, // Total amount including late fee
+        monthly_amount: payment.monthlyPayment, // ✅ Monthly installment due
+        amount_paid: payment.amountPaid, // ✅ Actual amount paid
+        remaining_amount: payment.remainingAmount, // ✅ Remaining balance
         payment_date: today, // ✅ Actual date the payment was made
         payment_month: payment.paymentMonth, // ✅ Accounting month (YYYY-MM)
+        due_date: `${payment.paymentMonth}-01`, // ✅ Due date (first of month)
+        days_overdue: payment.daysOverdue, // ✅ Days overdue
+        late_fee_amount: payment.lateFeeAmount, // ✅ Late fee charged
         payment_method: payment.paymentMethod,
         payment_type: 'rental_payment',
-        payment_status: 'completed',
         notes: payment.notes,
         transaction_type: 'inflow' as const
+        // payment_status will be auto-calculated by trigger
       }));
 
       // Insert payments into database
@@ -456,7 +525,8 @@ const PaymentRegistration = () => {
                     <th className="p-4 text-right text-sm font-semibold">اسم العميل</th>
                     <th className="p-4 text-right text-sm font-semibold">رقم المركبة</th>
                     <th className="p-4 text-right text-sm font-semibold">رقم الجوال</th>
-                    <th className="p-4 text-right text-sm font-semibold">القسط الشهري</th>
+                    <th className="p-4 text-right text-sm font-semibold">القسط المستحق</th>
+                    <th className="p-4 text-right text-sm font-semibold">المبلغ المدفوع</th>
                     <th className="p-4 text-right text-sm font-semibold">الشهر</th>
                     <th className="p-4 text-right text-sm font-semibold">طريقة الدفع</th>
                     <th className="p-4 text-right text-sm font-semibold">تسجيل الدفعة</th>
@@ -467,7 +537,7 @@ const PaymentRegistration = () => {
                 <tbody>
                   {filteredContracts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-12 text-center">
+                      <td colSpan={10} className="p-12 text-center">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">
                           {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
@@ -480,20 +550,43 @@ const PaymentRegistration = () => {
                         <td className="p-4 font-semibold">{contract.customerName}</td>
                         <td className="p-4 font-mono text-primary">{contract.vehicleNumber}</td>
                         <td className="p-4 font-mono text-sm text-muted-foreground">{contract.phone}</td>
-                        <td className="p-4 font-mono font-semibold text-success">
-                          {contract.monthlyPayment.toLocaleString('ar-SA')} ر.ق
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            <div className="font-mono font-semibold text-success">
+                              {contract.monthlyPayment.toLocaleString('ar-SA')} ر.ق
+                            </div>
+                            {contract.daysOverdue > 0 && (
+                              <div className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('ar-SA')} ر.ق
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <Input
+                            type="number"
+                            value={contract.amountPaid}
+                            onChange={(e) => updatePaymentCalculations(contract.contractId, {
+                              amountPaid: parseFloat(e.target.value) || 0
+                            })}
+                            className="w-32 text-sm font-mono"
+                            min="0"
+                            step="0.01"
+                          />
+                          {contract.remainingAmount !== 0 && (
+                            <div className="text-xs mt-1 text-muted-foreground">
+                              متبقي: {contract.remainingAmount.toLocaleString('ar-SA')} ر.ق
+                            </div>
+                          )}
                         </td>
                         <td className="p-4">
                           <input
                             type="month"
                             value={contract.paymentMonth}
-                            onChange={(e) => setContracts(prev =>
-                              prev.map(c =>
-                                c.contractId === contract.contractId
-                                  ? { ...c, paymentMonth: e.target.value }
-                                  : c
-                              )
-                            )}
+                            onChange={(e) => updatePaymentCalculations(contract.contractId, {
+                              paymentMonth: e.target.value
+                            })}
                             className="w-full p-2 border rounded-md text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
                           />
                         </td>
