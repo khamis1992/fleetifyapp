@@ -29,7 +29,8 @@ import {
   Calendar,
   AlertCircle,
   X,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import { PageHelp } from "@/components/help";
 import { PaymentRegistrationPageHelpContent } from "@/components/help/content";
@@ -70,6 +71,25 @@ const PaymentRegistration = () => {
     analysis: PaymentAnalysis;
   } | null>(null);
   const analysisTimeoutRef = useRef<NodeJS.Timeout>(); // إصلاح memory leak
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Filtering state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
+
+  // Sorting state
+  const [sortBy, setSortBy] = useState<'name' | 'amount' | 'overdue' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Bulk actions state
+  const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
+
+  // Mobile view state
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
 
   // جلب العقود النشطة
   useEffect(() => {
@@ -370,20 +390,82 @@ const PaymentRegistration = () => {
     }
   };
 
-  // تصفية العقود - محسّن بـ useMemo و debounce
-  const filteredContracts = useMemo(() => {
-    if (!debouncedSearchTerm) return contracts;
-    
-    const searchLower = debouncedSearchTerm.toLowerCase().trim();
-    return contracts.filter(contract => (
-      contract.customerName.toLowerCase().includes(searchLower) ||
-      contract.vehicleNumber.toLowerCase().includes(searchLower) ||
-      contract.phone.includes(searchLower)
-    ));
-  }, [contracts, debouncedSearchTerm]); // يُعاد حسابه فقط عند تغيير contracts أو debouncedSearchTerm
+  // تصفية وترتيب وترقيم العقود - محسّن بـ useMemo
+  const { filteredAndSortedContracts, paginatedContracts, statistics, totalPages } = useMemo(() => {
+    // 1. Search filtering
+    let filtered = contracts;
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase().trim();
+      filtered = filtered.filter(contract => (
+        contract.customerName.toLowerCase().includes(searchLower) ||
+        contract.vehicleNumber.toLowerCase().includes(searchLower) ||
+        contract.phone.includes(searchLower)
+      ));
+    }
 
-  const paidCount = contracts.filter(c => c.status === 'paid').length;
-  const pendingCount = contracts.filter(c => c.status === 'pending').length;
+    // 2. Status filtering
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === statusFilter);
+    }
+
+    // 3. Payment method filtering
+    if (paymentMethodFilter !== 'all') {
+      filtered = filtered.filter(c => c.paymentMethod === paymentMethodFilter);
+    }
+
+    // 4. Month filtering
+    if (monthFilter !== 'all') {
+      filtered = filtered.filter(c => c.paymentMonth === monthFilter);
+    }
+
+    // 5. Sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.customerName.localeCompare(b.customerName, 'ar');
+          break;
+        case 'amount':
+          comparison = a.monthlyPayment - b.monthlyPayment;
+          break;
+        case 'overdue':
+          comparison = a.daysOverdue - b.daysOverdue;
+          break;
+        case 'date':
+          comparison = a.paymentMonth.localeCompare(b.paymentMonth);
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    // 6. Calculate statistics
+    const stats = {
+      total: contracts.length,
+      paid: contracts.filter(c => c.status === 'paid').length,
+      pending: contracts.filter(c => c.status === 'pending').length,
+      overdue: contracts.filter(c => c.daysOverdue > 0).length,
+      totalAmount: contracts.reduce((sum, c) => sum + c.monthlyPayment, 0),
+      totalPaid: contracts.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amountPaid, 0),
+      totalLateFees: contracts.reduce((sum, c) => sum + c.lateFeeAmount, 0),
+    };
+
+    // 7. Pagination
+    const pages = Math.ceil(sorted.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginated = sorted.slice(startIndex, startIndex + itemsPerPage);
+
+    return {
+      filteredAndSortedContracts: sorted,
+      paginatedContracts: paginated,
+      statistics: stats,
+      totalPages: pages
+    };
+  }, [contracts, debouncedSearchTerm, statusFilter, paymentMethodFilter, monthFilter, sortBy, sortOrder, currentPage, itemsPerPage]);
+
+  // For backward compatibility
+  const filteredContracts = paginatedContracts;
+  const paidCount = statistics.paid;
+  const pendingCount = statistics.pending;
 
   if (loading) {
     return (
@@ -451,45 +533,87 @@ const PaymentRegistration = () => {
           </CardContent>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold font-mono">{contracts.length}</div>
-                  <div className="text-sm text-muted-foreground">عقود نشطة</div>
+                  <div className="text-xl font-bold font-mono">{statistics.total}</div>
+                  <div className="text-xs text-muted-foreground">عقود نشطة</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold font-mono">{paidCount}</div>
-                  <div className="text-sm text-muted-foreground">دفعات مسجلة</div>
+                  <div className="text-xl font-bold font-mono">{statistics.paid}</div>
+                  <div className="text-xs text-muted-foreground">مسددة</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-orange-600" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold font-mono">{pendingCount}</div>
-                  <div className="text-sm text-muted-foreground">في الانتظار</div>
+                  <div className="text-xl font-bold font-mono">{statistics.pending}</div>
+                  <div className="text-xs text-muted-foreground">معلقة</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <div className="text-xl font-bold font-mono">{statistics.overdue}</div>
+                  <div className="text-xs text-muted-foreground">متأخرة</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <DollarSign className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold font-mono">{statistics.totalAmount.toLocaleString('ar-SA')}</div>
+                  <div className="text-xs text-muted-foreground">إجمالي المبالغ</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold font-mono">{statistics.totalLateFees.toLocaleString('ar-SA')}</div>
+                  <div className="text-xs text-muted-foreground">غرامات</div>
                 </div>
               </div>
             </CardContent>
@@ -499,8 +623,9 @@ const PaymentRegistration = () => {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {/* Search Bar - محسّن مع مؤشر تحميل */}
-            <div className="p-4 border-b">
+            {/* Search and Filters */}
+            <div className="p-4 border-b space-y-4">
+              {/* Search Bar */}
               <div className="relative max-w-md">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -509,10 +634,117 @@ const PaymentRegistration = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10 pl-10"
                 />
-                {/* مؤشر تحميل أثناء البحث */}
                 {searchTerm && searchTerm !== debouncedSearchTerm && (
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Filters and Controls */}
+              <div className="flex flex-wrap gap-3 items-center">
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-3 py-2 border rounded-md text-sm bg-background"
+                >
+                  <option value="all">جميع الحالات</option>
+                  <option value="pending">معلقة</option>
+                  <option value="completed">مسددة كاملة</option>
+                  <option value="partial">مسددة جزئياً</option>
+                  <option value="late">متأخرة</option>
+                  <option value="partial_late">متأخرة جزئياً</option>
+                  <option value="overpaid">مدفوعة زائدة</option>
+                </select>
+
+                {/* Payment Method Filter */}
+                <select
+                  value={paymentMethodFilter}
+                  onChange={(e) => {
+                    setPaymentMethodFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-3 py-2 border rounded-md text-sm bg-background"
+                >
+                  <option value="all">جميع طرق الدفع</option>
+                  <option value="cash">نقدي</option>
+                  <option value="bank_transfer">تحويل بنكي</option>
+                  <option value="credit_card">بطاقة ائتمان</option>
+                  <option value="check">شيك</option>
+                </select>
+
+                {/* Month Filter */}
+                <select
+                  value={monthFilter}
+                  onChange={(e) => {
+                    setMonthFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-3 py-2 border rounded-md text-sm bg-background"
+                >
+                  <option value="all">جميع الأشهر</option>
+                  <option value="01">يناير</option>
+                  <option value="02">فبراير</option>
+                  <option value="03">مارس</option>
+                  <option value="04">أبريل</option>
+                  <option value="05">مايو</option>
+                  <option value="06">يونيو</option>
+                  <option value="07">يوليو</option>
+                  <option value="08">أغسطس</option>
+                  <option value="09">سبتمبر</option>
+                  <option value="10">أكتوبر</option>
+                  <option value="11">نوفمبر</option>
+                  <option value="12">ديسمبر</option>
+                </select>
+
+                {/* Results count */}
+                <div className="text-sm text-muted-foreground mr-auto">
+                  عرض {paginatedContracts.length} من {filteredContracts.length}
+                </div>
+
+                {/* Bulk actions */}
+                {selectedContracts.size > 0 && (
+                  <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                    <Badge variant="secondary" className="font-bold">
+                      {selectedContracts.size} مختار
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Bulk payment action
+                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+                        console.log('Bulk payment for:', selectedData);
+                        // TODO: Implement bulk payment modal
+                      }}
+                    >
+                      <DollarSign className="w-4 h-4 ml-1" />
+                      تسجيل دفعة جماعية
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Export selected
+                        console.log('Export selected:', Array.from(selectedContracts));
+                        // TODO: Implement export functionality
+                      }}
+                    >
+                      <Download className="w-4 h-4 ml-1" />
+                      تصدير
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedContracts(new Set())}
+                    >
+                      <X className="w-4 h-4 ml-1" />
+                      إلغاء التحديد
+                    </Button>
                   </div>
                 )}
               </div>
@@ -523,20 +755,119 @@ const PaymentRegistration = () => {
               <table className="w-full">
                 <thead className="bg-muted/50 border-b-2">
                   <tr>
-                    <th className="p-4 text-right text-sm font-semibold">معلومات العميل</th>
-                    <th className="p-4 text-right text-sm font-semibold">القسط المستحق</th>
-                    <th className="p-4 text-right text-sm font-semibold">المبلغ المدفوع</th>
-                    <th className="p-4 text-right text-sm font-semibold">الشهر</th>
+                    <th className="p-4 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedContracts.size === filteredContracts.length && filteredContracts.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedContracts(new Set(filteredContracts.map(c => c.contractId)));
+                          } else {
+                            setSelectedContracts(new Set());
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                    </th>
+                    <th 
+                      className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (sortField === 'customerName') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField('customerName');
+                          setSortOrder('asc');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        معلومات العميل
+                        {sortField === 'customerName' && (
+                          <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (sortField === 'monthlyAmount') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField('monthlyAmount');
+                          setSortOrder('desc');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        القسط المستحق
+                        {sortField === 'monthlyAmount' && (
+                          <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (sortField === 'amountPaid') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField('amountPaid');
+                          setSortOrder('desc');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        المبلغ المدفوع
+                        {sortField === 'amountPaid' && (
+                          <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (sortField === 'month') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField('month');
+                          setSortOrder('desc');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        الشهر
+                        {sortField === 'month' && (
+                          <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
                     <th className="p-4 text-right text-sm font-semibold">طريقة الدفع</th>
                     <th className="p-4 text-right text-sm font-semibold">تسجيل الدفعة</th>
-                    <th className="p-4 text-right text-sm font-semibold">الحالة</th>
+                    <th 
+                      className="p-4 text-right text-sm font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (sortField === 'status') {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortField('status');
+                          setSortOrder('asc');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        الحالة
+                        {sortField === 'status' && (
+                          <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
                     <th className="p-4 text-right text-sm font-semibold">إجراء</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredContracts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-12 text-center">
+                      <td colSpan={9} className="p-12 text-center">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">
                           {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
@@ -546,6 +877,22 @@ const PaymentRegistration = () => {
                   ) : (
                     filteredContracts.map((contract) => (
                       <tr key={contract.contractId} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedContracts.has(contract.contractId)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedContracts);
+                              if (e.target.checked) {
+                                newSelected.add(contract.contractId);
+                              } else {
+                                newSelected.delete(contract.contractId);
+                              }
+                              setSelectedContracts(newSelected);
+                            }}
+                            className="w-4 h-4"
+                          />
+                        </td>
                         <td className="p-4">
                           <Popover>
                             <PopoverTrigger asChild>
@@ -694,6 +1041,51 @@ const PaymentRegistration = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredContracts.length > 0 && (
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-t">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>عرض</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="border rounded-md px-2 py-1 bg-background"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>من {filteredContracts.length} عقد</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    السابق
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    صفحة {page} من {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    التالي
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
