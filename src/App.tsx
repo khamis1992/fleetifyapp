@@ -144,7 +144,7 @@ const PerformanceDashboard = lazy(() => import("./pages/PerformanceDashboard"));
 
 // Legal pages
 const Legal = lazy(() => import("./pages/Legal"));
-const LegalCasesTracking = lazy(() => import("./pages/legal/LegalCasesTrackingTest"));
+const LegalCasesTracking = lazy(() => import("./pages/legal/LegalCasesTracking"));
 const DefaultersList = lazy(() => import("./pages/legal/DefaultersList"));
 const LegalReports = lazy(() => import("./pages/legal/LegalReports"));
 const LateFees = lazy(() => import("./pages/legal/LateFees"));
