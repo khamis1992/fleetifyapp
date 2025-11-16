@@ -262,12 +262,15 @@ const PaymentRegistration = () => {
 
     try {
       // Prepare payment records for database
+      const today = new Date().toISOString().split('T')[0]; // Actual payment date (today)
+      
       const paymentRecords = paymentsToSave.map(payment => ({
         company_id: companyId,
         contract_id: payment.contractId,
         customer_id: payment.customerId,
         amount: payment.monthlyPayment,
-        payment_date: `${payment.paymentMonth}-01`, // First day of selected month
+        payment_date: today, // ✅ Actual date the payment was made
+        payment_month: payment.paymentMonth, // ✅ Accounting month (YYYY-MM)
         payment_method: payment.paymentMethod,
         payment_type: 'rental_payment',
         payment_status: 'completed',
