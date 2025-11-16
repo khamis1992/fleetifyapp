@@ -47,6 +47,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1465,6 +1466,52 @@ interface PaymentScheduleTabProps {
 
 const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: PaymentScheduleTabProps) => {
   const { toast } = useToast();
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [isPaymentPreviewOpen, setIsPaymentPreviewOpen] = useState(false);
+
+  // Handle payment view
+  const handlePaymentView = useCallback((payment: any) => {
+    setSelectedPayment(payment);
+    setIsPaymentPreviewOpen(true);
+  }, []);
+
+  // Handle payment print
+  const handlePaymentPrint = useCallback((payment: any) => {
+    try {
+      const { printDocument, convertReceiptToPrintable } = require('@/utils/printHelper');
+      
+      // Convert payment to receipt format
+      const receiptData = {
+        id: payment.id,
+        customer_name: contract.customer_name || 'عميل',
+        customer_phone: contract.customer_phone,
+        vehicle_number: contract.vehicle_number,
+        month: format(new Date(payment.payment_date), 'MMMM yyyy', { locale: ar }),
+        payment_date: payment.payment_date,
+        rent_amount: payment.amount,
+        fine: 0,
+        total_paid: payment.amount,
+        payment_method: payment.payment_method,
+        reference_number: payment.reference_number,
+        notes: payment.notes
+      };
+      
+      const printableData = convertReceiptToPrintable(receiptData);
+      printDocument(printableData);
+      
+      toast({
+        title: 'تم فتح نافذة الطباعة',
+        description: `إيصال الدفع #${payment.payment_number}`,
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+      toast({
+        title: 'خطأ في الطباعة',
+        description: 'حدث خطأ أثناء طباعة الإيصال',
+        variant: 'destructive'
+      });
+    }
+  }, [contract, toast]);
   
   // حساب جدول الدفعات المستحق
   const paymentSchedule = useMemo(() => {
@@ -1666,6 +1713,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">المرجع</TableHead>
                   <TableHead className="text-right">الملاحظات</TableHead>
+                  <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1691,6 +1739,28 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                       {payment.notes || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePaymentView(payment)}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          عرض
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePaymentPrint(payment)}
+                          className="flex items-center gap-1"
+                        >
+                          <Printer className="h-4 w-4" />
+                          طباعة
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1721,6 +1791,48 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
           </Card>
         )}
       </div>
+
+      {/* Payment Preview Dialog */}
+      {selectedPayment && (
+        <Dialog open={isPaymentPreviewOpen} onOpenChange={setIsPaymentPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                تفاصيل الدفعة #{selectedPayment.payment_number}
+              </DialogTitle>
+              <DialogDescription>
+                معاينة تفاصيل الدفعة قبل الطباعة
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-4">
+              {(() => {
+                const { UnifiedPrintableDocument } = require('@/components/finance');
+                const { convertReceiptToPrintable } = require('@/utils/printHelper');
+                
+                const receiptData = {
+                  id: selectedPayment.id,
+                  customer_name: contract.customer_name || 'عميل',
+                  customer_phone: contract.customer_phone,
+                  vehicle_number: contract.vehicle_number,
+                  month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
+                  payment_date: selectedPayment.payment_date,
+                  rent_amount: selectedPayment.amount,
+                  fine: 0,
+                  total_paid: selectedPayment.amount,
+                  payment_method: selectedPayment.payment_method,
+                  reference_number: selectedPayment.reference_number,
+                  notes: selectedPayment.notes
+                };
+                
+                const printableData = convertReceiptToPrintable(receiptData);
+                
+                return <UnifiedPrintableDocument data={printableData} />;
+              })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
