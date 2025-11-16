@@ -240,8 +240,16 @@
   /* Fix for pages with fixed height */
   [class*="min-h-screen"],
   [class*="h-screen"] {
-    min-height: 100vh;
-    height: auto;
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Specific fix for CRM page */
+  [data-page="crm"] {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
   }
   
   /* ==========================================

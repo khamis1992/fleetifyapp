@@ -761,7 +761,7 @@ export default function CustomerCRM() {
 
   if (loadingCustomers) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50" data-page="crm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[1, 2, 3, 4].map(i => (
@@ -778,7 +778,7 @@ export default function CustomerCRM() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" data-page="crm">
       {/* Page Title */}
       <div className="bg-white border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
