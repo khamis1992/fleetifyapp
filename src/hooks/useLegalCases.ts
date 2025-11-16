@@ -100,7 +100,7 @@ export const useLegalCases = (filters?: UseLegalCasesFilters) => {
 
       let query = supabase
         .from('legal_cases')
-        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, total_costs, created_at, case_description', { count: 'exact' })
+        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, total_costs, created_at, description', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
