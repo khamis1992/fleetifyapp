@@ -65,6 +65,34 @@ const PaymentRegistration = () => {
   const [contracts, setContracts] = useState<ActiveContract[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  // Advanced search state
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedSearch, setAdvancedSearch] = useState({
+    minAmount: '',
+    maxAmount: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const saved = localStorage.getItem('paymentRegistrationColumns');
+    return saved ? JSON.parse(saved) : {
+      customer: true,
+      monthlyAmount: true,
+      amountPaid: true,
+      month: true,
+      paymentMethod: true,
+      status: true,
+      actions: true
+    };
+  });
+
+  // Save column visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem('paymentRegistrationColumns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
 
   // Export function
   const exportToCSV = (data: ActiveContract[], filename: string) => {
@@ -146,6 +174,32 @@ const PaymentRegistration = () => {
     paymentMonth: new Date().toISOString().slice(0, 7),
     notes: ''
   });
+
+  // Filter presets
+  const filterPresets = [
+    {
+      name: 'المتأخرات فقط',
+      filters: { statusFilter: 'late', paymentMethodFilter: 'all', monthFilter: 'all', sortField: 'daysOverdue', sortOrder: 'desc' as const }
+    },
+    {
+      name: 'النقدية هذا الشهر',
+      filters: { statusFilter: 'all', paymentMethodFilter: 'cash', monthFilter: new Date().toISOString().slice(0, 7).split('-')[1], sortField: '', sortOrder: 'asc' as const }
+    },
+    {
+      name: 'المعلقة - أعلى مبلغ',
+      filters: { statusFilter: 'pending', paymentMethodFilter: 'all', monthFilter: 'all', sortField: 'monthlyAmount', sortOrder: 'desc' as const }
+    }
+  ];
+
+  const applyPreset = (preset: typeof filterPresets[0]) => {
+    setStatusFilter(preset.filters.statusFilter);
+    setPaymentMethodFilter(preset.filters.paymentMethodFilter);
+    setMonthFilter(preset.filters.monthFilter);
+    setSortField(preset.filters.sortField);
+    setSortOrder(preset.filters.sortOrder);
+    setPage(1);
+    toast.success(`تم تطبيق فلتر: ${preset.name}`);
+  };
 
   // Mobile view state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
@@ -782,6 +836,21 @@ const PaymentRegistration = () => {
           <CardContent className="p-0">
             {/* Search and Filters */}
             <div className="p-4 border-b space-y-4">
+              {/* Filter Presets */}
+              <div className="flex flex-wrap gap-2">
+                {filterPresets.map((preset, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset(preset)}
+                    className="text-xs"
+                  >
+                    {preset.name}
+                  </Button>
+                ))}
+              </div>
+
               {/* Search Bar */}
               <div className="relative max-w-md">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
