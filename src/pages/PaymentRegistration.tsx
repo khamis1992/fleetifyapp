@@ -10,6 +10,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { 
@@ -522,9 +523,7 @@ const PaymentRegistration = () => {
               <table className="w-full">
                 <thead className="bg-muted/50 border-b-2">
                   <tr>
-                    <th className="p-4 text-right text-sm font-semibold">اسم العميل</th>
-                    <th className="p-4 text-right text-sm font-semibold">رقم المركبة</th>
-                    <th className="p-4 text-right text-sm font-semibold">رقم الجوال</th>
+                    <th className="p-4 text-right text-sm font-semibold">معلومات العميل</th>
                     <th className="p-4 text-right text-sm font-semibold">القسط المستحق</th>
                     <th className="p-4 text-right text-sm font-semibold">المبلغ المدفوع</th>
                     <th className="p-4 text-right text-sm font-semibold">الشهر</th>
@@ -537,7 +536,7 @@ const PaymentRegistration = () => {
                 <tbody>
                   {filteredContracts.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="p-12 text-center">
+                      <td colSpan={8} className="p-12 text-center">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground">
                           {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
@@ -547,9 +546,36 @@ const PaymentRegistration = () => {
                   ) : (
                     filteredContracts.map((contract) => (
                       <tr key={contract.contractId} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-4 font-semibold">{contract.customerName}</td>
-                        <td className="p-4 font-mono text-primary">{contract.vehicleNumber}</td>
-                        <td className="p-4 font-mono text-sm text-muted-foreground">{contract.phone}</td>
+                        <td className="p-4">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="text-right hover:bg-muted/50 p-2 rounded-md transition-colors">
+                                <div className="font-semibold text-primary">{contract.customerName}</div>
+                                <div className="text-xs text-muted-foreground mt-1">انقر للتفاصيل</div>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80" align="start">
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">اسم العميل</div>
+                                  <div className="font-semibold">{contract.customerName}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">رقم المركبة</div>
+                                  <div className="font-mono text-primary font-semibold">{contract.vehicleNumber}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">رقم الجوال</div>
+                                  <div className="font-mono">{contract.phone}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">رقم العقد</div>
+                                  <div className="font-mono text-sm">{contract.contractNumber}</div>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </td>
                         <td className="p-4">
                           <div className="space-y-1">
                             <div className="font-mono font-semibold text-success">
