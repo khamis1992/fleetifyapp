@@ -64,7 +64,60 @@ const PaymentRegistration = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const [contracts, setContracts] = useState<ActiveContract[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // تحسين الأداء
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Export function
+  const exportToCSV = (data: ActiveContract[], filename: string) => {
+    const headers = [
+      'اسم العميل',
+      'رقم المركبة',
+      'رقم الجوال',
+      'رقم العقد',
+      'القسط الشهري',
+      'المبلغ المدفوع',
+      'المتبقي',
+      'أيام التأخير',
+      'الغرامة',
+      'الشهر',
+      'طريقة الدفع',
+      'الحالة',
+      'الملاحظات'
+    ];
+
+    const rows = data.map(contract => [
+      contract.customerName,
+      contract.vehicleNumber,
+      contract.phone,
+      contract.contractNumber,
+      contract.monthlyPayment,
+      contract.amountPaid,
+      contract.remainingAmount,
+      contract.daysOverdue,
+      contract.lateFeeAmount,
+      contract.paymentMonth,
+      contract.paymentMethod === 'cash' ? 'نقدي' :
+        contract.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
+        contract.paymentMethod === 'check' ? 'شيك' :
+        contract.paymentMethod === 'credit_card' ? 'بطاقة ائتمان' : 'أخرى',
+      contract.status === 'paid' ? 'مسددة' : 'معلقة',
+      contract.notes
+    ]);
+
+    const csvContent = [
+      '\uFEFF' + headers.join(','), // Add BOM for Excel Arabic support
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }; // تحسين الأداء
   const [loading, setLoading] = useState(true);
   const [aiModalData, setAiModalData] = useState<{
     contract: ActiveContract;
@@ -87,9 +140,67 @@ const PaymentRegistration = () => {
 
   // Bulk actions state
   const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
+  const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
+  const [bulkPaymentData, setBulkPaymentData] = useState({
+    paymentMethod: 'cash',
+    paymentMonth: new Date().toISOString().slice(0, 7),
+    notes: ''
+  });
 
   // Mobile view state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl+S: Save all (prevent default browser save)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        toast.info('تم حفظ جميع التغييرات');
+      }
+      
+      // Ctrl+A: Select all
+      if (e.ctrlKey && e.key === 'a' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        setSelectedContracts(new Set(paginatedContracts.map(c => c.contractId)));
+        toast.info(`تم تحديد ${paginatedContracts.length} عقد`);
+      }
+      
+      // Ctrl+D: Deselect all
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        setSelectedContracts(new Set());
+        toast.info('تم إلغاء التحديد');
+      }
+      
+      // Ctrl+E: Export selected
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        if (selectedContracts.size > 0) {
+          const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+          exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
+          toast.success(`تم تصدير ${selectedData.length} عقد`);
+        } else {
+          toast.error('يرجى اختيار عقود للتصدير');
+        }
+      }
+      
+      // Esc: Close modals
+      if (e.key === 'Escape') {
+        setShowBulkPaymentModal(false);
+        setAiModalData(null);
+      }
+      
+      // /: Focus search
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('input[placeholder*="بحث"]')?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [paginatedContracts, selectedContracts]);
 
   // جلب العقود النشطة
   useEffect(() => {
@@ -469,10 +580,56 @@ const PaymentRegistration = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري تحميل العقود النشطة...</p>
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="max-w-[1400px] mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <div className="h-8 w-48 bg-muted animate-pulse rounded"></div>
+                  <div className="h-4 w-64 bg-muted animate-pulse rounded"></div>
+                </div>
+                <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Statistics Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-muted animate-pulse rounded-lg"></div>
+                    <div className="space-y-2 flex-1">
+                      <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
+                      <div className="h-3 w-20 bg-muted animate-pulse rounded"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="p-4 border-b space-y-4">
+                <div className="h-10 w-full max-w-md bg-muted animate-pulse rounded"></div>
+                <div className="flex gap-3">
+                  <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
+                  <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
+                  <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-20 bg-muted animate-pulse rounded"></div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -715,12 +872,7 @@ const PaymentRegistration = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        // Bulk payment action
-                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
-                        console.log('Bulk payment for:', selectedData);
-                        // TODO: Implement bulk payment modal
-                      }}
+                      onClick={() => setShowBulkPaymentModal(true)}
                     >
                       <DollarSign className="w-4 h-4 ml-1" />
                       تسجيل دفعة جماعية
@@ -729,9 +881,9 @@ const PaymentRegistration = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // Export selected
-                        console.log('Export selected:', Array.from(selectedContracts));
-                        // TODO: Implement export functionality
+                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+                        exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
+                        toast.success(`تم تصدير ${selectedData.length} عقد`);
                       }}
                     >
                       <Download className="w-4 h-4 ml-1" />
@@ -750,8 +902,186 @@ const PaymentRegistration = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile Cards View */}
+            <div className="md:hidden space-y-3">
+              {paginatedContracts.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground">
+                    {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد عقود نشطة'}
+                  </p>
+                </div>
+              ) : (
+                paginatedContracts.map((contract) => (
+                  <Card key={contract.contractId} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Card Header */}
+                      <div className="bg-muted/30 p-4 flex items-center justify-between border-b">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedContracts.has(contract.contractId)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedContracts);
+                              if (e.target.checked) {
+                                newSelected.add(contract.contractId);
+                              } else {
+                                newSelected.delete(contract.contractId);
+                              }
+                              setSelectedContracts(newSelected);
+                            }}
+                            className="w-5 h-5"
+                          />
+                          <div>
+                            <div className="font-bold text-primary">{contract.customerName}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              <Car className="w-3 h-3 inline ml-1" />
+                              {contract.vehicleNumber}
+                            </div>
+                          </div>
+                        </div>
+                        <Badge
+                          variant={contract.status === 'paid' ? 'default' : 'secondary'}
+                          className={contract.status === 'paid' ? 'bg-success hover:bg-success' : ''}
+                        >
+                          {contract.status === 'paid' ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              مسددة
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 mr-1" />
+                              معلقة
+                            </>
+                          )}
+                        </Badge>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="p-4 space-y-3">
+                        {/* Phone */}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">رقم الجوال</span>
+                          <span className="font-mono font-semibold">{contract.phone}</span>
+                        </div>
+
+                        {/* Monthly Amount */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">القسط المستحق</span>
+                          <div className="text-left">
+                            <div className="font-mono font-bold text-success">
+                              {contract.monthlyPayment.toLocaleString('ar-SA')} ر.س
+                            </div>
+                            {contract.daysOverdue > 0 && (
+                              <div className="text-xs text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="w-3 h-3" />
+                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('ar-SA')} ر.س
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Amount Paid */}
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-2">المبلغ المدفوع</label>
+                          <Input
+                            type="number"
+                            value={contract.amountPaid}
+                            onChange={(e) => updatePaymentCalculations(contract.contractId, {
+                              amountPaid: parseFloat(e.target.value) || 0
+                            })}
+                            className="text-sm font-mono"
+                            min="0"
+                            step="0.01"
+                          />
+                          {contract.remainingAmount !== 0 && (
+                            <div className="text-xs mt-1 text-muted-foreground">
+                              متبقي: {contract.remainingAmount.toLocaleString('ar-SA')} ر.س
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Month */}
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-2">الشهر</label>
+                          <input
+                            type="month"
+                            value={contract.paymentMonth}
+                            onChange={(e) => updatePaymentCalculations(contract.contractId, {
+                              paymentMonth: e.target.value
+                            })}
+                            className="w-full p-2 border rounded-md text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+
+                        {/* Payment Method */}
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-2">طريقة الدفع</label>
+                          <select
+                            value={contract.paymentMethod}
+                            onChange={(e) => setContracts(prev =>
+                              prev.map(c =>
+                                c.contractId === contract.contractId
+                                  ? { ...c, paymentMethod: e.target.value }
+                                  : c
+                              )
+                            )}
+                            className="w-full p-2 border rounded-md text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          >
+                            <option value="cash">نقدي</option>
+                            <option value="bank_transfer">تحويل بنكي</option>
+                            <option value="check">شيك</option>
+                            <option value="credit_card">بطاقة ائتمان</option>
+                            <option value="other">أخرى</option>
+                          </select>
+                        </div>
+
+                        {/* Notes */}
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-2">ملاحظات</label>
+                          <textarea
+                            placeholder="مثال: تم سداد مبلغ 1500"
+                            value={contract.notes}
+                            onChange={(e) => handleNotesChange(contract.contractId, e.target.value)}
+                            className="w-full min-h-[60px] p-2 border rounded-md text-sm focus:border-warning focus:ring-2 focus:ring-warning/20 transition-all"
+                            style={{
+                              borderColor: contract.notes ? 'hsl(25, 90%, 55%)' : undefined,
+                              backgroundColor: contract.notes ? 'hsl(25, 90%, 98%)' : undefined
+                            }}
+                          />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => confirmPayment(contract.contractId)}
+                            disabled={!contract.notes.trim() || contract.status === 'paid'}
+                            className="flex-1 bg-success hover:bg-success/90"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            تأكيد
+                          </Button>
+                          {contract.notes.trim() && (
+                            <Button
+                              size="sm"
+                              onClick={() => deletePayment(contract.contractId)}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50 border-b-2">
                   <tr>
@@ -1155,6 +1485,145 @@ const PaymentRegistration = () => {
                 >
                   فهمت
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {/* Bulk Payment Modal */}
+        {showBulkPaymentModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold">تسجيل دفعة جماعية</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      تسجيل دفعة لـ {selectedContracts.size} عقد
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowBulkPaymentModal(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Selected Contracts Summary */}
+                <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold mb-3">العقود المختارة:</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {paginatedContracts
+                      .filter(c => selectedContracts.has(c.contractId))
+                      .map(contract => (
+                        <div key={contract.contractId} className="flex justify-between items-center text-sm p-2 bg-background rounded">
+                          <span className="font-semibold">{contract.customerName}</span>
+                          <span className="text-muted-foreground">{contract.vehicleNumber}</span>
+                          <span className="font-mono">{contract.monthlyPayment.toLocaleString('ar-SA')} ر.س</span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <div className="mt-3 pt-3 border-t flex justify-between items-center font-bold">
+                    <span>الإجمالي:</span>
+                    <span className="text-lg text-success">
+                      {paginatedContracts
+                        .filter(c => selectedContracts.has(c.contractId))
+                        .reduce((sum, c) => sum + c.monthlyPayment, 0)
+                        .toLocaleString('ar-SA')} ر.س
+                    </span>
+                  </div>
+                </div>
+
+                {/* Payment Details Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold block mb-2">الشهر</label>
+                    <input
+                      type="month"
+                      value={bulkPaymentData.paymentMonth}
+                      onChange={(e) => setBulkPaymentData(prev => ({ ...prev, paymentMonth: e.target.value }))}
+                      className="w-full p-2 border rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold block mb-2">طريقة الدفع</label>
+                    <select
+                      value={bulkPaymentData.paymentMethod}
+                      onChange={(e) => setBulkPaymentData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="w-full p-2 border rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="cash">نقدي</option>
+                      <option value="bank_transfer">تحويل بنكي</option>
+                      <option value="check">شيك</option>
+                      <option value="credit_card">بطاقة ائتمان</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold block mb-2">ملاحظات</label>
+                    <textarea
+                      value={bulkPaymentData.notes}
+                      onChange={(e) => setBulkPaymentData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="مثال: تم سداد جميع الأقساط نقداً"
+                      className="w-full min-h-[100px] p-2 border rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    className="flex-1 bg-success hover:bg-success/90"
+                    onClick={async () => {
+                      try {
+                        const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+                        
+                        for (const contract of selectedData) {
+                          await updatePaymentCalculations(contract.contractId, {
+                            amountPaid: contract.monthlyPayment,
+                            paymentMonth: bulkPaymentData.paymentMonth
+                          });
+                          
+                          setContracts(prev =>
+                            prev.map(c =>
+                              c.contractId === contract.contractId
+                                ? { ...c, paymentMethod: bulkPaymentData.paymentMethod, notes: bulkPaymentData.notes }
+                                : c
+                            )
+                          );
+                          
+                          await confirmPayment(contract.contractId);
+                        }
+                        
+                        toast.success(`تم تسجيل ${selectedData.length} دفعة بنجاح`);
+                        setShowBulkPaymentModal(false);
+                        setSelectedContracts(new Set());
+                        setBulkPaymentData({
+                          paymentMethod: 'cash',
+                          paymentMonth: new Date().toISOString().slice(0, 7),
+                          notes: ''
+                        });
+                      } catch (error) {
+                        console.error('Bulk payment error:', error);
+                        toast.error('حدث خطأ أثناء تسجيل الدفعات');
+                      }
+                    }}
+                    disabled={!bulkPaymentData.notes.trim()}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    تأكيد وتسجيل الدفعات
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkPaymentModal(false)}
+                  >
+                    إلغاء
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
