@@ -344,7 +344,7 @@ const PaymentRegistration = () => {
         payment_type: 'rental_payment',
         notes: payment.notes,
         transaction_type: 'inflow' as const
-        // payment_status will be auto-calculated by trigger
+        // payment_completion_status will be auto-calculated by trigger
       }));
 
       // Insert payments into database
