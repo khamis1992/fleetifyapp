@@ -214,7 +214,13 @@ export const LegalCasesTracking: React.FC = () => {
         {/* Cases View */}
         {activeView === 'cases' && (
           <>
-          {/* Filters Bar */}
+          {!companyId ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center text-gray-500">الرجاء تحديد الشركة أولاً</div>
+              </CardContent>
+            </Card>
+          ) : (
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col gap-4">
@@ -346,6 +352,7 @@ export const LegalCasesTracking: React.FC = () => {
                 </div>
               )}
             </>
+          )}
           )}
           </>
         )}
