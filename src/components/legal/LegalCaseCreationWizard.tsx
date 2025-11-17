@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  Dialogوصف تفصيلي,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, Cardوصف تفصيلي, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -211,9 +211,9 @@ Selected العقود: ${formData.selected_contracts.length}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>إنشاء قضية قانونية</DialogTitle>
-          <Dialogوصف تفصيلي>
+            <CardDescription>
             Step {currentStepIndex + 1} of {stepOrder.length}
-          </Dialogوصف تفصيلي>
+            </CardDescription>
           <Progress value={progress} className="mt-4" />
         </DialogHeader>
 
@@ -450,9 +450,9 @@ const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">الفواتير</CardTitle>
-          <Cardوصف تفصيلي>
+          <CardDescription>
             المحدد: {formData.selected_invoices.length} | إجمالي المطالبة: {formatCurrency(selectedInvoiceAmount)}
-          </Cardوصف تفصيلي>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {mockالفواتير.map((invoice) => (
@@ -478,9 +478,9 @@ const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">العقود</CardTitle>
-          <Cardوصف تفصيلي>
+          <CardDescription>
             المحدد: {formData.selected_contracts.length}
-          </Cardوصف تفصيلي>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {mockالعقود.map((contract) => (
@@ -823,9 +823,9 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         <Card className="border-blue-200 bg-blue-50/50">
           <CardHeader>
             <CardTitle className="text-sm">القضايا السابقة للعميل</CardTitle>
-            <Cardوصف تفصيلي>
+            <CardDescription>
               {loadingCases ? 'جاري تحميل سجل القضايا...' : `${customerCases.length} قضية`}
-            </Cardوصف تفصيلي>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loadingCases ? (
@@ -991,9 +991,9 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">الأدلة المرفوعة</CardTitle>
-            <Cardوصف تفصيلي>
+            <CardDescription>
               {formData.evidence_files.length} ملف مرفوع
-            </Cardوصف تفصيلي>
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {formData.evidence_files.map((file) => (
