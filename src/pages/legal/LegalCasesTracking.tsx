@@ -153,34 +153,34 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Tabs System */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <TabsList className="w-full grid grid-cols-4 h-auto p-0 bg-transparent">
+          <TabsList className="w-full grid grid-cols-4 h-auto p-0 bg-gray-50">
             <TabsTrigger 
               value="overview" 
-              className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors rounded-none"
+              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-3 data-[state=active]:border-primary data-[state=active]:font-semibold hover:bg-white/50 hover:text-primary transition-all rounded-none border-b-3 border-transparent"
             >
-              <LayoutDashboard className="w-4 h-4" />
-              <span className="hidden sm:inline">نظرة عامة</span>
+              <LayoutDashboard className="w-5 h-5" />
+              <span className="hidden sm:inline font-medium">نظرة عامة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="cases" 
-              className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors rounded-none"
+              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-3 data-[state=active]:border-primary data-[state=active]:font-semibold hover:bg-white/50 hover:text-primary transition-all rounded-none border-b-3 border-transparent"
             >
-              <Folder className="w-4 h-4" />
-              <span className="hidden sm:inline">القضايا</span>
+              <Folder className="w-5 h-5" />
+              <span className="hidden sm:inline font-medium">القضايا</span>
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors rounded-none"
+              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-3 data-[state=active]:border-primary data-[state=active]:font-semibold hover:bg-white/50 hover:text-primary transition-all rounded-none border-b-3 border-transparent"
             >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">الإعدادات</span>
+              <Settings className="w-5 h-5" />
+              <span className="hidden sm:inline font-medium">الإعدادات</span>
             </TabsTrigger>
             <TabsTrigger 
               value="reports" 
-              className="flex items-center gap-2 px-6 py-4 data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-primary/5 transition-colors rounded-none"
+              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-3 data-[state=active]:border-primary data-[state=active]:font-semibold hover:bg-white/50 hover:text-primary transition-all rounded-none border-b-3 border-transparent"
             >
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">التقارير</span>
+              <FileText className="w-5 h-5" />
+              <span className="hidden sm:inline font-medium">التقارير</span>
             </TabsTrigger>
           </TabsList>
         </div>
