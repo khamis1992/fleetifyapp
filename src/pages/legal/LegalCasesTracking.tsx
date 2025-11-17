@@ -153,31 +153,31 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Tabs System */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <TabsList className="w-full grid grid-cols-4 h-auto p-0 bg-gray-100 border-b border-gray-200 rounded-none">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger 
               value="overview" 
-              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-500 font-medium data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-4 data-[state=active]:border-primary data-[state=active]:font-bold hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 rounded-none border-b-4 border-transparent"
+              className="flex items-center justify-center gap-2"
             >
               <LayoutDashboard className="w-5 h-5" />
               <span className="hidden sm:inline">نظرة عامة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="cases" 
-              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-500 font-medium data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-4 data-[state=active]:border-primary data-[state=active]:font-bold hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 rounded-none border-b-4 border-transparent"
+              className="flex items-center justify-center gap-2"
             >
               <Folder className="w-5 h-5" />
               <span className="hidden sm:inline">القضايا</span>
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-500 font-medium data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-4 data-[state=active]:border-primary data-[state=active]:font-bold hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 rounded-none border-b-4 border-transparent"
+              className="flex items-center justify-center gap-2"
             >
               <Settings className="w-5 h-5" />
               <span className="hidden sm:inline">الإعدادات</span>
             </TabsTrigger>
             <TabsTrigger 
               value="reports" 
-              className="flex items-center justify-center gap-2 px-4 py-4 text-gray-500 font-medium data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-4 data-[state=active]:border-primary data-[state=active]:font-bold hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 rounded-none border-b-4 border-transparent"
+              className="flex items-center justify-center gap-2"
             >
               <FileText className="w-5 h-5" />
               <span className="hidden sm:inline">التقارير</span>
