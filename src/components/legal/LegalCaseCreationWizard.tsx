@@ -502,175 +502,218 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   formData,
   setFormData,
 }) => {
-  // Fetch real data from Supabase
-  const [invoices, setInvoices] = React.useState<any[]>([]);
-  const [contracts, setContracts] = React.useState<any[]>([]);
-  const [loadingInvoices, setLoadingInvoices] = React.useState(false);
-  const [loadingContracts, setLoadingContracts] = React.useState(false);
+  // Fetch outstanding amounts from Supabase
+  const [unpaidRent, setUnpaidRent] = React.useState<any[]>([]);
+  const [lateFees, setLateFees] = React.useState<any[]>([]);
+  const [trafficViolations, setTrafficViolations] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    const fetchInvoices = async () => {
+    const fetchOutstandingAmounts = async () => {
+      if (!formData.customer_id) return;
+      
       try {
-        setLoadingInvoices(true);
-        let query = supabase
+        setLoading(true);
+        
+        // Fetch unpaid rent (invoices)
+        const { data: rentData, error: rentError } = await supabase
           .from('invoices')
-          .select('id, invoice_number, total_amount, invoice_date, customer_id')
+          .select('id, invoice_number, total_amount, invoice_date, payment_status, due_date')
+          .eq('customer_id', formData.customer_id)
+          .neq('payment_status', 'paid')
           .order('invoice_date', { ascending: false });
         
-        if (formData.customer_id) {
-          query = query.eq('customer_id', formData.customer_id);
-        }
+        if (rentError) throw rentError;
+        setUnpaidRent(rentData || []);
         
-        const { data, error } = await query;
-        if (error) throw error;
-        setInvoices(data || []);
-      } catch (error) {
-        console.error('Error fetching invoices:', error);
-      } finally {
-        setLoadingInvoices(false);
-      }
-    };
-    fetchInvoices();
-  }, [formData.customer_id]);
-
-  React.useEffect(() => {
-    const fetchContracts = async () => {
-      try {
-        setLoadingContracts(true);
-        let query = supabase
-          .from('contracts')
-          .select('id, contract_number, contract_type, customer_id')
+        // Fetch late fees
+        const { data: feesData, error: feesError } = await supabase
+          .from('late_fees')
+          .select('id, fee_amount, days_overdue, invoice_id, status, created_at')
+          .eq('status', 'applied')
+          .in('invoice_id', (rentData || []).map(inv => inv.id))
           .order('created_at', { ascending: false });
         
-        if (formData.customer_id) {
-          query = query.eq('customer_id', formData.customer_id);
-        }
+        if (feesError) throw feesError;
+        setLateFees(feesData || []);
         
-        const { data, error } = await query;
-        if (error) throw error;
-        setContracts(data || []);
+        // Fetch traffic violations (penalties)
+        const { data: violationsData, error: violationsError } = await supabase
+          .from('penalties')
+          .select('id, penalty_number, violation_type, amount, penalty_date, payment_status, vehicle_plate')
+          .eq('customer_id', formData.customer_id)
+          .eq('payment_status', 'unpaid')
+          .order('penalty_date', { ascending: false });
+        
+        if (violationsError) throw violationsError;
+        setTrafficViolations(violationsData || []);
+        
       } catch (error) {
-        console.error('Error fetching contracts:', error);
+        console.error('Error fetching outstanding amounts:', error);
       } finally {
-        setLoadingContracts(false);
+        setLoading(false);
       }
     };
-    fetchContracts();
+    fetchOutstandingAmounts();
   }, [formData.customer_id]);
 
-  const selectedInvoiceAmount = invoices
-    .filter((inv) => formData.selected_invoices.includes(inv.id))
-    .reduce((sum, inv) => sum + inv.total_amount, 0);
+  // Calculate total outstanding amount
+  const totalRent = unpaidRent.reduce((sum, inv) => sum + inv.total_amount, 0);
+  const totalLateFees = lateFees.reduce((sum, fee) => sum + fee.fee_amount, 0);
+  const totalViolations = trafficViolations.reduce((sum, v) => sum + v.amount, 0);
+  const grandTotal = totalRent + totalLateFees + totalViolations;
 
-  const toggleInvoice = (invoiceId: string) => {
-    setFormData({
-      ...formData,
-      selected_invoices: formData.selected_invoices.includes(invoiceId)
-        ? formData.selected_invoices.filter((id) => id !== invoiceId)
-        : [...formData.selected_invoices, invoiceId],
-    });
-  };
 
-  const toggleContract = (contractId: string) => {
-    setFormData({
-      ...formData,
-      selected_contracts: formData.selected_contracts.includes(contractId)
-        ? formData.selected_contracts.filter((id) => id !== contractId)
-        : [...formData.selected_contracts, contractId],
-    });
-  };
 
   return (
     <div className="space-y-6">
-      {formData.customer_id ? (
-        <Alert>
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            عرض الفواتير والعقود الخاصة بالعميل: <strong>{formData.customer_name}</strong>
-          </AlertDescription>
-        </Alert>
-      ) : (
+      {!formData.customer_id ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            لم يتم اختيار عميل في الخطوة السابقة. عرض جميع الفواتير والعقود.
+            يرجى اختيار العميل في الخطوة السابقة لعرض المبالغ المستحقة.
           </AlertDescription>
         </Alert>
+      ) : loading ? (
+        <div className="text-center py-8">
+          <div className="text-muted-foreground">جاري تحميل المبالغ المستحقة...</div>
+        </div>
+      ) : (
+        <>
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              المبالغ المستحقة للعميل: <strong>{formData.customer_name}</strong>
+            </AlertDescription>
+          </Alert>
+          
+          {/* Total Summary Card */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-2xl">إجمالي المبالغ المستحقة</CardTitle>
+              <CardDescription className="text-3xl font-bold text-primary mt-2">
+                {formatCurrency(grandTotal)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-sm text-muted-foreground">الإيجارات</div>
+                  <div className="text-lg font-semibold">{formatCurrency(totalRent)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">غرامات التأخير</div>
+                  <div className="text-lg font-semibold">{formatCurrency(totalLateFees)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">المخالفات المرورية</div>
+                  <div className="text-lg font-semibold">{formatCurrency(totalViolations)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Unpaid Rent Section */}
+      {formData.customer_id && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">الإيجارات غير المدفوعة</CardTitle>
+            <CardDescription>
+              {unpaidRent.length} فاتورة | الإجمالي: {formatCurrency(totalRent)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {unpaidRent.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">لا توجد إيجارات غير مدفوعة</div>
+            ) : (
+              unpaidRent.map((rent) => (
+                <div
+                  key={rent.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{rent.invoice_number}</div>
+                    <div className="text-sm text-muted-foreground">
+                      تاريخ الفاتورة: {new Date(rent.invoice_date).toLocaleDateString('ar-QA')} | 
+                      تاريخ الاستحقاق: {new Date(rent.due_date).toLocaleDateString('ar-QA')}
+                    </div>
+                  </div>
+                  <Badge variant="destructive">{formatCurrency(rent.total_amount)}</Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Late Fees Section */}
+      {formData.customer_id && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">غرامات التأخير</CardTitle>
+            <CardDescription>
+              {lateFees.length} غرامة | الإجمالي: {formatCurrency(totalLateFees)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {lateFees.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">لا توجد غرامات تأخير</div>
+            ) : (
+              lateFees.map((fee) => (
+                <div
+                  key={fee.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">غرامة تأخير</div>
+                    <div className="text-sm text-muted-foreground">
+                      عدد أيام التأخير: {fee.days_overdue} يوم | 
+                      التاريخ: {new Date(fee.created_at).toLocaleDateString('ar-QA')}
+                    </div>
+                  </div>
+                  <Badge variant="destructive">{formatCurrency(fee.fee_amount)}</Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       )}
       
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          اختيار الفواتير والعقود <strong>اختياري</strong>. يمكنك المتابعة بدون اختيار أي عنصر. سيتم حساب إجمالي المطالبة تلقائياً.
-        </AlertDescription>
-      </Alert>
-
-      {/* الفواتير Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">الفواتير</CardTitle>
-          <CardDescription>
-            المحدد: {formData.selected_invoices.length} | إجمالي المطالبة: {formatCurrency(selectedInvoiceAmount)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loadingInvoices ? (
-            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
-          ) : invoices.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">لا توجد فواتير</div>
-          ) : (
-            invoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
-              >
-                <Checkbox
-                  checked={formData.selected_invoices.includes(invoice.id)}
-                  onCheckedChange={() => toggleInvoice(invoice.id)}
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{invoice.invoice_number}</div>
-                  <div className="text-sm text-muted-foreground">{invoice.invoice_date}</div>
+      {/* Traffic Violations Section */}
+      {formData.customer_id && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">المخالفات المرورية</CardTitle>
+            <CardDescription>
+              {trafficViolations.length} مخالفة | الإجمالي: {formatCurrency(totalViolations)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {trafficViolations.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">لا توجد مخالفات مرورية</div>
+            ) : (
+              trafficViolations.map((violation) => (
+                <div
+                  key={violation.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{violation.penalty_number}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {violation.violation_type} | 
+                      لوحة: {violation.vehicle_plate} | 
+                      التاريخ: {new Date(violation.penalty_date).toLocaleDateString('ar-QA')}
+                    </div>
+                  </div>
+                  <Badge variant="destructive">{formatCurrency(violation.amount)}</Badge>
                 </div>
-                <Badge variant="outline">{formatCurrency(invoice.total_amount)}</Badge>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      {/* العقود Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">العقود</CardTitle>
-          <CardDescription>
-            المحدد: {formData.selected_contracts.length}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loadingContracts ? (
-            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
-          ) : contracts.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">لا توجد عقود</div>
-          ) : (
-            contracts.map((contract) => (
-              <div
-                key={contract.id}
-                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
-              >
-                <Checkbox
-                  checked={formData.selected_contracts.includes(contract.id)}
-                  onCheckedChange={() => toggleContract(contract.id)}
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{contract.contract_number}</div>
-                  <div className="text-sm text-muted-foreground">{contract.contract_type}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
