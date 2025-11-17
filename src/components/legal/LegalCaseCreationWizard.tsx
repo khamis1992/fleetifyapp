@@ -225,7 +225,7 @@ Selected العقود: ${formData.selected_contracts.length}
 
           {/* Step 2: Select الفواتير/العقود */}
           {currentStep === 'invoices' && (
-            <الفواتيرSelectionStep formData={formData} setFormData={setFormData} />
+            <InvoiceSelectionStep formData={formData} setFormData={setFormData} />
           )}
 
           {/* Step 3: معلومات العميل */}
@@ -394,17 +394,17 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
 // STEP 2: الفواتير Selection
 // ============================================================================
 
-interface الفواتيرSelectionStepProps {
+interface InvoiceSelectionStepProps {
   formData: CaseFormData;
   setFormData: (data: CaseFormData) => void;
 }
 
-const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps> = ({
+const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   formData,
   setFormData,
 }) => {
   // Mock data - in production, fetch from Supabase
-  const mockالفواتير = [
+  const mockInvoices = [
     { id: '1', number: 'INV-2025-001', amount: 5000, date: '2025-09-01' },
     { id: '2', number: 'INV-2025-002', amount: 7500, date: '2025-08-15' },
     { id: '3', number: 'INV-2025-003', amount: 3200, date: '2025-07-20' },
@@ -415,7 +415,7 @@ const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps
     { id: 'C2', number: 'CONTRACT-2024-002', title: 'Service Agreement' },
   ];
 
-  const selectedInvoiceAmount = mockالفواتير
+  const selectedInvoiceAmount = mockInvoices
     .filter((inv) => formData.selected_invoices.includes(inv.id))
     .reduce((sum, inv) => sum + inv.amount, 0);
 
@@ -455,7 +455,7 @@ const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockالفواتير.map((invoice) => (
+          {mockInvoices.map((invoice) => (
             <div
               key={invoice.id}
               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
@@ -537,16 +537,16 @@ interface CustomerInfoStepProps {
 const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormData }) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
-  const [loading, setجاري التحميل... React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [customerCases, setCustomerCases] = React.useState<any[]>([]);
-  const [loadingCases, setجاري التحميل...es] = React.useState(false);
+  const [loadingCases, setLoadingCases] = React.useState(false);
 
   // Fetch customers from database
   React.useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        setجاري التحميل...ue);
+        setLoading(true);
         const { data, error } = await supabase
           .from('customers')
           .select('id, first_name, last_name, company_name, email, phone, address, national_id, emergency_contact_name')
@@ -560,7 +560,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         console.error('Error fetching customers:', error);
         toast.error('فشل تحميل العملاء');
       } finally {
-        setجاري التحميل...lse);
+        setLoading(false);
       }
     };
 
@@ -569,7 +569,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
   // Auto-extract customer from selected invoices
   React.useEffect(() => {
-    const extractCustomerFromالفواتير = async () => {
+    const extractCustomerFromInvoices = async () => {
       if (formData.selected_invoices.length > 0 && !formData.customer_id) {
         try {
           const { data, error } = await supabase
@@ -592,13 +592,13 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
       }
     };
 
-    extractCustomerFromالفواتير();
+    extractCustomerFromInvoices();
   }, [formData.selected_invoices]);
 
   // Fetch customer's previous cases
   const fetchCustomerCases = async (customerId: string) => {
     try {
-      setجاري التحميل...es(true);
+      setLoadingCases(true);
       const { data, error } = await supabase
         .from('legal_cases')
         .select('id, case_title, case_type, case_status, case_value, created_at')
@@ -611,7 +611,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     } catch (error) {
       console.error('Error fetching customer cases:', error);
     } finally {
-      setجاري التحميل...es(false);
+      setLoadingCases(false);
     }
   };
 
