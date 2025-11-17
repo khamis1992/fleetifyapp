@@ -281,7 +281,11 @@ export const LegalCasesTracking: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AutoCreateCaseTriggersConfig companyId={companyId || ''} />
+              <AutoCreateCaseTriggersConfig 
+                open={true}
+                onOpenChange={() => {}}
+                companyId={companyId || ''} 
+              />
             </CardContent>
           </Card>
 
@@ -337,7 +341,11 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <AutoCreateCaseTriggersConfig companyId={companyId || ''} />
+              <AutoCreateCaseTriggersConfig 
+                open={true}
+                onOpenChange={() => {}}
+                companyId={companyId || ''} 
+              />
             </CardContent>
           </Card>
         </div>
