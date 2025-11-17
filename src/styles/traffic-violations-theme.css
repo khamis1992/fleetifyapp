@@ -230,3 +230,20 @@
   box-shadow: 0 0 0 3px hsla(var(--ring), 0.1);
 }
 
+/* ===== فرض الأرقام الإنجليزية ===== */
+.counter,
+.stat-card .text-3xl,
+.stat-card .text-2xl,
+[class*="font-bold"],
+.text-3xl,
+.text-2xl,
+.text-xl {
+  font-variant-numeric: lining-nums tabular-nums;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* تطبيق الأرقام الإنجليزية على جميع الأرقام */
+* {
+  font-variant-numeric: lining-nums;
+}
