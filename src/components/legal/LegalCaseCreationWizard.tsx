@@ -502,7 +502,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   formData,
   setFormData,
 }) => {
-  // Mock data - in production, fetch from Supabase
+  // Fetch real data from Supabase
   const [invoices, setInvoices] = React.useState<any[]>([]);
   const [contracts, setContracts] = React.useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = React.useState(false);
@@ -512,8 +512,15 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
     const fetchInvoices = async () => {
       try {
         setLoadingInvoices(true);
-        let query = supabase.from('invoices').select('id, invoice_number, total_amount, invoice_date, customer_id').order('invoice_date', { ascending: false });
-        if (formData.customer_id) query = query.eq('customer_id', formData.customer_id);
+        let query = supabase
+          .from('invoices')
+          .select('id, invoice_number, total_amount, invoice_date, customer_id')
+          .order('invoice_date', { ascending: false });
+        
+        if (formData.customer_id) {
+          query = query.eq('customer_id', formData.customer_id);
+        }
+        
         const { data, error } = await query;
         if (error) throw error;
         setInvoices(data || []);
@@ -530,8 +537,15 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
     const fetchContracts = async () => {
       try {
         setLoadingContracts(true);
-        let query = supabase.from('contracts').select('id, contract_number, contract_type, customer_id').order('created_at', { ascending: false });
-        if (formData.customer_id) query = query.eq('customer_id', formData.customer_id);
+        let query = supabase
+          .from('contracts')
+          .select('id, contract_number, contract_type, customer_id')
+          .order('created_at', { ascending: false });
+        
+        if (formData.customer_id) {
+          query = query.eq('customer_id', formData.customer_id);
+        }
+        
         const { data, error } = await query;
         if (error) throw error;
         setContracts(data || []);
@@ -655,7 +669,6 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
               </div>
             ))
           )}
-        </CardContent>
         </CardContent>
       </Card>
     </div>
