@@ -145,6 +145,7 @@ const PerformanceDashboard = lazy(() => import("./pages/PerformanceDashboard"));
 // Legal pages
 const Legal = lazy(() => import("./pages/Legal"));
 const LegalCasesTracking = lazy(() => import("./pages/legal/LegalCasesTracking"));
+const LegalCasesTrackingV2 = lazy(() => import("./pages/legal/LegalCasesTrackingV2"));
 const DefaultersList = lazy(() => import("./pages/legal/DefaultersList"));
 const LegalReports = lazy(() => import("./pages/legal/LegalReports"));
 const LateFees = lazy(() => import("./pages/legal/LateFees"));
@@ -863,6 +864,13 @@ const AppRoutes = () => {
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
               <LegalCasesTracking />
+            </Suspense>
+          </AdminRoute>
+        } />
+        <Route path="legal/cases-v2" element={
+          <AdminRoute>
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <LegalCasesTrackingV2 />
             </Suspense>
           </AdminRoute>
         } />
