@@ -2,17 +2,17 @@
  * Legal Case Creation Wizard
  * 
  * Complete 4-step wizard for creating legal cases:
- * 1. Case Details - Type, priority, expected outcome
- * 2. Select Invoices/Contracts - Multi-select with claim calculation
- * 3. Customer Information - Auto-populate & edit customer details
- * 4. Evidence Upload - Upload contracts, invoices, receipts, communications, photos, recordings
+ * 1. تفاصيل القضية - Type, priority, expected outcome
+ * 2. Select الفواتير/العقود - Multi-select with claim calculation
+ * 3. معلومات العميل - Auto-populate & edit customer details
+ * 4. رفع المستندات - Upload contracts, invoices, receipts, communications, photos, recordings
  */
 
 import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  Dialogوصف تفصيلي,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, Cardوصف تفصيلي, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -41,9 +41,10 @@ import {
   X,
   CheckCircle,
 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, Alertوصف تفصيلي } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useCreateLegalCase } from '@/hooks/useLegalCases';
+import { useCaseDraft } from '@/hooks/useCaseDraft';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -112,6 +113,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   });
 
   const createCaseMutation = useCreateLegalCase();
+  const { saveDraft, lastSaved } = useCaseDraft(formData, currentStep);
 
   const stepOrder: WizardStep[] = ['details', 'invoices', 'customer', 'evidence', 'review'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
@@ -132,7 +134,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   const handleSubmit = async () => {
     try {
       if (!formData.case_title || !formData.customer_name) {
-        toast.error('Please fill in all required fields');
+        toast.error('يرجى ملء جميع الحقول المطلوبة');
         return;
       }
 
@@ -156,17 +158,17 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         legal_team: [],
         tags: [],
         notes: `Customer ID: ${formData.customer_id}
-National ID: ${formData.national_id}
-Address: ${formData.address}
-Emergency Contact: ${formData.emergency_contact}
+الرقم الوطني: ${formData.national_id}
+العنوان: ${formData.address}
+جهة اتصال طوارئ: ${formData.emergency_contact}
 Employer: ${formData.employer_info}
-Selected Invoices: ${formData.selected_invoices.length}
-Selected Contracts: ${formData.selected_contracts.length}
-Evidence Files: ${formData.evidence_files.length}
-Expected Outcome: ${formData.expected_outcome}`,
+Selected الفواتير: ${formData.selected_invoices.length}
+Selected العقود: ${formData.selected_contracts.length}
+ملفات الأدلة: ${formData.evidence_files.length}
+النتيجة المتوقعة: ${formData.expected_outcome}`,
       });
 
-      toast.success('Legal case created successfully');
+      toast.success('تم إنشاء القضية بنجاح');
       onSuccess?.();
       onOpenChange(false);
       resetForm();
@@ -209,29 +211,29 @@ Expected Outcome: ${formData.expected_outcome}`,
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>إنشاء قضية قانونية</DialogTitle>
-          <DialogDescription>
+          <Dialogوصف تفصيلي>
             Step {currentStepIndex + 1} of {stepOrder.length}
-          </DialogDescription>
+          </Dialogوصف تفصيلي>
           <Progress value={progress} className="mt-4" />
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Step 1: Case Details */}
+          {/* Step 1: تفاصيل القضية */}
           {currentStep === 'details' && (
             <CaseDetailsStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 2: Select Invoices/Contracts */}
+          {/* Step 2: Select الفواتير/العقود */}
           {currentStep === 'invoices' && (
-            <InvoicesSelectionStep formData={formData} setFormData={setFormData} />
+            <الفواتيرSelectionStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 3: Customer Information */}
+          {/* Step 3: معلومات العميل */}
           {currentStep === 'customer' && (
             <CustomerInfoStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 4: Evidence Upload */}
+          {/* Step 4: رفع المستندات */}
           {currentStep === 'evidence' && (
             <EvidenceUploadStep formData={formData} setFormData={setFormData} />
           )}
@@ -243,14 +245,23 @@ Expected Outcome: ${formData.expected_outcome}`,
         </div>
 
         <DialogFooter className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePrevStep}
-            disabled={currentStepIndex === 0}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Previous
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handlePrevStep}
+              disabled={currentStepIndex === 0}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              السابق
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => saveDraft()}
+              className="text-muted-foreground"
+            >
+              حفظ كمسودة
+            </Button>
+          </div>
 
           {currentStep === 'review' ? (
             <Button
@@ -272,7 +283,7 @@ Expected Outcome: ${formData.expected_outcome}`,
 };
 
 // ============================================================================
-// STEP 1: Case Details
+// STEP 1: تفاصيل القضية
 // ============================================================================
 
 interface CaseDetailsStepProps {
@@ -311,8 +322,8 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="payment_collection">تحصيل دفعات</SelectItem>
-              <SelectItem value="contract_breach">Contract Breach</SelectItem>
-              <SelectItem value="vehicle_damage">Vehicle Damage</SelectItem>
+              <SelectItem value="contract_breach">خرق عقد</SelectItem>
+              <SelectItem value="vehicle_damage">أضرار مركبة</SelectItem>
               <SelectItem value="other">أخرى</SelectItem>
             </SelectContent>
           </Select>
@@ -356,8 +367,8 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="payment">استرداد المبلغ</SelectItem>
-            <SelectItem value="vehicle_return">Vehicle Return</SelectItem>
-            <SelectItem value="both">Both Payment & Return</SelectItem>
+            <SelectItem value="vehicle_return">استرجاع المركبة</SelectItem>
+            <SelectItem value="both">كلاهما</SelectItem>
             <SelectItem value="other">أخرى</SelectItem>
           </SelectContent>
         </Select>
@@ -365,7 +376,7 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
 
       <div>
         <Label htmlFor="description" className="text-base font-semibold mb-2 block">
-          Description
+          وصف تفصيلي <span className="text-muted-foreground font-normal">(اختياري)</span>
         </Label>
         <Textarea
           id="description"
@@ -380,31 +391,31 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
 };
 
 // ============================================================================
-// STEP 2: Invoices Selection
+// STEP 2: الفواتير Selection
 // ============================================================================
 
-interface InvoicesSelectionStepProps {
+interface الفواتيرSelectionStepProps {
   formData: CaseFormData;
   setFormData: (data: CaseFormData) => void;
 }
 
-const InvoicesSelectionStep: React.FC<InvoicesSelectionStepProps> = ({
+const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps> = ({
   formData,
   setFormData,
 }) => {
   // Mock data - in production, fetch from Supabase
-  const mockInvoices = [
+  const mockالفواتير = [
     { id: '1', number: 'INV-2025-001', amount: 5000, date: '2025-09-01' },
     { id: '2', number: 'INV-2025-002', amount: 7500, date: '2025-08-15' },
     { id: '3', number: 'INV-2025-003', amount: 3200, date: '2025-07-20' },
   ];
 
-  const mockContracts = [
+  const mockالعقود = [
     { id: 'C1', number: 'CONTRACT-2024-001', title: 'Rental Agreement' },
     { id: 'C2', number: 'CONTRACT-2024-002', title: 'Service Agreement' },
   ];
 
-  const selectedInvoiceAmount = mockInvoices
+  const selectedInvoiceAmount = mockالفواتير
     .filter((inv) => formData.selected_invoices.includes(inv.id))
     .reduce((sum, inv) => sum + inv.amount, 0);
 
@@ -430,21 +441,21 @@ const InvoicesSelectionStep: React.FC<InvoicesSelectionStepProps> = ({
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Select all invoices and contracts related to this case. The total claim amount will be calculated automatically.
-        </AlertDescription>
+        <Alertوصف تفصيلي>
+          اختيار الفواتير والعقود <strong>اختياري</strong>. يمكنك المتابعة بدون اختيار أي عنصر. سيتم حساب إجمالي المطالبة تلقائياً.
+        </Alertوصف تفصيلي>
       </Alert>
 
-      {/* Invoices Section */}
+      {/* الفواتير Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Invoices</CardTitle>
-          <CardDescription>
-            Selected: {formData.selected_invoices.length} | Total Claim: {formatCurrency(selectedInvoiceAmount)}
-          </CardDescription>
+          <CardTitle className="text-lg">الفواتير</CardTitle>
+          <Cardوصف تفصيلي>
+            المحدد: {formData.selected_invoices.length} | إجمالي المطالبة: {formatCurrency(selectedInvoiceAmount)}
+          </Cardوصف تفصيلي>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockInvoices.map((invoice) => (
+          {mockالفواتير.map((invoice) => (
             <div
               key={invoice.id}
               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
@@ -463,16 +474,16 @@ const InvoicesSelectionStep: React.FC<InvoicesSelectionStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Contracts Section */}
+      {/* العقود Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Contracts</CardTitle>
-          <CardDescription>
-            Selected: {formData.selected_contracts.length}
-          </CardDescription>
+          <CardTitle className="text-lg">العقود</CardTitle>
+          <Cardوصف تفصيلي>
+            المحدد: {formData.selected_contracts.length}
+          </Cardوصف تفصيلي>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockContracts.map((contract) => (
+          {mockالعقود.map((contract) => (
             <div
               key={contract.id}
               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
@@ -494,7 +505,7 @@ const InvoicesSelectionStep: React.FC<InvoicesSelectionStepProps> = ({
 };
 
 // ============================================================================
-// STEP 3: Customer Information
+// STEP 3: معلومات العميل
 // ============================================================================
 
 interface Customer {
@@ -526,16 +537,16 @@ interface CustomerInfoStepProps {
 const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormData }) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setجاري التحميل... React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [customerCases, setCustomerCases] = React.useState<any[]>([]);
-  const [loadingCases, setLoadingCases] = React.useState(false);
+  const [loadingCases, setجاري التحميل...es] = React.useState(false);
 
   // Fetch customers from database
   React.useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        setLoading(true);
+        setجاري التحميل...ue);
         const { data, error } = await supabase
           .from('customers')
           .select('id, first_name, last_name, company_name, email, phone, address, national_id, emergency_contact_name')
@@ -547,9 +558,9 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         setFilteredCustomers((data as any) || []);
       } catch (error) {
         console.error('Error fetching customers:', error);
-        toast.error('Failed to load customers');
+        toast.error('فشل تحميل العملاء');
       } finally {
-        setLoading(false);
+        setجاري التحميل...lse);
       }
     };
 
@@ -558,7 +569,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
   // Auto-extract customer from selected invoices
   React.useEffect(() => {
-    const extractCustomerFromInvoices = async () => {
+    const extractCustomerFromالفواتير = async () => {
       if (formData.selected_invoices.length > 0 && !formData.customer_id) {
         try {
           const { data, error } = await supabase
@@ -572,7 +583,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
             const matchedCustomer = customers.find(c => c.id === data[0].customer_id);
             if (matchedCustomer) {
               handleSelectCustomer(matchedCustomer.id);
-              toast.success('Customer extracted from invoice');
+              toast.success('تم استخراج معلومات العميل من الفاتورة');
             }
           }
         } catch (error) {
@@ -581,13 +592,13 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
       }
     };
 
-    extractCustomerFromInvoices();
+    extractCustomerFromالفواتير();
   }, [formData.selected_invoices]);
 
   // Fetch customer's previous cases
   const fetchCustomerCases = async (customerId: string) => {
     try {
-      setLoadingCases(true);
+      setجاري التحميل...es(true);
       const { data, error } = await supabase
         .from('legal_cases')
         .select('id, case_title, case_type, case_status, case_value, created_at')
@@ -600,7 +611,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     } catch (error) {
       console.error('Error fetching customer cases:', error);
     } finally {
-      setLoadingCases(false);
+      setجاري التحميل...es(false);
     }
   };
 
@@ -651,21 +662,21 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     <div className="space-y-4">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Select an existing customer or manually enter customer information. Details can be edited below.
-        </AlertDescription>
+        <Alertوصف تفصيلي>
+          اختر عميلاً موجوداً أو أدخل معلومات العميل يدوياً. يمكن تعديل التفاصيل أدناه.
+        </Alertوصف تفصيلي>
       </Alert>
 
       {/* Customer Search & Selection */}
       <div className="space-y-3">
         <Label htmlFor="customer_search" className="text-base font-semibold mb-2 block">
-          Search & Select Customer
+          البحث واختيار العميل
         </Label>
         
         {/* Search Input */}
         <Input
           id="customer_search"
-          placeholder="Search by name, phone, email, or ID..."
+          placeholder="ابحث باستخدام الاسم، الهاتف، البريد الإلكتروني، أو الرقم الوطني..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           disabled={loading}
@@ -677,7 +688,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
           <Card className="bg-muted/50">
             <CardContent className="pt-4">
               {filteredCustomers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No customers match your search</p>
+                <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة للبحث</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {filteredCustomers.map((customer) => (
@@ -702,12 +713,12 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
           </Card>
         )}
         
-        {/* Quick Select - Recent Customers */}
-        {!searchTerm && filteredCustomers.length > 0 && (
+        {/* Quick Select - Recent Customers - Show only first 10 */}
+        {!searchTerm && customers.length > 0 && (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Quick select:</p>
+            <p className="text-xs text-muted-foreground mb-2">اختيار سريع:</p>
             <div className="space-y-1 max-h-48 overflow-y-auto">
-              {filteredCustomers.slice(0, 10).map((customer) => (
+              {customers.slice(0, 10).map((customer) => (
                 <Button
                   key={customer.id}
                   variant="outline"
@@ -727,7 +738,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="customer_name" className="text-base font-semibold mb-2 block">
-          Customer Name *
+          اسم العميل *
         </Label>
         <Input
           id="customer_name"
@@ -740,7 +751,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="national_id" className="text-base font-semibold mb-2 block">
-            National ID
+            الرقم الوطني
           </Label>
           <Input
             id="national_id"
@@ -751,7 +762,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
         <div>
           <Label htmlFor="phone" className="text-base font-semibold mb-2 block">
-            Phone
+            رقم الهاتف
           </Label>
           <Input
             id="phone"
@@ -763,7 +774,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="email" className="text-base font-semibold mb-2 block">
-          Email
+          البريد الإلكتروني
         </Label>
         <Input
           id="email"
@@ -775,7 +786,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="address" className="text-base font-semibold mb-2 block">
-          Address
+          العنوان
         </Label>
         <Textarea
           id="address"
@@ -787,7 +798,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="emergency_contact" className="text-base font-semibold mb-2 block">
-          Emergency Contact
+          جهة اتصال طوارئ
         </Label>
         <Input
           id="emergency_contact"
@@ -798,7 +809,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="employer_info" className="text-base font-semibold mb-2 block">
-          Employer Information
+          معلومات جهة العمل
         </Label>
         <Input
           id="employer_info"
@@ -807,20 +818,20 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         />
       </div>
 
-      {/* Customer's Previous Cases */}
+      {/* القضايا السابقة للعميل */}
       {formData.customer_id && (
         <Card className="border-blue-200 bg-blue-50/50">
           <CardHeader>
-            <CardTitle className="text-sm">Customer's Previous Cases</CardTitle>
-            <CardDescription>
-              {loadingCases ? 'Loading case history...' : `${customerCases.length} case(s) found`}
-            </CardDescription>
+            <CardTitle className="text-sm">القضايا السابقة للعميل</CardTitle>
+            <Cardوصف تفصيلي>
+              {loadingCases ? 'جاري تحميل سجل القضايا...' : `${customerCases.length} قضية`}
+            </Cardوصف تفصيلي>
           </CardHeader>
           <CardContent>
             {loadingCases ? (
-              <div className="text-sm text-muted-foreground">Loading...</div>
+              <div className="text-sm text-muted-foreground">جاري التحميل...</div>
             ) : customerCases.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No previous cases for this customer</div>
+              <div className="text-sm text-muted-foreground">لا توجد قضايا سابقة لهذا العميل</div>
             ) : (
               <div className="space-y-2">
                 {customerCases.map((caseItem) => (
@@ -856,7 +867,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 };
 
 // ============================================================================
-// STEP 4: Evidence Upload
+// STEP 4: رفع المستندات
 // ============================================================================
 
 interface EvidenceUploadStepProps {
@@ -871,10 +882,10 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
   const [dragActive, setDragActive] = React.useState(false);
 
   const evidenceCategories = [
-    { value: 'contract', label: 'Contracts' },
-    { value: 'invoice', label: 'Invoices' },
+    { value: 'contract', label: 'العقود' },
+    { value: 'invoice', label: 'الفواتير' },
     { value: 'receipt', label: 'Payment Receipts' },
-    { value: 'communication', label: 'Email/SMS Communications' },
+    { value: 'communication', label: 'البريد الإلكتروني/SMS Communications' },
     { value: 'photo', label: 'Photos (Vehicle/Damage)' },
     { value: 'recording', label: 'Voice Recordings' },
     { value: 'witness', label: 'Witness Statements' },
@@ -920,7 +931,7 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
       evidence_files: [...formData.evidence_files, ...newFiles],
     });
 
-    toast.success(`${newFiles.length} file(s) added`);
+    toast.success(`${newFiles.length} ملف تمت إضافته`);
   };
 
   const removeFile = (fileId: string) => {
@@ -943,9 +954,9 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Upload supporting documents and evidence for the legal case. All files should be relevant to the case.
-        </AlertDescription>
+        <Alertوصف تفصيلي>
+          رفع المستندات <strong>اختياري</strong>. يمكنك إضافة المستندات لاحقاً من صفحة القضية.
+        </Alertوصف تفصيلي>
       </Alert>
 
       {/* Drag & Drop Zone */}
@@ -959,8 +970,8 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
         }`}
       >
         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-        <p className="text-sm font-medium mb-1">Drag and drop files here</p>
-        <p className="text-xs text-muted-foreground mb-4">or click to select files</p>
+        <p className="text-sm font-medium mb-1">اسحب وأفلت الملفات هنا</p>
+        <p className="text-xs text-muted-foreground mb-4">أو انقر لاختيار الملفات</p>
         <input
           type="file"
           multiple
@@ -970,7 +981,7 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
         />
         <Label htmlFor="file-input" className="cursor-pointer">
           <Button variant="outline" size="sm">
-            Select Files
+            اختر الملفات
           </Button>
         </Label>
       </div>
@@ -979,10 +990,10 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
       {formData.evidence_files.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Uploaded Evidence</CardTitle>
-            <CardDescription>
-              {formData.evidence_files.length} file(s) uploaded
-            </CardDescription>
+            <CardTitle className="text-lg">الأدلة المرفوعة</CardTitle>
+            <Cardوصف تفصيلي>
+              {formData.evidence_files.length} ملف مرفوع
+            </Cardوصف تفصيلي>
           </CardHeader>
           <CardContent className="space-y-3">
             {formData.evidence_files.map((file) => (
@@ -1038,7 +1049,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Case Details</CardTitle>
+          <CardTitle>تفاصيل القضية</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
@@ -1050,11 +1061,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
             <Badge>{formData.case_type}</Badge>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Priority:</span>
+            <span className="text-muted-foreground">الأولوية:</span>
             <Badge variant="destructive">{formData.priority.toUpperCase()}</Badge>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Expected Outcome:</span>
+            <span className="text-muted-foreground">النتيجة المتوقعة:</span>
             <span className="font-medium">{formData.expected_outcome}</span>
           </div>
         </CardContent>
@@ -1062,7 +1073,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Customer Information</CardTitle>
+          <CardTitle>معلومات العميل</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
@@ -1070,11 +1081,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
             <span className="font-medium">{formData.customer_name}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Phone:</span>
+            <span className="text-muted-foreground">رقم الهاتف:</span>
             <span className="font-medium">{formData.phone}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Email:</span>
+            <span className="text-muted-foreground">البريد الإلكتروني:</span>
             <span className="font-medium">{formData.email}</span>
           </div>
         </CardContent>
@@ -1086,15 +1097,15 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Invoices:</span>
+            <span className="text-muted-foreground">الفواتير:</span>
             <Badge variant="secondary">{formData.selected_invoices.length}</Badge>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Contracts:</span>
+            <span className="text-muted-foreground">العقود:</span>
             <Badge variant="secondary">{formData.selected_contracts.length}</Badge>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Evidence Files:</span>
+            <span className="text-muted-foreground">ملفات الأدلة:</span>
             <Badge variant="secondary">{formData.evidence_files.length}</Badge>
           </div>
         </CardContent>
@@ -1102,9 +1113,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Alert className="border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-800">
-          All information is complete. Click "Create Case" to finalize.
-        </AlertDescription>
+        <Alertوصف تفصيلي className="text-green-800">
+          جميع المعلومات مكتملة. انقر على "إنشاء القضية" للإنهاء.
+        </Alertوصف تفصيلي>
       </Alert>
     </div>
   );
