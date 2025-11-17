@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +64,9 @@ import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNotice
 import '@/styles/legal-cases-animations.css';
 
 export const LegalCasesTracking: React.FC = () => {
-  const [activeView, setActiveView] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeView = searchParams.get('view') || 'overview';
+  const setActiveView = (view: string) => setSearchParams({ view });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
