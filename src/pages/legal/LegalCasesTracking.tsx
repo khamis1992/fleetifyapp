@@ -353,7 +353,6 @@ export const LegalCasesTracking: React.FC = () => {
               )}
             </>
           )}
-          )}
           </>
         )}
 
