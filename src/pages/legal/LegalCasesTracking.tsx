@@ -214,6 +214,23 @@ export const LegalCasesTracking: React.FC = () => {
         {/* Cases View */}
         {activeView === 'cases' && (
           <>
+          <Card>
+            <CardHeader>
+              <CardTitle>قائمة القضايا</CardTitle>
+              <CardDescription>جميع القضايا القانونية</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-gray-500">لا توجد قضايا حالياً</p>
+              </div>
+            </CardContent>
+          </Card>
+          </>
+        )}
+
+        {/* Cases View - OLD (commented out for testing) */}
+        {false && activeView === 'cases-old' && (
+          <>
           {!companyId ? (
             <Card>
               <CardContent className="pt-6">
