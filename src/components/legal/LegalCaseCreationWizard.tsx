@@ -515,12 +515,13 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
       try {
         setLoading(true);
         
-        // Fetch unpaid rent (invoices)
+        // Fetch overdue rent (invoices) - only invoices past due date
         const { data: rentData, error: rentError } = await supabase
           .from('invoices')
           .select('id, invoice_number, total_amount, invoice_date, payment_status, due_date')
           .eq('customer_id', formData.customer_id)
           .neq('payment_status', 'paid')
+          .lte('due_date', new Date().toISOString())
           .order('invoice_date', { ascending: false });
         
         if (rentError) throw rentError;
