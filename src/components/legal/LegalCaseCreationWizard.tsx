@@ -1,11 +1,12 @@
 /**
  * Legal Case Creation Wizard
  * 
- * Complete 4-step wizard for creating legal cases:
- * 1. تفاصيل القضية - Type, priority, expected outcome
- * 2. Select الفواتير/العقود - Multi-select with claim calculation
- * 3. معلومات العميل - Auto-populate & edit customer details
+ * Complete 5-step wizard for tracking legal cases:
+ * 1. تفاصيل القضية - Type, priority, court info (complaint #, case #, court name, dates)
+ * 2. معلومات العميل - Select customer first
+ * 3. Select الفواتير/العقود - Multi-select filtered by customer
  * 4. رفع المستندات - Upload contracts, invoices, receipts, communications, photos, recordings
+ * 5. المراجعة - Review all details before submission
  */
 
 import React, { useState } from 'react';
@@ -61,6 +62,14 @@ interface CaseFormData {
   expected_outcome: 'payment' | 'vehicle_return' | 'both' | 'other';
   description: string;
   
+  // Court case tracking
+  complaint_number: string;  // رقم البلاغ
+  court_case_number: string;  // رقم القضية في المحكمة
+  court_name: string;  // اسم المحكمة
+  filing_date: string;  // تاريخ رفع القضية
+  first_hearing_date: string;  // تاريخ أول جلسة (اختياري)
+  judge_name: string;  // القاضي المسؤول (اختياري)
+  
   // Selected invoices/contracts
   selected_invoices: string[];
   selected_contracts: string[];
@@ -99,6 +108,12 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
     priority: 'medium',
     expected_outcome: 'payment',
     description: '',
+    complaint_number: '',
+    court_case_number: '',
+    court_name: '',
+    filing_date: '',
+    first_hearing_date: '',
+    judge_name: '',
     selected_invoices: [],
     selected_contracts: [],
     customer_id: '',
@@ -115,7 +130,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   const createCaseMutation = useCreateLegalCase();
   const { saveDraft, lastSaved } = useCaseDraft(formData, currentStep);
 
-  const stepOrder: WizardStep[] = ['details', 'invoices', 'customer', 'evidence', 'review'];
+  const stepOrder: WizardStep[] = ['details', 'customer', 'invoices', 'evidence', 'review'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / stepOrder.length) * 100;
 
@@ -150,6 +165,13 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         client_phone: formData.phone,
         client_email: formData.email,
         case_value: totalClaimAmount,
+        // Court tracking fields
+        complaint_number: formData.complaint_number,
+        court_name: formData.court_name,
+        filing_date: formData.filing_date,
+        hearing_date: formData.first_hearing_date,
+        judge_name: formData.judge_name,
+        case_reference: formData.court_case_number,  // Map court_case_number to case_reference
         legal_fees: 0,
         court_fees: 0,
         other_expenses: 0,
@@ -191,6 +213,12 @@ Selected العقود: ${formData.selected_contracts.length}
       priority: 'medium',
       expected_outcome: 'payment',
       description: '',
+      complaint_number: '',
+      court_case_number: '',
+      court_name: '',
+      filing_date: '',
+      first_hearing_date: '',
+      judge_name: '',
       selected_invoices: [],
       selected_contracts: [],
       customer_id: '',
@@ -223,14 +251,14 @@ Selected العقود: ${formData.selected_contracts.length}
             <CaseDetailsStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 2: Select الفواتير/العقود */}
-          {currentStep === 'invoices' && (
-            <InvoiceSelectionStep formData={formData} setFormData={setFormData} />
-          )}
-
-          {/* Step 3: معلومات العميل */}
+          {/* Step 2: معلومات العميل */}
           {currentStep === 'customer' && (
             <CustomerInfoStep formData={formData} setFormData={setFormData} />
+          )}
+
+          {/* Step 3: Select الفواتير/العقود - Filtered by selected customer */}
+          {currentStep === 'invoices' && (
+            <InvoiceSelectionStep formData={formData} setFormData={setFormData} />
           )}
 
           {/* Step 4: رفع المستندات */}
@@ -386,6 +414,87 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
       </div>
+
+      {/* Court Case Tracking Section */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-semibold mb-4">معلومات القضية في المحكمة</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="complaint_number" className="text-base font-semibold mb-2 block">
+              رقم البلاغ *
+            </Label>
+            <Input
+              id="complaint_number"
+              placeholder="مثال: 2025/123"
+              value={formData.complaint_number}
+              onChange={(e) => setFormData({ ...formData, complaint_number: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="court_case_number" className="text-base font-semibold mb-2 block">
+              رقم القضية في المحكمة *
+            </Label>
+            <Input
+              id="court_case_number"
+              placeholder="مثال: 456/2025"
+              value={formData.court_case_number}
+              onChange={(e) => setFormData({ ...formData, court_case_number: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="court_name" className="text-base font-semibold mb-2 block">
+            اسم المحكمة *
+          </Label>
+          <Input
+            id="court_name"
+            placeholder="مثال: محكمة الدوحة الابتدائية"
+            value={formData.court_name}
+            onChange={(e) => setFormData({ ...formData, court_name: e.target.value })}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <Label htmlFor="filing_date" className="text-base font-semibold mb-2 block">
+              تاريخ رفع القضية *
+            </Label>
+            <Input
+              id="filing_date"
+              type="date"
+              value={formData.filing_date}
+              onChange={(e) => setFormData({ ...formData, filing_date: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="first_hearing_date" className="text-base font-semibold mb-2 block">
+              تاريخ أول جلسة <span className="text-muted-foreground font-normal">(اختياري)</span>
+            </Label>
+            <Input
+              id="first_hearing_date"
+              type="date"
+              value={formData.first_hearing_date}
+              onChange={(e) => setFormData({ ...formData, first_hearing_date: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="judge_name" className="text-base font-semibold mb-2 block">
+            القاضي المسؤول <span className="text-muted-foreground font-normal">(اختياري)</span>
+          </Label>
+          <Input
+            id="judge_name"
+            placeholder="مثال: القاضي محمد أحمد"
+            value={formData.judge_name}
+            onChange={(e) => setFormData({ ...formData, judge_name: e.target.value })}
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -439,6 +548,22 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
 
   return (
     <div className="space-y-6">
+      {formData.customer_id ? (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            عرض الفواتير والعقود الخاصة بالعميل: <strong>{formData.customer_name}</strong>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            لم يتم اختيار عميل في الخطوة السابقة. عرض جميع الفواتير والعقود.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>

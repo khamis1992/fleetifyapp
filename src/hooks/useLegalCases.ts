@@ -37,6 +37,8 @@ export interface LegalCase {
   is_confidential: boolean;
   police_station?: string;
   police_report_number?: string;
+  complaint_number?: string;  // رقم البلاغ
+  judge_name?: string;  // القاضي المسؤول
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -71,6 +73,8 @@ export interface LegalCaseFormData {
   is_confidential: boolean;
   police_station?: string;
   police_report_number?: string;
+  complaint_number?: string;  // رقم البلاغ
+  judge_name?: string;  // القاضي المسؤول
 }
 
 interface UseLegalCasesFilters {
