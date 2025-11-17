@@ -315,14 +315,11 @@ export const LegalCasesTracking: React.FC = () => {
       </div>
 
       {/* Case Creation Wizard Dialog */}
-      {showCaseWizard && (
-        <LegalCaseCreationWizard
-          isOpen={showCaseWizard}
-          onClose={() => setShowCaseWizard(false)}
-          onCaseCreated={handleCaseCreated}
-          companyId={companyId || ''}
-        />
-      )}
+      <LegalCaseCreationWizard
+        open={showCaseWizard}
+        onOpenChange={setShowCaseWizard}
+        onSuccess={handleCaseCreated}
+      />
 
       {/* Triggers Config Dialog */}
       <AutoCreateCaseTriggersConfig 
