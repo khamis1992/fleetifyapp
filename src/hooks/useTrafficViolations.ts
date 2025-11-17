@@ -117,6 +117,13 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
               model,
               year
             ),
+            customers (
+              id,
+              first_name,
+              last_name,
+              company_name,
+              phone
+            ),
             contracts (
               id,
               contract_number,
