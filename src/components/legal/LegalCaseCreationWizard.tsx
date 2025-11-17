@@ -1211,6 +1211,53 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
+  const [selectedInvoicesData, setSelectedInvoicesData] = React.useState<any[]>([]);
+  const [selectedContractsData, setSelectedContractsData] = React.useState<any[]>([]);
+  const [selectedPenaltiesData, setSelectedPenaltiesData] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchSelectedData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch selected invoices details
+        if (formData.selected_invoices.length > 0) {
+          const { data: invoicesData } = await supabase
+            .from('invoices')
+            .select('id, invoice_number, total_amount, invoice_date, payment_status')
+            .in('id', formData.selected_invoices);
+          setSelectedInvoicesData(invoicesData || []);
+        }
+        
+        // Fetch selected contracts details
+        if (formData.selected_contracts.length > 0) {
+          const { data: contractsData } = await supabase
+            .from('contracts')
+            .select('id, contract_number, start_date, end_date, monthly_rate')
+            .in('id', formData.selected_contracts);
+          setSelectedContractsData(contractsData || []);
+        }
+        
+        // Note: Penalties are stored in selected_invoices array with 'penalty-' prefix
+        const penaltyIds = formData.selected_invoices.filter(id => id.startsWith('penalty-')).map(id => id.replace('penalty-', ''));
+        if (penaltyIds.length > 0) {
+          const { data: penaltiesData } = await supabase
+            .from('penalties')
+            .select('id, penalty_number, violation_type, amount, penalty_date, vehicle_plate')
+            .in('id', penaltyIds);
+          setSelectedPenaltiesData(penaltiesData || []);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching selected data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSelectedData();
+  }, [formData.selected_invoices, formData.selected_contracts]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -1259,21 +1306,126 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Selected Evidence</CardTitle>
+          <CardTitle>الأدلة المحددة</CardTitle>
+          <CardDescription>
+            الفواتير والعقود والمخالفات المرتبطة بالقضية
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">الفواتير:</span>
-            <Badge variant="secondary">{formData.selected_invoices.length}</Badge>
-          </div>
-          <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">العقود:</span>
-            <Badge variant="secondary">{formData.selected_contracts.length}</Badge>
-          </div>
-          <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">ملفات الأدلة:</span>
-            <Badge variant="secondary">{formData.evidence_files.length}</Badge>
-          </div>
+        <CardContent className="space-y-6">
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
+          ) : (
+            <>
+              {/* Invoices Section */}
+              {selectedInvoicesData.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    الفواتير المستحقة
+                    <Badge variant="secondary">{selectedInvoicesData.length}</Badge>
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedInvoicesData.map((invoice) => (
+                      <div key={invoice.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{invoice.invoice_number}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(invoice.invoice_date).toLocaleDateString('ar-QA')}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-primary">{formatCurrency(invoice.total_amount)}</div>
+                          <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'destructive'} className="text-xs">
+                            {invoice.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Penalties Section */}
+              {selectedPenaltiesData.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    المخالفات المرورية
+                    <Badge variant="secondary">{selectedPenaltiesData.length}</Badge>
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedPenaltiesData.map((penalty) => (
+                      <div key={penalty.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{penalty.penalty_number}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {penalty.violation_type} • {penalty.vehicle_plate}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(penalty.penalty_date).toLocaleDateString('ar-QA')}
+                          </div>
+                        </div>
+                        <div className="font-bold text-destructive">{formatCurrency(penalty.amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contracts Section */}
+              {selectedContractsData.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    العقود المرتبطة
+                    <Badge variant="secondary">{selectedContractsData.length}</Badge>
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedContractsData.map((contract) => (
+                      <div key={contract.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{contract.contract_number}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(contract.start_date).toLocaleDateString('ar-QA')} - {contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : 'مفتوح'}
+                          </div>
+                        </div>
+                        <div className="font-bold text-primary">{formatCurrency(contract.monthly_rate)}/شهر</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Evidence Files */}
+              {formData.evidence_files.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    ملفات الأدلة
+                    <Badge variant="secondary">{formData.evidence_files.length}</Badge>
+                  </h4>
+                  <div className="space-y-2">
+                    {formData.evidence_files.map((file) => (
+                      <div key={file.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium text-sm">{file.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </div>
+                          </div>
+                        </div>
+                        <Badge variant="outline">{file.category}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedInvoicesData.length === 0 && selectedPenaltiesData.length === 0 && selectedContractsData.length === 0 && formData.evidence_files.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  لم يتم تحديد أي أدلة بعد
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
