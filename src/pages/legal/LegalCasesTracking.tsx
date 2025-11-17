@@ -325,31 +325,11 @@ export const LegalCasesTracking: React.FC = () => {
       )}
 
       {/* Triggers Config Dialog */}
-      {showTriggersConfig && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>إعداد الإنشاء التلقائي</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTriggersConfig(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <AutoCreateCaseTriggersConfig 
-                open={true}
-                onOpenChange={() => {}}
-                companyId={companyId || ''} 
-              />
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <AutoCreateCaseTriggersConfig 
+        open={showTriggersConfig}
+        onOpenChange={setShowTriggersConfig}
+        companyId={companyId || ''} 
+      />
     </div>
   );
 };
