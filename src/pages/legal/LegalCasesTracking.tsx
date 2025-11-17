@@ -232,7 +232,7 @@ export const LegalCasesTracking: React.FC = () => {
                     جميع القضايا القانونية المسجلة في النظام
                   </CardDescription>
                 </div>
-                <Button className="gap-2">
+                <Button onClick={() => setShowCaseWizard(true)} className="gap-2">
                   <Plus className="w-4 h-4" />
                   قضية جديدة
                 </Button>
@@ -260,7 +260,7 @@ export const LegalCasesTracking: React.FC = () => {
                   <p className="text-sm text-gray-500 mb-6">
                     ابدأ بإنشاء قضية قانونية جديدة من الزر أعلاه
                   </p>
-                  <Button className="gap-2">
+                  <Button onClick={() => setShowCaseWizard(true)} className="gap-2">
                     <Plus className="w-4 h-4" />
                     إنشاء قضية جديدة
                   </Button>
