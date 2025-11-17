@@ -127,9 +127,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
             )
           `)
           .eq('company_id', profile.company_id)
-          .order('created_at', { ascending: false })
-          .limit(limit)
-          .range(offset, offset + limit - 1);
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('Error fetching traffic violations:', error);
