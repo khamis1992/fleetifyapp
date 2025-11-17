@@ -53,6 +53,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
 import DelinquentCustomersTab from '@/components/legal/DelinquentCustomersTab';
+import SimpleCasesTab from '@/components/legal/SimpleCasesTab';
 import LegalCaseCreationWizard from '@/components/legal/LegalCaseCreationWizard';
 import AutoCreateCaseTriggersConfig from '@/components/legal/AutoCreateCaseTriggersConfig';
 import CaseDashboard from '@/components/legal/CaseDashboard';
@@ -219,19 +220,7 @@ export const LegalCasesTracking: React.FC = () => {
 
         {/* Cases View */}
         {activeView === 'cases' && (
-          <>
-          <Card>
-            <CardHeader>
-              <CardTitle>قائمة القضايا</CardTitle>
-              <CardDescription>جميع القضايا القانونية</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-gray-500">لا توجد قضايا حالياً</p>
-              </div>
-            </CardContent>
-          </Card>
-          </>
+          <SimpleCasesTab />
         )}
 
         {/* Cases View - OLD (commented out for testing) */}
