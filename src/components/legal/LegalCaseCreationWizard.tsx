@@ -41,7 +41,7 @@ import {
   X,
   CheckCircle,
 } from 'lucide-react';
-import { Alert, Alertوصف تفصيلي } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useCreateLegalCase } from '@/hooks/useLegalCases';
 import { useCaseDraft } from '@/hooks/useCaseDraft';
@@ -441,9 +441,9 @@ const الفواتيرSelectionStep: React.FC<الفواتيرSelectionStepProps
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <Alertوصف تفصيلي>
+        <AlertDescription>
           اختيار الفواتير والعقود <strong>اختياري</strong>. يمكنك المتابعة بدون اختيار أي عنصر. سيتم حساب إجمالي المطالبة تلقائياً.
-        </Alertوصف تفصيلي>
+        </AlertDescription>
       </Alert>
 
       {/* الفواتير Section */}
@@ -662,9 +662,9 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     <div className="space-y-4">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <Alertوصف تفصيلي>
+        <AlertDescription>
           اختر عميلاً موجوداً أو أدخل معلومات العميل يدوياً. يمكن تعديل التفاصيل أدناه.
-        </Alertوصف تفصيلي>
+        </AlertDescription>
       </Alert>
 
       {/* Customer Search & Selection */}
@@ -954,9 +954,9 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <Alertوصف تفصيلي>
+        <AlertDescription>
           رفع المستندات <strong>اختياري</strong>. يمكنك إضافة المستندات لاحقاً من صفحة القضية.
-        </Alertوصف تفصيلي>
+        </AlertDescription>
       </Alert>
 
       {/* Drag & Drop Zone */}
@@ -1113,9 +1113,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Alert className="border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-600" />
-        <Alertوصف تفصيلي className="text-green-800">
+        <AlertDescription className="text-green-800">
           جميع المعلومات مكتملة. انقر على "إنشاء القضية" للإنهاء.
-        </Alertوصف تفصيلي>
+        </AlertDescription>
       </Alert>
     </div>
   );
