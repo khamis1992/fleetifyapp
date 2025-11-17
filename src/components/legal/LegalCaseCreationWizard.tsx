@@ -78,11 +78,7 @@ interface CaseFormData {
   customer_id: string;
   customer_name: string;
   national_id: string;
-  address: string;
   phone: string;
-  email: string;
-  emergency_contact: string;
-  employer_info: string;
   
   // Evidence files
   evidence_files: Array<{
@@ -181,9 +177,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         tags: [],
         notes: `Customer ID: ${formData.customer_id}
 الرقم الوطني: ${formData.national_id}
-العنوان: ${formData.address}
-جهة اتصال طوارئ: ${formData.emergency_contact}
-Employer: ${formData.employer_info}
+رقم الهاتف: ${formData.phone}
 Selected الفواتير: ${formData.selected_invoices.length}
 Selected العقود: ${formData.selected_contracts.length}
 ملفات الأدلة: ${formData.evidence_files.length}
@@ -224,11 +218,7 @@ Selected العقود: ${formData.selected_contracts.length}
       customer_id: '',
       customer_name: '',
       national_id: '',
-      address: '',
       phone: '',
-      email: '',
-      emergency_contact: '',
-      employer_info: '',
       evidence_files: [],
     });
     setCurrentStep('details');
@@ -771,10 +761,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         customer_id: selected.id,
         customer_name: fullName,
         national_id: selected.national_id || '',
-        email: selected.email || '',
         phone: selected.phone || '',
-        address: selected.address || '',
-        emergency_contact: selected.emergency_contact_name || '',
       });
       // Fetch previous cases for this customer
       fetchCustomerCases(selected.id);
@@ -895,52 +882,6 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="email" className="text-base font-semibold mb-2 block">
-          البريد الإلكتروني
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="address" className="text-base font-semibold mb-2 block">
-          العنوان
-        </Label>
-        <Textarea
-          id="address"
-          rows={2}
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="emergency_contact" className="text-base font-semibold mb-2 block">
-          جهة اتصال طوارئ
-        </Label>
-        <Input
-          id="emergency_contact"
-          value={formData.emergency_contact}
-          onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="employer_info" className="text-base font-semibold mb-2 block">
-          معلومات جهة العمل
-        </Label>
-        <Input
-          id="employer_info"
-          value={formData.employer_info}
-          onChange={(e) => setFormData({ ...formData, employer_info: e.target.value })}
-        />
       </div>
 
       {/* القضايا السابقة للعميل */}
