@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Tabs removed - using custom conditional rendering
 import {
   Table,
   TableBody,
@@ -63,7 +63,7 @@ import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNotice
 import '@/styles/legal-cases-animations.css';
 
 export const LegalCasesTracking: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeView, setActiveView] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -150,49 +150,70 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs System */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger 
-              value="overview" 
-              className="flex items-center justify-center gap-2"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span className="hidden sm:inline">نظرة عامة</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="cases" 
-              className="flex items-center justify-center gap-2"
-            >
-              <Folder className="w-5 h-5" />
-              <span className="hidden sm:inline">القضايا</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              className="flex items-center justify-center gap-2"
-            >
-              <Settings className="w-5 h-5" />
-              <span className="hidden sm:inline">الإعدادات</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="reports" 
-              className="flex items-center justify-center gap-2"
-            >
-              <FileText className="w-5 h-5" />
-              <span className="hidden sm:inline">التقارير</span>
-            </TabsTrigger>
-          </TabsList>
+      {/* Custom Navigation */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="w-full grid grid-cols-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveView('overview')}
+            className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all duration-200 border-b-4 ${
+              activeView === 'overview'
+                ? 'bg-white text-primary border-primary font-bold'
+                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-800'
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="hidden sm:inline">نظرة عامة</span>
+          </button>
+          <button
+            onClick={() => setActiveView('cases')}
+            className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all duration-200 border-b-4 ${
+              activeView === 'cases'
+                ? 'bg-white text-primary border-primary font-bold'
+                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-800'
+            }`}
+          >
+            <Folder className="w-5 h-5" />
+            <span className="hidden sm:inline">القضايا</span>
+          </button>
+          <button
+            onClick={() => setActiveView('settings')}
+            className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all duration-200 border-b-4 ${
+              activeView === 'settings'
+                ? 'bg-white text-primary border-primary font-bold'
+                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-800'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="hidden sm:inline">الإعدادات</span>
+          </button>
+          <button
+            onClick={() => setActiveView('reports')}
+            className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all duration-200 border-b-4 ${
+              activeView === 'reports'
+                ? 'bg-white text-primary border-primary font-bold'
+                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-800'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            <span className="hidden sm:inline">التقارير</span>
+          </button>
         </div>
+      </div>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <CaseDashboard />
-          <DeadlineAlerts />
-        </TabsContent>
+      {/* Content Area */}
+      <div className="space-y-6">
 
-        {/* Cases Tab */}
-        <TabsContent value="cases" className="space-y-6">
+        {/* Overview View */}
+        {activeView === 'overview' && (
+          <>
+            <CaseDashboard />
+            <DeadlineAlerts />
+          </>
+        )}
+
+        {/* Cases View */}
+        {activeView === 'cases' && (
+          <>
           {/* Filters Bar */}
           <Card>
             <CardContent className="pt-6">
@@ -326,10 +347,12 @@ export const LegalCasesTracking: React.FC = () => {
               )}
             </>
           )}
-        </TabsContent>
+          </>
+        )}
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
+        {/* Settings View */}
+        {activeView === 'settings' && (
+          <>
           <Card>
             <CardHeader>
               <CardTitle>الإنشاء التلقائي للقضايا</CardTitle>
@@ -358,13 +381,14 @@ export const LegalCasesTracking: React.FC = () => {
               />
             </CardContent>
           </Card>
-        </TabsContent>
+          </>
+        )}
 
-        {/* Reports Tab */}
-        <TabsContent value="reports" className="space-y-6">
+        {/* Reports View */}
+        {activeView === 'reports' && (
           <DelinquentCustomersTab />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       {/* Case Creation Wizard Dialog */}
       {showCaseWizard && (
