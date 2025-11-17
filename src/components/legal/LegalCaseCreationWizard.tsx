@@ -503,20 +503,50 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   setFormData,
 }) => {
   // Mock data - in production, fetch from Supabase
-  const mockInvoices = [
-    { id: '1', number: 'INV-2025-001', amount: 5000, date: '2025-09-01' },
-    { id: '2', number: 'INV-2025-002', amount: 7500, date: '2025-08-15' },
-    { id: '3', number: 'INV-2025-003', amount: 3200, date: '2025-07-20' },
-  ];
+  const [invoices, setInvoices] = React.useState<any[]>([]);
+  const [contracts, setContracts] = React.useState<any[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = React.useState(false);
+  const [loadingContracts, setLoadingContracts] = React.useState(false);
 
-  const mockالعقود = [
-    { id: 'C1', number: 'CONTRACT-2024-001', title: 'Rental Agreement' },
-    { id: 'C2', number: 'CONTRACT-2024-002', title: 'Service Agreement' },
-  ];
+  React.useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        setLoadingInvoices(true);
+        let query = supabase.from('invoices').select('id, invoice_number, total_amount, invoice_date, customer_id').order('invoice_date', { ascending: false });
+        if (formData.customer_id) query = query.eq('customer_id', formData.customer_id);
+        const { data, error } = await query;
+        if (error) throw error;
+        setInvoices(data || []);
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+      } finally {
+        setLoadingInvoices(false);
+      }
+    };
+    fetchInvoices();
+  }, [formData.customer_id]);
 
-  const selectedInvoiceAmount = mockInvoices
+  React.useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        setLoadingContracts(true);
+        let query = supabase.from('contracts').select('id, contract_number, contract_type, customer_id').order('created_at', { ascending: false });
+        if (formData.customer_id) query = query.eq('customer_id', formData.customer_id);
+        const { data, error } = await query;
+        if (error) throw error;
+        setContracts(data || []);
+      } catch (error) {
+        console.error('Error fetching contracts:', error);
+      } finally {
+        setLoadingContracts(false);
+      }
+    };
+    fetchContracts();
+  }, [formData.customer_id]);
+
+  const selectedInvoiceAmount = invoices
     .filter((inv) => formData.selected_invoices.includes(inv.id))
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + inv.total_amount, 0);
 
   const toggleInvoice = (invoiceId: string) => {
     setFormData({
@@ -570,22 +600,28 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockInvoices.map((invoice) => (
-            <div
-              key={invoice.id}
-              className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
-            >
-              <Checkbox
-                checked={formData.selected_invoices.includes(invoice.id)}
-                onCheckedChange={() => toggleInvoice(invoice.id)}
-              />
-              <div className="flex-1">
-                <div className="font-medium">{invoice.number}</div>
-                <div className="text-sm text-muted-foreground">{invoice.date}</div>
+          {loadingInvoices ? (
+            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
+          ) : invoices.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">لا توجد فواتير</div>
+          ) : (
+            invoices.map((invoice) => (
+              <div
+                key={invoice.id}
+                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
+              >
+                <Checkbox
+                  checked={formData.selected_invoices.includes(invoice.id)}
+                  onCheckedChange={() => toggleInvoice(invoice.id)}
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{invoice.invoice_number}</div>
+                  <div className="text-sm text-muted-foreground">{invoice.invoice_date}</div>
+                </div>
+                <Badge variant="outline">{formatCurrency(invoice.total_amount)}</Badge>
               </div>
-              <Badge variant="outline">{formatCurrency(invoice.amount)}</Badge>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -598,21 +634,28 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockالعقود.map((contract) => (
-            <div
-              key={contract.id}
-              className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
-            >
-              <Checkbox
-                checked={formData.selected_contracts.includes(contract.id)}
-                onCheckedChange={() => toggleContract(contract.id)}
-              />
-              <div className="flex-1">
-                <div className="font-medium">{contract.number}</div>
-                <div className="text-sm text-muted-foreground">{contract.title}</div>
+          {loadingContracts ? (
+            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
+          ) : contracts.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">لا توجد عقود</div>
+          ) : (
+            contracts.map((contract) => (
+              <div
+                key={contract.id}
+                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
+              >
+                <Checkbox
+                  checked={formData.selected_contracts.includes(contract.id)}
+                  onCheckedChange={() => toggleContract(contract.id)}
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{contract.contract_number}</div>
+                  <div className="text-sm text-muted-foreground">{contract.contract_type}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
+        </CardContent>
         </CardContent>
       </Card>
     </div>
