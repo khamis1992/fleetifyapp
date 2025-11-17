@@ -89,7 +89,7 @@ export const LegalCasesTracking: React.FC = () => {
       page: currentPage,
       pageSize,
     },
-    activeView === 'cases' // Only fetch when in cases view
+    false // Disabled - using SimpleCasesTab instead
   );
 
   const { data: stats, isLoading: isLoadingStats } = useLegalCaseStats();
