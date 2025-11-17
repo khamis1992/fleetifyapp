@@ -84,7 +84,7 @@ interface UseLegalCasesFilters {
   pageSize?: number;
 }
 
-export const useLegalCases = (filters?: UseLegalCasesFilters) => {
+export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean = true) => {
   const { user } = useAuth();
   const companyFilter = useCompanyFilter();
 
@@ -134,7 +134,7 @@ export const useLegalCases = (filters?: UseLegalCasesFilters) => {
       if (error) throw error;
       return { data: data as LegalCase[], count: count || 0 };
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && enabled,
     staleTime: 30000, // Cache for 30 seconds
   });
 };

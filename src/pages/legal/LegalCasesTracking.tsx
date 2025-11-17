@@ -77,13 +77,16 @@ export const LegalCasesTracking: React.FC = () => {
 
   const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
 
-  const { data: casesResponse, isLoading, error } = useLegalCases({
-    case_status: statusFilter !== 'all' ? statusFilter : undefined,
-    case_type: typeFilter !== 'all' ? typeFilter : undefined,
-    search: searchTerm || undefined,
-    page: currentPage,
-    pageSize,
-  });
+  const { data: casesResponse, isLoading, error } = useLegalCases(
+    {
+      case_status: statusFilter !== 'all' ? statusFilter : undefined,
+      case_type: typeFilter !== 'all' ? typeFilter : undefined,
+      search: searchTerm || undefined,
+      page: currentPage,
+      pageSize,
+    },
+    activeView === 'cases' // Only fetch when in cases view
+  );
 
   const { data: stats, isLoading: isLoadingStats } = useLegalCaseStats();
 
