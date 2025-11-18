@@ -83,12 +83,30 @@ const Invoices = () => {
 
   // Extract invoices and pagination from response
   const invoices = useMemo(() => {
-    if (!invoicesResponse) return [];
-    if (Array.isArray(invoicesResponse)) return invoicesResponse;
-    if (invoicesResponse && typeof invoicesResponse === 'object' && 'data' in invoicesResponse) {
-      return Array.isArray(invoicesResponse.data) ? invoicesResponse.data : [];
+    try {
+      if (!invoicesResponse) {
+        console.log('[Invoices] No response');
+        return [];
+      }
+      if (Array.isArray(invoicesResponse)) {
+        console.log('[Invoices] Response is array:', invoicesResponse.length);
+        return invoicesResponse;
+      }
+      if (invoicesResponse && typeof invoicesResponse === 'object' && 'data' in invoicesResponse) {
+        const data = invoicesResponse.data;
+        if (Array.isArray(data)) {
+          console.log('[Invoices] Response has data array:', data.length);
+          return data;
+        }
+        console.log('[Invoices] Response.data is not array:', typeof data);
+        return [];
+      }
+      console.log('[Invoices] Unexpected response type:', typeof invoicesResponse);
+      return [];
+    } catch (error) {
+      console.error('[Invoices] Error extracting invoices:', error);
+      return [];
     }
-    return [];
   }, [invoicesResponse]);
 
   const paginationInfo = useMemo(() => {
@@ -217,9 +235,17 @@ const Invoices = () => {
   // Calculate statistics from all invoices
   const statistics = useMemo(() => {
     try {
-      const allInvoices = Array.isArray(allInvoicesForStats) 
-        ? allInvoicesForStats 
-        : allInvoicesForStats?.data || [];
+      console.log('[Stats] allInvoicesForStats type:', typeof allInvoicesForStats);
+      console.log('[Stats] allInvoicesForStats isArray:', Array.isArray(allInvoicesForStats));
+      
+      let allInvoices = [];
+      if (Array.isArray(allInvoicesForStats)) {
+        allInvoices = allInvoicesForStats;
+      } else if (allInvoicesForStats && typeof allInvoicesForStats === 'object' && 'data' in allInvoicesForStats) {
+        allInvoices = Array.isArray(allInvoicesForStats.data) ? allInvoicesForStats.data : [];
+      }
+      
+      console.log('[Stats] allInvoices length:', allInvoices.length);
 
       if (!Array.isArray(allInvoices)) {
         return {
