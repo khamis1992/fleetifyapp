@@ -516,7 +516,7 @@ const Invoices = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع المراكز</SelectItem>
-                {costCenters?.map(center => (
+                {Array.isArray(costCenters) && costCenters.map(center => (
                   <SelectItem key={center.id} value={center.id}>
                     {center.center_name_ar || center.center_name}
                   </SelectItem>
@@ -606,7 +606,7 @@ const Invoices = () => {
                           <div className="flex items-center gap-1">
                             <Building2 className="h-3 w-3" />
                             <span className="text-sm">
-                              {costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name_ar || costCenters?.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد'}
+                              {Array.isArray(costCenters) ? (costCenters.find(c => c.id === invoice.cost_center_id)?.center_name_ar || costCenters.find(c => c.id === invoice.cost_center_id)?.center_name || 'غير محدد') : 'غير محدد'}
                             </span>
                           </div>
                         ) : (
