@@ -587,7 +587,7 @@ const Invoices = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map((invoice) => (
+                  {Array.isArray(filteredInvoices) && filteredInvoices.map((invoice) => (
                     <TableRow
                       key={invoice.id}
                       className={selectedInvoice?.id === invoice.id ? "bg-muted" : ""}
