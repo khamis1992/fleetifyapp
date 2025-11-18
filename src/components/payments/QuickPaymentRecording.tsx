@@ -94,7 +94,7 @@ export function QuickPaymentRecording() {
           contracts (contract_number)
         `)
         .eq('customer_id', customer.id)
-        .in('status', ['unpaid', 'pending', 'overdue', 'partially_paid'])
+        .in('status', ['sent', 'unpaid', 'pending', 'overdue', 'partially_paid'])
         .order('due_date', { ascending: true });
 
       if (error) throw error;
