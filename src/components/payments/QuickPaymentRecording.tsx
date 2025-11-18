@@ -203,7 +203,7 @@ export function QuickPaymentRecording() {
 تم استلام دفعتك بنجاح:
 📄 رقم الفاتورة: ${selectedInvoice.invoice_number}
 💰 المبلغ المدفوع: ${amount.toFixed(2)} ريال
-📅 تاريخ الدفع: ${new Date().toLocaleDateString('ar-SA')}
+📅 تاريخ الدفع: ${new Date().toLocaleDateString('ar-EG')}
 💳 طريقة الدفع: ${paymentMethod === 'cash' ? 'نقدي' : paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'أخرى'}
 
 شكراً لتعاملكم معنا.
@@ -334,7 +334,7 @@ export function QuickPaymentRecording() {
                                 عقد: {invoice.contracts?.contract_number}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                تاريخ الاستحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-SA')}
+                                تاريخ الاستحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG')}
                               </div>
                             </div>
                             <div className="text-left">
