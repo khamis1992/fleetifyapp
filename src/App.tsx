@@ -62,6 +62,7 @@ const InvoiceScannerPage = lazy(() => import("./pages/InvoiceScannerPage"));
 const FinancialTracking = lazy(() => import("./pages/FinancialTracking"));
 const SyncPaymentsToLedger = lazy(() => import("./pages/SyncPaymentsToLedger"));
 const PaymentRegistration = lazy(() => import("./pages/PaymentRegistration"));
+const QuickPayment = lazy(() => import("./pages/payments/QuickPayment"));
 
 // Super Admin pages - lazy loaded
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
@@ -712,6 +713,13 @@ const AppRoutes = () => {
           <RouteWrapper routeName="Payment Registration" fallbackPath="/dashboard">
             <Suspense fallback={<PageSkeletonFallback />}>
               <PaymentRegistration />
+            </Suspense>
+          </RouteWrapper>
+        } />
+        <Route path="payments/quick-payment" element={
+          <RouteWrapper routeName="Quick Payment" fallbackPath="/dashboard">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <QuickPayment />
             </Suspense>
           </RouteWrapper>
         } />
