@@ -11,3 +11,4 @@ export { NavBadge, NavBadgeDot } from './NavBadge';
 export { VoiceInput } from './VoiceInput';
 export { VoiceRecorder } from './VoiceRecorder';
 export { VoicePrivacyDialog } from './VoicePrivacyDialog';
+export { TouchOptimization, useTouchOptimization, GESTURE_CONFIGS } from './TouchOptimization';

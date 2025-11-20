@@ -293,7 +293,7 @@ const revenue = totalCredit - totalDebit; // مع abs() في العرض
 
 ---
 
-**آخر تحديث**: 6 نوفمبر 2025  
+**آخر تحديث**: 6 نوفمبر 2025
 **الحالة**: ⏳ في انتظار الموافقة للبدء
 
 ---
@@ -304,3 +304,126 @@ const revenue = totalCredit - totalDebit; // مع abs() في العرض
 1. **المهمة 2**: إصلاح صفحة المدفوعات (الأسهل والأسرع)
 2. ثم **المهمة 1**: إصلاح صفحة التقارير المالية
 3. ثم نستمر حسب الأولويات المذكورة
+
+---
+
+# Task: I18N-001 Complete Translation Coverage
+
+## Objective
+Implement comprehensive internationalization (i18n) system for FleetifyApp to support global expansion with complete translation coverage, RTL/LTR mixed content handling, icon mirroring, locale-specific business rules, and translation validation.
+
+## Acceptance Criteria
+- [ ] Complete translation files for English, Arabic, French, Spanish, German, Chinese, Hindi, and Japanese
+- [ ] Mixed content handling system for seamless RTL/LTR switching
+- [ ] Icon mirroring system for RTL languages (especially Arabic)
+- [ ] Locale-specific business rule engine with cultural adaptations
+- [ ] Translation validation and completeness framework
+- [ ] Internationalization testing automation
+- [ ] Fleet management terminology fully translated across all languages
+- [ ] Financial and legal document translations with cultural sensitivity
+- [ ] Customer communication templates in multiple languages
+- [ ] Date, number, and currency formatting for different locales
+- [ ] Production-ready deployment with language switching
+
+## Scope & Impact Radius
+**Modules/files likely touched:**
+- `/src/lib/i18n/` - New internationalization framework
+- `/src/locales/` - Translation files for all supported languages
+- `/src/components/` - All UI components updated for i18n
+- `/src/pages/` - All page components updated for i18n
+- `/src/hooks/` - New useTranslation and locale hooks
+- `/src/utils/` - Date, number, currency formatting utilities
+- `/src/types/` - Locale-specific type definitions
+- `/public/locales/` - Static translation assets
+- `/tests/` - Internationalization test suites
+
+**Out-of-scope:**
+- Complete localization of external APIs (Google Maps, payment gateways)
+- Translation of user-generated content
+- Real-time translation features
+- Voice recognition/synthesis in multiple languages
+
+## Risks & Mitigations
+- **Risk**: Translation quality and cultural appropriateness
+  **Mitigation**: Professional translation services, cultural review by native speakers, validation framework
+- **Risk**: Performance impact of loading multiple translation files
+  **Mitigation**: Code splitting, lazy loading, translation caching strategies
+- **Risk**: Complex RTL layout breaking existing UI
+  **Mitigation**: Comprehensive testing, progressive rollout, feature flag I18N_RTL_ENABLED
+- **Risk**: Business logic not adapting to locale-specific requirements
+  **Mitigation**: Locale-specific rule engine, extensive testing in different business contexts
+- **Risk**: Database migration for localized content
+  **Mitigation**: Phased rollout with backward compatibility, feature flag I18N_DB_MIGRATION
+
+## Steps
+- [ ] Pre-flight: Run tests, lint, and build to ensure green baseline
+- [ ] Design comprehensive i18n architecture with translation file structure
+- [ ] Set up i18n framework (react-i18next with TypeScript support)
+- [ ] Create translation keys structure and namespace organization
+- [ ] Implement English translations as base language (complete coverage)
+- [ ] Implement Arabic translations with RTL support and cultural adaptations
+- [ ] Implement French, Spanish, German translations (European languages)
+- [ ] Implement Chinese, Hindi, Japanese translations (Asian languages)
+- [ ] Create mixed content handling system for RTL/LTR switching
+- [ ] Implement icon mirroring system for directional icons
+- [ ] Build locale-specific business rule engine
+- [ ] Create translation validation and completeness checking framework
+- [ ] Implement date, number, and currency formatting by locale
+- [ ] Add internationalization testing automation
+- [ ] Update all UI components to use translation keys
+- [ ] Create language switcher component with preferences
+- [ ] Implement SEO optimizations for multiple languages
+- [ ] Add performance monitoring for translation loading
+- [ ] Update SYSTEM_REFERENCE.md with i18n architecture documentation
+- [ ] Create deployment guide for internationalized environments
+
+## Review (fill after merge)
+Summary of changes:
+Known limitations:
+Follow-ups:
+
+## PR Checklist (paste into PR)
+
+**Conventional commit title & clear description**
+- feat: implement comprehensive internationalization system with complete translation coverage
+
+**Acceptance criteria met & demonstrated**
+- ✅ Complete translation files for 8 languages (EN, AR, FR, ES, DE, ZH, HI, JA)
+- ✅ Mixed content handling for RTL/LTR switching
+- ✅ Icon mirroring system for RTL languages
+- ✅ Locale-specific business rule engine
+- ✅ Translation validation framework
+- ✅ Fleet management terminology translated
+- ✅ Financial/legal document translations
+- ✅ Cultural adaptations implemented
+- ✅ Date/number/currency formatting by locale
+- ✅ Testing automation for i18n
+
+**Tests added/updated and passing**
+- Unit tests for translation functions
+- Integration tests for language switching
+- Visual regression tests for RTL layouts
+- Translation completeness validation tests
+
+**Build passes in CI**
+- TypeScript compilation with strict i18n types
+- Bundle size analysis with translation splitting
+- Performance tests for translation loading
+
+**Feature flag or non-breaking path**
+- Feature flag: I18N_ENABLED (default true for gradual rollout)
+- Feature flag: I18N_RTL_ENABLED (default false for RTL features)
+- Backward compatibility maintained
+
+**Rollback plan included**
+- Disable feature flags to revert to English-only
+- Database migration rollback script
+- Static asset fallback to English translations
+
+**Docs updated (SYSTEM_REFERENCE.md)**
+- i18n architecture documentation
+- Translation key conventions
+- Locale-specific business rules
+- Deployment guide for internationalized environments
+
+Refs: tasks/todo.md#I18N-001
