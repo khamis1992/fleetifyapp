@@ -155,22 +155,27 @@ CREATE TABLE IF NOT EXISTS inventory_optimization_metrics (
 -- ============================================================================
 
 -- Apply timestamp triggers to new tables
+DROP TRIGGER IF EXISTS update_warehouse_transfers_timestamp ON inventory_warehouse_transfers;
 CREATE TRIGGER update_warehouse_transfers_timestamp
   BEFORE UPDATE ON inventory_warehouse_transfers
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_transfer_items_timestamp ON inventory_warehouse_transfer_items;
 CREATE TRIGGER update_transfer_items_timestamp
   BEFORE UPDATE ON inventory_warehouse_transfer_items
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_replenishment_rules_timestamp ON inventory_replenishment_rules;
 CREATE TRIGGER update_replenishment_rules_timestamp
   BEFORE UPDATE ON inventory_replenishment_rules
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_replenishment_requests_timestamp ON inventory_replenishment_requests;
 CREATE TRIGGER update_replenishment_requests_timestamp
   BEFORE UPDATE ON inventory_replenishment_requests
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_demand_forecasts_timestamp ON inventory_demand_forecasts;
 CREATE TRIGGER update_demand_forecasts_timestamp
   BEFORE UPDATE ON inventory_demand_forecasts
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
@@ -244,6 +249,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply trigger to stock levels table
+DROP TRIGGER IF EXISTS trigger_replenishment_check ON inventory_stock_levels;
 CREATE TRIGGER trigger_replenishment_check
   AFTER UPDATE ON inventory_stock_levels
   FOR EACH ROW
@@ -295,15 +301,18 @@ ALTER TABLE inventory_demand_forecasts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_optimization_metrics ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for warehouse transfers
+DROP POLICY IF EXISTS "Users can view their company's warehouse transfers" ON inventory_warehouse_transfers;
 CREATE POLICY "Users can view their company's warehouse transfers"
   ON inventory_warehouse_transfers FOR SELECT
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can manage warehouse transfers for their company" ON inventory_warehouse_transfers;
 CREATE POLICY "Users can manage warehouse transfers for their company"
   ON inventory_warehouse_transfers FOR ALL
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
 -- RLS Policies for transfer items
+DROP POLICY IF EXISTS "Users can view transfer items for their company" ON inventory_warehouse_transfer_items;
 CREATE POLICY "Users can view transfer items for their company"
   ON inventory_warehouse_transfer_items FOR SELECT
   USING (transfer_id IN (
@@ -311,6 +320,7 @@ CREATE POLICY "Users can view transfer items for their company"
     WHERE company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
   ));
 
+DROP POLICY IF EXISTS "Users can manage transfer items for their company" ON inventory_warehouse_transfer_items;
 CREATE POLICY "Users can manage transfer items for their company"
   ON inventory_warehouse_transfer_items FOR ALL
   USING (transfer_id IN (
@@ -319,10 +329,12 @@ CREATE POLICY "Users can manage transfer items for their company"
   ));
 
 -- RLS Policies for replenishment rules (same pattern for other tables)
+DROP POLICY IF EXISTS "Users can view replenishment rules for their company" ON inventory_replenishment_rules;
 CREATE POLICY "Users can view replenishment rules for their company"
   ON inventory_replenishment_rules FOR SELECT
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can manage replenishment rules for their company" ON inventory_replenishment_rules;
 CREATE POLICY "Users can manage replenishment rules for their company"
   ON inventory_replenishment_rules FOR ALL
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));

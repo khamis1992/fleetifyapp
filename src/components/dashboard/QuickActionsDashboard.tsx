@@ -78,10 +78,10 @@ const QuickActionsDashboard: React.FC = () => {
     {
       id: 'record-payment',
       title: 'تسجيل دفعة',
-      description: 'تسجيل دفعة مالية جديدة',
+      description: 'واجهة متقدمة لتسجيل وإدارة الدفعات',
       icon: DollarSign,
       color: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
-      route: '/finance/payments',
+      route: '/payments/quick-payment',
       requiresAdmin: true
     },
     {
@@ -174,8 +174,8 @@ const QuickActionsDashboard: React.FC = () => {
     }
     
     if (action.id === 'record-payment') {
-      // التنقل إلى صفحة تسجيل الدفعات
-      navigate('/payment-registration');
+      // التنقل إلى صفحة تسجيل الدفعات المحسّنة
+      navigate('/payments/quick-payment');
       return;
     }
     

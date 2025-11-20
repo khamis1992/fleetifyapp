@@ -212,30 +212,37 @@ CREATE TABLE IF NOT EXISTS inventory_purchasing_rules (
 -- ============================================================================
 
 -- Apply timestamp triggers
+DROP TRIGGER IF EXISTS update_suppliers_timestamp ON inventory_suppliers;
 CREATE TRIGGER update_suppliers_timestamp
   BEFORE UPDATE ON inventory_suppliers
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_supplier_categories_timestamp ON inventory_supplier_categories;
 CREATE TRIGGER update_supplier_categories_timestamp
   BEFORE UPDATE ON inventory_supplier_categories
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_supplier_products_timestamp ON inventory_supplier_products;
 CREATE TRIGGER update_supplier_products_timestamp
   BEFORE UPDATE ON inventory_supplier_products
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_purchase_orders_timestamp ON inventory_purchase_orders;
 CREATE TRIGGER update_purchase_orders_timestamp
   BEFORE UPDATE ON inventory_purchase_orders
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_purchase_order_items_timestamp ON inventory_purchase_order_items;
 CREATE TRIGGER update_purchase_order_items_timestamp
   BEFORE UPDATE ON inventory_purchase_order_items
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_supplier_performance_timestamp ON inventory_supplier_performance;
 CREATE TRIGGER update_supplier_performance_timestamp
   BEFORE UPDATE ON inventory_supplier_performance
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
 
+DROP TRIGGER IF EXISTS update_purchasing_rules_timestamp ON inventory_purchasing_rules;
 CREATE TRIGGER update_purchasing_rules_timestamp
   BEFORE UPDATE ON inventory_purchasing_rules
   FOR EACH ROW EXECUTE FUNCTION update_inventory_timestamp();
@@ -263,14 +270,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply triggers to purchase order items
+DROP TRIGGER IF EXISTS trigger_update_po_total_on_item_insert ON inventory_purchase_order_items;
 CREATE TRIGGER trigger_update_po_total_on_item_insert
   AFTER INSERT ON inventory_purchase_order_items
   FOR EACH ROW EXECUTE FUNCTION update_purchase_order_total();
 
+DROP TRIGGER IF EXISTS trigger_update_po_total_on_item_update ON inventory_purchase_order_items;
 CREATE TRIGGER trigger_update_po_total_on_item_update
   AFTER UPDATE ON inventory_purchase_order_items
   FOR EACH ROW EXECUTE FUNCTION update_purchase_order_total();
 
+DROP TRIGGER IF EXISTS trigger_update_po_total_on_item_delete ON inventory_purchase_order_items;
 CREATE TRIGGER trigger_update_po_total_on_item_delete
   AFTER DELETE ON inventory_purchase_order_items
   FOR EACH ROW EXECUTE FUNCTION update_purchase_order_total();
@@ -322,19 +332,23 @@ ALTER TABLE inventory_supplier_performance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_purchasing_rules ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for suppliers
+DROP POLICY IF EXISTS "Users can view their company's suppliers" ON inventory_suppliers;
 CREATE POLICY "Users can view their company's suppliers"
   ON inventory_suppliers FOR SELECT
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can manage suppliers for their company" ON inventory_suppliers;
 CREATE POLICY "Users can manage suppliers for their company"
   ON inventory_suppliers FOR ALL
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
 -- RLS Policies for purchase orders (same pattern)
+DROP POLICY IF EXISTS "Users can view their company's purchase orders" ON inventory_purchase_orders;
 CREATE POLICY "Users can view their company's purchase orders"
   ON inventory_purchase_orders FOR SELECT
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can manage purchase orders for their company" ON inventory_purchase_orders;
 CREATE POLICY "Users can manage purchase orders for their company"
   ON inventory_purchase_orders FOR ALL
   USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
