@@ -359,6 +359,11 @@ CREATE POLICY "Users can manage purchase orders for their company"
 -- 12. HELPFUL VIEWS
 -- ============================================================================
 
+-- Drop existing views first to avoid dependency issues
+DROP VIEW IF EXISTS inventory_suppliers_summary CASCADE;
+DROP VIEW IF EXISTS inventory_purchase_order_summary CASCADE;
+DROP VIEW IF EXISTS inventory_pending_purchase_orders CASCADE;
+
 -- View: Supplier summary with latest performance
 CREATE OR REPLACE VIEW inventory_suppliers_summary AS
 SELECT
@@ -385,7 +390,7 @@ WHERE s.is_active = true
 ORDER BY s.rating DESC, sp.quality_score DESC NULLS LAST;
 
 -- View: Purchase order status summary
-CREATE OR REPLACE VIEW inventory_purchase_order_summary AS
+CREATE VIEW inventory_purchase_order_summary AS
 SELECT
   po.company_id,
   po.status,
@@ -398,7 +403,7 @@ GROUP BY po.company_id, po.status, DATE_TRUNC('month', po.order_date)
 ORDER BY order_month DESC, po.status;
 
 -- View: Pending purchase orders by supplier
-CREATE OR REPLACE VIEW inventory_pending_purchase_orders AS
+CREATE VIEW inventory_pending_purchase_orders AS
 SELECT
   po.*,
   s.company_name as supplier_name,
