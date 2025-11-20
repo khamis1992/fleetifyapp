@@ -1,12 +1,24 @@
 /**
- * Contract Calculations Module
+ * Enhanced Contract Calculations Module - Version 2.0
  *
  * Comprehensive financial calculations for fleet management contracts
  * including payment processing, fee calculations, revenue projections,
  * profitability analysis, and contract lifecycle financial management.
+ *
+ * Enhanced features:
+ * - Mixed billing models (daily, weekly, monthly, yearly, custom)
+ * - Tiered pricing structures
+ * - Advanced discount calculations
+ * - Multi-currency support
+ * - Pro-rated calculations
+ * - Revenue recognition
+ * - Performance caching
  */
 
 import { addDays, addMonths, differenceInDays, differenceInMonths, isLeapYear } from 'date-fns';
+
+export type BillingFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+export type PricingModel = 'fixed' | 'tiered' | 'usage_based' | 'subscription';
 
 export interface Contract {
   id: string;
@@ -16,6 +28,39 @@ export interface Contract {
   end_date: string;
   currency: string;
   financial_terms: FinancialTerms;
+  billing_frequency: BillingFrequency;
+  pricing_model: PricingModel;
+  tiered_pricing?: TieredPricingStructure;
+  usage_based?: UsageBasedPricing;
+  custom_billing?: CustomBillingConfiguration;
+}
+
+export interface TieredPricingStructure {
+  tiers: Array<{
+    min_units: number;
+    max_units?: number;
+    rate_per_unit: number;
+    description?: string;
+  }>;
+  unit_type: 'days' | 'kilometers' | 'hours' | 'months';
+}
+
+export interface UsageBasedPricing {
+  base_fee: number;
+  variable_rate: number;
+  usage_unit: 'kilometers' | 'hours' | 'days';
+  included_usage?: number;
+  billing_cycle: 'weekly' | 'monthly';
+}
+
+export interface CustomBillingConfiguration {
+  billing_periods: Array<{
+    start_date: string;
+    end_date: string;
+    amount: number;
+    description?: string;
+  }>;
+  billing_calendar: 'calendar_month' | 'anniversary' | 'custom';
 }
 
 export interface FinancialTerms {
@@ -91,14 +136,49 @@ export interface DiscountResult {
   discountedAmount: number;
 }
 
+export interface EnhancedPaymentResult {
+  subtotal: number;
+  tax: number;
+  total: number;
+  currency: string;
+  breakdown: PaymentBreakdown;
+  billing_period: BillingPeriod;
+  pro_rata_adjustment?: number;
+  discounts_applied: DiscountResult[];
+  fees_applied: Array<{
+    type: string;
+    amount: number;
+    description: string;
+  }>;
+}
+
+export interface PaymentBreakdown {
+  base_rate: number;
+  insurance_fees: number;
+  service_fees: number;
+  usage_fees?: number;
+  tier_fees?: number;
+  custom_fees?: number;
+}
+
+export interface BillingPeriod {
+  start_date: string;
+  end_date: string;
+  days: number;
+  billing_frequency: BillingFrequency;
+}
+
 export interface ContractSummary {
   agreementNumber: string;
   contractDuration: number;
   monthlyPayment: MonthlyPaymentResult;
+  enhancedPayment?: EnhancedPaymentResult;
   totalRevenue: number;
   depositRequired: number;
   currency: string;
   profitability?: ProfitabilityResult;
+  billing_frequency: BillingFrequency;
+  pricing_model: PricingModel;
   terms: {
     paymentTerms: string;
     cancellationPolicy: string;
@@ -106,8 +186,376 @@ export interface ContractSummary {
   };
 }
 
+export interface CalculationCache {
+  [key: string]: {
+    result: any;
+    timestamp: number;
+    ttl: number;
+  };
+}
+
+export interface CalculationMetrics {
+  calculation_time_ms: number;
+  cache_hit_rate: number;
+  error_count: number;
+  last_calculation: string;
+}
+
+// Enhanced Calculation Engine with Caching
+const calculationCache: CalculationCache = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let calculationMetrics: CalculationMetrics = {
+  calculation_time_ms: 0,
+  cache_hit_rate: 0,
+  error_count: 0,
+  last_calculation: ''
+};
+
 /**
- * Calculate monthly payment including fees and taxes
+ * Enhanced contract calculation engine with mixed billing models
+ */
+export function calculateEnhancedPayment(
+  contract: Contract,
+  billingPeriod?: Partial<BillingPeriod>,
+  usageData?: { [unit: string]: number },
+  discounts?: Array<{ type: string; rate: number; description: string }>
+): EnhancedPaymentResult {
+  const startTime = Date.now();
+
+  try {
+    // Generate cache key
+    const cacheKey = generateCacheKey(contract, billingPeriod, usageData, discounts);
+
+    // Check cache
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      calculationMetrics.cache_hit_rate = updateCacheHitRate(true);
+      return cached;
+    }
+
+    // Validate contract
+    validateContract(contract);
+
+    // Calculate based on pricing model
+    let baseAmount: number;
+    let breakdown: PaymentBreakdown;
+
+    switch (contract.pricing_model) {
+      case 'tiered':
+        const tieredResult = calculateTieredPricing(contract, usageData);
+        baseAmount = tieredResult.baseAmount;
+        breakdown = { ...tieredResult.breakdown, tier_fees: tieredResult.tierFees };
+        break;
+
+      case 'usage_based':
+        const usageResult = calculateUsageBasedPricing(contract, usageData);
+        baseAmount = usageResult.baseAmount;
+        breakdown = { ...usageResult.breakdown, usage_fees: usageResult.usageFees };
+        break;
+
+      case 'custom':
+        const customResult = calculateCustomBilling(contract, billingPeriod);
+        baseAmount = customResult.baseAmount;
+        breakdown = { ...customResult.breakdown, custom_fees: customResult.customFees };
+        break;
+
+      default: // 'fixed'
+        baseAmount = calculateFixedRatePayment(contract, billingPeriod);
+        breakdown = {
+          base_rate: baseAmount,
+          insurance_fees: contract.financial_terms.insurance_fees,
+          service_fees: contract.financial_terms.service_fees
+        };
+    }
+
+    // Add standard fees
+    const subtotal = baseAmount + contract.financial_terms.insurance_fees + contract.financial_terms.service_fees;
+
+    // Apply discounts
+    const discountsApplied = discounts?.map(d => calculateDiscountAmount(subtotal, d.rate)) || [];
+    const totalDiscounts = discountsApplied.reduce((sum, d) => sum + d.discountAmount, 0);
+    const discountedSubtotal = Math.max(0, subtotal - totalDiscounts);
+
+    // Calculate tax
+    const tax = discountedSubtotal * contract.financial_terms.tax_rate;
+    const total = discountedSubtotal + tax;
+
+    const result: EnhancedPaymentResult = {
+      subtotal,
+      tax,
+      total,
+      currency: contract.currency,
+      breakdown,
+      billing_period: calculateBillingPeriod(contract, billingPeriod),
+      pro_rata_adjustment: calculateProRataAdjustment(contract, billingPeriod),
+      discounts_applied: discountsApplied,
+      fees_applied: [
+        { type: 'insurance', amount: contract.financial_terms.insurance_fees, description: 'Insurance fees' },
+        { type: 'service', amount: contract.financial_terms.service_fees, description: 'Service fees' }
+      ]
+    };
+
+    // Cache result
+    setCache(cacheKey, result);
+
+    // Update metrics
+    calculationMetrics.calculation_time_ms = Date.now() - startTime;
+    calculationMetrics.cache_hit_rate = updateCacheHitRate(false);
+    calculationMetrics.last_calculation = new Date().toISOString();
+
+    return result;
+
+  } catch (error) {
+    calculationMetrics.error_count++;
+    console.error('Enhanced payment calculation error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calculate payment for tiered pricing model
+ */
+function calculateTieredPricing(
+  contract: Contract,
+  usageData?: { [unit: string]: number }
+): { baseAmount: number; breakdown: PaymentBreakdown; tierFees: number } {
+  if (!contract.tiered_pricing) {
+    throw new Error('Tiered pricing structure not defined');
+  }
+
+  const tiers = contract.tiered_pricing.tiers;
+  const unitType = contract.tiered_pricing.unit_type;
+  const usage = usageData?.[unitType] || 0;
+
+  let tierFees = 0;
+  for (const tier of tiers) {
+    if (usage >= tier.min_units && (!tier.max_units || usage < tier.max_units)) {
+      tierFees = usage * tier.rate_per_unit;
+      break;
+    }
+  }
+
+  return {
+    baseAmount: tierFees,
+    breakdown: {
+      base_rate: 0,
+      insurance_fees: contract.financial_terms.insurance_fees,
+      service_fees: contract.financial_terms.service_fees,
+      tier_fees: tierFees
+    },
+    tierFees
+  };
+}
+
+/**
+ * Calculate payment for usage-based pricing model
+ */
+function calculateUsageBasedPricing(
+  contract: Contract,
+  usageData?: { [unit: string]: number }
+): { baseAmount: number; breakdown: PaymentBreakdown; usageFees: number } {
+  if (!contract.usage_based) {
+    throw new Error('Usage-based pricing not defined');
+  }
+
+  const { base_fee, variable_rate, usage_unit, included_usage = 0 } = contract.usage_based;
+  const usage = usageData?.[usage_unit] || 0;
+
+  const billableUsage = Math.max(0, usage - included_usage);
+  const usageFees = base_fee + (billableUsage * variable_rate);
+
+  return {
+    baseAmount: usageFees,
+    breakdown: {
+      base_rate: base_fee,
+      insurance_fees: contract.financial_terms.insurance_fees,
+      service_fees: contract.financial_terms.service_fees,
+      usage_fees: billableUsage * variable_rate
+    },
+    usageFees: billableUsage * variable_rate
+  };
+}
+
+/**
+ * Calculate payment for custom billing configuration
+ */
+function calculateCustomBilling(
+  contract: Contract,
+  billingPeriod?: Partial<BillingPeriod>
+): { baseAmount: number; breakdown: PaymentBreakdown; customFees: number } {
+  if (!contract.custom_billing) {
+    throw new Error('Custom billing configuration not defined');
+  }
+
+  // For custom billing, use the predefined billing periods
+  const today = new Date();
+  const relevantPeriod = contract.custom_billing.billing_periods.find(period => {
+    const start = new Date(period.start_date);
+    const end = new Date(period.end_date);
+    return today >= start && today <= end;
+  });
+
+  const customFees = relevantPeriod?.amount || contract.monthly_rate;
+
+  return {
+    baseAmount: customFees,
+    breakdown: {
+      base_rate: customFees,
+      insurance_fees: contract.financial_terms.insurance_fees,
+      service_fees: contract.financial_terms.service_fees,
+      custom_fees: customFees
+    },
+    customFees
+  };
+}
+
+/**
+ * Calculate payment for fixed rate model
+ */
+function calculateFixedRatePayment(
+  contract: Contract,
+  billingPeriod?: Partial<BillingPeriod>
+): number {
+  switch (contract.billing_frequency) {
+    case 'daily':
+      return contract.monthly_rate / 30.44; // Average days in month
+    case 'weekly':
+      return contract.monthly_rate / 4.33; // Average weeks in month
+    case 'monthly':
+      return contract.monthly_rate;
+    case 'yearly':
+      return contract.monthly_rate * 12;
+    default:
+      return contract.monthly_rate;
+  }
+}
+
+/**
+ * Calculate billing period details
+ */
+function calculateBillingPeriod(
+  contract: Contract,
+  customPeriod?: Partial<BillingPeriod>
+): BillingPeriod {
+  if (customPeriod) {
+    return {
+      start_date: customPeriod.start_date || contract.start_date,
+      end_date: customPeriod.end_date || contract.end_date,
+      days: customPeriod.days || 0,
+      billing_frequency: customPeriod.billing_frequency || contract.billing_frequency
+    };
+  }
+
+  const start = new Date(contract.start_date);
+  const end = new Date(contract.end_date);
+  const days = differenceInDays(end, start);
+
+  return {
+    start_date: contract.start_date,
+    end_date: contract.end_date,
+    days: Math.max(1, days),
+    billing_frequency: contract.billing_frequency
+  };
+}
+
+/**
+ * Calculate pro-rata adjustment for partial periods
+ */
+function calculateProRataAdjustment(
+  contract: Contract,
+  billingPeriod?: Partial<BillingPeriod>
+): number | undefined {
+  if (contract.billing_frequency === 'monthly' && billingPeriod?.days) {
+    const dailyRate = contract.monthly_rate / 30.44;
+    return billingPeriod.days * dailyRate - contract.monthly_rate;
+  }
+  return undefined;
+}
+
+/**
+ * Generate cache key for calculations
+ */
+function generateCacheKey(
+  contract: Contract,
+  billingPeriod?: Partial<BillingPeriod>,
+  usageData?: { [unit: string]: number },
+  discounts?: Array<{ type: string; rate: number; description: string }>
+): string {
+  const key = {
+    contract_id: contract.id,
+    billing_frequency: contract.billing_frequency,
+    pricing_model: contract.pricing_model,
+    monthly_rate: contract.monthly_rate,
+    billing_period: billingPeriod,
+    usage: usageData,
+    discounts: discounts,
+    timestamp: Date.now()
+  };
+
+  return btoa(JSON.stringify(key));
+}
+
+/**
+ * Get result from cache
+ */
+function getFromCache(key: string): any {
+  const cached = calculationCache[key];
+  if (cached && (Date.now() - cached.timestamp) < cached.ttl) {
+    return cached.result;
+  }
+  delete calculationCache[key];
+  return null;
+}
+
+/**
+ * Set result in cache
+ */
+function setCache(key: string, result: any): void {
+  calculationCache[key] = {
+    result,
+    timestamp: Date.now(),
+    ttl: CACHE_TTL
+  };
+}
+
+/**
+ * Update cache hit rate metric
+ */
+function updateCacheHitRate(hit: boolean): number {
+  // Simple moving average for cache hit rate
+  const currentRate = calculationMetrics.cache_hit_rate;
+  return hit ? (currentRate * 0.9 + 0.1) : (currentRate * 0.9);
+}
+
+/**
+ * Validate contract data
+ */
+function validateContract(contract: Contract): void {
+  if (!contract.id) throw new Error('Contract ID is required');
+  if (!contract.monthly_rate || contract.monthly_rate < 0) throw new Error('Invalid monthly rate');
+  if (!contract.currency) throw new Error('Currency is required');
+  if (!new Date(contract.start_date)) throw new Error('Invalid start date');
+  if (!new Date(contract.end_date)) throw new Error('Invalid end date');
+  if (new Date(contract.end_date) <= new Date(contract.start_date)) throw new Error('End date must be after start date');
+}
+
+/**
+ * Get calculation metrics
+ */
+export function getCalculationMetrics(): CalculationMetrics {
+  return { ...calculationMetrics };
+}
+
+/**
+ * Clear calculation cache
+ */
+export function clearCalculationCache(): void {
+  Object.keys(calculationCache).forEach(key => delete calculationCache[key]);
+  calculationMetrics.cache_hit_rate = 0;
+}
+
+/**
+ * Legacy monthly payment calculation for backward compatibility
  */
 export function calculateMonthlyPayment(contract: Contract): MonthlyPaymentResult {
   if (!contract) {

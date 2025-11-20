@@ -1,6 +1,6 @@
 # SYSTEM_REFERENCE.md - FleetifyApp Master Documentation
-Last Updated: 2025-01-20
-Version: 1.4.0 (Phase 13 - DOC-001 Documentation System Complete)
+Last Updated: 2025-01-21
+Version: 1.5.0 (Phase 13 - DOC-001 Documentation System Complete + I18N-001 Internationalization System)
 
 ## 📋 Table of Contents
 - [Architecture Overview](#architecture-overview)
@@ -13,6 +13,7 @@ Version: 1.4.0 (Phase 13 - DOC-001 Documentation System Complete)
 - [Database Schema](#database-schema)
 - [API Structure](#api-structure)
 - [Testing Strategy](#testing-strategy)
+- [Internationalization (i18n)](#internationalization-i18n)
 - [Deployment & DevOps](#deployment--devops)
 
 ---
@@ -1110,6 +1111,425 @@ describe('useContracts', () => {
   });
 });
 ```
+
+---
+
+## 🌍 Internationalization (i18n)
+
+### Architecture Overview
+
+FleetifyApp implements a comprehensive internationalization system supporting 8 languages with RTL/LTR mixed content handling, cultural adaptations, and locale-specific business rules.
+
+**Supported Languages**:
+- English (en) - Base language
+- Arabic (ar) - RTL with full cultural adaptations
+- French (fr) - European standards
+- Spanish (es) - European standards
+- German (de) - European standards
+- Chinese (zh) - Asian language support
+- Hindi (hi) - Asian language support
+- Japanese (ja) - Asian language support
+
+### Core Components
+
+#### 1. I18n Framework (`/src/lib/i18n/`)
+
+**Configuration** (`config.ts`):
+```typescript
+import { initializeI18n, changeLanguage, formatCurrency } from '@/lib/i18n/config';
+
+// Initialize i18n system
+await initializeI18n();
+
+// Format currency for current locale
+const amount = formatCurrency(1000); // $1,000.00 (USD) or ر.ق.١٠٠٠ (QAR)
+```
+
+**Locale Configurations** (`locales.ts`):
+- Comprehensive locale-specific settings
+- Business day configurations (weekend definitions)
+- Currency formatting and positioning
+- Date/time formatting patterns
+- Cultural adaptations and etiquette
+
+**Business Rules Engine** (`businessRules.ts`):
+```typescript
+import { createBusinessRuleEngine } from '@/lib/i18n/businessRules';
+
+const rulesEngine = createBusinessRuleEngine('ar');
+const workingHours = rulesEngine.getRuleCategory('hr').workingHours;
+const paymentTerms = rulesEngine.applyRule('financial', 'paymentTerms');
+```
+
+**Validation Framework** (`validation.ts`):
+```typescript
+import { translationValidator } from '@/lib/i18n/validation';
+
+// Validate translation completeness
+const results = await translationValidator.validateLanguageNamespace('ar', 'fleet');
+const report = translationValidator.generateValidationReport(results);
+```
+
+#### 2. React Components (`/src/components/i18n/`)
+
+**I18nProvider**:
+```typescript
+import { I18nProvider } from '@/components/i18n';
+
+<I18nProvider
+  language="en"
+  enableRTL={true}
+  enableIconMirroring={true}
+  enableMixedContent={true}
+  onLanguageChange={(lang) => console.log('Language:', lang)}
+>
+  <App />
+</I18nProvider>
+```
+
+**Language Switcher**:
+```typescript
+import { LanguageSwitcher } from '@/components/i18n';
+
+<LanguageSwitcher
+  variant="dropdown"
+  showFlag={true}
+  showNativeName={true}
+  position="bottom-right"
+/>
+```
+
+**Mirrored Icon**:
+```typescript
+import { MirroredIcon } from '@/components/i18n';
+
+<MirroredIcon
+  icon={ChevronLeft}
+  name="chevron-left"
+  className="w-5 h-5"
+  // Automatically mirrors in RTL languages
+/>
+```
+
+#### 3. React Hooks (`/src/hooks/useTranslation.ts`)
+
+**useFleetifyTranslation**:
+```typescript
+import { useFleetifyTranslation } from '@/hooks/useTranslation';
+
+const {
+  t,
+  rtl,
+  formatLocalCurrency,
+  formatLocalDate,
+  getBusinessRules,
+  renderMixedContent
+} = useFleetifyTranslation('fleet');
+
+// Translate with fallback
+const text = t('vehicle.title', {}, 'Vehicle Management');
+
+// Format with locale awareness
+const price = formatLocalCurrency(1000);
+const date = formatLocalDate(new Date());
+
+// Mixed content for RTL/LTR
+const mixed = renderMixedContent('Hello World مرحبا');
+```
+
+#### 4. Translation Files (`/public/locales/`)
+
+**Namespace Structure**:
+```
+/public/locales/
+├── en/
+│   ├── common.json      # Common UI elements
+│   ├── fleet.json       # Fleet management terms
+│   ├── contracts.json   # Contract terminology
+│   ├── financial.json   # Financial terms
+│   └── ...
+├── ar/
+│   ├── common.json      # Arabic translations
+│   ├── fleet.json       # Fleet management in Arabic
+│   └── ...
+└── [other languages]/
+```
+
+**Translation Key Structure**:
+```json
+{
+  "fleet": {
+    "vehicles": "Vehicles",
+    "maintenance": {
+      "oil_change": "Oil Change",
+      "schedule": "Maintenance Schedule"
+    }
+  }
+}
+```
+
+### RTL/LTR Mixed Content Handling
+
+**Automatic Direction Detection**:
+```typescript
+// Automatic HTML direction setup
+document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+document.body.classList.toggle('rtl', rtl);
+```
+
+**Mixed Content Rendering**:
+```typescript
+// Render content with proper direction
+const mixedContent = renderMixedContent(content, {
+  rtlClassName: 'text-right font-ar',
+  ltrClassName: 'text-left',
+  wrapperClassName: 'mixed-content-wrapper'
+});
+```
+
+**Icon Mirroring**:
+```typescript
+// Icons automatically mirror in RTL
+<MirroredIcon
+  icon={ArrowLeft}
+  name="arrow-left"
+  // Becomes ArrowRight in Arabic
+/>
+```
+
+### Cultural Adaptations
+
+**Business Hours by Locale**:
+```typescript
+// Arabic (Qatar)
+ar: {
+  business: {
+    workingDays: [0, 1, 2, 3, 4], // Sunday-Thursday
+    weekendDays: [5, 6], // Friday-Saturday
+    workingHours: { start: '07:00', end: '15:00' }
+  }
+}
+
+// French
+fr: {
+  business: {
+    workingDays: [1, 2, 3, 4, 5], // Monday-Friday
+    weekendDays: [0, 6], // Sunday-Saturday
+    workingHours: { start: '09:00', end: '18:00' }
+  }
+}
+```
+
+**Currency Formatting**:
+```typescript
+// Each locale has specific formatting
+ar: {
+  currency: {
+    code: 'QAR',
+    symbol: 'ر.ق',
+    position: 'before',
+    decimals: 2
+  }
+}
+```
+
+**Legal Document Requirements**:
+```typescript
+// Arabic requires numbers written in words for legal documents
+ar: {
+  legal: {
+    numberWords: true,
+    dateFormat: 'DD/MM/YYYY',
+    languageCode: 'ar'
+  }
+}
+```
+
+### Translation Validation
+
+**Completeness Checking**:
+```typescript
+// Check all translations are complete
+const validationResults = await translationValidator.validateAllTranslations();
+
+// Generate completeness report
+const report = translationValidator.generateValidationReport(validationResults);
+console.log('Translation completeness:', report.summary.averageCompleteness);
+```
+
+**Quality Assurance**:
+- Placeholder validation ({{variable}} consistency)
+- HTML tag validation across languages
+- Length variation warnings for UI elements
+- Cultural appropriateness checks
+
+### Implementation Guidelines
+
+#### 1. Component Internationalization
+
+**Good Practice**:
+```typescript
+// Use translation keys, not hardcoded text
+const VehicleCard = ({ vehicle }) => {
+  const { t, formatLocalCurrency } = useFleetifyTranslation();
+
+  return (
+    <div>
+      <h3>{t('vehicle.title')}</h3>
+      <p>{t('vehicle.make')}: {vehicle.make}</p>
+      <p>{t('vehicle.daily_rate')}: {formatLocalCurrency(vehicle.dailyRate)}</p>
+      <span>{t(`status.${vehicle.status}`)}</span>
+    </div>
+  );
+};
+```
+
+**Bad Practice**:
+```typescript
+// Avoid hardcoded text
+const VehicleCard = ({ vehicle }) => {
+  return (
+    <div>
+      <h3>Vehicle Details</h3>  // ❌ Hardcoded
+      <p>Make: {vehicle.make}</p>
+    </div>
+  );
+};
+```
+
+#### 2. RTL Layout Considerations
+
+**Use Direction-Aware Utilities**:
+```typescript
+const { getDirectionalPadding, getDirectionalMargin } = useRTLLayout();
+
+<div
+  style={{
+    paddingLeft: getDirectionalPadding('1rem', '0'),
+    paddingRight: getDirectionalPadding('0', '1rem'),
+    marginLeft: getDirectionalMargin('1rem', '0'),
+    marginRight: getDirectionalMargin('0', '1rem')
+  }}
+>
+  Content
+</div>
+```
+
+**Use Mirrored Icons for Navigation**:
+```typescript
+// Automatically mirrors in RTL
+<MirroredIcon
+  icon={ChevronLeft}
+  name="chevron-left"
+  className="w-4 h-4"
+/>
+```
+
+#### 3. Date and Number Formatting
+
+**Always Use Locale-Aware Formatting**:
+```typescript
+const { formatLocalDate, formatLocalNumber, formatLocalTime } = useFleetifyTranslation();
+
+// ✅ Correct - locale-aware
+const date = formatLocalDate(new Date());
+const amount = formatLocalNumber(1234.56);
+const time = formatLocalTime(new Date());
+
+// ❌ Incorrect - not locale-aware
+const date = new Date().toLocaleDateString();
+const amount = 1234.56.toLocaleString();
+```
+
+#### 4. Business Logic Adaptations
+
+**Use Locale-Specific Business Rules**:
+```typescript
+const { getBusinessRules, validateBusinessData } = useFleetifyTranslation();
+
+// Get locale-specific working hours
+const workingHours = getBusinessRules('hr').workingHours;
+
+// Validate data against locale requirements
+const validation = validateBusinessData(contractData, 'contracts');
+if (!validation.valid) {
+  console.error('Validation errors:', validation.errors);
+}
+```
+
+### Performance Considerations
+
+**Translation Loading**:
+- Lazy loading of translation files by namespace
+- Translation caching to prevent re-fetching
+- Code splitting to reduce bundle size
+
+**Bundle Size Optimization**:
+```typescript
+// Dynamic imports for large translation sets
+const loadFleetTranslations = () =>
+  import(`/locales/${currentLanguage}/fleet.json`);
+
+// Namespace-based loading
+const { t } = useTranslation(['fleet', 'contracts']);
+```
+
+### Testing Internationalization
+
+**Unit Tests**:
+```typescript
+describe('I18n Components', () => {
+  it('should render translations correctly', () => {
+    const { getByText } = render(
+      <I18nProvider language="en">
+        <Component />
+      </I18nProvider>
+    );
+
+    expect(getByText('Vehicles')).toBeInTheDocument();
+  });
+
+  it('should handle RTL correctly', () => {
+    const { container } = render(
+      <I18nProvider language="ar">
+        <Component />
+      </I18nProvider>
+    );
+
+    expect(container.querySelector('html')).toHaveAttribute('dir', 'rtl');
+  });
+});
+```
+
+**Integration Tests**:
+```typescript
+describe('Language Switching', () => {
+  it('should switch languages and update UI', async () => {
+    const { getByText, rerender } = render(<LanguageSwitcher />);
+
+    fireEvent.click(getByText('العربية'));
+
+    await waitFor(() => {
+      expect(document.documentElement.dir).toBe('rtl');
+    });
+  });
+});
+```
+
+### Deployment Considerations
+
+**Environment Variables**:
+```env
+VITE_DEFAULT_LANGUAGE=en
+VITE_SUPPORTED_LANGUAGES=en,ar,fr,es,de,zh,hi,ja
+VITE_ENABLE_RTL=true
+VITE_TRANSLATION_VALIDATION=true
+```
+
+**Build Configuration**:
+- Translation files copied to `/public/locales/`
+- Babel plugin for React i18next optimization
+- TypeScript strict checking for translation keys
 
 ---
 

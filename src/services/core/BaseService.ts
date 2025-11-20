@@ -10,11 +10,21 @@
 import { ErrorHandler } from '@/lib/errorHandler';
 import { logger } from '@/lib/logger';
 import type { BaseRepository } from './BaseRepository';
+import { createOptimizedQueryFn, createOptimizedMutationFn } from '@/lib/queryClient';
+import { getCacheByType } from './ApiCache';
+import { globalPerformanceMonitor } from './PerformanceMonitor';
+import { globalBatchProcessor } from './BatchProcessor';
+import { globalQueryOptimizer } from './QueryOptimizer';
 
 export interface ServiceOptions {
   enableLogging?: boolean;
   enableCaching?: boolean;
   cacheTimeMs?: number;
+  enablePerformanceMonitoring?: boolean;
+  enableQueryOptimization?: boolean;
+  cacheType?: 'user' | 'fleet' | 'financial' | 'customer' | 'contract' | 'config';
+  enableBatchProcessing?: boolean;
+  defaultBatchSize?: number;
 }
 
 export interface ValidationResult {
@@ -41,8 +51,24 @@ export abstract class BaseService<T extends { id?: string }> {
       enableLogging: true,
       enableCaching: false,
       cacheTimeMs: 5 * 60 * 1000, // 5 minutes
+      enablePerformanceMonitoring: true,
+      enableQueryOptimization: false,
+      cacheType: 'config',
+      enableBatchProcessing: false,
+      defaultBatchSize: 100,
       ...options
     };
+
+    // Initialize performance monitoring if enabled
+    if (this.options.enablePerformanceMonitoring) {
+      globalPerformanceMonitor.addAlertRule({
+        name: `${this.serviceName}_slow_operations`,
+        condition: (stats) => stats.p95ResponseTime > 5000, // 5 seconds
+        threshold: 5000,
+        enabled: true,
+        cooldownMs: 60000 // 1 minute
+      });
+    }
   }
 
   /**
@@ -289,6 +315,229 @@ export abstract class BaseService<T extends { id?: string }> {
       delayMs: 1000,
       backoffMultiplier: 2
     });
+  }
+
+  // ============ Performance Optimization Methods ============
+
+  /**
+   * Execute optimized query with caching and monitoring
+   */
+  protected async executeOptimizedQuery<R>(
+    queryKey: string,
+    queryFn: () => Promise<R>,
+    options?: {
+      cacheKey?: string;
+      skipCache?: boolean;
+      customTtl?: number;
+    }
+  ): Promise<R> {
+    if (!this.options.enableCaching) {
+      return this.executeWithMonitoring(queryKey, queryFn);
+    }
+
+    const cache = getCacheByType(this.options.cacheType!);
+    const cacheKeyStr = options?.cacheKey || `${this.serviceName}_${queryKey}`;
+
+    // Check cache first
+    if (!options?.skipCache) {
+      const cached = cache?.get<R>(cacheKeyStr);
+      if (cached) {
+        this.log('executeOptimizedQuery', 'Cache hit', { queryKey, cacheKeyStr });
+        return cached;
+      }
+    }
+
+    // Execute with monitoring
+    const result = await this.executeWithMonitoring(queryKey, queryFn);
+
+    // Cache the result
+    if (cache && !options?.skipCache) {
+      cache.set(cacheKeyStr, result, options?.customTtl);
+    }
+
+    return result;
+  }
+
+  /**
+   * Execute batch operation with performance monitoring
+   */
+  protected async executeBatchOperation<T, R>(
+    items: T[],
+    operation: (items: T[], batchIndex: number) => Promise<R[]>,
+    options?: {
+      batchSize?: number;
+      maxConcurrency?: number;
+      onProgress?: (progress: any) => void;
+    }
+  ): Promise<{ results: R[]; errors: any[] }> {
+    if (!this.options.enableBatchProcessing || items.length < this.options.defaultBatchSize!) {
+      // Execute sequentially for small batches
+      const results: R[] = [];
+      const errors: any[] = [];
+
+      for (const item of items) {
+        try {
+          const result = await this.executeWithMonitoring(
+            `${this.serviceName}_batch_item`,
+            () => operation([item], 0)
+          );
+          results.push(...result);
+        } catch (error) {
+          errors.push({ item, error });
+        }
+      }
+
+      return { results, errors };
+    }
+
+    // Use batch processor for large operations
+    const batchSize = options?.batchSize || this.options.defaultBatchSize!;
+
+    const result = await globalBatchProcessor.process(
+      items,
+      operation,
+      {
+        batchSize,
+        maxConcurrency: options?.maxConcurrency || 5,
+        onProgress: options?.onProgress,
+        enableProgressTracking: true
+      }
+    );
+
+    return {
+      results: result.results,
+      errors: result.errors.map(e => ({ item: e.item, error: e.error }))
+    };
+  }
+
+  /**
+   * Execute database operation with query optimization
+   */
+  protected async executeOptimizedDatabaseQuery<R>(
+    query: string,
+    params?: any[],
+    queryFn?: () => Promise<R>
+  ): Promise<R> {
+    if (!this.options.enableQueryOptimization || !queryFn) {
+      return queryFn ? queryFn() : this.executeWithMonitoring(query, () => Promise.resolve({} as R));
+    }
+
+    try {
+      // Analyze and optimize the query
+      const optimizationResult = await globalQueryOptimizer.optimizeQuery(query, params);
+
+      // Log optimization recommendations
+      if (optimizationResult.recommendations.length > 0) {
+        this.log('executeOptimizedDatabaseQuery', 'Query optimization recommendations', {
+          originalQuery: query,
+          recommendations: optimizationResult.recommendations,
+          improvementEstimate: optimizationResult.improvementEstimate
+        });
+      }
+
+      // Execute the optimized query
+      return await this.executeWithMonitoring(
+        `optimized_${query.substring(0, 50)}`,
+        queryFn
+      );
+
+    } catch (error) {
+      this.log('executeOptimizedDatabaseQuery', 'Query optimization failed, executing original', {
+        query: query.substring(0, 100),
+        error: error instanceof Error ? error.message : String(error)
+      });
+
+      // Fallback to original query
+      return queryFn();
+    }
+  }
+
+  /**
+   * Execute operation with performance monitoring
+   */
+  protected async executeWithMonitoring<R>(
+    operationName: string,
+    operation: () => Promise<R>
+  ): Promise<R> {
+    if (!this.options.enablePerformanceMonitoring) {
+      return operation();
+    }
+
+    const endTimer = globalPerformanceMonitor.startTimer(`${this.serviceName}_${operationName}`, {
+      serviceName: this.serviceName
+    });
+
+    try {
+      const result = await operation();
+      const metric = endTimer({ success: true });
+      globalPerformanceMonitor.record(metric);
+
+      return result;
+
+    } catch (error) {
+      const metric = endTimer({
+        success: false,
+        statusCode: (error as any)?.status
+      });
+      globalPerformanceMonitor.record(metric);
+
+      throw error;
+    }
+  }
+
+  /**
+   * Invalidate cache entries for this service
+   */
+  protected invalidateCache(pattern?: RegExp): number {
+    if (!this.options.enableCaching) {
+      return 0;
+    }
+
+    const cache = getCacheByType(this.options.cacheType!);
+
+    if (pattern) {
+      return cache?.clearPattern(pattern) || 0;
+    } else {
+      cache?.clear();
+      return 1;
+    }
+  }
+
+  /**
+   * Get performance metrics for this service
+   */
+  getServicePerformanceMetrics() {
+    if (!this.options.enablePerformanceMonitoring) {
+      return null;
+    }
+
+    const stats = globalPerformanceMonitor.getStats();
+    const serviceMetrics = stats.recentErrors.filter(
+      (metric: any) => metric.name?.includes(this.serviceName)
+    );
+
+    return {
+      serviceName: this.serviceName,
+      totalRequests: serviceMetrics.length,
+      errorCount: serviceMetrics.filter((m: any) => !m.success).length,
+      averageResponseTime: serviceMetrics.reduce((sum: number, m: any) => sum + m.duration, 0) / serviceMetrics.length,
+      cacheStats: this.options.enableCaching ? getCacheByType(this.options.cacheType!)?.getStats() : null
+    };
+  }
+
+  /**
+   * Preload cache with common data
+   */
+  protected async preloadCache(
+    keys: string[],
+    dataLoader: (key: string) => Promise<any>
+  ): Promise<void> {
+    if (!this.options.enableCaching) {
+      return;
+    }
+
+    const cache = getCacheByType(this.options.cacheType!);
+    await cache?.preload(keys, dataLoader, this.options.cacheTimeMs);
   }
 }
 

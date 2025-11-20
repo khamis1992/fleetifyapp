@@ -8,6 +8,260 @@
 // Import ChartOfAccount from useChartOfAccounts to avoid conflicts
 import type { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 
+// ============================================
+// Multi-Currency Types
+// ============================================
+
+export interface ExchangeRate {
+  id: string;
+  from_currency: string;
+  to_currency: string;
+  rate: number;
+  source: 'fixer_io' | 'exchangerate_api' | 'manual' | 'calculation';
+  effective_date: string;
+  expires_at?: string;
+  is_active: boolean;
+  company_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurrencyExposure {
+  id: string;
+  company_id: string;
+  currency: string;
+  exposure_amount: number;
+  exposure_type: 'receivable' | 'payable' | 'investment' | 'loan';
+  base_currency_amount?: number;
+  exchange_rate_at_creation?: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  hedged_amount: number;
+  hedging_instrument?: 'forward' | 'option' | 'swap' | 'natural';
+  entity_type?: string;
+  entity_id?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurrencyConfiguration {
+  id: string;
+  company_id: string;
+  base_currency: string;
+  supported_currencies: string[];
+  auto_update_rates: boolean;
+  rate_update_frequency: 'hourly' | 'daily' | 'weekly';
+  preferred_rate_provider: string;
+  rate_tolerance_percentage: number;
+  last_rate_update?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurrencyConversionRequest {
+  amount: number;
+  from_currency: string;
+  to_currency: string;
+  date?: string;
+  company_id?: string;
+}
+
+export interface CurrencyConversionResult {
+  original_amount: number;
+  original_currency: string;
+  converted_amount: number;
+  target_currency: string;
+  exchange_rate: number;
+  conversion_date: string;
+  rate_source: string;
+}
+
+export interface CurrencyExposureReport {
+  currency: string;
+  total_exposure: number;
+  receivables: number;
+  payables: number;
+  investments: number;
+  loans: number;
+  hedged_amount: number;
+  net_exposure: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  hedging_recommendations: HedgingRecommendation[];
+}
+
+export interface HedgingRecommendation {
+  strategy: 'forward_contract' | 'currency_option' | 'natural_hedging' | 'currency_swap';
+  amount: number;
+  maturity_date: string;
+  estimated_cost: number;
+  risk_reduction: number;
+  description: string;
+}
+
+// ============================================
+// Compliance Types
+// ============================================
+
+export interface ComplianceRule {
+  id: string;
+  company_id?: string;
+  rule_name: string;
+  rule_code: string;
+  rule_category: 'gaap' | 'tax' | 'aml' | 'kyc' | 'reporting' | 'operational';
+  rule_type: 'validation' | 'threshold' | 'workflow' | 'calculation';
+  rule_description?: string;
+  rule_config: Record<string, any>;
+  jurisdiction?: string;
+  severity_level: 'low' | 'medium' | 'high' | 'critical';
+  is_active: boolean;
+  auto_execute: boolean;
+  execution_frequency?: 'real_time' | 'daily' | 'weekly' | 'monthly';
+  notification_config?: Record<string, any>;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
+export interface ComplianceValidation {
+  id: string;
+  company_id: string;
+  rule_id: string;
+  entity_type: string;
+  entity_id: string;
+  entity_reference?: string;
+  validation_result: 'pass' | 'fail' | 'warning' | 'error' | 'pending';
+  validation_score?: number;
+  validation_details: Record<string, any>;
+  risk_assessment?: 'low' | 'medium' | 'high' | 'critical';
+  action_required: boolean;
+  action_description?: string;
+  action_deadline?: string;
+  assigned_to?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_notes?: string;
+  validated_at: string;
+  created_at: string;
+}
+
+export interface RegulatoryReport {
+  id: string;
+  company_id: string;
+  report_type: string;
+  report_subtype?: string;
+  jurisdiction: string;
+  reporting_period_start: string;
+  reporting_period_end: string;
+  report_data: Record<string, any>;
+  report_summary?: string;
+  status: 'draft' | 'pending_review' | 'submitted' | 'approved' | 'rejected' | 'amended';
+  submission_deadline?: string;
+  submission_date?: string;
+  submission_method?: string;
+  submission_reference?: string;
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
+  file_attachments?: string[];
+  compliance_score?: number;
+  findings_count: number;
+  violations_count: number;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AMLKYCDiligence {
+  id: string;
+  company_id: string;
+  entity_type: 'customer' | 'vendor' | 'beneficial_owner';
+  entity_id: string;
+  entity_name: string;
+  risk_rating: 'low' | 'medium' | 'high' | 'prohibited';
+  verification_status: 'pending' | 'verified' | 'rejected' | 'additional_info_required';
+  verification_method?: string;
+  verification_score?: number;
+  documents_verified?: string[];
+  screening_results: Record<string, any>;
+  due_diligence_level: 'simplified' | 'standard' | 'enhanced';
+  enhanced_due_diligence: boolean;
+  ongoing_monitoring: boolean;
+  last_review_date?: string;
+  next_review_date?: string;
+  pep_status?: string;
+  sanctions_status?: string;
+  adverse_media_findings: number;
+  risk_factors: Record<string, any>;
+  mitigating_factors: Record<string, any>;
+  approval_required: boolean;
+  approved_by?: string;
+  approved_at?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplianceAuditTrail {
+  id: string;
+  company_id: string;
+  action_type: string;
+  entity_type?: string;
+  entity_id?: string;
+  action_description: string;
+  old_values?: Record<string, any>;
+  new_values?: Record<string, any>;
+  user_id?: string;
+  session_id?: string;
+  ip_address?: string;
+  user_agent?: string;
+  action_timestamp: string;
+  system_generated: boolean;
+  compliance_impact: 'low' | 'medium' | 'high' | 'critical';
+  requires_review: boolean;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_notes?: string;
+}
+
+export interface ComplianceCalendar {
+  id: string;
+  company_id: string;
+  event_type: string;
+  event_title: string;
+  event_description?: string;
+  jurisdiction?: string;
+  due_date: string;
+  reminder_days: number;
+  recurring_pattern?: 'monthly' | 'quarterly' | 'annually';
+  recurring_end_date?: string;
+  responsible_user_id?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  completion_date?: string;
+  completion_notes?: string;
+  file_attachments?: string[];
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplianceDashboardSummary {
+  total_rules: number;
+  active_validations: number;
+  pending_actions: number;
+  overdue_reports: number;
+  high_risk_entities: number;
+  compliance_score: number;
+  upcoming_deadlines: ComplianceCalendar[];
+  recent_validations: ComplianceValidation[];
+  risk_exposure: CurrencyExposureReport[];
+}
+
+// ============================================
+// Enhanced Finance Types with Multi-Currency Support
+// ============================================
+
 export interface JournalEntry {
   id: string;
   company_id: string;
@@ -19,6 +273,14 @@ export interface JournalEntry {
   description: string;
   total_debit: number;
   total_credit: number;
+  currency: string;
+  exchange_rate?: number;
+  base_currency_debit?: number;
+  base_currency_credit?: number;
+  compliance_status?: 'compliant' | 'non_compliant' | 'pending_review';
+  compliance_notes?: string;
+  validated_by?: string;
+  validated_at?: string;
   status: 'draft' | 'posted' | 'reversed';
   created_by?: string;
   posted_by?: string;
