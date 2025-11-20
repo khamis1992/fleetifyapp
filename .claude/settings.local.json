@@ -129,7 +129,13 @@
       "Bash(npm ls:*)",
       "Bash(nul)",
       "Bash(npx eslint:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx claude-code-templates@latest documentation/create-architecture-documentation:*)",
+      "Bash(npm search:*)",
+      "Bash(supabase status:*)",
+      "Bash(supabase migration list:*)",
+      "Bash(types/supabase.ts)"
     ],
     "deny": [],
     "ask": []

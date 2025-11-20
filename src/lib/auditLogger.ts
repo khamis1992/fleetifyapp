@@ -1,9 +1,11 @@
 /**
- * Audit Logging System
+ * Enhanced Audit Logging System
  * Tracks sensitive operations for compliance and security
+ * Integrates with comprehensive financial audit service
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { financialAuditService } from '@/services/auditService';
 
 export type AuditEventType =
   | 'user_login'
@@ -312,6 +314,276 @@ class AuditLogger {
       details: { exportType, recordCount },
       success,
     });
+  }
+
+  /**
+   * Enhanced financial operation logging with comprehensive audit service integration
+   */
+  async logFinancialOperation(params: {
+    event_type: any;
+    resource_type: 'payment' | 'invoice' | 'contract' | 'journal_entry' | 'account' | 'customer';
+    resource_id: string;
+    entity_name?: string;
+    old_values?: Record<string, any>;
+    new_values?: Record<string, any>;
+    changes_summary?: string;
+    metadata?: Record<string, any>;
+    notes?: string;
+    status?: 'success' | 'failed' | 'pending';
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    financial_data: {
+      amount?: number;
+      currency?: string;
+      account_code?: string;
+      reference_number?: string;
+      transaction_date?: string;
+      payment_method?: string;
+      invoice_number?: string;
+      contract_number?: string;
+      customer_id?: string;
+      vendor_id?: string;
+      tax_amount?: number;
+      discount_amount?: number;
+      balance?: number;
+    };
+  }): Promise<string | null> {
+    // Use the comprehensive financial audit service
+    const auditLogId = await financialAuditService.logFinancialOperation(params);
+
+    // Also log to the basic audit system for backward compatibility
+    await this.log({
+      event_type: params.event_type as any,
+      severity: params.severity || this.getSeverityFromEventType(params.event_type),
+      company_id: '', // Will be set by financialAuditService
+      action: this.mapEventTypeToAction(params.event_type),
+      entity_type: params.resource_type,
+      entity_id: params.resource_id,
+      entity_name: params.entity_name,
+      old_values: params.old_values,
+      new_values: params.new_values,
+      changes_summary: params.changes_summary,
+      details: params.metadata,
+      notes: params.notes,
+      success: params.status === 'success',
+    });
+
+    return auditLogId;
+  }
+
+  /**
+   * Quick financial operation logging helpers
+   */
+  async logPayment(
+    action: 'created' | 'updated' | 'deleted' | 'approved' | 'rejected' | 'refunded' | 'allocated' | 'disputed',
+    paymentData: any,
+    oldPaymentData?: any,
+    options: {
+      notes?: string;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
+    } = {}
+  ): Promise<string | null> {
+    return this.logFinancialOperation({
+      event_type: `payment_${action}` as any,
+      resource_type: 'payment',
+      resource_id: paymentData.id || paymentData.payment_id,
+      entity_name: paymentData.payment_number || paymentData.reference_number,
+      old_values: oldPaymentData,
+      new_values: paymentData,
+      changes_summary: this.generatePaymentSummary(action, oldPaymentData, paymentData),
+      notes: options.notes,
+      severity: options.severity,
+      financial_data: {
+        amount: paymentData.amount,
+        currency: paymentData.currency || 'USD',
+        reference_number: paymentData.payment_number || paymentData.reference_number,
+        transaction_date: paymentData.payment_date,
+        payment_method: paymentData.payment_method,
+        customer_id: paymentData.customer_id,
+        balance: paymentData.balance
+      }
+    });
+  }
+
+  async logContract(
+    action: 'created' | 'updated' | 'deleted' | 'approved' | 'activated' | 'cancelled' | 'terminated' | 'renewed' | 'amended',
+    contractData: any,
+    oldContractData?: any,
+    options: {
+      notes?: string;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
+    } = {}
+  ): Promise<string | null> {
+    return this.logFinancialOperation({
+      event_type: `contract_${action}` as any,
+      resource_type: 'contract',
+      resource_id: contractData.id || contractData.contract_id,
+      entity_name: contractData.contract_number || contractData.reference_number,
+      old_values: oldContractData,
+      new_values: contractData,
+      changes_summary: this.generateContractSummary(action, oldContractData, contractData),
+      notes: options.notes,
+      severity: options.severity,
+      financial_data: {
+        amount: contractData.monthly_rent || contractData.total_amount,
+        currency: contractData.currency || 'USD',
+        reference_number: contractData.contract_number || contractData.reference_number,
+        transaction_date: contractData.start_date,
+        customer_id: contractData.customer_id
+      }
+    });
+  }
+
+  async logInvoice(
+    action: 'created' | 'updated' | 'deleted' | 'approved' | 'sent' | 'paid' | 'overdue' | 'written_off',
+    invoiceData: any,
+    oldInvoiceData?: any,
+    options: {
+      notes?: string;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
+    } = {}
+  ): Promise<string | null> {
+    return this.logFinancialOperation({
+      event_type: `invoice_${action}` as any,
+      resource_type: 'invoice',
+      resource_id: invoiceData.id || invoiceData.invoice_id,
+      entity_name: invoiceData.invoice_number || invoiceData.reference_number,
+      old_values: oldInvoiceData,
+      new_values: invoiceData,
+      changes_summary: this.generateInvoiceSummary(action, oldInvoiceData, invoiceData),
+      notes: options.notes,
+      severity: options.severity,
+      financial_data: {
+        amount: invoiceData.total_amount,
+        currency: invoiceData.currency || 'USD',
+        reference_number: invoiceData.invoice_number || invoiceData.reference_number,
+        transaction_date: invoiceData.invoice_date || invoiceData.created_at,
+        customer_id: invoiceData.customer_id,
+        tax_amount: invoiceData.tax_amount,
+        discount_amount: invoiceData.discount_amount
+      }
+    });
+  }
+
+  async logJournalEntry(
+    action: 'created' | 'updated' | 'deleted' | 'posted' | 'reversed',
+    entryData: any,
+    oldEntryData?: any,
+    options: {
+      notes?: string;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
+    } = {}
+  ): Promise<string | null> {
+    return this.logFinancialOperation({
+      event_type: `journal_entry_${action}` as any,
+      resource_type: 'journal_entry',
+      resource_id: entryData.id || entryData.journal_entry_id,
+      entity_name: entryData.entry_number || entryData.reference_number,
+      old_values: oldEntryData,
+      new_values: entryData,
+      changes_summary: this.generateJournalEntrySummary(action, oldEntryData, entryData),
+      notes: options.notes,
+      severity: options.severity || 'high', // Journal entries are high severity by default
+      financial_data: {
+        amount: entryData.total_amount || entryData.amount,
+        reference_number: entryData.entry_number || entryData.reference_number,
+        transaction_date: entryData.entry_date,
+        account_code: entryData.account_code
+      }
+    });
+  }
+
+  // Private helper methods
+  private mapEventTypeToAction(eventType: string): string {
+    if (eventType.includes('created')) return 'CREATE';
+    if (eventType.includes('updated')) return 'UPDATE';
+    if (eventType.includes('deleted') || eventType.includes('terminated')) return 'DELETE';
+    if (eventType.includes('approved')) return 'APPROVE';
+    if (eventType.includes('rejected')) return 'REJECT';
+    if (eventType.includes('cancelled')) return 'CANCEL';
+    if (eventType.includes('reversed')) return 'UPDATE';
+    return eventType.toUpperCase();
+  }
+
+  private getSeverityFromEventType(eventType: string): 'low' | 'medium' | 'high' | 'critical' {
+    if (eventType.includes('deleted') || eventType.includes('terminated')) return 'critical';
+    if (eventType.includes('cancelled') || eventType.includes('rejected')) return 'high';
+    if (eventType.includes('approved') || eventType.includes('created')) return 'medium';
+    return 'low';
+  }
+
+  private generatePaymentSummary(action: string, oldData?: any, newData?: any): string {
+    switch (action) {
+      case 'payment_created':
+        return `Payment of ${newData?.amount || 0} created via ${newData?.payment_method || 'unknown'}`;
+      case 'payment_updated':
+        return `Payment updated: ${this.describeChanges(oldData, newData)}`;
+      case 'payment_deleted':
+        return `Payment of ${oldData?.amount || 0} deleted`;
+      case 'payment_approved':
+        return `Payment of ${newData?.amount || 0} approved`;
+      case 'payment_refunded':
+        return `Payment of ${newData?.amount || 0} refunded`;
+      default:
+        return `Payment ${action.replace('payment_', '')}`;
+    }
+  }
+
+  private generateContractSummary(action: string, oldData?: any, newData?: any): string {
+    switch (action) {
+      case 'contract_created':
+        return `Contract created with value ${newData?.monthly_rent || 0}`;
+      case 'contract_updated':
+        return `Contract updated: ${this.describeChanges(oldData, newData)}`;
+      case 'contract_cancelled':
+        return `Contract cancelled: ${oldData?.contract_number || 'Unknown'}`;
+      case 'contract_terminated':
+        return `Contract terminated: ${oldData?.contract_number || 'Unknown'}`;
+      default:
+        return `Contract ${action.replace('contract_', '')}`;
+    }
+  }
+
+  private generateInvoiceSummary(action: string, oldData?: any, newData?: any): string {
+    switch (action) {
+      case 'invoice_created':
+        return `Invoice ${newData?.invoice_number || 'Unknown'} created for ${newData?.total_amount || 0}`;
+      case 'invoice_updated':
+        return `Invoice updated: ${this.describeChanges(oldData, newData)}`;
+      case 'invoice_paid':
+        return `Invoice ${newData?.invoice_number || 'Unknown'} marked as paid`;
+      case 'invoice_written_off':
+        return `Invoice ${newData?.invoice_number || 'Unknown'} written off`;
+      default:
+        return `Invoice ${action.replace('invoice_', '')}`;
+    }
+  }
+
+  private generateJournalEntrySummary(action: string, oldData?: any, newData?: any): string {
+    switch (action) {
+      case 'journal_entry_created':
+        return `Journal entry created: ${newData?.description || 'No description'}`;
+      case 'journal_entry_posted':
+        return `Journal entry posted: ${newData?.entry_number || 'Unknown'}`;
+      case 'journal_entry_reversed':
+        return `Journal entry reversed: ${newData?.entry_number || 'Unknown'}`;
+      default:
+        return `Journal entry ${action.replace('journal_entry_', '')}`;
+    }
+  }
+
+  private describeChanges(oldData?: any, newData?: any): string {
+    if (!oldData || !newData) return 'No previous data available';
+
+    const changes = [];
+    const fields = ['amount', 'status', 'payment_method', 'due_date', 'customer_id', 'total_amount'];
+
+    fields.forEach(field => {
+      if (oldData[field] !== newData[field]) {
+        changes.push(`${field}: ${oldData[field]} → ${newData[field]}`);
+      }
+    });
+
+    return changes.length > 0 ? changes.join(', ') : 'No significant changes';
   }
 
   /**

@@ -794,5 +794,173 @@ class FinancialAuditService {
   }
 }
 
+/**
+   * Subscribe to real-time audit updates
+   */
+  subscribeToRealtimeUpdates(companyId: string, callback: (log: FinancialAuditLog) => void) {
+    const channelName = `audit-updates-${companyId}`;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'financial_audit_trail',
+          filter: `company_id=eq.${companyId}`,
+        },
+        (payload) => {
+          const log = payload.new as FinancialAuditLog;
+          callback(log);
+        }
+      );
+
+    return channel;
+  }
+
+  /**
+   * Unsubscribe from real-time updates
+   */
+  unsubscribeFromRealtimeUpdates(channel: any) {
+    channel.unsubscribe();
+  }
+
+  /**
+   * Get audit retention policies
+   */
+  async getRetentionPolicy(): Promise<AuditRetentionPolicy[]> {
+    // This would typically be stored in a configuration table
+    // For now, return default retention policies
+    return [
+      {
+        entity_type: 'payment',
+        retention_days: 2555, // 7 years
+        archival_after_days: 1095, // 3 years
+        auto_delete: true,
+        compliance_requirements: ['SOX', 'PCI-DSS', 'GAAP']
+      },
+      {
+        entity_type: 'invoice',
+        retention_days: 2555,
+        archival_after_days: 1095,
+        auto_delete: true,
+        compliance_requirements: ['SOX', 'PCI-DSS', 'Tax Regulations']
+      },
+      {
+        entity_type: 'contract',
+        retention_days: 2555,
+        archival_after_days: 1825, // 5 years
+        auto_delete: true,
+        compliance_requirements: ['Legal Requirements', 'Contract Laws']
+      },
+      {
+        entity_type: 'journal_entry',
+        retention_days: 2555,
+        archival_after_days: 1825,
+        auto_delete: true,
+        compliance_requirements: ['SOX', 'Accounting Standards']
+      },
+      {
+        entity_type: 'account',
+        retention_days: 2555,
+        archival_after_days: null,
+        auto_delete: false, // Never auto-delete account records
+        compliance_requirements: ['Regulatory Requirements']
+      },
+      {
+        entity_type: 'customer',
+        retention_days: 1825, // 5 years
+        archival_after_days: 730, // 2 years
+        auto_delete: true,
+        compliance_requirements: ['Privacy Regulations', 'GDPR']
+      }
+    ];
+  }
+
+  /**
+   * Archive old audit logs
+   */
+  async archiveAuditLogs(beforeDate: string): Promise<{ archived: number; errors: string[] }> {
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .update({
+          metadata: {
+            archived: true,
+            archival_date: new Date().toISOString()
+          }
+        })
+        .lt('created_at', beforeDate)
+        .eq('archived', false);
+
+      if (error) {
+        throw error;
+      }
+
+      // Move to archive table if it exists
+      const archivedCount = data?.length || 0;
+
+      return {
+        archived: archivedCount,
+        errors: []
+      };
+    } catch (error) {
+      console.error('Failed to archive audit logs:', error);
+      return {
+        archived: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      };
+    }
+  }
+
+  /**
+   * Delete audit logs older than retention period
+   */
+  async deleteOldAuditLogs(): Promise<{ deleted: number; errors: string[] }> {
+    try {
+      const policies = await this.getRetentionPolicy();
+      const deletionPromises = policies.map(async (policy) => {
+        if (!policy.auto_delete || !policy.archival_after_days) {
+          return { deleted: 0, entityType: policy.entity_type };
+        }
+
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - policy.archival_after_days);
+
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .delete()
+          .eq('resource_type', policy.entity_type)
+          .lt('created_at', cutoffDate.toISOString())
+          .eq('archived', true);
+
+        return {
+          deleted: data?.length || 0,
+          entityType: policy.entity_type
+        };
+      });
+
+      const results = await Promise.all(deletionPromises);
+
+      const totalDeleted = results.reduce((sum, result) => sum + result.deleted);
+      const errors = results
+        .filter(result => result.deleted === 0)
+        .map(result => `Failed to delete ${result.entityType} records`);
+
+      return {
+        deleted: totalDeleted,
+        errors
+      };
+    } catch (error) {
+      console.error('Failed to delete old audit logs:', error);
+      return {
+        deleted: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      };
+    }
+  }
+}
+
 // Export singleton instance
 export const financialAuditService = FinancialAuditService.getInstance();

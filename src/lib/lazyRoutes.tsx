@@ -66,7 +66,7 @@ export const LazyReportView = lazy(() => import('@/pages/ReportView'));
 
 // ==================== Admin Pages ====================
 export const LazyBackupPage = lazy(() => import('@/pages/BackupPage'));
-export const LazyAuditPage = lazy(() => import('@/pages/AuditPage'));
+export const LazyAuditDashboard = lazy(() => import('@/pages/audit/AuditDashboard'));
 export const LazyApprovalSystem = lazy(() => import('@/pages/ApprovalSystem'));
 
 // ==================== Support ====================
@@ -148,7 +148,7 @@ export const lazyRouteConfig = {
   
   // Admin
   backup: { component: LazyBackupPage, preload: false },
-  audit: { component: LazyAuditPage, preload: false },
+  audit: { component: LazyAuditDashboard, preload: false },
   
   // Support
   support: { component: LazySupport, preload: false },

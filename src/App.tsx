@@ -136,7 +136,7 @@ const SalesAnalytics = lazyWithRetry(() => import("./pages/sales/SalesAnalytics"
 // Other pages
 const QuotationApproval = lazy(() => import("./pages/QuotationApproval"));
 const BackupPage = lazy(() => import("./pages/BackupPage"));
-const AuditPage = lazy(() => import("./pages/AuditPage"));
+const AuditDashboard = lazyWithRetry(() => import("./pages/audit/AuditDashboard"), "AuditDashboard");
 const ApprovalSystem = lazy(() => import("./pages/ApprovalSystem"));
 const Support = lazy(() => import("./pages/Support"));
 const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
@@ -475,7 +475,7 @@ const AppRoutes = () => {
         <Route path="audit" element={
           <AdminRoute>
             <Suspense fallback={<PageSkeletonFallback />}>
-              <AuditPage />
+              <AuditDashboard />
             </Suspense>
           </AdminRoute>
         } />

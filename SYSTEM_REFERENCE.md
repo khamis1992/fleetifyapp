@@ -1,6 +1,6 @@
 # SYSTEM_REFERENCE.md - FleetifyApp Master Documentation
-Last Updated: 2025-01-21
-Version: 1.5.0 (Phase 13 - DOC-001 Documentation System Complete + I18N-001 Internationalization System)
+Last Updated: 2025-11-20
+Version: 1.6.0 (Phase 14 - FIN-003 Multi-Currency and Compliance System Complete)
 
 ## 📋 Table of Contents
 - [Architecture Overview](#architecture-overview)
@@ -14,6 +14,7 @@ Version: 1.5.0 (Phase 13 - DOC-001 Documentation System Complete + I18N-001 Inte
 - [API Structure](#api-structure)
 - [Testing Strategy](#testing-strategy)
 - [Internationalization (i18n)](#internationalization-i18n)
+- [Multi-Currency & Compliance System](#multi-currency--compliance-system)
 - [Deployment & DevOps](#deployment--devops)
 
 ---
@@ -1533,6 +1534,286 @@ VITE_TRANSLATION_VALIDATION=true
 
 ---
 
+## 💰 Multi-Currency & Compliance System (FIN-003)
+
+### Overview
+Phase 14 introduces a comprehensive multi-currency and compliance system that enables global operations with automated regulatory compliance, real-time exchange rate management, and advanced risk monitoring capabilities.
+
+### Core Components
+
+#### Exchange Rate Management (`/src/services/exchangeRateService.ts`)
+**Purpose**: Real-time exchange rate fetching, conversion, and historical tracking
+- **Multi-API Support**: Fixer.io, ExchangeRate-API with fallback mechanisms
+- **Caching Strategy**: 5-minute intelligent cache with LRU eviction
+- **Historical Tracking**: Complete exchange rate history for audit and analysis
+- **Currency Coverage**: 9+ currencies (QAR, SAR, KWD, AED, BHD, OMR, USD, EUR, GBP)
+- **Performance**: Optimized database queries with materialized views
+
+```typescript
+// Example usage
+const result = await exchangeRateService.convertCurrency({
+  amount: 1000,
+  from_currency: 'USD',
+  to_currency: 'QAR',
+  company_id: companyId
+});
+```
+
+#### Compliance Engine (`/src/services/complianceEngine.ts`)
+**Purpose**: Automated GAAP, tax, AML, and KYC compliance validation
+- **Rules Engine**: Customizable compliance rules with 15+ built-in GAAP validations
+- **Jurisdiction Support**: QAR/SAR specific regulations (VAT, Zakat compliance)
+- **AML/KYC**: Due diligence with sanctions screening and PEP checks
+- **Regulatory Reporting**: Automated report generation for tax authorities
+- **Audit Trail**: Complete compliance activity tracking
+
+```typescript
+// Compliance validation example
+const complianceResult = await complianceEngine.runComplianceValidation({
+  entityType: 'transaction',
+  entityId: transactionId,
+  companyId: companyId,
+  ruleCategories: ['gaap', 'aml', 'tax']
+});
+```
+
+#### Enhanced Currency Utilities (`/src/utils/enhancedCurrencyUtils.ts`)
+**Purpose**: Advanced currency formatting, conversion, and compliance checking
+- **Multi-Locale Support**: Proper RTL/LTR formatting for Arabic currencies
+- **Compliance Checking**: Automatic reporting requirement detection
+- **Risk Analysis**: Currency volatility and exposure calculations
+- **Gain/Loss Tracking**: Realized/unrealized gains calculation
+- **Format Options**: Multiple display formats with jurisdiction-specific rules
+
+#### Currency Management Hooks (`/src/hooks/useCurrencyManager.ts`)
+**Purpose**: React integration for currency operations and compliance
+- **Real-time Rates**: Live subscription to exchange rate updates
+- **Cache Management**: Intelligent client-side caching with invalidation
+- **Compliance Integration**: Seamless compliance checking for transactions
+- **Risk Monitoring**: Real-time exposure and risk assessment
+- **Multi-Currency State**: Centralized currency state management
+
+```typescript
+// Hook usage example
+const {
+  convertCurrency,
+  formatCurrency,
+  validateCompliance,
+  currencyExposure,
+  complianceSummary
+} = useCurrencyManager({ companyId });
+```
+
+#### Compliance Dashboard (`/src/pages/finance/ComplianceDashboard.tsx`)
+**Purpose**: Real-time monitoring dashboard for compliance and risk management
+- **Overview Tab**: Key metrics, compliance scores, and risk indicators
+- **Currency Exposure**: Detailed exposure analysis with hedging recommendations
+- **Compliance Status**: Rule validation results and action items
+- **Deadline Tracking**: Compliance calendar with upcoming deadlines
+- **Regulatory Reports**: Report generation and submission tracking
+
+### Database Schema
+
+#### Exchange Rate Tables
+```sql
+-- Exchange rates with multi-provider support and company-specific rates
+CREATE TABLE exchange_rates (
+    id UUID PRIMARY KEY,
+    from_currency VARCHAR(3) NOT NULL,
+    to_currency VARCHAR(3) NOT NULL,
+    rate DECIMAL(20,10) NOT NULL,
+    source VARCHAR(50) NOT NULL,
+    effective_date DATE NOT NULL,
+    company_id UUID REFERENCES companies(id),
+    is_active BOOLEAN DEFAULT true
+);
+
+-- Currency exposure tracking for risk management
+CREATE TABLE currency_exposure (
+    id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(id),
+    currency VARCHAR(3) NOT NULL,
+    exposure_amount DECIMAL(20,2) NOT NULL,
+    exposure_type VARCHAR(20) NOT NULL,
+    risk_level VARCHAR(10) DEFAULT 'medium',
+    hedged_amount DECIMAL(20,2) DEFAULT 0
+);
+```
+
+#### Compliance Tables
+```sql
+-- Compliance rules engine with configurable validation logic
+CREATE TABLE compliance_rules (
+    id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(id),
+    rule_name VARCHAR(100) NOT NULL,
+    rule_category VARCHAR(50) NOT NULL,
+    rule_config JSONB NOT NULL,
+    jurisdiction VARCHAR(10),
+    is_active BOOLEAN DEFAULT true
+);
+
+-- Compliance validation results with detailed findings
+CREATE TABLE compliance_validations (
+    id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(id),
+    rule_id UUID REFERENCES compliance_rules(id),
+    entity_type VARCHAR(50) NOT NULL,
+    validation_result VARCHAR(20) NOT NULL,
+    action_required BOOLEAN DEFAULT false
+);
+
+-- AML/KYC due diligence records
+CREATE TABLE aml_kyc_diligence (
+    id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(id),
+    entity_type VARCHAR(20) NOT NULL,
+    risk_rating VARCHAR(10) DEFAULT 'medium',
+    verification_status VARCHAR(20) DEFAULT 'pending',
+    screening_results JSONB
+);
+```
+
+### Supported Currencies
+
+| Currency | Code | Symbol | Jurisdiction | Reporting Threshold | VAT Rate |
+|----------|------|--------|-------------|-------------------|----------|
+| Qatari Riyal | QAR | ر.ق | Qatar | QAR 50,000 | 5% |
+| Saudi Riyal | SAR | ر.س | Saudi Arabia | SAR 100,000 | 15% |
+| Kuwaiti Dinar | KWD | د.ك | Kuwait | KWD 3,000 | N/A |
+| UAE Dirham | AED | د.إ | UAE | AED 55,000 | 5% |
+| Bahraini Dinar | BHD | د.ب | Bahrain | BHD 2,500 | N/A |
+| Omani Rial | OMR | ر.ع | Oman | OMR 13,000 | N/A |
+| US Dollar | USD | $ | International | USD 10,000 | N/A |
+| Euro | EUR | € | EU | EUR 10,000 | N/A |
+
+### Compliance Features
+
+#### GAAP Compliance
+- **Revenue Recognition**: Accrual-based revenue validation
+- **Matching Principle**: Expense-revenue matching checks
+- **Materiality Thresholds**: Configurable materiality testing
+- **Audit Trail**: Complete change tracking for financial entries
+
+#### Tax Compliance (QAR/SAR)
+- **VAT Validation**: Automatic VAT calculation and reporting
+  - Qatar VAT: 5% on taxable supplies above QAR 3,000,000 annual turnover
+  - Saudi VAT: 15% standard rate with exemptions
+- **Zakat Compliance**: Islamic finance compliance (2.5% calculation)
+- **Tax Reporting**: Automated regulatory report generation
+
+#### AML/KYC Compliance
+- **Screening Integration**: Sanctions list and PEP screening
+- **Risk Assessment**: Automated risk rating based on transaction patterns
+- **Due Diligence**: Simplified, standard, and enhanced due diligence levels
+- **Monitoring**: Ongoing transaction monitoring with alerting
+
+### API Integration
+
+#### Exchange Rate Providers
+```typescript
+// Multiple API providers with fallback
+const EXCHANGE_RATE_PROVIDERS = {
+  fixer_io: {
+    baseUrl: 'https://api.fixer.io/latest',
+    supportedCurrencies: ['EUR', 'USD', 'GBP', 'AUD', 'CAD'],
+    baseCurrency: 'EUR'
+  },
+  exchangerate_api: {
+    baseUrl: 'https://v6.exchangerate-api.com/v6/latest',
+    supportedCurrencies: ['USD', 'EUR', 'GBP', 'JPY', 'AUD'],
+    baseCurrency: 'USD'
+  }
+};
+```
+
+#### Regulatory APIs
+- **Qatar Tax Authority**: VAT reporting integration
+- **Saudi ZATCA**: VAT and Zakat reporting automation
+- **AML Screening**: Integration with sanctions databases
+- **Bank Integration**: Transaction monitoring APIs
+
+### Risk Management
+
+#### Currency Exposure Analysis
+- **Real-time Monitoring**: Live exposure tracking across all currencies
+- **Hedging Recommendations**: Automated hedging strategy suggestions
+- **Volatility Analysis**: Historical rate change analysis
+- **Stress Testing**: Scenario-based risk assessment
+
+#### Risk Indicators
+```typescript
+interface RiskIndicators {
+  totalRiskScore: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  currencyVolatility: Record<string, number>;
+  hedgingRecommendations: string[];
+}
+```
+
+### Security & Compliance
+
+#### Data Protection
+- **Encryption**: All sensitive financial data encrypted at rest
+- **Access Control**: Role-based permissions for compliance features
+- **Audit Logging**: Complete audit trail for regulatory compliance
+- **Data Retention**: Configurable retention policies for compliance data
+
+#### Regulatory Compliance
+- **SOX Compliance**: Sarbanes-Oxley Act requirements for financial reporting
+- **GDPR Compliance**: Data protection for EU currency operations
+- **Local Regulations**: Qatar and Saudi financial regulations
+- **International Standards**: FATF recommendations for AML/CFT
+
+### Performance Optimizations
+
+#### Database Performance
+- **Indexed Queries**: Optimized queries for exchange rates and compliance data
+- **Materialized Views**: Pre-computed exposure and risk calculations
+- **Partitioning**: Time-based partitioning for historical data
+- **Caching**: Multi-level caching strategy for rates and calculations
+
+#### Application Performance
+- **Lazy Loading**: On-demand loading of exchange rate data
+- **Batch Processing**: Bulk operations for currency conversions
+- **Real-time Subscriptions**: Efficient Supabase Realtime subscriptions
+- **Memory Management**: LRU cache eviction and memory optimization
+
+### Monitoring & Alerting
+
+#### Key Metrics
+- **Exchange Rate Accuracy**: 99.9% accuracy target for rate data
+- **Compliance Score**: Real-time compliance percentage tracking
+- **Risk Exposure**: Live exposure monitoring with alerting
+- **API Performance**: Sub-second response times for conversions
+
+#### Alert Configuration
+```typescript
+// Example alert configuration
+const complianceAlerts = {
+  highRiskExposure: { threshold: 100000, currency: 'QAR' },
+  complianceScore: { threshold: 80, type: 'below' },
+  overdueReports: { threshold: 0, type: 'count' },
+  exchangeRateVariance: { threshold: 2, type: 'percentage' }
+};
+```
+
+### Integration Points
+
+#### Existing Financial Modules
+- **Enhanced Invoicing**: Multi-currency invoice generation and tracking
+- **Payment Processing**: Currency-aware payment handling with compliance checks
+- **Financial Reporting**: Multi-currency financial statement generation
+- **Customer Management**: Currency-specific customer account management
+
+#### Future Integrations
+- **Banking APIs**: Real-time bank integration for transaction monitoring
+- **Accounting Systems**: ERP integration for automated compliance reporting
+- **Tax Authorities**: Direct API submission for regulatory reports
+- **Compliance Platforms**: Integration with enterprise compliance systems
+
+---
+
 ## 🚀 Deployment & DevOps
 
 ### Build Process
@@ -1611,21 +1892,100 @@ VITE_SENTRY_DSN=your_sentry_dsn
 
 ## 📊 Monitoring & Logging
 
+### API Monitoring System (API-003) - COMPREHENSIVE
+
+**Overview**: Complete API monitoring system with real-time visibility, performance tracking, and intelligent alerting for FleetifyApp API operations.
+
+**Core Components** (`/src/lib/api-monitoring/`):
+- **monitor.ts** (800+ lines) - Core monitoring framework with metrics collection, rate limiting, and health status
+- **middleware.ts** (600+ lines) - API monitoring middleware for request/response tracking and Supabase integration
+- **analytics.ts** (700+ lines) - Advanced analytics engine with performance predictions and optimization recommendations
+- **integration.ts** (400+ lines) - Integration layer for FleetifyApp with environment-specific configuration
+
+**React Components** (`/src/components/monitoring/`):
+- **APIHealthDashboard.tsx** (500+ lines) - Real-time health status dashboard with visual metrics
+- **PerformanceMonitor.tsx** (600+ lines) - Detailed performance monitoring with trends and recommendations
+
+**React Hooks** (`/src/hooks/useAPIMonitoring.ts`):
+- **useAPIHealth** - Real-time health status monitoring with auto-refresh
+- **useAPIMetrics** - Time-windowed metrics collection and analysis
+- **usePerformanceTrends** - Performance trend analysis and anomaly detection
+- **useOptimizationRecommendations** - Automated performance optimization suggestions
+- **useMonitoringDashboard** - Comprehensive dashboard state management
+
+**Database Schema** (`/supabase/migrations/`):
+- **api_metrics** - Aggregated performance metrics by time window
+- **api_requests** - Detailed request logs with metadata
+- **api_responses** - Response logs with performance data and error categorization
+- **api_alerts** - Intelligent alerting system with severity levels
+- **api_rate_limits** - Rate limiting tracking and violation management
+- **api_performance_reports** - Automated performance reports generation
+- **api_slow_queries** - Slow query tracking and analysis
+
+**Key Features**:
+- **Real-time Monitoring**: Live health status with configurable refresh intervals
+- **Performance Analytics**: Response time, throughput, error rate analysis with percentiles
+- **Intelligent Alerting**: Context-aware alerts with severity levels and escalation rules
+- **Rate Limiting**: Adaptive rate limiting with user-based and time-based thresholds
+- **Error Categorization**: Automatic error classification (authentication, validation, server, network, etc.)
+- **Performance Predictions**: ML-based performance forecasting using linear regression
+- **Optimization Recommendations**: Automated suggestions for performance improvements
+- **Usage Patterns**: API usage analytics with geographic and device breakdowns
+- **Health Scoring**: Comprehensive system health metrics with 0-100 scoring
+- **Anomaly Detection**: Statistical anomaly detection with configurable thresholds
+
+**Edge Functions** (`/supabase/functions/api-monitoring-webhook/`):
+- Webhook endpoint for external monitoring data ingestion
+- Metrics aggregation functions for performance data processing
+- Health check endpoints for monitoring system status
+- Scheduled data cleanup and aggregation jobs
+
+**Configuration**:
+- Environment-based configuration with feature flags
+- Development: Full data collection with detailed logging
+- Production: Optimized collection with privacy-focused defaults
+- Configurable retention policies and aggregation levels
+- Adaptive sampling rates based on traffic patterns
+
+**Integration**:
+- Automatic Supabase client monitoring with query tracking
+- Browser fetch/XHR monitoring for comprehensive coverage
+- React component integration with real-time updates
+- Error tracking integration with performance correlation
+
+**Performance Impact**:
+- Asynchronous data collection to minimize API overhead
+- Configurable sampling rates (10% in production, 100% in development)
+- Batch processing and efficient data aggregation
+- Memory-efficient with automatic cleanup and retention policies
+
+**Privacy & Security**:
+- No request/response body collection in production by default
+- IP address collection disabled in production for privacy
+- Secure data storage with Row Level Security (RLS)
+- Rate limiting and abuse protection for monitoring endpoints
+
 ### Error Tracking
 - Console errors logged to browser console (controlled by window.__APP_DEBUG__ flag)
 - Centralized logger implemented (src/lib/logger.ts)
 - Production: Clean console (debug logs disabled by default)
+- API monitoring with intelligent error categorization and alerting
 - TODO: Implement Sentry integration (Phase 11)
 
 ### Performance Metrics
 - Core Web Vitals monitoring
 - Custom performance marks for critical paths
 - Bundle size tracking
+- API response time metrics with P95/P99 percentiles
+- Throughput and error rate tracking
+- Real-time health scoring and anomaly detection
 
 ### Analytics
 - User behavior tracking (when enabled)
 - Feature usage metrics
-- Performance analytics
+- Performance analytics with predictive forecasting
+- API usage patterns and geographic analysis
+- Automated optimization recommendations with impact scoring
 
 ---
 

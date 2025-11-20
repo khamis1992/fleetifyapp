@@ -302,6 +302,11 @@ export interface JournalEntryLine {
   line_description?: string;
   debit_amount: number;
   credit_amount: number;
+  currency: string;
+  exchange_rate?: number;
+  base_currency_debit?: number;
+  base_currency_credit?: number;
+  compliance_validations?: string[];
   line_number: number;
   created_at: string;
   account?: ChartOfAccount;
@@ -322,11 +327,16 @@ export interface Invoice {
   tax_amount: number;
   discount_amount: number;
   total_amount: number;
+  base_currency_amount?: number;
+  exchange_rate?: number;
   paid_amount: number;
   balance_due: number;
+  base_currency_balance?: number;
   currency: string;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   payment_status: 'unpaid' | 'partial' | 'paid';
+  compliance_validations?: string[];
+  tax_compliance_status?: 'compliant' | 'non_compliant' | 'pending';
   notes?: string;
   terms?: string;
   journal_entry_id?: string;
