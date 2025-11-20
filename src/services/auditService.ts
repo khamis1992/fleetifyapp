@@ -792,9 +792,8 @@ class FinancialAuditService {
     // For now, return JSON format
     return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   }
-}
 
-/**
+  /**
    * Subscribe to real-time audit updates
    */
   subscribeToRealtimeUpdates(companyId: string, callback: (log: FinancialAuditLog) => void) {

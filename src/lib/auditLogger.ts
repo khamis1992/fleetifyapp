@@ -171,48 +171,8 @@ class AuditLogger {
   }
 
   /**
-   * Log payment operations
+   * NOTE: logPayment and logContract methods are defined below with enhanced functionality
    */
-  async logPayment(
-    action: 'created' | 'updated' | 'deleted' | 'approved',
-    paymentId: string,
-    companyId: string,
-    details?: any,
-    success: boolean = true
-  ): Promise<void> {
-    await this.log({
-      event_type: `payment_${action}` as AuditEventType,
-      severity: action === 'deleted' ? 'high' : action === 'approved' ? 'medium' : 'low',
-      company_id: companyId,
-      entity_type: 'payment',
-      entity_id: paymentId,
-      action: `payment_${action}`,
-      details,
-      success,
-    });
-  }
-
-  /**
-   * Log contract operations
-   */
-  async logContract(
-    action: 'created' | 'updated' | 'deleted' | 'approved',
-    contractId: string,
-    companyId: string,
-    details?: any,
-    success: boolean = true
-  ): Promise<void> {
-    await this.log({
-      event_type: `contract_${action}` as AuditEventType,
-      severity: action === 'deleted' ? 'high' : action === 'approved' ? 'medium' : 'low',
-      company_id: companyId,
-      entity_type: 'contract',
-      entity_id: contractId,
-      action: `contract_${action}`,
-      details,
-      success,
-    });
-  }
 
   /**
    * Log customer operations

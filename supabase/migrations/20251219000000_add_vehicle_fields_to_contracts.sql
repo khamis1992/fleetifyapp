@@ -2,25 +2,59 @@
 -- This migration adds vehicle-related fields to the contracts table
 -- to support storing vehicle information directly on contracts
 
--- Add license_plate column if it doesn't exist
-ALTER TABLE public.contracts
-ADD COLUMN IF NOT EXISTS license_plate TEXT;
+-- Use DO block to safely add columns without affecting views
+DO $$
+BEGIN
+  -- Add license_plate column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contracts' 
+    AND column_name = 'license_plate'
+  ) THEN
+    ALTER TABLE public.contracts ADD COLUMN license_plate TEXT;
+  END IF;
 
--- Add make column if it doesn't exist
-ALTER TABLE public.contracts
-ADD COLUMN IF NOT EXISTS make TEXT;
+  -- Add make column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contracts' 
+    AND column_name = 'make'
+  ) THEN
+    ALTER TABLE public.contracts ADD COLUMN make TEXT;
+  END IF;
 
--- Add model column if it doesn't exist
-ALTER TABLE public.contracts
-ADD COLUMN IF NOT EXISTS model TEXT;
+  -- Add model column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contracts' 
+    AND column_name = 'model'
+  ) THEN
+    ALTER TABLE public.contracts ADD COLUMN model TEXT;
+  END IF;
 
--- Add year column if it doesn't exist
-ALTER TABLE public.contracts
-ADD COLUMN IF NOT EXISTS year INTEGER;
+  -- Add year column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contracts' 
+    AND column_name = 'year'
+  ) THEN
+    ALTER TABLE public.contracts ADD COLUMN year INTEGER;
+  END IF;
 
--- Add vehicle_status column if it doesn't exist
-ALTER TABLE public.contracts
-ADD COLUMN IF NOT EXISTS vehicle_status TEXT;
+  -- Add vehicle_status column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'contracts' 
+    AND column_name = 'vehicle_status'
+  ) THEN
+    ALTER TABLE public.contracts ADD COLUMN vehicle_status TEXT;
+  END IF;
+END $$;
 
 -- Add indexes for better search performance
 CREATE INDEX IF NOT EXISTS idx_contracts_license_plate ON public.contracts(license_plate);

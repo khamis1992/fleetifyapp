@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS inventory_warehouse_transfers (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-  CONSTRAINT unique_transfer_number UNIQUE(company_id, transfer_number),
+  CONSTRAINT unique_warehouse_transfer_number UNIQUE(company_id, transfer_number),
   CONSTRAINT different_warehouses CHECK (from_warehouse_id != to_warehouse_id)
 );
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS inventory_warehouse_transfer_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-  CONSTRAINT unique_item_per_transfer UNIQUE(transfer_id, item_id),
+  CONSTRAINT unique_item_per_warehouse_transfer UNIQUE(transfer_id, item_id),
   CONSTRAINT check_shipped_quantity CHECK (quantity_shipped IS NULL OR quantity_shipped >= 0),
   CONSTRAINT check_received_quantity CHECK (quantity_received IS NULL OR quantity_received >= 0)
 );
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS inventory_replenishment_requests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_by UUID REFERENCES auth.users(id),
 
-  CONSTRAINT unique_request_number UNIQUE(company_id, request_number)
+  CONSTRAINT unique_replenishment_request_number UNIQUE(company_id, request_number)
 );
 
 -- ============================================================================
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS inventory_demand_forecasts (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-  CONSTRAINT unique_item_warehouse_date_period UNIQUE(item_id, warehouse_id, forecast_date, forecast_period),
+  CONSTRAINT unique_forecast_item_warehouse_date_period UNIQUE(item_id, warehouse_id, forecast_date, forecast_period),
   CONSTRAINT check_demand_positive CHECK (predicted_demand >= 0),
   CONSTRAINT check_actual_demand_positive CHECK (actual_demand IS NULL OR actual_demand >= 0)
 );
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS inventory_optimization_metrics (
   service_level DECIMAL(5, 2) DEFAULT 95 CHECK (service_level BETWEEN 0 AND 100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-  CONSTRAINT unique_item_warehouse_date UNIQUE(item_id, warehouse_id, calculation_date),
+  CONSTRAINT unique_optimization_item_warehouse_date UNIQUE(item_id, warehouse_id, calculation_date),
   CONSTRAINT check_turnover_positive CHECK (inventory_turnover_rate IS NULL OR inventory_turnover_rate >= 0),
   CONSTRAINT check_days_positive CHECK (days_of_supply IS NULL OR days_of_supply >= 0)
 );
@@ -366,9 +366,9 @@ CREATE OR REPLACE VIEW inventory_transfer_summary AS
 SELECT
   t.company_id,
   t.from_warehouse_id,
-  t.from_warehouse_name,
+  fw.warehouse_name as from_warehouse_name,
   t.to_warehouse_id,
-  t.to_warehouse_name,
+  tw.warehouse_name as to_warehouse_name,
   t.status,
   COUNT(*) as transfer_count,
   SUM(COALESCE(ti.quantity_requested, 0)) as total_quantity_requested,
@@ -377,7 +377,9 @@ SELECT
   t.transfer_date
 FROM inventory_warehouse_transfers t
 LEFT JOIN inventory_warehouse_transfer_items ti ON t.id = ti.transfer_id
-GROUP BY t.company_id, t.from_warehouse_id, t.from_warehouse_name, t.to_warehouse_id, t.to_warehouse_name, t.status, t.transfer_date
+LEFT JOIN inventory_warehouses fw ON t.from_warehouse_id = fw.id
+LEFT JOIN inventory_warehouses tw ON t.to_warehouse_id = tw.id
+GROUP BY t.company_id, t.from_warehouse_id, fw.warehouse_name, t.to_warehouse_id, tw.warehouse_name, t.status, t.transfer_date
 ORDER BY t.transfer_date DESC;
 
 -- ============================================================================

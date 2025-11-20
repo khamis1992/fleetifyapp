@@ -135,7 +135,8 @@
       "Bash(npm search:*)",
       "Bash(supabase status:*)",
       "Bash(supabase migration list:*)",
-      "Bash(types/supabase.ts)"
+      "Bash(types/supabase.ts)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []

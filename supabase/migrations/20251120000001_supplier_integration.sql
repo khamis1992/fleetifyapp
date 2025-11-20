@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS inventory_suppliers (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_by UUID REFERENCES auth.users(id),
 
-  CONSTRAINT unique_supplier_per_company UNIQUE(company_id, company_name),
+  CONSTRAINT unique_inventory_supplier_per_company UNIQUE(company_id, company_name),
   CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS inventory_supplier_categories (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_by UUID REFERENCES auth.users(id),
 
-  CONSTRAINT unique_category_per_company UNIQUE(company_id, category_name)
+  CONSTRAINT unique_supplier_category_per_company UNIQUE(company_id, category_name)
 );
 
 -- Supplier-Category mapping table

@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS aml_kyc_diligence (
     next_review_date DATE,
     pep_status VARCHAR(20), -- 'none', 'confirmed_pep', 'suspected_pep'
     sanctions_status VARCHAR(20), -- 'clear', 'matched', 'under_review'
-    adverse_media findings INTEGER DEFAULT 0,
+    adverse_media_findings INTEGER DEFAULT 0,
     risk_factors JSONB, -- Specific risk factors identified
     mitigating_factors JSONB, -- Mitigating circumstances
     approval_required BOOLEAN DEFAULT false,
