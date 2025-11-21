@@ -152,7 +152,8 @@
       "Bash(supabase db shell:*)",
       "mcp__supabase__apply_migration",
       "mcp__supabase__get_advisors",
-      "Bash(\"C:\\Users\\khamis\\Desktop\\fleetifyapp\\tasks\\todo.md\")"
+      "Bash(\"C:\\Users\\khamis\\Desktop\\fleetifyapp\\tasks\\todo.md\")",
+      "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key VITE_ENCRYPTION_SECRET=test_secret npm run vercel-build:*)"
     ],
     "deny": [],
     "ask": []
