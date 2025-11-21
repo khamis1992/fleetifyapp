@@ -150,7 +150,9 @@
       "Bash(supabase projects list:*)",
       "Bash(supabase db dump:*)",
       "Bash(supabase db shell:*)",
-      "mcp__supabase__apply_migration"
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__get_advisors",
+      "Bash(\"C:\\Users\\khamis\\Desktop\\fleetifyapp\\tasks\\todo.md\")"
     ],
     "deny": [],
     "ask": []

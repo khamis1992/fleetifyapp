@@ -378,7 +378,3 @@ export const FleetOperationsSection: React.FC = () => {
     </section>
   );
 };
-      </motion.div>
-    </section>
-  );
-};

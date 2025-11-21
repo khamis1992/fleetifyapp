@@ -52,7 +52,7 @@ export const securityConfig: SecurityConfig = {
     'font-src': ["'self'", "data:"],
     'connect-src': [
       "'self'",
-      import.meta.env.VITE_SUPABASE_URL || 'https://*.supabase.co',
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://*.supabase.co',
       'ws:', // WebSocket for Vite HMR in development
       'wss:' // WebSocket for production
     ],

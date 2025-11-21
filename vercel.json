@@ -1,6 +1,13 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
+  "installCommand": "npm ci",
+  "framework": "vite",
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

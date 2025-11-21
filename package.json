@@ -48,7 +48,8 @@
     "build:apk": "./build-apk.sh",
     "verify:apk": "./verify-build.sh",
     "demo:apk": "./demo-apk-build.sh",
-    "vercel-build": "npm run build",
+    "vercel-build": "node scripts/vercel-build.js",
+    "build:prod": "vite build --mode production",
     "fix:credentials": "node scripts/fix-hardcoded-credentials.js",
     "fix:credentials:dry-run": "node scripts/fix-hardcoded-credentials.js --dry-run",
     "security:scan": "node scripts/security-scanner.js --scan-all",
@@ -171,6 +172,7 @@
     "usehooks-ts": "^3.1.1",
     "uuid": "^10.0.0",
     "vaul": "^0.9.3",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

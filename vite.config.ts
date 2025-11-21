@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -7,7 +7,11 @@ import compression from 'vite-plugin-compression';
 import { securityPlugin } from "./src/lib/vite-security-plugin";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  // Load environment variables based on mode
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
   server: {
     host: "::",
     port: 8080,
@@ -20,7 +24,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     // Security plugin for development headers
     ...(mode === 'development' ? [securityPlugin(), componentTagger()] : [securityPlugin()]),
-    ...(process.env.ANALYZE ? [visualizer({
+    ...(env.ANALYZE ? [visualizer({
       open: true,
       gzipSize: true,
       brotliSize: true,
@@ -159,7 +163,36 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),
-    '__DEV__': mode === 'development'
+    '__DEV__': mode === 'development',
+    // Define environment variables for build time
+    ...(env.VITE_SUPABASE_URL && {
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL)
+    }),
+    ...(env.VITE_SUPABASE_ANON_KEY && {
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY)
+    }),
+    ...(env.VITE_ENCRYPTION_SECRET && {
+      'process.env.VITE_ENCRYPTION_SECRET': JSON.stringify(env.VITE_ENCRYPTION_SECRET)
+    }),
+    ...(env.VITE_APP_VERSION && {
+      'process.env.VITE_APP_VERSION': JSON.stringify(env.VITE_APP_VERSION)
+    }),
+    ...(env.VITE_API_TIMEOUT && {
+      'process.env.VITE_API_TIMEOUT': JSON.stringify(env.VITE_API_TIMEOUT)
+    }),
+    ...(env.VITE_ENABLE_ANALYTICS && {
+      'process.env.VITE_ENABLE_ANALYTICS': JSON.stringify(env.VITE_ENABLE_ANALYTICS)
+    }),
+    ...(env.VITE_API_PERFORMANCE_OPTIMIZATIONS && {
+      'process.env.VITE_API_PERFORMANCE_OPTIMIZATIONS': JSON.stringify(env.VITE_API_PERFORMANCE_OPTIMIZATIONS)
+    }),
+    ...(env.VITE_PERFORMANCE_MONITORING_ENABLED && {
+      'process.env.VITE_PERFORMANCE_MONITORING_ENABLED': JSON.stringify(env.VITE_PERFORMANCE_MONITORING_ENABLED)
+    }),
+    ...(env.VITE_MONITORING_ENABLED && {
+      'process.env.VITE_MONITORING_ENABLED': JSON.stringify(env.VITE_MONITORING_ENABLED)
+    })
   },
   // PWA and caching
-}));
+  };
+});
