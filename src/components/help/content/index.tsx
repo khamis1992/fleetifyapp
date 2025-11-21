@@ -33,3 +33,4 @@ export * from './QuotationsPageHelp';
 export * from './ReportsPageHelp';
 export * from './CollectionsPageHelp';
 export * from './PaymentRegistrationPageHelp';
+export * from './QuickPaymentPageHelpContent';
