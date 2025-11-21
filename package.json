@@ -48,7 +48,6 @@
     "build:apk": "./build-apk.sh",
     "verify:apk": "./verify-build.sh",
     "demo:apk": "./demo-apk-build.sh",
-    "vercel-build": "node scripts/vercel-build.js",
     "build:prod": "vite build --mode production",
     "fix:credentials": "node scripts/fix-hardcoded-credentials.js",
     "fix:credentials:dry-run": "node scripts/fix-hardcoded-credentials.js --dry-run",
