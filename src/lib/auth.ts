@@ -1,6 +1,8 @@
 // SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { validateInput, loginSchema, registerSchema, changePasswordSchema, withRateLimit } from './validation';
+import { securityConfig } from './security';
 
 export interface AuthUser extends User {
   profile?: {
@@ -32,7 +34,7 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   updateProfile: (updates: Record<string, unknown>) => Promise<{ error: Error | null }>;
-  changePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   sessionError?: string | null;
   validateSession?: () => Promise<boolean>;
   refreshUser?: () => Promise<void>;
@@ -40,27 +42,61 @@ export interface AuthContextType {
 
 export const authService = {
   async signUp(email: string, password: string, userData?: Record<string, unknown>) {
-    const redirectUrl = `${window.location.origin}/`;
+    try {
+      // Validate input with rate limiting
+      const validation = withRateLimit('signup', async () => {
+        return validateInput(registerSchema, {
+          email,
+          password,
+          confirmPassword: password, // For signup, we don't have confirmPassword, so we use password
+          firstName: userData?.first_name || '',
+          lastName: userData?.last_name || '',
+          phone: userData?.phone
+        });
+      });
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: userData
+      const validationResult = await validation;
+      if (!validationResult.success) {
+        const errorMessage = Object.values(validationResult.errors || {}).join(', ');
+        return { error: new Error(errorMessage) };
       }
-    });
 
-    return { error };
+      const redirectUrl = `${window.location.origin}/`;
+
+      const { error } = await supabase.auth.signUp({
+        email: validationResult.data!.email,
+        password: validationResult.data!.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: userData
+        }
+      });
+
+      return { error };
+    } catch (error) {
+      console.error('📝 [AUTH_SERVICE] Sign up error:', error);
+      return { error: error instanceof Error ? error : new Error('خطأ غير معروف في إنشاء الحساب') };
+    }
   },
 
   async signIn(email: string, password: string) {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      // Validate input with rate limiting
+      const validation = withRateLimit('signin', async () => {
+        return validateInput(loginSchema, { email, password });
       });
-      
+
+      const validationResult = await validation;
+      if (!validationResult.success) {
+        const errorMessage = Object.values(validationResult.errors || {}).join(', ');
+        return { error: new Error(errorMessage) };
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: validationResult.data!.email,
+        password: validationResult.data!.password
+      });
+
       return { error };
     } catch (error) {
       console.error('📝 [AUTH_SERVICE] Sign in error:', error);
@@ -266,11 +302,56 @@ export const authService = {
     return { error };
   },
 
-  async changePassword(newPassword: string) {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
-    return { error };
-  }
+  async changePassword(currentPassword: string, newPassword: string) {
+    try {
+      // Validate input with rate limiting
+      const validation = withRateLimit('changePassword', async () => {
+        return validateInput(changePasswordSchema, {
+          currentPassword,
+          newPassword,
+          confirmPassword: newPassword
+        });
+      });
+
+      const validationResult = await validation;
+      if (!validationResult.success) {
+        const errorMessage = Object.values(validationResult.errors || {}).join(', ');
+        return { error: new Error(errorMessage) };
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: validationResult.data!.newPassword
+      });
+
+      return { error };
+    } catch (error) {
+      console.error('📝 [AUTH_SERVICE] Change password error:', error);
+      return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تغيير كلمة المرور') };
+    }
+  },
+
+  async validateSession(session: Session): Promise<boolean> {
+    try {
+      const now = new Date();
+      const expiresAt = new Date(session.expires_at! * 1000);
+      const thresholdMinutes = securityConfig.session.refreshThreshold;
+      const thresholdTime = new Date(expiresAt.getTime() - thresholdMinutes * 60 * 1000);
+
+      // Check if session is expired or needs refresh
+      if (now >= expiresAt) {
+        return false; // Session expired
+      }
+
+      if (now >= thresholdTime) {
+        // Session needs refresh, attempt to refresh
+        const { error } = await supabase.auth.refreshSession();
+        return !error;
+      }
+
+      return true; // Session is valid
+    } catch (error) {
+      console.error('📝 [AUTH_SERVICE] Session validation error:', error);
+      return false;
+    }
+  },
 };

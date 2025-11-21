@@ -2,7 +2,7 @@
  * Excel Export Utility
  *
  * Provides functions for exporting tables and data to Excel format (.xlsx)
- * with formatting, multiple sheets, and styling.
+ * with formatting, multiple sheets, and styling using ExcelJS.
  *
  * Features:
  * - Single table export
@@ -12,11 +12,12 @@
  * - Filter dropdowns on headers
  * - Number formatting
  * - RTL support for Arabic content
+ * - Security: Uses ExcelJS instead of vulnerable xlsx package
  *
- * Performance: Lazy loads xlsx library (404KB) on-demand
+ * Performance: Lazy loads ExcelJS library on-demand
  */
 
-// Lazy load xlsx (404KB) - only when exporting/importing
+// Lazy load ExcelJS - only when exporting/importing (SECURE alternative to vulnerable xlsx)
 
 export interface ExcelExportOptions {
   sheetName?: string;
@@ -60,15 +61,16 @@ const DEFAULT_OPTIONS: ExcelExportOptions = {
 
 /**
  * Convert data to worksheet with formatting
- * Lazy loads xlsx library on-demand
+ * Lazy loads ExcelJS library on-demand
  */
 async function createWorksheet(
+  workbook: any,
   data: Record<string, any>[],
   columns?: { header: string; key: string; width?: number }[],
   options: ExcelExportOptions = {}
 ): Promise<any> {
-  // Dynamically import xlsx only when needed (saves 404KB from initial bundle)
-  const XLSX = await import('xlsx');
+  // Dynamically import ExcelJS only when needed (SECURE alternative)
+  const ExcelJS = await import('exceljs');
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -76,7 +78,9 @@ async function createWorksheet(
     throw new Error('لا توجد بيانات للتصدير');
   }
 
-  let ws: any;
+  // Add worksheet
+  const worksheet = workbook.addWorksheet(opts.sheetName);
+
   let headers: string[];
   let keys: string[];
 
@@ -84,37 +88,56 @@ async function createWorksheet(
     // Use provided columns
     headers = columns.map(col => col.header);
     keys = columns.map(col => col.key);
-
-    // Create data array
-    const wsData = [
-      headers,
-      ...data.map(row => keys.map(key => row[key] ?? ''))
-    ];
-
-    ws = XLSX.utils.aoa_to_sheet(wsData);
   } else {
     // Auto-detect columns from data
-    ws = XLSX.utils.json_to_sheet(data);
+    keys = Object.keys(data[0]);
+    headers = keys;
   }
 
-  // Apply column widths
-  const colWidths: any[] = [];
+  // Add header row with styling
+  if (opts.includeHeaders) {
+    const headerRow = worksheet.addRow(headers);
 
+    if (opts.headerStyle) {
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = {
+          bold: opts.headerStyle.bold,
+          color: { argb: opts.headerStyle.textColor?.replace('#', 'FF') || 'FFFFFFFF' },
+          size: opts.headerStyle.fontSize,
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: opts.headerStyle.backgroundColor?.replace('#', 'FF') || 'FF3B82F6' },
+        };
+        cell.alignment = {
+          horizontal: 'center',
+          vertical: 'middle',
+        };
+      });
+    }
+  }
+
+  // Add data rows
+  data.forEach(row => {
+    const rowData = keys.map(key => row[key] ?? '');
+    worksheet.addRow(rowData);
+  });
+
+  // Apply column widths
   if (columns && columns.some(col => col.width)) {
     // Use provided widths
     columns.forEach((col, idx) => {
-      colWidths[idx] = { wch: col.width || 15 };
+      worksheet.getColumn(idx + 1).width = col.width || 15;
     });
   } else if (opts.columnWidths) {
     // Use manual widths
     opts.columnWidths.forEach((width, idx) => {
-      colWidths[idx] = { wch: width };
+      worksheet.getColumn(idx + 1).width = width;
     });
   } else {
     // Auto-size based on content
-    const allKeys = columns ? keys : Object.keys(data[0]);
-
-    allKeys.forEach((key, idx) => {
+    keys.forEach((key, idx) => {
       const headerLength = columns ? columns[idx].header.length : key.length;
       const maxContentLength = Math.max(
         ...data.slice(0, 100).map(row => {
@@ -124,57 +147,37 @@ async function createWorksheet(
       );
 
       const width = Math.min(Math.max(headerLength, maxContentLength) + 2, 50);
-      colWidths[idx] = { wch: width };
+      worksheet.getColumn(idx + 1).width = width;
     });
-  }
-
-  ws['!cols'] = colWidths;
-
-  // Apply header styling
-  if (opts.includeHeaders && opts.headerStyle) {
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    const headerRow = 0;
-
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: headerRow, c: col });
-      const cell = ws[cellAddress];
-
-      if (cell) {
-        cell.s = {
-          font: {
-            bold: opts.headerStyle.bold,
-            color: { rgb: opts.headerStyle.textColor?.replace('#', '') },
-            sz: opts.headerStyle.fontSize,
-          },
-          fill: {
-            fgColor: { rgb: opts.headerStyle.backgroundColor?.replace('#', '') },
-          },
-          alignment: {
-            horizontal: 'center',
-            vertical: 'center',
-          },
-        };
-      }
-    }
   }
 
   // Apply auto-filter
   if (opts.autoFilter && opts.includeHeaders) {
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    ws['!autofilter'] = { ref: XLSX.utils.encode_range(range) };
+    worksheet.autoFilter = {
+      from: {
+        row: 1,
+        column: 1
+      },
+      to: {
+        row: 1,
+        column: keys.length
+      }
+    };
   }
 
   // Freeze header row
   if (opts.freezeHeader && opts.includeHeaders) {
-    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    worksheet.views = [
+      { state: 'frozen', xSplit: 0, ySplit: 1 }
+    ];
   }
 
-  return ws;
+  return worksheet;
 }
 
 /**
  * Export single table to Excel
- * Lazy loads xlsx library on first use
+ * Lazy loads ExcelJS library on first use (SECURE)
  */
 export async function exportTableToExcel(
   data: Record<string, any>[],
@@ -185,21 +188,30 @@ export async function exportTableToExcel(
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   try {
-    // Dynamically import xlsx only when needed
-    const XLSX = await import('xlsx');
-
-    // Create worksheet
-    const ws = await createWorksheet(data, columns, opts);
+    // Dynamically import ExcelJS only when needed (SECURE alternative)
+    const ExcelJS = await import('exceljs');
 
     // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, opts.sheetName);
+    const workbook = new ExcelJS.Workbook();
+
+    // Create worksheet
+    await createWorksheet(workbook, data, columns, opts);
 
     // Generate filename
     const fileName = filename || generateFilename('تقرير', 'xlsx');
 
     // Write file
-    XLSX.writeFile(wb, fileName, { bookType: 'xlsx', type: 'binary' });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error exporting to Excel:', error);
     throw new Error('فشل التصدير إلى Excel');
@@ -208,7 +220,7 @@ export async function exportTableToExcel(
 
 /**
  * Export multiple sheets to Excel workbook
- * Lazy loads xlsx library on first use
+ * Lazy loads ExcelJS library on first use (SECURE)
  */
 export async function exportMultiSheetExcel(
   sheets: ExcelSheetData[],
@@ -219,29 +231,33 @@ export async function exportMultiSheetExcel(
   }
 
   try {
-    // Dynamically import xlsx only when needed
-    const XLSX = await import('xlsx');
+    // Dynamically import ExcelJS only when needed (SECURE alternative)
+    const ExcelJS = await import('exceljs');
 
     // Create workbook
-    const wb = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
 
     // Add each sheet
     for (const sheetData of sheets) {
-      const ws = await createWorksheet(
-        sheetData.data,
-        sheetData.columns,
-        sheetData.options
-      );
-
-      const sheetName = sheetData.sheetName || `ورقة ${sheets.indexOf(sheetData) + 1}`;
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      const opts = { ...DEFAULT_OPTIONS, ...sheetData.options, sheetName: sheetData.sheetName };
+      await createWorksheet(workbook, sheetData.data, sheetData.columns, opts);
     }
 
     // Generate filename
     const fileName = filename || generateFilename('تقرير_متعدد', 'xlsx');
 
     // Write file
-    XLSX.writeFile(wb, fileName, { bookType: 'xlsx', type: 'binary' });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error exporting multi-sheet Excel:', error);
     throw new Error('فشل التصدير إلى Excel متعدد الأوراق');
@@ -393,26 +409,46 @@ export function generateFilename(
 
 /**
  * Read Excel file (for import functionality)
- * Lazy loads xlsx library on first use
+ * Lazy loads ExcelJS library on first use (SECURE)
  */
 export async function readExcelFile(
   file: File
 ): Promise<{ sheetNames: string[]; data: Record<string, any>[][] }> {
-  // Dynamically import xlsx only when needed
-  const XLSX = await import('xlsx');
+  // Dynamically import ExcelJS only when needed (SECURE alternative)
+  const ExcelJS = await import('exceljs');
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const data = e.target?.result as ArrayBuffer;
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(data);
 
-        const sheetNames = workbook.SheetNames;
-        const sheetsData = sheetNames.map(name => {
-          const worksheet = workbook.Sheets[name];
-          return XLSX.utils.sheet_to_json(worksheet);
+        const sheetNames = workbook.worksheets.map(sheet => sheet.name);
+        const sheetsData = workbook.worksheets.map(worksheet => {
+          const jsonData: Record<string, any>[] = [];
+          const headers: string[] = [];
+
+          worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) {
+              // Extract headers
+              row.eachCell((cell, colNumber) => {
+                headers[colNumber - 1] = cell.value?.toString() || `Column${colNumber}`;
+              });
+            } else {
+              // Extract data rows
+              const rowData: Record<string, any> = {};
+              row.eachCell((cell, colNumber) => {
+                const header = headers[colNumber - 1] || `Column${colNumber}`;
+                rowData[header] = cell.value;
+              });
+              jsonData.push(rowData);
+            }
+          });
+
+          return jsonData;
         });
 
         resolve({
@@ -428,6 +464,6 @@ export async function readExcelFile(
       reject(new Error('فشل قراءة الملف'));
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 }

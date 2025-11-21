@@ -50,6 +50,7 @@ interface AutoCreateCaseTriggersConfigProps {
   onOpenChange: (open: boolean) => void;
   companyId: string;
   onSave?: (config: AutoCreateTriggerConfig) => void;
+  embedded?: boolean; // إذا كان true، يتم عرض المحتوى بدون Dialog
 }
 
 const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> = ({
@@ -57,6 +58,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
   onOpenChange,
   companyId,
   onSave,
+  embedded = false,
 }) => {
   const { config: savedConfig, isLoading, saveConfig } = useLegalCaseAutoTriggers(companyId);
   const [config, setConfig] = useState<AutoCreateTriggerConfig>({
@@ -108,20 +110,10 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
     config.enable_broken_promises_trigger,
   ].filter(Boolean).length;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-500" />
-            {t.dialog.title}
-          </DialogTitle>
-          <DialogDescription>
-            {t.dialog.description}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
+  // محتوى المكون الرئيسي
+  const content = (
+    <>
+      <div className="space-y-6 py-4">
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -362,14 +354,58 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
           </Card>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t.buttons.cancel}
-          </Button>
-          <Button onClick={handleSave}>
-            {t.buttons.save}
-          </Button>
-        </DialogFooter>
+        {!embedded && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t.buttons.cancel}
+            </Button>
+            <Button onClick={handleSave}>
+              {t.buttons.save}
+            </Button>
+          </DialogFooter>
+        )}
+
+        {embedded && (
+          <div className="flex justify-end gap-2 mt-6">
+            <Button onClick={handleSave}>
+              {t.buttons.save}
+            </Button>
+          </div>
+        )}
+      </>
+  );
+
+  // إذا كان embedded، نعرض المحتوى مباشرة
+  if (embedded) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="h-5 w-5 text-yellow-500" />
+          <h3 className="text-lg font-semibold">{t.dialog.title}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t.dialog.description}
+        </p>
+        {content}
+      </div>
+    );
+  }
+
+  // خلاف ذلك، نعرض كـ Dialog
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-yellow-500" />
+            {t.dialog.title}
+          </DialogTitle>
+          <DialogDescription>
+            {t.dialog.description}
+          </DialogDescription>
+        </DialogHeader>
+
+        {content}
       </DialogContent>
     </Dialog>
   );

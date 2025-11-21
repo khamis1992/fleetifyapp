@@ -136,7 +136,21 @@
       "Bash(supabase status:*)",
       "Bash(supabase migration list:*)",
       "Bash(types/supabase.ts)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(tasklist:*)",
+      "Bash(pkill:*)",
+      "Bash(netstat:*)",
+      "Bash(npx tsx:*)",
+      "Bash(ping:*)",
+      "Bash(set:*)",
+      "Bash(taskkill:*)",
+      "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key npm run dev:*)",
+      "Bash(supabase projects list:*)",
+      "Bash(supabase db dump:*)",
+      "Bash(supabase db shell:*)",
+      "mcp__supabase__apply_migration"
     ],
     "deny": [],
     "ask": []

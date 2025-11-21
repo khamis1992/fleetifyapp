@@ -104,7 +104,7 @@ export const FleetOperationsSection: React.FC = () => {
             maintenance_type: v.status === 'out_of_service' ? 'خارج الخدمة' : 'صيانة جارية',
             scheduled_date: new Date().toISOString(), // Current date
             status: 'in_progress',
-            vehicles: { license_plate: v.license_plate }
+            vehicles: { license_plate: v.plate_number }
           }));
         combined.push(...unscheduledVehicles);
       }
@@ -122,7 +122,7 @@ export const FleetOperationsSection: React.FC = () => {
 
       // Count scheduled maintenance records
       const { count: scheduledCount, error: scheduledError } = await supabase
-        .from('maintenance_records')
+        .from('vehicle_maintenance')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', user.profile.company_id)
         .in('status', ['pending', 'in_progress', 'scheduled']);
@@ -374,6 +374,10 @@ export const FleetOperationsSection: React.FC = () => {
             </span>
           </div>
         </div>
+      </motion.div>
+    </section>
+  );
+};
       </motion.div>
     </section>
   );

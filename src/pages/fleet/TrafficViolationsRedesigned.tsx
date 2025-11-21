@@ -606,7 +606,19 @@ export default function TrafficViolationsRedesigned() {
                               {violation.vehicles?.plate_number || violation.vehicle_plate || '-'}
                             </TableCell>
                             <TableCell>
-                              {violation.customers ? `${violation.customers.first_name} ${violation.customers.last_name}` : '-'}
+                              {(() => {
+                                // محاولة الحصول على اسم العميل من customers مباشرة
+                                if (violation.customers) {
+                                  const fullName = `${violation.customers.first_name || ''} ${violation.customers.last_name || ''}`.trim();
+                                  return fullName || violation.customers.company_name || '-';
+                                }
+                                // محاولة الحصول على اسم العميل من خلال العقد
+                                if (violation.contracts?.customers) {
+                                  const fullName = `${violation.contracts.customers.first_name || ''} ${violation.contracts.customers.last_name || ''}`.trim();
+                                  return fullName || violation.contracts.customers.company_name || '-';
+                                }
+                                return '-';
+                              })()}
                             </TableCell>
                             <TableCell>{getStatusBadge(violation.status)}</TableCell>
                             <TableCell>{getPaymentStatusBadge(violation.payment_status || 'unpaid')}</TableCell>
@@ -786,7 +798,12 @@ export default function TrafficViolationsRedesigned() {
           </TabsContent>
         </Tabs>
       </Card>
-    <PageHelp content={<TrafficViolationsPageHelpContent />} />
+    <PageHelp 
+      title="مساعدة - المخالفات المرورية"
+      description="تعلم كيفية إدارة المخالفات المرورية بشكل فعال"
+    >
+      <TrafficViolationsPageHelpContent />
+    </PageHelp>
 
     </div>
   );

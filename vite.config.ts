@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { visualizer } from 'rollup-plugin-visualizer';
 import compression from 'vite-plugin-compression';
+import { securityPlugin } from "./src/lib/vite-security-plugin";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -17,7 +18,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    ...(mode === 'development' ? [componentTagger()] : []),
+    // Security plugin for development headers
+    ...(mode === 'development' ? [securityPlugin(), componentTagger()] : [securityPlugin()]),
     ...(process.env.ANALYZE ? [visualizer({
       open: true,
       gzipSize: true,
@@ -113,7 +115,7 @@ export default defineConfig(({ mode }) => ({
           'icons-vendor': ['lucide-react'],
           // Heavy export libraries (lazy loaded)
           'pdf-vendor': ['html2canvas', 'jspdf', 'jspdf-autotable'],
-          'excel-vendor': ['xlsx'],
+          'excel-vendor': ['exceljs'], // SECURE alternative to vulnerable xlsx
           // Utils
           'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge']
         },

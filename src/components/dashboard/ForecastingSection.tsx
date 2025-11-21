@@ -77,7 +77,10 @@ export const ForecastingSection: React.FC = () => {
         });
       }
 
-      return weekDays;
+      // Calculate unique contracts for the entire week
+      const uniqueContractsCount = allContracts?.length || 0;
+
+      return { weekDays, uniqueContractsCount };
     },
     enabled: !!user?.profile?.company_id,
   });
@@ -164,7 +167,8 @@ export const ForecastingSection: React.FC = () => {
   });
 
   // Use real calendar data from database
-  const calendarData = calendarDataRaw || [];
+  const calendarData = calendarDataRaw?.weekDays || [];
+  const uniqueContractsCount = calendarDataRaw?.uniqueContractsCount || 0;
 
   const currentRevenue = Math.round(dashboardStats?.monthlyRevenue || 0);
   const revenueChangePercent = parseFloat(dashboardStats?.revenueChange?.replace(/[^0-9.-]/g, '') || '0');
@@ -179,7 +183,7 @@ export const ForecastingSection: React.FC = () => {
   // Calculate week summary from calendar data
   const weekSummary = calendarData && calendarData.length > 0 ? {
     avgOccupancy: Math.round(calendarData.reduce((sum, day) => sum + day.occupancyRate, 0) / calendarData.length),
-    totalBookings: calendarData.reduce((sum, day) => sum + day.contractsCount, 0)
+    totalBookings: uniqueContractsCount // Use unique contracts count for the entire week
   } : { avgOccupancy: 0, totalBookings: 0 };
 
   return (

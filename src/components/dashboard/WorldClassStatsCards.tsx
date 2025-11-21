@@ -126,7 +126,7 @@ export const WorldClassStatsCards: React.FC = () => {
       delay: 0.2
     },
     {
-      title: "الإيرادات الشهرية",
+      title: "إيرادات الشهر الحالي",
       value: formattedRevenue,
       change: stats?.revenueChange,
       progress: undefined,

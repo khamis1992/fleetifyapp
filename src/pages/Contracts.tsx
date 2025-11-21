@@ -110,6 +110,9 @@ function ContractsNew() {
       newFilters.status = "cancelled";
     } else if (activeTab === "alerts") {
       newFilters.status = "expiring_soon";
+    } else if (activeTab === "all") {
+      // ✅ تعيين 'all' بشكل واضح لجميع العقود
+      newFilters.status = "all";
     }
     
     return newFilters;

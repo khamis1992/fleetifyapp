@@ -130,7 +130,14 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
               status,
               start_date,
               end_date,
-              customer_id
+              customer_id,
+              customers (
+                id,
+                first_name,
+                last_name,
+                company_name,
+                phone
+              )
             )
           `)
           .eq('company_id', profile.company_id)

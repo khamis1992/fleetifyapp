@@ -29,6 +29,7 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { MobileOptimizationProvider } from "@/components/performance";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import SecurityHeaders from "@/components/SecurityHeaders";
 
 // Critical pages - loaded immediately
 import Index from "./pages/Index";
@@ -323,9 +324,10 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter future={{ 
+      <SecurityHeaders />
+      <BrowserRouter future={{
         v7_startTransition: true,
-        v7_relativeSplatPath: true 
+        v7_relativeSplatPath: true
       }}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>

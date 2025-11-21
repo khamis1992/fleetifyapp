@@ -284,7 +284,8 @@ export const LegalCasesTracking: React.FC = () => {
               <AutoCreateCaseTriggersConfig 
                 open={true}
                 onOpenChange={() => {}}
-                companyId={companyId || ''} 
+                companyId={companyId || ''}
+                embedded={true}
               />
             </CardContent>
           </Card>
