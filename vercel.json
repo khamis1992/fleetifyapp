@@ -2,6 +2,21 @@
   "framework": "vite",
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install --frozen-lockfile",
+  "outputDirectory": "dist",
+  "env": {
+    "NODE_ENV": "production",
+    "NODE_OPTIONS": "--max-old-space-size=8192",
+    "VITE_BUILD_CACHE": "true"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "NODE_OPTIONS": "--max-old-space-size=8192"
+    }
+  },
+  "github": {
+    "silent": true
+  },
   "rewrites": [
     {
       "source": "/(.*)",

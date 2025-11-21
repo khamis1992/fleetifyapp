@@ -10,6 +10,7 @@ import { securityPlugin } from "./src/lib/vite-security-plugin";
 export default defineConfig(({ mode }) => {
   // Load environment variables based on mode
   const env = loadEnv(mode, process.cwd(), '');
+  const isProduction = mode === 'production';
 
   return {
   server: {
@@ -32,16 +33,18 @@ export default defineConfig(({ mode }) => {
       template: 'treemap',
     })] : []),
     // Compression for production builds
-    ...(mode === 'production' ? [
+    ...(isProduction ? [
       compression({
         algorithm: 'gzip',
         ext: '.gz',
-        threshold: 1024,
+        threshold: 10240, // Only compress files > 10KB
+        deleteOriginFile: false,
       }),
       compression({
         algorithm: 'brotliCompress',
         ext: '.br',
-        threshold: 1024,
+        threshold: 10240, // Only compress files > 10KB
+        deleteOriginFile: false,
       }),
     ] : []),
   ],
@@ -63,99 +66,137 @@ export default defineConfig(({ mode }) => {
       '@supabase/supabase-js',
       '@tanstack/react-query',
       'framer-motion',
-      'recharts'
     ],
     exclude: [
       'lucide-react',
       '@radix-ui/react-separator',
-      '@radix-ui/react-collapsible'
+      '@radix-ui/react-collapsible',
+      // Exclude heavy libraries from pre-bundling
+      'recharts',
+      'html2canvas',
+      'jspdf',
+      'exceljs',
+      'xlsx',
     ],
     force: true,
     esbuildOptions: {
-      target: 'es2022',
+      target: 'es2020',
       mainFields: ['module', 'browser', 'main'],
+      treeShaking: true,
     },
   },
   build: {
-    target: 'es2022',
-    minify: 'terser',
+    target: 'es2020',
+    minify: isProduction ? 'esbuild' : false, // esbuild is MUCH faster than terser
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
-    // Terser options for better minification
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console for logger functionality
-        drop_debugger: true,
-        pure_funcs: [], // Don't drop any console methods - logger needs them
-      },
-      format: {
-        comments: false, // Remove comments
-      },
-    },
     // Chunk size warning limit
     chunkSizeWarningLimit: 1000,
+    // Faster builds with esbuild
+    reportCompressedSize: false, // Disable to speed up build
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React libraries
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // UI Libraries
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            'framer-motion'
-          ],
+        // Optimized manual chunks - smaller and more granular
+        manualChunks: (id) => {
+          // Core React libraries - keep together
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'react-core';
+          }
+          
+          // Radix UI components - split by category
+          if (id.includes('@radix-ui')) {
+            if (id.includes('dialog') || id.includes('dropdown') || id.includes('popover')) {
+              return 'radix-overlays';
+            }
+            if (id.includes('tabs') || id.includes('accordion') || id.includes('collapsible')) {
+              return 'radix-containers';
+            }
+            return 'radix-ui';
+          }
+          
           // Data and API
-          'data-vendor': [
-            '@supabase/supabase-js',
-            '@tanstack/react-query'
-          ],
-          // Charts and visualization (lazy loaded)
-          'charts-vendor': ['recharts'],
-          // Icons - tree-shakeable bundle
-          'icons-vendor': ['lucide-react'],
-          // Heavy export libraries (lazy loaded)
-          'pdf-vendor': ['html2canvas', 'jspdf', 'jspdf-autotable'],
-          'excel-vendor': ['exceljs'], // SECURE alternative to vulnerable xlsx
-          // Utils
-          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge']
+          if (id.includes('@supabase') || id.includes('@tanstack/react-query')) {
+            return 'data-api';
+          }
+          
+          // Charts - lazy loaded
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+          
+          // Icons - tree-shakeable
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
+          
+          // PDF libraries - lazy loaded
+          if (id.includes('html2canvas') || id.includes('jspdf') || id.includes('html2pdf')) {
+            return 'pdf-libs';
+          }
+          
+          // Excel libraries - lazy loaded  
+          if (id.includes('exceljs') || id.includes('xlsx')) {
+            return 'excel-libs';
+          }
+          
+          // Framer Motion
+          if (id.includes('framer-motion')) {
+            return 'animations';
+          }
+          
+          // Date utilities
+          if (id.includes('date-fns')) {
+            return 'date-utils';
+          }
+          
+          // Leaflet maps - lazy loaded
+          if (id.includes('leaflet')) {
+            return 'maps';
+          }
+          
+          // Other node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
         chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
+          const facadeModuleId = chunkInfo.facadeModuleId;
           if (facadeModuleId) {
-            // Ensure consistent naming for finance pages to prevent chunk loading errors
             if (facadeModuleId.includes('pages/finance/Payments')) {
-              return 'pages/Payments-[hash].js'
+              return 'pages/Payments-[hash].js';
             }
             if (facadeModuleId.includes('pages/')) {
-              return 'pages/[name]-[hash].js'
+              return 'pages/[name]-[hash].js';
             }
             if (facadeModuleId.includes('components/')) {
-              return 'components/[name]-[hash].js'
+              return 'components/[name]-[hash].js';
             }
           }
-          return 'chunks/[name]-[hash].js'
+          return 'chunks/[name]-[hash].js';
         },
         assetFileNames: (assetInfo) => {
           if (assetInfo.name) {
             if (/\.(png|jpe?g|gif|svg|webp)$/i.test(assetInfo.name)) {
-              return 'images/[name]-[hash][extname]'
+              return 'images/[name]-[hash][extname]';
             }
             if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-              return 'fonts/[name]-[hash][extname]'
+              return 'fonts/[name]-[hash][extname]';
             }
           }
-          return 'assets/[name]-[hash][extname]'
-        }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+      // Performance optimizations
+      treeshake: {
+        preset: 'recommended',
+        moduleSideEffects: 'no-external',
       },
     },
     // Image optimization
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
     cssCodeSplit: true,
-    sourcemap: mode === 'development',
+    sourcemap: false, // Disable sourcemaps in production for faster builds
   },
   // Performance optimizations
   css: {
@@ -193,6 +234,11 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_MONITORING_ENABLED': JSON.stringify(env.VITE_MONITORING_ENABLED)
     })
   },
-  // PWA and caching
+  // Experimental features for faster builds
+  experimental: {
+    renderBuiltUrl(filename) {
+      return '/' + filename;
+    }
+  },
   };
 });
