@@ -7,12 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFinancialOverview } from '@/hooks/useFinancialOverview';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useNavigate } from 'react-router-dom';
 
 export const ForecastingSection: React.FC = () => {
   const { user } = useAuth();
   const { data: financialData } = useFinancialOverview('car_rental');
   const { data: dashboardStats } = useDashboardStats();
   const { formatCurrency } = useCurrencyFormatter();
+  const navigate = useNavigate();
 
   // Fetch real booking calendar data
   const { data: calendarDataRaw } = useQuery({
@@ -20,43 +22,58 @@ export const ForecastingSection: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return null;
 
-      // Use local date to avoid timezone issues
+      // Get the start of current week (Sunday)
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time to midnight
+      today.setHours(0, 0, 0, 0);
+      const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - dayOfWeek); // Go back to Sunday
       
-      // Get contracts for the current week (7 days: -3 to +3)
+      // Get total vehicles count once
+      const { count: totalVehicles } = await supabase
+        .from('vehicles')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', user.profile.company_id)
+        .eq('is_active', true);
+
+      // Get all contracts for the week in one query
+      const weekEnd = new Date(startOfWeek);
+      weekEnd.setDate(startOfWeek.getDate() + 6);
+      
+      const { data: allContracts, error } = await supabase
+        .from('contracts')
+        .select('id, start_date, end_date, status')
+        .eq('company_id', user.profile.company_id)
+        .in('status', ['active', 'draft'])
+        .lte('start_date', weekEnd.toISOString().split('T')[0])
+        .gte('end_date', startOfWeek.toISOString().split('T')[0]);
+
+      if (error) console.error('Error fetching contracts:', error);
+
+      // Build week days array
       const weekDays = [];
-      for (let i = -3; i <= 3; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(startOfWeek);
+        date.setDate(startOfWeek.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
 
-        // Count active contracts for this day
-        const { data: contracts, error } = await supabase
-          .from('contracts')
-          .select('id, status')
-          .eq('company_id', user.profile.company_id)
-          .lte('start_date', dateStr)
-          .or(`end_date.gte.${dateStr},end_date.is.null`)
-          .eq('status', 'active');
+        // Count contracts active on this specific day
+        const contractsForDay = allContracts?.filter(contract => {
+          const startDate = contract.start_date;
+          const endDate = contract.end_date;
+          return dateStr >= startDate && dateStr <= endDate;
+        }) || [];
 
-        if (error) console.error('Error fetching contracts:', error);
-
-        // Get total vehicles
-        const { count: totalVehicles } = await supabase
-          .from('vehicles')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', user.profile.company_id)
-          .eq('is_active', true);
-
-        const occupancyRate = totalVehicles ? Math.round((contracts?.length || 0) / totalVehicles * 100) : 0;
+        const occupancyRate = totalVehicles ? Math.round((contractsForDay.length / totalVehicles) * 100) : 0;
+        const isToday = date.toDateString() === today.toDateString();
 
         weekDays.push({
           date: date.getDate(),
-          fullDate: date, // Store full date object
-          isToday: i === 0,
+          fullDate: date,
+          dayName: date.toLocaleDateString('ar-SA', { weekday: 'long' }),
+          isToday,
           occupancyRate,
-          contractsCount: contracts?.length || 0
+          contractsCount: contractsForDay.length
         });
       }
 
@@ -264,7 +281,11 @@ export const ForecastingSection: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">تقويم الحجوزات</h3>
-          <button className="text-sm font-semibold text-red-600 hover:text-red-700">
+          <button 
+            onClick={() => navigate('/fleet/reservation-system')}
+            className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1"
+          >
+            <Calendar className="w-4 h-4" />
             عرض الشهر كاملاً
           </button>
         </div>
@@ -276,49 +297,86 @@ export const ForecastingSection: React.FC = () => {
           ))}
         </div>
         
-        <div className="grid grid-cols-7 gap-2">
+        {!calendarData || calendarData.length === 0 ? (
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-2 mb-4">
           {calendarData?.map((day, index) => {
             const bgColor = day.isToday 
               ? 'bg-blue-100 border-2 border-blue-500' 
               : day.occupancyRate >= 90 
-              ? 'bg-red-50' 
+              ? 'bg-red-50 border border-red-300' 
               : day.occupancyRate >= 70 
-              ? 'bg-orange-50' 
+              ? 'bg-orange-50 border border-orange-300' 
               : day.occupancyRate >= 50 
-              ? 'bg-yellow-50' 
-              : 'bg-gray-100';
+              ? 'bg-yellow-50 border border-yellow-300' 
+              : 'bg-green-50 border border-green-300';
             
             const textColor = day.isToday 
-              ? 'text-blue-600' 
+              ? 'text-blue-700' 
               : day.occupancyRate >= 90 
-              ? 'text-red-600' 
+              ? 'text-red-700' 
               : day.occupancyRate >= 70 
-              ? 'text-orange-600' 
+              ? 'text-orange-700' 
               : day.occupancyRate >= 50 
-              ? 'text-yellow-600' 
-              : 'text-green-600';
+              ? 'text-yellow-700' 
+              : 'text-green-700';
 
             return (
               <div 
                 key={index} 
-                className={`aspect-square rounded-lg ${bgColor} flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-colors`}
+                className={`aspect-square rounded-lg ${bgColor} flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all`}
+                title={`${day.dayName || ''} - ${day.contractsCount} عقد نشط - ${day.occupancyRate}% إشغال`}
               >
-                <span className={`text-sm ${day.isToday ? 'font-bold' : 'font-semibold'} ${day.isToday ? textColor : ''}`}>
+                <span className={`text-sm ${day.isToday ? 'font-bold' : 'font-semibold'} ${textColor}`}>
                   {day.date}
                 </span>
-                <span className={`text-xs ${textColor}`}>
-                  {day.isToday ? 'اليوم' : day.occupancyRate >= 95 ? 'محجوز' : `${day.occupancyRate}%`}
+                <span className={`text-xs font-medium ${textColor}`}>
+                  {day.isToday ? 'اليوم' : day.occupancyRate >= 95 ? 'ممتلئ' : `${day.occupancyRate}%`}
                 </span>
+                {day.contractsCount > 0 && (
+                  <span className={`text-[10px] ${textColor} opacity-70 mt-0.5`}>
+                    {day.contractsCount} عقد
+                  </span>
+                )}
               </div>
             );
           })}
+        </div>
+        )}
+        
+        {/* Color Legend */}
+        <div className="flex items-center justify-center gap-3 mt-4 flex-wrap text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-50 border border-green-300"></div>
+            <span className="text-gray-600">متاح (&lt;50%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-yellow-50 border border-yellow-300"></div>
+            <span className="text-gray-600">متوسط (50-70%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-orange-50 border border-orange-300"></div>
+            <span className="text-gray-600">مشغول (70-90%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-50 border border-red-300"></div>
+            <span className="text-gray-600">ممتلئ (≥90%)</span>
+          </div>
         </div>
         
         <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-gray-900">ملخص الأسبوع</span>
             <span className="text-xs text-gray-500">
-              {calendarData?.[0]?.date || ''}-{calendarData?.[6]?.date || ''} {new Date().toLocaleDateString('ar-SA', { month: 'long' })}
+              {calendarData?.[0]?.fullDate && calendarData?.[6]?.fullDate 
+                ? `${calendarData[0].fullDate.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })} - ${calendarData[6].fullDate.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}`
+                : 'جاري التحميل...'
+              }
             </span>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -328,7 +386,7 @@ export const ForecastingSection: React.FC = () => {
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">{weekSummary.totalBookings}</p>
-              <p className="text-xs text-gray-600">حجوزات نشطة</p>
+              <p className="text-xs text-gray-600">عقود نشطة</p>
             </div>
           </div>
         </div>
