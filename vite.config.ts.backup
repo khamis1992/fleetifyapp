@@ -65,21 +65,18 @@ export default defineConfig(({ mode }) => {
       'react/jsx-runtime',
       '@supabase/supabase-js',
       '@tanstack/react-query',
+      'framer-motion',
     ],
     exclude: [
       'lucide-react',
       '@radix-ui/react-separator',
       '@radix-ui/react-collapsible',
-      // Exclude ALL heavy libraries from pre-bundling
+      // Exclude heavy libraries from pre-bundling
       'recharts',
       'html2canvas',
       'jspdf',
-      'jspdf-autotable',
       'exceljs',
       'xlsx',
-      'framer-motion',
-      'leaflet',
-      'react-leaflet',
     ],
     force: true,
     esbuildOptions: {
@@ -95,84 +92,55 @@ export default defineConfig(({ mode }) => {
     assetsDir: 'assets',
     emptyOutDir: true,
     // Chunk size warning limit
-    chunkSizeWarningLimit: 500, // Reduced from 1000 to 500KB
+    chunkSizeWarningLimit: 1000,
     // Faster builds with esbuild
     reportCompressedSize: false, // Disable to speed up build
     rollupOptions: {
-      // Increase max chunk size warnings
-      onwarn(warning, warn) {
-        // Suppress chunk size warnings in production
-        if (warning.code === 'CIRCULAR_DEPENDENCY') return;
-        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
-        warn(warning);
-      },
       output: {
-        // AGGRESSIVE code splitting - split everything into smaller chunks
+        // Optimized manual chunks - smaller and more granular
         manualChunks: (id) => {
-          // Core React libraries - keep together but separate from everything else
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+          // Core React libraries - keep together
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
             return 'react-core';
           }
           
-          if (id.includes('node_modules/react-router-dom')) {
-            return 'react-router';
-          }
-          
-          // Radix UI components - split by category for better caching
+          // Radix UI components - split by category
           if (id.includes('@radix-ui')) {
-            if (id.includes('dialog') || id.includes('dropdown') || id.includes('popover') || id.includes('tooltip')) {
+            if (id.includes('dialog') || id.includes('dropdown') || id.includes('popover')) {
               return 'radix-overlays';
             }
             if (id.includes('tabs') || id.includes('accordion') || id.includes('collapsible')) {
               return 'radix-containers';
             }
-            if (id.includes('select') || id.includes('combobox') || id.includes('checkbox') || id.includes('radio')) {
-              return 'radix-forms';
-            }
             return 'radix-ui';
           }
           
-          // Data and API - separate Supabase and React Query
-          if (id.includes('@supabase')) {
-            return 'supabase';
-          }
-          if (id.includes('@tanstack/react-query')) {
-            return 'react-query';
+          // Data and API
+          if (id.includes('@supabase') || id.includes('@tanstack/react-query')) {
+            return 'data-api';
           }
           
-          // Charts - HEAVY, keep separate
+          // Charts - lazy loaded
           if (id.includes('recharts')) {
             return 'charts';
           }
           
-          // Icons - tree-shakeable but still separate
+          // Icons - tree-shakeable
           if (id.includes('lucide-react')) {
             return 'icons';
           }
           
-          // PDF libraries - VERY HEAVY, keep completely separate
-          if (id.includes('html2canvas')) {
-            return 'html2canvas';
-          }
-          if (id.includes('jspdf-autotable')) {
-            return 'jspdf-autotable';
-          }
-          if (id.includes('jspdf')) {
-            return 'jspdf';
-          }
-          if (id.includes('html2pdf')) {
-            return 'html2pdf';
+          // PDF libraries - lazy loaded
+          if (id.includes('html2canvas') || id.includes('jspdf') || id.includes('html2pdf')) {
+            return 'pdf-libs';
           }
           
-          // Excel libraries - VERY HEAVY, split separately
-          if (id.includes('exceljs')) {
-            return 'exceljs';
-          }
-          if (id.includes('xlsx')) {
-            return 'xlsx';
+          // Excel libraries - lazy loaded  
+          if (id.includes('exceljs') || id.includes('xlsx')) {
+            return 'excel-libs';
           }
           
-          // Framer Motion - animations
+          // Framer Motion
           if (id.includes('framer-motion')) {
             return 'animations';
           }
@@ -182,61 +150,25 @@ export default defineConfig(({ mode }) => {
             return 'date-utils';
           }
           
-          // Leaflet maps - HEAVY, keep separate
-          if (id.includes('leaflet') || id.includes('react-leaflet')) {
+          // Leaflet maps - lazy loaded
+          if (id.includes('leaflet')) {
             return 'maps';
           }
           
-          // Form libraries
-          if (id.includes('react-hook-form') || id.includes('zod')) {
-            return 'forms';
-          }
-          
-          // UI utilities
-          if (id.includes('clsx') || id.includes('class-variance-authority') || id.includes('tailwind-merge')) {
-            return 'ui-utils';
-          }
-          
-          // Other node_modules - split into smaller vendor chunks
+          // Other node_modules
           if (id.includes('node_modules')) {
-            // Extract package name
-            const match = id.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)\//);
-            if (match) {
-              const packageName = match[1];
-              // Group small packages together
-              if (packageName.startsWith('@')) {
-                const scope = packageName.split('/')[0];
-                return `vendor-${scope.replace('@', '')}`;
-              }
-              return `vendor-${packageName}`;
-            }
             return 'vendor';
           }
         },
-        // Optimize chunk file names
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId;
           if (facadeModuleId) {
-            // Finance pages - separate chunks
-            if (facadeModuleId.includes('pages/finance/')) {
-              const pageName = facadeModuleId.match(/pages\/finance\/([^/]+)/)?.[1] || 'finance';
-              return `finance/${pageName}-[hash].js`;
+            if (facadeModuleId.includes('pages/finance/Payments')) {
+              return 'pages/Payments-[hash].js';
             }
-            // Fleet pages - separate chunks
-            if (facadeModuleId.includes('pages/fleet/')) {
-              const pageName = facadeModuleId.match(/pages\/fleet\/([^/]+)/)?.[1] || 'fleet';
-              return `fleet/${pageName}-[hash].js`;
-            }
-            // HR pages - separate chunks
-            if (facadeModuleId.includes('pages/hr/')) {
-              const pageName = facadeModuleId.match(/pages\/hr\/([^/]+)/)?.[1] || 'hr';
-              return `hr/${pageName}-[hash].js`;
-            }
-            // Other pages
             if (facadeModuleId.includes('pages/')) {
               return 'pages/[name]-[hash].js';
             }
-            // Components
             if (facadeModuleId.includes('components/')) {
               return 'components/[name]-[hash].js';
             }
@@ -259,8 +191,6 @@ export default defineConfig(({ mode }) => {
       treeshake: {
         preset: 'recommended',
         moduleSideEffects: 'no-external',
-        propertyReadSideEffects: false,
-        unknownGlobalSideEffects: false,
       },
     },
     // Image optimization
