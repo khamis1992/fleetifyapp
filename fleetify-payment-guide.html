@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دليل نظام الدفع في فليتفاي - Fleetify Payment System Guide</title>
+    <meta name="description" content="دليل شامل لاستخدام نظام الدفع في نظام إدارة الأسطول فليتفاي">
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts - Arabic Support -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS Variables for Professional Color Scheme */
+        :root {
+            --primary-blue: #1e3a8a;
+            --primary-light: #3b82f6;
+            --secondary-green: #059669;
+            --accent-teal: #14b8a6;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--gray-700);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+
+        .site-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .site-title p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Navigation */
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            background: white;
+            margin: 2rem auto;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--secondary-green) 0%, var(--accent-teal) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .hero-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .hero-section p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.95;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Content Sections */
+        .content-section {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 50%;
+            transform: translateX(50%);
+            width: 60px;
+            height: 4px;
+            background: var(--secondary-green);
+            border-radius: 2px;
+        }
+
+        /* Feature Cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-light);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent-teal));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            color: var(--gray-800);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .feature-description {
+            color: var(--gray-600);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .feature-link {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.3s ease;
+        }
+
+        .feature-link:hover {
+            gap: 1rem;
+        }
+
+        /* Step-by-Step Guide */
+        .steps-container {
+            margin: 3rem 0;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--gray-100);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .step-item:hover {
+            background: var(--gray-200);
+            transform: translateX(-4px);
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-blue);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .step-description {
+            color: var(--gray-600);
+            line-height: 1.6;
+        }
+
+        /* Screenshot Placeholder */
+        .screenshot-placeholder {
+            background: var(--gray-100);
+            border: 2px dashed var(--gray-300);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screenshot-placeholder::before {
+            content: '📸';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+
+        .placeholder-icon {
+            font-size: 4rem;
+            color: var(--gray-400);
+            margin-bottom: 1rem;
+        }
+
+        .placeholder-title {
+            font-size: 1.2rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .placeholder-description {
+            color: var(--gray-500);
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .flow-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: -1.5rem;
+            right: 30px;
+            width: 2px;
+            height: 1.5rem;
+            background: var(--gray-300);
+        }
+
+        .flow-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-left: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+            background: var(--gray-100);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+        }
+
+        .flow-title {
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 0.25rem;
+        }
+
+        .flow-description {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        /* Tips and Best Practices */
+        .tips-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid #f59e0b;
+        }
+
+        .tips-title {
+            color: #92400e;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tips-list {
+            list-style: none;
+        }
+
+        .tips-list li {
+            padding: 0.5rem 0;
+            padding-right: 1.5rem;
+            position: relative;
+            color: #78350f;
+        }
+
+        .tips-list li::before {
+            content: '✓';
+            position: absolute;
+            right: 0;
+            color: #059669;
+            font-weight: bold;
+        }
+
+        /* Troubleshooting Section */
+        .troubleshooting-section {
+            background: var(--gray-100);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .issue-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-right: 4px solid var(--error);
+        }
+
+        .issue-title {
+            color: var(--error);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-solution {
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+
+        .issue-solution strong {
+            color: var(--success);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--gray-900);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-light);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: var(--gray-300);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-light);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                justify-content: center;
+            }
+
+            .hero-section h2 {
+                font-size: 2rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .step-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .flow-step {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .flow-step:not(:last-child)::after {
+                right: 50%;
+                transform: translateX(50%);
+            }
+
+            .flow-icon {
+                margin-left: 0;
+                margin-bottom: 1rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+            }
+        }
+
+        /* Accessibility Features */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles for better accessibility */
+        a:focus,
+        button:focus,
+        input:focus,
+        textarea:focus {
+            outline: 2px solid var(--primary-light);
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --gray-600: #000;
+                --gray-700: #000;
+                --gray-800: #000;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .header,
+            .footer {
+                background: none;
+                color: black;
+            }
+
+            .nav-menu,
+            .hero-section {
+                display: none;
+            }
+
+            .main-content {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar for RTL */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-400);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-500);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">فليتفاي</div>
+                    <div class="site-title">
+                        <h1>دليل نظام الدفع الشامل</h1>
+                        <p>Fleetify Payment System Complete Guide</p>
+                    </div>
+                </div>
+                <nav class="nav-menu" role="navigation" aria-label="Main navigation">
+                    <a href="#overview" class="nav-link"><i class="fas fa-home"></i> نظرة عامة</a>
+                    <a href="#features" class="nav-link"><i class="fas fa-star"></i> المميزات</a>
+                    <a href="#guides" class="nav-link"><i class="fas fa-book"></i> الأدلة</a>
+                    <a href="#troubleshooting" class="nav-link"><i class="fas fa-tools"></i> المساعدة</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <h2>مرحباً بك في نظام الدفع المتقدم في فليتفاي</h2>
+                <p>نظام شامل لإدارة الفواتير والمدفوعات والمصروفات والتقارير المالية المصمم خصيصاً لإدارة أساطيل المركبات</p>
+
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">وحدات رئيسية للنظام</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">مراقبة وتقارير فورية</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">أمان وحماية البيانات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">50+</div>
+                        <div class="stat-label">تقارير وتحليلات مالية</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Overview Section -->
+        <section id="overview" class="content-section">
+            <div class="container">
+                <h2 class="section-title">نظرة عامة على نظام الدفع</h2>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <h3 class="feature-title">إدارة الفواتير</h3>
+                        <p class="feature-description">
+                            إنشاء وإدارة وتتبع الفواتير بشكل احترافي مع قوالب جاهزة وإمكانية التخصيص الكامل وإرسال تلقائي للعملاء.
+                        </p>
+                        <a href="#invoicing" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h3 class="feature-title">معالجة المدفوعات</h3>
+                        <p class="feature-description">
+                            تسجيل وتتبع المدفوعات مع دعم متعدد لطرق الدفع وتذكيرات تلقائية وحسابات تلقائية للرصيد المتبقي.
+                        </p>
+                        <a href="#payments" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title">التقارير المالية</h3>
+                        <p class="feature-description">
+                            توليد تقارير مالية شاملة مع رسومات بيانية تفاعلية وإمكانية التصفية والتصدير بصيغ متعددة.
+                        </p>
+                        <a href="#reports" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <h3 class="feature-title">إدارة المصروفات</h3>
+                        <p class="feature-description">
+                            تتبع المصروفات مع التصنيف وإرفاق الإيصالات الرقمية وتوليد تقارير المصروفات التفصيلية.
+                        </p>
+                        <a href="#expenses" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                        <h3 class="feature-title">إدارة الخزينة</h3>
+                        <p class="feature-description">
+                            مراقبة التدفق النقدي وموازنة البنوك وجدول المدفوعات والتنبؤ المالي الذكي.
+                        </p>
+                        <a href="#treasury" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3 class="feature-title">لوحة التحكم</h3>
+                        <p class="feature-description">
+                            نظرة شاملة على الوضع المالي مع مؤشرات الأداء الرئيسية والمعاملات الأخيرة وإشارات الحالة الفورية.
+                        </p>
+                        <a href="#dashboard" class="feature-link">
+                            تعلم المزيد <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Overview -->
+        <section id="dashboard" class="content-section" style="background: var(--gray-100);">
+            <div class="container">
+                <h2 class="section-title">لوحة التحكم المالية</h2>
+
+                <div class="screenshot-placeholder">
+                    <div class="placeholder-icon">📊</div>
+                    <h3 class="placeholder-title">لوحة التحكم المالية - Financial Dashboard</h3>
+                    <p class="placeholder-description">عرض شامل للملخص المالي والمعاملات الأخيرة ومؤشرات الأداء</p>
+                </div>
+
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary-blue);">مكونات لوحة التحكم</h3>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">💰</div>
+                        <div class="flow-content">
+                            <div class="flow-title">ملخص الإيرادات والمصروفات</div>
+                            <div class="flow-description">عرض إجمالي الإيرادات والمصروفات للأسبوع/الشهر/السنة مع نسب التغير</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">📈</div>
+                        <div class="flow-content">
+                            <div class="flow-title">مؤشرات الأداء المالية</div>
+                            <div class="flow-description">مؤشرات رئيسية مثل صافي الربح، التدفق النقدي، نسب التحصيل</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">🔔</div>
+                        <div class="flow-content">
+                            <div class="flow-title">الإشعارات والتنبيهات</div>
+                            <div class="flow-description">تنبيهات للفواتير المستحقة والمدفوعات المتأخرة والحدود المالية</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">📋</div>
+                        <div class="flow-content">
+                            <div class="flow-title">المعاملات الأخيرة</div>
+                            <div class="flow-description">قائمة آخر المعاملات المالية مع إمكانية الوصول السريع للتفاصيل</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guides Section -->
+        <section id="guides" class="content-section">
+            <div class="container">
+                <h2 class="section-title">الأدلة التعليمية خطوة بخطوة</h2>
+
+                <!-- Invoicing Guide -->
+                <div id="invoicing" class="steps-container">
+                    <h3 style="color: var(--primary-blue); margin-bottom: 2rem; text-align: center;">دليل إدارة الفواتير</h3>
+
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4 class="step-title">إنشاء فاتورة جديدة</h4>
+                            <p class="step-description">
+                                اضغط على "إنشاء فاتورة" من القائمة الرئيسية، اختر العميل، أضف الخدمات أو المنتجات،
+                                وقم بتعيين الأسعار والكميات. يمكن حفظ الفاتورة كمسودة أو إرسالها مباشرة.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4 class="step-title">تخصيص الفاتورة</h4>
+                            <p class="step-description">
+                                اختر قالب الفاتورة المناسب، أضف شعار الشركة، تعديل البنود، إضافة رسوم إضافية أو خصومات،
+                                وتحديد شروط الدفع والإجراءات المتأخرة.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4 class="step-title">إرسال الفاتورة</h4>
+                            <p class="step-description">
+                                أرسل الفاتورة عبر البريد الإلكتروني مباشرة من النظام، أو حملها كـ PDF،
+                                أو أرسل رابط الدفع الإلكتروني للعميل.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4 class="step-title">تتبع حالة الفاتورة</h4>
+                            <p class="step-description">
+                                مراقبة حالة الفاتورة (مسودة، مرسلة، مدفوعة، متأخرة)، تلقي إشعارات تلقائية،
+                                ومتابعة المدفوعات المستلمة والرصيد المتبقي.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screenshot-placeholder">
+                    <div class="placeholder-icon">🧾</div>
+                    <h3 class="placeholder-title">واجهة إنشاء الفواتير</h3>
+                    <p class="placeholder-description">شاشة إنشاء وتخصيص وإرسال الفواتير بشكل احترافي</p>
+                </div>
+
+                <!-- Payment Processing Guide -->
+                <div id="payments" class="steps-container" style="margin-top: 4rem;">
+                    <h3 style="color: var(--primary-blue); margin-bottom: 2rem; text-align: center;">دليل معالجة المدفوعات</h3>
+
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4 class="step-title">تسجيل الدفعة</h4>
+                            <p class="step-description">
+                                اختر الفاتورة المراد سدادها، أدخل مبلغ الدفعة، حدد طريقة الدفع (نقدي، بطاقة، تحويل بنكي)،
+                                وأضف ملاحظات أو مرجع المعاملة.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4 class="step-title">التحقق من الدفعة</h4>
+                            <p class="step-description">
+                                يقوم النظام بالتحقق تلقائياً من مطابقة المبلغ، تحديث حالة الفاتورة،
+                                وتوليد إيصال الدفعة تلقائياً.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4 class="step-title">إرسال تأكيد الدفع</h4>
+                            <p class="step-description">
+                                إرسال تأكيد تلقائي للعميل عبر البريد الإلكتروني مع إيصال الدفعة،
+                                تحديث السجلات المحاسبية، وإغلاق الفاتورة إذا تم السداد الكامل.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4 class="step-title">إدارة الدفعات الجزئية</h4>
+                            <p class="step-description">
+                                التعامل مع الدفعات الجزئية، تتبع الرصيد المتبقي، وجدولة الدفعات المستقبلية
+                                مع إشعارات التذكير التلقائية.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Reports Guide -->
+                <div id="reports" class="steps-container" style="margin-top: 4rem;">
+                    <h3 style="color: var(--primary-blue); margin-bottom: 2rem; text-align: center;">دليل التقارير المالية</h3>
+
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4 class="step-title">اختر نوع التقرير</h4>
+                            <p class="step-description">
+                                اختر من بين التقارير المتاحة: تقرير الإيرادات، تقرير المصروفات، تقرير الربح والخسارة،
+                                تقرير التدفق النقدي، أو تقرير ديون العملاء.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4 class="step-title">حدد الفترة والمعايير</h4>
+                            <p class="step-description">
+                                حدد الفترة الزمنية للتقرير (يوم، أسبوع، شهر، سنة)، اختر العملاء أو الموردين،
+                                وحدد فئات المصروفات أو الإيرادات.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4 class="step-title">تخصيص التقرير</h4>
+                            <p class="step-description">
+                                اختر الأعمدة المراد عرضها، أضف رسومات بيانية، قارن بين الفترات،
+                                وأضف ملاحظات أو شروحات مخصصة.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4 class="step-title">تصدير ومشاركة التقرير</h4>
+                            <p class="step-description">
+                                تصدير التقرير بصيغ PDF أو Excel، مشاركة عبر البريد الإلكتروني،
+                                حفظ كقالب للاستخدام المستقبلي، أو جدولة إرسال دوري.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screenshot-placeholder">
+                    <div class="placeholder-icon">📊</div>
+                    <h3 class="placeholder-title">مثال على تقرير مالي تفاعلي</h3>
+                    <p class="placeholder-description">رسومات بيانية تفاعلية وتحليلات شاملة للأداء المالي</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expense Management Section -->
+        <section id="expenses" class="content-section" style="background: var(--gray-100);">
+            <div class="container">
+                <h2 class="section-title">إدارة المصروفات</h2>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h3 class="feature-title">إضافة المصروفات</h3>
+                        <p class="feature-description">
+                            إدخال المصروفات بسهولة مع التفاصيل الكاملة، التصنيف التلقائي، وإرفاق الإيصالات الرقمية أو المستندات.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h3 class="feature-title">تصنيف المصروفات</h3>
+                        <p class="feature-description">
+                            تنظيم المصروفات في فئات (وقود، صيانة، تأمين، رواتب، إلخ) مع إمكانية إنشاء فئات مخصصة.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <h3 class="feature-title">إرفاق الإيصالات</h3>
+                        <p class="feature-description">
+                            التقاط أو رفع صور الإيصالات مباشرة من التطبيق مع حفظ تلقائي وتصنيف ذكي.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tips-section">
+                    <h3 class="tips-title">
+                        <i class="fas fa-lightbulb"></i>
+                        نصائح لإدارة المصروفات بفعالية
+                    </h3>
+                    <ul class="tips-list">
+                        <li>قم بتسجيل المصروفات فور حدوثها لتجنب النسيان</li>
+                        <li>استخدم الفئات القياسية للمصروفات لتسهيل التحليل</li>
+                        <li>التقط صورة للإيصال دائماً كدليل</li>
+                        <li>راجع المصروفات أسبوعياً لتحديد فرص التوفير</li>
+                        <li>استخدم التقارير لمقارنة المصروفات بين الفترات</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Treasury Management Section -->
+        <section id="treasury" class="content-section">
+            <div class="container">
+                <h2 class="section-title">إدارة الخزينة</h2>
+
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary-blue); text-align: center;">دورة إدارة الخزينة</h3>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">🏦</div>
+                        <div class="flow-content">
+                            <div class="flow-title">موازنة الحسابات البنكية</div>
+                            <div class="flow-description">مطابقة الحركات البنكية مع السجلات المحاسبية وتحديد أي اختلافات</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">📅</div>
+                        <div class="flow-content">
+                            <div class="flow-title">جدولة المدفوعات</div>
+                            <div class="flow-description">تخطيط وتتبع المدفوعات القادمة والمستحقة مع إشعارات التذكير</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">📈</div>
+                        <div class="flow-content">
+                            <div class="flow-title">مراقبة التدفق النقدي</div>
+                            <div class="flow-description">تتبع التدفقات النقدية الداخلة والخارجة وتحديد الفترات الحرجة</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-icon">🔮</div>
+                        <div class="flow-content">
+                            <div class="flow-title">التنبؤ المالي</div>
+                            <div class="flow-description">توقع الاحتياجات المالية المستقبلية بناءً على الاتجاهات الحالية</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screenshot-placeholder">
+                    <div class="placeholder-icon">💰</div>
+                    <h3 class="placeholder-title">لوحة مراقبة التدفق النقدي</h3>
+                    <p class="placeholder-description">عرض تفاعلي للتدفقات النقدية والتنبؤات المالية</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Breakdown -->
+        <section id="features" class="content-section" style="background: var(--gray-100);">
+            <div class="container">
+                <h2 class="section-title">تفصيل المميزات المتقدمة</h2>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 class="feature-title">الأتمتة الذكية</h3>
+                        <p class="feature-description">
+                            إنشاء الفواتير التلقائي، إرسال التذكيرات، حساب الفوائد المتأخرة،
+                            وتوليد التقارير الدورية بشكل تلقائي.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h3 class="feature-title">دعم متعدد العملات</h3>
+                        <p class="feature-description">
+                            التعامل مع عملات متعددة، تحويل العملات تلقائياً،
+                            وإدارة أسعار الصرف مع تحديث دوري.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="feature-title">الأمان والامتثال</h3>
+                        <p class="feature-description">
+                            تشفير البيانات، مصادقة متعددة العوامل، نسخ احتياطي تلقائي،
+                            والامتثال للمعايير المحاسبية المعتمدة.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3 class="feature-title">تطبيق الموبايل</h3>
+                        <p class="feature-description">
+                            وصول كامل من الهاتف المحمول، إصدار إيصالات فورية،
+                            تتبع المصروفات أثناء التنقل، والإشعارات الفورية.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <h3 class="feature-title">التكامل مع الأنظمة الأخرى</h3>
+                        <p class="feature-description">
+                            الربط مع أنظمة المحاسبة، بوابات الدفع الإلكتروني،
+                            أنظمة إدارة المخزون، والبنوك.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h3 class="feature-title">التحليلات المتقدمة</h3>
+                        <p class="feature-description">
+                            تحليلات تفصيلية، رسومات بيانية تفاعلية، مؤشرات أداء رئيسية،
+                            والتقارير المخصصة حسب الاحتياج.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Troubleshooting Section -->
+        <section id="troubleshooting" class="content-section">
+            <div class="container">
+                <h2 class="section-title">استكشاف الأخطاء وإصلاحها</h2>
+
+                <div class="troubleshooting-section">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary-blue);">المشاكل الشائعة والحلول</h3>
+
+                    <div class="issue-item">
+                        <h4 class="issue-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            الفاتورة لا تظهر في القائمة بعد الإرسال
+                        </h4>
+                        <p class="issue-solution">
+                            <strong>الحل:</strong> تحقق من اتصال الإنترنت، انتظر بضع دقائق للمزامنة،
+                            أو قم بتحديث الصفحة. إذا استمرت المشكلة، تحقق من حالة المزامنة في الإعدادات.
+                        </p>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4 class="issue-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            لا يمكن إرفاق الإيصالات الرقمية
+                        </h4>
+                        <p class="issue-solution">
+                            <strong>الحل:</strong> تحقق من حجم الملف (أقل من 10 ميجابايت)،
+                            تأكد من صيغة الملف المدعومة (JPG, PNG, PDF)، وتحقق من صلاحيات الكاميرا والتخزين.
+                        </p>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4 class="issue-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            الأرقام في التقارير لا تتطابق مع الحركات الفعلية
+                        </h4>
+                        <p class="issue-solution">
+                            <strong>الحل:</strong> تحقق من الفترة الزمنية للتقرير، تأكد من تصفية جميع الفئات،
+                            وقم بموازنة الحسابات البنكية. قد تحتاج إلى مزامنة البيانات يدوياً.
+                        </p>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4 class="issue-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            بطء في تحميل لوحة التحكم
+                        </h4>
+                        <p class="issue-solution">
+                            <strong>الحل:</strong> قم بمسح ذاكرة التخزين المؤقت للمتصفح،
+                            تحقق من سرعة الإنترنت، أو حاول استخدام متصفح مختلف.
+                            يمكن أيضاً تقليل كمية البيانات المعروضة في الإعدادات.
+                        </p>
+                    </div>
+
+                    <div class="issue-item">
+                        <h4 class="issue-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            لا تتلقى إشعارات البريد الإلكتروني
+                        </h4>
+                        <p class="issue-solution">
+                            <strong>الحل:</strong> تحقق من مجلد البريد المزعج،
+                            تأكد من صحة إعدادات البريد الإلكتروني في ملف التعريف،
+                            وافحص قائمة مرسلي البريد المحظورين.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tips-section" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-color: var(--primary-light);">
+                    <h3 class="tips-title" style="color: var(--primary-blue);">
+                        <i class="fas fa-headset"></i>
+                        الحصول على المساعدة
+                    </h3>
+                    <ul class="tips-list" style="color: var(--primary-blue);">
+                        <li>مراجعة دليل المستخدم المفصل المتاح في مركز المساعدة</li>
+                        <li>الاتصال بفريق الدعم الفني عبر البريد الإلكتروني: support@fleetify.com</li>
+                        <li>استخدام نظام المحادثة المباشرة المتوفر 24/7</li>
+                        <li>مشاركة لقطة شاشة للمشكلة مع وصف مفصل</li>
+                        <li>حجز جلسة تدريب عبر الإنترنت مع خبرائنا</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>روابط سريعة</h3>
+                    <ul class="footer-links">
+                        <li><a href="#overview">نظرة عامة</a></li>
+                        <li><a href="#features">المميزات</a></li>
+                        <li><a href="#guides">الأدلة</a></li>
+                        <li><a href="#troubleshooting">المساعدة</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h3>الدعم الفني</h3>
+                    <ul class="footer-links">
+                        <li><a href="mailto:support@fleetify.com">support@fleetify.com</a></li>
+                        <li><a href="tel:+966500000000">+966 500 000 000</a></li>
+                        <li><a href="#">مركز المساعدة</a></li>
+                        <li><a href="#">فيديوهات تعليمية</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h3>تابعنا</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">فيسبوك</a></li>
+                        <li><a href="#">تويتر</a></li>
+                        <li><a href="#">لينكدإن</a></li>
+                        <li><a href="#">يوتيوب</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--gray-700); padding-top: 2rem; margin-top: 2rem;">
+                <p>&copy; 2025 فليتفاي - Fleetify. جميع الحقوق محفوظة.</p>
+                <p>نسخة 1.4 | آخر تحديث: نوفمبر 2025</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add active state to navigation based on scroll position
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 200)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.style.background = '';
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.style.background = 'rgba(255, 255, 255, 0.2)';
+                }
+            });
+        });
+
+        // Add loading animation removal
+        window.addEventListener('load', () => {
+            document.body.classList.remove('loading');
+        });
+
+        // Accessibility: Add keyboard navigation for feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.setAttribute('tabindex', '0');
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const link = card.querySelector('.feature-link');
+                    if (link) link.click();
+                }
+            });
+        });
+
+        // Print functionality
+        function printGuide() {
+            window.print();
+        }
+
+        // Add print button (hidden by default, can be shown with CSS)
+        const printButton = document.createElement('button');
+        printButton.innerHTML = '<i class="fas fa-print"></i> طباعة الدليل';
+        printButton.className = 'print-button';
+        printButton.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 20px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+        `;
+        printButton.onclick = printGuide;
+        document.body.appendChild(printButton);
+
+        // Show print button only when printing is possible
+        if (window.print) {
+            printButton.style.display = 'block';
+        }
+
+        // Track user engagement (optional analytics)
+        const engagementEvents = {
+            scroll: false,
+            timeSpent: 0,
+            sectionsViewed: new Set()
+        };
+
+        // Track scroll engagement
+        window.addEventListener('scroll', () => {
+            if (!engagementEvents.scroll && window.scrollY > 200) {
+                engagementEvents.scroll = true;
+                console.log('User engaged: scrolled beyond header');
+            }
+        });
+
+        // Track time spent
+        setInterval(() => {
+            engagementEvents.timeSpent++;
+        }, 1000);
+
+        // Track sections viewed
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    engagementEvents.sectionsViewed.add(entry.target.id);
+                    console.log(`Section viewed: ${entry.target.id}`);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Log engagement data when user leaves
+        window.addEventListener('beforeunload', () => {
+            console.log('Engagement summary:', {
+                scrolled: engagementEvents.scroll,
+                timeSpent: engagementEvents.timeSpent,
+                sectionsViewed: Array.from(engagementEvents.sectionsViewed)
+            });
+        });
+    </script>
+</body>
+</html>
