@@ -153,7 +153,13 @@
       "mcp__supabase__apply_migration",
       "mcp__supabase__get_advisors",
       "Bash(\"C:\\Users\\khamis\\Desktop\\fleetifyapp\\tasks\\todo.md\")",
-      "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key VITE_ENCRYPTION_SECRET=test_secret npm run vercel-build:*)"
+      "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key VITE_ENCRYPTION_SECRET=test_secret npm run vercel-build:*)",
+      "Bash(wc:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel:*)",
+      "Bash(npx depcheck:*)",
+      "Bash(railway --version:*)",
+      "Bash(railway login:*)"
     ],
     "deny": [],
     "ask": []
