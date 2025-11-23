@@ -16,7 +16,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:server": "eslint src/server --ext ts",
     "preview": "vite preview",
-    "start": "node server.js",
+    "start": "node index.js",
     "start:direct": "node dist/server/index.js",
     "start:dev": "tsx src/server/index.ts",
     "sync:agreements": "tsx src/scripts/sync-agreement-numbers.ts",
