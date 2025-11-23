@@ -159,7 +159,20 @@
       "Bash(vercel:*)",
       "Bash(npx depcheck:*)",
       "Bash(railway --version:*)",
-      "Bash(railway login:*)"
+      "Bash(railway login:*)",
+      "Bash(docker build:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway init:*)",
+      "Bash(railway up:*)",
+      "Bash(railway services:*)",
+      "Bash(railway service:*)",
+      "Bash(railway status:*)",
+      "Bash(railway --help:*)",
+      "Bash(railway add:*)",
+      "Bash(railway project:*)",
+      "Bash(railway connect:*)",
+      "WebFetch(domain:docs.railway.com)",
+      "mcp__playwright__playwright_get"
     ],
     "deny": [],
     "ask": []
