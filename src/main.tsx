@@ -139,4 +139,4 @@ if (import.meta.env.DEV) {
   root.render(<App />);
 }
 
-console.log('✅ [MAIN] App render called');
+console.log('✅ [MAIN] App render called');// Cache bust: Mon, Nov 24, 2025  4:45:06 AM
