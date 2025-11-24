@@ -9,7 +9,7 @@ files.forEach(file => {
   const original = content;
 
   // Step 1: Fix extra &quot; before />
-  content = content.replace(/&quot;'s*'/>/g, '" />');
+  content = content.replace(/&quot;\s*\/>/g, '" />');
 
   // Step 2: Replace remaining &quot; with '"
   content = content.replace(/&quot;/g, '''"');
@@ -38,4 +38,4 @@ files.forEach(file => {
   }
 });
 
-console.log(''nDone!');
+console.log('\nDone!');

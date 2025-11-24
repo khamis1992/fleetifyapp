@@ -46,7 +46,7 @@ async function verifyContractsStatistics() {
     const statsContracts = allContractsForStats || [];
     
     // Function to check if contract amounts are zero or invalid (من الكود)
-    const isZeroAmount = (c: any) => {
+    const isZeroAmount = (c) => {
       const ca = c?.contract_amount;
       const ma = c?.monthly_amount;
       const caNum = ca === undefined || ca === null || ca === '' ? null : Number(ca);
@@ -55,15 +55,15 @@ async function verifyContractsStatistics() {
     };
 
     // حساب الحالات (تماماً كما في الكود)
-    const activeContracts = statsContracts.filter((c: any) => c.status === 'active');
-    const underReviewContracts = statsContracts.filter((c: any) => c.status === 'under_review' && !isZeroAmount(c));
-    const draftContracts = statsContracts.filter((c: any) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
-    const expiredContracts = statsContracts.filter((c: any) => c.status === 'expired');
-    const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
-    const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
+    const activeContracts = statsContracts.filter((c) => c.status === 'active');
+    const underReviewContracts = statsContracts.filter((c) => c.status === 'under_review' && !isZeroAmount(c));
+    const draftContracts = statsContracts.filter((c) => c.status === 'draft' || (isZeroAmount(c) && !['cancelled','expired','suspended','under_review', 'active'].includes(c.status)));
+    const expiredContracts = statsContracts.filter((c) => c.status === 'expired');
+    const suspendedContracts = statsContracts.filter((c) => c.status === 'suspended');
+    const cancelledContracts = statsContracts.filter((c) => c.status === 'cancelled');
 
     // حساب الإيرادات
-    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract: any) => sum + (contract.contract_amount || 0), 0);
+    const totalRevenue = [...activeContracts, ...underReviewContracts].reduce((sum, contract) => sum + (contract.contract_amount || 0), 0);
 
     // عرض النتائج
     console.log('══════════════════════════════════════════════════════════');
@@ -92,8 +92,8 @@ async function verifyContractsStatistics() {
     if (dbError) {
       console.error('❌ خطأ في جلب إحصائيات قاعدة البيانات:', dbError);
     } else {
-      const statusCounts: Record<string, number> = {};
-      dbStats?.forEach((contract: any) => {
+      const statusCounts = {};
+      dbStats?.forEach((contract) => {
         statusCounts[contract.status] = (statusCounts[contract.status] || 0) + 1;
       });
 
