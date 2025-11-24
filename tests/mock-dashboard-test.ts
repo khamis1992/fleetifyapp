@@ -1,4 +1,5 @@
 import { chromium, Page } from 'playwright';
+import { writeFileSync } from 'fs';
 
 /**
  * Mock dashboard testing that bypasses Supabase requirements
@@ -365,7 +366,7 @@ ${totalElements === 0 ?
 }
       `;
 
-      const fs = require('fs');
+      const fs = { writeFileSync };
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const reportFile = `mock-dashboard-test-report-${timestamp}.md`;
 

@@ -321,8 +321,7 @@ async function createCustomer(
       firstNameAr = firstName;
       lastNameAr = lastName;
     } else {
-      firstName = firstName;
-      lastName = lastName;
+      // No changes needed for English names
     }
   } else {
     // Single name - treat as first name
