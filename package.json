@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "dev:server": "tsx src/server/index.ts",
