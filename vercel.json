@@ -1,7 +1,7 @@
 {
   "framework": "vite",
   "buildCommand": "npm run build:ci",
-  "installCommand": "npm install",
+  "installCommand": "pnpm install",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production",
