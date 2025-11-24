@@ -20,10 +20,12 @@ Post the plan for approval before coding.
 ---
 
 ## 2) Pre-Flight Safety Checks
-- Typecheck, lint, and unit tests must pass on `main`  
-- Build succeeds locally and in CI  
-- `.env` and secrets are not hard-coded  
-- Confirm correct environment (dev/stage/prod) and feature flag paths  
+- Typecheck, lint, and unit tests must pass on `main`
+- **CRITICAL**: Build MUST succeed locally with EXACT same command as CI (`npm run build:ci`)
+- Verify package manager consistency (pnpm-lock.yaml → use pnpm, npm → use npm)
+- Check `vercel.json` or platform config matches local setup
+- `.env` and secrets are not hard-coded
+- Confirm correct environment (dev/stage/prod) and feature flag paths
 - If DB/migrations involved: create reversible migrations with down scripts and test on sandbox
 
 ---
@@ -71,10 +73,54 @@ Update `SYSTEM_REFERENCE.md` and READMEs:
 ---
 
 ## 7) Verification & Rollback
-- Verify in target env (dev/stage/prod) using test steps  
+- Verify in target env (dev/stage/prod) using test steps
+- **DEPLOYMENT VERIFICATION**: Always check deployment logs for:
+  - Package manager consistency (pnpm vs npm)
+  - Command not found errors (exit code 127)
+  - Build script execution order
 - If anomalies occur → rollback immediately per plan, then investigate
 
----
+### 7.1) Critical Deployment Troubleshooting
+**Before pushing changes that affect build:**
+
+1. **Package Manager Check**:
+   ```bash
+   # If pnpm-lock.yaml exists → vercel.json must use pnpm install
+   # If package-lock.json exists → vercel.json must use npm install
+   ls -la *lock.json
+   ```
+
+2. **Build Command Verification**:
+   ```bash
+   # ALWAYS test the EXACT command CI will run
+   npm run build:ci  # or whatever vercel.json buildCommand specifies
+   ```
+
+3. **Binary Resolution**:
+   ```bash
+   # If vite command not found → use npx vite build in package.json
+   # Check node_modules/.bin/vite exists
+   ls node_modules/.bin/ | grep vite
+   ```
+
+### 7.2) Common Deployment Pitfalls & Solutions
+
+| Problem | Root Cause | Solution |
+|---------|------------|----------|
+| `sh: line 1: vite: command not found` | Package manager mismatch | Match `vercel.json` `installCommand` with lock file |
+| `Exit code 127` | Binary not in PATH | Use `npx` prefix in build scripts |
+| Parsing errors | Syntax issues in code | Fix JSX, template literals, special characters |
+| Cache pollution | Large .pnpm-store/ in git | `git rm -r --cached .pnpm-store/` + add to .gitignore |
+| Build fails locally but not in CI | Environment differences | Use same Node.js version, check env variables |
+
+**Quick Deployment Checklist:**
+```bash
+# Before any deployment-related changes:
+1. npm run build:ci           # Test exact CI command
+2. ls -la *lock.json          # Check package manager
+3. cat vercel.json           # Verify configuration
+4. git status                 # Ensure clean working directory
+```
 
 ## 8) MCP Usage Rules (Integration Layer)
 
@@ -125,12 +171,14 @@ Out-of-scope: <list>
 - Risk: <...> → Mitigation: <flag, fallback, canary>
 
 ## Steps
-- [ ] Pre-flight: typecheck/lint/tests/build green  
-- [ ] Design small change set (link to diff or plan)  
-- [ ] Implement behind flag/config `<FLAG_NAME>`  
-- [ ] Add/adjust tests  
-- [ ] Update docs (`SYSTEM_REFERENCE.md`)  
-- [ ] Open PR with test steps & rollback plan  
+- [ ] Pre-flight: typecheck/lint/tests/build green
+- [ ] **BUILD VERIFICATION**: Test exact CI command locally (`npm run build:ci`)
+- [ ] **PACKAGE MANAGER CHECK**: Verify vercel.json matches lock file (pnpm vs npm)
+- [ ] Design small change set (link to diff or plan)
+- [ ] Implement behind flag/config `<FLAG_NAME>`
+- [ ] Add/adjust tests
+- [ ] Update docs (`SYSTEM_REFERENCE.md`)
+- [ ] Open PR with test steps & rollback plan
 - [ ] Verify in <env> and unflag if stable
 
 ## Review (after merge)
