@@ -172,7 +172,8 @@
       "Bash(railway project:*)",
       "Bash(railway connect:*)",
       "WebFetch(domain:docs.railway.com)",
-      "mcp__playwright__playwright_get"
+      "mcp__playwright__playwright_get",
+      "Bash(railway.json)"
     ],
     "deny": [],
     "ask": []
