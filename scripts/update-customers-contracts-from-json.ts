@@ -680,10 +680,10 @@ async function updateFromJSON(jsonFile: string): Promise<UpdateResult> {
       const newContractId = await createContract(
         customerId!,
         vehicleId,
-        defaultCompanyId,
         record.vehicle_number,
         parsedDate,
-        record.installment_amount
+        record.installment_amount,
+        defaultCompanyId
       );
 
       if (newContractId) {

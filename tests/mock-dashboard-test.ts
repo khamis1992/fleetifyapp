@@ -366,11 +366,10 @@ ${totalElements === 0 ?
 }
       `;
 
-      const fs = { writeFileSync };
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const reportFile = `mock-dashboard-test-report-${timestamp}.md`;
 
-      fs.writeFileSync(reportFile, reportContent);
+      writeFileSync(reportFile, reportContent);
       console.log(`\n📄 Detailed report saved to: ${reportFile}`);
     }
 
