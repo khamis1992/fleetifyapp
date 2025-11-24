@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => {
       target: 'es2020',
       minify: isProduction ? 'esbuild' : false,
       outDir: 'dist',
-      chunkSizeWarningLimit: 500,
+      chunkSizeWarningLimit: 1500,
       reportCompressedSize: false,
       rollupOptions: {
         external: [],
