@@ -4,7 +4,6 @@
  */
 
 import { useEffect } from 'react';
-import { securityHeaders } from '@/lib/security';
 
 export function SecurityHeaders() {
   useEffect(() => {

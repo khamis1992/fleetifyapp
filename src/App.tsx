@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import ErrorBoundary from "@/lib/errorBoundary";
 import { performanceMonitor } from "@/lib/performanceMonitor";
+import { performanceLogger } from "@/lib/performanceLogger";
 import { compatibilityManager } from "@/lib/compatibilityManager";
 import { preloadCriticalRoutes, preloadRelatedRoutes } from "@/utils/routePreloading";
 import { useStableNavigation } from "@/utils/navigationOptimization";
