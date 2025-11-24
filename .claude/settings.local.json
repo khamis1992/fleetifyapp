@@ -173,7 +173,12 @@
       "Bash(railway connect:*)",
       "WebFetch(domain:docs.railway.com)",
       "mcp__playwright__playwright_get",
-      "Bash(railway.json)"
+      "Bash(railway.json)",
+      "Bash(src/main.tsx)",
+      "Bash(pnpm:*)",
+      "Bash(./node_modules/.bin/vite:*)",
+      "Bash(npx vite:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
