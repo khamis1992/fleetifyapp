@@ -132,9 +132,9 @@ const InvoiceScannerDemo: React.FC = () => {
   };
 
   const getConfidenceIcon = (confidence: number) => {
-    if (confidence >= 85) return <CheckCircle className=\"h-4 w-4\" />;
-    if (confidence >= 70) return <Clock className=\"h-4 w-4\" />;
-    return <AlertTriangle className=\"h-4 w-4\" />;
+    if (confidence >= 85) return <CheckCircle className="h-4 w-4" />;
+    if (confidence >= 70) return <Clock className="h-4 w-4" />;
+    return <AlertTriangle className="h-4 w-4" />;
   };
 
   return (

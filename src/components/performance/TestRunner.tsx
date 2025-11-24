@@ -42,11 +42,13 @@ export const TestRunner: React.FC = () => {
       
       console.log('🧪 Comprehensive validation completed');
       console.log(`Overall Status: ${report.overall.toUpperCase()}`);
-      console.log(`Success Rate: ${((report.components.performanceLogger.status === 'pass' ? 1 : 0) + 
-                    (report.components.performanceMonitor.status === 'pass' ? 1 : 0) + 
-                    (report.components.queryClient.status === 'pass' ? 1 : 0) + 
-                    (report.components.cacheOptimization.status === 'pass' ? 1 : 0) + 
-                    (report.components.dashboard.status === 'pass' ? 1 : 0)}/6 * 100}%`);
+      const successCount = (report.components.performanceLogger.status === 'pass' ? 1 : 0) +
+                            (report.components.performanceMonitor.status === 'pass' ? 1 : 0) +
+                            (report.components.queryClient.status === 'pass' ? 1 : 0) +
+                            (report.components.cacheOptimization.status === 'pass' ? 1 : 0) +
+                            (report.components.dashboard.status === 'pass' ? 1 : 0);
+      const successRate = Math.round((successCount / 6) * 100);
+      console.log(`Success Rate: ${successRate}%`);
       
     } catch (error) {
       console.error('❌ Validation failed:', error);
