@@ -178,7 +178,10 @@
       "Bash(pnpm:*)",
       "Bash(./node_modules/.bin/vite:*)",
       "Bash(npx vite:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key VITE_ENCRYPTION_SECRET=test_secret npm run build:*)",
+      "Bash(powershell:*)",
+      "Bash(start:*)"
     ],
     "deny": [],
     "ask": []
