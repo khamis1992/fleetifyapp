@@ -22,6 +22,12 @@ Post the plan for approval before coding.
 ## 2) Pre-Flight Safety Checks
 - Typecheck, lint, and unit tests must pass on `main`
 - **CRITICAL**: Build MUST succeed locally with EXACT same command as CI (`npm run build:ci`)
+- **REACT BUNDLING CHECK**: Verify React module resolution to prevent forwardRef errors
+  ```bash
+  # Test React bundling works correctly
+  npm run build:ci && npm run preview
+  # Check for React forwardRef errors in console
+  ```
 - Verify package manager consistency (pnpm-lock.yaml → use pnpm, npm → use npm)
 - Check `vercel.json` or platform config matches local setup
 - `.env` and secrets are not hard-coded
@@ -109,6 +115,8 @@ Update `SYSTEM_REFERENCE.md` and READMEs:
 |---------|------------|----------|
 | `sh: line 1: vite: command not found` | Package manager mismatch | Match `vercel.json` `installCommand` with lock file |
 | `Exit code 127` | Binary not in PATH | Use `npx` prefix in build scripts |
+| **Blank page in production** | React module bundling issue | See "React Module Bundling" section below |
+| **`TypeError: Cannot read properties of undefined (reading 'forwardRef')`** | React separated from vendor chunks | Keep React in vendor chunk via vite.config.ts |
 | Parsing errors | Syntax issues in code | Fix JSX, template literals, special characters |
 | Cache pollution | Large .pnpm-store/ in git | `git rm -r --cached .pnpm-store/` + add to .gitignore |
 | Build fails locally but not in CI | Environment differences | Use same Node.js version, check env variables |
@@ -146,8 +154,120 @@ Split into smaller parallel segments handled by three agents:
 - Agent 2 → Execution (`supabase mcp`)  
 - Agent 3 → Validation (`browser mcp`)
 
-**UI Consistency:**  
+**UI Consistency:**
 All new features must maintain the same color scheme, button style, and layout as the existing system.
+
+---
+
+## 9) React Module Bundling Guidelines
+
+### 9.1) Critical Prevention: Blank Page & forwardRef Errors
+
+**Problem**: When React is separated into different chunks during bundling, vendor libraries that use `React.forwardRef` fail with:
+```
+TypeError: Cannot read properties of undefined (reading 'forwardRef')
+```
+
+**Root Cause**: Module loading order issues where vendor chunks try to access React APIs before React chunk is loaded.
+
+### 9.2) Vite Configuration Requirements
+
+**Always ensure React stays bundled with vendor dependencies:**
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      // ALL Radix UI components that use React.forwardRef
+      '@radix-ui/react-slot',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-radio-group',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-slider',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-label',
+      '@radix-ui/react-textarea',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-badge',
+      '@radix-ui/react-card',
+      '@radix-ui/react-alert-dialog',
+      '@radix-ui/react-aspect-ratio',
+      // Add other UI libraries that use React.forwardRef
+    ],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // CRITICAL: React and React DOM must stay in vendor chunk
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
+            return 'vendor';
+          }
+          // Other chunking logic...
+        },
+      },
+    },
+  },
+});
+```
+
+### 9.3) Pre-Deployment React Bundle Verification
+
+```bash
+# Always test React bundling before deployment
+npm run build:ci
+npm run preview
+
+# Check console for React errors
+# Open http://localhost:3001 and verify:
+# 1. Page loads without blank screen
+# 2. No forwardRef errors in console
+# 3. UI components render correctly
+```
+
+### 9.4) Common React Bundling Pitfalls
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Blank white page | React chunks not loading | Keep React in vendor chunk |
+| forwardRef undefined | Vendor chunks load before React | Add UI libs to optimizeDeps.include |
+| UI components not rendering | Missing React dependencies | Check manualChunks configuration |
+| Large bundle size | Over-chunking React components | Consolidate React-related chunks |
+
+### 9.5) Package Manager Consistency
+
+**Critical for React module resolution:**
+
+```json
+// vercel.json
+{
+  "installCommand": "pnpm install",  // Must match lock file
+  "buildCommand": "pnpm run build:ci" // Must use same package manager
+}
+```
+
+### 9.6) Troubleshooting Checklist
+
+Before any deployment that affects React/components:
+
+1. **Build Test**: `npm run build:ci` succeeds
+2. **Bundle Analysis**: Check console for chunk loading issues
+3. **Preview Verification**: `npm run preview` loads correctly
+4. **Console Check**: No forwardRef or React undefined errors
+5. **UI Components**: All Radix/UI components render
+6. **Package Manager**: vercel.json matches lock file type
 
 ---
 
@@ -173,7 +293,9 @@ Out-of-scope: <list>
 ## Steps
 - [ ] Pre-flight: typecheck/lint/tests/build green
 - [ ] **BUILD VERIFICATION**: Test exact CI command locally (`npm run build:ci`)
+- [ ] **REACT BUNDLE VERIFICATION**: Test React bundling with `npm run preview`
 - [ ] **PACKAGE MANAGER CHECK**: Verify vercel.json matches lock file (pnpm vs npm)
+- [ ] **FORWARDREF ERROR CHECK**: Check console for React forwardRef errors
 - [ ] Design small change set (link to diff or plan)
 - [ ] Implement behind flag/config `<FLAG_NAME>`
 - [ ] Add/adjust tests
