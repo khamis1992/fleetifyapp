@@ -360,7 +360,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
                 الشروط والأحكام
               </div>
               <div className="terms-section bg-gray-50 p-5 rounded-lg">
-                {/* SECURITY FIX: Sanitize HTML to prevent XSS attacks */}
+                {/* SECURITY: Sanitized HTML content - XSS protection enabled */}
                 <div
                   className="whitespace-pre-line"
                   dangerouslySetInnerHTML={{
