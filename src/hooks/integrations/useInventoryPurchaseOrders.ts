@@ -43,6 +43,115 @@ export interface ReceivePOData {
 }
 
 // ============================================================================
+// Internal Helper: Create Journal Entry for PO Receipt
+// ============================================================================
+
+async function createPOJournalEntryInternal(
+  companyId: string,
+  poId: string,
+  orderNumber: string,
+  totalAmount: number
+): Promise<void> {
+  // Get account mappings or fallback to default accounts
+  const { data: mappings } = await supabase
+    .from('account_mappings')
+    .select(`
+      chart_of_accounts_id,
+      default_account_type:default_account_types(type_code)
+    `)
+    .eq('company_id', companyId)
+    .eq('is_active', true);
+
+  let purchasesAccountId: string | null = null;
+  let apAccountId: string | null = null;
+
+  mappings?.forEach((mapping: any) => {
+    const typeCode = mapping.default_account_type?.type_code;
+    if (typeCode === 'purchases' || typeCode === 'inventory') {
+      purchasesAccountId = mapping.chart_of_accounts_id;
+    } else if (typeCode === 'accounts_payable') {
+      apAccountId = mapping.chart_of_accounts_id;
+    }
+  });
+
+  // Fallback: Get accounts by code pattern
+  if (!purchasesAccountId || !apAccountId) {
+    const { data: defaultAccounts } = await supabase
+      .from('chart_of_accounts')
+      .select('id, account_code')
+      .eq('company_id', companyId)
+      .eq('is_header', false)
+      .gte('account_level', 3);
+
+    defaultAccounts?.forEach((acc: any) => {
+      if (acc.account_code.startsWith('51') && !purchasesAccountId) {
+        purchasesAccountId = acc.id;
+      }
+      if (acc.account_code.startsWith('21') && !apAccountId) {
+        apAccountId = acc.id;
+      }
+    });
+  }
+
+  if (!purchasesAccountId || !apAccountId) {
+    console.warn('Could not find accounts for PO journal entry');
+    return;
+  }
+
+  // Generate entry number
+  const entryNumber = `JE-PO-${Date.now().toString().slice(-6)}`;
+
+  // Create journal entry
+  const { data: journalEntry, error: entryError } = await supabase
+    .from('journal_entries')
+    .insert({
+      company_id: companyId,
+      entry_number: entryNumber,
+      entry_date: new Date().toISOString().split('T')[0],
+      description: `استلام أمر شراء رقم ${orderNumber}`,
+      reference_type: 'PURCHASE_ORDER',
+      reference_id: poId,
+      total_debit: totalAmount,
+      total_credit: totalAmount,
+      status: 'posted',
+      posted_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (entryError) throw entryError;
+
+  // Create journal entry lines
+  const lines = [
+    {
+      journal_entry_id: journalEntry.id,
+      account_id: purchasesAccountId,
+      line_description: `مشتريات - أمر شراء ${orderNumber}`,
+      debit_amount: totalAmount,
+      credit_amount: 0,
+      line_number: 1,
+    },
+    {
+      journal_entry_id: journalEntry.id,
+      account_id: apAccountId,
+      line_description: `ذمم دائنة - أمر شراء ${orderNumber}`,
+      debit_amount: 0,
+      credit_amount: totalAmount,
+      line_number: 2,
+    },
+  ];
+
+  const { error: linesError } = await supabase
+    .from('journal_entry_lines')
+    .insert(lines);
+
+  if (linesError) throw linesError;
+
+  // Journal entry is linked via reference_id field in journal_entries table
+  console.log(`Journal entry ${journalEntry.entry_number} created for PO ${orderNumber}`);
+}
+
+// ============================================================================
 // Auto-generate PO from low stock item
 // ============================================================================
 
@@ -223,6 +332,32 @@ export const useReceivePOToInventory = () => {
           .eq('id', data.po_id);
 
         if (statusError) throw statusError;
+
+        // 6. Create journal entry if fully received (financial integration)
+        if (newStatus === 'received') {
+          // Check if journal entry already exists for this PO
+          const { data: existingEntry } = await supabase
+            .from('journal_entries')
+            .select('id')
+            .eq('company_id', user.profile.company_id)
+            .eq('reference_type', 'PURCHASE_ORDER')
+            .eq('reference_id', data.po_id)
+            .maybeSingle();
+
+          if (!existingEntry) {
+            try {
+              await createPOJournalEntryInternal(
+                user.profile.company_id,
+                data.po_id,
+                po.order_number,
+                po.total_amount
+              );
+            } catch (journalError) {
+              console.error('Error creating journal entry for PO:', journalError);
+              // Don't fail the whole operation, just log the error
+            }
+          }
+        }
 
         return { po, newStatus };
       } catch (error) {

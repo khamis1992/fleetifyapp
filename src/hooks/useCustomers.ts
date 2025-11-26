@@ -314,6 +314,49 @@ export const useCreateCustomer = () => {
         }
       }
 
+      // تحديد الشركة للتحقق من التكرارات
+      const checkCompanyId = customerData.selectedCompanyId || user?.profile?.company_id || user?.company?.id;
+
+      // التحقق من التكرارات - البحث بناءً على رقم الهاتف أو الهوية
+      if (checkCompanyId) {
+        const phone = customerData.phone?.trim();
+        const nationalId = customerData.national_id?.trim();
+
+        // التحقق من رقم الهاتف
+        if (phone) {
+          const { data: existingByPhone } = await supabase
+            .from('customers')
+            .select('id, first_name, last_name, first_name_ar, last_name_ar, phone')
+            .eq('company_id', checkCompanyId)
+            .eq('phone', phone)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (existingByPhone) {
+            const existingName = existingByPhone.first_name_ar || existingByPhone.first_name || '';
+            const existingLastName = existingByPhone.last_name_ar || existingByPhone.last_name || '';
+            throw new Error(`يوجد عميل بنفس رقم الهاتف: ${existingName} ${existingLastName} (${phone})`);
+          }
+        }
+
+        // التحقق من رقم الهوية
+        if (nationalId) {
+          const { data: existingByNationalId } = await supabase
+            .from('customers')
+            .select('id, first_name, last_name, first_name_ar, last_name_ar, national_id')
+            .eq('company_id', checkCompanyId)
+            .eq('national_id', nationalId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (existingByNationalId) {
+            const existingName = existingByNationalId.first_name_ar || existingByNationalId.first_name || '';
+            const existingLastName = existingByNationalId.last_name_ar || existingByNationalId.last_name || '';
+            throw new Error(`يوجد عميل بنفس رقم الهوية: ${existingName} ${existingLastName} (${nationalId})`);
+          }
+        }
+      }
+
       // تحديد الشركة
       const isSuperAdmin = user?.roles?.includes('super_admin');
       let companyId: string;

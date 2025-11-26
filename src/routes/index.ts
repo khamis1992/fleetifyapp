@@ -144,13 +144,6 @@ const FixVehicleData = lazy(() => import('@/pages/FixVehicleData'));
 
 // Help & Documentation pages
 const HelpHub = lazy(() => import('@/pages/help/HelpHub'));
-const UserGuide = lazy(() => import('@/pages/help/UserGuide'));
-const ContractsHelp = lazy(() => import('@/pages/help/ContractsHelp'));
-const DashboardHelp = lazy(() => import('@/pages/help/DashboardHelp'));
-const CustomersHelp = lazy(() => import('@/pages/help/CustomersHelp'));
-const FinanceHelp = lazy(() => import('@/pages/help/FinanceHelp'));
-const CollectionsHelp = lazy(() => import('@/pages/help/CollectionsHelp'));
-const FleetHelp = lazy(() => import('@/pages/help/FleetHelp'));
 
 // Performance monitoring
 const PerformanceMonitor = lazy(() => import('@/components/performance').then(m => ({ default: m.PerformanceMonitor })));
@@ -1395,90 +1388,6 @@ const routeConfigs: RouteConfig[] = [
     description: 'Help center',
     group: 'help',
     priority: 150,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/user-guide',
-    component: UserGuide,
-    lazy: true,
-    exact: true,
-    title: 'User Guide',
-    description: 'User guide',
-    group: 'help',
-    priority: 151,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/contracts',
-    component: ContractsHelp,
-    lazy: true,
-    exact: true,
-    title: 'Contracts Help',
-    description: 'Contracts help',
-    group: 'help',
-    priority: 152,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/dashboard',
-    component: DashboardHelp,
-    lazy: true,
-    exact: true,
-    title: 'Dashboard Help',
-    description: 'Dashboard help',
-    group: 'help',
-    priority: 153,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/customers',
-    component: CustomersHelp,
-    lazy: true,
-    exact: true,
-    title: 'Customers Help',
-    description: 'Customers help',
-    group: 'help',
-    priority: 154,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/finance',
-    component: FinanceHelp,
-    lazy: true,
-    exact: true,
-    title: 'Finance Help',
-    description: 'Finance help',
-    group: 'help',
-    priority: 155,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/collections',
-    component: CollectionsHelp,
-    lazy: true,
-    exact: true,
-    title: 'Collections Help',
-    description: 'Collections help',
-    group: 'help',
-    priority: 156,
-    protected: true,
-    layout: 'dashboard',
-  },
-  {
-    path: '/help/fleet',
-    component: FleetHelp,
-    lazy: true,
-    exact: true,
-    title: 'Fleet Help',
-    description: 'Fleet help',
-    group: 'help',
-    priority: 157,
     protected: true,
     layout: 'dashboard',
   },

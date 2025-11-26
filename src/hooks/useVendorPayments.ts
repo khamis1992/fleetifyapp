@@ -5,6 +5,155 @@ import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 import { usePermissions } from './usePermissions';
 import * as Sentry from '@sentry/react';
 
+// ============================================================================
+// Internal Helper: Create Journal Entry for Vendor Payment
+// ============================================================================
+
+async function createVendorPaymentJournalEntryInternal(
+  companyId: string,
+  paymentId: string,
+  paymentNumber: string,
+  vendorId: string,
+  amount: number,
+  paymentMethod: string,
+  bankId?: string
+): Promise<string | null> {
+  try {
+    // Get vendor info
+    const { data: vendor } = await supabase
+      .from('vendors')
+      .select('vendor_name, vendor_name_ar')
+      .eq('id', vendorId)
+      .single();
+
+    const vendorName = vendor?.vendor_name_ar || vendor?.vendor_name || 'مورد';
+
+    // Get account mappings
+    const { data: mappings } = await supabase
+      .from('account_mappings')
+      .select(`
+        chart_of_accounts_id,
+        default_account_type:default_account_types(type_code)
+      `)
+      .eq('company_id', companyId)
+      .eq('is_active', true);
+
+    let apAccountId: string | null = null;
+    let cashAccountId: string | null = null;
+    let bankAccountId: string | null = null;
+
+    mappings?.forEach((mapping: any) => {
+      const typeCode = mapping.default_account_type?.type_code;
+      if (typeCode === 'accounts_payable') {
+        apAccountId = mapping.chart_of_accounts_id;
+      } else if (typeCode === 'cash') {
+        cashAccountId = mapping.chart_of_accounts_id;
+      } else if (typeCode === 'bank') {
+        bankAccountId = mapping.chart_of_accounts_id;
+      }
+    });
+
+    // Fallback: Get accounts by code pattern
+    if (!apAccountId || !cashAccountId || !bankAccountId) {
+      const { data: defaultAccounts } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code')
+        .eq('company_id', companyId)
+        .eq('is_header', false)
+        .gte('account_level', 3);
+
+      defaultAccounts?.forEach((acc: any) => {
+        if (acc.account_code.startsWith('21') && !apAccountId) {
+          apAccountId = acc.id;
+        }
+        if (acc.account_code.startsWith('1111') && !cashAccountId) {
+          cashAccountId = acc.id;
+        }
+        if (acc.account_code.startsWith('1115') && !bankAccountId) {
+          bankAccountId = acc.id;
+        }
+      });
+    }
+
+    if (!apAccountId) {
+      console.warn('Could not find AP account for vendor payment journal entry');
+      return null;
+    }
+
+    // Determine credit account based on payment method
+    let creditAccountId: string | null = null;
+    let creditAccountName = '';
+
+    if (paymentMethod === 'cash') {
+      creditAccountId = cashAccountId;
+      creditAccountName = 'الصندوق';
+    } else {
+      creditAccountId = bankAccountId || bankId;
+      creditAccountName = 'البنك';
+    }
+
+    if (!creditAccountId) {
+      console.warn('Could not find cash/bank account for vendor payment journal entry');
+      return null;
+    }
+
+    // Generate entry number
+    const entryNumber = `JE-VP-${Date.now().toString().slice(-6)}`;
+
+    // Create journal entry
+    const { data: journalEntry, error: entryError } = await supabase
+      .from('journal_entries')
+      .insert({
+        company_id: companyId,
+        entry_number: entryNumber,
+        entry_date: new Date().toISOString().split('T')[0],
+        description: `دفع للمورد ${vendorName} - دفعة رقم ${paymentNumber}`,
+        reference_type: 'VENDOR_PAYMENT',
+        reference_id: paymentId,
+        total_debit: amount,
+        total_credit: amount,
+        status: 'posted',
+        posted_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (entryError) throw entryError;
+
+    // Create journal entry lines
+    const lines = [
+      {
+        journal_entry_id: journalEntry.id,
+        account_id: apAccountId,
+        line_description: `تسديد ذمم دائنة - ${vendorName}`,
+        debit_amount: amount,
+        credit_amount: 0,
+        line_number: 1,
+      },
+      {
+        journal_entry_id: journalEntry.id,
+        account_id: creditAccountId,
+        line_description: `دفع من ${creditAccountName}`,
+        debit_amount: 0,
+        credit_amount: amount,
+        line_number: 2,
+      },
+    ];
+
+    const { error: linesError } = await supabase
+      .from('journal_entry_lines')
+      .insert(lines);
+
+    if (linesError) throw linesError;
+
+    console.log(`Journal entry ${journalEntry.entry_number} created for vendor payment ${paymentNumber}`);
+    return journalEntry.id;
+  } catch (error) {
+    console.error('Error creating vendor payment journal entry:', error);
+    return null;
+  }
+}
+
 export interface VendorPayment {
   id: string;
   company_id: string;
@@ -221,6 +370,45 @@ export const useCreateVendorPayment = () => {
         level: 'info',
         data: { paymentId: payment.id, paymentNumber: payment.payment_number }
       });
+
+      // Create journal entry for the payment (financial integration)
+      try {
+        const journalEntryId = await createVendorPaymentJournalEntryInternal(
+          companyId,
+          payment.id,
+          payment.payment_number,
+          data.vendor_id,
+          data.amount,
+          data.payment_method,
+          data.bank_id
+        );
+
+        // Update payment with journal entry reference
+        if (journalEntryId) {
+          await supabase
+            .from('vendor_payments')
+            .update({ journal_entry_id: journalEntryId })
+            .eq('id', payment.id);
+
+          Sentry.addBreadcrumb({
+            category: 'vendor_payments',
+            message: 'Journal entry created for vendor payment',
+            level: 'info',
+            data: { paymentId: payment.id, journalEntryId }
+          });
+        }
+      } catch (journalError) {
+        // Log journal entry error but don't fail the operation
+        console.error('Error creating journal entry for vendor payment:', journalError);
+        Sentry.captureException(journalError, {
+          tags: {
+            feature: 'vendor_payments',
+            action: 'create_journal_entry',
+            severity: 'medium'
+          },
+          extra: { paymentId: payment.id }
+        });
+      }
 
       // Safe audit logging
       try {

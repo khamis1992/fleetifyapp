@@ -86,3 +86,15 @@ export {
   type OrderFulfillmentFilters,
   type FulfillmentSummary,
 } from './useCustomerOrderFulfillment';
+
+// Purchase Order Financial Integration
+export {
+  usePurchaseAccountMappings,
+  useCreatePOReceiptJournalEntry,
+  useCreateVendorPaymentJournalEntry,
+  useAutoCreatePOJournalEntry,
+  useAccountsPayableByVendor,
+  type POJournalEntryData,
+  type VendorPaymentJournalData,
+  type PurchaseAccountMapping,
+} from './usePurchaseOrderFinancialIntegration';
