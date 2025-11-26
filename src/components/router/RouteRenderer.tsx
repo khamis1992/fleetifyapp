@@ -34,6 +34,8 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   // Find current route configuration
   useEffect(() => {
     const currentRoute = routes.find(route => {
+      // Handle wildcard route (404)
+      if (route.path === '*') return false;
       const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
       const regex = new RegExp(`^${pathPattern}$`);
       return regex.test(location.pathname);

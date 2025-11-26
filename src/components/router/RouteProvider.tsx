@@ -40,6 +40,8 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
   // Find current route configuration
   const currentRoute = useMemo(() => {
     return routes.find(route => {
+      // Handle wildcard route (404)
+      if (route.path === '*') return false;
       const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
       const regex = new RegExp(`^${pathPattern}$`);
       return regex.test(location.pathname);
@@ -117,6 +119,8 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
 
     exists: (path: string) => {
       return routes.some(route => {
+        // Handle wildcard route (404)
+        if (route.path === '*') return false;
         const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
         const regex = new RegExp(`^${pathPattern}$`);
         return regex.test(path);
@@ -125,6 +129,8 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
 
     getRoute: (path: string) => {
       return routes.find(route => {
+        // Handle wildcard route (404)
+        if (route.path === '*') return false;
         const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
         const regex = new RegExp(`^${pathPattern}$`);
         return regex.test(path);
@@ -137,6 +143,8 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
 
     getParentRoutes: (path: string) => {
       const route = routes.find(route => {
+        // Handle wildcard route (404)
+        if (route.path === '*') return false;
         const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
         const regex = new RegExp(`^${pathPattern}$`);
         return regex.test(path);
