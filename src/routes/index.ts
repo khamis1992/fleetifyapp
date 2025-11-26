@@ -270,7 +270,7 @@ const routeConfigs: RouteConfig[] = [
     layout: 'dashboard',
   },
   {
-    path: '/customers/:id',
+    path: '/customers/:customerId',
     component: CustomerDetailsPage,
     lazy: true,
     exact: true,
@@ -306,7 +306,7 @@ const routeConfigs: RouteConfig[] = [
     layout: 'dashboard',
   },
   {
-    path: '/contracts/:id',
+    path: '/contracts/:contractNumber',
     component: ContractDetailsPage,
     lazy: true,
     exact: true,
@@ -330,7 +330,7 @@ const routeConfigs: RouteConfig[] = [
     layout: 'dashboard',
   },
   {
-    path: '/fleet/vehicles/:id',
+    path: '/fleet/vehicles/:vehicleId',
     component: VehicleDetailsPage,
     lazy: true,
     exact: true,

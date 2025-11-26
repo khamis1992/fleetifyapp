@@ -1007,7 +1007,7 @@ const CustomerDetailsPage = () => {
                             className="flex-1 gap-2"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleViewContract(contract.id);
+                              handleViewContract(contract.contractNumber);
                             }}
                           >
                             <Eye className="w-4 h-4" />

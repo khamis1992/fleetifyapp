@@ -130,8 +130,8 @@ export function SimplifiedContractForm() {
       queryClient.invalidateQueries({ queryKey: ['contract-stats'] });
 
       // Navigate to contract details
-      if (result.contract_id) {
-        navigate(`/contracts/${result.contract_id}`);
+      if (result.contract_number) {
+        navigate(`/contracts/${result.contract_number}`);
       }
     },
     onError: (error: Error) => {
