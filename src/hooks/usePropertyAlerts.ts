@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrentCompany } from '@/hooks/useCurrentCompany';
 import { addDays } from 'date-fns';
 
 export interface PropertyAlert {
@@ -23,10 +24,19 @@ export interface PropertyAlert {
 
 export const usePropertyAlerts = () => {
   const { companyId, filter, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess();
+  const { data: company } = useCurrentCompany();
+  
+  // Only run for real_estate business type
+  const isRealEstateCompany = company?.business_type === 'real_estate';
   
   return useQuery({
     queryKey: getQueryKey(['property-alerts']),
     queryFn: async (): Promise<PropertyAlert[]> => {
+      // Skip query for non-real-estate companies
+      if (!isRealEstateCompany) {
+        return [];
+      }
+      
       if (!companyId && !hasGlobalAccess) {
         return [];
       }
@@ -38,7 +48,8 @@ export const usePropertyAlerts = () => {
 
       return await fetchPropertyAlerts(targetCompanyId, hasGlobalAccess);
     },
-    enabled: !!(companyId || hasGlobalAccess),
+    // Only enable for real_estate companies
+    enabled: isRealEstateCompany && !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

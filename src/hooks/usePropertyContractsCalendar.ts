@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrentCompany } from '@/hooks/useCurrentCompany';
 import { addDays, format } from 'date-fns';
 
 export interface CalendarEvent {
@@ -18,10 +19,19 @@ export interface CalendarEvent {
 
 export const usePropertyContractsCalendar = (startDate?: Date, endDate?: Date) => {
   const { companyId, filter, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess();
+  const { data: company } = useCurrentCompany();
+  
+  // Only run for real_estate business type
+  const isRealEstateCompany = company?.business_type === 'real_estate';
   
   return useQuery({
     queryKey: getQueryKey(['property-contracts-calendar', startDate?.toISOString(), endDate?.toISOString()]),
     queryFn: async (): Promise<CalendarEvent[]> => {
+      // Skip query for non-real-estate companies
+      if (!isRealEstateCompany) {
+        return [];
+      }
+      
       if (!companyId && !hasGlobalAccess) {
         return [];
       }
@@ -33,7 +43,8 @@ export const usePropertyContractsCalendar = (startDate?: Date, endDate?: Date) =
 
       return await fetchCalendarEvents(targetCompanyId, hasGlobalAccess, startDate, endDate);
     },
-    enabled: !!(companyId || hasGlobalAccess),
+    // Only enable for real_estate companies
+    enabled: isRealEstateCompany && !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

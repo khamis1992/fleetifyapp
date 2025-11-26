@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrentCompany } from '@/hooks/useCurrentCompany';
 import { PropertyStats } from '@/modules/properties/types';
 
 export interface RealEstateDashboardStats extends PropertyStats {
@@ -26,10 +27,19 @@ export interface RealEstateDashboardStats extends PropertyStats {
 
 export const useRealEstateDashboardStats = () => {
   const { companyId, filter, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess();
+  const { data: company } = useCurrentCompany();
+  
+  // Only run for real_estate business type
+  const isRealEstateCompany = company?.business_type === 'real_estate';
   
   return useQuery({
     queryKey: getQueryKey(['real-estate-dashboard-stats']),
     queryFn: async (): Promise<RealEstateDashboardStats> => {
+      // Skip query for non-real-estate companies
+      if (!isRealEstateCompany) {
+        return getEmptyRealEstateStats();
+      }
+      
       if (!companyId && !hasGlobalAccess) {
         return getEmptyRealEstateStats();
       }
@@ -41,7 +51,8 @@ export const useRealEstateDashboardStats = () => {
 
       return await fetchRealEstateStats(targetCompanyId, hasGlobalAccess);
     },
-    enabled: !!(companyId || hasGlobalAccess),
+    // Only enable for real_estate companies
+    enabled: isRealEstateCompany && !!(companyId || hasGlobalAccess),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
