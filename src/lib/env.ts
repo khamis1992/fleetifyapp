@@ -66,7 +66,7 @@ export function isFeatureEnabled(featureName: string): boolean {
  * Get API base URL
  */
 export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL || '/api';
+  return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
 }
 
 /**
