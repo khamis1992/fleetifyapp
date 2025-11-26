@@ -29,23 +29,48 @@ export const FinancialAnalyticsSection: React.FC = () => {
   // State for time period filter
   const [timePeriod, setTimePeriod] = React.useState<'daily' | 'weekly' | 'monthly'>('monthly');
 
-  // Fetch real customer data grouped by week
+  // Fetch real customer data grouped by week - OPTIMIZED: Single bulk query instead of N+1
   const { data: customersWeeklyData, isLoading: customersLoading } = useQuery({
     queryKey: ['customers-weekly', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
 
-      const { data, error } = await supabase
-        .from('customers')
-        .select('created_at, id')
-        .eq('company_id', user.profile.company_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true });
+      const now = new Date();
+      const fiveWeeksAgo = new Date(now);
+      fiveWeeksAgo.setDate(now.getDate() - 35); // 5 weeks back
 
-      if (error) throw error;
+      // ⚡ OPTIMIZATION: Fetch customers and contracts in parallel with a single query each
+      const [customersResult, contractsResult] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('created_at, id')
+          .eq('company_id', user.profile.company_id)
+          .eq('is_active', true)
+          .gte('created_at', fiveWeeksAgo.toISOString())
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('contracts')
+          .select('customer_id, created_at')
+          .eq('company_id', user.profile.company_id)
+          .order('created_at', { ascending: true })
+      ]);
+
+      if (customersResult.error) throw customersResult.error;
+
+      const customers = customersResult.data || [];
+      const contracts = contractsResult.data || [];
+
+      // Build a map of customer_id -> earliest contract date for quick lookup
+      const customerFirstContractMap = new Map<string, Date>();
+      contracts.forEach(contract => {
+        const contractDate = new Date(contract.created_at);
+        const existing = customerFirstContractMap.get(contract.customer_id);
+        if (!existing || contractDate < existing) {
+          customerFirstContractMap.set(contract.customer_id, contractDate);
+        }
+      });
 
       // Group customers by week for the last 5 weeks
-      const now = new Date();
       const weeklyData = [];
       
       for (let i = 4; i >= 0; i--) {
@@ -54,35 +79,24 @@ export const FinancialAnalyticsSection: React.FC = () => {
         const weekEnd = new Date(now);
         weekEnd.setDate(now.getDate() - (i * 7));
 
-        const customersInWeek = data?.filter(customer => {
+        const customersInWeek = customers.filter(customer => {
           const createdAt = new Date(customer.created_at);
           return createdAt >= weekStart && createdAt < weekEnd;
-        }) || [];
+        });
 
-        // Calculate returning customers (customers who had contracts before this week)
-        const customerIds = customersInWeek.map(c => c.id);
+        // ⚡ OPTIMIZATION: Check returning customers using the pre-built map (O(1) lookup)
         let returningCount = 0;
-        
-        if (customerIds.length > 0) {
-          // For each customer in this week, check if they had contracts before this week
-          for (const customerId of customerIds) {
-            const { data: previousContracts } = await supabase
-              .from('contracts')
-              .select('id')
-              .eq('customer_id', customerId)
-              .eq('company_id', user.profile.company_id)
-              .lt('created_at', weekStart.toISOString())
-              .limit(1);
-            
-            if (previousContracts && previousContracts.length > 0) {
-              returningCount++;
-            }
+        customersInWeek.forEach(customer => {
+          const firstContractDate = customerFirstContractMap.get(customer.id);
+          // Customer is "returning" if they had a contract before this week
+          if (firstContractDate && firstContractDate < weekStart) {
+            returningCount++;
           }
-        }
+        });
 
         weeklyData.push({
           week: `الأسبوع ${5 - i}`,
-          new: customersInWeek.length,
+          new: customersInWeek.length - returningCount,
           returning: returningCount
         });
       }
@@ -90,13 +104,14 @@ export const FinancialAnalyticsSection: React.FC = () => {
       return weeklyData;
     },
     enabled: !!user?.profile?.company_id,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Revenue Chart Data from real financial data
   const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   
-  // Fetch real revenue data based on time period
+  // Fetch real revenue data based on time period - OPTIMIZED with parallel queries
   const { data: revenueByPeriod, isLoading: revenueLoading } = useQuery({
     queryKey: ['revenue-by-period', user?.profile?.company_id, timePeriod],
     queryFn: async () => {
@@ -117,45 +132,48 @@ export const FinancialAnalyticsSection: React.FC = () => {
         groupBy = 'month';
       }
 
-      // Fetch payments (revenue)
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select('amount, payment_date, contract_id')
-        .eq('company_id', user.profile.company_id)
-        .eq('status', 'completed')
-        .gte('payment_date', startDate.toISOString())
-        .order('payment_date', { ascending: true });
+      // ⚡ OPTIMIZATION: Fetch all data in parallel instead of sequential
+      const [paymentsResult, contractsResult, maintenanceResult] = await Promise.all([
+        // Fetch payments (revenue)
+        supabase
+          .from('payments')
+          .select('amount, payment_date, contract_id')
+          .eq('company_id', user.profile.company_id)
+          .eq('status', 'completed')
+          .gte('payment_date', startDate.toISOString())
+          .order('payment_date', { ascending: true }),
+        // Fetch contracts with vehicles to calculate costs
+        supabase
+          .from('contracts')
+          .select(`
+            id,
+            contract_amount,
+            monthly_amount,
+            start_date,
+            end_date,
+            vehicles (
+              purchase_price,
+              depreciation_rate
+            )
+          `)
+          .eq('company_id', user.profile.company_id)
+          .in('status', ['active', 'expired'])
+          .gte('start_date', startDate.toISOString()),
+        // Fetch maintenance costs
+        supabase
+          .from('maintenance_records')
+          .select('cost, maintenance_date, vehicle_id')
+          .eq('company_id', user.profile.company_id)
+          .gte('maintenance_date', startDate.toISOString())
+      ]);
 
-      if (paymentsError) throw paymentsError;
+      if (paymentsResult.error) throw paymentsResult.error;
+      if (contractsResult.error) throw contractsResult.error;
+      if (maintenanceResult.error) console.error('Maintenance error:', maintenanceResult.error);
 
-      // Fetch contracts with vehicles to calculate costs
-      const { data: contractsData, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_amount,
-          monthly_amount,
-          start_date,
-          end_date,
-          vehicles (
-            purchase_price,
-            depreciation_rate
-          )
-        `)
-        .eq('company_id', user.profile.company_id)
-        .in('status', ['active', 'expired'])
-        .gte('start_date', startDate.toISOString());
-
-      if (contractsError) throw contractsError;
-
-      // Fetch maintenance costs
-      const { data: maintenanceData, error: maintenanceError } = await supabase
-        .from('maintenance_records')
-        .select('cost, maintenance_date, vehicle_id')
-        .eq('company_id', user.profile.company_id)
-        .gte('maintenance_date', startDate.toISOString());
-
-      if (maintenanceError) console.error('Maintenance error:', maintenanceError);
+      const paymentsData = paymentsResult.data;
+      const contractsData = contractsResult.data;
+      const maintenanceData = maintenanceResult.data;
 
       // Group revenue and costs by period
       const revenueGrouped = new Map<string, number>();
@@ -248,6 +266,7 @@ export const FinancialAnalyticsSection: React.FC = () => {
       return result;
     },
     enabled: !!user?.profile?.company_id,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
   
   const isLoading = financialLoading || statsLoading || customersLoading || revenueLoading;

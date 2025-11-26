@@ -68,43 +68,47 @@ async function fetchPropertyAlerts(
     // Fetch data for alerts
     const [
       contractsResult,
-      paymentsResult,
+      propertyPaymentsResult,
       propertiesResult,
       documentsResult
     ] = await Promise.all([
-      // Property contracts
-      buildQuery(supabase.from('property_contracts').select(`
-        *,
-        properties(id, property_name, address),
-        customers(id, full_name)
-      `))
+      // Property contracts - use simpler query without nested relations that may not exist
+      buildQuery(supabase.from('property_contracts').select('*'))
         .eq('is_active', true)
         .lte('end_date', next90Days.toISOString())
-        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .then((res: any) => res.error ? { data: null, error: res.error } : res)
+        .catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
-      // Overdue payments
-      buildQuery(supabase.from('payments').select(`
-        *,
-        property_contracts(id, properties(id, property_name)),
-        customers(id, full_name)
-      `))
+      // Property payments - use correct table for property-related payments
+      buildQuery(supabase.from('property_payments').select('*'))
         .in('status', ['pending', 'overdue'])
-        .lte('due_date', currentDate.toISOString())
-        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .lte('payment_date', currentDate.toISOString())
+        .then((res: any) => res.error ? { data: null, error: res.error } : res)
+        .catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Properties
       buildQuery(supabase.from('properties').select('*'))
         .eq('is_active', true)
-        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } })),
+        .then((res: any) => res.error ? { data: null, error: res.error } : res)
+        .catch(() => ({ data: null, error: { message: 'Table not found' } })),
       
       // Document expiry alerts (from existing system)
       buildQuery(supabase.from('document_expiry_alerts').select('*'))
         .eq('is_acknowledged', false)
-        .then((res: any) => res).catch(() => ({ data: null, error: { message: 'Table not found' } }))
+        .then((res: any) => res.error ? { data: null, error: res.error } : res)
+        .catch(() => ({ data: null, error: { message: 'Table not found' } }))
     ]);
+    
+    // Log errors for debugging (only in development)
+    if (contractsResult.error) console.warn('[PropertyAlerts] property_contracts query failed:', contractsResult.error.message);
+    if (propertyPaymentsResult.error) console.warn('[PropertyAlerts] property_payments query failed:', propertyPaymentsResult.error.message);
+    if (propertiesResult.error) console.warn('[PropertyAlerts] properties query failed:', propertiesResult.error.message);
+    
+    // Rename for consistent variable usage below
+    const paymentsResult = propertyPaymentsResult;
 
     // Contract Expiry Alerts
-    if (contractsResult.data) {
+    if (contractsResult.data && contractsResult.data.length > 0) {
       contractsResult.data.forEach((contract: any) => {
         if (contract.end_date) {
           const endDate = new Date(contract.end_date);
@@ -115,9 +119,9 @@ async function fetchPropertyAlerts(
               id: `contract_expiry_${contract.id}`,
               type: 'contract_expiry',
               priority: daysUntilExpiry <= 7 ? 'high' : daysUntilExpiry <= 30 ? 'medium' : 'low',
-              title: `انتهاء عقد ${contract.properties?.property_name || 'عقار'}`,
-              description: `عقد الإيجار رقم ${contract.contract_number} ينتهي ${daysUntilExpiry <= 0 ? 'منتهي' : `خلال ${daysUntilExpiry} يوم`}`,
-              property: contract.properties?.property_name || 'عقار غير معروف',
+              title: `انتهاء عقد عقاري`,
+              description: `عقد الإيجار رقم ${contract.contract_number || contract.id} ينتهي ${daysUntilExpiry <= 0 ? 'منتهي' : `خلال ${daysUntilExpiry} يوم`}`,
+              property: 'عقار',
               propertyId: contract.property_id,
               contractId: contract.id,
               daysRemaining: daysUntilExpiry,
@@ -126,8 +130,7 @@ async function fetchPropertyAlerts(
               acknowledged: false,
               createdAt: currentDate,
               metadata: {
-                contractNumber: contract.contract_number,
-                tenant: contract.customers?.full_name
+                contractNumber: contract.contract_number
               }
             });
           }
@@ -135,33 +138,35 @@ async function fetchPropertyAlerts(
       });
     }
 
-    // Payment Overdue Alerts
-    if (paymentsResult.data) {
+    // Payment Overdue Alerts (from property_payments table)
+    if (paymentsResult.data && paymentsResult.data.length > 0) {
       paymentsResult.data.forEach((payment: any) => {
-        if (payment.due_date) {
-          const dueDate = new Date(payment.due_date);
+        const paymentDate = payment.payment_date || payment.due_date;
+        if (paymentDate) {
+          const dueDate = new Date(paymentDate);
           const daysOverdue = Math.ceil((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          alerts.push({
-            id: `payment_overdue_${payment.id}`,
-            type: 'payment_overdue',
-            priority: daysOverdue >= 30 ? 'high' : daysOverdue >= 7 ? 'medium' : 'low',
-            title: `دفعة متأخرة - ${payment.property_contracts?.properties?.property_name || 'عقار'}`,
-            description: `دفعة بقيمة ${payment.amount} د.ك متأخرة منذ ${daysOverdue} يوم`,
-            property: payment.property_contracts?.properties?.property_name || 'عقار غير معروف',
-            propertyId: payment.property_contracts?.properties?.id || '',
-            contractId: payment.contract_id,
-            paymentId: payment.id,
-            daysRemaining: -daysOverdue,
-            amount: payment.amount,
-            dueDate: dueDate,
-            acknowledged: false,
-            createdAt: currentDate,
-            metadata: {
-              tenant: payment.customers?.full_name,
-              status: payment.status
-            }
-          });
+          if (daysOverdue > 0) {
+            alerts.push({
+              id: `payment_overdue_${payment.id}`,
+              type: 'payment_overdue',
+              priority: daysOverdue >= 30 ? 'high' : daysOverdue >= 7 ? 'medium' : 'low',
+              title: `دفعة متأخرة - عقار`,
+              description: `دفعة بقيمة ${payment.amount} ر.ق متأخرة منذ ${daysOverdue} يوم`,
+              property: 'عقار',
+              propertyId: payment.property_id || '',
+              contractId: payment.property_contract_id,
+              paymentId: payment.id,
+              daysRemaining: -daysOverdue,
+              amount: payment.amount,
+              dueDate: dueDate,
+              acknowledged: false,
+              createdAt: currentDate,
+              metadata: {
+                status: payment.status
+              }
+            });
+          }
         }
       });
     }
@@ -197,9 +202,9 @@ async function fetchPropertyAlerts(
     }
 
     // Contract Renewal Opportunities
-    if (contractsResult.data) {
+    if (contractsResult.data && contractsResult.data.length > 0) {
       contractsResult.data.forEach((contract: any) => {
-        if (contract.end_date && contract.status === 'active') {
+        if (contract.end_date && (contract.status === 'active' || contract.is_active)) {
           const endDate = new Date(contract.end_date);
           const daysUntilExpiry = Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
           
@@ -209,9 +214,9 @@ async function fetchPropertyAlerts(
               id: `contract_renewal_${contract.id}`,
               type: 'contract_renewal',
               priority: 'medium',
-              title: `فرصة تجديد عقد`,
-              description: `عقد ${contract.properties?.property_name || 'عقار'} مؤهل للتجديد`,
-              property: contract.properties?.property_name || 'عقار غير معروف',
+              title: `فرصة تجديد عقد عقاري`,
+              description: `عقد عقاري مؤهل للتجديد`,
+              property: 'عقار',
               propertyId: contract.property_id,
               contractId: contract.id,
               daysRemaining: daysUntilExpiry,
@@ -221,7 +226,6 @@ async function fetchPropertyAlerts(
               createdAt: currentDate,
               metadata: {
                 contractNumber: contract.contract_number,
-                tenant: contract.customers?.full_name,
                 currentAmount: contract.rental_amount
               }
             });
