@@ -521,8 +521,8 @@ const CustomerDetailsPage = () => {
     });
   }, [customerId, companyId, isLoading, isAuthenticating, customer, customerError]);
 
-  // انتظار تحميل بيانات المصادقة أولاً
-  if (isAuthenticating || isLoading || (!companyId && !customerError)) {
+  // انتظار تحميل بيانات المصادقة أولاً - يجب انتظار companyId
+  if (isAuthenticating || !companyId || isLoading) {
     return <PageSkeletonFallback />;
   }
 

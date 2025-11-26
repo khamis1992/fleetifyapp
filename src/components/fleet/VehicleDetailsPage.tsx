@@ -281,8 +281,8 @@ const VehicleDetailsPage = () => {
   // معالجة حالات التحميل والأخطاء
   const isLoading = loadingVehicle || loadingContracts || loadingMaintenance || loadingViolations;
 
-  // انتظار تحميل بيانات المصادقة أولاً
-  if (isAuthenticating || isLoading || (!companyId && !vehicleError)) {
+  // انتظار تحميل بيانات المصادقة أولاً - يجب انتظار companyId
+  if (isAuthenticating || !companyId || isLoading) {
     return <PageSkeletonFallback />;
   }
 

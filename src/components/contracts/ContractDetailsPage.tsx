@@ -378,8 +378,11 @@ const ContractDetailsPage = () => {
   };
 
   // معالجة حالات التحميل والأخطاء
-  // انتظار تحميل بيانات المصادقة أولاً
-  if (isAuthenticating || isLoading || (!companyId && !error)) {
+  // انتظار تحميل بيانات المصادقة أولاً - يجب انتظار companyId
+  // isAuthenticating: جارٍ التحقق من الجلسة
+  // !companyId: لم يتم تحميل بيانات الشركة بعد (الـ full profile)
+  // isLoading: الـ query قيد التنفيذ
+  if (isAuthenticating || !companyId || isLoading) {
     return <PageSkeletonFallback />;
   }
 
