@@ -27,14 +27,26 @@ import {
   Info,
   Loader2,
   TestTube,
-  Phone
+  Phone,
+  Settings,
+  ExternalLink,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSendManualReminders } from '@/hooks/useSendManualReminders';
 import { toast } from 'sonner';
-import { sendBulkWhatsAppMessages, formatPhoneForWhatsApp, defaultTemplates } from '@/utils/whatsappWebSender';
+import { 
+  sendBulkWhatsAppMessages, 
+  sendWhatsAppMessage,
+  formatPhoneForWhatsApp, 
+  defaultTemplates,
+  getUltramsgConfig,
+  saveUltramsgConfig,
+  isUltramsgConfigured
+} from '@/utils/whatsappWebSender';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
@@ -80,12 +92,28 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   const [isLoadingContracts, setIsLoadingContracts] = useState(false);
   
   // Test Mode States
-  const [activeTab, setActiveTab] = useState<'send' | 'test'>('send');
+  const [activeTab, setActiveTab] = useState<'send' | 'test' | 'settings'>('send');
   const [testPhone, setTestPhone] = useState('');
   const [testName, setTestName] = useState('عميل تجريبي');
   const [testContractNumber, setTestContractNumber] = useState('TEST-001');
   const [testAmount, setTestAmount] = useState('1000');
   const [isSendingTest, setIsSendingTest] = useState(false);
+  
+  // Ultramsg Settings
+  const [instanceId, setInstanceId] = useState('');
+  const [token, setToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
+
+  // Load Ultramsg config on mount
+  useEffect(() => {
+    const config = getUltramsgConfig();
+    if (config) {
+      setInstanceId(config.instanceId);
+      setToken(config.token);
+      setIsConfigured(true);
+    }
+  }, []);
 
   // Fetch all active contracts with valid phone numbers when dialog opens
   useEffect(() => {
@@ -213,7 +241,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       return;
     }
 
-    console.log('📤 [SendRemindersDialog] Sending reminders via WhatsApp Web:', {
+    console.log('📤 [SendRemindersDialog] Sending reminders via Ultramsg API:', {
       count: contractsToSend.length,
       reminderType: selectedType,
       contracts: contractsToSend.map(c => ({
@@ -223,7 +251,13 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       })),
     });
 
-    // Direct sending via WhatsApp Web (فوري - يعمل الآن!)
+    // Check if Ultramsg is configured
+    if (!isConfigured) {
+      toast.error('يجب إعداد Ultramsg أولاً من تبويب الإعدادات');
+      setActiveTab('settings');
+      return;
+    }
+
     setIsSending(true);
     
     try {
@@ -282,30 +316,39 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       });
 
       // Show confirmation
-      const confirmMessage = `سيتم فتح ${messages.length} نافذة واتساب ويب.\n\nكل نافذة ستحتوي على رسالة جاهزة للإرسال.\nفقط اضغط "إرسال" في كل نافذة.\n\nهل تريد المتابعة؟`;
+      const confirmMessage = `سيتم إرسال ${messages.length} رسالة عبر Ultramsg API.\n\nالرسائل ستُرسل تلقائياً بدون تدخل.\n\nهل تريد المتابعة؟`;
       
       if (!confirm(confirmMessage)) {
         setIsSending(false);
         return;
       }
 
-      // Send messages
-      toast.info('جاري فتح نوافذ واتساب ويب...', {
-        description: `سيتم فتح ${messages.length} نافذة بفاصل 2 ثانية`,
+      // Send messages via Ultramsg API
+      toast.info('جاري إرسال الرسائل عبر Ultramsg...', {
+        description: `سيتم إرسال ${messages.length} رسالة`,
       });
 
       const result = await sendBulkWhatsAppMessages(messages, 2000);
 
-      toast.success(`تم فتح ${result.sent} نافذة واتساب بنجاح!`, {
-        description: 'يرجى الضغط على "إرسال" في كل نافذة',
-      });
+      if (result.sent > 0) {
+        toast.success(`تم إرسال ${result.sent} رسالة بنجاح!`, {
+          description: result.failed > 0 ? `فشل إرسال ${result.failed} رسالة` : undefined,
+        });
+      }
+
+      if (result.failed > 0 && result.errors.length > 0) {
+        console.error('❌ Failed messages:', result.errors);
+        toast.error(`فشل إرسال ${result.failed} رسالة`, {
+          description: result.errors[0],
+        });
+      }
 
       onOpenChange(false);
       setSelectedContracts([]);
       setCustomMessage('');
     } catch (error: any) {
-      console.error('❌ [SendRemindersDialog] Error in direct send:', error);
-      toast.error('حدث خطأ أثناء فتح واتساب: ' + error.message);
+      console.error('❌ [SendRemindersDialog] Error sending via Ultramsg:', error);
+      toast.error('حدث خطأ أثناء الإرسال: ' + error.message);
     } finally {
       setIsSending(false);
     }
@@ -323,6 +366,13 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   const handleTestSend = async () => {
     if (!testPhone.trim()) {
       toast.error('يرجى إدخال رقم الهاتف للتجربة');
+      return;
+    }
+
+    // Check if Ultramsg is configured
+    if (!isConfigured) {
+      toast.error('يجب إعداد Ultramsg أولاً من تبويب الإعدادات');
+      setActiveTab('settings');
       return;
     }
 
@@ -365,29 +415,50 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       }
 
       // Show confirmation
-      const confirmMessage = `سيتم فتح نافذة واتساب ويب لإرسال رسالة تجريبية إلى:\n\nالرقم: ${phone}\nالاسم: ${testName}\n\nهل تريد المتابعة؟`;
+      const confirmMessage = `سيتم إرسال رسالة تجريبية عبر Ultramsg إلى:\n\nالرقم: ${phone}\nالاسم: ${testName}\n\nهل تريد المتابعة؟`;
       
       if (!confirm(confirmMessage)) {
         setIsSendingTest(false);
         return;
       }
 
-      // Open WhatsApp Web
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://web.whatsapp.com/send?phone=${phone.replace('+', '')}&text=${encodedMessage}`;
+      // Send via Ultramsg API
+      toast.info('جاري إرسال الرسالة التجريبية...');
       
-      window.open(whatsappUrl, '_blank');
-
-      toast.success('تم فتح واتساب ويب بنجاح!', {
-        description: 'يرجى الضغط على "إرسال" في نافذة واتساب',
+      const result = await sendWhatsAppMessage({
+        phone: phone,
+        message: message,
+        customerName: testName,
       });
+
+      if (result.success) {
+        toast.success('تم إرسال الرسالة التجريبية بنجاح! ✅', {
+          description: `تم الإرسال إلى ${phone}`,
+        });
+      } else {
+        toast.error('فشل إرسال الرسالة', {
+          description: result.error,
+        });
+      }
 
     } catch (error: any) {
       console.error('❌ [SendRemindersDialog] Error in test send:', error);
-      toast.error('حدث خطأ أثناء فتح واتساب: ' + error.message);
+      toast.error('حدث خطأ أثناء الإرسال: ' + error.message);
     } finally {
       setIsSendingTest(false);
     }
+  };
+
+  // Save Ultramsg Settings
+  const handleSaveSettings = () => {
+    if (!instanceId.trim() || !token.trim()) {
+      toast.error('يرجى إدخال Instance ID و Token');
+      return;
+    }
+    
+    saveUltramsgConfig({ instanceId: instanceId.trim(), token: token.trim() });
+    setIsConfigured(true);
+    toast.success('تم حفظ إعدادات Ultramsg بنجاح!');
   };
 
   const reminderTypes = [
@@ -442,9 +513,14 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Tabs for Send / Test */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'send' | 'test')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          {/* Tabs for Settings / Send / Test */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'send' | 'test' | 'settings')} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="settings" className="gap-2">
+                <Settings className="h-4 w-4" />
+                الإعدادات
+                {!isConfigured && <span className="h-2 w-2 bg-red-500 rounded-full" />}
+              </TabsTrigger>
               <TabsTrigger value="send" className="gap-2">
                 <Send className="h-4 w-4" />
                 إرسال للعملاء
@@ -455,14 +531,135 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            {/* Test Tab Content */}
-            <TabsContent value="test" className="mt-4 space-y-4">
-              <Alert className="border-orange-200 bg-orange-50">
-                <TestTube className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-900">
-                  <strong>وضع التجربة:</strong> أرسل رسالة تجريبية لأي رقم تختاره لاختبار النظام قبل إرساله للعملاء الفعليين.
+            {/* Settings Tab Content */}
+            <TabsContent value="settings" className="mt-4 space-y-4">
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-900">
+                  <strong>إعدادات Ultramsg:</strong> قم بإدخال بيانات حسابك من{' '}
+                  <a 
+                    href="https://user.ultramsg.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                  >
+                    ultramsg.com
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
                 </AlertDescription>
               </Alert>
+
+              <Card className={`border-2 ${isConfigured ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300'}`}>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">بيانات Ultramsg API</h3>
+                    {isConfigured && (
+                      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        مُعد
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="instanceId">Instance ID *</Label>
+                      <Input
+                        id="instanceId"
+                        value={instanceId}
+                        onChange={(e) => setInstanceId(e.target.value)}
+                        placeholder="مثال: instance12345"
+                        dir="ltr"
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        تجده في لوحة تحكم Ultramsg بجانب اسم الجهاز
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="token">Token *</Label>
+                      <div className="relative">
+                        <Input
+                          id="token"
+                          type={showToken ? 'text' : 'password'}
+                          value={token}
+                          onChange={(e) => setToken(e.target.value)}
+                          placeholder="أدخل Token الخاص بك"
+                          dir="ltr"
+                          className="font-mono pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setShowToken(!showToken)}
+                        >
+                          {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        تجده في صفحة إعدادات الـ Instance
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex gap-2">
+                      <Button
+                        onClick={handleSaveSettings}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        حفظ الإعدادات
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open('https://user.ultramsg.com/', '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        فتح Ultramsg
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+                    <h4 className="font-medium mb-2">كيفية الحصول على البيانات:</h4>
+                    <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                      <li>ادخل إلى <a href="https://user.ultramsg.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">user.ultramsg.com</a></li>
+                      <li>أنشئ حساب جديد أو سجل دخول</li>
+                      <li>أضف Instance جديد وربطه برقم الواتساب</li>
+                      <li>انسخ Instance ID و Token من لوحة التحكم</li>
+                    </ol>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Test Tab Content */}
+            <TabsContent value="test" className="mt-4 space-y-4">
+              {isConfigured ? (
+                <Alert className="border-green-200 bg-green-50">
+                  <TestTube className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-900">
+                    <strong>وضع التجربة:</strong> أرسل رسالة تجريبية عبر Ultramsg API لأي رقم تختاره لاختبار النظام.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="border-orange-200 bg-orange-50">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-900">
+                    <strong>تنبيه:</strong> يجب إعداد Ultramsg أولاً من تبويب "الإعدادات".
+                    <Button 
+                      variant="link" 
+                      className="text-orange-700 p-0 h-auto mr-1"
+                      onClick={() => setActiveTab('settings')}
+                    >
+                      إذهب للإعدادات ←
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <Card className="border-2 border-dashed border-orange-300">
                 <CardContent className="pt-6 space-y-4">
@@ -551,13 +748,13 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
 
                   <Button
                     onClick={handleTestSend}
-                    disabled={!testPhone.trim() || isSendingTest}
+                    disabled={!testPhone.trim() || isSendingTest || !isConfigured}
                     className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
                   >
                     {isSendingTest ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        جاري فتح واتساب...
+                        جاري الإرسال عبر Ultramsg...
                       </>
                     ) : (
                       <>
@@ -572,14 +769,29 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
 
             {/* Send Tab Content */}
             <TabsContent value="send" className="mt-4 space-y-4">
-              {/* Send Method Selection */}
-              <Alert className="border-green-200 bg-green-50">
-                <Info className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-900">
-                  <strong>إرسال فوري عبر واتساب ويب:</strong> سيتم فتح نوافذ واتساب ويب مع الرسائل جاهزة. 
-                  فقط اضغط "إرسال" في كل نافذة. لا يحتاج إعدادات إضافية! ✅
-                </AlertDescription>
-              </Alert>
+              {/* Send Method Info */}
+              {isConfigured ? (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-900">
+                    <strong>إرسال تلقائي عبر Ultramsg API:</strong> الرسائل ستُرسل تلقائياً بدون فتح نوافذ! ✅
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="border-orange-200 bg-orange-50">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-900">
+                    <strong>تنبيه:</strong> يجب إعداد Ultramsg أولاً من تبويب "الإعدادات" للإرسال التلقائي.
+                    <Button 
+                      variant="link" 
+                      className="text-orange-700 p-0 h-auto mr-1"
+                      onClick={() => setActiveTab('settings')}
+                    >
+                      إذهب للإعدادات ←
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Statistics */}
           <div className="grid grid-cols-3 gap-3">
@@ -755,18 +967,18 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           </Button>
           <Button
             onClick={handleSend}
-            disabled={selectedContracts.length === 0 || isSending}
+            disabled={selectedContracts.length === 0 || isSending || !isConfigured}
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
           >
             {isSending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                جاري فتح واتساب...
+                جاري الإرسال عبر Ultramsg...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                إرسال عبر واتساب ويب ({selectedContracts.length})
+                إرسال عبر Ultramsg ({selectedContracts.length})
               </>
             )}
           </Button>

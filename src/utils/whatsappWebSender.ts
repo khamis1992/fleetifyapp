@@ -1,10 +1,9 @@
 /**
- * WhatsApp Web Sender Utility
- * ============================
- * Purpose: Send WhatsApp messages directly from browser using WhatsApp Web API
- * Type: Client-side solution (no backend needed)
- * Advantage: Works immediately without Ultramsg or Edge Functions
- * Limitation: Opens WhatsApp Web tabs for each message
+ * WhatsApp Sender Utility with Ultramsg API
+ * ==========================================
+ * Purpose: Send WhatsApp messages via Ultramsg API
+ * API Documentation: https://docs.ultramsg.com/
+ * Dashboard: https://user.ultramsg.com/
  */
 
 interface SendWhatsAppParams {
@@ -13,8 +12,65 @@ interface SendWhatsAppParams {
   customerName?: string;
 }
 
+interface UltramsgConfig {
+  instanceId: string;
+  token: string;
+}
+
+interface UltramsgResponse {
+  sent: string;
+  message: string;
+  id?: string;
+  error?: string;
+}
+
+// Storage key for Ultramsg settings
+const ULTRAMSG_CONFIG_KEY = 'ultramsg_config';
+
 /**
- * Format phone number for WhatsApp Web
+ * Get Ultramsg configuration from localStorage
+ */
+export const getUltramsgConfig = (): UltramsgConfig | null => {
+  try {
+    const config = localStorage.getItem(ULTRAMSG_CONFIG_KEY);
+    if (config) {
+      return JSON.parse(config);
+    }
+  } catch (error) {
+    console.error('Error reading Ultramsg config:', error);
+  }
+  return null;
+};
+
+/**
+ * Save Ultramsg configuration to localStorage
+ */
+export const saveUltramsgConfig = (config: UltramsgConfig): void => {
+  try {
+    localStorage.setItem(ULTRAMSG_CONFIG_KEY, JSON.stringify(config));
+    console.log('✅ Ultramsg config saved successfully');
+  } catch (error) {
+    console.error('Error saving Ultramsg config:', error);
+  }
+};
+
+/**
+ * Clear Ultramsg configuration
+ */
+export const clearUltramsgConfig = (): void => {
+  localStorage.removeItem(ULTRAMSG_CONFIG_KEY);
+};
+
+/**
+ * Check if Ultramsg is configured
+ */
+export const isUltramsgConfigured = (): boolean => {
+  const config = getUltramsgConfig();
+  return !!(config?.instanceId && config?.token);
+};
+
+/**
+ * Format phone number for WhatsApp
  * Removes all non-digit characters and ensures international format
  */
 export const formatPhoneForWhatsApp = (phone: string): string => {
@@ -35,57 +91,120 @@ export const formatPhoneForWhatsApp = (phone: string): string => {
 };
 
 /**
- * Send single WhatsApp message via WhatsApp Web
- * Opens WhatsApp Web in new tab with pre-filled message
+ * Send single WhatsApp message via Ultramsg API
+ * https://docs.ultramsg.com/api/post/messages/chat
  */
-export const sendWhatsAppMessage = ({ phone, message, customerName }: SendWhatsAppParams): void => {
+export const sendWhatsAppMessage = async ({ phone, message, customerName }: SendWhatsAppParams): Promise<{
+  success: boolean;
+  error?: string;
+  messageId?: string;
+}> => {
+  const config = getUltramsgConfig();
+  
+  if (!config?.instanceId || !config?.token) {
+    console.error('❌ Ultramsg not configured. Please set Instance ID and Token.');
+    return { 
+      success: false, 
+      error: 'Ultramsg غير مُعد. يرجى إدخال Instance ID و Token في الإعدادات.' 
+    };
+  }
+
   const formattedPhone = formatPhoneForWhatsApp(phone);
-  const encodedMessage = encodeURIComponent(message);
-  const whatsappUrl = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
   
-  // Open in new tab
-  window.open(whatsappUrl, '_blank');
-  
-  console.log(`📤 WhatsApp Web opened for ${customerName || phone}:`, {
-    originalPhone: phone,
-    formattedPhone,
-    messageLength: message.length,
-  });
+  try {
+    const response = await fetch(`https://api.ultramsg.com/${config.instanceId}/messages/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        token: config.token,
+        to: formattedPhone,
+        body: message,
+      }),
+    });
+
+    const data: UltramsgResponse = await response.json();
+    
+    if (data.sent === 'true' || data.sent === true as any) {
+      console.log(`✅ WhatsApp message sent to ${customerName || phone}:`, {
+        messageId: data.id,
+        phone: formattedPhone,
+      });
+      return { success: true, messageId: data.id };
+    } else {
+      console.error(`❌ Failed to send WhatsApp to ${customerName || phone}:`, data);
+      return { 
+        success: false, 
+        error: data.error || data.message || 'فشل في إرسال الرسالة' 
+      };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
+    console.error(`❌ Network error sending WhatsApp to ${customerName || phone}:`, error);
+    return { success: false, error: errorMessage };
+  }
 };
 
 /**
  * Send multiple WhatsApp messages with delay
- * Opens tabs sequentially with delay to avoid overwhelming the browser
  */
 export const sendBulkWhatsAppMessages = async (
   messages: SendWhatsAppParams[],
   delayMs: number = 2000
-): Promise<{ sent: number; total: number }> => {
+): Promise<{ sent: number; failed: number; total: number; errors: string[] }> => {
   let sentCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
   
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     
     try {
-      sendWhatsAppMessage(msg);
-      sentCount++;
+      const result = await sendWhatsAppMessage(msg);
+      
+      if (result.success) {
+        sentCount++;
+      } else {
+        failedCount++;
+        errors.push(`${msg.customerName || msg.phone}: ${result.error}`);
+      }
       
       // Log progress
-      console.log(`📨 Progress: ${i + 1}/${messages.length} - ${msg.customerName || msg.phone}`);
+      console.log(`📨 Progress: ${i + 1}/${messages.length} - ${msg.customerName || msg.phone} - ${result.success ? '✅' : '❌'}`);
       
       // Wait before next message (except for last one)
       if (i < messages.length - 1) {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     } catch (error) {
-      console.error(`❌ Failed to open WhatsApp for ${msg.customerName || msg.phone}:`, error);
+      failedCount++;
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      errors.push(`${msg.customerName || msg.phone}: ${errorMsg}`);
+      console.error(`❌ Failed to send to ${msg.customerName || msg.phone}:`, error);
     }
   }
   
   return {
     sent: sentCount,
+    failed: failedCount,
     total: messages.length,
+    errors,
   };
+};
+
+/**
+ * Test Ultramsg connection by sending a test message
+ */
+export const testUltramsgConnection = async (testPhone: string): Promise<{
+  success: boolean;
+  error?: string;
+}> => {
+  return sendWhatsAppMessage({
+    phone: testPhone,
+    message: '✅ رسالة اختبار من نظام Fleetify - الاتصال يعمل بنجاح!',
+    customerName: 'Test',
+  });
 };
 
 /**
@@ -146,4 +265,3 @@ export const defaultTemplates = {
   escalation: (name: string, invoiceNumber: string, amount: number) =>
     `عزيزي العميل ${name} 🚨\n\nإنذار نهائي: فاتورتك رقم ${invoiceNumber} متأخرة بشكل كبير.\n\nسيتم اتخاذ إجراءات قانونية خلال 48 ساعة في حالة عدم السداد.\n\nالمبلغ المستحق: ${amount} ر.ق`,
 };
-

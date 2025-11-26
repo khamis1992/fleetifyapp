@@ -10,7 +10,6 @@ import { CommandPalette } from '@/components/command-palette';
 
 // Lazy load heavy components
 const WorldClassStatsCards = lazy(() => import('@/components/dashboard/WorldClassStatsCards').then(m => ({ default: m.WorldClassStatsCards })));
-const QuickActionsDashboard = lazy(() => import('@/components/dashboard/QuickActionsDashboard'));
 const FinancialAnalyticsSection = lazy(() => import('@/components/dashboard/FinancialAnalyticsSection').then(m => ({ default: m.FinancialAnalyticsSection })));
 const FleetOperationsSection = lazy(() => import('@/components/dashboard/FleetOperationsSection').then(m => ({ default: m.FleetOperationsSection })));
 const ForecastingSection = lazy(() => import('@/components/dashboard/ForecastingSection').then(m => ({ default: m.ForecastingSection })));
@@ -82,11 +81,6 @@ const CarRentalDashboard: React.FC = () => {
           </section>
         }>
           <WorldClassStatsCards />
-        </Suspense>
-
-        {/* Quick Actions Panel - Lazy Loaded */}
-        <Suspense fallback={<SectionLoader />}>
-          <QuickActionsDashboard />
         </Suspense>
 
         {/* Financial Analytics Section - Lazy Loaded */}
