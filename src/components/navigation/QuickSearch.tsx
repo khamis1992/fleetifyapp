@@ -205,6 +205,16 @@ export const QuickSearch: React.FC = () => {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // Helper function to build customer display name
+  const getCustomerDisplayName = (customer: any): string => {
+    if (customer.customer_type === 'company') {
+      return customer.company_name_ar || customer.company_name || 'شركة';
+    }
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'عميل';
+  };
+
   // Search in database
   const searchDatabase = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 2 || !companyId) {
@@ -216,37 +226,40 @@ export const QuickSearch: React.FC = () => {
     const results: DataSearchResult[] = [];
 
     try {
-      // Search Customers
+      // Search Customers - using correct column names
       const { data: customers } = await supabase
         .from('customers')
-        .select('id, full_name, phone, id_number')
+        .select('id, customer_type, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, phone, national_id')
         .eq('company_id', companyId)
-        .or(`full_name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,id_number.ilike.%${searchQuery}%`)
+        .eq('is_active', true)
+        .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,first_name_ar.ilike.%${searchQuery}%,last_name_ar.ilike.%${searchQuery}%,company_name.ilike.%${searchQuery}%,company_name_ar.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,national_id.ilike.%${searchQuery}%`)
         .limit(5);
 
       customers?.forEach(c => {
         results.push({
           id: c.id,
-          title: c.full_name || 'عميل',
-          subtitle: c.phone || c.id_number,
+          title: getCustomerDisplayName(c),
+          subtitle: c.phone || c.national_id,
           path: `/customers/${c.id}`,
           type: 'customer',
         });
       });
 
-      // Search Contracts
+      // Search Contracts - with correct customer fields
       const { data: contracts } = await supabase
         .from('contracts')
-        .select('id, contract_number, customer:customers(full_name)')
+        .select('id, contract_number, customer:customers(first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, customer_type)')
         .eq('company_id', companyId)
-        .or(`contract_number.ilike.%${searchQuery}%`)
+        .ilike('contract_number', `%${searchQuery}%`)
         .limit(5);
 
       contracts?.forEach(c => {
+        const customer = c.customer as any;
+        const customerName = customer ? getCustomerDisplayName(customer) : undefined;
         results.push({
           id: c.id,
           title: `عقد ${c.contract_number}`,
-          subtitle: (c.customer as any)?.full_name,
+          subtitle: customerName,
           path: `/contracts/${c.contract_number}`,
           type: 'contract',
         });
@@ -270,19 +283,21 @@ export const QuickSearch: React.FC = () => {
         });
       });
 
-      // Search Invoices
+      // Search Invoices - with correct customer fields
       const { data: invoices } = await supabase
         .from('invoices')
-        .select('id, invoice_number, customer:customers(full_name)')
+        .select('id, invoice_number, customer:customers(first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, customer_type)')
         .eq('company_id', companyId)
         .ilike('invoice_number', `%${searchQuery}%`)
         .limit(5);
 
       invoices?.forEach(i => {
+        const customer = i.customer as any;
+        const customerName = customer ? getCustomerDisplayName(customer) : undefined;
         results.push({
           id: i.id,
           title: `فاتورة ${i.invoice_number}`,
-          subtitle: (i.customer as any)?.full_name,
+          subtitle: customerName,
           path: `/finance/invoices/${i.id}`,
           type: 'invoice',
         });
