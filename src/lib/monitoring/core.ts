@@ -425,59 +425,34 @@ class MonitoringCore {
   }
 
   private async sendMetrics(metric: PerformanceMetric): Promise<void> {
-    // Send to monitoring service
-    try {
-      await fetch(this.config.endpoints.metrics, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'metric', data: metric })
-      });
-    } catch (error) {
-      console.debug('[Monitoring] Failed to send metric:', error);
+    // DISABLED: No backend API exists for monitoring metrics
+    // Data is stored locally only - enable when backend is available
+    if (this.config.debug) {
+      console.debug('[Monitoring] Metric recorded locally:', metric.name);
     }
   }
 
   private async sendError(errorEntry: { error: Error; context?: ErrorContext; timestamp: number }): Promise<void> {
-    try {
-      await fetch(this.config.endpoints.logs, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'error',
-          data: {
-            message: errorEntry.error.message,
-            stack: errorEntry.error.stack,
-            context: errorEntry.context,
-            timestamp: errorEntry.timestamp
-          }
-        })
-      });
-    } catch (error) {
-      console.debug('[Monitoring] Failed to send error:', error);
+    // DISABLED: No backend API exists for monitoring logs
+    // Errors are stored locally only - enable when backend is available
+    if (this.config.debug) {
+      console.debug('[Monitoring] Error recorded locally:', errorEntry.error.message);
     }
   }
 
   private async sendUserEvent(event: UserEvent): Promise<void> {
-    try {
-      await fetch(this.config.endpoints.logs, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'user_event', data: event })
-      });
-    } catch (error) {
-      console.debug('[Monitoring] Failed to send user event:', error);
+    // DISABLED: No backend API exists for monitoring logs
+    // User events are stored locally only - enable when backend is available
+    if (this.config.debug) {
+      console.debug('[Monitoring] User event recorded locally:', event.type);
     }
   }
 
   private async sendBusinessMetric(metric: BusinessMetric): Promise<void> {
-    try {
-      await fetch(this.config.endpoints.metrics, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'business_metric', data: metric })
-      });
-    } catch (error) {
-      console.debug('[Monitoring] Failed to send business metric:', error);
+    // DISABLED: No backend API exists for monitoring metrics
+    // Business metrics are stored locally only - enable when backend is available
+    if (this.config.debug) {
+      console.debug('[Monitoring] Business metric recorded locally:', metric.name);
     }
   }
 
@@ -517,7 +492,16 @@ class MonitoringCore {
   private async triggerAlert(rule: AlertRule): Promise<void> {
     if (!rule.enabled) return;
 
-    // Send alert notification
+    // DISABLED: No backend API exists for monitoring alerts
+    // Alerts are logged locally only - enable when backend is available
+    if (this.config.debug) {
+      console.debug('[Monitoring] Alert triggered locally:', rule.name, rule.severity);
+    }
+    
+    // Original code disabled - no backend endpoint exists
+    return;
+    
+    // Send alert notification (disabled)
     try {
       await fetch('/api/monitoring/alerts', {
         method: 'POST',
