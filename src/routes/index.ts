@@ -1251,6 +1251,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'dashboard',
   },
   {
+    path: '/legal/advisor',
+    component: Legal,
+    lazy: true,
+    exact: true,
+    title: 'Legal Advisor',
+    description: 'AI-powered legal advisor',
+    group: 'legal',
+    priority: 119,
+    protected: true,
+    layout: 'dashboard',
+  },
+  {
     path: '/legal/cases',
     component: LegalCasesTracking,
     lazy: true,

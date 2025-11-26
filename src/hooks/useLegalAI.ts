@@ -417,32 +417,72 @@ ${legalReferences}
   };
 }
 
-// البحث في قاعدة المعرفة القانونية
+// البحث في قاعدة المعرفة القانونية الشاملة
 async function searchLegalKnowledge(query: string, country: string = 'qatar') {
   try {
     // استخراج الكلمات المفتاحية من الاستفسار
     const keywords = extractKeywords(query);
     
-    // البحث في قاعدة البيانات
-    const { data, error } = await supabase
+    // البحث في الجدول الشامل للقوانين القطرية الجديد
+    const { data: qatarLaws, error: qatarError } = await supabase
+      .from('qatar_legal_texts')
+      .select('*')
+      .eq('is_active', true)
+      .order('year', { ascending: false })
+      .limit(100);
+
+    if (qatarError) {
+      console.error('Error searching qatar_legal_texts:', qatarError);
+    }
+
+    // تصفية النتائج بناءً على الكلمات المفتاحية
+    const relevantQatarLaws = (qatarLaws || []).filter((law: any) => {
+      const content = `${law.title_ar} ${law.part_title || ''} ${law.chapter_title || ''} ${law.article_text_ar} ${(law.keywords || []).join(' ')}`.toLowerCase();
+      return keywords.some(keyword => content.includes(keyword.toLowerCase()));
+    }).slice(0, 8);
+
+    // تحويل النتائج لتنسيق موحد
+    const formattedQatarLaws = relevantQatarLaws.map((law: any) => ({
+      law_name: law.title_ar,
+      law_number: law.law_number,
+      law_year: law.year,
+      article_number: law.article_number,
+      article_title: law.article_title_ar || law.chapter_title,
+      article_content: law.article_text_ar,
+      category: law.part_title,
+      subcategory: law.chapter_title,
+      law_type: law.law_type
+    }));
+
+    // البحث أيضاً في الجدول القديم للتوافق
+    const { data: oldData, error: oldError } = await supabase
       .from('legal_knowledge_base')
       .select('*')
       .eq('country', country)
       .eq('is_active', true)
-      .order('created_at', { ascending: false });
+      .limit(50);
 
-    if (error) {
-      console.error('Error searching legal knowledge:', error);
-      return [];
+    if (oldError) {
+      console.error('Error searching legal_knowledge_base:', oldError);
     }
 
-    // تصفية النتائج بناءً على الكلمات المفتاحية
-    const relevantLaws = (data || []).filter((law: any) => {
+    // تصفية النتائج القديمة
+    const relevantOldLaws = (oldData || []).filter((law: any) => {
       const content = `${law.category} ${law.subcategory || ''} ${law.law_name} ${law.article_title || ''} ${law.article_content}`.toLowerCase();
       return keywords.some(keyword => content.includes(keyword.toLowerCase()));
-    }).slice(0, 5);
+    }).slice(0, 3);
 
-    return relevantLaws;
+    // دمج النتائج مع إعطاء الأولوية للجدول الجديد
+    const allResults = [...formattedQatarLaws, ...relevantOldLaws];
+    
+    // إزالة التكرارات بناءً على رقم المادة
+    const uniqueResults = allResults.filter((law, index, self) => 
+      index === self.findIndex((l) => 
+        l.article_number === law.article_number && l.law_name === law.law_name
+      )
+    );
+
+    return uniqueResults.slice(0, 10);
   } catch (error) {
     console.error('Error in searchLegalKnowledge:', error);
     return [];
