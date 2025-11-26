@@ -54,7 +54,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
-import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ContractDocuments } from './ContractDocuments';
 import { OfficialContractView } from './OfficialContractView';
@@ -83,7 +83,7 @@ const ContractDetailsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const companyId = useCurrentCompanyId();
+  const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
 
   // الحالة المحلية
@@ -378,7 +378,8 @@ const ContractDetailsPage = () => {
   };
 
   // معالجة حالات التحميل والأخطاء
-  if (isLoading) {
+  // انتظار تحميل بيانات المصادقة أولاً
+  if (isAuthenticating || isLoading || (!companyId && !error)) {
     return <PageSkeletonFallback />;
   }
 

@@ -10,7 +10,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrentCompanyId, useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { 
   useCustomerDocuments, 
@@ -92,7 +92,7 @@ const CustomerDetailsPage = () => {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const companyId = useCurrentCompanyId();
+  const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
   // الحالة المحلية
@@ -515,12 +515,14 @@ const CustomerDetailsPage = () => {
       customerId,
       companyId,
       isLoading,
+      isAuthenticating,
       hasCustomer: !!customer,
       customerError: customerError?.message,
     });
-  }, [customerId, companyId, isLoading, customer, customerError]);
+  }, [customerId, companyId, isLoading, isAuthenticating, customer, customerError]);
 
-  if (isLoading) {
+  // انتظار تحميل بيانات المصادقة أولاً
+  if (isAuthenticating || isLoading || (!companyId && !customerError)) {
     return <PageSkeletonFallback />;
   }
 

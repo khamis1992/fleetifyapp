@@ -9,7 +9,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrentCompanyId, useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
   ArrowRight,
@@ -55,7 +55,7 @@ const VehicleDetailsPage = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const companyId = useCurrentCompanyId();
+  const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
 
   // الحالة المحلية
@@ -281,7 +281,8 @@ const VehicleDetailsPage = () => {
   // معالجة حالات التحميل والأخطاء
   const isLoading = loadingVehicle || loadingContracts || loadingMaintenance || loadingViolations;
 
-  if (isLoading) {
+  // انتظار تحميل بيانات المصادقة أولاً
+  if (isAuthenticating || isLoading || (!companyId && !vehicleError)) {
     return <PageSkeletonFallback />;
   }
 
