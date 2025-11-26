@@ -382,12 +382,12 @@ if (typeof window !== 'undefined') {
     const metrics = performanceMonitor.getPerformanceSummary();
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('Performance Metrics:', metrics);
     }
 
     // Send to analytics service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // performanceMonitor.sendMetrics('/api/analytics/performance');
     }
   }, 30000); // Every 30 seconds

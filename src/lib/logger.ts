@@ -33,10 +33,10 @@ class Logger {
     const isDev = typeof import.meta !== 'undefined' && (import.meta as any)?.env?.DEV
     if (typeof window !== 'undefined') {
       this.enabled = isDev ? Boolean((window as any).__APP_DEBUG__) : false
-      this.monitoringEnabled = Boolean((window as any).__MONITORING_ENABLED__) || process.env.NODE_ENV === 'production'
+      this.monitoringEnabled = Boolean((window as any).__MONITORING_ENABLED__) || import.meta.env.PROD
     } else {
       this.enabled = false
-      this.monitoringEnabled = process.env.NODE_ENV === 'production'
+      this.monitoringEnabled = import.meta.env.PROD
     }
 
     // Start periodic log flushing
@@ -347,7 +347,7 @@ class Logger {
         }
       },
       tags: {
-        environment: process.env.NODE_ENV || 'unknown',
+        environment: import.meta.env.MODE || 'unknown',
         level
       }
     }

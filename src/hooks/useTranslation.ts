@@ -144,7 +144,7 @@ export const useFleetifyTranslation = (namespace?: string | string[]) => {
       const translation = t(key, options);
 
       // Log missing translations in development
-      if (process.env.NODE_ENV === 'development' && translation === key && !fallback) {
+      if (import.meta.env.DEV && translation === key && !fallback) {
         console.warn(`Translation missing for key: ${key} in language: ${currentLanguage}`);
       }
 

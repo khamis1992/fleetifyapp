@@ -333,9 +333,6 @@ const SearchInner: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Debug Panel */}
-      <SearchDebugPanel searchDebug={searchDebug} setSearchDebug={setSearchDebug} />
-      
       {/* رأس الصفحة */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

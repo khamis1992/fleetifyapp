@@ -571,7 +571,7 @@ class ErrorTrackingService {
 
   private extractErrorTags(error: Error, context?: ErrorContext): Record<string, string> {
     const tags: Record<string, string> = {
-      environment: process.env.NODE_ENV || 'unknown',
+      environment: import.meta.env.MODE || 'unknown',
       userAgent: navigator.userAgent.split(' ')[0],
       url: window.location.pathname
     };

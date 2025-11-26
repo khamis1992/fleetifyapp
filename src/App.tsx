@@ -47,10 +47,10 @@ import { MobileOptimizationProvider } from '@/components/performance';
 // === Configuration ===
 const APP_CONFIG = {
   // Feature flags
-  ENABLE_PERFORMANCE_MONITORING: process.env.NODE_ENV === 'development',
-  ENABLE_REACT_QUERY_DEVTOOLS: process.env.NODE_ENV === 'development',
-  ENABLE_PWA: process.env.REACT_APP_ENABLE_PWA === 'true',
-  ENABLE_COMMAND_PALETTE: process.env.REACT_APP_ENABLE_COMMAND_PALETTE !== 'false',
+  ENABLE_PERFORMANCE_MONITORING: import.meta.env.DEV,
+  ENABLE_REACT_QUERY_DEVTOOLS: import.meta.env.DEV,
+  ENABLE_PWA: import.meta.env.VITE_ENABLE_PWA === 'true',
+  ENABLE_COMMAND_PALETTE: import.meta.env.VITE_ENABLE_COMMAND_PALETTE !== 'false',
 
   // Performance settings
   CRITICAL_ROUTES: ['/dashboard', '/customers', '/contracts', '/fleet'],

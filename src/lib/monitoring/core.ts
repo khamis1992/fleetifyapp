@@ -92,9 +92,9 @@ class MonitoringCore {
 
   constructor(config?: Partial<MonitoringConfig>) {
     this.config = {
-      enabled: process.env.NODE_ENV === 'production',
+      enabled: import.meta.env.PROD,
       sampleRate: 0.1, // 10% sampling
-      debug: process.env.NODE_ENV === 'development',
+      debug: import.meta.env.DEV,
       endpoints: {
         metrics: '/api/monitoring/metrics',
         logs: '/api/monitoring/logs',
@@ -143,8 +143,8 @@ class MonitoringCore {
       timestamp: metric.timestamp || Date.now(),
       tags: {
         ...metric.tags,
-        environment: process.env.NODE_ENV,
-        version: process.env.npm_package_version
+        environment: import.meta.env.MODE,
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0'
       }
     };
 
@@ -162,7 +162,7 @@ class MonitoringCore {
       context: {
         ...context,
         timestamp: Date.now(),
-        environment: process.env.NODE_ENV,
+        environment: import.meta.env.MODE,
         userAgent: navigator.userAgent,
         url: window.location.href
       },
@@ -197,7 +197,7 @@ class MonitoringCore {
       timestamp: metric.timestamp || Date.now(),
       dimensions: {
         ...metric.dimensions,
-        environment: process.env.NODE_ENV
+        environment: import.meta.env.MODE
       }
     };
 
@@ -216,7 +216,7 @@ class MonitoringCore {
       operation,
       startTime: performance.now(),
       tags: {
-        environment: process.env.NODE_ENV,
+        environment: import.meta.env.MODE,
         service: 'fleetifyapp'
       }
     };

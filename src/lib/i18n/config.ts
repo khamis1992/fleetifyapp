@@ -129,7 +129,7 @@ export const initializeI18n = async (): Promise<void> => {
     .init({
       lng: initialLanguage,
       fallbackLng: FALLBACK_LANGUAGE,
-      debug: process.env.NODE_ENV === 'development',
+      debug: import.meta.env.DEV,
 
       // Namespace configuration
       defaultNS: TRANSLATION_NAMESPACES.COMMON,

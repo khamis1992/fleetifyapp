@@ -19,13 +19,13 @@ import type {
 const EXCHANGE_RATE_PROVIDERS = {
   fixer_io: {
     baseUrl: 'https://api.fixer.io/latest',
-    apiKey: process.env.VITE_FIXER_API_KEY,
+    apiKey: import.meta.env.VITE_FIXER_API_KEY,
     supportedCurrencies: ['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'JPY', 'SEK', 'NZD'],
     baseCurrency: 'EUR'
   },
   exchangerate_api: {
     baseUrl: 'https://v6.exchangerate-api.com/v6/latest',
-    apiKey: process.env.VITE_EXCHANGERATE_API_KEY,
+    apiKey: import.meta.env.VITE_EXCHANGERATE_API_KEY,
     supportedCurrencies: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'],
     baseCurrency: 'USD'
   }

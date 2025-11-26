@@ -247,7 +247,7 @@ export class MemoryLeakDetector {
     });
 
     // In development, you might want to show this to the developer
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.group(`🚨 Memory Leak: ${leak.component}`);
       console.error('Leak Size:', `${leak.leakSize.toFixed(2)}MB`);
       console.error('Severity:', leak.severity);

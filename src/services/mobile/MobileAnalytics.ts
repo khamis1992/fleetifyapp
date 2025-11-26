@@ -126,7 +126,7 @@ export class MobileAnalytics {
       samplingRate: 1.0,
       batchSize: 50,
       flushInterval: 30000, // 30 seconds
-      debug: process.env.NODE_ENV === 'development',
+      debug: import.meta.env.DEV,
       ...config
     };
 
@@ -333,8 +333,8 @@ export class MobileAnalytics {
         performanceMetrics: this.getCurrentPerformanceMetrics(),
         userAction: 'unknown',
         sessionDuration: Date.now() - this.session.startTime,
-        appVersion: process.env.REACT_APP_VERSION || 'unknown',
-        buildNumber: process.env.REACT_APP_BUILD_NUMBER || 'unknown'
+        appVersion: import.meta.env.VITE_APP_VERSION || 'unknown',
+        buildNumber: import.meta.env.VITE_BUILD_NUMBER || 'unknown'
       });
     };
 
@@ -354,8 +354,8 @@ export class MobileAnalytics {
         performanceMetrics: this.getCurrentPerformanceMetrics(),
         userAction: 'unknown',
         sessionDuration: Date.now() - this.session.startTime,
-        appVersion: process.env.REACT_APP_VERSION || 'unknown',
-        buildNumber: process.env.REACT_APP_BUILD_NUMBER || 'unknown'
+        appVersion: import.meta.env.VITE_APP_VERSION || 'unknown',
+        buildNumber: import.meta.env.VITE_BUILD_NUMBER || 'unknown'
       });
     };
 
