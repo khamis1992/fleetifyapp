@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModuleConfig } from '@/modules/core/hooks';
+import { apiClient } from '@/lib/api/client';
 
 export interface DashboardStats {
   totalVehicles?: number;
@@ -23,6 +24,22 @@ export interface DashboardStats {
   customerSatisfactionRate?: number; // نسبة رضا العملاء (محسوبة)
 }
 
+// Track backend availability
+let backendAvailable: boolean | null = null;
+
+async function checkBackendAvailability(): Promise<boolean> {
+  if (backendAvailable !== null) return backendAvailable;
+  try {
+    backendAvailable = await apiClient.healthCheck();
+    console.log(`[useDashboardStats] Backend ${backendAvailable ? '✅ available with Redis caching' : '❌ unavailable'}`);
+  } catch {
+    backendAvailable = false;
+  }
+  // Re-check every 5 minutes
+  setTimeout(() => { backendAvailable = null; }, 5 * 60 * 1000);
+  return backendAvailable;
+}
+
 export const useDashboardStats = () => {
   const { user } = useAuth();
   const { moduleContext } = useModuleConfig();
@@ -38,6 +55,23 @@ export const useDashboardStats = () => {
           revenueChange: '+0%'
         };
       }
+
+      // 🚀 TRY BACKEND API FIRST (with Redis caching)
+      const isBackendUp = await checkBackendAvailability();
+      if (isBackendUp) {
+        try {
+          const response = await apiClient.get<DashboardStats>('/api/dashboard/stats');
+          if (response.success && response.data) {
+            console.log(`[useDashboardStats] ⚡ Data from backend API ${response.cached ? '(CACHED - instant)' : '(fresh)'}`);
+            return response.data;
+          }
+        } catch (error) {
+          console.warn('[useDashboardStats] Backend API failed, falling back to Supabase:', error);
+        }
+      }
+
+      // 📊 FALLBACK: Direct Supabase queries (original logic)
+      console.log('[useDashboardStats] Using Supabase direct queries');
 
       // جلب company_id من جدول profiles
       let company_id: string;
