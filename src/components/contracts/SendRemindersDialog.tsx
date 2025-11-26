@@ -25,8 +25,13 @@ import {
   CheckCircle, 
   AlertCircle,
   Info,
-  Loader2
+  Loader2,
+  TestTube,
+  Phone
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSendManualReminders } from '@/hooks/useSendManualReminders';
 import { toast } from 'sonner';
 import { sendBulkWhatsAppMessages, formatPhoneForWhatsApp, defaultTemplates } from '@/utils/whatsappWebSender';
@@ -73,6 +78,14 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [allActiveContracts, setAllActiveContracts] = useState<Contract[]>([]);
   const [isLoadingContracts, setIsLoadingContracts] = useState(false);
+  
+  // Test Mode States
+  const [activeTab, setActiveTab] = useState<'send' | 'test'>('send');
+  const [testPhone, setTestPhone] = useState('');
+  const [testName, setTestName] = useState('عميل تجريبي');
+  const [testContractNumber, setTestContractNumber] = useState('TEST-001');
+  const [testAmount, setTestAmount] = useState('1000');
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   // Fetch all active contracts with valid phone numbers when dialog opens
   useEffect(() => {
@@ -306,6 +319,77 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
     }
   };
 
+  // Handle Test Send
+  const handleTestSend = async () => {
+    if (!testPhone.trim()) {
+      toast.error('يرجى إدخال رقم الهاتف للتجربة');
+      return;
+    }
+
+    setIsSendingTest(true);
+
+    try {
+      // Generate test message
+      let message = customMessage;
+      
+      if (!message) {
+        switch (selectedType) {
+          case 'general':
+            message = defaultTemplates.general(testName, testContractNumber);
+            break;
+          case 'pre_due':
+            message = defaultTemplates.pre_due(testName, testContractNumber, parseFloat(testAmount) || 1000, 'قريباً');
+            break;
+          case 'due_date':
+            message = defaultTemplates.due_date(testName, testContractNumber, parseFloat(testAmount) || 1000);
+            break;
+          case 'overdue':
+            message = defaultTemplates.overdue(testName, testContractNumber, parseFloat(testAmount) || 1000);
+            break;
+          case 'escalation':
+            message = defaultTemplates.escalation(testName, testContractNumber, parseFloat(testAmount) || 1000);
+            break;
+          default:
+            message = defaultTemplates.general(testName, testContractNumber);
+        }
+      }
+
+      // Format phone number
+      let phone = testPhone.replace(/\s+/g, '').replace(/-/g, '');
+      if (!phone.startsWith('+')) {
+        // Assume Qatar number if no country code
+        if (!phone.startsWith('974')) {
+          phone = '974' + phone;
+        }
+        phone = '+' + phone;
+      }
+
+      // Show confirmation
+      const confirmMessage = `سيتم فتح نافذة واتساب ويب لإرسال رسالة تجريبية إلى:\n\nالرقم: ${phone}\nالاسم: ${testName}\n\nهل تريد المتابعة؟`;
+      
+      if (!confirm(confirmMessage)) {
+        setIsSendingTest(false);
+        return;
+      }
+
+      // Open WhatsApp Web
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://web.whatsapp.com/send?phone=${phone.replace('+', '')}&text=${encodedMessage}`;
+      
+      window.open(whatsappUrl, '_blank');
+
+      toast.success('تم فتح واتساب ويب بنجاح!', {
+        description: 'يرجى الضغط على "إرسال" في نافذة واتساب',
+      });
+
+    } catch (error: any) {
+      console.error('❌ [SendRemindersDialog] Error in test send:', error);
+      toast.error('حدث خطأ أثناء فتح واتساب: ' + error.message);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   const reminderTypes = [
     {
       value: 'general' as ReminderType,
@@ -358,16 +442,146 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Send Method Selection */}
-          <Alert className="border-green-200 bg-green-50">
-            <Info className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-900">
-              <strong>إرسال فوري عبر واتساب ويب:</strong> سيتم فتح نوافذ واتساب ويب مع الرسائل جاهزة. 
-              فقط اضغط "إرسال" في كل نافذة. لا يحتاج إعدادات إضافية! ✅
-            </AlertDescription>
-          </Alert>
+          {/* Tabs for Send / Test */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'send' | 'test')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="send" className="gap-2">
+                <Send className="h-4 w-4" />
+                إرسال للعملاء
+              </TabsTrigger>
+              <TabsTrigger value="test" className="gap-2">
+                <TestTube className="h-4 w-4" />
+                تجربة الإرسال
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Statistics */}
+            {/* Test Tab Content */}
+            <TabsContent value="test" className="mt-4 space-y-4">
+              <Alert className="border-orange-200 bg-orange-50">
+                <TestTube className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-900">
+                  <strong>وضع التجربة:</strong> أرسل رسالة تجريبية لأي رقم تختاره لاختبار النظام قبل إرساله للعملاء الفعليين.
+                </AlertDescription>
+              </Alert>
+
+              <Card className="border-2 border-dashed border-orange-300">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="testPhone" className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        رقم الهاتف للتجربة *
+                      </Label>
+                      <Input
+                        id="testPhone"
+                        type="tel"
+                        value={testPhone}
+                        onChange={(e) => setTestPhone(e.target.value)}
+                        placeholder="مثال: 55123456 أو +97455123456"
+                        className="text-left"
+                        dir="ltr"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        أدخل رقمك الشخصي أو أي رقم للتجربة
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="testName">اسم المستلم (للرسالة)</Label>
+                      <Input
+                        id="testName"
+                        value={testName}
+                        onChange={(e) => setTestName(e.target.value)}
+                        placeholder="اسم تجريبي"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="testContractNumber">رقم العقد (للرسالة)</Label>
+                      <Input
+                        id="testContractNumber"
+                        value={testContractNumber}
+                        onChange={(e) => setTestContractNumber(e.target.value)}
+                        placeholder="TEST-001"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="testAmount">المبلغ (للرسالة)</Label>
+                      <Input
+                        id="testAmount"
+                        type="number"
+                        value={testAmount}
+                        onChange={(e) => setTestAmount(e.target.value)}
+                        placeholder="1000"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reminder Type Selection for Test */}
+                  <div>
+                    <Label className="mb-2 block">نوع الرسالة</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {reminderTypes.map((type) => (
+                        <Button
+                          key={type.value}
+                          variant={selectedType === type.value ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedType(type.value)}
+                          className="justify-start gap-2"
+                        >
+                          <type.icon className="h-4 w-4" />
+                          {type.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Message for Test */}
+                  <div>
+                    <Label>رسالة مخصصة (اختياري)</Label>
+                    <textarea
+                      value={customMessage}
+                      onChange={(e) => setCustomMessage(e.target.value)}
+                      placeholder="اترك فارغاً لاستخدام القالب الافتراضي..."
+                      className="w-full min-h-[80px] p-3 border border-gray-300 rounded-lg mt-2"
+                      maxLength={1000}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleTestSend}
+                    disabled={!testPhone.trim() || isSendingTest}
+                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                  >
+                    {isSendingTest ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        جاري فتح واتساب...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="h-4 w-4 mr-2" />
+                        إرسال رسالة تجريبية
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Send Tab Content */}
+            <TabsContent value="send" className="mt-4 space-y-4">
+              {/* Send Method Selection */}
+              <Alert className="border-green-200 bg-green-50">
+                <Info className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-900">
+                  <strong>إرسال فوري عبر واتساب ويب:</strong> سيتم فتح نوافذ واتساب ويب مع الرسائل جاهزة. 
+                  فقط اضغط "إرسال" في كل نافذة. لا يحتاج إعدادات إضافية! ✅
+                </AlertDescription>
+              </Alert>
+
+              {/* Statistics */}
           <div className="grid grid-cols-3 gap-3">
             <Card>
               <CardContent className="pt-4">
@@ -531,6 +745,8 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               </div>
             )}
           </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <DialogFooter>
