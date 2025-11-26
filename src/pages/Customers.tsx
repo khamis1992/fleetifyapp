@@ -265,12 +265,13 @@ const Customers = () => {
 
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
   
-  // Virtual scrolling implementation for desktop
+  // Virtual scrolling implementation for mobile only
   const virtualizer = useVirtualizer({
     count: customers.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => isMobile ? 120 : 60,
-    overscan: 5, // Reduced from 10 to 5 for better performance
+    estimateSize: () => 120,
+    overscan: 5,
+    enabled: isMobile, // Only enable for mobile
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -1146,141 +1147,130 @@ const Customers = () => {
               </div>
             ) : (
               <div className="overflow-hidden">
-                {/* Virtualized Table */}
-                <div
-                  ref={parentRef}
-                  className="overflow-auto"
-                  style={{ height: 'calc(100vh - 450px)', minHeight: '400px' }}
-                >
-                  <table className="w-full" style={{ tableLayout: 'fixed' }}>
-                    <colgroup>
-                      <col style={{ width: '50px' }} />
-                      <col style={{ width: '200px' }} />
-                      <col style={{ width: '150px' }} />
-                      <col style={{ width: '120px' }} />
-                      <col style={{ width: '120px' }} />
-                      <col style={{ width: '100px' }} />
-                      <col style={{ width: '100px' }} />
-                    </colgroup>
-                    <thead className="sticky top-0 bg-accent/50 border-b border-border z-10">
-                      <tr>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">
-                          <div className="flex items-center gap-2">
+                {/* Customer Table */}
+                <div className="overflow-auto max-h-[calc(100vh-450px)] min-h-[400px]">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-accent/50 border-b border-border z-10">
+                      <TableRow>
+                        <TableHead className="text-right w-[50px]">
+                          <input type="checkbox" className="w-4 h-4 rounded border-border" />
+                        </TableHead>
+                        <TableHead className="text-right">العميل</TableHead>
+                        <TableHead className="text-right">رقم الهاتف</TableHead>
+                        <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                        <TableHead className="text-right">نوع العميل</TableHead>
+                        <TableHead className="text-right">الحالة</TableHead>
+                        <TableHead className="text-right">العقود</TableHead>
+                        <TableHead className="text-right">الإجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {customers.map((customer, index) => (
+                        <TableRow
+                          key={customer.id}
+                          className="hover:bg-accent/30 transition-all duration-200"
+                        >
+                          <TableCell className="w-[50px]">
                             <input type="checkbox" className="w-4 h-4 rounded border-border" />
-                          </div>
-                        </th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العميل</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">رقم الهاتف</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">نوع العميل</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الحالة</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">العقود</th>
-                        <th className="text-right px-6 py-4 text-sm font-semibold text-accent-foreground">الإجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {virtualItems.map((virtualItem) => {
-                        const customer = customers[virtualItem.index];
-                        
-                        return (
-                          <tr
-                            key={customer.id}
-                            className="border-b hover:bg-accent/30 transition-all duration-200"
-                          >
-                            <td className="px-6 py-4" style={{ minWidth: '50px', width: '50px' }}>
-                              <input type="checkbox" className="w-4 h-4 rounded border-border" />
-                            </td>
-                            
-                            <td className="px-6 py-4" style={{ minWidth: '200px', width: '200px' }}>
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                                  style={{ background: getAvatarColor(virtualItem.index) }}
-                                >
-                                  {getCustomerInitials(customer)}
-                                </div>
-                                <div>
-                                  <p 
-                                    className="font-semibold cursor-pointer hover:text-primary transition-colors"
-                                    onClick={() => handleViewCustomer(customer)}
-                                  >
-                                    {getCustomerName(customer)}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">{customer.id?.substring(0, 10)}...</p>
-                                </div>
-                              </div>
-                            </td>
-                            
-                            <td className="px-6 py-4 text-muted-foreground" style={{ minWidth: '150px', width: '150px' }}>{customer.phone || '-'}</td>
-                            
-                            <td className="px-6 py-4" style={{ minWidth: '120px', width: '120px' }}>
-                              <Badge 
-                                variant={customer.customer_type === 'individual' ? 'default' : 'secondary'}
-                                className="px-3 py-1 rounded-full text-sm"
+                          </TableCell>
+                          
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+                                style={{ background: getAvatarColor(index) }}
                               >
-                                {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
-                              </Badge>
-                            </td>
-                            
-                            <td className="px-6 py-4" style={{ minWidth: '120px', width: '120px' }}>
-                              {customer.is_blacklisted ? (
-                                <Badge variant="destructive" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
-                                  <span className="w-2 h-2 rounded-full bg-destructive"></span>
-                                  محظور
-                                </Badge>
-                              ) : customer.is_active ? (
-                                <Badge variant="default" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                                  <span className="w-2 h-2 rounded-full bg-green-600"></span>
-                                  نشط
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
-                                  <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                  معلق
-                                </Badge>
+                                {getCustomerInitials(customer)}
+                              </div>
+                              <div className="min-w-0">
+                                <p 
+                                  className="font-semibold cursor-pointer hover:text-primary transition-colors truncate"
+                                  onClick={() => handleViewCustomer(customer)}
+                                >
+                                  {getCustomerName(customer)}
+                                </p>
+                                <p className="text-sm text-muted-foreground truncate">{customer.phone || '-'}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="text-muted-foreground">{customer.phone || '-'}</TableCell>
+                          
+                          <TableCell className="text-muted-foreground">{customer.email || '-'}</TableCell>
+                          
+                          <TableCell>
+                            <Badge 
+                              variant={customer.customer_type === 'individual' ? 'destructive' : 'secondary'}
+                              className={cn(
+                                "px-3 py-1 rounded-full text-sm",
+                                customer.customer_type === 'individual' 
+                                  ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400' 
+                                  : ''
                               )}
-                            </td>
-                            
-                            <td className="px-6 py-4" style={{ minWidth: '100px', width: '100px' }}>
-                              <span className="font-semibold text-primary">
-                                {finalContractCounts[customer.id] || 0} {finalContractCounts[customer.id] === 1 ? 'عقد' : 'عقود'}
-                              </span>
-                            </td>
-                            
-                            <td className="px-6 py-4" style={{ minWidth: '100px', width: '100px' }}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-5 w-5" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleQuickRent(customer)}>
-                                    <FileText className="h-4 w-4 ml-2" />
-                                    إنشاء عقد
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
-                                    <Eye className="h-4 w-4 ml-2" />
-                                    عرض التفاصيل
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                                    <Edit className="h-4 w-4 ml-2" />
-                                    تعديل
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteCustomer(customer)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 ml-2" />
-                                    حذف
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            >
+                              {customer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+                            </Badge>
+                          </TableCell>
+                          
+                          <TableCell>
+                            {customer.is_blacklisted ? (
+                              <Badge variant="destructive" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                <span className="w-2 h-2 rounded-full bg-white"></span>
+                                محظور
+                              </Badge>
+                            ) : customer.is_active ? (
+                              <Badge className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                                <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                                نشط
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit">
+                                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                                معلق
+                              </Badge>
+                            )}
+                          </TableCell>
+                          
+                          <TableCell>
+                            <span className="font-semibold text-primary">
+                              {finalContractCounts[customer.id] || 0} {finalContractCounts[customer.id] === 1 ? 'عقد' : 'عقود'}
+                            </span>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-5 w-5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleQuickRent(customer)}>
+                                  <FileText className="h-4 w-4 ml-2" />
+                                  إنشاء عقد
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                                  <Eye className="h-4 w-4 ml-2" />
+                                  عرض التفاصيل
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                  <Edit className="h-4 w-4 ml-2" />
+                                  تعديل
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 ml-2" />
+                                  حذف
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* Footer - Statistics */}

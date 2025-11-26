@@ -184,10 +184,12 @@ function ContractsNew() {
     [statistics]
   );
 
-  // Handle pre-selected customer from navigation
+  // Handle pre-selected customer from navigation or openCreate state
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
       setPreselectedCustomerId(location.state.selectedCustomerId || undefined);
+      setShowContractWizard(true);
+    } else if (location.state?.openCreate) {
       setShowContractWizard(true);
     }
   }, [location.state]);

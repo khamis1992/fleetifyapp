@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { HelpIcon } from '@/components/help/HelpIcon';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 const getStatusVariant = (status: PurchaseOrder['status']) => {
   switch (status) {
@@ -65,6 +66,7 @@ export default function PurchaseOrders() {
 
   const { data: purchaseOrders, isLoading, error } = usePurchaseOrders();
   const deletePurchaseOrder = useDeletePurchaseOrder();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const filteredOrders = purchaseOrders?.filter(order =>
     order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,7 +148,7 @@ export default function PurchaseOrders() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">القيمة الإجمالية</p>
-                <p className="text-2xl font-bold">{totalAmount.toFixed(3)} د.ك</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalAmount)}</p>
               </div>
               <Download className="h-8 w-8 text-green-600" />
             </div>
@@ -228,7 +230,7 @@ export default function PurchaseOrders() {
                       }
                     </TableCell>
                     <TableCell className="font-medium">
-                      {order.total_amount.toFixed(3)} د.ك
+                      {formatCurrency(order.total_amount)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(order.status)}>
@@ -330,15 +332,15 @@ export default function PurchaseOrders() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">المجموع الفرعي</p>
-                    <p className="font-medium">{selectedOrder.subtotal.toFixed(3)} د.ك</p>
+                    <p className="font-medium">{formatCurrency(selectedOrder.subtotal)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">الضريبة</p>
-                    <p className="font-medium">{selectedOrder.tax_amount.toFixed(3)} د.ك</p>
+                    <p className="font-medium">{formatCurrency(selectedOrder.tax_amount)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">الإجمالي</p>
-                    <p className="font-bold text-lg">{selectedOrder.total_amount.toFixed(3)} د.ك</p>
+                    <p className="font-bold text-lg">{formatCurrency(selectedOrder.total_amount)}</p>
                   </div>
                 </div>
               </div>

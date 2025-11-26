@@ -28,7 +28,7 @@ export const QuickActionBar: React.FC = () => {
       label: 'تسجيل دفعة',
       icon: CreditCard,
       action: () => {
-        navigate('/payments/quick');
+        navigate('/finance/payments/quick');
         setIsExpanded(false);
       },
       color: 'text-green-500',
@@ -37,7 +37,7 @@ export const QuickActionBar: React.FC = () => {
       label: 'إنشاء عقد',
       icon: FileText,
       action: () => {
-        navigate('/contracts/new');
+        navigate('/contracts', { state: { openCreate: true } });
         setIsExpanded(false);
       },
       color: 'text-blue-500',
