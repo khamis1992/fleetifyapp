@@ -2,23 +2,13 @@
  * HTML Sanitization Utility
  *
  * SECURITY: This file provides HTML sanitization to prevent XSS attacks.
- * Uses DOMPurify for production-grade XSS protection when available,
- * with a fallback to browser-based sanitization.
+ * Uses browser-based sanitization that works reliably across all environments.
+ * This approach avoids build-time dependency resolution issues with DOMPurify.
  */
 
-let DOMPurify: any = null;
-
-// Try to import DOMPurify dynamically (ESM compatible)
-// Note: DOMPurify is optional - fallback sanitization is sufficient for most cases
-(async () => {
-  try {
-    const module = await import('dompurify');
-    DOMPurify = module.default || module;
-  } catch {
-    // DOMPurify not installed - using browser-based fallback sanitization
-    // This is fine for most use cases
-  }
-})();
+// We use browser-based sanitization which is sufficient for our use case
+// and avoids build issues with dynamic imports in Vite/Rollup
+const DOMPurify: any = null;
 
 // DOMPurify configuration (when available)
 const SANITIZE_CONFIG = {
