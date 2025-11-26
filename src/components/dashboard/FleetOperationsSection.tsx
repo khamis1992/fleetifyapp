@@ -58,28 +58,28 @@ export const FleetOperationsSection: React.FC = () => {
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
 
-      // Get scheduled maintenance records
+      // Get scheduled maintenance records from vehicle_maintenance table
       const { data: scheduledMaintenance, error: maintenanceError } = await supabase
-        .from('maintenance_records')
+        .from('vehicle_maintenance')
         .select(`
           id,
           maintenance_type,
           scheduled_date,
           status,
           vehicle_id,
-          vehicles (license_plate)
+          vehicles (plate_number)
         `)
         .eq('company_id', user.profile.company_id)
         .in('status', ['pending', 'in_progress', 'scheduled'])
         .order('scheduled_date', { ascending: true })
         .limit(5);
 
-      if (maintenanceError) console.error('Error fetching scheduled maintenance:', maintenanceError);
+      if (maintenanceError) console.debug('Maintenance query status:', maintenanceError.message);
 
       // Get vehicles currently in maintenance status (not in scheduled records)
       const { data: vehiclesInMaintenance, error: vehiclesError } = await supabase
         .from('vehicles')
-        .select('id, license_plate, status')
+        .select('id, plate_number, status')
         .eq('company_id', user.profile.company_id)
         .in('status', ['maintenance', 'out_of_service'])
         .eq('is_active', true);
@@ -104,7 +104,7 @@ export const FleetOperationsSection: React.FC = () => {
             maintenance_type: v.status === 'out_of_service' ? 'خارج الخدمة' : 'صيانة جارية',
             scheduled_date: new Date().toISOString(), // Current date
             status: 'in_progress',
-            vehicles: { license_plate: v.plate_number }
+            vehicles: { plate_number: v.plate_number }
           }));
         combined.push(...unscheduledVehicles);
       }
@@ -281,7 +281,7 @@ export const FleetOperationsSection: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                     <div>
-                      <p className="font-semibold text-sm">{maintenance.vehicles?.license_plate || 'غير محدد'}</p>
+                      <p className="font-semibold text-sm">{maintenance.vehicles?.plate_number || 'غير محدد'}</p>
                       <p className="text-xs text-gray-600">
                         {maintenance.maintenance_type} - 
                         {isOverdue ? ` متأخر ${Math.abs(daysUntil)} ${Math.abs(daysUntil) === 1 ? 'يوم' : 'أيام'}` :
