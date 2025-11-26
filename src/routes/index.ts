@@ -22,6 +22,7 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
@@ -235,6 +236,18 @@ const routeConfigs: RouteConfig[] = [
     description: 'Main dashboard',
     group: 'dashboard',
     priority: 10,
+    protected: true,
+    layout: 'dashboard',
+  },
+  {
+    path: '/dashboard-v2',
+    component: DashboardV2,
+    lazy: true,
+    exact: true,
+    title: 'Dashboard V2',
+    description: 'New professional dashboard design',
+    group: 'dashboard',
+    priority: 11,
     protected: true,
     layout: 'dashboard',
   },
