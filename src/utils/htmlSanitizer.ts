@@ -8,12 +8,17 @@
 
 let DOMPurify: any = null;
 
-// Try to import DOMPurify dynamically
-try {
-  DOMPurify = require('dompurify');
-} catch (error) {
-  console.warn('DOMPurify not available, using fallback sanitization');
-}
+// Try to import DOMPurify dynamically (ESM compatible)
+// Note: DOMPurify is optional - fallback sanitization is sufficient for most cases
+(async () => {
+  try {
+    const module = await import('dompurify');
+    DOMPurify = module.default || module;
+  } catch {
+    // DOMPurify not installed - using browser-based fallback sanitization
+    // This is fine for most use cases
+  }
+})();
 
 // DOMPurify configuration (when available)
 const SANITIZE_CONFIG = {

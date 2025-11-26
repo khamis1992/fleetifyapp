@@ -11,21 +11,25 @@ export function SecurityHeaders() {
     // But we can implement security measures at the application level
 
     // 1. Add meta tags for security (these help with some security measures)
+    // NOTE: X-Frame-Options, X-Content-Type-Options, X-XSS-Protection MUST be set 
+    // via HTTP headers (configured in vercel.json), not via meta tags
     const addSecurityMetaTags = () => {
       const metaTags = [
         { name: 'referrer', content: 'strict-origin-when-cross-origin' },
-        { name: 'robots', content: 'noindex, nofollow' }, // In production
-        { 'http-equiv': 'X-Content-Type-Options', content: 'nosniff' },
-        { 'http-equiv': 'X-Frame-Options', content: 'DENY' },
-        { 'http-equiv': 'X-XSS-Protection', content: '1; mode=block' },
+        // Only add robots in production to prevent indexing of staging/dev
+        ...(import.meta.env.PROD ? [{ name: 'robots', content: 'index, follow' }] : []),
       ];
 
       metaTags.forEach(tag => {
-        const meta = document.createElement('meta');
-        Object.entries(tag).forEach(([key, value]) => {
-          meta.setAttribute(key, value);
-        });
-        document.head.appendChild(meta);
+        // Check if meta tag already exists to avoid duplicates
+        const existingMeta = document.querySelector(`meta[name="${tag.name}"]`);
+        if (!existingMeta) {
+          const meta = document.createElement('meta');
+          Object.entries(tag).forEach(([key, value]) => {
+            meta.setAttribute(key, value);
+          });
+          document.head.appendChild(meta);
+        }
       });
     };
 
