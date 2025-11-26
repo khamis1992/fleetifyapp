@@ -28,6 +28,7 @@ import {
   LogIn,
   LogOut,
   AlertTriangle,
+  AlertCircle,
   Folder,
   GitBranch,
   Activity,
@@ -193,6 +194,25 @@ const ContractDetailsPage = () => {
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contract?.id && !!companyId,
+  });
+
+  // جلب المخالفات المرورية المرتبطة بالعقد
+  const { data: trafficViolations = [], isLoading: loadingViolations } = useQuery({
+    queryKey: ['contract-traffic-violations', contract?.id, companyId],
+    queryFn: async () => {
+      if (!contract?.id || !companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select('*')
+        .eq('contract_id', contract.id)
+        .eq('company_id', companyId)
+        .order('violation_date', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -750,6 +770,18 @@ const ContractDetailsPage = () => {
                   الغرامات
                 </TabsTrigger>
                 <TabsTrigger
+                  value="violations"
+                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  المخالفات المرورية
+                  {trafficViolations.length > 0 && (
+                    <Badge variant="destructive" className="text-xs h-5 px-1.5 mr-1">
+                      {trafficViolations.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
                   value="documents"
                   className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
                 >
@@ -830,6 +862,107 @@ const ContractDetailsPage = () => {
               {/* تبويب الغرامات */}
               <TabsContent value="fines" className="mt-0">
                 <LateFinesTab contract={contract} />
+              </TabsContent>
+
+              {/* تبويب المخالفات المرورية */}
+              <TabsContent value="violations" className="mt-0">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
+                      <p className="text-sm text-gray-500">المخالفات المرورية المسجلة على هذا العقد</p>
+                    </div>
+                    <Badge variant={trafficViolations.length > 0 ? "destructive" : "secondary"}>
+                      {trafficViolations.length} مخالفة
+                    </Badge>
+                  </div>
+
+                  {loadingViolations ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : trafficViolations.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                      <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">لا توجد مخالفات مرورية مسجلة على هذا العقد</p>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-lg border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="text-right">رقم المخالفة</TableHead>
+                            <TableHead className="text-right">التاريخ</TableHead>
+                            <TableHead className="text-right">نوع المخالفة</TableHead>
+                            <TableHead className="text-right">الموقع</TableHead>
+                            <TableHead className="text-right">المبلغ</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {trafficViolations.map((violation: any) => (
+                            <TableRow key={violation.id} className="hover:bg-gray-50">
+                              <TableCell className="font-mono text-sm">{violation.violation_number}</TableCell>
+                              <TableCell>
+                                {violation.violation_date && format(new Date(violation.violation_date), 'dd/MM/yyyy', { locale: ar })}
+                                {violation.violation_time && (
+                                  <span className="text-xs text-gray-500 mr-2">
+                                    {violation.violation_time}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <span className="font-medium">{violation.violation_type}</span>
+                                  {violation.violation_description && (
+                                    <p className="text-xs text-gray-500 mt-1">{violation.violation_description}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">{violation.location || '-'}</TableCell>
+                              <TableCell className="font-semibold text-red-600">
+                                {formatCurrency(violation.total_amount)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    violation.status === 'paid' ? 'default' :
+                                    violation.status === 'pending' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className={
+                                    violation.status === 'paid' ? 'bg-green-100 text-green-700' :
+                                    violation.status === 'pending' ? 'bg-red-100 text-red-700' :
+                                    ''
+                                  }
+                                >
+                                  {violation.status === 'paid' ? 'مدفوعة' :
+                                   violation.status === 'pending' ? 'غير مدفوعة' :
+                                   violation.status === 'contested' ? 'معترض عليها' :
+                                   violation.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      
+                      {/* ملخص المخالفات */}
+                      <div className="bg-gray-50 p-4 border-t">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">إجمالي المخالفات غير المدفوعة:</span>
+                          <span className="font-bold text-red-600">
+                            {formatCurrency(
+                              trafficViolations
+                                .filter((v: any) => v.status === 'pending')
+                                .reduce((sum: number, v: any) => sum + (v.total_amount || 0), 0)
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* تبويب المستندات */}

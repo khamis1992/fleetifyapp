@@ -41,6 +41,7 @@ import {
   Upload,
   X,
   CheckCircle,
+  FileWarning,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
@@ -48,6 +49,7 @@ import { useCreateLegalCase } from '@/hooks/useLegalCases';
 import { useCaseDraft } from '@/hooks/useCaseDraft';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { LegalComplaintGenerator } from './LegalComplaintGenerator';
 
 interface LegalCaseWizardProps {
   open: boolean;
@@ -79,6 +81,10 @@ interface CaseFormData {
   customer_name: string;
   national_id: string;
   phone: string;
+  email: string;
+  address: string;
+  emergency_contact: string;
+  employer_info: string;
   
   // Evidence files
   evidence_files: Array<{
@@ -90,7 +96,7 @@ interface CaseFormData {
   }>;
 }
 
-type WizardStep = 'details' | 'invoices' | 'customer' | 'evidence' | 'review';
+type WizardStep = 'details' | 'customer' | 'court' | 'invoices' | 'evidence' | 'review';
 
 const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   open,
@@ -98,6 +104,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   onSuccess,
 }) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('details');
+  const [showComplaintGenerator, setShowComplaintGenerator] = useState(false);
   const [formData, setFormData] = useState<CaseFormData>({
     case_title: '',
     case_type: 'payment_collection',
@@ -126,7 +133,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   const createCaseMutation = useCreateLegalCase();
   const { saveDraft, lastSaved } = useCaseDraft(formData, currentStep);
 
-  const stepOrder: WizardStep[] = ['details', 'customer', 'invoices', 'evidence', 'review'];
+  const stepOrder: WizardStep[] = ['details', 'customer', 'court', 'invoices', 'evidence', 'review'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / stepOrder.length) * 100;
 
@@ -219,6 +226,10 @@ Selected العقود: ${formData.selected_contracts.length}
       customer_name: '',
       national_id: '',
       phone: '',
+      email: '',
+      address: '',
+      emergency_contact: '',
+      employer_info: '',
       evidence_files: [],
     });
     setCurrentStep('details');
@@ -246,7 +257,12 @@ Selected العقود: ${formData.selected_contracts.length}
             <CustomerInfoStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 3: Select الفواتير/العقود - Filtered by selected customer */}
+          {/* Step 3: معلومات القضية في المحكمة */}
+          {currentStep === 'court' && (
+            <CourtInfoStep formData={formData} setFormData={setFormData} />
+          )}
+
+          {/* Step 4: Select الفواتير/العقود - Filtered by selected customer */}
           {currentStep === 'invoices' && (
             <InvoiceSelectionStep formData={formData} setFormData={setFormData} />
           )}
@@ -258,7 +274,32 @@ Selected العقود: ${formData.selected_contracts.length}
 
           {/* Step 5: Review */}
           {currentStep === 'review' && (
-            <ReviewStep formData={formData} />
+            <div className="space-y-4">
+              <ReviewStep formData={formData} />
+              
+              {/* زر إنشاء ملف البلاغ */}
+              <Card className="border-orange-200 bg-orange-50/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileWarning className="w-4 h-4 text-orange-600" />
+                    إنشاء ملف البلاغ
+                  </CardTitle>
+                  <CardDescription>
+                    قم بإنشاء مذكرة شارحة للمطالبة المالية وتحويل الغرامات المرورية
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-100"
+                    onClick={() => setShowComplaintGenerator(true)}
+                  >
+                    <FileText className="w-4 h-4 ml-2" />
+                    إنشاء ملف البلاغ
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 
@@ -296,6 +337,21 @@ Selected العقود: ${formData.selected_contracts.length}
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* مكون إنشاء البلاغ */}
+      <LegalComplaintGenerator
+        open={showComplaintGenerator}
+        onOpenChange={setShowComplaintGenerator}
+        caseData={{
+          customer_name: formData.customer_name,
+          customer_id: formData.customer_id,
+          national_id: formData.national_id,
+          phone: formData.phone,
+          total_amount: 0,
+          late_fees: 0,
+          unpaid_rent: 0,
+        }}
+      />
     </Dialog>
   );
 };
@@ -404,93 +460,110 @@ const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
       </div>
+    </div>
+  );
+};
 
-      {/* Court Case Tracking Section */}
-      <div className="border-t pt-4 mt-4">
-        <h3 className="text-lg font-semibold mb-4">معلومات القضية في المحكمة</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="complaint_number" className="text-base font-semibold mb-2 block">
-              رقم البلاغ *
-            </Label>
-            <Input
-              id="complaint_number"
-              placeholder="مثال: 2025/123"
-              value={formData.complaint_number}
-              onChange={(e) => setFormData({ ...formData, complaint_number: e.target.value })}
-            />
-          </div>
+// ============================================================================
+// STEP 3: معلومات القضية في المحكمة
+// ============================================================================
 
-          <div>
-            <Label htmlFor="court_case_number" className="text-base font-semibold mb-2 block">
-              رقم القضية في المحكمة *
-            </Label>
-            <Input
-              id="court_case_number"
-              placeholder="مثال: 456/2025"
-              value={formData.court_case_number}
-              onChange={(e) => setFormData({ ...formData, court_case_number: e.target.value })}
-            />
-          </div>
-        </div>
+interface CourtInfoStepProps {
+  formData: CaseFormData;
+  setFormData: (data: CaseFormData) => void;
+}
 
-        <div className="mt-4">
-          <Label htmlFor="court_name" className="text-base font-semibold mb-2 block">
-            اسم المحكمة *
+const CourtInfoStep: React.FC<CourtInfoStepProps> = ({ formData, setFormData }) => {
+  return (
+    <div className="space-y-4">
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          أدخل معلومات القضية في المحكمة. يمكنك تعديل هذه البيانات لاحقاً.
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="complaint_number" className="text-base font-semibold mb-2 block">
+            رقم البلاغ
           </Label>
           <Input
-            id="court_name"
-            placeholder="مثال: محكمة الدوحة الابتدائية"
-            value={formData.court_name}
-            onChange={(e) => setFormData({ ...formData, court_name: e.target.value })}
+            id="complaint_number"
+            placeholder="مثال: 2025/123"
+            value={formData.complaint_number}
+            onChange={(e) => setFormData({ ...formData, complaint_number: e.target.value })}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <Label htmlFor="filing_date" className="text-base font-semibold mb-2 block">
-              تاريخ رفع القضية *
-            </Label>
-            <Input
-              id="filing_date"
-              type="date"
-              value={formData.filing_date}
-              onChange={(e) => setFormData({ ...formData, filing_date: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="first_hearing_date" className="text-base font-semibold mb-2 block">
-              تاريخ أول جلسة <span className="text-muted-foreground font-normal">(اختياري)</span>
-            </Label>
-            <Input
-              id="first_hearing_date"
-              type="date"
-              value={formData.first_hearing_date}
-              onChange={(e) => setFormData({ ...formData, first_hearing_date: e.target.value })}
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Label htmlFor="judge_name" className="text-base font-semibold mb-2 block">
-            القاضي المسؤول <span className="text-muted-foreground font-normal">(اختياري)</span>
+        <div>
+          <Label htmlFor="court_case_number" className="text-base font-semibold mb-2 block">
+            رقم القضية في المحكمة
           </Label>
           <Input
-            id="judge_name"
-            placeholder="مثال: القاضي محمد أحمد"
-            value={formData.judge_name}
-            onChange={(e) => setFormData({ ...formData, judge_name: e.target.value })}
+            id="court_case_number"
+            placeholder="مثال: 456/2025"
+            value={formData.court_case_number}
+            onChange={(e) => setFormData({ ...formData, court_case_number: e.target.value })}
           />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="court_name" className="text-base font-semibold mb-2 block">
+          اسم المحكمة
+        </Label>
+        <Input
+          id="court_name"
+          placeholder="مثال: محكمة الدوحة الابتدائية"
+          value={formData.court_name}
+          onChange={(e) => setFormData({ ...formData, court_name: e.target.value })}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="filing_date" className="text-base font-semibold mb-2 block">
+            تاريخ رفع القضية
+          </Label>
+          <Input
+            id="filing_date"
+            type="date"
+            value={formData.filing_date}
+            onChange={(e) => setFormData({ ...formData, filing_date: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="first_hearing_date" className="text-base font-semibold mb-2 block">
+            تاريخ أول جلسة <span className="text-muted-foreground font-normal">(اختياري)</span>
+          </Label>
+          <Input
+            id="first_hearing_date"
+            type="date"
+            value={formData.first_hearing_date}
+            onChange={(e) => setFormData({ ...formData, first_hearing_date: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="judge_name" className="text-base font-semibold mb-2 block">
+          القاضي المسؤول <span className="text-muted-foreground font-normal">(اختياري)</span>
+        </Label>
+        <Input
+          id="judge_name"
+          placeholder="مثال: القاضي محمد أحمد"
+          value={formData.judge_name}
+          onChange={(e) => setFormData({ ...formData, judge_name: e.target.value })}
+        />
       </div>
     </div>
   );
 };
 
 // ============================================================================
-// STEP 2: الفواتير Selection
+// STEP 4: الفواتير Selection
 // ============================================================================
 
 interface InvoiceSelectionStepProps {
@@ -538,16 +611,28 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
         if (feesError) throw feesError;
         setLateFees(feesData || []);
         
-        // Fetch traffic violations (penalties)
-        const { data: violationsData, error: violationsError } = await supabase
-          .from('penalties')
-          .select('id, penalty_number, violation_type, amount, penalty_date, payment_status, vehicle_plate')
-          .eq('customer_id', formData.customer_id)
-          .eq('payment_status', 'unpaid')
-          .order('penalty_date', { ascending: false });
+        // Fetch traffic violations via contracts
+        // First get customer's contracts
+        const { data: contractsData } = await supabase
+          .from('contracts')
+          .select('id')
+          .eq('customer_id', formData.customer_id);
         
-        if (violationsError) throw violationsError;
-        setTrafficViolations(violationsData || []);
+        if (contractsData && contractsData.length > 0) {
+          const contractIds = contractsData.map(c => c.id);
+          const { data: violationsData, error: violationsError } = await supabase
+            .from('traffic_violations')
+            .select('id, violation_number, violation_type, total_amount, violation_date, status')
+            .in('contract_id', contractIds)
+            .eq('status', 'pending')
+            .order('violation_date', { ascending: false });
+          
+          if (violationsError) {
+            console.warn('Traffic violations query error:', violationsError);
+          } else {
+            setTrafficViolations(violationsData || []);
+          }
+        }
         
       } catch (error) {
         console.error('Error fetching outstanding amounts:', error);
@@ -561,7 +646,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   // Calculate total outstanding amount
   const totalRent = unpaidRent.reduce((sum, inv) => sum + inv.total_amount, 0);
   const totalLateFees = lateFees.reduce((sum, fee) => sum + fee.fee_amount, 0);
-  const totalViolations = trafficViolations.reduce((sum, v) => sum + v.amount, 0);
+  const totalViolations = trafficViolations.reduce((sum, v) => sum + (v.total_amount || 0), 0);
   const grandTotal = totalRent + totalLateFees + totalViolations;
 
 
@@ -701,14 +786,13 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
                   className="flex items-center gap-3 p-3 border rounded-lg"
                 >
                   <div className="flex-1">
-                    <div className="font-medium">{violation.penalty_number}</div>
+                    <div className="font-medium">{violation.violation_number}</div>
                     <div className="text-sm text-muted-foreground">
                       {violation.violation_type} | 
-                      لوحة: {violation.vehicle_plate} | 
-                      التاريخ: {new Date(violation.penalty_date).toLocaleDateString('ar-QA')}
+                      التاريخ: {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('ar-QA') : '-'}
                     </div>
                   </div>
-                  <Badge variant="destructive">{formatCurrency(violation.amount)}</Badge>
+                  <Badge variant="destructive">{formatCurrency(violation.total_amount)}</Badge>
                 </div>
               ))
             )}
@@ -1239,14 +1323,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           setSelectedContractsData(contractsData || []);
         }
         
-        // Note: Penalties are stored in selected_invoices array with 'penalty-' prefix
-        const penaltyIds = formData.selected_invoices.filter(id => id.startsWith('penalty-')).map(id => id.replace('penalty-', ''));
-        if (penaltyIds.length > 0) {
-          const { data: penaltiesData } = await supabase
-            .from('penalties')
-            .select('id, penalty_number, violation_type, amount, penalty_date, vehicle_plate')
-            .in('id', penaltyIds);
-          setSelectedPenaltiesData(penaltiesData || []);
+        // Note: Violations are stored in selected_invoices array with 'violation-' prefix
+        const violationIds = formData.selected_invoices.filter(id => id.startsWith('violation-')).map(id => id.replace('violation-', ''));
+        if (violationIds.length > 0) {
+          const { data: violationsData, error: violationsError } = await supabase
+            .from('traffic_violations')
+            .select('id, violation_number, violation_type, total_amount, violation_date')
+            .in('id', violationIds);
+          if (!violationsError) {
+            setSelectedPenaltiesData(violationsData || []);
+          }
         }
         
       } catch (error) {
@@ -1344,7 +1430,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                 </div>
               )}
 
-              {/* Penalties Section */}
+              {/* Violations Section */}
               {selectedPenaltiesData.length > 0 && (
                 <div>
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
@@ -1352,18 +1438,18 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                     <Badge variant="secondary">{selectedPenaltiesData.length}</Badge>
                   </h4>
                   <div className="space-y-2">
-                    {selectedPenaltiesData.map((penalty) => (
-                      <div key={penalty.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    {selectedPenaltiesData.map((violation: any) => (
+                      <div key={violation.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                         <div>
-                          <div className="font-medium">{penalty.penalty_number}</div>
+                          <div className="font-medium">{violation.violation_number}</div>
                           <div className="text-sm text-muted-foreground">
-                            {penalty.violation_type} • {penalty.vehicle_plate}
+                            {violation.violation_type}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(penalty.penalty_date).toLocaleDateString('ar-QA')}
+                            {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('ar-QA') : '-'}
                           </div>
                         </div>
-                        <div className="font-bold text-destructive">{formatCurrency(penalty.amount)}</div>
+                        <div className="font-bold text-destructive">{formatCurrency(violation.total_amount)}</div>
                       </div>
                     ))}
                   </div>

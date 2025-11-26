@@ -290,6 +290,7 @@ export const useCustomers = (filters?: CustomerFilters) => {
     staleTime: 30 * 1000, // 30 seconds for faster updates
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
+    refetchOnMount: true, // Always refetch on mount to ensure fresh data
     // Add better error handling and defaults
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),

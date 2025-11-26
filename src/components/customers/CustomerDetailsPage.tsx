@@ -57,6 +57,7 @@ import {
   Activity,
   FilePlus,
   UserPlus,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -209,6 +210,47 @@ const CustomerDetailsPage = () => {
   const uploadDocument = useUploadCustomerDocument();
   const deleteDocument = useDeleteCustomerDocument();
   const downloadDocument = useDownloadCustomerDocument();
+
+  // جلب المخالفات المرورية المرتبطة بالعميل (عبر العقود)
+  const { data: trafficViolations = [], isLoading: loadingViolations } = useQuery({
+    queryKey: ['customer-traffic-violations', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+
+      // جلب المخالفات المرتبطة بعقود العميل
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select(`
+          *,
+          contract:contracts!contract_id(
+            id,
+            contract_number,
+            customer_id
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            make,
+            model,
+            plate_number
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('violation_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching traffic violations:', error);
+        return [];
+      }
+
+      // تصفية المخالفات المرتبطة بالعميل
+      const customerViolations = data?.filter(
+        v => v.contract?.customer_id === customerId
+      ) || [];
+
+      return customerViolations;
+    },
+    enabled: !!customerId && !!companyId,
+  });
 
   // حساب الإحصائيات من البيانات الحقيقية
   const stats = useMemo(() => {
@@ -896,6 +938,23 @@ const CustomerDetailsPage = () => {
               المستندات
             </button>
             <button
+              onClick={() => setActiveTab('violations')}
+              className={cn(
+                "px-6 py-4 font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap border-b-3",
+                activeTab === 'violations'
+                  ? 'text-red-600 border-red-600 bg-transparent'
+                  : 'text-gray-500 border-transparent hover:text-gray-900 hover:bg-gray-50'
+              )}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              المخالفات
+              {trafficViolations.length > 0 && (
+                <Badge variant="destructive" className="mr-1 text-xs">
+                  {trafficViolations.length}
+                </Badge>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('activity')}
               className={cn(
                 "px-6 py-4 font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap border-b-3",
@@ -1346,6 +1405,129 @@ const CustomerDetailsPage = () => {
                     <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                     <p>لا توجد مستندات مرفوعة حتى الآن</p>
                     <p className="text-sm mt-1">ابدأ برفع المستندات باستخدام الزر أعلاه</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* تبويب المخالفات المرورية */}
+            {activeTab === 'violations' && (
+              <div className="animate-in fade-in-50 duration-300">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">المخالفات المرورية</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      إجمالي {trafficViolations.length} مخالفة مسجلة
+                    </p>
+                  </div>
+                </div>
+
+                {loadingViolations ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <span className="mr-2 text-gray-500">جاري تحميل المخالفات...</span>
+                  </div>
+                ) : trafficViolations.length > 0 ? (
+                  <div className="space-y-4">
+                    {trafficViolations.map((violation: any, index: number) => (
+                      <div 
+                        key={violation.id}
+                        className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start gap-4">
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center",
+                              violation.status === 'paid' 
+                                ? "bg-green-100" 
+                                : violation.status === 'pending' 
+                                  ? "bg-yellow-100" 
+                                  : "bg-red-100"
+                            )}>
+                              <AlertTriangle className={cn(
+                                "w-6 h-6",
+                                violation.status === 'paid' 
+                                  ? "text-green-600" 
+                                  : violation.status === 'pending' 
+                                    ? "text-yellow-600" 
+                                    : "text-red-600"
+                              )} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{violation.violation_type}</h4>
+                              <p className="text-sm text-gray-500 mt-1">
+                                رقم المخالفة: {violation.violation_number}
+                              </p>
+                              {violation.vehicle && (
+                                <p className="text-sm text-gray-500">
+                                  المركبة: {violation.vehicle.make} {violation.vehicle.model} - {violation.vehicle.plate_number}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className={cn(
+                            "px-3 py-1",
+                            violation.status === 'paid' 
+                              ? "bg-green-100 text-green-700" 
+                              : violation.status === 'pending' 
+                                ? "bg-yellow-100 text-yellow-700" 
+                                : "bg-red-100 text-red-700"
+                          )}>
+                            {violation.status === 'paid' ? 'مدفوعة' : violation.status === 'pending' ? 'قيد السداد' : 'غير مدفوعة'}
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">تاريخ المخالفة</p>
+                            <p className="font-semibold text-gray-900">
+                              {violation.violation_date 
+                                ? format(new Date(violation.violation_date), 'dd/MM/yyyy', { locale: ar }) 
+                                : '-'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">الموقع</p>
+                            <p className="font-semibold text-gray-900">{violation.location || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">المبلغ</p>
+                            <p className="font-bold text-red-600">{violation.fine_amount?.toLocaleString()} ر.ق</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">الجهة المصدرة</p>
+                            <p className="font-semibold text-gray-900">{violation.issuing_authority || '-'}</p>
+                          </div>
+                        </div>
+
+                        {violation.violation_description && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-1">الوصف</p>
+                            <p className="text-sm text-gray-700">{violation.violation_description}</p>
+                          </div>
+                        )}
+
+                        {violation.contract && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => navigate(`/contracts/${violation.contract.contract_number}`)}
+                            >
+                              <FileText className="w-4 h-4" />
+                              عرض العقد #{violation.contract.contract_number}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-500 border border-gray-200">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p className="font-medium">لا توجد مخالفات مرورية مسجلة</p>
+                    <p className="text-sm mt-1">لم يتم تسجيل أي مخالفات على عقود هذا العميل</p>
                   </div>
                 )}
               </div>

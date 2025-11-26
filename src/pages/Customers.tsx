@@ -78,10 +78,8 @@ import {
   CustomerDetailsDialog, 
   BulkDeleteCustomersDialog, 
   CustomerCSVUpload, 
-  CustomerImportWizard, 
-  CustomerCreationOptionsDialog 
+  CustomerImportWizard
 } from '@/components/customers';
-import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { MobileCustomerCard } from '@/components/customers';
@@ -93,23 +91,24 @@ import { PageHelp } from '@/components/help';
 import { CustomersPageHelpContent } from '@/components/help/content/CustomersPageHelp';
 
 const Customers = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { isMobile } = useSimpleBreakpoint();
-  const { hasFullCompanyControl, companyId } = useUnifiedCompanyAccess();
+  const { hasFullCompanyControl, companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { hasPermission } = useRolePermissions();
   
   const canEdit = hasPermission('edit_customers');
   const canDelete = hasPermission('delete_customers');
   const parentRef = useRef<HTMLDivElement>(null);
   
+  // Show loading state while authentication or company data is loading
+  const isInitialLoading = authLoading || isAuthenticating || !companyId;
+  
   // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [customerType, setCustomerType] = useState<'all' | 'individual' | 'corporate'>('all');
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [showCreationOptionsDialog, setShowCreationOptionsDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showQuickCreateDialog, setShowQuickCreateDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -278,15 +277,8 @@ const Customers = () => {
 
   // Event handlers
   const handleCreateCustomer = () => {
-    setShowCreationOptionsDialog(true);
-  };
-
-  const handleSelectFullForm = () => {
+    // فتح نموذج إضافة العميل الكامل مباشرة
     setShowCreateDialog(true);
-  };
-
-  const handleSelectQuickAdd = () => {
-    setShowQuickCreateDialog(true);
   };
 
   const handleBulkDelete = () => {
@@ -717,6 +709,18 @@ const Customers = () => {
     return colors[index % colors.length];
   };
 
+  // Show loading screen while company data is being loaded
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">جاري تحميل بيانات العملاء...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Mobile view
   if (isMobile) {
     return (
@@ -869,13 +873,6 @@ const Customers = () => {
         </PageCustomizer>
         
         {/* Shared Dialogs for Mobile */}
-        <CustomerCreationOptionsDialog
-          open={showCreationOptionsDialog}
-          onOpenChange={setShowCreationOptionsDialog}
-          onSelectFullForm={handleSelectFullForm}
-          onSelectQuickAdd={handleSelectQuickAdd}
-        />
-        
         <EnhancedCustomerDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
@@ -920,15 +917,6 @@ const Customers = () => {
           onComplete={() => {
             refetch();
             toast.success('تم استيراد العملاء بنجاح');
-          }}
-        />
-        
-        <QuickCustomerForm
-          open={showQuickCreateDialog}
-          onOpenChange={setShowQuickCreateDialog}
-          onSuccess={(customerId, customerData) => {
-            refetch();
-            toast.success('تم إنشاء العميل السريع بنجاح');
           }}
         />
 
@@ -1355,13 +1343,6 @@ const Customers = () => {
       </PageCustomizer>
       
       {/* Shared Dialogs for Desktop */}
-      <CustomerCreationOptionsDialog
-        open={showCreationOptionsDialog}
-        onOpenChange={setShowCreationOptionsDialog}
-        onSelectFullForm={handleSelectFullForm}
-        onSelectQuickAdd={handleSelectQuickAdd}
-      />
-      
       <EnhancedCustomerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
@@ -1406,15 +1387,6 @@ const Customers = () => {
         onComplete={() => {
           refetch();
           toast.success('تم استيراد العملاء بنجاح');
-        }}
-      />
-
-      <QuickCustomerForm
-        open={showQuickCreateDialog}
-        onOpenChange={setShowQuickCreateDialog}
-        onSuccess={(customerId, customerData) => {
-          refetch();
-          toast.success('تم إنشاء العميل السريع بنجاح');
         }}
       />
 
