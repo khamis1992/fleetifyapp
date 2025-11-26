@@ -103,6 +103,8 @@ const IntegrationDashboard = lazy(() => import('@/pages/dashboards/IntegrationDa
 const VendorCategories = lazy(() => import('@/pages/finance/VendorCategories'));
 const ARAgingReport = lazy(() => import('@/pages/finance/ARAgingReport'));
 const PaymentTracking = lazy(() => import('@/pages/finance/PaymentTracking'));
+const Vendors = lazy(() => import('@/pages/finance/Vendors'));
+const PurchaseOrders = lazy(() => import('@/pages/finance/PurchaseOrders'));
 
 // Sales/CRM Management pages
 const SalesPipeline = lazy(() => import('@/pages/sales/SalesPipeline'));
@@ -995,6 +997,32 @@ const routeConfigs: RouteConfig[] = [
     description: 'HR settings',
     group: 'hr',
     priority: 87,
+    protected: true,
+    layout: 'dashboard',
+  },
+
+  // === Finance Sub-routes ===
+  {
+    path: '/finance/vendors',
+    component: Vendors,
+    lazy: true,
+    exact: true,
+    title: 'Vendors',
+    description: 'Vendor management',
+    group: 'finance',
+    priority: 88,
+    protected: true,
+    layout: 'dashboard',
+  },
+  {
+    path: '/finance/purchase-orders',
+    component: PurchaseOrders,
+    lazy: true,
+    exact: true,
+    title: 'Purchase Orders',
+    description: 'Purchase order management',
+    group: 'finance',
+    priority: 89,
     protected: true,
     layout: 'dashboard',
   },
