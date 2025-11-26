@@ -21,7 +21,11 @@ import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 
 
-export const DashboardLayout: React.FC = () => {
+interface DashboardLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -118,7 +122,7 @@ export const DashboardLayout: React.FC = () => {
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto p-6">
-            <Outlet />
+            {children || <Outlet />}
           </main>
         </div>
         <QuickActionBar />
