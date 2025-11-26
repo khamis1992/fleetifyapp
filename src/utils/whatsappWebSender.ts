@@ -24,49 +24,41 @@ interface UltramsgResponse {
   error?: string;
 }
 
-// Storage key for Ultramsg settings
-const ULTRAMSG_CONFIG_KEY = 'ultramsg_config';
+// ============================================
+// ULTRAMSG FIXED CONFIGURATION - DO NOT CHANGE
+// ============================================
+const ULTRAMSG_INSTANCE_ID = 'instance148672';
+const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
 
 /**
- * Get Ultramsg configuration from localStorage
+ * Get Ultramsg configuration (fixed values)
  */
-export const getUltramsgConfig = (): UltramsgConfig | null => {
-  try {
-    const config = localStorage.getItem(ULTRAMSG_CONFIG_KEY);
-    if (config) {
-      return JSON.parse(config);
-    }
-  } catch (error) {
-    console.error('Error reading Ultramsg config:', error);
-  }
-  return null;
+export const getUltramsgConfig = (): UltramsgConfig => {
+  return {
+    instanceId: ULTRAMSG_INSTANCE_ID,
+    token: ULTRAMSG_TOKEN,
+  };
 };
 
 /**
- * Save Ultramsg configuration to localStorage
+ * Save Ultramsg configuration (disabled - using fixed values)
  */
-export const saveUltramsgConfig = (config: UltramsgConfig): void => {
-  try {
-    localStorage.setItem(ULTRAMSG_CONFIG_KEY, JSON.stringify(config));
-    console.log('✅ Ultramsg config saved successfully');
-  } catch (error) {
-    console.error('Error saving Ultramsg config:', error);
-  }
+export const saveUltramsgConfig = (_config: UltramsgConfig): void => {
+  console.log('ℹ️ Ultramsg config is fixed and cannot be changed');
 };
 
 /**
- * Clear Ultramsg configuration
+ * Clear Ultramsg configuration (disabled - using fixed values)
  */
 export const clearUltramsgConfig = (): void => {
-  localStorage.removeItem(ULTRAMSG_CONFIG_KEY);
+  console.log('ℹ️ Ultramsg config is fixed and cannot be cleared');
 };
 
 /**
- * Check if Ultramsg is configured
+ * Check if Ultramsg is configured (always true with fixed config)
  */
 export const isUltramsgConfigured = (): boolean => {
-  const config = getUltramsgConfig();
-  return !!(config?.instanceId && config?.token);
+  return true;
 };
 
 /**
