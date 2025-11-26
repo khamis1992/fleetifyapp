@@ -66,7 +66,8 @@ export function isFeatureEnabled(featureName: string): boolean {
  * Get API base URL
  */
 export function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+  // Use full backend URL directly to avoid Vercel rewrite issues
+  return import.meta.env.VITE_API_URL || 'https://fleetify-backend-production.up.railway.app';
 }
 
 /**
