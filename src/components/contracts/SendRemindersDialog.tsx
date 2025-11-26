@@ -94,7 +94,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           monthly_amount,
           monthly_rent,
           status,
-          customers(
+          customer:customers!customer_id(
             id,
             first_name_ar,
             last_name_ar,
@@ -107,7 +107,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           )
         `)
         .eq('company_id', companyId)
-        .in('status', ['active', 'rented', 'approved'])
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -116,12 +116,14 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         return;
       }
 
+      console.log('📋 [SendRemindersDialog] Raw data from Supabase:', data?.length, data?.[0]);
+
       // Map to Contract interface
-      const mappedContracts: Contract[] = (data || []).map(c => ({
+      const mappedContracts: Contract[] = (data || []).map((c: any) => ({
         id: c.id,
         contract_number: c.contract_number,
-        customer_phone: c.customers?.phone,
-        customers: c.customers,
+        customer_phone: c.customer?.phone,
+        customers: c.customer,
         monthly_rent: c.monthly_rent,
         monthly_amount: c.monthly_amount,
         status: c.status,

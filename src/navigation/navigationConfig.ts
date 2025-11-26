@@ -343,7 +343,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Legal Affairs (Combined - 4 items)
+  // Legal Affairs (Combined - 2 items)
   {
     id: 'legal',
     name: 'الشؤون القانونية',
@@ -361,18 +361,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         name: 'تتبع القضايا',
         href: '/legal/cases',
         icon: FileText,
-      },
-      {
-        id: 'legal-disputes',
-        name: 'نزاعات الفواتير',
-        href: '/legal/invoice-disputes',
-        icon: AlertCircle,
-      },
-      {
-        id: 'legal-late-fees',
-        name: 'غرامات التأخير والتذكيرات',
-        href: '/legal/late-fees',
-        icon: AlertTriangle,
       },
     ],
   },
