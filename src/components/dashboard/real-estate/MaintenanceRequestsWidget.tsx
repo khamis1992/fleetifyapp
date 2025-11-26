@@ -55,24 +55,31 @@ export const MaintenanceRequestsWidget: React.FC = () => {
         return [];
       }
 
-      let query = supabase
-        .from('property_maintenance')
-        .select('*');
+      // GRACEFUL HANDLING: property_maintenance table may not exist
+      try {
+        let query = supabase
+          .from('property_maintenance')
+          .select('*');
 
-      if (filter.company_id) {
-        query = query.eq('company_id', filter.company_id);
-      } else if (companyId && !hasGlobalAccess) {
-        query = query.eq('company_id', companyId);
-      }
+        if (filter.company_id) {
+          query = query.eq('company_id', filter.company_id);
+        } else if (companyId && !hasGlobalAccess) {
+          query = query.eq('company_id', companyId);
+        }
 
-      const { data, error } = await query.order('requested_date', { ascending: false });
+        const { data, error } = await query.order('requested_date', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching maintenance data:', error);
+        if (error) {
+          // Table may not exist - return empty array silently
+          console.warn('property_maintenance table not available:', error.message);
+          return [];
+        }
+
+        return data as MaintenanceRequest[];
+      } catch (err) {
+        console.warn('Error fetching maintenance data:', err);
         return [];
       }
-
-      return data as MaintenanceRequest[];
     },
     enabled: !!(companyId || hasGlobalAccess),
   });

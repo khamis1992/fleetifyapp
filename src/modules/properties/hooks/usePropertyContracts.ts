@@ -12,21 +12,10 @@ export function usePropertyContracts(propertyId?: string) {
     queryFn: async () => {
       if (!companyId) return [];
       
+      // SIMPLIFIED: Avoid explicit FK names that may not exist
       let query = supabase
         .from('property_contracts')
-        .select(`
-          *,
-          properties!fk_property_contracts_property (
-            id,
-            property_name,
-            property_name_ar
-          ),
-          tenants!fk_property_contracts_tenant (
-            id,
-            full_name,
-            full_name_ar
-          )
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -89,22 +78,11 @@ export function useCreatePropertyContract() {
         contract_number: contractData.contract_number || `PROP-${Date.now()}`
       };
 
+      // SIMPLIFIED: Avoid explicit FK names that may not exist
       const { data, error } = await supabase
         .from('property_contracts')
         .insert(contractWithDefaults)
-        .select(`
-          *,
-          properties!fk_property_contracts_property (
-            id,
-            property_name,
-            property_name_ar
-          ),
-          tenants!fk_property_contracts_tenant (
-            id,
-            full_name,
-            full_name_ar
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {

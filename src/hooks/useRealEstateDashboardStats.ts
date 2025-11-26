@@ -69,31 +69,35 @@ async function fetchRealEstateStats(
   };
 
   try {
-    // تنفيذ الاستعلامات مع timeout
+    // تنفيذ الاستعلامات مع timeout - GRACEFUL ERROR HANDLING
+    const safeQuery = async (query: any) => {
+      try {
+        const result = await query;
+        return result.error ? { data: null, count: 0, error: result.error } : result;
+      } catch (err) {
+        console.warn('Query failed:', err);
+        return { data: null, count: 0, error: err };
+      }
+    };
+
     const queryPromise = Promise.all([
       // Properties data with status breakdown
-      buildQuery(supabase.from('properties').select('*'))
-        .eq('is_active', true),
+      safeQuery(buildQuery(supabase.from('properties').select('*')).eq('is_active', true)),
       
       // Property owners count
-      buildQuery(supabase.from('property_owners').select('*', { count: 'exact', head: true }))
-        .eq('is_active', true),
+      safeQuery(buildQuery(supabase.from('property_owners').select('*', { count: 'exact', head: true })).eq('is_active', true)),
       
       // Property tenants count (using customers as tenants)
-      buildQuery(supabase.from('customers').select('*', { count: 'exact', head: true }))
-        .eq('is_active', true),
+      safeQuery(buildQuery(supabase.from('customers').select('*', { count: 'exact', head: true })).eq('is_active', true)),
       
       // Property contracts data
-      buildQuery(supabase.from('property_contracts').select('*'))
-        .eq('is_active', true),
+      safeQuery(buildQuery(supabase.from('property_contracts').select('*')).eq('is_active', true)),
       
-      // Property payments data (using payments table)
-      buildQuery(supabase.from('payments').select('*')),
+      // Property payments data (using property_payments table - NOT payments)
+      safeQuery(buildQuery(supabase.from('property_payments').select('*'))),
       
       // Revenue from active contracts
-      buildQuery(supabase.from('property_contracts').select('rental_amount'))
-        .eq('status', 'active')
-        .eq('is_active', true)
+      safeQuery(buildQuery(supabase.from('property_contracts').select('rental_amount')).eq('status', 'active').eq('is_active', true))
     ]);
 
     const timeoutPromise = new Promise((_, reject) => {

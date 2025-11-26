@@ -6,24 +6,10 @@ export function usePropertyPayments(contractId?: string) {
   return useQuery({
     queryKey: ['property-payments', contractId],
     queryFn: async () => {
+      // SIMPLIFIED: Avoid nested joins that may cause 400 errors
       let query = supabase
         .from('property_payments')
-        .select(`
-          *,
-          property_contracts!inner(
-            id,
-            contract_number,
-            property_id,
-            properties(property_name, property_code)
-          ),
-          journal_entries(
-            id,
-            journal_entry_number,
-            entry_date,
-            total_amount,
-            status
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (contractId) {
@@ -34,7 +20,8 @@ export function usePropertyPayments(contractId?: string) {
 
       if (error) {
         console.error('Error fetching property payments:', error);
-        throw error;
+        // Return empty array instead of throwing to avoid breaking the UI
+        return [];
       }
 
       return data as any[];
@@ -49,38 +36,16 @@ export function usePropertyPayment(id?: string) {
     queryFn: async () => {
       if (!id) return null;
 
+      // SIMPLIFIED: Avoid nested joins that may cause 400 errors
       const { data, error } = await supabase
         .from('property_payments')
-        .select(`
-          *,
-          property_contracts!inner(
-            id,
-            contract_number,
-            property_id,
-            properties(property_name, property_code)
-          ),
-          journal_entries(
-            id,
-            journal_entry_number,
-            entry_date,
-            total_amount,
-            status,
-            journal_entry_lines(
-              id,
-              account_id,
-              description,
-              debit_amount,
-              credit_amount,
-              chart_of_accounts(account_code, account_name, account_name_ar)
-            )
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
       if (error) {
         console.error('Error fetching property payment:', error);
-        throw error;
+        return null;
       }
 
       return data as any;
@@ -101,19 +66,11 @@ export function useCreatePropertyPayment() {
         payment_date: paymentData.payment_date || new Date().toISOString()
       };
 
+      // SIMPLIFIED: Avoid nested joins
       const { data, error } = await supabase
         .from('property_payments')
         .insert(paymentWithStatus)
-        .select(`
-          *,
-          journal_entries(
-            id,
-            journal_entry_number,
-            entry_date,
-            total_amount,
-            status
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -148,20 +105,12 @@ export function useUpdatePropertyPayment() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      // SIMPLIFIED: Avoid nested joins
       const { data, error } = await supabase
         .from('property_payments')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          journal_entries(
-            id,
-            journal_entry_number,
-            entry_date,
-            total_amount,
-            status
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -192,24 +141,17 @@ export function useOverduePropertyPayments() {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
 
+      // SIMPLIFIED: Avoid nested joins that may cause 400 errors
       const { data, error } = await supabase
         .from('property_payments')
-        .select(`
-          *,
-          property_contracts!inner(
-            id,
-            contract_number,
-            property_id,
-            properties(property_name, property_code)
-          )
-        `)
+        .select('*')
         .eq('status', 'pending')
         .lt('due_date', today)
         .order('due_date', { ascending: true });
 
       if (error) {
         console.error('Error fetching overdue property payments:', error);
-        throw error;
+        return [];
       }
 
       return data as any[];
@@ -222,24 +164,10 @@ export function usePropertyPaymentsByDateRange(startDate?: string, endDate?: str
   return useQuery({
     queryKey: ['property-payments', 'date-range', startDate, endDate],
     queryFn: async () => {
+      // SIMPLIFIED: Avoid nested joins that may cause 400 errors
       let query = supabase
         .from('property_payments')
-        .select(`
-          *,
-          property_contracts!inner(
-            id,
-            contract_number,
-            property_id,
-            properties(property_name, property_code)
-          ),
-          journal_entries(
-            id,
-            journal_entry_number,
-            entry_date,
-            total_amount,
-            status
-          )
-        `)
+        .select('*')
         .order('payment_date', { ascending: false });
 
       if (startDate) {
@@ -253,7 +181,7 @@ export function usePropertyPaymentsByDateRange(startDate?: string, endDate?: str
 
       if (error) {
         console.error('Error fetching property payments by date range:', error);
-        throw error;
+        return [];
       }
 
       return data as any[];
