@@ -113,20 +113,36 @@ export const getCompanyFilter = (context: CompanyScopeContext, forceOwnCompany: 
     return { company_id: context.companyId };
   }
   
-  // SECURITY FIX: During auth initialization, user might not have company loaded yet
-  // Instead of blocking completely, log warning and return empty (which will show no data)
-  // This prevents the app from being stuck in error state during auth load
+  // No user context - auth still loading
   if (!context.user) {
-    logger.warn('⚠️ [getCompanyFilter] No user context - auth may still be loading');
+    logger.debug('⏳ [getCompanyFilter] No user context - auth still loading');
     return { company_id: '__loading__' }; // Will match nothing, but won't block UI
   }
   
-  // Final security fallback: user exists but no company association
-  logger.error('🚨 [getCompanyFilter] SECURITY: User has no company association - blocking access', {
+  // RACE CONDITION FIX: User exists but company_id not yet loaded
+  // This happens during early auth initialization when session is found but profile
+  // fetch is still in progress. Check if user looks like it's still initializing
+  // (has id but missing company data that should be loaded from profile)
+  const userHasBasicAuthOnly = context.user?.id && 
+    !context.user?.company?.id && 
+    !(context.user as any)?.company_id &&
+    !context.user?.profile?.company_id;
+  
+  if (userHasBasicAuthOnly) {
+    // User session exists but profile/company not loaded yet - this is an intermediate state
+    logger.debug('⏳ [getCompanyFilter] User authenticated but company data still loading', {
+      userId: context.user?.id
+    });
+    return { company_id: '__loading__' }; // Will match nothing, but won't block UI - queries will refetch when company loads
+  }
+  
+  // Final security fallback: user fully loaded but genuinely has no company association
+  // This is a real issue that should be logged
+  logger.warn('⚠️ [getCompanyFilter] User has no company association after full load', {
     userId: context.user?.id,
     email: context.user?.email
   });
-  return { company_id: 'no-access-security-block' };
+  return { company_id: '__no_company__' }; // Return placeholder that matches nothing
 };
 
 /**
