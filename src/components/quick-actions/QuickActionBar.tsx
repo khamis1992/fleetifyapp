@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Plus, UserPlus, Package, ShoppingCart, Building, X } from 'lucide-react';
+import { Plus, CreditCard, FileText, Search, ShoppingCart, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -25,19 +25,29 @@ export const QuickActionBar: React.FC = () => {
 
   const quickActions: QuickAction[] = [
     {
-      label: 'إضافة عميل محتمل',
-      icon: UserPlus,
+      label: 'تسجيل دفعة',
+      icon: CreditCard,
       action: () => {
-        navigate('/sales/leads');
+        navigate('/payments/quick');
+        setIsExpanded(false);
+      },
+      color: 'text-green-500',
+    },
+    {
+      label: 'إنشاء عقد',
+      icon: FileText,
+      action: () => {
+        navigate('/contracts/new');
         setIsExpanded(false);
       },
       color: 'text-blue-500',
     },
     {
-      label: 'إضافة صنف مخزني',
-      icon: Package,
+      label: 'البحث',
+      icon: Search,
       action: () => {
-        navigate('/inventory');
+        // Trigger keyboard shortcut for quick search (Ctrl+K)
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
         setIsExpanded(false);
       },
       color: 'text-purple-500',
@@ -50,15 +60,6 @@ export const QuickActionBar: React.FC = () => {
         setIsExpanded(false);
       },
       color: 'text-orange-500',
-    },
-    {
-      label: 'إضافة مورد',
-      icon: Building,
-      action: () => {
-        navigate('/finance/vendors');
-        setIsExpanded(false);
-      },
-      color: 'text-green-500',
     },
   ];
 
