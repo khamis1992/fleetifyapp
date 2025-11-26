@@ -1,28 +1,202 @@
 /**
  * Supabase Edge Function: Send WhatsApp Reminders
  * ================================================
- * Purpose: Process queued payment reminders and send via WhatsApp
+ * Purpose: Process automated payment reminders via WhatsApp
  * Integration: Ultramsg API
- * Trigger: Manual invoke or Cron job
+ * 
+ * Schedule:
+ * - Day 28: Pre-due reminder (3 days before due date)
+ * - Day 2: Late payment notice with penalty
+ * - Day 5: Final warning
+ * - Day 10: Legal action notice
+ * 
+ * Trigger: Cron job or manual invoke
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Environment variables
-const ULTRAMSG_INSTANCE_ID = Deno.env.get('ULTRAMSG_INSTANCE_ID');
-const ULTRAMSG_TOKEN = Deno.env.get('ULTRAMSG_TOKEN');
+// ============================================
+// ULTRAMSG CONFIGURATION
+// ============================================
+const ULTRAMSG_INSTANCE_ID = 'instance148672';
+const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-interface Reminder {
+// Company info
+const COMPANY_NAME = 'شركة العراف لتأجير السيارات';
+const DAILY_LATE_FEE = 120; // QAR per day
+
+// Reminder types
+type ReminderType = 'pre_due' | 'overdue_day2' | 'final_warning' | 'legal_action';
+
+interface Contract {
   id: string;
-  phone_number: string;
-  message_template: string;
-  customer_name: string;
-  invoice_id: string;
+  contract_number: string;
   customer_id: string;
-  reminder_type: string;
+  monthly_amount: number;
+  customer: {
+    first_name_ar?: string;
+    last_name_ar?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name_ar?: string;
+    company_name?: string;
+    customer_type?: string;
+    phone?: string;
+  };
+}
+
+/**
+ * Get customer display name
+ */
+function getCustomerName(customer: Contract['customer']): string {
+  if (customer.customer_type === 'corporate') {
+    return customer.company_name_ar || customer.company_name || 'العميل الكريم';
+  }
+  const firstName = customer.first_name_ar || customer.first_name || '';
+  const lastName = customer.last_name_ar || customer.last_name || '';
+  return `${firstName} ${lastName}`.trim() || 'العميل الكريم';
+}
+
+/**
+ * Format phone number for WhatsApp
+ */
+function formatPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  }
+  if (!cleaned.startsWith('974') && cleaned.length === 8) {
+    cleaned = '974' + cleaned;
+  }
+  return cleaned;
+}
+
+/**
+ * Generate reminder message based on type
+ */
+function generateMessage(
+  type: ReminderType,
+  customerName: string,
+  contractNumber: string,
+  amount: number,
+  daysLate: number = 0
+): string {
+  switch (type) {
+    case 'pre_due':
+      return `السلام عليكم ورحمة الله وبركاته
+
+${customerName} الكريم،
+
+نود تذكيركم بأن موعد سداد الإيجار الشهري سيحين يوم 1 من الشهر القادم.
+
+━━━━━━━━━━━━━━━━━━
+📋 رقم العقد: ${contractNumber}
+💰 المبلغ المستحق: ${amount.toLocaleString()} ر.ق
+📅 تاريخ الاستحقاق: اليوم الأول من الشهر
+━━━━━━━━━━━━━━━━━━
+
+⚠️ تنويه هام:
+في حال التأخر عن السداد، سيتم احتساب غرامة تأخير بقيمة ${DAILY_LATE_FEE} ر.ق عن كل يوم تأخير.
+
+نأمل منكم التكرم بترتيب السداد في الموعد المحدد لتجنب أي رسوم إضافية.
+
+شاكرين لكم حسن تعاونكم،
+${COMPANY_NAME}`;
+
+    case 'overdue_day2':
+      const penalty2 = DAILY_LATE_FEE * daysLate;
+      return `السلام عليكم ورحمة الله وبركاته
+
+${customerName} الكريم،
+
+⚠️ إشعار تأخر سداد
+
+نفيدكم بأنه لم يتم سداد قيمة الإيجار المستحق في موعده.
+
+━━━━━━━━━━━━━━━━━━
+📋 رقم العقد: ${contractNumber}
+💰 المبلغ الأصلي: ${amount.toLocaleString()} ر.ق
+💸 غرامة التأخير: ${penalty2.toLocaleString()} ر.ق (${daysLate} يوم × ${DAILY_LATE_FEE})
+💵 الإجمالي: ${(amount + penalty2).toLocaleString()} ر.ق
+⏰ الحالة: متأخر عن السداد
+━━━━━━━━━━━━━━━━━━
+
+🔴 تم تطبيق غرامة التأخير:
+• غرامة يومية: ${DAILY_LATE_FEE} ر.ق عن كل يوم تأخير
+• تبدأ الغرامة من تاريخ الاستحقاق (يوم 1)
+
+يرجى تسوية قيمة الإيجار في أقرب وقت ممكن لتجنب تراكم غرامات التأخير.
+
+للتواصل والسداد:
+${COMPANY_NAME}`;
+
+    case 'final_warning':
+      const penalty5 = DAILY_LATE_FEE * daysLate;
+      return `السلام عليكم ورحمة الله وبركاته
+
+${customerName} الكريم،
+
+🚨 إنذار نهائي
+
+بالإشارة إلى رسائلنا السابقة بخصوص الإيجار المتأخر، وحيث لم يتم السداد حتى تاريخه:
+
+━━━━━━━━━━━━━━━━━━
+📋 رقم العقد: ${contractNumber}
+💰 المبلغ الأصلي: ${amount.toLocaleString()} ر.ق
+💸 غرامة التأخير: ${penalty5.toLocaleString()} ر.ق (${daysLate} يوم × ${DAILY_LATE_FEE})
+💵 الإجمالي المستحق: ${(amount + penalty5).toLocaleString()} ر.ق
+⚠️ الحالة: إنذار نهائي
+━━━━━━━━━━━━━━━━━━
+
+⚠️ تنبيه هام:
+في حال عدم السداد خلال 5 أيام من تاريخ هذه الرسالة:
+• سيتم تحويل الملف للشؤون القانونية
+• سيتم اتخاذ الإجراءات القانونية اللازمة
+• ستتحمل كافة التكاليف القانونية الإضافية
+
+نأمل تفادي هذه الإجراءات بالتواصل الفوري معنا.
+
+${COMPANY_NAME}
+قسم التحصيل`;
+
+    case 'legal_action':
+      const penalty10 = DAILY_LATE_FEE * daysLate;
+      return `السلام عليكم ورحمة الله وبركاته
+
+${customerName} الكريم،
+
+⚖️ إشعار اتخاذ إجراءات قانونية
+
+نفيدكم بأنه نظراً لعدم الاستجابة لمراسلاتنا المتكررة بخصوص المبالغ المتأخرة:
+
+━━━━━━━━━━━━━━━━━━
+📋 رقم العقد: ${contractNumber}
+💰 المبلغ الأصلي: ${amount.toLocaleString()} ر.ق
+💸 غرامة التأخير: ${penalty10.toLocaleString()} ر.ق (${daysLate} يوم × ${DAILY_LATE_FEE})
+💵 الإجمالي المستحق: ${(amount + penalty10).toLocaleString()} ر.ق
+━━━━━━━━━━━━━━━━━━
+
+🔴 تم اتخاذ الإجراءات القانونية التالية:
+• تحويل الملف للشؤون القانونية ✓
+• إعداد ملف الدعوى القضائية ✓
+• التنسيق مع الجهات المختصة ✓
+
+📌 ملاحظة:
+• ستتحمل كافة التكاليف القانونية وأتعاب المحاماة
+• سيتم المطالبة بكامل المستحقات والغرامات
+• قد يؤثر ذلك على سجلك الائتماني
+
+في حال الرغبة بالتسوية الودية، يرجى التواصل الفوري معنا.
+
+${COMPANY_NAME}
+الشؤون القانونية`;
+
+    default:
+      return '';
+  }
 }
 
 /**
@@ -33,137 +207,37 @@ async function sendWhatsAppMessage(
   message: string
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
-    // Validate environment variables
-    if (!ULTRAMSG_INSTANCE_ID || !ULTRAMSG_TOKEN) {
-      console.error('❌ Missing Ultramsg credentials');
-      return { 
-        success: false, 
-        error: 'Missing Ultramsg credentials. Please configure ULTRAMSG_INSTANCE_ID and ULTRAMSG_TOKEN.' 
-      };
-    }
+    const formattedPhone = formatPhone(phone);
+    
+    console.log(`📞 Sending to: ${formattedPhone}`);
 
-    // Format phone number according to Ultramsg API requirements
-    // Required format: +1408XXXXXXX (international format with +)
-    let formattedPhone = phone.trim();
-    
-    // Remove all non-digits except +
-    formattedPhone = formattedPhone.replace(/[^\d+]/g, '');
-    
-    // If starts with 00, replace with +
-    if (formattedPhone.startsWith('00')) {
-      formattedPhone = '+' + formattedPhone.substring(2);
-    }
-    // If starts with country code without +, add +
-    else if (formattedPhone.length > 0 && !formattedPhone.startsWith('+')) {
-      // Common country codes: 974 (Qatar/Kuwait), 966 (Saudi), 971 (UAE), etc.
-      // For Kuwait/Qatar numbers starting with 974, add +
-      if (formattedPhone.startsWith('974')) {
-        formattedPhone = '+' + formattedPhone;
-      }
-      // For other formats, assume international format needed
-      else if (formattedPhone.length >= 8) {
-        formattedPhone = '+' + formattedPhone;
-      }
-    }
-    
-    // Validate phone number (must have + and at least 8 digits)
-    if (!formattedPhone.startsWith('+') || formattedPhone.length < 10) {
-      console.error(`❌ Invalid phone format: ${phone} → ${formattedPhone}`);
-      return { 
-        success: false, 
-        error: `Invalid phone number format. Expected international format with + (e.g., +97412345678). Got: ${phone}` 
-      };
-    }
-
-    console.log(`📞 Sending to: ${formattedPhone} (original: ${phone})`);
-
-    // Validate message length (Ultramsg max: 4096 characters)
-    if (message.length > 4096) {
-      console.warn(`⚠️ Message too long (${message.length} chars), truncating to 4096`);
-      message = message.substring(0, 4096);
-    }
-    
-    // Prepare request body according to Ultramsg API documentation
-    // API Reference: https://docs.ultramsg.com/api/post/messages/chat
-    const requestBody = {
-      token: ULTRAMSG_TOKEN,
-      to: formattedPhone, // International format: +1408XXXXXXX
-      body: message, // UTF-8 or UTF-16 string with emoji, max 4096 characters
-    };
-    
-    console.log('📤 Sending to Ultramsg API:', {
-      url: `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/chat`,
-      to: formattedPhone,
-      messageLength: message.length,
-    });
-    
-    // Call Ultramsg API
     const response = await fetch(
       `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/chat`,
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify(requestBody),
+        body: new URLSearchParams({
+          token: ULTRAMSG_TOKEN,
+          to: formattedPhone,
+          body: message,
+        }),
       }
     );
 
-    // Parse response
-    let data;
-    const responseText = await response.text();
+    const data = await response.json();
     
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error('❌ Failed to parse Ultramsg response:', responseText);
-      return { 
-        success: false, 
-        error: `Invalid response from Ultramsg: ${responseText.substring(0, 100)}` 
-      };
-    }
+    console.log('📥 Ultramsg Response:', JSON.stringify(data));
     
-    // Log full response for debugging
-    console.log('📥 Ultramsg API Response:', JSON.stringify(data));
-    
-    // Check response according to Ultramsg API documentation
-    // Success indicators: sent=true, or id/msgId present, or status='sent'
-    if (data.sent === 'true' || data.sent === true || data.id || data.msgId || data.status === 'sent') {
-      return { 
-        success: true, 
-        messageId: data.id || data.msgId || data.messageId || 'unknown'
-      };
-    } 
-    // Check for error response
-    else if (data.error || data.message) {
-      const errorMsg = data.error || data.message || 'Unknown error from Ultramsg';
-      console.error('❌ Ultramsg API Error:', errorMsg);
-      return { 
-        success: false, 
-        error: errorMsg
-      };
-    }
-    // If response status is not OK, treat as error
-    else if (!response.ok) {
-      return { 
-        success: false, 
-        error: `HTTP ${response.status}: ${response.statusText}` 
-      };
-    }
-    // Unknown response format
-    else {
-      console.warn('⚠️ Unknown response format from Ultramsg:', data);
-      return { 
-        success: false, 
-        error: `Unexpected response format: ${JSON.stringify(data).substring(0, 200)}` 
-      };
+    if (data.sent === 'true' || data.sent === true || data.id) {
+      return { success: true, messageId: data.id };
+    } else {
+      return { success: false, error: data.error || data.message || 'Unknown error' };
     }
   } catch (error) {
-    console.error('❌ Error sending WhatsApp message:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Network error' 
-    };
+    console.error('❌ Error sending message:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -174,7 +248,7 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    // Handle CORS preflight
+    // Handle CORS
     if (req.method === 'OPTIONS') {
       return new Response('ok', {
         headers: {
@@ -185,231 +259,189 @@ serve(async (req) => {
       });
     }
 
-    console.log('🚀 Starting WhatsApp reminder processing...');
-
-    // Create Supabase client with service role
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
-
-    // Check for test mode
     const body = await req.json().catch(() => ({}));
+    
+    // Test mode - send single message
     if (body.test && body.phone && body.message) {
-      console.log('🧪 Test mode: sending single message');
+      console.log('🧪 Test mode');
       const result = await sendWhatsAppMessage(body.phone, body.message);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: result.success,
-          message: result.success ? 'Test message sent!' : 'Failed to send test message',
-          error: result.error,
-          messageId: result.messageId
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          }
-        }
-      );
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
-    // Fetch grouped reminders (one per customer)
-    const { data: groupedReminders, error: fetchError } = await supabase.rpc(
-      'get_grouped_reminders_for_today'
-    );
+    console.log('🚀 Starting automated reminders...');
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    // Get today's day of month
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    
+    console.log(`📅 Today is day ${dayOfMonth} of the month`);
+
+    // Determine reminder type based on day
+    let reminderType: ReminderType | null = null;
+    let daysLate = 0;
+    
+    if (dayOfMonth === 28) {
+      reminderType = 'pre_due';
+    } else if (dayOfMonth === 2) {
+      reminderType = 'overdue_day2';
+      daysLate = 2;
+    } else if (dayOfMonth === 5) {
+      reminderType = 'final_warning';
+      daysLate = 5;
+    } else if (dayOfMonth === 10) {
+      reminderType = 'legal_action';
+      daysLate = 10;
+    }
+
+    // Allow manual override
+    if (body.reminderType) {
+      reminderType = body.reminderType;
+      daysLate = body.daysLate || daysLate;
+    }
+
+    if (!reminderType) {
+      console.log('📭 No reminders scheduled for today');
+      return new Response(JSON.stringify({
+        success: true,
+        message: `No reminders for day ${dayOfMonth}. Reminders are sent on days 28, 2, 5, and 10.`,
+        sent: 0
+      }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    console.log(`📨 Processing ${reminderType} reminders...`);
+
+    // Get active contracts with unpaid current month
+    const { data: contracts, error: fetchError } = await supabase
+      .from('contracts')
+      .select(`
+        id,
+        contract_number,
+        customer_id,
+        monthly_amount,
+        customer:customers!customer_id(
+          first_name_ar,
+          last_name_ar,
+          first_name,
+          last_name,
+          company_name_ar,
+          company_name,
+          customer_type,
+          phone
+        )
+      `)
+      .eq('status', 'active')
+      .not('customer.phone', 'is', null);
 
     if (fetchError) {
-      console.error('❌ Error fetching grouped reminders:', fetchError);
       throw fetchError;
     }
 
-    if (!groupedReminders || groupedReminders.length === 0) {
-      console.log('📭 No reminders to process');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'No reminders in queue',
-          sent: 0,
-          failed: 0,
-          duration: Date.now() - startTime
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          }
-        }
-      );
+    if (!contracts || contracts.length === 0) {
+      console.log('📭 No active contracts found');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'No active contracts',
+        sent: 0
+      }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
-    console.log(`📤 Processing ${groupedReminders.length} grouped reminders...`);
+    console.log(`📋 Found ${contracts.length} active contracts`);
 
     let successCount = 0;
     let failedCount = 0;
-    const results = [];
+    const results: any[] = [];
 
-    // Process each grouped reminder
-    for (const group of groupedReminders) {
-      console.log(`\n📨 Processing group for ${group.customer_name} (${group.invoice_count} invoices)`);
+    for (const contract of contracts) {
+      const customer = contract.customer as Contract['customer'];
       
-      // Generate grouped message
-      const { data: messageData, error: msgError } = await supabase.rpc(
-        'generate_grouped_reminder_message',
-        {
-          p_customer_name: group.customer_name,
-          p_invoices_data: group.invoices_data,
-          p_total_amount: group.total_amount,
-          p_invoice_count: group.invoice_count,
-          p_reminder_type: group.reminder_type,
-          p_company_id: group.company_id
-        }
-      );
-
-      if (msgError) {
-        console.error(`❌ Error generating message:`, msgError);
-        failedCount++;
+      if (!customer?.phone) {
+        console.log(`⏭️ Skipping ${contract.contract_number} - no phone`);
         continue;
       }
 
-      const message = messageData;
-      console.log(`📝 Generated message (${message.length} chars)`);
-      
-      const sendResult = await sendWhatsAppMessage(
-        group.phone_number,
-        message
+      const customerName = getCustomerName(customer);
+      const message = generateMessage(
+        reminderType,
+        customerName,
+        contract.contract_number,
+        contract.monthly_amount,
+        daysLate
       );
 
-      // Get all reminder IDs in this group
-      const reminderIds = group.invoices_data.map((inv: any) => inv.reminder_id);
+      const result = await sendWhatsAppMessage(customer.phone, message);
 
-      if (sendResult.success) {
-        // Update ALL reminders in group to 'sent'
-        const { error: updateError } = await supabase
-          .from('reminder_schedules')
-          .update({
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            delivery_status: 'sent',
-            updated_at: new Date().toISOString(),
-          })
-          .in('id', reminderIds);
-
-        if (updateError) {
-          console.error(`❌ Error updating reminders:`, updateError);
-        }
-
-        // Log to reminder_history for each reminder
-        const historyRecords = reminderIds.map((rid: string) => ({
-          reminder_schedule_id: rid,
-          action: 'sent',
-          success: true,
-          phone_number: group.phone_number,
-          message_sent: message,
-        }));
-
-        await supabase
-          .from('reminder_history')
-          .insert(historyRecords);
-
+      if (result.success) {
         successCount++;
-        console.log(`✅ Sent grouped message to ${group.customer_name} (${group.phone_number})`);
-        console.log(`   📊 Covered ${group.invoice_count} invoices, total: ${group.total_amount}`);
-        
+        console.log(`✅ Sent to ${customerName} (${contract.contract_number})`);
         results.push({
-          customer: group.customer_name,
+          contract: contract.contract_number,
+          customer: customerName,
           status: 'sent',
-          invoice_count: group.invoice_count,
-          total_amount: group.total_amount,
-          messageId: sendResult.messageId
+          messageId: result.messageId
         });
       } else {
-        // Update ALL reminders in group to 'failed'
-        const { error: updateError } = await supabase
-          .from('reminder_schedules')
-          .update({
-            status: 'failed',
-            last_error: sendResult.error || 'Unknown error',
-            retry_count: supabase.raw('COALESCE(retry_count, 0) + 1'),
-            next_retry_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .in('id', reminderIds);
-
-        if (updateError) {
-          console.error(`❌ Error updating failed reminders:`, updateError);
-        }
-
-        // Log to reminder_history
-        const historyRecords = reminderIds.map((rid: string) => ({
-          reminder_schedule_id: rid,
-          action: 'failed',
-          success: false,
-          phone_number: group.phone_number,
-          error_message: sendResult.error || 'Unknown error',
-        }));
-
-        await supabase
-          .from('reminder_history')
-          .insert(historyRecords);
-
         failedCount++;
-        console.log(`❌ Failed to send to ${group.customer_name}: ${sendResult.error}`);
-        
+        console.log(`❌ Failed: ${customerName} - ${result.error}`);
         results.push({
-          customer: group.customer_name,
+          contract: contract.contract_number,
+          customer: customerName,
           status: 'failed',
-          invoice_count: group.invoice_count,
-          error: sendResult.error
+          error: result.error
         });
       }
 
-      // Delay between messages to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+      // Log to reminder_history
+      await supabase.from('reminder_history').insert({
+        contract_id: contract.id,
+        customer_id: contract.customer_id,
+        reminder_type: reminderType,
+        phone_number: customer.phone,
+        message_sent: message,
+        success: result.success,
+        error_message: result.error || null,
+        sent_at: new Date().toISOString()
+      }).catch(e => console.error('Failed to log:', e));
+
+      // Delay between messages
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
     const duration = Date.now() - startTime;
-    console.log(`\n✅ Processing complete in ${duration}ms`);
-    console.log(`📊 Results: ${successCount} customers sent, ${failedCount} failed`);
+    
+    console.log(`\n✅ Complete: ${successCount} sent, ${failedCount} failed in ${duration}ms`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Processed ${groupedReminders.length} grouped reminders (${successCount} customers)`,
-        customers_sent: successCount,
-        customers_failed: failedCount,
-        total_groups: groupedReminders.length,
-        duration,
-        results,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      reminderType,
+      dayOfMonth,
+      sent: successCount,
+      failed: failedCount,
+      total: contracts.length,
+      duration,
+      results
+    }), {
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
 
   } catch (error) {
-    console.error('💥 Error in send-whatsapp-reminders:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Internal server error',
-        duration: Date.now() - startTime
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    console.error('💥 Error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message,
+      duration: Date.now() - startTime
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
   }
 });
-
