@@ -46,8 +46,7 @@ export const QuickActionBar: React.FC = () => {
       label: 'البحث',
       icon: Search,
       action: () => {
-        // Trigger keyboard shortcut for quick search (Ctrl+K)
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+        navigate('/search');
         setIsExpanded(false);
       },
       color: 'text-purple-500',
