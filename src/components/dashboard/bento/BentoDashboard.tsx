@@ -893,20 +893,22 @@ const BentoDashboard: React.FC = () => {
         </AnimatePresence>
 
         {/* React Grid Layout */}
-        <ResponsiveGridLayout
-          className="layout"
-          layout={gridLayout}
-          cols={12}
-          rowHeight={60}
-          onLayoutChange={onLayoutChange}
-          isDraggable={isEditMode}
-          isResizable={isEditMode}
-          draggableHandle=".drag-handle"
-          resizeHandles={['se', 'sw', 'ne', 'nw']}
-          margin={[16, 16]}
-          containerPadding={[0, 0]}
-          useCSSTransforms={true}
-        >
+        <div className="w-full" dir="ltr">
+          <ResponsiveGridLayout
+            className="layout"
+            layout={gridLayout}
+            cols={12}
+            rowHeight={60}
+            onLayoutChange={onLayoutChange}
+            isDraggable={isEditMode}
+            isResizable={isEditMode}
+            draggableHandle=".drag-handle"
+            resizeHandles={['se', 'sw', 'ne', 'nw']}
+            margin={[16, 16]}
+            containerPadding={[0, 0]}
+            useCSSTransforms={true}
+            compactType="vertical"
+          >
           {widgets.filter(w => w.visible).map((widget) => (
             <div
               key={widget.id}
@@ -940,7 +942,8 @@ const BentoDashboard: React.FC = () => {
               </div>
             </div>
           ))}
-        </ResponsiveGridLayout>
+          </ResponsiveGridLayout>
+        </div>
       </div>
 
       {/* Custom styles for react-grid-layout */}
