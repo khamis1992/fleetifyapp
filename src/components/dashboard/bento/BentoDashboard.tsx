@@ -707,7 +707,7 @@ const BentoDashboard: React.FC = () => {
   );
 };
 
-// Helper function for time ago
+// Helper function for calculating time ago from a date
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return 'الآن';
