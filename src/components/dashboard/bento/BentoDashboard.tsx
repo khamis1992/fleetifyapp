@@ -716,8 +716,8 @@ const BentoDashboard: React.FC = () => {
         </motion.div>
       </div>
     </div>
+  </div>
   );
 };
 
 export default BentoDashboard;
-
