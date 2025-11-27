@@ -47,6 +47,7 @@ const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
 // Super Admin pages
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin'));
 const SuperAdminDashboard = lazy(() => import('@/pages/super-admin/Dashboard'));
+const QualityDashboard = lazy(() => import('@/pages/admin/QualityDashboard'));
 const SuperAdminCompanies = lazy(() => import('@/pages/super-admin/Companies'));
 const CreateCompany = lazy(() => import('@/pages/super-admin/CreateCompany'));
 const SuperAdminUsers = lazy(() => import('@/pages/super-admin/Users'));
@@ -622,6 +623,19 @@ const routeConfigs: RouteConfig[] = [
     priority: 48,
     protected: true,
     layout: 'admin',
+    requiredRole: 'super_admin',
+  },
+  {
+    path: '/admin/quality',
+    component: QualityDashboard,
+    lazy: true,
+    exact: true,
+    title: 'Quality Dashboard',
+    description: 'CTO Agent quality monitoring',
+    group: 'admin',
+    priority: 49,
+    protected: true,
+    layout: 'bento',
     requiredRole: 'super_admin',
   },
   {
