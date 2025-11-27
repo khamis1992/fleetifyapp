@@ -253,10 +253,10 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
-    path: '/finance',
+    path: '/finance/*',
     component: Finance,
     lazy: true,
-    exact: true,
+    exact: false,
     title: 'Finance',
     description: 'Financial management',
     group: 'finance',
