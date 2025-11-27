@@ -31,24 +31,24 @@ export interface DashboardWidget {
   maxH?: number;  // الحد الأقصى للارتفاع
 }
 
-// الترتيب الافتراضي للبطاقات - شبكة 12 عمود
+// الترتيب الافتراضي للبطاقات - شبكة 12 عمود (RTL: x=0 هو اليمين)
 const DEFAULT_LAYOUT: DashboardWidget[] = [
-  // الصف الأول - بطاقات الإحصائيات
-  { id: 'stats-vehicles', title: 'إجمالي المركبات', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
-  { id: 'stats-contracts', title: 'العقود النشطة', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
-  { id: 'stats-customers', title: 'إجمالي العملاء', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
-  { id: 'stats-revenue', title: 'إيرادات الشهر', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  // الصف الأول - بطاقات الإحصائيات (4 بطاقات متساوية)
+  { id: 'stats-vehicles', title: 'إجمالي المركبات', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-contracts', title: 'العقود النشطة', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-customers', title: 'إجمالي العملاء', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-revenue', title: 'إيرادات الشهر', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
   // الصف الثاني - الرسوم البيانية والصيانة
-  { id: 'chart-revenue', title: 'الأداء المالي', x: 7, y: 2, w: 5, h: 4, minW: 3, minH: 3, visible: true },
-  { id: 'chart-fleet', title: 'حالة الأسطول', x: 4, y: 2, w: 3, h: 4, minW: 2, minH: 3, visible: true },
-  { id: 'maintenance', title: 'جدول الصيانة', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'chart-revenue', title: 'الأداء المالي', x: 0, y: 2, w: 5, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'chart-fleet', title: 'حالة الأسطول', x: 5, y: 2, w: 3, h: 4, minW: 2, minH: 3, visible: true },
+  { id: 'maintenance', title: 'جدول الصيانة', x: 8, y: 2, w: 4, h: 4, minW: 3, minH: 3, visible: true },
   // الصف الثالث - التقويم والتوقعات والنشاطات
-  { id: 'calendar', title: 'تقويم الحجوزات', x: 8, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'calendar', title: 'تقويم الحجوزات', x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
   { id: 'forecast', title: 'توقعات الإيرادات', x: 4, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
-  { id: 'activities', title: 'النشاطات الأخيرة', x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'activities', title: 'النشاطات الأخيرة', x: 8, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
 ];
 
-const STORAGE_KEY = 'dashboard_layout_v2';
+const STORAGE_KEY = 'dashboard_layout_v3'; // تم تحديث الإصدار لإعادة تعيين الترتيب
 
 // تحويل من DashboardWidget[] إلى Layout[] لـ react-grid-layout
 export function widgetsToLayout(widgets: DashboardWidget[]): Layout[] {
