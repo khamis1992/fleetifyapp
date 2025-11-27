@@ -1,0 +1,167 @@
+{
+  "version": "1.0.0",
+  "project": "fleetifyapp",
+  "last_updated": "2025-11-27",
+  
+  "thresholds": {
+    "coverage_min": 70,
+    "eslint_max_warnings": 10,
+    "bundle_size_max_mb": 2,
+    "build_time_max_min": 5,
+    "file_loc_max": 500,
+    "complexity_max": 10,
+    "waiver_expiry_days": 7
+  },
+  
+  "stages": [
+    {
+      "id": "lint",
+      "name": "Linting",
+      "blocking": true,
+      "commands": [
+        "npm run lint"
+      ],
+      "success_criteria": "exit_code === 0"
+    },
+    {
+      "id": "typecheck",
+      "name": "Type Checking",
+      "blocking": true,
+      "commands": [
+        "npm run typecheck"
+      ],
+      "success_criteria": "exit_code === 0"
+    },
+    {
+      "id": "tests",
+      "name": "Unit & Integration Tests",
+      "blocking": true,
+      "commands": [
+        "npm run test:ci"
+      ],
+      "success_criteria": "exit_code === 0"
+    },
+    {
+      "id": "coverage",
+      "name": "Code Coverage",
+      "blocking": true,
+      "commands": [
+        "npm run test:coverage"
+      ],
+      "success_criteria": "coverage >= thresholds.coverage_min"
+    },
+    {
+      "id": "security",
+      "name": "Security Audit",
+      "blocking": true,
+      "commands": [
+        "npm audit --audit-level=high"
+      ],
+      "success_criteria": "no high/critical vulnerabilities"
+    },
+    {
+      "id": "build",
+      "name": "Production Build",
+      "blocking": true,
+      "commands": [
+        "npm run build:ci"
+      ],
+      "success_criteria": "exit_code === 0 && bundle_size <= thresholds.bundle_size_max_mb"
+    },
+    {
+      "id": "secrets",
+      "name": "Secret Scan",
+      "blocking": true,
+      "patterns": [
+        "(?i)(api[_-]?key|apikey|secret|password|token|auth)\\s*[=:]\\s*['\"][^'\"]{8,}['\"]",
+        "sk-[a-zA-Z0-9]{32,}",
+        "ghp_[a-zA-Z0-9]{36}",
+        "eyJ[a-zA-Z0-9_-]*\\.[a-zA-Z0-9_-]*\\.[a-zA-Z0-9_-]*"
+      ],
+      "exclude": [
+        "*.test.*",
+        "*.spec.*",
+        "__mocks__/*",
+        ".env.example"
+      ]
+    }
+  ],
+  
+  "checks": {
+    "solid": {
+      "srp": {
+        "max_component_props": 8,
+        "max_file_exports": 5,
+        "max_function_responsibilities": 3
+      },
+      "ocp": {
+        "prefer_composition": true,
+        "check_extension_points": true
+      },
+      "lsp": {
+        "verify_prop_contracts": true
+      },
+      "isp": {
+        "max_interface_properties": 10
+      },
+      "dip": {
+        "no_direct_db_in_components": true,
+        "use_hooks_for_data": true
+      }
+    },
+    
+    "code_quality": {
+      "no_any": true,
+      "no_console_in_prod": true,
+      "prefer_const": true,
+      "explicit_return_types": false,
+      "max_params": 4,
+      "max_depth": 4
+    },
+    
+    "react": {
+      "no_inline_styles": false,
+      "prefer_functional": true,
+      "use_memo_threshold": 5,
+      "check_key_props": true,
+      "no_index_keys": true
+    },
+    
+    "supabase": {
+      "rls_required": true,
+      "company_id_filter": true,
+      "no_raw_sql": true,
+      "use_types": true
+    }
+  },
+  
+  "notifications": {
+    "on_failure": {
+      "slack": false,
+      "email": false,
+      "github_comment": true
+    },
+    "on_success": {
+      "slack": false,
+      "email": false,
+      "github_comment": false
+    }
+  },
+  
+  "waivers": {
+    "enabled": true,
+    "require_justification": true,
+    "max_duration_days": 7,
+    "require_approval": false,
+    "auto_expire": true
+  },
+  
+  "audit": {
+    "enabled": true,
+    "table": "cto_agent_audit",
+    "log_all_stages": true,
+    "include_metrics": true,
+    "retention_days": 90
+  }
+}
+
