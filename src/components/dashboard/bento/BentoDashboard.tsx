@@ -893,7 +893,7 @@ const BentoDashboard: React.FC = () => {
         </AnimatePresence>
 
         {/* React Grid Layout - Responsive */}
-        <div className="w-full" dir="ltr">
+        <div className="w-full" dir="ltr" style={{ transform: 'scaleX(-1)' }}>
           <ResponsiveGridLayout
             className="layout"
             layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout, xs: gridLayout, xxs: gridLayout }}
@@ -914,6 +914,7 @@ const BentoDashboard: React.FC = () => {
           {widgets.filter(w => w.visible).map((widget) => (
             <div
               key={widget.id}
+              style={{ transform: 'scaleX(-1)' }}
               className={cn(
                 'relative group',
                 isEditMode && 'ring-2 ring-coral-300 ring-dashed rounded-[1.25rem]'
