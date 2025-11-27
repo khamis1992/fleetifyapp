@@ -46,10 +46,10 @@ const navigation: NavItem[] = [
     label: 'إدارة الأسطول',
     icon: Car,
     children: [
-      { id: 'vehicles', label: 'المركبات', href: '/fleet/vehicles' },
-      { id: 'contracts', label: 'العقود', href: '/fleet/contracts' },
+      { id: 'vehicles', label: 'المركبات', href: '/fleet' },
+      { id: 'contracts', label: 'العقود', href: '/contracts' },
       { id: 'maintenance', label: 'الصيانة', href: '/fleet/maintenance' },
-      { id: 'tracking', label: 'التتبع', href: '/fleet/tracking' },
+      { id: 'reservations', label: 'الحجوزات', href: '/fleet/reservations' },
     ],
   },
   {
@@ -63,10 +63,10 @@ const navigation: NavItem[] = [
     label: 'المالية',
     icon: Banknote,
     children: [
-      { id: 'invoices', label: 'الفواتير', href: '/finance/invoices' },
-      { id: 'payments', label: 'المدفوعات', href: '/finance/payments' },
-      { id: 'reports', label: 'التقارير', href: '/finance/reports' },
-      { id: 'accounting', label: 'المحاسبة', href: '/finance/accounting' },
+      { id: 'finance-main', label: 'الفواتير والمدفوعات', href: '/finance' },
+      { id: 'payments-register', label: 'تسجيل دفعة', href: '/finance/payments/register' },
+      { id: 'payments-tracking', label: 'تتبع المدفوعات', href: '/finance/payments/tracking' },
+      { id: 'reports', label: 'التقارير', href: '/reports' },
     ],
   },
   {
@@ -74,9 +74,9 @@ const navigation: NavItem[] = [
     label: 'العمليات',
     icon: Truck,
     children: [
-      { id: 'bookings', label: 'الحجوزات', href: '/operations/bookings' },
-      { id: 'calendar', label: 'التقويم', href: '/operations/calendar' },
-      { id: 'violations', label: 'المخالفات', href: '/traffic-violations' },
+      { id: 'violations', label: 'المخالفات المرورية', href: '/fleet/violations' },
+      { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits' },
+      { id: 'fleet-reports', label: 'تقارير الأسطول', href: '/fleet/reports' },
     ],
   },
   {
