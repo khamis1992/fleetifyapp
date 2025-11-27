@@ -10,8 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     // Define process.env for libraries that use it
     define: {
-      'process.env.NODE_ENV': JSON.stringify(mode),
-      'process.env': JSON.stringify({}),
+      'process.env': {},
     },
     server: {
       host: "::",

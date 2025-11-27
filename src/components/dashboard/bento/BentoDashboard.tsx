@@ -28,12 +28,9 @@ import {
   FilePlus,
   ShoppingCart,
   UserCheck,
-  X,
   ChevronLeft,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   PieChart,
