@@ -1,0 +1,255 @@
+# ============================================
+# Ghost Reviewer Agent
+# Deep architectural review before merge
+# ============================================
+
+name: 👻 Ghost Reviewer Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  ghost-review:
+    name: 🔍 Deep Code Review
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get Changed Files
+        id: changed
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.ts' '*.tsx' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Architecture Analysis
+        id: architecture
+        run: |
+          ISSUES=""
+          ISSUE_COUNT=0
+          
+          for file in ${{ steps.changed.outputs.files }}; do
+            if [ -f "$file" ]; then
+              echo "Analyzing: $file"
+              CONTENT=$(cat "$file")
+              
+              # Check for circular dependencies hints
+              IMPORTS=$(grep -E "^import.*from" "$file" | grep -oE "'[^']+'" | tr -d "'" || true)
+              FILENAME=$(basename "$file" | sed 's/\.[^.]*$//')
+              
+              for import_path in $IMPORTS; do
+                if echo "$import_path" | grep -q "$FILENAME"; then
+                  ISSUES="$ISSUES\n⚠️ Potential circular dependency in $file: imports from related path"
+                  ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                fi
+              done
+              
+              # Check for global state abuse
+              if echo "$CONTENT" | grep -qE 'window\.\w+\s*=|globalThis\.\w+\s*='; then
+                ISSUES="$ISSUES\n❌ Global state mutation in $file"
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+              fi
+              
+              # Check for localStorage/sessionStorage without try-catch
+              if echo "$CONTENT" | grep -qE 'localStorage\.|sessionStorage\.'; then
+                if ! echo "$CONTENT" | grep -qE 'try\s*\{'; then
+                  ISSUES="$ISSUES\n⚠️ Storage access without try-catch in $file"
+                  ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                fi
+              fi
+              
+              # Check for bad async patterns
+              if echo "$CONTENT" | grep -qE 'async.*=>.*\{' && ! echo "$CONTENT" | grep -qE 'try|catch|await'; then
+                ISSUES="$ISSUES\n⚠️ Async function without error handling in $file"
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+              fi
+              
+              # Check for missing loading states in components
+              if echo "$file" | grep -qE '\.tsx$'; then
+                if echo "$CONTENT" | grep -qE 'useQuery|useMutation|fetch\('; then
+                  if ! echo "$CONTENT" | grep -qE 'isLoading|loading|isPending'; then
+                    ISSUES="$ISSUES\n⚠️ Data fetching without loading state in $file"
+                    ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                  fi
+                fi
+              fi
+              
+              # Check for missing error boundaries
+              if echo "$CONTENT" | grep -qE 'Suspense'; then
+                if ! echo "$CONTENT" | grep -qE 'ErrorBoundary'; then
+                  ISSUES="$ISSUES\n⚠️ Suspense without ErrorBoundary in $file"
+                  ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                fi
+              fi
+              
+              # Check for console.log in production code
+              if echo "$CONTENT" | grep -qE 'console\.(log|debug|info)\('; then
+                ISSUES="$ISSUES\n⚠️ Console logging in $file - remove before merge"
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+              fi
+              
+              # Check for TODO/FIXME comments
+              TODO_COUNT=$(echo "$CONTENT" | grep -cE '//\s*(TODO|FIXME|HACK|XXX)' || true)
+              if [ "$TODO_COUNT" -gt "0" ]; then
+                ISSUES="$ISSUES\n📝 $TODO_COUNT TODO/FIXME comments in $file"
+              fi
+              
+              # Check for large files (complexity indicator)
+              LINE_COUNT=$(wc -l < "$file")
+              if [ "$LINE_COUNT" -gt "500" ]; then
+                ISSUES="$ISSUES\n⚠️ Large file ($LINE_COUNT lines) - consider splitting: $file"
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+              fi
+              
+              # Check for deeply nested conditionals
+              NEST_DEPTH=$(echo "$CONTENT" | grep -oE '\{|\}' | awk 'BEGIN{max=0;d=0} /\{/{d++;if(d>max)max=d} /\}/{d--} END{print max}')
+              if [ "$NEST_DEPTH" -gt "5" ]; then
+                ISSUES="$ISSUES\n⚠️ Deep nesting (depth: $NEST_DEPTH) in $file - consider refactoring"
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+              fi
+              
+              # Check for useEffect dependencies issues
+              if echo "$CONTENT" | grep -qE 'useEffect\s*\(\s*\(\s*\)\s*=>\s*\{'; then
+                # Check for missing dependencies array
+                EFFECT_COUNT=$(echo "$CONTENT" | grep -c 'useEffect' || true)
+                DEPS_COUNT=$(echo "$CONTENT" | grep -cE 'useEffect.*\[\]' || true)
+                if [ "$EFFECT_COUNT" -gt "$DEPS_COUNT" ]; then
+                  ISSUES="$ISSUES\n⚠️ useEffect may have missing dependencies in $file"
+                fi
+              fi
+              
+              # Check for magic numbers
+              MAGIC=$(echo "$CONTENT" | grep -oE '[^a-zA-Z_][0-9]{3,}[^a-zA-Z_0-9]' | wc -l || true)
+              if [ "$MAGIC" -gt "3" ]; then
+                ISSUES="$ISSUES\n⚠️ Magic numbers detected in $file - consider using constants"
+              fi
+            fi
+          done
+          
+          echo "issue_count=$ISSUE_COUNT" >> $GITHUB_OUTPUT
+          echo "issues<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$ISSUES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ "$ISSUE_COUNT" -gt "10" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          elif [ "$ISSUE_COUNT" -gt "0" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=info" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Dependency Graph Check
+        id: deps
+        run: |
+          VIOLATIONS=""
+          
+          # Check for imports from wrong layers (clean architecture)
+          for file in ${{ steps.changed.outputs.files }}; do
+            if [ -f "$file" ]; then
+              # Components should not import from pages
+              if echo "$file" | grep -q "src/components/"; then
+                if grep -qE "from\s*['\"].*pages" "$file"; then
+                  VIOLATIONS="$VIOLATIONS\n❌ Component imports from pages: $file"
+                fi
+              fi
+              
+              # Hooks should not import components
+              if echo "$file" | grep -q "src/hooks/"; then
+                if grep -qE "from\s*['\"].*components" "$file"; then
+                  VIOLATIONS="$VIOLATIONS\n❌ Hook imports component: $file"
+                fi
+              fi
+              
+              # Utils should be pure - no React imports
+              if echo "$file" | grep -q "src/utils/"; then
+                if grep -qE "from\s*['\"]react['\"]" "$file"; then
+                  VIOLATIONS="$VIOLATIONS\n⚠️ Utility imports React: $file"
+                fi
+              fi
+            fi
+          done
+          
+          echo "violations<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Log to Supabase
+        if: always()
+        run: |
+          curl -X POST "${{ env.SUPABASE_URL }}/rest/v1/cto_agent_audit" \
+            -H "apikey: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "run_id": "${{ github.run_id }}",
+              "stage": "ghost_review",
+              "status": "${{ steps.architecture.outputs.status }}",
+              "severity": "${{ steps.architecture.outputs.severity }}",
+              "actor": "ghost-reviewer",
+              "pr_number": ${{ github.event.pull_request.number }},
+              "branch": "${{ github.head_ref }}",
+              "commit_sha": "${{ github.sha }}",
+              "details": {
+                "issues_found": ${{ steps.architecture.outputs.issue_count }},
+                "files_reviewed": "${{ steps.changed.outputs.files }}"
+              }
+            }'
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueCount = '${{ steps.architecture.outputs.issue_count }}';
+            const issues = `${{ steps.architecture.outputs.issues }}`;
+            const depViolations = `${{ steps.deps.outputs.violations }}`;
+            
+            let emoji = issueCount == 0 ? '✅' : '👻';
+            let body = `## ${emoji} Ghost Reviewer Report\n\n`;
+            
+            body += `_A silent senior engineer has reviewed your code..._\n\n`;
+            
+            if (issueCount > 0 || depViolations) {
+              body += `### 🔍 Issues Found\n`;
+              body += issues || 'No critical issues.';
+              body += '\n\n';
+              
+              if (depViolations) {
+                body += `### 📦 Architecture Violations\n`;
+                body += depViolations;
+                body += '\n\n';
+              }
+              
+              body += `---\n`;
+              body += `> 💡 These are suggestions to improve code quality.\n`;
+              body += `> Address critical issues (❌) before merging.\n`;
+            } else {
+              body += `### ✨ Excellent Work!\n`;
+              body += `No significant issues found. Your code passes the ghost review.\n`;
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+

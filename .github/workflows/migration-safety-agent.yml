@@ -1,0 +1,197 @@
+# ============================================
+# SQL Migration Safety Agent
+# Prevents destructive database operations
+# ============================================
+
+name: 🗃️ Migration Safety Agent
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - '**/*.sql'
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  migration-safety:
+    name: 🛡️ Migration Safety Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Changed Files
+        id: changed_files
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.sql' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Analyze Migrations
+        id: analyze
+        run: |
+          DESTRUCTIVE_OPS=0
+          IRREVERSIBLE_OPS=0
+          WARNINGS=""
+          BLOCKERS=""
+          
+          for file in ${{ steps.changed_files.outputs.files }}; do
+            if [ -f "$file" ]; then
+              echo "Analyzing: $file"
+              CONTENT=$(cat "$file" | tr '[:upper:]' '[:lower:]')
+              
+              # Check for DROP TABLE
+              if echo "$CONTENT" | grep -qE 'drop\s+table'; then
+                DESTRUCTIVE_OPS=$((DESTRUCTIVE_OPS + 1))
+                BLOCKERS="$BLOCKERS\n❌ DROP TABLE detected in $file"
+                
+                # Check if there's a backup or IF EXISTS
+                if ! echo "$CONTENT" | grep -qE 'if\s+exists|create.*backup|into.*backup'; then
+                  IRREVERSIBLE_OPS=$((IRREVERSIBLE_OPS + 1))
+                fi
+              fi
+              
+              # Check for DROP COLUMN
+              if echo "$CONTENT" | grep -qE 'drop\s+column'; then
+                DESTRUCTIVE_OPS=$((DESTRUCTIVE_OPS + 1))
+                BLOCKERS="$BLOCKERS\n❌ DROP COLUMN detected in $file"
+              fi
+              
+              # Check for TRUNCATE
+              if echo "$CONTENT" | grep -qE 'truncate\s+table'; then
+                DESTRUCTIVE_OPS=$((DESTRUCTIVE_OPS + 1))
+                BLOCKERS="$BLOCKERS\n❌ TRUNCATE TABLE detected in $file"
+              fi
+              
+              # Check for ALTER COLUMN TYPE (data loss risk)
+              if echo "$CONTENT" | grep -qE 'alter\s+column.*type'; then
+                WARNINGS="$WARNINGS\n⚠️ ALTER COLUMN TYPE in $file - verify data compatibility"
+              fi
+              
+              # Check for missing transaction wrapper
+              if ! echo "$CONTENT" | grep -qE 'begin|start\s+transaction'; then
+                WARNINGS="$WARNINGS\n⚠️ No transaction wrapper in $file"
+              fi
+              
+              # Check for missing DOWN migration
+              if echo "$file" | grep -qE 'migrations/'; then
+                DOWN_FILE="${file%.sql}_down.sql"
+                if [ ! -f "$DOWN_FILE" ] && ! echo "$CONTENT" | grep -qE 'rollback|down:'; then
+                  WARNINGS="$WARNINGS\n⚠️ No rollback script for $file"
+                fi
+              fi
+              
+              # Check for DELETE without WHERE
+              if echo "$CONTENT" | grep -qE 'delete\s+from' && ! echo "$CONTENT" | grep -qE 'delete\s+from.*where'; then
+                BLOCKERS="$BLOCKERS\n❌ DELETE without WHERE clause in $file"
+                DESTRUCTIVE_OPS=$((DESTRUCTIVE_OPS + 1))
+              fi
+              
+              # Check for UPDATE without WHERE
+              if echo "$CONTENT" | grep -qE 'update\s+\w+\s+set' && ! echo "$CONTENT" | grep -qE 'update.*set.*where'; then
+                BLOCKERS="$BLOCKERS\n❌ UPDATE without WHERE clause in $file"
+                DESTRUCTIVE_OPS=$((DESTRUCTIVE_OPS + 1))
+              fi
+            fi
+          done
+          
+          echo "destructive_ops=$DESTRUCTIVE_OPS" >> $GITHUB_OUTPUT
+          echo "irreversible_ops=$IRREVERSIBLE_OPS" >> $GITHUB_OUTPUT
+          
+          # Encode for multiline
+          echo "warnings<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$WARNINGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "blockers<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$BLOCKERS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ "$DESTRUCTIVE_OPS" -gt "0" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "severity=critical" >> $GITHUB_OUTPUT
+          elif [ -n "$WARNINGS" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=info" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log to Supabase
+        if: always()
+        run: |
+          curl -X POST "${{ env.SUPABASE_URL }}/rest/v1/cto_agent_audit" \
+            -H "apikey: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "run_id": "${{ github.run_id }}",
+              "stage": "migration_safety",
+              "status": "${{ steps.analyze.outputs.status }}",
+              "severity": "${{ steps.analyze.outputs.severity }}",
+              "actor": "${{ github.actor }}",
+              "pr_number": ${{ github.event.pull_request.number || 'null' }},
+              "branch": "${{ github.head_ref }}",
+              "commit_sha": "${{ github.sha }}",
+              "details": {
+                "destructive_operations": ${{ steps.analyze.outputs.destructive_ops }},
+                "irreversible_operations": ${{ steps.analyze.outputs.irreversible_ops }},
+                "files_analyzed": "${{ steps.changed_files.outputs.files }}"
+              }
+            }'
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.analyze.outputs.status }}';
+            const destructive = '${{ steps.analyze.outputs.destructive_ops }}';
+            const warnings = `${{ steps.analyze.outputs.warnings }}`;
+            const blockers = `${{ steps.analyze.outputs.blockers }}`;
+            
+            let body = `## 🗃️ Migration Safety Analysis\n\n`;
+            
+            if (destructive > 0) {
+              body += `### ❌ Destructive Operations Detected\n\n`;
+              body += `**${destructive} potentially destructive operation(s) found.**\n\n`;
+              body += blockers + '\n\n';
+              body += `> ⚠️ **This PR requires manual approval from a database administrator.**\n`;
+              body += `> Please ensure you have:\n`;
+              body += `> - [ ] Backup of affected data\n`;
+              body += `> - [ ] Rollback script ready\n`;
+              body += `> - [ ] Tested in staging environment\n`;
+            } else {
+              body += `### ✅ No Destructive Operations\n\n`;
+            }
+            
+            if (warnings) {
+              body += `\n### ⚠️ Warnings\n${warnings}\n`;
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Block Merge if Destructive
+        if: steps.analyze.outputs.destructive_ops > 0
+        run: |
+          echo "❌ BLOCKED: Destructive database operations detected!"
+          echo "This PR requires manual review and approval."
+          echo ""
+          echo "To proceed, you must:"
+          echo "1. Add a rollback script"
+          echo "2. Get DBA approval"
+          echo "3. Add label 'migration-approved'"
+          exit 1
+

@@ -1,0 +1,184 @@
+# ============================================
+# Design Consistency Agent
+# Ensures UI/UX standards compliance
+# ============================================
+
+name: 🎨 Design Consistency Agent
+
+on:
+  pull_request:
+    paths:
+      - 'src/**/*.tsx'
+      - 'src/**/*.css'
+      - 'src/**/*.scss'
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  design-audit:
+    name: 🎯 Design Standards Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get Changed Files
+        id: changed_files
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.tsx' '*.css' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Run Design Audit
+        id: design_audit
+        run: |
+          INLINE_STYLE_COUNT=0
+          HARDCODED_COLORS=0
+          MISSING_RTL=0
+          NON_SHADCN=0
+          VIOLATIONS=""
+          
+          for file in ${{ steps.changed_files.outputs.files }}; do
+            if [ -f "$file" ]; then
+              echo "Checking: $file"
+              CONTENT=$(cat "$file")
+              
+              # Check for inline styles
+              INLINE=$(echo "$CONTENT" | grep -c 'style={{' || true)
+              if [ "$INLINE" -gt "0" ]; then
+                INLINE_STYLE_COUNT=$((INLINE_STYLE_COUNT + INLINE))
+                VIOLATIONS="$VIOLATIONS\n⚠️ Inline styles ($INLINE) in $file"
+              fi
+              
+              # Check for hardcoded colors (hex values not in theme)
+              HARDCODED=$(echo "$CONTENT" | grep -oE '#[0-9a-fA-F]{3,6}' | wc -l || true)
+              if [ "$HARDCODED" -gt "0" ]; then
+                HARDCODED_COLORS=$((HARDCODED_COLORS + HARDCODED))
+                VIOLATIONS="$VIOLATIONS\n⚠️ Hardcoded colors ($HARDCODED) in $file - use theme tokens"
+              fi
+              
+              # Check for missing dir="rtl" support in new components
+              if echo "$CONTENT" | grep -qE 'export.*function|export.*const.*=.*\('; then
+                if ! echo "$CONTENT" | grep -qE 'dir=|rtl|ltr|direction'; then
+                  # Check if it's a UI component
+                  if echo "$CONTENT" | grep -qE 'className=|<div|<span|<button'; then
+                    MISSING_RTL=$((MISSING_RTL + 1))
+                    VIOLATIONS="$VIOLATIONS\n⚠️ Missing RTL support in $file"
+                  fi
+                fi
+              fi
+              
+              # Check for non-Shadcn button/input usage
+              if echo "$CONTENT" | grep -qE '<button\s|<input\s' && ! echo "$CONTENT" | grep -qE 'from.*@/components/ui'; then
+                NON_SHADCN=$((NON_SHADCN + 1))
+                VIOLATIONS="$VIOLATIONS\n⚠️ Using native HTML elements instead of Shadcn UI in $file"
+              fi
+              
+              # Check for inconsistent spacing (should use Tailwind spacing scale)
+              if echo "$CONTENT" | grep -qE 'margin:\s*\d+px|padding:\s*\d+px|gap:\s*\d+px'; then
+                VIOLATIONS="$VIOLATIONS\n⚠️ Hardcoded pixel values in $file - use Tailwind spacing"
+              fi
+              
+              # Check for !important usage (anti-pattern)
+              if echo "$CONTENT" | grep -q '!important'; then
+                VIOLATIONS="$VIOLATIONS\n❌ !important usage in $file - avoid this"
+              fi
+              
+              # Check for deprecated Tailwind classes
+              DEPRECATED_CLASSES="flex-grow flex-shrink"
+              for class in $DEPRECATED_CLASSES; do
+                if echo "$CONTENT" | grep -q "$class"; then
+                  VIOLATIONS="$VIOLATIONS\n⚠️ Deprecated class '$class' in $file"
+                fi
+              done
+            fi
+          done
+          
+          TOTAL_ISSUES=$((INLINE_STYLE_COUNT + HARDCODED_COLORS + MISSING_RTL + NON_SHADCN))
+          
+          echo "inline_styles=$INLINE_STYLE_COUNT" >> $GITHUB_OUTPUT
+          echo "hardcoded_colors=$HARDCODED_COLORS" >> $GITHUB_OUTPUT
+          echo "missing_rtl=$MISSING_RTL" >> $GITHUB_OUTPUT
+          echo "non_shadcn=$NON_SHADCN" >> $GITHUB_OUTPUT
+          echo "total_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+          
+          echo "violations<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ "$TOTAL_ISSUES" -gt "10" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          elif [ "$TOTAL_ISSUES" -gt "0" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=info" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log to Supabase
+        if: always()
+        run: |
+          curl -X POST "${{ env.SUPABASE_URL }}/rest/v1/cto_agent_audit" \
+            -H "apikey: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "run_id": "${{ github.run_id }}",
+              "stage": "design_audit",
+              "status": "${{ steps.design_audit.outputs.status }}",
+              "severity": "${{ steps.design_audit.outputs.severity }}",
+              "actor": "${{ github.actor }}",
+              "pr_number": ${{ github.event.pull_request.number || 'null' }},
+              "branch": "${{ github.head_ref }}",
+              "commit_sha": "${{ github.sha }}",
+              "details": {
+                "inline_styles": ${{ steps.design_audit.outputs.inline_styles }},
+                "hardcoded_colors": ${{ steps.design_audit.outputs.hardcoded_colors }},
+                "missing_rtl": ${{ steps.design_audit.outputs.missing_rtl }},
+                "non_shadcn_components": ${{ steps.design_audit.outputs.non_shadcn }},
+                "total_issues": ${{ steps.design_audit.outputs.total_issues }}
+              }
+            }'
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.design_audit.outputs.total_issues > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 🎨 Design Consistency Report
+            
+            | Check | Count |
+            |-------|-------|
+            | Inline Styles | ${{ steps.design_audit.outputs.inline_styles }} |
+            | Hardcoded Colors | ${{ steps.design_audit.outputs.hardcoded_colors }} |
+            | Missing RTL Support | ${{ steps.design_audit.outputs.missing_rtl }} |
+            | Non-Shadcn Components | ${{ steps.design_audit.outputs.non_shadcn }} |
+            
+            ### Violations Found:
+            ${{ steps.design_audit.outputs.violations }}
+            
+            ### 📚 Design Guidelines:
+            - Use Tailwind CSS classes instead of inline styles
+            - Use theme colors from \`tailwind.config.ts\`
+            - Import UI components from \`@/components/ui\`
+            - Ensure RTL support for Arabic content`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+

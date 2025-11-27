@@ -1,0 +1,202 @@
+# ============================================
+# Auto ChangeLog Agent
+# Automatically generates changelog from commits
+# ============================================
+
+name: 📝 ChangeLog Agent
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+
+jobs:
+  generate-changelog:
+    name: 📋 Generate ChangeLog
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Previous Tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Parse Commits
+        id: parse
+        run: |
+          # Get commits since last tag
+          COMMITS=$(git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"%s|%h|%an" 2>/dev/null || git log --pretty=format:"%s|%h|%an" -20)
+          
+          FEATURES=""
+          FIXES=""
+          CHORES=""
+          DOCS=""
+          REFACTORS=""
+          BREAKING=""
+          
+          while IFS='|' read -r message hash author; do
+            # Skip empty lines
+            [ -z "$message" ] && continue
+            
+            # Parse conventional commits
+            if echo "$message" | grep -qE '^feat(\(.+\))?!?:'; then
+              FEATURES="$FEATURES\n- $message (\`$hash\`) - @$author"
+              if echo "$message" | grep -q '!:'; then
+                BREAKING="$BREAKING\n- $message"
+              fi
+            elif echo "$message" | grep -qE '^fix(\(.+\))?:'; then
+              FIXES="$FIXES\n- $message (\`$hash\`) - @$author"
+            elif echo "$message" | grep -qE '^chore(\(.+\))?:'; then
+              CHORES="$CHORES\n- $message (\`$hash\`)"
+            elif echo "$message" | grep -qE '^docs(\(.+\))?:'; then
+              DOCS="$DOCS\n- $message (\`$hash\`)"
+            elif echo "$message" | grep -qE '^refactor(\(.+\))?:'; then
+              REFACTORS="$REFACTORS\n- $message (\`$hash\`)"
+            fi
+          done <<< "$COMMITS"
+          
+          # Count changes
+          FEAT_COUNT=$(echo -e "$FEATURES" | grep -c "^-" || true)
+          FIX_COUNT=$(echo -e "$FIXES" | grep -c "^-" || true)
+          
+          # Save to outputs
+          echo "features<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FEATURES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "fixes<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FIXES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "chores<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHORES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "docs<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$DOCS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "refactors<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$REFACTORS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "breaking<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$BREAKING" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "feat_count=$FEAT_COUNT" >> $GITHUB_OUTPUT
+          echo "fix_count=$FIX_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Generate ChangeLog Entry
+        id: changelog
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION="Unreleased"
+          
+          # Check if this is a tagged release
+          if git describe --exact-match --tags HEAD 2>/dev/null; then
+            VERSION=$(git describe --exact-match --tags HEAD)
+          fi
+          
+          ENTRY="## [$VERSION] - $DATE\n\n"
+          
+          # Breaking Changes
+          if [ -n "${{ steps.parse.outputs.breaking }}" ] && [ "${{ steps.parse.outputs.breaking }}" != "" ]; then
+            ENTRY="$ENTRY### ⚠️ Breaking Changes\n${{ steps.parse.outputs.breaking }}\n\n"
+          fi
+          
+          # Features
+          if [ -n "${{ steps.parse.outputs.features }}" ] && [ "${{ steps.parse.outputs.features }}" != "" ]; then
+            ENTRY="$ENTRY### ✨ Features\n${{ steps.parse.outputs.features }}\n\n"
+          fi
+          
+          # Bug Fixes
+          if [ -n "${{ steps.parse.outputs.fixes }}" ] && [ "${{ steps.parse.outputs.fixes }}" != "" ]; then
+            ENTRY="$ENTRY### 🐛 Bug Fixes\n${{ steps.parse.outputs.fixes }}\n\n"
+          fi
+          
+          # Refactors
+          if [ -n "${{ steps.parse.outputs.refactors }}" ] && [ "${{ steps.parse.outputs.refactors }}" != "" ]; then
+            ENTRY="$ENTRY### ♻️ Refactors\n${{ steps.parse.outputs.refactors }}\n\n"
+          fi
+          
+          # Documentation
+          if [ -n "${{ steps.parse.outputs.docs }}" ] && [ "${{ steps.parse.outputs.docs }}" != "" ]; then
+            ENTRY="$ENTRY### 📚 Documentation\n${{ steps.parse.outputs.docs }}\n\n"
+          fi
+          
+          # Chores
+          if [ -n "${{ steps.parse.outputs.chores }}" ] && [ "${{ steps.parse.outputs.chores }}" != "" ]; then
+            ENTRY="$ENTRY### 🔧 Maintenance\n${{ steps.parse.outputs.chores }}\n\n"
+          fi
+          
+          echo "entry<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$ENTRY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update CHANGELOG.md
+        run: |
+          # Create CHANGELOG if it doesn't exist
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)," >> CHANGELOG.md
+            echo "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Insert new entry after header
+          ENTRY='${{ steps.changelog.outputs.entry }}'
+          
+          # Use temporary file for insertion
+          {
+            head -n 7 CHANGELOG.md
+            echo ""
+            echo -e "$ENTRY"
+            tail -n +8 CHANGELOG.md
+          } > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+      - name: Commit ChangeLog
+        run: |
+          git config --local user.email "cto-agent@fleetify.app"
+          git config --local user.name "CTO Agent"
+          
+          git add CHANGELOG.md
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changelog changes to commit"
+          else
+            git commit -m "docs(changelog): auto-update changelog [skip ci]"
+            git push
+          fi
+
+      - name: Create Release Notes (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = context.ref.replace('refs/tags/', '');
+            const body = `${{ steps.changelog.outputs.entry }}`;
+            
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              name: `Release ${version}`,
+              body: body,
+              draft: false,
+              prerelease: version.includes('-')
+            });
+

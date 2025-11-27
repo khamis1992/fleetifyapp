@@ -1,0 +1,244 @@
+# ============================================
+# Performance Agent
+# Nightly performance & bundle analysis
+# ============================================
+
+name: ⚡ Performance Agent
+
+on:
+  schedule:
+    # Every night at 3 AM
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  performance-analysis:
+    name: 📊 Performance Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build & Analyze Bundle
+        id: bundle
+        run: |
+          # Build with stats
+          pnpm run build 2>&1 | tee build-output.txt
+          
+          # Calculate bundle size
+          TOTAL_SIZE=$(du -sk dist/ | cut -f1)
+          JS_SIZE=$(find dist/ -name "*.js" -exec du -sk {} + | awk '{s+=$1} END {print s}')
+          CSS_SIZE=$(find dist/ -name "*.css" -exec du -sk {} + | awk '{s+=$1} END {print s}')
+          
+          echo "total_size_kb=$TOTAL_SIZE" >> $GITHUB_OUTPUT
+          echo "js_size_kb=${JS_SIZE:-0}" >> $GITHUB_OUTPUT
+          echo "css_size_kb=${CSS_SIZE:-0}" >> $GITHUB_OUTPUT
+          
+          # Check bundle size thresholds
+          MAX_TOTAL=5000  # 5MB max
+          MAX_JS=3000     # 3MB max for JS
+          
+          if [ "$TOTAL_SIZE" -gt "$MAX_TOTAL" ]; then
+            echo "bundle_status=fail" >> $GITHUB_OUTPUT
+            echo "bundle_message=Bundle too large: ${TOTAL_SIZE}KB > ${MAX_TOTAL}KB" >> $GITHUB_OUTPUT
+          else
+            echo "bundle_status=pass" >> $GITHUB_OUTPUT
+            echo "bundle_message=Bundle size OK: ${TOTAL_SIZE}KB" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Analyze Unused Dependencies
+        id: deps
+        run: |
+          # Check for unused dependencies
+          npx depcheck --json > depcheck.json 2>/dev/null || true
+          
+          UNUSED=$(cat depcheck.json | jq -r '.dependencies | length // 0')
+          MISSING=$(cat depcheck.json | jq -r '.missing | keys | length // 0')
+          
+          echo "unused_deps=$UNUSED" >> $GITHUB_OUTPUT
+          echo "missing_deps=$MISSING" >> $GITHUB_OUTPUT
+
+      - name: Check for Dead Code
+        id: dead_code
+        run: |
+          # Find unused exports
+          npx ts-prune 2>/dev/null | head -50 > dead-code.txt || true
+          DEAD_EXPORTS=$(wc -l < dead-code.txt)
+          echo "dead_exports=$DEAD_EXPORTS" >> $GITHUB_OUTPUT
+
+      - name: Analyze Import Sizes
+        id: imports
+        run: |
+          # Check for large imports that could be tree-shaken
+          LARGE_IMPORTS=""
+          
+          # Check for full lodash imports
+          LODASH_FULL=$(grep -r "from 'lodash'" src/ --include="*.ts" --include="*.tsx" | wc -l || true)
+          if [ "$LODASH_FULL" -gt "0" ]; then
+            LARGE_IMPORTS="$LARGE_IMPORTS\n⚠️ $LODASH_FULL files import full lodash - use lodash-es or specific imports"
+          fi
+          
+          # Check for full moment.js
+          MOMENT_FULL=$(grep -r "from 'moment'" src/ --include="*.ts" --include="*.tsx" | wc -l || true)
+          if [ "$MOMENT_FULL" -gt "0" ]; then
+            LARGE_IMPORTS="$LARGE_IMPORTS\n⚠️ $MOMENT_FULL files import moment.js - consider date-fns"
+          fi
+          
+          # Check for full icon library imports
+          ICON_FULL=$(grep -r "from 'lucide-react'" src/ --include="*.ts" --include="*.tsx" | grep -v "{ " | wc -l || true)
+          if [ "$ICON_FULL" -gt "0" ]; then
+            LARGE_IMPORTS="$LARGE_IMPORTS\n⚠️ $ICON_FULL files may import all icons - use named imports"
+          fi
+          
+          echo "large_imports<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$LARGE_IMPORTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check Slow SQL Queries (via Supabase)
+        id: sql_perf
+        run: |
+          # This would query Supabase analytics for slow queries
+          # For now, just analyze migration files for potential issues
+          
+          SLOW_PATTERNS=0
+          
+          # Check for missing indexes on foreign keys
+          for file in supabase/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              # Check for foreign keys without indexes
+              FK_COUNT=$(grep -c "REFERENCES" "$file" || true)
+              IDX_COUNT=$(grep -c "CREATE INDEX" "$file" || true)
+              
+              if [ "$FK_COUNT" -gt "$IDX_COUNT" ]; then
+                SLOW_PATTERNS=$((SLOW_PATTERNS + 1))
+              fi
+            fi
+          done
+          
+          echo "slow_patterns=$SLOW_PATTERNS" >> $GITHUB_OUTPUT
+
+      - name: Generate Performance Report
+        id: report
+        run: |
+          SCORE=100
+          
+          # Deduct for bundle size
+          if [ "${{ steps.bundle.outputs.total_size_kb }}" -gt "5000" ]; then
+            SCORE=$((SCORE - 20))
+          elif [ "${{ steps.bundle.outputs.total_size_kb }}" -gt "3000" ]; then
+            SCORE=$((SCORE - 10))
+          fi
+          
+          # Deduct for unused deps
+          UNUSED=${{ steps.deps.outputs.unused_deps }}
+          if [ "$UNUSED" -gt "10" ]; then
+            SCORE=$((SCORE - 15))
+          elif [ "$UNUSED" -gt "5" ]; then
+            SCORE=$((SCORE - 5))
+          fi
+          
+          # Deduct for dead code
+          DEAD=${{ steps.dead_code.outputs.dead_exports }}
+          if [ "$DEAD" -gt "50" ]; then
+            SCORE=$((SCORE - 15))
+          elif [ "$DEAD" -gt "20" ]; then
+            SCORE=$((SCORE - 5))
+          fi
+          
+          echo "performance_score=$SCORE" >> $GITHUB_OUTPUT
+          
+          if [ "$SCORE" -lt "70" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "severity=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "severity=info" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log to Supabase
+        if: always()
+        run: |
+          curl -X POST "${{ env.SUPABASE_URL }}/rest/v1/cto_agent_audit" \
+            -H "apikey: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "run_id": "${{ github.run_id }}",
+              "stage": "performance_scan",
+              "status": "${{ steps.report.outputs.status }}",
+              "severity": "${{ steps.report.outputs.severity }}",
+              "actor": "system",
+              "branch": "main",
+              "commit_sha": "${{ github.sha }}",
+              "details": {
+                "performance_score": ${{ steps.report.outputs.performance_score }},
+                "bundle_size_kb": ${{ steps.bundle.outputs.total_size_kb }},
+                "js_size_kb": ${{ steps.bundle.outputs.js_size_kb }},
+                "css_size_kb": ${{ steps.bundle.outputs.css_size_kb }},
+                "unused_dependencies": ${{ steps.deps.outputs.unused_deps }},
+                "missing_dependencies": ${{ steps.deps.outputs.missing_deps }},
+                "dead_exports": ${{ steps.dead_code.outputs.dead_exports }},
+                "slow_sql_patterns": ${{ steps.sql_perf.outputs.slow_patterns }}
+              },
+              "metrics": {
+                "bundle_total_kb": ${{ steps.bundle.outputs.total_size_kb }},
+                "bundle_js_kb": ${{ steps.bundle.outputs.js_size_kb }},
+                "bundle_css_kb": ${{ steps.bundle.outputs.css_size_kb }},
+                "score": ${{ steps.report.outputs.performance_score }}
+              }
+            }'
+
+      - name: Save Performance Report
+        run: |
+          mkdir -p reports
+          cat > reports/performance-$(date +%Y-%m-%d).md << 'EOF'
+          # Performance Report - $(date +%Y-%m-%d)
+          
+          ## 📊 Bundle Analysis
+          
+          | Metric | Value |
+          |--------|-------|
+          | Total Size | ${{ steps.bundle.outputs.total_size_kb }}KB |
+          | JavaScript | ${{ steps.bundle.outputs.js_size_kb }}KB |
+          | CSS | ${{ steps.bundle.outputs.css_size_kb }}KB |
+          
+          ## 🔍 Code Quality
+          
+          | Check | Count |
+          |-------|-------|
+          | Unused Dependencies | ${{ steps.deps.outputs.unused_deps }} |
+          | Dead Exports | ${{ steps.dead_code.outputs.dead_exports }} |
+          | Slow SQL Patterns | ${{ steps.sql_perf.outputs.slow_patterns }} |
+          
+          ## 📈 Performance Score: ${{ steps.report.outputs.performance_score }}/100
+          
+          ${{ steps.imports.outputs.large_imports }}
+          EOF
+
+      - name: Commit Report
+        run: |
+          git config --local user.email "cto-agent@fleetify.app"
+          git config --local user.name "CTO Agent"
+          git add reports/ || true
+          git commit -m "chore: add performance report $(date +%Y-%m-%d)" || true
+          git push || true
+
