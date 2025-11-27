@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import BentoSidebar from './BentoSidebar';
 import {
   Car,
   FileText,
@@ -296,16 +297,21 @@ const BentoDashboard: React.FC = () => {
 
   if (statsLoading) {
     return (
-      <div className="min-h-screen bg-[#f0efed] p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-coral-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f0efed] p-5">
-      {/* FAB Menu */}
-      <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} />
+    <div className="min-h-screen bg-[#f0efed] flex" dir="rtl">
+      {/* Sidebar */}
+      <BentoSidebar />
+
+      {/* Main Content */}
+      <div className="flex-1 p-5 overflow-auto">
+        {/* FAB Menu */}
+        <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} />
 
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
@@ -547,17 +553,142 @@ const BentoDashboard: React.FC = () => {
           </button>
         </motion.div>
 
+        {/* Booking Calendar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="col-span-4 bg-white rounded-2xl p-4 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-neutral-900 text-sm">تقويم الحجوزات</h3>
+            <button 
+              onClick={() => navigate('/operations/calendar')}
+              className="text-[10px] text-coral-600 font-medium flex items-center gap-1"
+            >
+              <Calendar className="w-3 h-3" />
+              عرض الشهر
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+            {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((d) => (
+              <span key={d} className="text-[8px] text-neutral-400">{d}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {[...Array(7)].map((_, i) => {
+              const date = new Date();
+              date.setDate(date.getDate() + i);
+              const dayNum = date.getDate();
+              const isToday = i === 0;
+              const occupancy = Math.round(Math.random() * 50 + 40); // placeholder
+              const getColors = (occ: number) => {
+                if (occ < 50) return 'bg-green-50 border-green-200 text-green-700';
+                if (occ < 70) return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+                if (occ < 85) return 'bg-orange-50 border-orange-200 text-orange-700';
+                return 'bg-red-50 border-red-200 text-red-700';
+              };
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'aspect-square rounded-lg flex flex-col items-center justify-center border',
+                    isToday ? 'bg-blue-100 border-2 border-blue-500' : getColors(occupancy)
+                  )}
+                >
+                  <span className={cn('text-[10px] font-semibold', isToday && 'font-bold text-blue-700')}>
+                    {dayNum}
+                  </span>
+                  <span className={cn('text-[7px]', isToday ? 'text-blue-600' : '')}>
+                    {isToday ? 'اليوم' : `${occupancy}%`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-neutral-900">ملخص الأسبوع</span>
+              <span className="text-[8px] text-neutral-400">{dayNumber}-{dayNumber + 6} {monthYear.split(' ')[0]}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="text-center">
+                <p className="text-sm font-bold text-blue-600">{occupancyRate}%</p>
+                <p className="text-[8px] text-neutral-500">متوسط الإشغال</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold text-green-600">{stats?.activeContracts || 0}</p>
+                <p className="text-[8px] text-neutral-500">عقود نشطة</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Revenue Forecast */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="col-span-4 bg-white rounded-2xl p-4 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-neutral-900 text-sm">توقعات الإيرادات</h3>
+            <div className="w-7 h-7 bg-coral-100 rounded-lg flex items-center justify-center">
+              <Brain className="w-3.5 h-3.5 text-coral-600" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] text-neutral-500">الشهر الحالي</span>
+                <span className="text-[11px] font-bold text-neutral-900">{formatCurrency(stats?.monthlyRevenue || 0)} QAR</span>
+              </div>
+              <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-coral-500" style={{ width: '80%' }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] text-neutral-500">توقع الشهر القادم</span>
+                <span className="text-[11px] font-bold text-green-600">{formatCurrency((stats?.monthlyRevenue || 0) * 1.22)} QAR</span>
+              </div>
+              <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-green-500" style={{ width: '97%' }} />
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 p-2 bg-coral-50 rounded-lg">
+            <p className="text-[10px] font-semibold text-neutral-900 mb-1">العوامل المؤثرة:</p>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <ArrowUp className="w-2.5 h-2.5 text-green-500" />
+                <span className="text-[9px] text-neutral-600">العامل الموسمي (+8%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ArrowUp className="w-2.5 h-2.5 text-green-500" />
+                <span className="text-[9px] text-neutral-600">عقود جديدة (+12%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ArrowDown className="w-2.5 h-2.5 text-red-500" />
+                <span className="text-[9px] text-neutral-600">تأثير الصيانة (-2%)</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 text-center p-1.5 bg-green-50 rounded-lg">
+            <p className="text-lg font-bold text-green-600">+22%</p>
+            <p className="text-[8px] text-neutral-500">نمو متوقع</p>
+          </div>
+        </motion.div>
+
         {/* Recent Activities */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="col-span-4 bg-white rounded-2xl p-5 shadow-sm"
+          className="col-span-4 bg-white rounded-2xl p-4 shadow-sm"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-neutral-900 text-sm">النشاطات الأخيرة</h3>
-            <button className="text-xs text-coral-600 font-medium">عرض الكل</button>
+            <button className="text-[10px] text-coral-600 font-medium">عرض الكل</button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {activities?.map((activity: any, index: number) => {
               const colors = ['bg-green-500', 'bg-blue-500', 'bg-amber-500', 'bg-purple-500', 'bg-coral-500'];
               const timeAgo = getTimeAgo(new Date(activity.created_at));
@@ -566,7 +697,7 @@ const BentoDashboard: React.FC = () => {
                 <div key={activity.id} className="flex items-center gap-2">
                   <div className={cn('w-1.5 h-1.5 rounded-full', colors[index % colors.length])} />
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-neutral-900">{activity.description}</p>
+                    <p className="text-[11px] font-medium text-neutral-900">{activity.description}</p>
                     <p className="text-[9px] text-neutral-400">{timeAgo}</p>
                   </div>
                 </div>
@@ -577,8 +708,25 @@ const BentoDashboard: React.FC = () => {
             )}
           </div>
         </motion.div>
+      </div>
+      </div>
+    </div>
+  );
+};
 
-        {/* Quick Actions */}
+// Helper function for time ago
+function getTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'الآن';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  return `منذ ${days} يوم`;
+}
+
+export default BentoDashboard;
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -624,6 +772,7 @@ const BentoDashboard: React.FC = () => {
             </button>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );
