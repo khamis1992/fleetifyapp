@@ -1,127 +1,186 @@
-# Welcome to your Lovable project
+# 🚗 Fleetify - نظام إدارة الأساطيل والإيجارات
 
-## 🚀 Latest Updates
+<div align="center">
 
-### Phase 7B: Module Expansion (NEW!)
-**Fleetify is now a complete ERP solution!**
+![Fleetify Logo](public/assets/alaraf-logo.png)
 
-**Sales & CRM Module:**
-- Lead tracking and qualification
-- Sales pipeline management (Lead → Qualified → Proposal → Won/Lost)
-- Professional quote generation
-- Order fulfillment tracking
+**نظام ERP متكامل لإدارة الأساطيل وتأجير السيارات**
 
-**Advanced Inventory Management:**
-- Multi-warehouse stock tracking
-- Real-time inventory movements
-- Stock alerts and reorder points
-- Inventory analytics (valuation, aging, turnover)
-- Automated stock level updates
+[![Deploy Status](https://img.shields.io/badge/deploy-vercel-black)](https://www.alaraf.online)
+[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
 
-**Key Features:**
-- 15 new database tables
-- 45+ performance indexes
-- 35+ security policies (RLS)
-- 10 new React Query hooks
-- Advanced analytics views
-
-👉 **See:** [CHANGELOG_FLEETIFY_REVIEW.md](CHANGELOG_FLEETIFY_REVIEW.md) for Phase 7B details
-
-### Performance Optimization - Phase 1 Complete!
-- ⚡ **60% smaller** initial bundle (850KB → 340KB)
-- 🔍 **3-5x faster** search queries
-- 📊 **65% reduction** in Finance module size
-- ⏱️ **34% faster** page loads
-
-👉 **See:** [PERFORMANCE_MASTER_INDEX.md](PERFORMANCE_MASTER_INDEX.md) for complete details
+</div>
 
 ---
 
-## Project info
+## 📋 نظرة عامة
 
-**URL**: https://lovable.dev/projects/5ff0c8e1-2855-4929-a18d-792957ea202c
+**Fleetify** هو نظام ERP شامل مصمم خصيصاً لشركات تأجير السيارات وإدارة الأساطيل. يوفر حلولاً متكاملة لإدارة العقود، العملاء، المركبات، والمالية.
 
-## How can I edit this code?
+### 🌟 المميزات الرئيسية
 
-There are several ways of editing your application.
+- 🚗 **إدارة الأسطول** - تتبع شامل للمركبات والصيانة
+- 📝 **إدارة العقود** - نظام عقود متقدم مع تتبع المدفوعات
+- 👥 **إدارة العملاء** - CRM متكامل مع كشوف الحساب
+- 💰 **المركز المالي** - إدارة مالية شاملة مع التقارير
+- 📊 **التقارير والتحليلات** - لوحات تحكم تفاعلية
+- 🔔 **نظام التذكيرات** - تذكيرات واتساب تلقائية
+- 🚨 **المخالفات المرورية** - تتبع وإدارة المخالفات
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5ff0c8e1-2855-4929-a18d-792957ea202c) and start prompting.
+## 🛠️ التقنيات المستخدمة
 
-Changes made via Lovable will be committed automatically to this repo.
+| التقنية | الاستخدام |
+|---------|----------|
+| **React 18** | واجهة المستخدم |
+| **TypeScript** | النوع الآمن |
+| **Vite** | أداة البناء |
+| **Tailwind CSS** | التصميم |
+| **shadcn/ui** | مكونات UI |
+| **Supabase** | قاعدة البيانات والمصادقة |
+| **React Query** | إدارة البيانات |
+| **Recharts** | الرسوم البيانية |
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 البدء السريع
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### المتطلبات الأساسية
 
-Follow these steps:
+- Node.js 18+
+- pnpm أو npm
+- حساب Supabase
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### التثبيت
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# استنساخ المشروع
+git clone https://github.com/your-repo/fleetifyapp.git
+cd fleetifyapp
 
-# Step 3: Install the necessary dependencies.
-npm i
+# تثبيت التبعيات
+pnpm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# إعداد متغيرات البيئة
+cp .env.example .env
+
+# تشغيل خادم التطوير
+pnpm dev
 ```
 
-**Edit a file directly in GitHub**
+### متغيرات البيئة
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📁 هيكل المشروع
 
-## What technologies are used for this project?
+```
+fleetifyapp/
+├── src/
+│   ├── components/     # مكونات React
+│   ├── pages/          # صفحات التطبيق
+│   ├── hooks/          # React Hooks مخصصة
+│   ├── services/       # خدمات API
+│   ├── utils/          # دوال مساعدة
+│   └── integrations/   # تكاملات خارجية
+├── public/             # ملفات عامة
+├── docs/               # التوثيق
+├── sql/                # ملفات SQL
+├── scripts/            # سكربتات مساعدة
+└── supabase/           # إعدادات Supabase
+```
 
-This project is built with:
+---
 
-### Web Technologies:
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📚 الوحدات الرئيسية
 
-### Mobile Technologies:
-- Capacitor (for native mobile app generation)
-- Android SDK (for APK builds)
-- iOS SDK (for IPA builds)
+### 🚗 إدارة الأسطول (`/fleet`)
+- قائمة المركبات
+- تتبع الصيانة
+- المخالفات المرورية
+- نظام الحجوزات
 
-## How can I deploy this project?
+### 📝 إدارة العقود (`/contracts`)
+- إنشاء وإدارة العقود
+- تتبع المدفوعات
+- الغرامات والتعديلات
 
-### Web Deployment
-Simply open [Lovable](https://lovable.dev/projects/5ff0c8e1-2855-4929-a18d-792957ea202c) and click on Share -> Publish.
+### 👥 إدارة العملاء (`/customers`)
+- سجلات العملاء
+- كشوف الحساب
+- متابعة التحصيل
 
-### Mobile App Deployment
-To generate mobile apps (APK/IPA) from this React application:
+### 💰 المركز المالي (`/finance`)
+- الإيرادات والمصروفات
+- تتبع المدفوعات
+- التقارير المالية
 
-1. **Quick APK build**: `npm run build:apk`
-2. **Verify APK**: `npm run verify:apk`
-3. **Manual build**: See [MOBILE_BUILD_GUIDE.md](MOBILE_BUILD_GUIDE.md) for detailed instructions
+---
 
-**APK Output Location**: `build/app/outputs/flutter-apk/app-release.apk`
+## 🌐 النشر
 
-## Can I connect a custom domain to my Lovable project?
+### Vercel (موصى به)
 
-Yes, you can!
+```bash
+# البناء للإنتاج
+pnpm build:ci
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# أو استخدم Vercel CLI
+vercel --prod
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-# Build optimized for Vercel deployment
+### إعدادات Vercel
+
+```json
+{
+  "buildCommand": "pnpm run build:ci",
+  "installCommand": "pnpm install",
+  "outputDirectory": "dist"
+}
+```
+
+---
+
+## 📖 التوثيق
+
+- [دليل المطور](docs/DEVELOPER_GUIDE.md)
+- [مرجع API](docs/API_DOCUMENTATION.md)
+- [دليل النشر](docs/DEPLOYMENT_GUIDE.md)
+
+---
+
+## 🔒 الأمان
+
+- Row Level Security (RLS) مفعّل
+- مصادقة Supabase
+- تشفير البيانات الحساسة
+
+---
+
+## 📞 الدعم
+
+للمساعدة والدعم:
+- 📧 البريد: support@alaraf.online
+- 🌐 الموقع: [www.alaraf.online](https://www.alaraf.online)
+
+---
+
+## 📄 الترخيص
+
+هذا المشروع مملوك لشركة العراف لتأجير السيارات.
+
+---
+
+<div align="center">
+
+**صنع بـ ❤️ في قطر**
+
+</div>
