@@ -162,10 +162,10 @@ export default function TrafficViolationsRedesigned() {
     const timer = setInterval(() => {
       current += increment;
       if (current >= target) {
-        element.textContent = target.toLocaleString('ar-SA');
+        element.textContent = target.toLocaleString('en-US');
         clearInterval(timer);
       } else {
-        element.textContent = Math.floor(current).toLocaleString('ar-SA');
+        element.textContent = Math.floor(current).toLocaleString('en-US');
       }
     }, 16);
   };

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { Layout } from 'react-grid-layout';
 
 // تعريف أنواع البطاقات المتاحة في الداشبورد
 export type DashboardWidgetId = 
@@ -18,48 +19,93 @@ export type DashboardWidgetId =
 export interface DashboardWidget {
   id: DashboardWidgetId;
   title: string;
-  colSpan: number;
   visible: boolean;
+  // React Grid Layout properties
+  x: number;  // موقع X في الشبكة
+  y: number;  // موقع Y في الشبكة
+  w: number;  // العرض (عدد الأعمدة)
+  h: number;  // الارتفاع (عدد الصفوف)
+  minW?: number;  // الحد الأدنى للعرض
+  minH?: number;  // الحد الأدنى للارتفاع
+  maxW?: number;  // الحد الأقصى للعرض
+  maxH?: number;  // الحد الأقصى للارتفاع
 }
 
-// الترتيب الافتراضي للبطاقات
+// الترتيب الافتراضي للبطاقات - شبكة 12 عمود
 const DEFAULT_LAYOUT: DashboardWidget[] = [
-  { id: 'stats-vehicles', title: 'إجمالي المركبات', colSpan: 3, visible: true },
-  { id: 'stats-contracts', title: 'العقود النشطة', colSpan: 3, visible: true },
-  { id: 'stats-customers', title: 'إجمالي العملاء', colSpan: 3, visible: true },
-  { id: 'stats-revenue', title: 'إيرادات الشهر', colSpan: 3, visible: true },
-  { id: 'chart-revenue', title: 'الأداء المالي', colSpan: 5, visible: true },
-  { id: 'chart-fleet', title: 'حالة الأسطول', colSpan: 3, visible: true },
-  { id: 'maintenance', title: 'جدول الصيانة', colSpan: 4, visible: true },
-  { id: 'calendar', title: 'تقويم الحجوزات', colSpan: 4, visible: true },
-  { id: 'forecast', title: 'توقعات الإيرادات', colSpan: 4, visible: true },
-  { id: 'activities', title: 'النشاطات الأخيرة', colSpan: 4, visible: true },
+  // الصف الأول - بطاقات الإحصائيات
+  { id: 'stats-vehicles', title: 'إجمالي المركبات', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-contracts', title: 'العقود النشطة', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-customers', title: 'إجمالي العملاء', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  { id: 'stats-revenue', title: 'إيرادات الشهر', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2, maxH: 4, visible: true },
+  // الصف الثاني - الرسوم البيانية والصيانة
+  { id: 'chart-revenue', title: 'الأداء المالي', x: 7, y: 2, w: 5, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'chart-fleet', title: 'حالة الأسطول', x: 4, y: 2, w: 3, h: 4, minW: 2, minH: 3, visible: true },
+  { id: 'maintenance', title: 'جدول الصيانة', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  // الصف الثالث - التقويم والتوقعات والنشاطات
+  { id: 'calendar', title: 'تقويم الحجوزات', x: 8, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'forecast', title: 'توقعات الإيرادات', x: 4, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+  { id: 'activities', title: 'النشاطات الأخيرة', x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
 ];
 
-const STORAGE_KEY = 'dashboard_layout';
+const STORAGE_KEY = 'dashboard_layout_v2';
+
+// تحويل من DashboardWidget[] إلى Layout[] لـ react-grid-layout
+export function widgetsToLayout(widgets: DashboardWidget[]): Layout[] {
+  return widgets
+    .filter(w => w.visible)
+    .map(w => ({
+      i: w.id,
+      x: w.x,
+      y: w.y,
+      w: w.w,
+      h: w.h,
+      minW: w.minW,
+      minH: w.minH,
+      maxW: w.maxW,
+      maxH: w.maxH,
+    }));
+}
+
+// تحديث widgets من layout
+export function updateWidgetsFromLayout(widgets: DashboardWidget[], layout: Layout[]): DashboardWidget[] {
+  const layoutMap = new Map(layout.map(l => [l.i, l]));
+  return widgets.map(w => {
+    const layoutItem = layoutMap.get(w.id);
+    if (layoutItem) {
+      return {
+        ...w,
+        x: layoutItem.x,
+        y: layoutItem.y,
+        w: layoutItem.w,
+        h: layoutItem.h,
+      };
+    }
+    return w;
+  });
+}
 
 export function useDashboardLayout() {
   const { user } = useAuth();
-  const [layout, setLayout] = useState<DashboardWidget[]>(DEFAULT_LAYOUT);
+  const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_LAYOUT);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // تحميل التخصيصات من localStorage أو Supabase
+  // تحميل التخصيصات
   useEffect(() => {
     const loadLayout = async () => {
       setIsLoading(true);
       
       try {
-        // أولاً: محاولة التحميل من localStorage
+        // محاولة التحميل من localStorage
         const localLayout = localStorage.getItem(`${STORAGE_KEY}_${user?.id}`);
         if (localLayout) {
           const parsed = JSON.parse(localLayout);
-          // التأكد من وجود جميع البطاقات (في حال إضافة بطاقات جديدة)
           const mergedLayout = mergeLayouts(parsed, DEFAULT_LAYOUT);
-          setLayout(mergedLayout);
+          setWidgets(mergedLayout);
         }
 
-        // ثانياً: محاولة التحميل من Supabase (للمزامنة بين الأجهزة)
+        // محاولة التحميل من Supabase
         if (user?.id) {
           const { data } = await supabase
             .from('user_preferences')
@@ -68,11 +114,17 @@ export function useDashboardLayout() {
             .single();
 
           if (data?.dashboard_layout) {
-            const cloudLayout = JSON.parse(data.dashboard_layout);
-            const mergedLayout = mergeLayouts(cloudLayout, DEFAULT_LAYOUT);
-            setLayout(mergedLayout);
-            // تحديث localStorage
-            localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(mergedLayout));
+            try {
+              const cloudLayout = JSON.parse(data.dashboard_layout);
+              // التحقق من أن البيانات بالتنسيق الجديد (تحتوي على x, y)
+              if (cloudLayout[0]?.x !== undefined) {
+                const mergedLayout = mergeLayouts(cloudLayout, DEFAULT_LAYOUT);
+                setWidgets(mergedLayout);
+                localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(mergedLayout));
+              }
+            } catch (e) {
+              console.log('Using default layout - cloud data format mismatch');
+            }
           }
         }
       } catch (error) {
@@ -85,30 +137,38 @@ export function useDashboardLayout() {
     loadLayout();
   }, [user?.id]);
 
-  // دمج التخطيط المحفوظ مع الافتراضي (لإضافة بطاقات جديدة)
+  // دمج التخطيط المحفوظ مع الافتراضي
   const mergeLayouts = (saved: DashboardWidget[], defaults: DashboardWidget[]): DashboardWidget[] => {
     const savedIds = new Set(saved.map(w => w.id));
+    const defaultMap = new Map(defaults.map(w => [w.id, w]));
+    
+    // تحديث البطاقات المحفوظة بالقيم الافتراضية الناقصة
+    const updatedSaved = saved.map(w => ({
+      ...defaultMap.get(w.id),
+      ...w,
+    }));
+    
+    // إضافة بطاقات جديدة غير موجودة في المحفوظ
     const newWidgets = defaults.filter(w => !savedIds.has(w.id));
-    return [...saved, ...newWidgets];
+    return [...updatedSaved, ...newWidgets];
   };
 
   // حفظ التخصيصات
-  const saveLayout = useCallback(async (newLayout: DashboardWidget[]) => {
-    setLayout(newLayout);
+  const saveLayout = useCallback(async (newWidgets: DashboardWidget[]) => {
+    setWidgets(newWidgets);
     
-    // حفظ في localStorage
     if (user?.id) {
-      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(newLayout));
+      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(newWidgets));
     }
 
-    // حفظ في Supabase (بشكل غير متزامن)
+    // حفظ في Supabase
     if (user?.id) {
       try {
         await supabase
           .from('user_preferences')
           .upsert({
             user_id: user.id,
-            dashboard_layout: JSON.stringify(newLayout),
+            dashboard_layout: JSON.stringify(newWidgets),
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id'
@@ -119,26 +179,15 @@ export function useDashboardLayout() {
     }
   }, [user?.id]);
 
-  // إعادة الترتيب عند السحب والإفلات
-  const reorderWidgets = useCallback((activeId: string, overId: string) => {
-    setLayout((items) => {
-      const oldIndex = items.findIndex(item => item.id === activeId);
-      const newIndex = items.findIndex(item => item.id === overId);
-      
-      if (oldIndex === -1 || newIndex === -1) return items;
-
-      const newItems = [...items];
-      const [removed] = newItems.splice(oldIndex, 1);
-      newItems.splice(newIndex, 0, removed);
-      
-      return newItems;
-    });
+  // تحديث الترتيب من react-grid-layout
+  const onLayoutChange = useCallback((layout: Layout[]) => {
+    setWidgets(prev => updateWidgetsFromLayout(prev, layout));
   }, []);
 
   // تبديل ظهور بطاقة
   const toggleWidgetVisibility = useCallback((widgetId: DashboardWidgetId) => {
-    setLayout((items) =>
-      items.map((item) =>
+    setWidgets(items =>
+      items.map(item =>
         item.id === widgetId ? { ...item, visible: !item.visible } : item
       )
     );
@@ -146,28 +195,31 @@ export function useDashboardLayout() {
 
   // إعادة الترتيب الافتراضي
   const resetToDefault = useCallback(() => {
-    setLayout(DEFAULT_LAYOUT);
+    setWidgets(DEFAULT_LAYOUT);
     if (user?.id) {
       localStorage.removeItem(`${STORAGE_KEY}_${user.id}`);
     }
   }, [user?.id]);
 
-  // حفظ التغييرات عند الخروج من وضع التعديل
+  // حفظ عند الخروج من وضع التعديل
   const exitEditMode = useCallback(() => {
     setIsEditMode(false);
-    saveLayout(layout);
-  }, [layout, saveLayout]);
+    saveLayout(widgets);
+  }, [widgets, saveLayout]);
+
+  // الحصول على layout للـ react-grid-layout
+  const gridLayout = widgetsToLayout(widgets);
 
   return {
-    layout,
+    widgets,
+    gridLayout,
     isEditMode,
     isLoading,
     setIsEditMode,
-    reorderWidgets,
+    onLayoutChange,
     toggleWidgetVisibility,
     resetToDefault,
     exitEditMode,
     saveLayout,
   };
 }
-

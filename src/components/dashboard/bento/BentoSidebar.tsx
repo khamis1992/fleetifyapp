@@ -63,9 +63,10 @@ const navigation: NavItem[] = [
     label: 'المالية',
     icon: Banknote,
     children: [
-      { id: 'finance-main', label: 'الفواتير والمدفوعات', href: '/finance' },
+      { id: 'finance-center', label: 'المركز المالي', href: '/finance' },
       { id: 'payments-register', label: 'تسجيل دفعة', href: '/finance/payments/register' },
       { id: 'payments-tracking', label: 'تتبع المدفوعات', href: '/finance/payments/tracking' },
+      { id: 'vehicle-installments', label: 'أقساط السيارات', href: '/vehicle-installments' },
       { id: 'reports', label: 'التقارير', href: '/reports' },
     ],
   },

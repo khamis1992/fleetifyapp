@@ -1,24 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
+import GridLayout, { WidthProvider } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardLayout, DashboardWidgetId } from '@/hooks/useDashboardLayout';
-import { DraggableWidget } from './DraggableWidget';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +36,10 @@ import {
   RotateCcw,
   Check,
   X,
+  Eye,
+  EyeOff,
+  Move,
+  Maximize2,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -63,15 +55,18 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
+// React Grid Layout with width provider
+const ResponsiveGridLayout = WidthProvider(GridLayout);
+
 // ===== FAB Menu Component =====
 const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
 
   const actions = [
-    { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'bg-green-100 text-green-600', href: '/finance/payments' },
-    { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'bg-blue-100 text-blue-600', href: '/fleet/contracts/new' },
+    { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'bg-green-100 text-green-600', href: '/finance/payments/register' },
+    { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'bg-blue-100 text-blue-600', href: '/contracts' },
     { id: 'search', label: 'البحث', icon: Search, color: 'bg-amber-100 text-amber-600', href: '/search' },
-    { id: 'purchase', label: 'إنشاء أمر شراء', icon: ShoppingCart, color: 'bg-orange-100 text-orange-600', href: '/finance/purchases/new' },
+    { id: 'purchase', label: 'إنشاء أمر شراء', icon: ShoppingCart, color: 'bg-orange-100 text-orange-600', href: '/finance/purchase-orders' },
   ];
 
   const handleAction = (href: string) => {
@@ -137,8 +132,35 @@ const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
   );
 };
 
-// ===== Stat Card Component =====
-const BentoStatCard: React.FC<{
+// ===== Dynamic Size Context =====
+// نظام حساب الأحجام الديناميكية بناءً على أبعاد البطاقة
+interface SizeContext {
+  isCompact: boolean;
+  isLarge: boolean;
+  textScale: number;
+  iconScale: number;
+}
+
+const getSizeContext = (w: number, h: number): SizeContext => {
+  const area = w * h;
+  const isCompact = w <= 3 || h <= 2;
+  const isLarge = w >= 5 && h >= 4;
+  
+  // مقياس النص بناءً على المساحة
+  let textScale = 1;
+  if (area <= 6) textScale = 0.85;
+  else if (area >= 20) textScale = 1.15;
+  
+  // مقياس الأيقونات
+  let iconScale = 1;
+  if (area <= 6) iconScale = 0.8;
+  else if (area >= 20) iconScale = 1.2;
+
+  return { isCompact, isLarge, textScale, iconScale };
+};
+
+// ===== Responsive Stat Card =====
+const ResponsiveStatCard: React.FC<{
   title: string;
   value: string | number;
   change?: string;
@@ -147,37 +169,48 @@ const BentoStatCard: React.FC<{
   progressLabel?: string;
   progressValue?: number;
   progressColor?: string;
-}> = ({ title, value, change, icon: Icon, iconBg, progressLabel, progressValue, progressColor = 'bg-coral-500' }) => {
+  width: number;
+  height: number;
+}> = ({ title, value, change, icon: Icon, iconBg, progressLabel, progressValue, progressColor = 'bg-coral-500', width, height }) => {
   const isPositive = change?.startsWith('+');
+  const { isCompact, isLarge, textScale, iconScale } = getSizeContext(width, height);
+
+  // أحجام ديناميكية
+  const iconBoxSize = isCompact ? 'w-7 h-7' : isLarge ? 'w-12 h-12' : 'w-9 h-9';
+  const iconSize = isCompact ? 'w-3.5 h-3.5' : isLarge ? 'w-6 h-6' : 'w-4 h-4';
+  const titleSize = isCompact ? 'text-[9px]' : isLarge ? 'text-sm' : 'text-[11px]';
+  const valueSize = isCompact ? 'text-xl' : isLarge ? 'text-4xl' : 'text-[1.75rem]';
+  const badgeSize = isCompact ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-0.5';
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg transition-shadow h-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', iconBg)}>
-          <Icon className="w-5 h-5" />
+    <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <div className={cn('rounded-lg flex items-center justify-center', iconBoxSize, iconBg)}>
+          <Icon className={iconSize} />
         </div>
-        {change && (
+        {change && !isCompact && (
           <span className={cn(
-            'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold',
+            'inline-flex items-center gap-1 rounded-full font-semibold',
+            badgeSize,
             isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
           )}>
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
             {change}
           </span>
         )}
       </div>
-      <p className="text-xs text-neutral-500 font-medium mb-1">{title}</p>
-      <p className="text-2xl font-bold text-neutral-900 mb-3">{value}</p>
-      {progressLabel && progressValue !== undefined && (
-        <>
+      <p className={cn('text-neutral-500 font-medium mb-1', titleSize)}>{title}</p>
+      <p className={cn('font-bold text-neutral-900 leading-none mb-2 flex-grow', valueSize)}>{value}</p>
+      {progressLabel && progressValue !== undefined && !isCompact && (
+        <div className="mt-auto">
           <div className="flex items-center justify-between text-[10px] text-neutral-500 mb-1">
             <span>{progressLabel}</span>
             <span className={cn('font-semibold', progressColor.replace('bg-', 'text-'))}>{progressValue}%</span>
           </div>
-          <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
-            <div className={cn('h-full rounded-full', progressColor)} style={{ width: `${progressValue}%` }} />
+          <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
+            <div className={cn('h-full rounded-full transition-all', progressColor)} style={{ width: `${progressValue}%` }} />
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -191,36 +224,17 @@ const BentoDashboard: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
 
-  // استخدام hook التخصيص
+  // استخدام hook التخصيص المحدث
   const {
-    layout,
+    widgets,
+    gridLayout,
     isEditMode,
     setIsEditMode,
-    reorderWidgets,
+    onLayoutChange,
     toggleWidgetVisibility,
     resetToDefault,
     exitEditMode,
   } = useDashboardLayout();
-
-  // إعداد الحساسات للسحب والإفلات
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // معالجة نهاية السحب
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      reorderWidgets(active.id as string, over.id as string);
-    }
-  };
 
   // Helper function for calculating time ago from a date
   const getTimeAgo = (date: Date): string => {
@@ -268,7 +282,7 @@ const BentoDashboard: React.FC = () => {
         .eq('company_id', user.profile.company_id)
         .in('status', ['pending', 'in_progress', 'scheduled'])
         .order('scheduled_date', { ascending: true })
-        .limit(3);
+        .limit(5);
       return data || [];
     },
     enabled: !!user?.profile?.company_id,
@@ -346,12 +360,20 @@ const BentoDashboard: React.FC = () => {
     alert(`✅ تم تسجيل حضورك بنجاح!\n\nالتاريخ: ${dayName} ${dayNumber} ${monthYear}\nالوقت: ${time}`);
   };
 
+  // Get widget by ID
+  const getWidgetById = (id: DashboardWidgetId) => widgets.find(w => w.id === id);
+
   // تعريف محتوى كل بطاقة
   const renderWidget = (widgetId: DashboardWidgetId) => {
+    const widget = getWidgetById(widgetId);
+    const w = widget?.w || 3;
+    const h = widget?.h || 2;
+    const { isCompact, isLarge } = getSizeContext(w, h);
+
     switch (widgetId) {
       case 'stats-vehicles':
         return (
-          <BentoStatCard
+          <ResponsiveStatCard
             title="إجمالي المركبات"
             value={stats?.totalVehicles || 0}
             change={stats?.vehiclesChange}
@@ -360,12 +382,14 @@ const BentoDashboard: React.FC = () => {
             progressLabel="نشاط المركبات"
             progressValue={stats?.vehicleActivityRate || 0}
             progressColor="bg-coral-500"
+            width={w}
+            height={h}
           />
         );
 
       case 'stats-contracts':
         return (
-          <BentoStatCard
+          <ResponsiveStatCard
             title="العقود النشطة"
             value={stats?.activeContracts || 0}
             change={stats?.contractsChange}
@@ -374,12 +398,14 @@ const BentoDashboard: React.FC = () => {
             progressLabel="معدل الإكمال"
             progressValue={stats?.contractCompletionRate || 0}
             progressColor="bg-blue-500"
+            width={w}
+            height={h}
           />
         );
 
       case 'stats-customers':
         return (
-          <BentoStatCard
+          <ResponsiveStatCard
             title="إجمالي العملاء"
             value={stats?.totalCustomers || 0}
             change={stats?.customersChange}
@@ -388,30 +414,34 @@ const BentoDashboard: React.FC = () => {
             progressLabel="رضا العملاء"
             progressValue={stats?.customerSatisfactionRate || 0}
             progressColor="bg-green-500"
+            width={w}
+            height={h}
           />
         );
 
       case 'stats-revenue':
         return (
-          <BentoStatCard
+          <ResponsiveStatCard
             title="إيرادات الشهر"
             value={formatCurrency(stats?.monthlyRevenue || 0, { notation: 'compact' })}
             change={stats?.revenueChange}
             icon={Banknote}
             iconBg="bg-amber-100 text-amber-600"
+            width={w}
+            height={h}
           />
         );
 
       case 'chart-revenue':
         return (
-          <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
               <div>
-                <h3 className="font-bold text-neutral-900">الأداء المالي</h3>
-                <p className="text-xs text-neutral-400">تحليل الإيرادات الشهرية</p>
+                <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>الأداء المالي</h3>
+                {!isCompact && <p className="text-[10px] text-neutral-400">تحليل الإيرادات</p>}
               </div>
             </div>
-            <div className="h-44">
+            <div className="flex-grow min-h-[80px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData || []}>
                   <defs>
@@ -421,34 +451,50 @@ const BentoDashboard: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#78716c' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#78716c' }} tickFormatter={(v) => `${v}K`} />
+                  <XAxis dataKey="name" tick={{ fontSize: isCompact ? 8 : 10, fill: '#78716c' }} />
+                  <YAxis tick={{ fontSize: isCompact ? 8 : 10, fill: '#78716c' }} tickFormatter={(v) => `${v}K`} />
                   <Tooltip formatter={(value) => [`${value}K`, 'الإيرادات']} />
                   <Area type="monotone" dataKey="value" stroke="#e85a4f" strokeWidth={2} fill="url(#colorRevenue)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+            {isLarge && (
+              <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-neutral-100">
+                <div className="text-center">
+                  <p className="text-sm font-bold text-green-600">+22%</p>
+                  <p className="text-[9px] text-neutral-500">النمو</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-blue-600">{formatCurrency(stats?.monthlyRevenue || 0, { notation: 'compact' })}</p>
+                  <p className="text-[9px] text-neutral-500">الإيرادات</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-purple-600">{stats?.activeContracts || 0}</p>
+                  <p className="text-[9px] text-neutral-500">العقود</p>
+                </div>
+              </div>
+            )}
           </div>
         );
 
       case 'chart-fleet':
         return (
-          <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-neutral-900 text-sm">حالة الأسطول</h3>
-              <span className="px-2 py-1 bg-coral-500 text-white rounded-full text-[10px] font-semibold">
-                {occupancyRate}% إشغال
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>حالة الأسطول</h3>
+              <span className={cn('px-2 py-1 bg-coral-500 text-white rounded-full font-semibold', isCompact ? 'text-[8px]' : 'text-[10px]')}>
+                {occupancyRate}%
               </span>
             </div>
-            <div className="h-28 relative flex items-center justify-center">
+            <div className="relative flex-grow flex items-center justify-center min-h-[60px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={fleetChartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={35}
-                    outerRadius={50}
+                    innerRadius={isCompact ? '50%' : '55%'}
+                    outerRadius={isCompact ? '80%' : '85%'}
                     dataKey="value"
                   >
                     {fleetChartData.map((entry, index) => (
@@ -458,36 +504,38 @@ const BentoDashboard: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute text-center">
-                <p className="text-lg font-bold text-neutral-900">{totalVehicles}</p>
-                <p className="text-[9px] text-neutral-400">إجمالي</p>
+                <p className={cn('font-bold text-neutral-900', isCompact ? 'text-sm' : 'text-lg')}>{totalVehicles}</p>
+                <p className={cn('text-neutral-400', isCompact ? 'text-[7px]' : 'text-[9px]')}>إجمالي</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 mt-3">
-              {fleetChartData.map((item) => (
-                <div key={item.name} className="flex items-center gap-1.5 p-1.5 bg-neutral-50 rounded-lg">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                  <div>
-                    <p className="text-[10px] font-bold text-neutral-900">{item.value}</p>
-                    <p className="text-[8px] text-neutral-400">{item.name}</p>
+            {!isCompact && (
+              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                {fleetChartData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-1.5 p-1.5 bg-neutral-50 rounded-lg">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-neutral-900">{item.value}</p>
+                      <p className="text-[8px] text-neutral-400 truncate">{item.name}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
       case 'maintenance':
         return (
-          <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-neutral-900 text-sm">جدول الصيانة</h3>
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-600 rounded-full text-[9px] font-semibold">
-                <Clock className="w-2.5 h-2.5" />
-                {maintenanceData?.length || 0} قريباً
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>جدول الصيانة</h3>
+              <span className={cn('inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-600 rounded-full font-semibold', isCompact ? 'text-[8px]' : 'text-[9px]')}>
+                <Clock className={isCompact ? 'w-2 h-2' : 'w-2.5 h-2.5'} />
+                {maintenanceData?.length || 0}
               </span>
             </div>
-            <div className="space-y-2">
-              {maintenanceData?.slice(0, 3).map((item: any) => {
+            <div className="space-y-1.5 flex-grow overflow-auto">
+              {maintenanceData?.slice(0, isLarge ? 5 : 3).map((item: any) => {
                 const daysUntil = Math.ceil(
                   (new Date(item.scheduled_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
                 );
@@ -498,18 +546,18 @@ const BentoDashboard: React.FC = () => {
                   <div
                     key={item.id}
                     className={cn(
-                      'flex items-center gap-2 p-2.5 rounded-lg border-r-2',
+                      'flex items-center gap-2 p-2 rounded-lg border-r-2',
                       isOverdue ? 'bg-red-50 border-red-500' : isUrgent ? 'bg-amber-50 border-amber-500' : 'bg-yellow-50 border-yellow-500'
                     )}
                   >
                     {isOverdue ? (
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <AlertTriangle className={cn(isCompact ? 'w-3 h-3' : 'w-4 h-4', 'text-red-600 flex-shrink-0')} />
                     ) : (
-                      <Wrench className={cn('w-4 h-4', isUrgent ? 'text-amber-600' : 'text-yellow-600')} />
+                      <Wrench className={cn(isCompact ? 'w-3 h-3' : 'w-4 h-4', 'flex-shrink-0', isUrgent ? 'text-amber-600' : 'text-yellow-600')} />
                     )}
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-neutral-900">{item.vehicles?.plate_number || 'غير محدد'}</p>
-                      <p className="text-[9px] text-neutral-500">
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('font-semibold text-neutral-900 truncate', isCompact ? 'text-[10px]' : 'text-xs')}>{item.vehicles?.plate_number || 'غير محدد'}</p>
+                      <p className={cn('text-neutral-500 truncate', isCompact ? 'text-[8px]' : 'text-[9px]')}>
                         {item.maintenance_type} - {isOverdue ? `متأخر ${Math.abs(daysUntil)} يوم` : `بعد ${daysUntil} أيام`}
                       </p>
                     </div>
@@ -517,40 +565,43 @@ const BentoDashboard: React.FC = () => {
                 );
               })}
               {(!maintenanceData || maintenanceData.length === 0) && (
-                <div className="text-center py-4 text-neutral-400 text-sm">
-                  <Wrench className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p>لا توجد صيانات قادمة</p>
+                <div className="text-center py-4 text-neutral-400">
+                  <Wrench className={cn('mx-auto mb-2 opacity-30', isCompact ? 'w-6 h-6' : 'w-8 h-8')} />
+                  <p className={isCompact ? 'text-[10px]' : 'text-sm'}>لا توجد صيانات</p>
                 </div>
               )}
             </div>
             <button
               onClick={() => navigate('/fleet/maintenance')}
-              className="w-full mt-3 py-2 text-xs font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100"
+              className={cn(
+                'w-full mt-2 font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100 transition-colors',
+                isCompact ? 'py-1 text-[9px]' : 'py-1.5 text-[10px]'
+              )}
             >
-              عرض الكل
+              عرض الكل ({maintenanceData?.length || 0})
             </button>
           </div>
         );
 
       case 'calendar':
         return (
-          <div className="bg-white rounded-2xl p-4 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-neutral-900 text-sm">تقويم الحجوزات</h3>
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>تقويم الحجوزات</h3>
               <button 
                 onClick={() => navigate('/operations/calendar')}
-                className="text-[10px] text-coral-600 font-medium flex items-center gap-1"
+                className={cn('text-coral-600 font-medium flex items-center gap-1', isCompact ? 'text-[9px]' : 'text-[10px]')}
               >
-                <Calendar className="w-3 h-3" />
-                عرض الشهر
+                <Calendar className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+                عرض
               </button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+            <div className="grid grid-cols-7 gap-1 text-center mb-1">
               {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((d) => (
-                <span key={d} className="text-[8px] text-neutral-400">{d}</span>
+                <span key={d} className={cn('text-neutral-400', isCompact ? 'text-[6px]' : 'text-[8px]')}>{d}</span>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1 flex-grow">
               {[...Array(7)].map((_, i) => {
                 const date = new Date();
                 date.setDate(date.getDate() + i);
@@ -571,49 +622,51 @@ const BentoDashboard: React.FC = () => {
                       isToday ? 'bg-blue-100 border-2 border-blue-500' : getColors(occupancy)
                     )}
                   >
-                    <span className={cn('text-[10px] font-semibold', isToday && 'font-bold text-blue-700')}>
+                    <span className={cn('font-semibold', isCompact ? 'text-[8px]' : 'text-[10px]', isToday && 'font-bold text-blue-700')}>
                       {dayNum}
                     </span>
-                    <span className={cn('text-[7px]', isToday ? 'text-blue-600' : '')}>
+                    <span className={cn(isCompact ? 'text-[6px]' : 'text-[7px]', isToday ? 'text-blue-600' : '')}>
                       {isToday ? 'اليوم' : `${occupancy}%`}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-neutral-900">ملخص الأسبوع</span>
-                <span className="text-[8px] text-neutral-400">{`${dayNumber}-${dayNumber + 6} ${monthName}`}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <div className="text-center">
-                  <p className="text-sm font-bold text-blue-600">{occupancyRate}%</p>
-                  <p className="text-[8px] text-neutral-500">متوسط الإشغال</p>
+            {!isCompact && (
+              <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-neutral-900">ملخص الأسبوع</span>
+                  <span className="text-[8px] text-neutral-400">{`${dayNumber}-${dayNumber + 6} ${monthName}`}</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-green-600">{stats?.activeContracts || 0}</p>
-                  <p className="text-[8px] text-neutral-500">عقود نشطة</p>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-blue-600">{occupancyRate}%</p>
+                    <p className="text-[8px] text-neutral-500">الإشغال</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-green-600">{stats?.activeContracts || 0}</p>
+                    <p className="text-[8px] text-neutral-500">عقود</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         );
 
       case 'forecast':
         return (
-          <div className="bg-white rounded-2xl p-4 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-neutral-900 text-sm">توقعات الإيرادات</h3>
-              <div className="w-7 h-7 bg-coral-100 rounded-lg flex items-center justify-center">
-                <Brain className="w-3.5 h-3.5 text-coral-600" />
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>توقعات الإيرادات</h3>
+              <div className={cn('bg-coral-100 rounded-lg flex items-center justify-center', isCompact ? 'w-5 h-5' : 'w-7 h-7')}>
+                <Brain className={cn('text-coral-600', isCompact ? 'w-3 h-3' : 'w-3.5 h-3.5')} />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex-grow">
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] text-neutral-500">الشهر الحالي</span>
-                  <span className="text-[11px] font-bold text-neutral-900">{formatCurrency(stats?.monthlyRevenue || 0)} QAR</span>
+                  <span className={cn('text-neutral-500', isCompact ? 'text-[8px]' : 'text-[10px]')}>الشهر الحالي</span>
+                  <span className={cn('font-bold text-neutral-900', isCompact ? 'text-[9px]' : 'text-[11px]')}>{formatCurrency(stats?.monthlyRevenue || 0)}</span>
                 </div>
                 <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
                   <div className="h-full rounded-full bg-coral-500" style={{ width: '80%' }} />
@@ -621,62 +674,66 @@ const BentoDashboard: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] text-neutral-500">توقع الشهر القادم</span>
-                  <span className="text-[11px] font-bold text-green-600">{formatCurrency((stats?.monthlyRevenue || 0) * 1.22)} QAR</span>
+                  <span className={cn('text-neutral-500', isCompact ? 'text-[8px]' : 'text-[10px]')}>توقع الشهر القادم</span>
+                  <span className={cn('font-bold text-green-600', isCompact ? 'text-[9px]' : 'text-[11px]')}>{formatCurrency((stats?.monthlyRevenue || 0) * 1.22)}</span>
                 </div>
                 <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
                   <div className="h-full rounded-full bg-green-500" style={{ width: '97%' }} />
                 </div>
               </div>
             </div>
-            <div className="mt-3 p-2 bg-coral-50 rounded-lg">
-              <p className="text-[10px] font-semibold text-neutral-900 mb-1">العوامل المؤثرة:</p>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <ArrowUp className="w-2.5 h-2.5 text-green-500" />
-                  <span className="text-[9px] text-neutral-600">العامل الموسمي (+8%)</span>
+            {!isCompact && (
+              <>
+                <div className="mt-3 p-2 bg-coral-50 rounded-lg">
+                  <p className="text-[10px] font-semibold text-neutral-900 mb-1">العوامل المؤثرة:</p>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUp className="w-2.5 h-2.5 text-green-500" />
+                      <span className="text-[9px] text-neutral-600">العامل الموسمي (+8%)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUp className="w-2.5 h-2.5 text-green-500" />
+                      <span className="text-[9px] text-neutral-600">عقود جديدة (+12%)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowDown className="w-2.5 h-2.5 text-red-500" />
+                      <span className="text-[9px] text-neutral-600">تأثير الصيانة (-2%)</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <ArrowUp className="w-2.5 h-2.5 text-green-500" />
-                  <span className="text-[9px] text-neutral-600">عقود جديدة (+12%)</span>
+                <div className="mt-2 text-center p-1.5 bg-green-50 rounded-lg">
+                  <p className="text-lg font-bold text-green-600">+22%</p>
+                  <p className="text-[8px] text-neutral-500">نمو متوقع</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <ArrowDown className="w-2.5 h-2.5 text-red-500" />
-                  <span className="text-[9px] text-neutral-600">تأثير الصيانة (-2%)</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-2 text-center p-1.5 bg-green-50 rounded-lg">
-              <p className="text-lg font-bold text-green-600">+22%</p>
-              <p className="text-[8px] text-neutral-500">نمو متوقع</p>
-            </div>
+              </>
+            )}
           </div>
         );
 
       case 'activities':
         return (
-          <div className="bg-white rounded-2xl p-4 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-neutral-900 text-sm">النشاطات الأخيرة</h3>
-              <button className="text-[10px] text-coral-600 font-medium">عرض الكل</button>
+          <div className="bg-white rounded-[1.25rem] p-3 sm:p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <h3 className={cn('font-bold text-neutral-900', isCompact ? 'text-xs' : 'text-sm')}>النشاطات الأخيرة</h3>
+              <button className={cn('text-coral-600 font-medium', isCompact ? 'text-[9px]' : 'text-[10px]')}>عرض الكل</button>
             </div>
-            <div className="space-y-2">
-              {activities?.map((activity: any, index: number) => {
+            <div className="space-y-2 flex-grow overflow-auto">
+              {activities?.slice(0, isLarge ? 6 : isCompact ? 3 : 4).map((activity: any, index: number) => {
                 const colors = ['bg-green-500', 'bg-blue-500', 'bg-amber-500', 'bg-purple-500', 'bg-coral-500'];
                 const timeAgo = getTimeAgo(new Date(activity.created_at));
 
                 return (
                   <div key={activity.id} className="flex items-center gap-2">
-                    <div className={cn('w-1.5 h-1.5 rounded-full', colors[index % colors.length])} />
-                    <div className="flex-1">
-                      <p className="text-[11px] font-medium text-neutral-900">{activity.description}</p>
-                      <p className="text-[9px] text-neutral-400">{timeAgo}</p>
+                    <div className={cn('rounded-full flex-shrink-0', isCompact ? 'w-1 h-1' : 'w-1.5 h-1.5', colors[index % colors.length])} />
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('font-medium text-neutral-900 truncate', isCompact ? 'text-[9px]' : 'text-[11px]')}>{activity.description}</p>
+                      <p className={cn('text-neutral-400', isCompact ? 'text-[7px]' : 'text-[9px]')}>{timeAgo}</p>
                     </div>
                   </div>
                 );
               })}
               {(!activities || activities.length === 0) && (
-                <p className="text-center text-neutral-400 text-sm py-4">لا توجد نشاطات</p>
+                <p className={cn('text-center text-neutral-400 py-4', isCompact ? 'text-[10px]' : 'text-sm')}>لا توجد نشاطات</p>
               )}
             </div>
           </div>
@@ -802,43 +859,118 @@ const BentoDashboard: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Settings className="w-5 h-5 text-coral-600" />
                 <div>
-                  <p className="text-sm font-semibold text-coral-900">وضع التخصيص</p>
+                  <p className="text-sm font-semibold text-coral-900">وضع التخصيص المتقدم</p>
                   <p className="text-xs text-coral-700">
-                    اسحب البطاقات لإعادة ترتيبها • اضغط على أيقونة العين لإظهار/إخفاء البطاقة • اضغط "حفظ" عند الانتهاء
+                    <Move className="w-3 h-3 inline ml-1" /> اسحب البطاقات لتحريكها
+                    <span className="mx-2">•</span>
+                    <Maximize2 className="w-3 h-3 inline ml-1" /> اسحب الزوايا لتغيير الحجم
+                    <span className="mx-2">•</span>
+                    <Eye className="w-3 h-3 inline ml-1" /> اضغط لإخفاء/إظهار
                   </p>
                 </div>
               </div>
+              
+              {/* قائمة البطاقات المخفية */}
+              {widgets.some(w => !w.visible) && (
+                <div className="mt-3 pt-3 border-t border-coral-200">
+                  <p className="text-xs font-medium text-coral-800 mb-2">البطاقات المخفية:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {widgets.filter(w => !w.visible).map(w => (
+                      <button
+                        key={w.id}
+                        onClick={() => toggleWidgetVisibility(w.id)}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-lg text-xs text-neutral-600 hover:bg-coral-100 transition-colors"
+                      >
+                        <EyeOff className="w-3 h-3" />
+                        {w.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Bento Grid with Drag and Drop */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+        {/* React Grid Layout */}
+        <ResponsiveGridLayout
+          className="layout"
+          layout={gridLayout}
+          cols={12}
+          rowHeight={60}
+          onLayoutChange={onLayoutChange}
+          isDraggable={isEditMode}
+          isResizable={isEditMode}
+          draggableHandle=".drag-handle"
+          resizeHandles={['se', 'sw', 'ne', 'nw']}
+          margin={[16, 16]}
+          containerPadding={[0, 0]}
+          useCSSTransforms={true}
         >
-          <SortableContext
-            items={layout.map(w => w.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="grid grid-cols-12 gap-4">
-              {layout.map((widget) => (
-                <DraggableWidget
-                  key={widget.id}
-                  id={widget.id}
-                  colSpan={widget.colSpan}
-                  visible={widget.visible}
-                  isEditMode={isEditMode}
-                  onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
-                >
-                  {renderWidget(widget.id)}
-                </DraggableWidget>
-              ))}
+          {widgets.filter(w => w.visible).map((widget) => (
+            <div
+              key={widget.id}
+              className={cn(
+                'relative group',
+                isEditMode && 'ring-2 ring-coral-300 ring-dashed rounded-[1.25rem]'
+              )}
+            >
+              {/* أزرار التحكم في وضع التعديل */}
+              {isEditMode && (
+                <div className="absolute -top-2 -right-2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    className="drag-handle p-1.5 bg-coral-500 text-white rounded-lg shadow-lg cursor-grab active:cursor-grabbing hover:bg-coral-600 transition-colors"
+                    title="اسحب لتحريك"
+                  >
+                    <Move className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => toggleWidgetVisibility(widget.id)}
+                    className="p-1.5 bg-gray-500 text-white rounded-lg shadow-lg hover:bg-gray-600 transition-colors"
+                    title="إخفاء البطاقة"
+                  >
+                    <EyeOff className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              
+              {/* محتوى البطاقة */}
+              <div className="h-full">
+                {renderWidget(widget.id)}
+              </div>
             </div>
-          </SortableContext>
-        </DndContext>
+          ))}
+        </ResponsiveGridLayout>
       </div>
+
+      {/* Custom styles for react-grid-layout */}
+      <style>{`
+        .react-grid-item.react-grid-placeholder {
+          background: rgba(232, 90, 79, 0.2) !important;
+          border-radius: 1.25rem !important;
+          border: 2px dashed #e85a4f !important;
+        }
+        .react-grid-item > .react-resizable-handle {
+          background: transparent !important;
+        }
+        .react-grid-item > .react-resizable-handle::after {
+          content: '';
+          position: absolute;
+          right: 3px;
+          bottom: 3px;
+          width: 8px;
+          height: 8px;
+          border-right: 2px solid rgba(232, 90, 79, 0.5);
+          border-bottom: 2px solid rgba(232, 90, 79, 0.5);
+        }
+        .react-grid-item.resizing {
+          z-index: 100;
+        }
+        .react-grid-item.react-draggable-dragging {
+          z-index: 100;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+      `}</style>
     </div>
   );
 };
