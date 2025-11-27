@@ -179,6 +179,18 @@ const BentoDashboard: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
 
+  // Helper function for calculating time ago from a date
+  const getTimeAgo = (date: Date): string => {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return 'الآن';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    const days = Math.floor(hours / 24);
+    return `منذ ${days} يوم`;
+  };
+
   // Fleet Status Query
   const { data: fleetStatus } = useQuery({
     queryKey: ['fleet-status-bento', user?.profile?.company_id],
@@ -706,18 +718,6 @@ const BentoDashboard: React.FC = () => {
     </div>
   );
 };
-
-// Helper function for calculating time ago from a date
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return 'الآن';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `منذ ${minutes} دقيقة`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `منذ ${hours} ساعة`;
-  const days = Math.floor(hours / 24);
-  return `منذ ${days} يوم`;
-}
 
 export default BentoDashboard;
 
