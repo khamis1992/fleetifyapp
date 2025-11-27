@@ -237,7 +237,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'dashboard',
     priority: 10,
     protected: true,
-    layout: 'none', // New Bento design - no wrapper needed
+    layout: 'bento', // New Bento design with shared sidebar
   },
   {
     path: '/dashboard-v2',
@@ -249,7 +249,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'dashboard',
     priority: 11,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance',
@@ -261,7 +261,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 11,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/customers',
@@ -273,7 +273,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'customers',
     priority: 12,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/customers/:customerId',
@@ -285,7 +285,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'customers',
     priority: 13,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/customers/crm',
@@ -297,7 +297,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'customers',
     priority: 14,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/contracts',
@@ -309,7 +309,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'contracts',
     priority: 15,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/contracts/:contractNumber',
@@ -321,7 +321,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'contracts',
     priority: 16,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet',
@@ -333,7 +333,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 17,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/vehicles/:vehicleId',
@@ -345,7 +345,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 18,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/reports',
@@ -357,7 +357,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'reports',
     priority: 19,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/reports/hub',
@@ -369,7 +369,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'reports',
     priority: 20,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/reports/:id',
@@ -381,7 +381,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'reports',
     priority: 21,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/search',
@@ -393,7 +393,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 22,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/import',
@@ -405,7 +405,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 23,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Financial Management Routes ===
@@ -419,7 +419,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 24,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/tracking',
@@ -431,7 +431,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 25,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/sync-payments',
@@ -443,7 +443,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 26,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/payments/register',
@@ -455,7 +455,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 27,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/payments/quick',
@@ -467,7 +467,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 28,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/vendors/categories',
@@ -479,7 +479,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 29,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/reports/ar-aging',
@@ -491,7 +491,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 30,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/payments/tracking',
@@ -503,7 +503,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 31,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Super Admin Routes ===
@@ -649,7 +649,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 50,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/settings',
@@ -661,7 +661,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 51,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/settings/advanced',
@@ -673,7 +673,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 52,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/settings/audit-logs',
@@ -685,7 +685,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 53,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/settings/permissions',
@@ -697,7 +697,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 54,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -710,7 +710,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 55,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/settings/e-signature',
@@ -722,7 +722,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'settings',
     priority: 56,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Property Management Routes ===
@@ -736,7 +736,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 60,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/add',
@@ -748,7 +748,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 61,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/:id',
@@ -760,7 +760,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 62,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/owners',
@@ -772,7 +772,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 63,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/map',
@@ -784,7 +784,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 64,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/maintenance',
@@ -796,7 +796,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 65,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/properties/contracts',
@@ -808,7 +808,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'properties',
     priority: 66,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Fleet Management Sub-routes ===
@@ -822,7 +822,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 70,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/violations',
@@ -834,7 +834,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 71,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/violations/payments',
@@ -846,7 +846,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 72,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/reports',
@@ -858,7 +858,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 73,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/dispatch-permits',
@@ -870,7 +870,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 74,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/financial-analysis',
@@ -882,7 +882,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 75,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/fleet/reservations',
@@ -894,7 +894,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 76,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/vehicle-installments',
@@ -906,7 +906,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'fleet',
     priority: 77,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === HR Management Routes ===
@@ -920,7 +920,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 80,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/users',
@@ -932,7 +932,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 81,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/attendance',
@@ -944,7 +944,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 82,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/leave',
@@ -956,7 +956,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 83,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/locations',
@@ -968,7 +968,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 84,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/payroll',
@@ -980,7 +980,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 85,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/reports',
@@ -992,7 +992,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 86,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/hr/settings',
@@ -1004,7 +1004,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     priority: 87,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Finance Sub-routes ===
@@ -1018,7 +1018,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 88,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/finance/purchase-orders',
@@ -1030,7 +1030,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'finance',
     priority: 89,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Inventory Management ===
@@ -1044,7 +1044,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'inventory',
     priority: 90,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Integration Dashboard ===
@@ -1058,7 +1058,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'dashboards',
     priority: 91,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Sales/CRM Routes ===
@@ -1072,7 +1072,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 100,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/sales/leads',
@@ -1084,7 +1084,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 101,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/sales/opportunities',
@@ -1096,7 +1096,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 102,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/sales/quotes',
@@ -1108,7 +1108,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 103,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/sales/orders',
@@ -1120,7 +1120,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 104,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/sales/analytics',
@@ -1132,7 +1132,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 105,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Quotations ===
@@ -1146,7 +1146,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 106,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/quotations/approval',
@@ -1158,7 +1158,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'sales',
     priority: 107,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Other Utility Routes ===
@@ -1172,7 +1172,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 110,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -1185,7 +1185,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 111,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -1198,7 +1198,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 112,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/support',
@@ -1210,7 +1210,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 113,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/support/tickets/:id',
@@ -1222,7 +1222,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 114,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/tenants',
@@ -1234,7 +1234,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 115,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -1247,7 +1247,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 116,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Legal Routes ===
@@ -1261,7 +1261,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 120,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/advisor',
@@ -1273,7 +1273,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 119,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/cases',
@@ -1285,7 +1285,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 121,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/cases-v2',
@@ -1297,7 +1297,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 122,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/defaulters',
@@ -1309,7 +1309,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 123,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/reports',
@@ -1321,7 +1321,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 124,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/late-fees',
@@ -1333,7 +1333,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 125,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/whatsapp-reminders',
@@ -1345,7 +1345,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 126,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
   {
     path: '/legal/disputes',
@@ -1357,7 +1357,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'legal',
     priority: 127,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Contract Management ===
@@ -1371,7 +1371,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'contracts',
     priority: 130,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -1384,7 +1384,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'contracts',
     priority: 131,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
 
@@ -1399,7 +1399,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 140,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
 
@@ -1414,7 +1414,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'help',
     priority: 150,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
   },
 
   // === Performance Monitoring ===
@@ -1428,7 +1428,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'utilities',
     priority: 160,
     protected: true,
-    layout: 'dashboard',
+    layout: 'bento',
     requiredRole: 'admin',
   },
 
@@ -1466,42 +1466,42 @@ export const routeGroups: RouteGroup[] = [
     id: 'dashboard',
     name: 'Dashboard',
     description: 'Main application dashboard routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 10,
   },
   {
     id: 'finance',
     name: 'Finance',
     description: 'Financial management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 11,
   },
   {
     id: 'customers',
     name: 'Customers',
     description: 'Customer management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 12,
   },
   {
     id: 'contracts',
     name: 'Contracts',
     description: 'Contract management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 13,
   },
   {
     id: 'fleet',
     name: 'Fleet',
     description: 'Fleet management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 14,
   },
   {
     id: 'reports',
     name: 'Reports',
     description: 'Reports and analytics routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 15,
   },
   {
@@ -1515,63 +1515,63 @@ export const routeGroups: RouteGroup[] = [
     id: 'settings',
     name: 'Settings',
     description: 'Settings and configuration routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 21,
   },
   {
     id: 'properties',
     name: 'Properties',
     description: 'Property management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 22,
   },
   {
     id: 'hr',
     name: 'HR',
     description: 'Human resources routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 23,
   },
   {
     id: 'sales',
     name: 'Sales',
     description: 'Sales and CRM routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 24,
   },
   {
     id: 'legal',
     name: 'Legal',
     description: 'Legal management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 25,
   },
   {
     id: 'inventory',
     name: 'Inventory',
     description: 'Inventory management routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 26,
   },
   {
     id: 'utilities',
     name: 'Utilities',
     description: 'Utility and tool routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 27,
   },
   {
     id: 'help',
     name: 'Help',
     description: 'Help and documentation routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 28,
   },
   {
     id: 'dashboards',
     name: 'Dashboards',
     description: 'Specialized dashboard routes',
-    layout: 'dashboard',
+    layout: 'bento',
     priority: 29,
   },
 ];

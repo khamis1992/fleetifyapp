@@ -16,6 +16,7 @@ import { SuperAdminRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { SuperAdminLayout } from '@/components/layouts/SuperAdminLayout';
 import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout';
+import { BentoLayout } from '@/components/layouts/BentoLayout';
 
 interface RouteRendererProps {
   routes: RouteConfig[];
@@ -77,6 +78,18 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     // Layout wrapper
     const WithLayout = () => {
       switch (layout) {
+        case 'bento':
+          return (
+            <BentoLayout>
+              <LazyLoadErrorBoundary>
+                <Suspense fallback={<FallbackComponent />}>
+                  <RouteWrapper route={route}>
+                    <ProtectedComponent />
+                  </RouteWrapper>
+                </Suspense>
+              </LazyLoadErrorBoundary>
+            </BentoLayout>
+          );
         case 'dashboard':
           return (
             <DashboardLayout>

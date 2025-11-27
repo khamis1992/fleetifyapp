@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import BentoSidebar from './BentoSidebar';
 import {
   Car,
   FileText,
@@ -302,12 +301,9 @@ const BentoDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0efed] flex" dir="rtl">
-      {/* Sidebar */}
-      <BentoSidebar />
-
+    <div className="min-h-screen bg-[#f0efed]" dir="rtl">
       {/* Main Content */}
-      <div className="flex-1 p-5 overflow-auto">
+      <div className="p-5 overflow-auto">
         {/* FAB Menu */}
         <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} />
 
@@ -706,7 +702,6 @@ const BentoDashboard: React.FC = () => {
             )}
           </div>
         </motion.div>
-      </div>
       </div>
     </div>
   );
