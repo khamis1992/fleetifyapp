@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "buildCommand": "rm -rf node_modules/.vite && pnpm run build:ci",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "rm -rf node_modules/.vite && npm run build:ci",
+  "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production",
