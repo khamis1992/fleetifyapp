@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install",
+  "buildCommand": "rm -rf node_modules/.vite && pnpm run build:ci",
+  "installCommand": "pnpm install --force",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production",
