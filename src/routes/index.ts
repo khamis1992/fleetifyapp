@@ -237,7 +237,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'dashboard',
     priority: 10,
     protected: true,
-    layout: 'dashboard',
+    layout: 'none', // New Bento design - no wrapper needed
   },
   {
     path: '/dashboard-v2',

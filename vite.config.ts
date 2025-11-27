@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
 
   return {
+    // Define process.env for libraries that use it
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(mode),
+      'process.env': JSON.stringify({}),
+    },
     server: {
       host: "::",
       port: 8080,
