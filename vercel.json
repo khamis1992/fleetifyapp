@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "buildCommand": "pnpm run build:ci",
-  "installCommand": "corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install",
+  "buildCommand": "yarn build:ci",
+  "installCommand": "yarn install --frozen-lockfile || yarn install",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production",
