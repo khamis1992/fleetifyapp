@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "buildCommand": "yarn build:ci",
-  "installCommand": "yarn install --frozen-lockfile || yarn install",
+  "buildCommand": "npm run build:ci",
+  "installCommand": "npm ci --prefer-offline --no-audit",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production",
