@@ -277,6 +277,7 @@ const BentoDashboard: React.FC = () => {
   const dayName = today.toLocaleDateString('ar-SA', { weekday: 'long' });
   const dayNumber = today.getDate();
   const monthYear = today.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
+  const monthName = today.toLocaleDateString('ar-SA', { month: 'long' });
 
   // Fleet donut data
   const fleetChartData = [
@@ -605,7 +606,7 @@ const BentoDashboard: React.FC = () => {
           <div className="mt-2 p-2 bg-blue-50 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold text-neutral-900">ملخص الأسبوع</span>
-              <span className="text-[8px] text-neutral-400">{dayNumber}-{dayNumber + 6} {monthYear.split(' ')[0]}</span>
+              <span className="text-[8px] text-neutral-400">{`${dayNumber}-${dayNumber + 6} ${monthName}`}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div className="text-center">
