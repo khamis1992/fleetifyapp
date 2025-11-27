@@ -120,6 +120,19 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Coral accent color for Bento design
+				coral: {
+					50: '#fef5f3',
+					100: '#fde8e4',
+					200: '#fcd5cd',
+					300: '#f9b5a8',
+					400: '#f38b75',
+					500: '#e85a4f',
+					600: '#d44332',
+					700: '#b23526',
+					800: '#932f23',
+					900: '#7a2c23',
+				},
 				// Mobile-specific colors
 				mobile: {
 					navbar: 'hsl(var(--mobile-navbar, var(--background)))',

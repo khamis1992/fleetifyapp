@@ -1,264 +1,351 @@
-/* 
- * Fleetify Dashboard Theme - Modern Corporate Style
- * نظام تأجير المركبات - ثيم احترافي حديث
- * تاريخ الإنشاء: 2025
- */
+/* FleetifyApp Dashboard Professional Theme
+   Based on existing color system - Deep Red & Orange accent
+   Direction: RTL (Arabic)
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
-  /* ===== الألوان الأساسية (Primary Colors) ===== */
-  --background: oklch(0.98 0.005 240);           /* خلفية فاتحة جدًا مع لمسة زرقاء */
-  --foreground: oklch(0.15 0.01 240);            /* نص رئيسي داكن */
+  /* Core Colors - From FleetifyApp Design System */
+  --background: hsl(0, 0%, 96%);
+  --background-soft: hsl(0, 0%, 94%);
+  --foreground: hsl(0, 0%, 15%);
   
-  /* ===== البطاقات والعناصر (Cards & Elements) ===== */
-  --card: oklch(1.0 0 0);                        /* بطاقات بيضاء نقية */
-  --card-foreground: oklch(0.15 0.01 240);       /* نص البطاقات */
-  --card-hover: oklch(0.985 0.01 240);           /* تأثير hover للبطاقات */
+  /* Card System */
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 15%);
+  --card-hover: hsl(0, 0%, 98%);
   
-  /* ===== النوافذ المنبثقة (Popovers) ===== */
-  --popover: oklch(1.0 0 0);
-  --popover-foreground: oklch(0.15 0.01 240);
+  /* Primary - Deep Red */
+  --primary: hsl(0, 70%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --primary-dark: hsl(0, 70%, 35%);
+  --primary-light: hsl(0, 70%, 55%);
+  --primary-glow: hsla(0, 70%, 45%, 0.2);
   
-  /* ===== اللون الأساسي - أزرق احترافي (Primary - Professional Blue) ===== */
-  --primary: oklch(0.45 0.15 240);               /* أزرق داكن احترافي */
-  --primary-foreground: oklch(0.99 0 0);         /* أبيض للنصوص */
-  --primary-hover: oklch(0.40 0.17 240);         /* أغمق عند hover */
-  --primary-light: oklch(0.90 0.08 240);         /* أزرق فاتح للخلفيات */
+  /* Accent - Orange */
+  --accent: hsl(25, 90%, 92%);
+  --accent-foreground: hsl(0, 0%, 15%);
+  --accent-light: hsl(25, 90%, 95%);
+  --accent-muted: hsl(25, 90%, 85%);
+  --accent-strong: hsl(25, 85%, 55%);
   
-  /* ===== اللون الثانوي - برتقالي حيوي (Secondary - Vibrant Orange) ===== */
-  --secondary: oklch(0.65 0.18 45);              /* برتقالي دافئ */
-  --secondary-foreground: oklch(0.99 0 0);
-  --secondary-hover: oklch(0.60 0.20 45);
-  --secondary-light: oklch(0.92 0.08 45);
+  /* Secondary */
+  --secondary: hsl(0, 0%, 85%);
+  --secondary-foreground: hsl(0, 0%, 15%);
   
-  /* ===== اللون المكتوم (Muted) ===== */
-  --muted: oklch(0.96 0.005 240);                /* رمادي فاتح جدًا */
-  --muted-foreground: oklch(0.50 0.01 240);      /* رمادي متوسط */
+  /* Muted */
+  --muted: hsl(0, 0%, 92%);
+  --muted-foreground: hsl(0, 0%, 45%);
   
-  /* ===== اللون المميز (Accent) ===== */
-  --accent: oklch(0.55 0.20 200);                /* أزرق سماوي مشرق */
-  --accent-foreground: oklch(0.99 0 0);
-  --accent-light: oklch(0.93 0.10 200);
+  /* Status Colors */
+  --success: hsl(142, 56%, 42%);
+  --success-light: hsl(142, 56%, 95%);
+  --success-foreground: hsl(0, 0%, 100%);
   
-  /* ===== ألوان الحالات (Status Colors) ===== */
-  --success: oklch(0.55 0.18 145);               /* أخضر للنجاح */
-  --success-foreground: oklch(0.99 0 0);
-  --success-light: oklch(0.93 0.10 145);
+  --warning: hsl(25, 85%, 55%);
+  --warning-light: hsl(25, 85%, 95%);
+  --warning-foreground: hsl(0, 0%, 100%);
   
-  --warning: oklch(0.70 0.18 70);                /* أصفر برتقالي للتحذير */
-  --warning-foreground: oklch(0.15 0.01 70);
-  --warning-light: oklch(0.95 0.08 70);
+  --destructive: hsl(0, 65%, 51%);
+  --destructive-light: hsl(0, 65%, 95%);
+  --destructive-foreground: hsl(0, 0%, 100%);
   
-  --destructive: oklch(0.55 0.22 25);            /* أحمر للخطر */
-  --destructive-foreground: oklch(0.99 0 0);
-  --destructive-light: oklch(0.94 0.10 25);
+  --info: hsl(210, 100%, 50%);
+  --info-light: hsl(210, 100%, 95%);
   
-  --info: oklch(0.60 0.18 250);                  /* أزرق للمعلومات */
-  --info-foreground: oklch(0.99 0 0);
-  --info-light: oklch(0.93 0.10 250);
+  /* Borders */
+  --border: hsl(0, 0%, 88%);
+  --border-light: hsl(0, 0%, 92%);
+  --ring: hsl(0, 70%, 45%);
   
-  /* ===== الحدود والإدخالات (Borders & Inputs) ===== */
-  --border: oklch(0.90 0.005 240);               /* حدود رمادية فاتحة */
-  --border-hover: oklch(0.75 0.01 240);          /* حدود أغمق عند hover */
-  --input: oklch(0.95 0.005 240);                /* خلفية حقول الإدخال */
-  --ring: oklch(0.45 0.15 240);                  /* حلقة التركيز */
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(0, 70%, 35%), hsl(0, 70%, 45%));
+  --gradient-accent: linear-gradient(135deg, hsl(25, 85%, 50%), hsl(25, 90%, 60%));
+  --gradient-success: linear-gradient(135deg, hsl(142, 56%, 38%), hsl(142, 56%, 48%));
+  --gradient-hero: linear-gradient(135deg, hsl(0, 0%, 96%) 0%, hsl(0, 0%, 94%) 50%, hsl(25, 90%, 95%) 100%);
+  --gradient-card-hover: linear-gradient(135deg, hsla(0, 70%, 45%, 0.02), hsla(25, 85%, 55%, 0.02));
+  --gradient-mesh: 
+    radial-gradient(at 40% 20%, hsla(0, 70%, 45%, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(25, 85%, 55%, 0.06) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(0, 70%, 45%, 0.04) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(25, 90%, 60%, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(0, 70%, 55%, 0.06) 0px, transparent 50%);
   
-  /* ===== الرسوم البيانية (Charts) ===== */
-  --chart-1: oklch(0.45 0.15 240);               /* أزرق */
-  --chart-2: oklch(0.65 0.18 45);                /* برتقالي */
-  --chart-3: oklch(0.55 0.18 145);               /* أخضر */
-  --chart-4: oklch(0.60 0.18 250);               /* أزرق فاتح */
-  --chart-5: oklch(0.55 0.20 300);               /* بنفسجي */
+  /* Shadows */
+  --shadow-sm: 0 1px 2px hsla(0, 0%, 0%, 0.04);
+  --shadow-md: 0 4px 6px -1px hsla(0, 0%, 0%, 0.06), 0 2px 4px -2px hsla(0, 0%, 0%, 0.06);
+  --shadow-lg: 0 10px 15px -3px hsla(0, 0%, 0%, 0.08), 0 4px 6px -4px hsla(0, 0%, 0%, 0.08);
+  --shadow-xl: 0 20px 25px -5px hsla(0, 0%, 0%, 0.1), 0 8px 10px -6px hsla(0, 0%, 0%, 0.1);
+  --shadow-glow: 0 0 30px hsla(0, 70%, 45%, 0.15);
+  --shadow-card: 0 4px 20px hsla(0, 0%, 0%, 0.06);
+  --shadow-card-hover: 0 12px 40px hsla(0, 0%, 0%, 0.12);
   
-  /* ===== الشريط الجانبي (Sidebar) ===== */
-  --sidebar: oklch(0.97 0.005 240);
-  --sidebar-foreground: oklch(0.20 0.01 240);
-  --sidebar-primary: oklch(0.45 0.15 240);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.92 0.08 240);
-  --sidebar-accent-foreground: oklch(0.20 0.01 240);
-  --sidebar-border: oklch(0.90 0.005 240);
-  --sidebar-ring: oklch(0.45 0.15 240);
+  /* Typography */
+  --font-sans: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cairo', sans-serif;
   
-  /* ===== الخطوط (Fonts) ===== */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  --font-mono: 'Geist Mono', 'Courier New', monospace;
-  --font-arabic: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+  /* Spacing */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-full: 9999px;
   
-  /* ===== الانحناءات (Border Radius) ===== */
-  --radius: 0.75rem;                             /* 12px */
-  --radius-sm: 0.5rem;                           /* 8px */
-  --radius-md: 0.75rem;                          /* 12px */
-  --radius-lg: 1rem;                             /* 16px */
-  --radius-xl: 1.25rem;                          /* 20px */
-  --radius-2xl: 1.5rem;                          /* 24px */
-  
-  /* ===== الظلال (Shadows) - Modern Soft Shadows ===== */
-  --shadow-2xs: 0 1px 2px 0px hsl(240 10% 10% / 0.04);
-  --shadow-xs: 0 1px 3px 0px hsl(240 10% 10% / 0.06);
-  --shadow-sm: 0 2px 4px -1px hsl(240 10% 10% / 0.08), 0 1px 2px 0px hsl(240 10% 10% / 0.04);
-  --shadow: 0 4px 6px -1px hsl(240 10% 10% / 0.10), 0 2px 4px -1px hsl(240 10% 10% / 0.06);
-  --shadow-md: 0 6px 12px -2px hsl(240 10% 10% / 0.12), 0 3px 6px -1px hsl(240 10% 10% / 0.08);
-  --shadow-lg: 0 10px 20px -3px hsl(240 10% 10% / 0.15), 0 4px 8px -2px hsl(240 10% 10% / 0.10);
-  --shadow-xl: 0 20px 30px -5px hsl(240 10% 10% / 0.20), 0 8px 12px -3px hsl(240 10% 10% / 0.12);
-  --shadow-2xl: 0 25px 40px -8px hsl(240 10% 10% / 0.25);
-  
-  /* ===== Glassmorphism Effects ===== */
-  --glass-bg: oklch(1.0 0 0 / 0.7);
-  --glass-border: oklch(0.95 0.005 240 / 0.3);
-  --glass-blur: 12px;
-  
-  /* ===== تباعد وتتبع (Spacing & Tracking) ===== */
-  --tracking-normal: -0.01em;
-  --tracking-wide: 0.02em;
-  --spacing: 0.25rem;
-  
-  /* ===== الحركة والانتقال (Motion & Transition) ===== */
+  /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  
-  /* ===== Z-Index Layers ===== */
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* ===== Dark Mode Support ===== */
-.dark {
-  --background: oklch(0.12 0.01 240);
-  --foreground: oklch(0.95 0.005 240);
-  
-  --card: oklch(0.15 0.01 240);
-  --card-foreground: oklch(0.95 0.005 240);
-  --card-hover: oklch(0.17 0.01 240);
-  
-  --primary: oklch(0.60 0.18 240);
-  --primary-hover: oklch(0.65 0.20 240);
-  --primary-light: oklch(0.25 0.10 240);
-  
-  --secondary: oklch(0.70 0.18 45);
-  --secondary-hover: oklch(0.75 0.20 45);
-  
-  --muted: oklch(0.20 0.01 240);
-  --muted-foreground: oklch(0.60 0.01 240);
-  
-  --border: oklch(0.25 0.01 240);
-  --border-hover: oklch(0.35 0.02 240);
-  --input: oklch(0.18 0.01 240);
-  
-  --shadow-sm: 0 2px 4px -1px hsl(240 10% 5% / 0.3);
-  --shadow: 0 4px 6px -1px hsl(240 10% 5% / 0.4);
-  --shadow-md: 0 6px 12px -2px hsl(240 10% 5% / 0.5);
-  --shadow-lg: 0 10px 20px -3px hsl(240 10% 5% / 0.6);
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* ===== أنماط الـ Utility Classes ===== */
+body {
+  font-family: var(--font-sans) !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  direction: rtl !important;
+  text-align: right !important;
+  line-height: 1.6 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Glass Card Effect */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
-.gradient-primary {
-  background: linear-gradient(135deg, 
-    oklch(0.45 0.15 240) 0%, 
-    oklch(0.55 0.18 250) 100%);
+.glass-card:hover {
+  box-shadow: var(--shadow-card-hover) !important;
+  border-color: var(--border) !important;
 }
 
-.gradient-secondary {
-  background: linear-gradient(135deg, 
-    oklch(0.65 0.18 45) 0%, 
-    oklch(0.70 0.20 35) 100%);
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent-strong)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
 }
 
-.gradient-success {
-  background: linear-gradient(135deg, 
-    oklch(0.55 0.18 145) 0%, 
-    oklch(0.60 0.20 155) 100%);
+/* Stat Card Specific */
+.stat-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: var(--radius-2xl) !important;
+  padding: 1.5rem !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border-light) !important;
+  transition: all var(--transition-smooth) !important;
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, 
-    oklch(0.45 0.15 240) 0%, 
-    oklch(0.65 0.18 45) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.stat-card::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: var(--gradient-card-hover) !important;
+  opacity: 0 !important;
+  transition: opacity var(--transition-smooth) !important;
 }
 
-/* ===== مثال على استخدام الظلال ===== */
-.card-elevated {
-  box-shadow: var(--shadow-md);
-  transition: box-shadow var(--transition-base);
+.stat-card:hover::before {
+  opacity: 1 !important;
 }
 
-.card-elevated:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+.stat-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
 
-/* ===== أنماط للإحصائيات والأرقام ===== */
-.stat-number {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  letter-spacing: var(--tracking-normal);
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Icon Containers */
+.icon-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 4rem !important;
+  height: 4rem !important;
+  border-radius: var(--radius-xl) !important;
+  transition: transform var(--transition-spring) !important;
 }
 
-.stat-positive {
-  color: oklch(0.55 0.18 145);
+.icon-container:hover {
+  transform: scale(1.1) !important;
 }
 
-.stat-negative {
-  color: oklch(0.55 0.22 25);
+/* Badges */
+.badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  padding: 0.375rem 0.75rem !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all var(--transition-fast) !important;
 }
 
-/* ===== أنماط الأزرار ===== */
-.btn-primary {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border-radius: var(--radius);
-  padding: 0.625rem 1.25rem;
-  font-weight: 500;
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
+.badge-success {
+  background: var(--success-light) !important;
+  color: var(--success) !important;
+  border: 1px solid hsla(142, 56%, 42%, 0.2) !important;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+.badge-warning {
+  background: var(--warning-light) !important;
+  color: var(--warning) !important;
+  border: 1px solid hsla(25, 85%, 55%, 0.2) !important;
 }
 
-.btn-secondary {
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  border-radius: var(--radius);
-  padding: 0.625rem 1.25rem;
-  font-weight: 500;
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
+.badge-destructive {
+  background: var(--destructive-light) !important;
+  color: var(--destructive) !important;
+  border: 1px solid hsla(0, 65%, 51%, 0.2) !important;
 }
 
-.btn-secondary:hover {
-  background: var(--secondary-hover);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+/* Quick Action Pills */
+.quick-action {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 1rem !important;
+  border-radius: var(--radius-xl) !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border-light) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-smooth) !important;
 }
 
-/* ===== Responsive Typography ===== */
-@media (max-width: 768px) {
-  :root {
-    --radius: 0.625rem;  /* أصغر قليلاً على الموبايل */
-    --radius-lg: 0.875rem;
-  }
+.quick-action:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-color: var(--primary) !important;
 }
 
+/* Progress Bars */
+.progress-bar {
+  height: 0.5rem !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--muted) !important;
+  overflow: hidden !important;
+}
+
+.progress-bar-fill {
+  height: 100% !important;
+  border-radius: var(--radius-full) !important;
+  transition: width var(--transition-smooth) !important;
+}
+
+/* Chart Container */
+.chart-container {
+  background: var(--card) !important;
+  border-radius: var(--radius-2xl) !important;
+  padding: 1.5rem !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Activity Item */
+.activity-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  padding: 0.75rem !important;
+  border-radius: var(--radius-lg) !important;
+  transition: background var(--transition-fast) !important;
+}
+
+.activity-item:hover {
+  background: var(--muted) !important;
+}
+
+/* Alert Item */
+.alert-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: var(--radius-lg) !important;
+  border-right: 3px solid transparent !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.alert-item:hover {
+  background: var(--muted) !important;
+}
+
+.alert-item.warning {
+  border-right-color: var(--warning) !important;
+  background: var(--warning-light) !important;
+}
+
+.alert-item.success {
+  border-right-color: var(--success) !important;
+  background: var(--success-light) !important;
+}
+
+.alert-item.danger {
+  border-right-color: var(--destructive) !important;
+  background: var(--destructive-light) !important;
+}
+
+/* Donut Chart Center Text */
+.donut-center {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  text-align: center !important;
+}
+
+/* Contract List Item */
+.contract-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 1rem !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--background) !important;
+  border: 1px solid var(--border-light) !important;
+  transition: all var(--transition-fast) !important;
+  cursor: pointer !important;
+}
+
+.contract-item:hover {
+  background: var(--card) !important;
+  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted) !important;
+  border-radius: var(--radius-full) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+  border-radius: var(--radius-full) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground) !important;
+}
