@@ -896,9 +896,9 @@ const BentoDashboard: React.FC = () => {
         <div className="w-full" dir="ltr">
           <ResponsiveGridLayout
             className="layout"
-            layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout, xs: gridLayout }}
+            layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout, xs: gridLayout, xxs: gridLayout }}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+            cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
             rowHeight={60}
             onLayoutChange={(layout: any) => onLayoutChange(layout)}
             isDraggable={isEditMode}
@@ -909,7 +909,7 @@ const BentoDashboard: React.FC = () => {
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             compactType="vertical"
-            measureBeforeMount={true}
+            measureBeforeMount={false}
           >
           {widgets.filter(w => w.visible).map((widget) => (
             <div
