@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import GridLayout, { WidthProvider } from 'react-grid-layout';
+import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -55,8 +55,8 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
-// React Grid Layout with width provider
-const ResponsiveGridLayout = WidthProvider(GridLayout);
+// React Grid Layout with width provider - استخدام Responsive للتوافق مع أحجام الشاشة المختلفة
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 // ===== FAB Menu Component =====
 const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -892,14 +892,15 @@ const BentoDashboard: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* React Grid Layout */}
+        {/* React Grid Layout - Responsive */}
         <div className="w-full" dir="ltr">
           <ResponsiveGridLayout
             className="layout"
-            layout={gridLayout}
-            cols={12}
+            layouts={{ lg: gridLayout, md: gridLayout, sm: gridLayout, xs: gridLayout }}
+            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={60}
-            onLayoutChange={onLayoutChange}
+            onLayoutChange={(layout: any) => onLayoutChange(layout)}
             isDraggable={isEditMode}
             isResizable={isEditMode}
             draggableHandle=".drag-handle"
@@ -908,6 +909,7 @@ const BentoDashboard: React.FC = () => {
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             compactType="vertical"
+            measureBeforeMount={true}
           >
           {widgets.filter(w => w.visible).map((widget) => (
             <div
