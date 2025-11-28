@@ -27,6 +27,7 @@ const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
+const CustomerCRMKanban = lazy(() => import('@/pages/customers/CustomerCRMKanban'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
 const Fleet = lazy(() => import('@/pages/Fleet'));
@@ -295,6 +296,15 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Customer CRM',
     description: 'Customer relationship management',
+    group: 'customers',
+  },
+  {
+    path: '/customers/crm-kanban',
+    component: CustomerCRMKanban,
+    lazy: true,
+    exact: true,
+    title: 'Customer CRM Kanban (Test)',
+    description: 'Customer CRM with drag and drop - Testing',
     group: 'customers',
     priority: 14,
     protected: true,

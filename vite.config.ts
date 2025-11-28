@@ -56,6 +56,10 @@ export default defineConfig(({ mode }) => {
         '@radix-ui/react-avatar',
         '@radix-ui/react-alert-dialog',
         '@radix-ui/react-aspect-ratio',
+        // dnd-kit for drag and drop
+        '@dnd-kit/core',
+        '@dnd-kit/sortable',
+        '@dnd-kit/utilities',
       ],
       exclude: [
         'recharts',
