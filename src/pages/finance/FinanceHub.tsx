@@ -20,7 +20,10 @@ import {
   Target,
   Building,
   Settings as SettingsIcon,
+  FlaskConical,
+  LayoutGrid,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { QuickActions } from '@/components/finance/hub/QuickActions';
 import { UniversalSearch } from '@/components/finance/hub/UniversalSearch';
 import { ActivityTimeline } from '@/components/finance/hub/ActivityTimeline';
@@ -174,12 +177,21 @@ const FinanceHub: React.FC = () => {
               مرحباً، إليك نظرة سريعة على حالتك المالية
             </p>
           </div>
-          <Badge variant="outline" className="text-sm">
-            {userRole === 'cashier' && 'أمين صندوق'}
-            {userRole === 'accountant' && 'محاسب'}
-            {userRole === 'manager' && 'مدير مالي'}
-            {userRole === 'admin' && 'مدير النظام'}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Link to="/finance/hub-test">
+              <Button variant="outline" className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50">
+                <FlaskConical className="w-4 h-4" />
+                تجربة التصميم الجديد
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Badge variant="outline" className="text-sm">
+              {userRole === 'cashier' && 'أمين صندوق'}
+              {userRole === 'accountant' && 'محاسب'}
+              {userRole === 'manager' && 'مدير مالي'}
+              {userRole === 'admin' && 'مدير النظام'}
+            </Badge>
+          </div>
         </div>
       </motion.div>
 

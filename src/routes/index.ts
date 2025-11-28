@@ -23,7 +23,6 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
-const DashboardDndExperimental = lazy(() => import('@/pages/dashboards/DashboardDndExperimental'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
@@ -250,17 +249,6 @@ const routeConfigs: RouteConfig[] = [
     description: 'New professional dashboard design',
     group: 'dashboard',
     priority: 11,
-    protected: true,
-  },
-  {
-    path: '/dashboard-dnd-test',
-    component: DashboardDndExperimental,
-    lazy: true,
-    exact: true,
-    title: 'Dashboard DnD Test',
-    description: 'Experimental dashboard with drag and drop',
-    group: 'dashboard',
-    priority: 12,
     protected: true,
     layout: 'bento',
   },
