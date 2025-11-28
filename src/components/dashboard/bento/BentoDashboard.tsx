@@ -6,9 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { ContractWizard } from '@/components/contracts/ContractWizard';
+import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+import { Sparkline } from './Sparkline';
 import {
   Car,
   FileText,
@@ -22,13 +22,14 @@ import {
   Calendar,
   Brain,
   ArrowUp,
-  Bell,
   Search,
   Plus,
   CreditCard,
   FilePlus,
   ShoppingCart,
   UserCheck,
+  ChevronLeft,
+  ExternalLink,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -122,16 +123,19 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
   );
 };
 
-// ===== Stat Card Component =====
+// ===== Enhanced Interactive Stat Card Component =====
 interface StatCardProps {
   title: string;
   value: string | number;
-  change?: number;
+  change?: string | number;
   icon: React.ElementType;
   iconBg: string;
   progressLabel?: string;
   progressValue?: number;
   progressColor?: string;
+  linkTo?: string;
+  onClick?: () => void;
+  sparklineData?: number[];
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -143,27 +147,86 @@ const StatCard: React.FC<StatCardProps> = ({
   progressLabel,
   progressValue,
   progressColor = 'bg-coral-500',
+  linkTo,
+  onClick,
+  sparklineData,
 }) => {
-  const isPositive = change && change > 0;
+  const navigate = useNavigate();
+  // Handle both string and number change values
+  const changeStr = String(change || '');
+  const isPositive = changeStr.includes('+') || (typeof change === 'number' && change > 0);
+  const isClickable = !!linkTo || !!onClick;
+  
+  const handleClick = () => {
+    if (onClick) onClick();
+    else if (linkTo) navigate(linkTo);
+  };
   
   return (
-    <div className="bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+    <motion.div 
+      className={cn(
+        "bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-all h-full flex flex-col group",
+        isClickable && "cursor-pointer"
+      )}
+      onClick={isClickable ? handleClick : undefined}
+      whileHover={isClickable ? { y: -4, scale: 1.02 } : { y: -2 }}
+      whileTap={isClickable ? { scale: 0.98 } : undefined}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <div className="flex items-center justify-between mb-3">
-        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', iconBg)}>
+        <motion.div 
+          className={cn('w-9 h-9 rounded-lg flex items-center justify-center', iconBg)}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
           <Icon className="w-4 h-4" />
+        </motion.div>
+        <div className="flex items-center gap-2">
+          {change !== undefined && change !== null && (
+            <motion.span 
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+              )}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", delay: 0.2 }}
+            >
+              {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+              {changeStr}
+            </motion.span>
+          )}
+          {isClickable && (
+            <motion.div
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              initial={{ x: -5 }}
+              animate={{ x: 0 }}
+            >
+              <ExternalLink className="w-3 h-3 text-neutral-400" />
+            </motion.div>
+          )}
         </div>
-        {change !== undefined && (
-          <span className={cn(
-            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
-            isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-          )}>
-            {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-            {isPositive ? '+' : ''}{change}%
-          </span>
-        )}
       </div>
       <p className="text-[11px] text-neutral-500 font-medium mb-1">{title}</p>
-      <p className="text-[1.75rem] font-bold text-neutral-900 leading-none mb-2">{value}</p>
+      <motion.p 
+        className="text-[1.75rem] font-bold text-neutral-900 leading-none mb-2"
+        key={String(value)}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {value}
+      </motion.p>
+      
+      {/* Mini Sparkline Chart */}
+      {sparklineData && sparklineData.length > 0 && (
+        <div className="h-6 mt-1 mb-2">
+          <Sparkline data={sparklineData} color={progressColor} height={24} />
+        </div>
+      )}
+      
       {progressLabel && progressValue !== undefined && (
         <div className="mt-auto">
           <div className="flex items-center justify-between text-[10px] text-neutral-500 mb-1">
@@ -171,11 +234,27 @@ const StatCard: React.FC<StatCardProps> = ({
             <span className={cn('font-semibold', progressColor.replace('bg-', 'text-'))}>{progressValue}%</span>
           </div>
           <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
-            <div className={cn('h-full rounded-full', progressColor)} style={{ width: `${progressValue}%` }} />
+            <motion.div 
+              className={cn('h-full rounded-full', progressColor)} 
+              initial={{ width: 0 }}
+              animate={{ width: `${progressValue}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+            />
           </div>
         </div>
       )}
-    </div>
+      
+      {/* Hover hint for clickable cards */}
+      {isClickable && (
+        <motion.div 
+          className="mt-2 text-center opacity-0 group-hover:opacity-100 transition-opacity"
+          initial={{ y: 5 }}
+          animate={{ y: 0 }}
+        >
+          <span className="text-[8px] text-coral-500 font-medium">انقر للتفاصيل ←</span>
+        </motion.div>
+      )}
+    </motion.div>
   );
 };
 
@@ -187,6 +266,7 @@ const BentoDashboard: React.FC = () => {
   const { data: stats } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
+  const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
   // Fleet Status Query
   const { data: fleetStatus } = useQuery({
@@ -220,7 +300,7 @@ const BentoDashboard: React.FC = () => {
         .from('vehicle_maintenance')
         .select('id, maintenance_type, scheduled_date, status, vehicles(plate_number)')
         .eq('company_id', user.profile.company_id)
-        .in('status', ['pending', 'in_progress', 'scheduled'])
+        .in('status', ['pending', 'in_progress'])
         .order('scheduled_date', { ascending: true })
         .limit(5);
       return data || [];
@@ -266,7 +346,7 @@ const BentoDashboard: React.FC = () => {
   const today = new Date();
   const dayName = today.toLocaleDateString('ar-SA', { weekday: 'long' });
   const dayNumber = today.getDate();
-  const hijriDate = today.toLocaleDateString('ar-SA-u-ca-islamic', { month: 'long', year: 'numeric' });
+  const gregorianDate = today.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
 
   // Fleet donut data
   const fleetChartData = [
@@ -336,7 +416,7 @@ const BentoDashboard: React.FC = () => {
             <span className="text-xl font-bold text-neutral-900">{dayNumber}</span>
             <div className="text-right">
               <p className="text-xs font-medium text-neutral-700">{dayName}</p>
-              <p className="text-[10px] text-neutral-400">{hijriDate}</p>
+              <p className="text-[10px] text-neutral-400">{gregorianDate}</p>
             </div>
           </div>
           <button
@@ -361,19 +441,16 @@ const BentoDashboard: React.FC = () => {
             <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
           </div>
           
-          <button className="relative p-2.5 bg-white rounded-xl border border-neutral-200 hover:bg-neutral-50">
-            <Bell className="w-4 h-4 text-neutral-500" />
-            <span className="absolute -top-1 -left-1 w-4 h-4 bg-coral-500 rounded-full text-[10px] text-white flex items-center justify-center">
-              3
-            </span>
-          </button>
+          <div className="bg-white rounded-xl border border-neutral-200">
+            <UnifiedNotificationBell />
+          </div>
         </div>
       </header>
 
       {/* Bento Grid - Static Layout */}
       <div className="grid grid-cols-12 gap-4">
         
-        {/* Stats Row - 4 cards */}
+        {/* Stats Row - 4 Interactive cards */}
         <div className="col-span-3">
           <StatCard
             title="إجمالي المركبات"
@@ -384,6 +461,8 @@ const BentoDashboard: React.FC = () => {
             progressLabel="نشاط المركبات"
             progressValue={stats?.vehicleActivityRate || 85}
             progressColor="bg-coral-500"
+            linkTo="/fleet"
+            sparklineData={revenueData?.map(item => item.value) || []}
           />
         </div>
 
@@ -397,6 +476,8 @@ const BentoDashboard: React.FC = () => {
             progressLabel="معدل الإكمال"
             progressValue={stats?.contractCompletionRate || 78}
             progressColor="bg-blue-500"
+            linkTo="/contracts"
+            sparklineData={revenueData?.map(item => item.value) || []}
           />
         </div>
 
@@ -410,26 +491,43 @@ const BentoDashboard: React.FC = () => {
             progressLabel="رضا العملاء"
             progressValue={stats?.customerSatisfactionRate || 92}
             progressColor="bg-green-500"
+            linkTo="/customers"
+            sparklineData={revenueData?.map(item => item.value) || []}
           />
         </div>
 
         <div className="col-span-3">
           <StatCard
             title="إيرادات الشهر"
-            value={formatCurrency(stats?.monthlyRevenue || 0, { notation: 'compact' })}
+            value={formatCurrency(stats?.monthlyRevenue || 0)}
             change={stats?.revenueChange}
             icon={Banknote}
             iconBg="bg-amber-100 text-amber-600"
+            linkTo="/finance"
+            sparklineData={revenueData?.map(item => item.value) || []}
           />
         </div>
 
-        {/* Charts Row */}
-        <div className="col-span-5 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Financial Performance Chart */}
+        <motion.div 
+          className="col-span-5 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          whileHover={{ scale: 1.01 }}
+          onClick={() => navigate('/finance')}
+        >
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-bold text-neutral-900 text-sm">الأداء المالي</h3>
               <p className="text-[10px] text-neutral-400">تحليل الإيرادات</p>
             </div>
+            <motion.div
+              className="text-[9px] text-coral-500 font-medium opacity-0 group-hover:opacity-100"
+              whileHover={{ x: 2 }}
+            >
+              عرض التفاصيل ←
+            </motion.div>
           </div>
           <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
@@ -443,33 +541,72 @@ const BentoDashboard: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#78716c' }} />
                 <YAxis tick={{ fontSize: 10, fill: '#78716c' }} tickFormatter={(v) => `${v}K`} />
-                <Tooltip formatter={(value) => [`${value}K`, 'الإيرادات']} />
-                <Area type="monotone" dataKey="value" stroke="#e85a4f" strokeWidth={2} fill="url(#colorRevenue)" />
+                <Tooltip 
+                  formatter={(value) => [`${value}K`, 'الإيرادات']}
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    fontSize: '12px'
+                  }}
+                  cursor={{ stroke: '#e85a4f', strokeWidth: 1, strokeDasharray: '5 5' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#e85a4f" 
+                  strokeWidth={2} 
+                  fill="url(#colorRevenue)"
+                  animationDuration={1500}
+                  animationEasing="ease-out"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-neutral-100">
-            <div className="text-center">
-              <p className="text-sm font-bold text-green-600">+22%</p>
-              <p className="text-[9px] text-neutral-500">النمو</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-blue-600">{formatCurrency(stats?.monthlyRevenue || 0, { notation: 'compact' })}</p>
-              <p className="text-[9px] text-neutral-500">الإيرادات</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-purple-600">{stats?.activeContracts || 0}</p>
-              <p className="text-[9px] text-neutral-500">العقود</p>
-            </div>
+            {[
+              { value: '+22%', label: 'النمو', color: 'text-green-600' },
+              { value: formatCurrency(stats?.monthlyRevenue || 0), label: 'الإيرادات', color: 'text-blue-600' },
+              { value: stats?.activeContracts || 0, label: 'العقود', color: 'text-purple-600' },
+            ].map((item, index) => (
+              <motion.div 
+                key={index}
+                className="text-center cursor-pointer hover:bg-neutral-50 rounded-lg p-1 transition-colors"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.p 
+                  className={`text-sm font-bold ${item.color}`}
+                  key={String(item.value)}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                >
+                  {item.value}
+                </motion.p>
+                <p className="text-[9px] text-neutral-500">{item.label}</p>
+              </motion.div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-3 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Fleet Status Card */}
+        <motion.div 
+          className="col-span-3 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-neutral-900 text-sm">حالة الأسطول</h3>
-            <span className="px-2 py-0.5 bg-coral-500 text-white rounded-full text-[9px] font-semibold">
+            <motion.span 
+              className="px-2 py-0.5 bg-coral-500 text-white rounded-full text-[9px] font-semibold cursor-pointer"
+              whileHover={{ scale: 1.1 }}
+              onClick={() => navigate('/fleet')}
+            >
               {occupancyRate}%
-            </span>
+            </motion.span>
           </div>
           <div className="h-28 relative flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -481,82 +618,180 @@ const BentoDashboard: React.FC = () => {
                   innerRadius="55%"
                   outerRadius="85%"
                   dataKey="value"
+                  onMouseEnter={(_, index) => setActiveFleetIndex(index)}
+                  onMouseLeave={() => setActiveFleetIndex(null)}
                 >
                   {fleetChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color}
+                      style={{
+                        cursor: 'pointer',
+                        filter: activeFleetIndex === index ? 'brightness(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'none',
+                        transform: activeFleetIndex === index ? 'scale(1.05)' : 'scale(1)',
+                        transformOrigin: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => navigate(`/fleet?status=${entry.name}`)}
+                    />
                   ))}
                 </Pie>
+                <Tooltip 
+                  content={({ payload }) => {
+                    if (!payload?.[0]) return null;
+                    const data = payload[0].payload;
+                    return (
+                      <motion.div 
+                        className="bg-white px-3 py-2 rounded-lg shadow-lg border border-neutral-100"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                      >
+                        <p className="font-semibold text-sm text-neutral-900">{data.name}</p>
+                        <p className="text-neutral-600 text-xs">{data.value} مركبة</p>
+                        <p className="text-[9px] text-coral-500 mt-1">انقر للتصفية ←</p>
+                      </motion.div>
+                    );
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute text-center">
+            <motion.div 
+              className="absolute text-center"
+              key={totalVehicles}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               <p className="text-xl font-bold text-neutral-900">{totalVehicles}</p>
               <p className="text-[9px] text-neutral-400">إجمالي</p>
-            </div>
+            </motion.div>
           </div>
+          {/* Interactive Legend */}
           <div className="grid grid-cols-2 gap-1.5 mt-2">
-            {fleetChartData.map((item) => (
-              <div key={item.name} className="flex items-center gap-1.5 p-1.5 bg-neutral-50 rounded-lg">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+            {fleetChartData.map((item, index) => (
+              <motion.div 
+                key={item.name} 
+                className={cn(
+                  "flex items-center gap-1.5 p-1.5 rounded-lg cursor-pointer transition-all",
+                  activeFleetIndex === index ? 'bg-neutral-100 ring-1 ring-neutral-200' : 'bg-neutral-50 hover:bg-neutral-100'
+                )}
+                onClick={() => navigate(`/fleet?status=${item.name}`)}
+                onMouseEnter={() => setActiveFleetIndex(index)}
+                onMouseLeave={() => setActiveFleetIndex(null)}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <motion.div 
+                  className="w-2 h-2 rounded-full" 
+                  style={{ backgroundColor: item.color }}
+                  animate={{ scale: activeFleetIndex === index ? 1.3 : 1 }}
+                />
                 <div>
                   <p className="text-[10px] font-bold text-neutral-900">{item.value}</p>
                   <p className="text-[8px] text-neutral-400">{item.name}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Maintenance Schedule Card */}
+        <motion.div 
+          className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-neutral-900 text-sm">جدول الصيانة</h3>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[9px] font-semibold">
+            <motion.span 
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[9px] font-semibold cursor-pointer"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => navigate('/fleet/maintenance')}
+            >
               <Clock className="w-2.5 h-2.5" />
               {maintenanceData?.length || 0} قريباً
-            </span>
+            </motion.span>
           </div>
           <div className="space-y-1.5">
             {maintenanceData && maintenanceData.length > 0 ? (
               maintenanceData.slice(0, 3).map((item: any, index: number) => (
-                <div 
+                <motion.div 
                   key={item.id} 
                   className={cn(
-                    'flex items-center gap-2 p-2 rounded-lg border-r-2',
-                    index === 0 ? 'bg-red-50 border-red-500' : 'bg-amber-50 border-amber-500'
+                    'flex items-center gap-2 p-2 rounded-lg border-r-2 cursor-pointer group',
+                    index === 0 ? 'bg-red-50 border-red-500 hover:bg-red-100' : 'bg-amber-50 border-amber-500 hover:bg-amber-100'
                   )}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ x: 4, scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate(`/fleet/maintenance`)}
                 >
-                  {index === 0 ? (
-                    <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-                  ) : (
-                    <Wrench className="w-3.5 h-3.5 text-amber-600" />
-                  )}
+                  <motion.div
+                    animate={index === 0 ? { rotate: [0, 5, -5, 0] } : {}}
+                    transition={{ repeat: index === 0 ? Infinity : 0, duration: 2, repeatDelay: 1 }}
+                  >
+                    {index === 0 ? (
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                    ) : (
+                      <Wrench className="w-3.5 h-3.5 text-amber-600" />
+                    )}
+                  </motion.div>
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-neutral-900">
                       {item.vehicles?.plate_number || 'غير محدد'}
                     </p>
                     <p className="text-[9px] text-neutral-500">{item.maintenance_type}</p>
                   </div>
-                </div>
+                  <motion.div
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    initial={{ x: -5 }}
+                    animate={{ x: 0 }}
+                  >
+                    <ChevronLeft className="w-3 h-3 text-neutral-400" />
+                  </motion.div>
+                </motion.div>
               ))
             ) : (
-              <div className="text-center py-4 text-neutral-400">
+              <motion.div 
+                className="text-center py-4 text-neutral-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
                 <Wrench className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">لا توجد صيانات</p>
-              </div>
+              </motion.div>
             )}
           </div>
-          <button className="w-full mt-2 py-1.5 text-[10px] font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100">
+          <motion.button 
+            className="w-full mt-2 py-1.5 text-[10px] font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/fleet/maintenance')}
+          >
             عرض الكل ({maintenanceData?.length || 0})
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
-        {/* Bottom Row */}
-        <div className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Reservations Calendar Card */}
+        <motion.div 
+          className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-neutral-900 text-sm">تقويم الحجوزات</h3>
-            <button className="text-[10px] text-coral-600 font-medium flex items-center gap-1">
+            <motion.button 
+              className="text-[10px] text-coral-600 font-medium flex items-center gap-1"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => navigate('/fleet/reservations')}
+            >
               <Calendar className="w-3 h-3" />
               عرض
-            </button>
+            </motion.button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
             {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((day) => (
@@ -565,18 +800,28 @@ const BentoDashboard: React.FC = () => {
           </div>
           <div className="grid grid-cols-7 gap-1">
             {weekDays.map((day, index) => (
-              <div
+              <motion.div
                 key={index}
                 className={cn(
-                  'aspect-square rounded-lg flex flex-col items-center justify-center',
+                  'aspect-square rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all',
                   day.isToday
                     ? 'bg-blue-100 border-2 border-blue-500'
                     : day.occupancy > 80
-                    ? 'bg-red-50 border border-red-200'
+                    ? 'bg-red-50 border border-red-200 hover:border-red-400 hover:bg-red-100'
                     : day.occupancy > 60
-                    ? 'bg-orange-50 border border-orange-200'
-                    : 'bg-green-50 border border-green-200'
+                    ? 'bg-orange-50 border border-orange-200 hover:border-orange-400 hover:bg-orange-100'
+                    : 'bg-green-50 border border-green-200 hover:border-green-400 hover:bg-green-100'
                 )}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.15, zIndex: 10 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  const targetDate = new Date();
+                  targetDate.setDate(today.getDate() + index);
+                  navigate(`/fleet/reservations?date=${targetDate.toISOString().split('T')[0]}`);
+                }}
               >
                 <span className={cn('text-[10px] font-semibold', day.isToday ? 'text-blue-700' : 'text-neutral-700')}>
                   {day.day}
@@ -584,86 +829,176 @@ const BentoDashboard: React.FC = () => {
                 <span className={cn('text-[7px]', day.isToday ? 'text-blue-600' : 'text-neutral-500')}>
                   {day.isToday ? 'اليوم' : `${day.occupancy}%`}
                 </span>
-              </div>
+              </motion.div>
             ))}
           </div>
-          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+          <motion.div 
+            className="mt-2 p-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+            whileHover={{ scale: 1.01 }}
+            onClick={() => navigate('/fleet/reservations')}
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold text-neutral-900">ملخص الأسبوع</span>
-              <span className="text-[8px] text-neutral-400">{dayNumber}-{dayNumber + 6} {hijriDate.split(' ')[0]}</span>
+              <span className="text-[8px] text-neutral-400">{dayNumber}-{dayNumber + 6} {gregorianDate.split(' ')[0]}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div className="text-center">
-                <p className="text-sm font-bold text-blue-600">{occupancyRate}%</p>
+                <motion.p 
+                  className="text-sm font-bold text-blue-600"
+                  key={occupancyRate}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                >
+                  {occupancyRate}%
+                </motion.p>
                 <p className="text-[8px] text-neutral-500">الإشغال</p>
               </div>
               <div className="text-center">
-                <p className="text-sm font-bold text-green-600">{stats?.activeContracts || 0}</p>
+                <motion.p 
+                  className="text-sm font-bold text-green-600"
+                  key={stats?.activeContracts}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                >
+                  {stats?.activeContracts || 0}
+                </motion.p>
                 <p className="text-[8px] text-neutral-500">عقود</p>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <div className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Revenue Forecast Card */}
+        <motion.div 
+          className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          whileHover={{ scale: 1.01 }}
+          onClick={() => navigate('/finance')}
+        >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-neutral-900 text-sm">توقعات الإيرادات</h3>
-            <div className="w-7 h-7 bg-coral-100 rounded-lg flex items-center justify-center">
+            <motion.div 
+              className="w-7 h-7 bg-coral-100 rounded-lg flex items-center justify-center"
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 4, repeatDelay: 2 }}
+            >
               <Brain className="w-3.5 h-3.5 text-coral-600" />
-            </div>
+            </motion.div>
           </div>
           <div className="space-y-2">
             <div>
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-[10px] text-neutral-500">الشهر الحالي</span>
-                <span className="text-[11px] font-bold text-neutral-900">
+                <motion.span 
+                  className="text-[11px] font-bold text-neutral-900"
+                  key={stats?.monthlyRevenue}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
                   {formatCurrency(stats?.monthlyRevenue || 0)}
-                </span>
+                </motion.span>
               </div>
               <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-coral-500" style={{ width: '80%' }} />
+                <motion.div 
+                  className="h-full rounded-full bg-coral-500" 
+                  initial={{ width: 0 }}
+                  animate={{ width: '80%' }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-[10px] text-neutral-500">توقع الشهر القادم</span>
-                <span className="text-[11px] font-bold text-green-600">
+                <motion.span 
+                  className="text-[11px] font-bold text-green-600"
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
                   {formatCurrency((stats?.monthlyRevenue || 0) * 1.22)}
-                </span>
+                </motion.span>
               </div>
               <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-green-500" style={{ width: '97%' }} />
+                <motion.div 
+                  className="h-full rounded-full bg-green-500" 
+                  initial={{ width: 0 }}
+                  animate={{ width: '97%' }}
+                  transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+                />
               </div>
             </div>
           </div>
-          <div className="mt-3 p-2 bg-coral-50 rounded-lg">
+          <motion.div 
+            className="mt-3 p-2 bg-coral-50 rounded-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
             <p className="text-[10px] font-semibold text-neutral-900 mb-1">العوامل المؤثرة:</p>
             <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5">
-                <ArrowUp className="w-2.5 h-2.5 text-green-500" />
-                <span className="text-[9px] text-neutral-600">العامل الموسمي (+8%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ArrowUp className="w-2.5 h-2.5 text-green-500" />
-                <span className="text-[9px] text-neutral-600">عقود جديدة (+12%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <TrendingDown className="w-2.5 h-2.5 text-red-500" />
-                <span className="text-[9px] text-neutral-600">تأثير الصيانة (-2%)</span>
-              </div>
+              {[
+                { icon: ArrowUp, color: 'text-green-500', text: 'العامل الموسمي (+8%)' },
+                { icon: ArrowUp, color: 'text-green-500', text: 'عقود جديدة (+12%)' },
+                { icon: TrendingDown, color: 'text-red-500', text: 'تأثير الصيانة (-2%)' },
+              ].map((factor, index) => (
+                <motion.div 
+                  key={index}
+                  className="flex items-center gap-1.5"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                >
+                  <factor.icon className={`w-2.5 h-2.5 ${factor.color}`} />
+                  <span className="text-[9px] text-neutral-600">{factor.text}</span>
+                </motion.div>
+              ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <div className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow">
+        {/* Interactive Recent Activities Card */}
+        <motion.div 
+          className="col-span-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
+        >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-neutral-900 text-sm">النشاطات الأخيرة</h3>
-            <button className="text-[10px] text-coral-600 font-medium">عرض الكل</button>
+            <motion.button 
+              className="text-[10px] text-coral-600 font-medium"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => navigate('/reports')}
+            >
+              عرض الكل
+            </motion.button>
           </div>
           <div className="space-y-2">
-            <p className="text-center text-neutral-400 text-sm py-6">لا توجد نشاطات</p>
+            <motion.div 
+              className="text-center py-4 text-neutral-400"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              </motion.div>
+              <p className="text-sm">لا توجد نشاطات حديثة</p>
+              <motion.button
+                className="mt-2 text-[10px] text-coral-500 font-medium hover:text-coral-600"
+                whileHover={{ scale: 1.05 }}
+                onClick={() => navigate('/contracts')}
+              >
+                ابدأ بإنشاء عقد جديد ←
+              </motion.button>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Contract Wizard */}
