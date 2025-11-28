@@ -134,14 +134,16 @@ export function CallDialog({
 
         <div className="space-y-6 py-4">
           {/* Customer Info Card */}
-          <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-              <span className="text-3xl text-white font-bold">
+          <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-white">
+              <span className="text-4xl text-white font-bold">
                 {getInitials(customerName)}
               </span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{customerName}</h3>
-            <p className="text-lg font-mono text-gray-600" dir="ltr">{customerPhone}</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">{customerName}</h3>
+            <p className="text-xl font-mono text-blue-600 bg-white px-4 py-2 rounded-lg inline-block shadow-sm" dir="ltr">
+              📞 {customerPhone}
+            </p>
           </div>
 
           {/* Timer Display */}
