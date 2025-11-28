@@ -14,6 +14,9 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useFinanceRole } from '@/contexts/FinanceContext';
 import { UniversalSearch } from '@/components/finance/hub/UniversalSearch';
 import { ActivityTimeline } from '@/components/finance/hub/ActivityTimeline';
+import { useRecentActivities } from '@/hooks/useRecentActivities';
+import { useTreasurySummary } from '@/hooks/useTreasury';
+import { useInvoices } from '@/hooks/finance/useInvoices';
 import {
   AreaChart,
   Area,
@@ -274,34 +277,37 @@ const ActivityItemCard: React.FC<{ item: ActivityItem; formatCurrency: (n: numbe
 const FinanceHub: React.FC = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: stats } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const userRole = useFinanceRole();
+  
+  // استخدام البيانات الحقيقية من الـ hooks
+  const { data: recentActivities, isLoading: activitiesLoading } = useRecentActivities();
+  const { data: treasurySummary, isLoading: treasuryLoading } = useTreasurySummary();
+  const { data: invoices, isLoading: invoicesLoading } = useInvoices({ status: 'pending' });
 
-  // Sample revenue data for chart
-  const revenueData = [
-    { name: 'يناير', revenue: 45000, expenses: 32000 },
-    { name: 'فبراير', revenue: 52000, expenses: 38000 },
-    { name: 'مارس', revenue: 48000, expenses: 35000 },
-    { name: 'أبريل', revenue: 70000, expenses: 42000 },
-    { name: 'مايو', revenue: 65000, expenses: 40000 },
-    { name: 'يونيو', revenue: 80000, expenses: 45000 },
-  ];
+  // حساب الفواتير المعلقة والمتأخرة
+  const pendingInvoicesCount = invoices?.length || 0;
+  const pendingInvoicesTotal = invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
+  const overdueInvoices = invoices?.filter(inv => {
+    if (!inv.due_date) return false;
+    return new Date(inv.due_date) < new Date();
+  }) || [];
 
-  // Cash flow data
-  const cashFlowData = [
-    { name: 'نقدي', value: 45, color: '#e85a4f' },
-    { name: 'بنكي', value: 35, color: '#3b82f6' },
-    { name: 'شيكات', value: 15, color: '#22c55e' },
-    { name: 'آجل', value: 5, color: '#f59e0b' },
-  ];
-
-  // Sample activities
-  const activities: ActivityItem[] = [
-    { id: '1', type: 'payment', title: 'استلام دفعة - شركة الخليج', amount: 15000, time: 'منذ 5 دقائق', status: 'completed' },
-    { id: '2', type: 'invoice', title: 'فاتورة جديدة #INV-2024-156', amount: 8500, time: 'منذ 30 دقيقة', status: 'pending' },
-    { id: '3', type: 'entry', title: 'قيد محاسبي - مصروفات', amount: 2300, time: 'منذ ساعة', status: 'completed' },
-    { id: '4', type: 'transfer', title: 'تحويل داخلي - الصندوق → البنك', amount: 50000, time: 'منذ ساعتين', status: 'completed' },
-  ];
+  // تحويل النشاطات الأخيرة للتنسيق المطلوب
+  const activities: ActivityItem[] = React.useMemo(() => {
+    if (!recentActivities || recentActivities.length === 0) return [];
+    
+    return recentActivities.slice(0, 5).map((activity, idx) => ({
+      id: activity.id || String(idx),
+      type: activity.type === 'contract' ? 'invoice' : 
+            activity.type === 'payment' ? 'payment' : 
+            activity.type === 'maintenance' ? 'entry' : 'transfer',
+      title: activity.title || activity.description || 'نشاط غير معروف',
+      amount: activity.amount,
+      time: activity.time || 'منذ قليل',
+      status: 'completed' as const
+    }));
+  }, [recentActivities]);
 
   // Quick Actions
   const quickActions: QuickAction[] = [
@@ -334,11 +340,43 @@ const FinanceHub: React.FC = () => {
     { title: 'الإعدادات', description: 'إعدادات النظام المالي', icon: Settings, color: 'text-neutral-600', bgColor: 'bg-neutral-100', path: '/finance/settings' },
   ];
 
-  // Alerts
-  const alerts = [
-    { type: 'warning' as const, title: 'فواتير متأخرة', description: '5 فواتير تجاوزت تاريخ الاستحقاق', action: 'عرض', onAction: () => navigate('/finance/invoices') },
-    { type: 'info' as const, title: 'إقفال شهري', description: 'يجب إقفال شهر نوفمبر قبل 10 ديسمبر', action: 'إقفال', onAction: () => {} },
-  ];
+  // التنبيهات الحقيقية بناءً على البيانات
+  const alerts = React.useMemo(() => {
+    const alertsList: Array<{ type: 'warning' | 'info' | 'success' | 'danger'; title: string; description: string; action?: string; onAction?: () => void }> = [];
+    
+    // تنبيه الفواتير المتأخرة
+    if (overdueInvoices.length > 0) {
+      alertsList.push({
+        type: 'warning',
+        title: 'فواتير متأخرة',
+        description: `${overdueInvoices.length} فاتورة تجاوزت تاريخ الاستحقاق`,
+        action: 'عرض',
+        onAction: () => navigate('/finance/invoices?status=overdue')
+      });
+    }
+    
+    // تنبيه الفواتير المعلقة
+    if (pendingInvoicesCount > 5) {
+      alertsList.push({
+        type: 'info',
+        title: 'فواتير معلقة',
+        description: `لديك ${pendingInvoicesCount} فاتورة معلقة بإجمالي ${formatCurrency(pendingInvoicesTotal)}`,
+        action: 'عرض',
+        onAction: () => navigate('/finance/invoices?status=pending')
+      });
+    }
+    
+    // إذا لم توجد تنبيهات
+    if (alertsList.length === 0) {
+      alertsList.push({
+        type: 'success',
+        title: 'لا توجد تنبيهات',
+        description: 'جميع العمليات المالية تسير بشكل طبيعي'
+      });
+    }
+    
+    return alertsList;
+  }, [overdueInvoices.length, pendingInvoicesCount, pendingInvoicesTotal, formatCurrency, navigate]);
 
   // Get role badge text
   const getRoleBadge = () => {
@@ -437,13 +475,13 @@ const FinanceHub: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Row */}
+          {/* Stats Row - بيانات حقيقية */}
           <div className="col-span-6 lg:col-span-3">
             <StatCard
               title="إجمالي الإيرادات"
-              value={formatCurrency(stats?.monthlyRevenue || 125000)}
-              change={12}
-              trend="up"
+              value={statsLoading ? '...' : formatCurrency(stats?.monthlyRevenue || 0)}
+              change={stats?.revenueChange || 0}
+              trend={stats?.revenueChange && stats.revenueChange >= 0 ? 'up' : 'down'}
               icon={TrendingUp}
               iconBg="bg-green-100 text-green-600"
               subtitle="هذا الشهر"
@@ -452,30 +490,30 @@ const FinanceHub: React.FC = () => {
           </div>
           <div className="col-span-6 lg:col-span-3">
             <StatCard
-              title="المصروفات"
-              value={formatCurrency(45000)}
-              change={-5}
-              trend="down"
-              icon={TrendingDown}
-              iconBg="bg-red-100 text-red-600"
+              title="صافي التدفق"
+              value={treasuryLoading ? '...' : formatCurrency(treasurySummary?.netFlow || 0)}
+              change={treasurySummary?.netFlow && treasurySummary.netFlow > 0 ? Math.round((treasurySummary.netFlow / (treasurySummary.monthlyDeposits || 1)) * 100) : 0}
+              trend={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? 'up' : 'down'}
+              icon={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? TrendingUp : TrendingDown}
+              iconBg={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}
               subtitle="هذا الشهر"
-              onClick={() => navigate('/finance/reports')}
+              onClick={() => navigate('/finance/treasury')}
             />
           </div>
           <div className="col-span-6 lg:col-span-3">
             <StatCard
               title="الفواتير المعلقة"
-              value="12"
+              value={invoicesLoading ? '...' : String(pendingInvoicesCount)}
               icon={FileText}
               iconBg="bg-amber-100 text-amber-600"
-              subtitle={formatCurrency(85000)}
+              subtitle={formatCurrency(pendingInvoicesTotal)}
               onClick={() => navigate('/finance/invoices')}
             />
           </div>
           <div className="col-span-6 lg:col-span-3">
             <StatCard
               title="رصيد الخزينة"
-              value={formatCurrency(320000)}
+              value={treasuryLoading ? '...' : formatCurrency(treasurySummary?.totalBalance || 0)}
               icon={Wallet}
               iconBg="bg-coral-100 text-coral-600"
               subtitle="محدث الآن"
@@ -483,85 +521,131 @@ const FinanceHub: React.FC = () => {
             />
           </div>
 
-          {/* Revenue Chart */}
+          {/* ملخص الخزينة - بيانات حقيقية */}
           <div className="col-span-12 lg:col-span-8">
             <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-bold text-neutral-900">الأداء المالي</h3>
-                  <p className="text-xs text-neutral-400">مقارنة الإيرادات والمصروفات</p>
+                  <h3 className="font-bold text-neutral-900">ملخص الخزينة</h3>
+                  <p className="text-xs text-neutral-400">الإيداعات والسحوبات لهذا الشهر</p>
                 </div>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-coral-500" />
-                    <span className="text-neutral-600">الإيرادات</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <span className="text-neutral-600">المصروفات</span>
-                  </div>
-                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate('/finance/treasury')}>
+                  عرض التفاصيل
+                  <ChevronRight className="w-4 h-4 mr-1" />
+                </Button>
               </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
-                    <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#e85a4f" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#e85a4f" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#78716c' }} />
-                    <YAxis tick={{ fontSize: 11, fill: '#78716c' }} tickFormatter={(v) => `${v/1000}K`} />
-                    <Tooltip formatter={(value: number) => [formatCurrency(value), '']} />
-                    <Area type="monotone" dataKey="revenue" stroke="#e85a4f" strokeWidth={2} fill="url(#colorRevenue)" />
-                    <Area type="monotone" dataKey="expenses" stroke="#3b82f6" strokeWidth={2} fill="url(#colorExpenses)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              
+              {treasuryLoading ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-coral-500 border-t-transparent rounded-full"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ArrowDownLeft className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-green-800">الإيداعات</span>
+                    </div>
+                    <p className="text-2xl font-bold text-green-700">{formatCurrency(treasurySummary?.monthlyDeposits || 0)}</p>
+                    <p className="text-xs text-green-600 mt-1">هذا الشهر</p>
+                  </div>
+                  
+                  <div className="bg-red-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ArrowUpLeft className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-red-800">السحوبات</span>
+                    </div>
+                    <p className="text-2xl font-bold text-red-700">{formatCurrency(treasurySummary?.monthlyWithdrawals || 0)}</p>
+                    <p className="text-xs text-red-600 mt-1">هذا الشهر</p>
+                  </div>
+                  
+                  <div className={cn(
+                    "rounded-xl p-4",
+                    treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "bg-blue-50" : "bg-orange-50"
+                  )}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className={cn(
+                        "w-5 h-5",
+                        treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "text-blue-600" : "text-orange-600"
+                      )} />
+                      <span className={cn(
+                        "text-sm font-medium",
+                        treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "text-blue-800" : "text-orange-800"
+                      )}>صافي التدفق</span>
+                    </div>
+                    <p className={cn(
+                      "text-2xl font-bold",
+                      treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "text-blue-700" : "text-orange-700"
+                    )}>{formatCurrency(treasurySummary?.netFlow || 0)}</p>
+                    <p className={cn(
+                      "text-xs mt-1",
+                      treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "text-blue-600" : "text-orange-600"
+                    )}>الفرق</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* إحصائيات إضافية */}
+              <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">إجمالي العملاء</span>
+                  <span className="font-bold text-neutral-900">{stats?.totalCustomers || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-2">
+                  <span className="text-neutral-500">العقود النشطة</span>
+                  <span className="font-bold text-neutral-900">{stats?.activeContracts || 0}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Cash Flow Pie */}
+          {/* ملخص الفواتير - بيانات حقيقية */}
           <div className="col-span-12 lg:col-span-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
-              <h3 className="font-bold text-neutral-900 mb-2">توزيع طرق الدفع</h3>
-              <div className="h-48 relative flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={cashFlowData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="55%"
-                      outerRadius="85%"
-                      dataKey="value"
-                    >
-                      {cashFlowData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute text-center">
-                  <p className="text-2xl font-bold text-neutral-900">100%</p>
-                  <p className="text-[10px] text-neutral-400">إجمالي</p>
+              <h3 className="font-bold text-neutral-900 mb-2">حالة الفواتير</h3>
+              
+              {invoicesLoading ? (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-coral-500 border-t-transparent rounded-full"></div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {cashFlowData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs text-neutral-600">{item.name}</span>
-                    <span className="text-xs font-bold text-neutral-900 mr-auto">{item.value}%</span>
+              ) : (
+                <>
+                  <div className="space-y-3 mt-4">
+                    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm text-amber-800">معلقة</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-amber-700">{pendingInvoicesCount}</p>
+                        <p className="text-xs text-amber-600">{formatCurrency(pendingInvoicesTotal)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <span className="text-sm text-red-800">متأخرة</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-red-700">{overdueInvoices.length}</p>
+                        <p className="text-xs text-red-600">
+                          {formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => navigate('/finance/invoices')}
+                  >
+                    عرض جميع الفواتير
+                    <ChevronRight className="w-4 h-4 mr-1" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 

@@ -80,15 +80,7 @@ const navigation: NavItem[] = [
     id: 'finance',
     label: 'المالية',
     icon: Banknote,
-    children: [
-      { id: 'finance-center', label: 'المركز المالي', href: '/finance' },
-      { id: 'finance-invoices', label: 'الفواتير', href: '/finance/invoices' },
-      { id: 'payments-register', label: 'تسجيل دفعة', href: '/finance/payments/quick' },
-      { id: 'payments-tracking', label: 'تتبع المدفوعات', href: '/finance/payments/tracking' },
-      { id: 'finance-treasury', label: 'الخزينة والبنوك', href: '/finance/treasury' },
-      { id: 'vehicle-installments', label: 'أقساط السيارات', href: '/fleet/vehicle-installments' },
-      { id: 'finance-reports', label: 'التقارير المالية', href: '/finance/reports' },
-    ],
+    href: '/finance/hub',
   },
   {
     id: 'hr',
