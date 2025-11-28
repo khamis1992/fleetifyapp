@@ -342,11 +342,11 @@ const BentoDashboard: React.FC = () => {
                         (fleetStatus?.maintenance || 0) + (fleetStatus?.reserved || 0);
   const occupancyRate = totalVehicles > 0 ? Math.round((fleetStatus?.rented || 0) / totalVehicles * 100) : 0;
 
-  // Today's date
+  // Today's date (Gregorian calendar)
   const today = new Date();
-  const dayName = today.toLocaleDateString('ar-SA', { weekday: 'long' });
+  const dayName = today.toLocaleDateString('ar-EG', { weekday: 'long' });
   const dayNumber = today.getDate();
-  const gregorianDate = today.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
+  const gregorianDate = today.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
 
   // Fleet donut data
   const fleetChartData = [

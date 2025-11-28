@@ -1,0 +1,864 @@
+/**
+ * صفحة تفاصيل العميل - التصميم الجديد (Bento Style)
+ * مستوحى من تصميم الداشبورد مع ألوان متناسقة
+ * 
+ * @component CustomerDetailsPageNew
+ */
+
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { 
+  useCustomerDocuments, 
+  useUploadCustomerDocument, 
+  useDeleteCustomerDocument, 
+  useDownloadCustomerDocument 
+} from '@/hooks/useCustomerDocuments';
+import { format, differenceInDays } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowRight,
+  ExternalLink,
+  Edit3,
+  FileText,
+  Archive,
+  Trash2,
+  CheckCircle,
+  Hash,
+  Calendar,
+  Clock,
+  Mail,
+  Phone,
+  MapPin,
+  Cake,
+  CreditCard,
+  Briefcase,
+  User,
+  Wallet,
+  TrendingUp,
+  Car,
+  Plus,
+  Eye,
+  RefreshCw,
+  Star,
+  Landmark,
+  Banknote,
+  Smartphone,
+  ChevronRight,
+  ChevronLeft,
+  Download,
+  Upload,
+  Folder,
+  Activity,
+  AlertTriangle,
+  MessageSquare,
+  PhoneCall,
+  Globe,
+  Building2,
+  IdCard,
+  FileImage,
+  MoreVertical,
+  Printer,
+  Share2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import { PaymentForm } from '@/components/finance/PaymentForm';
+import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// ===== Types =====
+interface CustomerDocument {
+  id: string;
+  document_name: string;
+  document_type: string;
+  file_url?: string;
+  uploaded_at: string;
+  file_size?: number;
+  notes?: string;
+}
+
+// ===== Tab Components =====
+
+// تبويب المعلومات الشخصية
+const PersonalInfoTab = ({ customer }: { customer: any }) => {
+  const infoItems = [
+    { label: 'صاحب العمل', value: customer.employer || '-', icon: Building2 },
+    { label: 'المجموعة', value: customer.group_name || 'عميل عادي', icon: Users },
+    { label: 'الاسم الكامل', value: `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || '-', icon: User },
+    { label: 'المنصب', value: customer.job_title || '-', icon: Briefcase },
+    { label: 'الاسم الأول', value: customer.first_name_ar || customer.first_name || '-', icon: User },
+    { label: 'الاسم الأوسط', value: customer.middle_name || '-', icon: User },
+    { label: 'اسم العائلة', value: customer.last_name_ar || customer.last_name || '-', icon: User },
+  ];
+
+  const addressItems = [
+    { label: 'الرقم الفيدرالي', value: customer.national_id || '-' },
+    { label: 'العنوان 1', value: customer.address || '-' },
+    { label: 'العنوان 2', value: customer.address_2 || '-' },
+    { label: 'المدينة', value: customer.city || '-' },
+    { label: 'المنطقة', value: customer.state || '-' },
+    { label: 'البلد', value: customer.country || 'قطر' },
+    { label: 'الرمز البريدي', value: customer.postal_code || '-' },
+  ];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+    >
+      {/* معلومات الموظف */}
+      <div className="bg-white rounded-2xl p-6 border border-neutral-200">
+        <h4 className="text-sm font-bold text-neutral-900 mb-4">معلومات العميل</h4>
+        <div className="grid grid-cols-2 gap-4">
+          {infoItems.map((item, index) => (
+            <div key={index} className="space-y-1">
+              <p className="text-xs text-neutral-500">{item.label}</p>
+              <p className="text-sm font-semibold text-neutral-900">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* معلومات العنوان */}
+      <div className="bg-white rounded-2xl p-6 border border-neutral-200">
+        <h4 className="text-sm font-bold text-neutral-900 mb-4">معلومات العنوان</h4>
+        <div className="grid grid-cols-2 gap-4">
+          {addressItems.map((item, index) => (
+            <div key={index} className="space-y-1">
+              <p className="text-xs text-neutral-500">{item.label}</p>
+              <p className="text-sm font-semibold text-neutral-900">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// تبويب أرقام الهاتف
+const PhoneNumbersTab = ({ customer }: { customer: any }) => {
+  const phones = [
+    { type: 'رئيسي', number: customer.phone, icon: Phone },
+    { type: 'ثانوي', number: customer.secondary_phone || '-', icon: Phone },
+    { type: 'عمل', number: customer.work_phone || '-', icon: Briefcase },
+    { type: 'واتساب', number: customer.whatsapp || customer.phone || '-', icon: MessageSquare },
+  ];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl p-6 border border-neutral-200"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {phones.map((phone, index) => (
+          <div 
+            key={index} 
+            className="p-4 bg-neutral-50 rounded-xl border border-neutral-100 hover:border-coral-200 transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
+                <phone.icon className="w-5 h-5 text-coral-600" />
+              </div>
+              <span className="text-xs font-medium text-neutral-500">{phone.type}</span>
+            </div>
+            <p className="text-lg font-bold text-neutral-900 font-mono" dir="ltr">
+              {phone.number}
+            </p>
+            {phone.number !== '-' && (
+              <Button variant="ghost" size="sm" className="mt-2 text-coral-600 hover:text-coral-700 p-0 h-auto">
+                <PhoneCall className="w-4 h-4 mr-1" />
+                اتصال
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+// تبويب العقود
+const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], navigate: any, customerId: string }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">العقود النشطة</h4>
+          <p className="text-xs text-neutral-500">{contracts.length} عقد</p>
+        </div>
+        <Button 
+          className="bg-coral-500 hover:bg-coral-600 text-white gap-2"
+          onClick={() => navigate(`/contracts?customer=${customerId}`)}
+        >
+          <Plus className="w-4 h-4" />
+          عقد جديد
+        </Button>
+      </div>
+
+      {contracts.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {contracts.map((contract, index) => {
+            const vehicleName = contract.vehicle
+              ? `${contract.vehicle.make} ${contract.vehicle.model}`
+              : 'غير محدد';
+            const endDate = contract.end_date ? new Date(contract.end_date) : null;
+            const daysRemaining = endDate ? differenceInDays(endDate, new Date()) : 0;
+
+            return (
+              <motion.div
+                key={contract.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-coral-300 hover:shadow-lg transition-all cursor-pointer"
+                onClick={() => navigate(`/contracts/${contract.contract_number}`)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center">
+                      <Car className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-neutral-900">{vehicleName}</h5>
+                      <p className="text-xs text-neutral-500 font-mono">#{contract.contract_number}</p>
+                    </div>
+                  </div>
+                  <Badge className={cn(
+                    "text-xs",
+                    contract.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                  )}>
+                    {contract.status === 'active' ? 'نشط' : 'معلق'}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-2 bg-neutral-50 rounded-lg">
+                    <p className="text-xs text-neutral-500">الإيجار الشهري</p>
+                    <p className="text-sm font-bold text-coral-600">{contract.monthly_amount?.toLocaleString()} ر.ق</p>
+                  </div>
+                  <div className="p-2 bg-neutral-50 rounded-lg">
+                    <p className="text-xs text-neutral-500">ينتهي في</p>
+                    <p className="text-sm font-bold text-neutral-900">
+                      {contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yy') : '-'}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-neutral-50 rounded-lg">
+                    <p className="text-xs text-neutral-500">المتبقي</p>
+                    <p className={cn(
+                      "text-sm font-bold",
+                      daysRemaining <= 30 ? 'text-red-600' : daysRemaining <= 60 ? 'text-amber-600' : 'text-green-600'
+                    )}>
+                      {daysRemaining} يوم
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-500">لا توجد عقود لهذا العميل</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب المدفوعات
+const PaymentsTab = ({ payments, navigate }: { payments: any[], navigate: any }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">سجل المدفوعات</h4>
+          <p className="text-xs text-neutral-500">{payments.length} عملية</p>
+        </div>
+        <Button className="bg-green-500 hover:bg-green-600 text-white gap-2">
+          <Plus className="w-4 h-4" />
+          تسجيل دفعة
+        </Button>
+      </div>
+
+      {payments.length > 0 ? (
+        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">رقم الدفعة</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">التاريخ</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">المبلغ</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الطريقة</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الحالة</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {payments.slice(0, 5).map((payment, index) => (
+                <motion.tr 
+                  key={payment.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="hover:bg-neutral-50 transition-colors"
+                >
+                  <td className="px-4 py-3 text-sm font-mono text-neutral-900">#{payment.payment_number || payment.id.substring(0, 8)}</td>
+                  <td className="px-4 py-3 text-sm text-neutral-600">
+                    {payment.payment_date ? format(new Date(payment.payment_date), 'dd/MM/yyyy') : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-bold text-green-600">{payment.amount?.toLocaleString()} ر.ق</td>
+                  <td className="px-4 py-3 text-sm text-neutral-600">{payment.payment_method || '-'}</td>
+                  <td className="px-4 py-3">
+                    <Badge className={cn(
+                      "text-xs",
+                      payment.payment_status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    )}>
+                      {payment.payment_status === 'completed' ? 'مكتمل' : 'معلق'}
+                    </Badge>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <CreditCard className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-500">لا توجد مدفوعات مسجلة</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب الملاحظات
+const NotesTab = ({ customer }: { customer: any }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl p-6 border border-neutral-200"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-bold text-neutral-900">الملاحظات</h4>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Plus className="w-4 h-4" />
+          إضافة ملاحظة
+        </Button>
+      </div>
+      <div className="min-h-[200px] p-4 bg-neutral-50 rounded-xl border border-neutral-100">
+        <p className="text-neutral-500 text-sm">
+          {customer.notes || 'لا توجد ملاحظات مسجلة لهذا العميل...'}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+// ===== Main Component =====
+const CustomerDetailsPageNew = () => {
+  const { customerId } = useParams<{ customerId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // State
+  const [activeTab, setActiveTab] = useState('info');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Queries
+  const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
+    queryKey: ['customer-details-new', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) throw new Error('معرف غير صالح');
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['customer-contracts-new', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`*, vehicle:vehicles!vehicle_id(id, make, model, year, plate_number)`)
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['customer-payments-new', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('payment_date', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  const { data: documents = [] } = useCustomerDocuments(customerId);
+  const uploadDocument = useUploadCustomerDocument();
+
+  // Computed
+  const customerName = useMemo(() => {
+    if (!customer) return 'غير محدد';
+    if (customer.customer_type === 'corporate') {
+      return customer.company_name_ar || customer.company_name || 'شركة';
+    }
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'غير محدد';
+  }, [customer]);
+
+  const stats = useMemo(() => {
+    const activeContracts = contracts.filter(c => c.status === 'active').length;
+    const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalContractAmount = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.contract_amount || 0), 0);
+    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.total_paid || 0), 0);
+    const outstandingAmount = totalContractAmount - totalPaid;
+    const paidOnTime = payments.filter(p => p.payment_status === 'completed').length;
+    const commitmentRate = payments.length > 0 ? Math.round((paidOnTime / payments.length) * 100) : 100;
+
+    return { activeContracts, outstandingAmount, commitmentRate, totalPayments };
+  }, [contracts, payments]);
+
+  const getInitials = (name: string): string => {
+    if (!name || name === 'غير محدد') return '؟';
+    const names = name.split(' ').filter(n => n.length > 0);
+    return names.slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Handlers
+  const handleBack = () => navigate('/customers');
+  const handleOpenInNewWindow = () => window.open(`/customers/${customerId}/preview`, '_blank');
+  const handleEdit = () => setIsEditDialogOpen(true);
+  const handlePrint = () => window.print();
+
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !customerId) return;
+    const file = files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'خطأ', description: 'حجم الملف كبير جداً', variant: 'destructive' });
+      return;
+    }
+    uploadDocument.mutate({
+      customer_id: customerId,
+      document_type: selectedDocumentType,
+      document_name: file.name,
+      file: file,
+    });
+    event.target.value = '';
+  }, [customerId, selectedDocumentType, uploadDocument, toast]);
+
+  // Loading & Error States
+  if (isAuthenticating || !companyId || loadingCustomer) {
+    return <PageSkeletonFallback />;
+  }
+
+  if (customerError || !customer) {
+    return (
+      <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full border border-neutral-200 shadow-lg text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
+          <p className="text-neutral-500 mb-4">لم يتم العثور على هذا العميل</p>
+          <Button onClick={handleBack} className="bg-coral-500 hover:bg-coral-600">
+            العودة للعملاء
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-100">
+      {/* Header Bar */}
+      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 text-neutral-600 hover:text-neutral-900">
+                <ArrowRight className="w-4 h-4" />
+                العودة للقائمة
+              </Button>
+              <div className="h-5 w-px bg-neutral-200" />
+              <Button variant="ghost" size="sm" onClick={handleOpenInNewWindow} className="gap-2 text-neutral-600 hover:text-neutral-900">
+                <ExternalLink className="w-4 h-4" />
+                فتح في نافذة جديدة
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-neutral-500">نظرة عامة</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    خيارات
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleEdit} className="gap-2">
+                    <Edit3 className="w-4 h-4" />
+                    تعديل البيانات
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrint} className="gap-2">
+                    <Printer className="w-4 h-4" />
+                    طباعة
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2">
+                    <Share2 className="w-4 h-4" />
+                    مشاركة
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2 text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                    حذف العميل
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button className="bg-coral-500 hover:bg-coral-600 text-white gap-2">
+                <Edit3 className="w-4 h-4" />
+                تعديل
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Profile Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-6 mb-6 border border-neutral-200 shadow-sm"
+        >
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Avatar Section */}
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <Avatar className="w-24 h-24 rounded-full border-4 border-coral-100">
+                  <AvatarFallback className="bg-gradient-to-br from-coral-500 to-coral-600 text-white text-2xl font-bold">
+                    {getInitials(customerName)}
+                  </AvatarFallback>
+                </Avatar>
+                {customer.is_active && (
+                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white" />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-neutral-900">{customerName}</h1>
+                  {customer.is_vip && (
+                    <Badge className="bg-amber-100 text-amber-700 gap-1">
+                      <Star className="w-3 h-3" />
+                      VIP
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-neutral-500 text-sm">{customer.job_title || 'عميل'}</p>
+              </div>
+            </div>
+
+            {/* Quick Info */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 lg:pr-6 lg:border-r border-neutral-200">
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <Cake className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">تاريخ الميلاد</p>
+                  <p className="text-sm font-semibold text-neutral-900">{customer.date_of_birth || '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">رقم الهاتف</p>
+                  <p className="text-sm font-semibold text-neutral-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">البريد الإلكتروني</p>
+                  <p className="text-sm font-semibold text-neutral-900 truncate max-w-[180px]">{customer.email || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'العقود النشطة', value: stats.activeContracts, icon: FileText, color: 'blue', suffix: '' },
+            { label: 'المبلغ المستحق', value: stats.outstandingAmount, icon: Wallet, color: 'amber', suffix: ' ر.ق' },
+            { label: 'نسبة الالتزام', value: stats.commitmentRate, icon: TrendingUp, color: 'green', suffix: '%' },
+            { label: 'إجمالي المدفوعات', value: stats.totalPayments, icon: CreditCard, color: 'purple', suffix: ' ر.ق' },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={cn(
+                "bg-white rounded-2xl p-5 border border-neutral-200 hover:shadow-lg transition-all",
+                `border-r-4 border-r-${stat.color}-500`
+              )}
+              style={{ borderRightColor: stat.color === 'blue' ? '#3b82f6' : stat.color === 'amber' ? '#f59e0b' : stat.color === 'green' ? '#22c55e' : '#a855f7' }}
+            >
+              <div className={cn(
+                "w-11 h-11 rounded-xl flex items-center justify-center mb-3",
+                stat.color === 'blue' ? 'bg-blue-100' : stat.color === 'amber' ? 'bg-amber-100' : stat.color === 'green' ? 'bg-green-100' : 'bg-purple-100'
+              )}>
+                <stat.icon className={cn(
+                  "w-5 h-5",
+                  stat.color === 'blue' ? 'text-blue-600' : stat.color === 'amber' ? 'text-amber-600' : stat.color === 'green' ? 'text-green-600' : 'text-purple-600'
+                )} />
+              </div>
+              <p className={cn(
+                "text-2xl font-bold mb-1",
+                stat.color === 'blue' ? 'text-blue-600' : stat.color === 'amber' ? 'text-amber-600' : stat.color === 'green' ? 'text-green-600' : 'text-purple-600'
+              )}>
+                {stat.value.toLocaleString()}{stat.suffix}
+              </p>
+              <p className="text-xs text-neutral-500">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Tabs Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-2xl border border-neutral-200 overflow-hidden"
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="w-full justify-start bg-neutral-50 border-b border-neutral-200 rounded-none h-auto p-0 gap-0">
+              {[
+                { value: 'info', label: 'معلومات العميل', icon: User },
+                { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
+                { value: 'contracts', label: 'العقود', icon: FileText },
+                { value: 'payments', label: 'المدفوعات', icon: CreditCard },
+                { value: 'notes', label: 'الملاحظات', icon: MessageSquare },
+              ].map((tab) => (
+                <TabsTrigger 
+                  key={tab.value}
+                  value={tab.value} 
+                  className={cn(
+                    "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white",
+                    "data-[state=active]:border-coral-500 data-[state=active]:text-coral-600",
+                    "data-[state=inactive]:border-transparent data-[state=inactive]:text-neutral-500 hover:text-neutral-900"
+                  )}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <div className="p-6">
+              <TabsContent value="info" className="mt-0">
+                <PersonalInfoTab customer={customer} />
+              </TabsContent>
+              <TabsContent value="phones" className="mt-0">
+                <PhoneNumbersTab customer={customer} />
+              </TabsContent>
+              <TabsContent value="contracts" className="mt-0">
+                <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
+              </TabsContent>
+              <TabsContent value="payments" className="mt-0">
+                <PaymentsTab payments={payments} navigate={navigate} />
+              </TabsContent>
+              <TabsContent value="notes" className="mt-0">
+                <NotesTab customer={customer} />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </motion.div>
+
+        {/* Attachments Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-6 bg-white rounded-2xl p-6 border border-neutral-200"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-neutral-900">المرفقات</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4" />
+              رفع مستند
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileSelect}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            />
+          </div>
+
+          {documents.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {documents.map((doc: CustomerDocument, index: number) => (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="group relative bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden hover:border-coral-300 hover:shadow-md transition-all cursor-pointer"
+                >
+                  <div className="aspect-[4/3] bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
+                    <FileImage className="w-10 h-10 text-neutral-400" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-medium text-neutral-900 truncate">{doc.document_name}</p>
+                    <p className="text-[10px] text-neutral-500 mt-1">
+                      {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-4">
+              {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
+                <div 
+                  key={index}
+                  className="aspect-[4/3] bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-coral-300 hover:text-coral-500 transition-colors cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FileImage className="w-8 h-8 mb-2" />
+                  <p className="text-xs">{placeholder}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </main>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-coral-600" />
+              تعديل بيانات العميل
+            </DialogTitle>
+          </DialogHeader>
+          {customer && (
+            <EnhancedCustomerForm
+              mode="edit"
+              editingCustomer={customer}
+              onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: ['customer-details-new', customerId, companyId] });
+                setIsEditDialogOpen(false);
+                toast({ title: 'تم التحديث بنجاح' });
+              }}
+              onCancel={() => setIsEditDialogOpen(false)}
+              context="standalone"
+              integrationMode="dialog"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default CustomerDetailsPageNew;
+

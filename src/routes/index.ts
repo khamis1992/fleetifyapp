@@ -26,6 +26,7 @@ const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
+const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
@@ -283,6 +284,18 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Customer Details',
     description: 'Customer details page',
+    group: 'customers',
+    priority: 13,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/customers/:customerId/preview',
+    component: CustomerDetailsPageNew,
+    lazy: true,
+    exact: true,
+    title: 'Customer Details Preview',
+    description: 'New customer details page design preview',
     group: 'customers',
     priority: 13,
     protected: true,
