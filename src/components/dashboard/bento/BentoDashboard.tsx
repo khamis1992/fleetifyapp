@@ -6,6 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import {
   Car,
   FileText,
@@ -40,21 +46,26 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 // ===== FAB Menu Component =====
-const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const navigate = useNavigate();
+interface FABMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onActionSelect: (actionId: string) => void;
+}
 
+const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) => {
   const actions = [
-    { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'bg-green-100 text-green-600', href: '/finance/payments/register' },
-    { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'bg-blue-100 text-blue-600', href: '/contracts' },
-    { id: 'search', label: 'البحث', icon: Search, color: 'bg-amber-100 text-amber-600', href: '/search' },
-    { id: 'purchase', label: 'إنشاء أمر شراء', icon: ShoppingCart, color: 'bg-orange-100 text-orange-600', href: '/finance/purchase-orders' },
+    { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'bg-green-100 text-green-600' },
+    { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'bg-blue-100 text-blue-600' },
+    { id: 'search', label: 'البحث', icon: Search, color: 'bg-amber-100 text-amber-600' },
+    { id: 'purchase', label: 'إنشاء أمر شراء', icon: ShoppingCart, color: 'bg-orange-100 text-orange-600' },
   ];
 
-  const handleAction = (href: string) => {
+  const handleAction = (actionId: string) => {
     onClose();
-    navigate(href);
+    onActionSelect(actionId);
   };
 
   return (
@@ -86,7 +97,7 @@ const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0, transition: { delay: index * 0.05 } }}
                   exit={{ opacity: 0, x: -20 }}
-                  onClick={() => handleAction(action.href)}
+                  onClick={() => handleAction(action.id)}
                   className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:translate-x-1 min-w-[160px]"
                 >
                   <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', action.color)}>
@@ -179,6 +190,7 @@ const BentoDashboard: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const { data: stats } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
   // Fleet Status Query
   const { data: fleetStatus } = useQuery({
@@ -283,12 +295,36 @@ const BentoDashboard: React.FC = () => {
     }
     return days;
   };
-
   const weekDays = getWeekDays();
+
+  // Dialog handlers
+  const handleCreateContract = async (data: any) => {
+    try {
+      // TODO: Implement contract creation logic
+      toast.success('تم إنشاء العقد بنجاح');
+      setSelectedAction(null);
+    } catch (error) {
+      toast.error('حدث خطأ في إنشاء العقد');
+    }
+  };
+
+  const handleRegisterPayment = async (data: any) => {
+    try {
+      // TODO: Implement payment registration logic
+      toast.success('تم تسجيل الدفعة بنجاح');
+      setSelectedAction(null);
+    } catch (error) {
+      toast.error('حدث خطأ في تسجيل الدفعة');
+    }
+  };
+
+  return (andleActionSelect = (actionId: string) => {
+    setSelectedAction(actionId);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-150 p-5">
-      <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} />
+      <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} onActionSelect={handleActionSelect} />
 
       {/* Header */}
       <header className="flex items-center justify-between mb-5">
@@ -625,6 +661,100 @@ const BentoDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Contract Dialog */}
+      <Dialog open={selectedAction === 'contract'} onOpenChange={(open) => !open && setSelectedAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إنشاء عقد جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>نوع العقد</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر نوع العقد" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">إيجار يومي</SelectItem>
+                  <SelectItem value="weekly">إيجار أسبوعي</SelectItem>
+                  <SelectItem value="monthly">إيجار شهري</SelectItem>
+                  <SelectItem value="yearly">إيجار سنوي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
+              <Button onClick={() => handleCreateContract({})} className="flex-1">إنشاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Register Payment Dialog */}
+      <Dialog open={selectedAction === 'payment'} onOpenChange={(open) => !open && setSelectedAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تسجيل دفعة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>رقم العقد</Label>
+              <Input placeholder="اختر رقم العقد" />
+            </div>
+            <div>
+              <Label>مبلغ الدفعة</Label>
+              <Input type="number" placeholder="ادخل مبلغ الدفعة" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
+              <Button onClick={() => handleRegisterPayment({})} className="flex-1">تسجيل</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Search Dialog */}
+      <Dialog open={selectedAction === 'search'} onOpenChange={(open) => !open && setSelectedAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>بحث متقدم</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>ابحث عن</Label>
+              <Input placeholder="ابحث عن عقد أو عميل أو مركبة" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
+              <Button className="flex-1">بحث</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Purchase Order Dialog */}
+      <Dialog open={selectedAction === 'purchase'} onOpenChange={(open) => !open && setSelectedAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إنشاء أمر شراء</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>البند</Label>
+              <Input placeholder="ادخل اسم البند" />
+            </div>
+            <div>
+              <Label>الكمية</Label>
+              <Input type="number" placeholder="ادخل الكمية" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
+              <Button className="flex-1">إنشاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
