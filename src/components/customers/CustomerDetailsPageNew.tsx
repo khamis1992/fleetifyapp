@@ -399,6 +399,204 @@ const NotesTab = ({ customer }: { customer: any }) => {
   );
 };
 
+// تبويب المخالفات المرورية
+const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[], navigate: any, isLoading: boolean }) => {
+  if (isLoading) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-center py-12"
+      >
+        <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+        <span className="mr-2 text-neutral-500">جاري تحميل المخالفات...</span>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">المخالفات المرورية</h4>
+          <p className="text-xs text-neutral-500">{violations.length} مخالفة مسجلة</p>
+        </div>
+      </div>
+
+      {violations.length > 0 ? (
+        <div className="space-y-4">
+          {violations.map((violation: any, index: number) => (
+            <motion.div
+              key={violation.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-red-200 hover:shadow-md transition-all"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    violation.status === 'paid' 
+                      ? "bg-green-100" 
+                      : violation.status === 'pending' 
+                        ? "bg-amber-100" 
+                        : "bg-red-100"
+                  )}>
+                    <AlertTriangle className={cn(
+                      "w-6 h-6",
+                      violation.status === 'paid' 
+                        ? "text-green-600" 
+                        : violation.status === 'pending' 
+                          ? "text-amber-600" 
+                          : "text-red-600"
+                    )} />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-neutral-900">{violation.violation_type}</h5>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      رقم المخالفة: {violation.violation_number}
+                    </p>
+                    {violation.vehicle && (
+                      <p className="text-xs text-neutral-500">
+                        المركبة: {violation.vehicle.make} {violation.vehicle.model} - {violation.vehicle.plate_number}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <Badge className={cn(
+                  "text-xs px-3",
+                  violation.status === 'paid' 
+                    ? "bg-green-100 text-green-700" 
+                    : violation.status === 'pending' 
+                      ? "bg-amber-100 text-amber-700" 
+                      : "bg-red-100 text-red-700"
+                )}>
+                  {violation.status === 'paid' ? 'مدفوعة' : violation.status === 'pending' ? 'قيد السداد' : 'غير مدفوعة'}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-neutral-100">
+                <div className="p-2 bg-neutral-50 rounded-lg">
+                  <p className="text-xs text-neutral-500 mb-1">تاريخ المخالفة</p>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {violation.violation_date 
+                      ? format(new Date(violation.violation_date), 'dd/MM/yyyy', { locale: ar }) 
+                      : '-'}
+                  </p>
+                </div>
+                <div className="p-2 bg-neutral-50 rounded-lg">
+                  <p className="text-xs text-neutral-500 mb-1">الموقع</p>
+                  <p className="text-sm font-semibold text-neutral-900">{violation.location || '-'}</p>
+                </div>
+                <div className="p-2 bg-neutral-50 rounded-lg">
+                  <p className="text-xs text-neutral-500 mb-1">المبلغ</p>
+                  <p className="text-sm font-bold text-red-600">{violation.fine_amount?.toLocaleString()} ر.ق</p>
+                </div>
+                <div className="p-2 bg-neutral-50 rounded-lg">
+                  <p className="text-xs text-neutral-500 mb-1">الجهة المصدرة</p>
+                  <p className="text-sm font-semibold text-neutral-900">{violation.issuing_authority || '-'}</p>
+                </div>
+              </div>
+
+              {violation.violation_description && (
+                <div className="mt-4 pt-4 border-t border-neutral-100">
+                  <p className="text-xs text-neutral-500 mb-1">الوصف</p>
+                  <p className="text-sm text-neutral-700">{violation.violation_description}</p>
+                </div>
+              )}
+
+              {violation.contract && (
+                <div className="mt-4 pt-4 border-t border-neutral-100">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => navigate(`/contracts/${violation.contract.contract_number}`)}
+                  >
+                    <FileText className="w-4 h-4" />
+                    عرض العقد #{violation.contract.contract_number}
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <AlertTriangle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">لا توجد مخالفات مرورية مسجلة</p>
+          <p className="text-neutral-400 text-sm mt-1">لم يتم تسجيل أي مخالفات على عقود هذا العميل</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب سجل النشاط
+const ActivityTab = ({ customerId, companyId }: { customerId: string, companyId: string }) => {
+  // جلب سجل النشاط من العمليات المختلفة
+  const activities = useMemo(() => {
+    // سيتم ملء هذا من البيانات الفعلية لاحقاً
+    return [];
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">سجل النشاط</h4>
+          <p className="text-xs text-neutral-500">آخر الأنشطة والتحديثات</p>
+        </div>
+      </div>
+
+      {activities.length > 0 ? (
+        <div className="relative">
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-neutral-200" />
+          <div className="space-y-4">
+            {activities.map((activity: any, index: number) => (
+              <motion.div
+                key={activity.id || index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="relative pr-14"
+              >
+                <div className="absolute right-4 w-4 h-4 rounded-full bg-coral-500 border-2 border-white shadow" />
+                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-neutral-900">{activity.description}</p>
+                      <p className="text-xs text-neutral-500 mt-1">{activity.date}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {activity.type}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <Activity className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">لا توجد أنشطة مسجلة حتى الآن</p>
+          <p className="text-neutral-400 text-sm mt-1">سيظهر سجل النشاط هنا عند إجراء أي عمليات</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 // ===== Main Component =====
 const CustomerDetailsPageNew = () => {
   const { customerId } = useParams<{ customerId: string }>();
@@ -467,6 +665,30 @@ const CustomerDetailsPageNew = () => {
 
   const { data: documents = [] } = useCustomerDocuments(customerId);
   const uploadDocument = useUploadCustomerDocument();
+
+  // جلب المخالفات المرورية
+  const { data: trafficViolations = [], isLoading: loadingViolations } = useQuery({
+    queryKey: ['customer-traffic-violations-new', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select(`
+          *,
+          contract:contracts!contract_id(id, contract_number, customer_id),
+          vehicle:vehicles!vehicle_id(id, make, model, plate_number)
+        `)
+        .eq('company_id', companyId)
+        .order('violation_date', { ascending: false });
+      if (error) {
+        console.error('Error fetching traffic violations:', error);
+        return [];
+      }
+      // تصفية المخالفات المرتبطة بالعميل
+      return data?.filter(v => v.contract?.customer_id === customerId) || [];
+    },
+    enabled: !!customerId && !!companyId,
+  });
 
   // Computed
   const customerName = useMemo(() => {
@@ -668,43 +890,104 @@ const CustomerDetailsPageNew = () => {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - التصميم المحدث */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[
-            { label: 'العقود النشطة', value: stats.activeContracts, icon: FileText, color: 'blue', suffix: '' },
-            { label: 'المبلغ المستحق', value: stats.outstandingAmount, icon: Wallet, color: 'amber', suffix: ' ر.ق' },
-            { label: 'نسبة الالتزام', value: stats.commitmentRate, icon: TrendingUp, color: 'green', suffix: '%' },
-            { label: 'إجمالي المدفوعات', value: stats.totalPayments, icon: CreditCard, color: 'purple', suffix: ' ر.ق' },
-          ].map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
-                "bg-white rounded-2xl p-5 border border-neutral-200 hover:shadow-lg transition-all",
-                `border-r-4 border-r-${stat.color}-500`
-              )}
-              style={{ borderRightColor: stat.color === 'blue' ? '#3b82f6' : stat.color === 'amber' ? '#f59e0b' : stat.color === 'green' ? '#22c55e' : '#a855f7' }}
-            >
-              <div className={cn(
-                "w-11 h-11 rounded-xl flex items-center justify-center mb-3",
-                stat.color === 'blue' ? 'bg-blue-100' : stat.color === 'amber' ? 'bg-amber-100' : stat.color === 'green' ? 'bg-green-100' : 'bg-purple-100'
-              )}>
-                <stat.icon className={cn(
-                  "w-5 h-5",
-                  stat.color === 'blue' ? 'text-blue-600' : stat.color === 'amber' ? 'text-amber-600' : stat.color === 'green' ? 'text-green-600' : 'text-purple-600'
-                )} />
+          {/* بطاقة العقود النشطة */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+          >
+            {/* الحد الملون على اليسار */}
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-blue-500 rounded-full" />
+            
+            {/* الأيقونة في الأعلى يمين */}
+            <div className="flex justify-end mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-7 h-7 text-blue-600" />
               </div>
-              <p className={cn(
-                "text-2xl font-bold mb-1",
-                stat.color === 'blue' ? 'text-blue-600' : stat.color === 'amber' ? 'text-amber-600' : stat.color === 'green' ? 'text-green-600' : 'text-purple-600'
-              )}>
-                {stat.value.toLocaleString()}{stat.suffix}
+            </div>
+            
+            {/* الرقم والوصف */}
+            <div className="text-center">
+              <p className="text-4xl font-black text-blue-600 mb-2">
+                {stats.activeContracts}
               </p>
-              <p className="text-xs text-neutral-500">{stat.label}</p>
-            </motion.div>
-          ))}
+              <p className="text-sm font-medium text-neutral-600">العقود النشطة</p>
+            </div>
+          </motion.div>
+
+          {/* بطاقة المبلغ المستحق */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+          >
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-amber-500 rounded-full" />
+            
+            <div className="flex justify-end mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Wallet className="w-7 h-7 text-amber-600" />
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-4xl font-black text-amber-600 mb-2">
+                {stats.outstandingAmount.toLocaleString()}
+                <span className="text-xl font-bold mr-1">ر.ق</span>
+              </p>
+              <p className="text-sm font-medium text-neutral-600">المبلغ المستحق</p>
+            </div>
+          </motion.div>
+
+          {/* بطاقة نسبة الالتزام */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+          >
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-green-500 rounded-full" />
+            
+            <div className="flex justify-end mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-7 h-7 text-green-600" />
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-4xl font-black text-green-600 mb-2">
+                {stats.commitmentRate}%
+              </p>
+              <p className="text-sm font-medium text-neutral-600">نسبة الالتزام</p>
+            </div>
+          </motion.div>
+
+          {/* بطاقة إجمالي المدفوعات */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+          >
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-purple-500 rounded-full" />
+            
+            <div className="flex justify-end mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CreditCard className="w-7 h-7 text-purple-600" />
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-4xl font-black text-purple-600 mb-2">
+                {stats.totalPayments.toLocaleString()}
+                <span className="text-xl font-bold mr-1">ر.ق</span>
+              </p>
+              <p className="text-sm font-medium text-neutral-600">إجمالي المدفوعات</p>
+            </div>
+          </motion.div>
         </div>
 
         {/* Tabs Section */}
@@ -715,25 +998,32 @@ const CustomerDetailsPageNew = () => {
           className="bg-white rounded-2xl border border-neutral-200 overflow-hidden"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start bg-neutral-50 border-b border-neutral-200 rounded-none h-auto p-0 gap-0">
+            <TabsList className="w-full justify-start bg-neutral-50 border-b border-neutral-200 rounded-none h-auto p-0 gap-0 overflow-x-auto">
               {[
                 { value: 'info', label: 'معلومات العميل', icon: User },
                 { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
                 { value: 'contracts', label: 'العقود', icon: FileText },
                 { value: 'payments', label: 'المدفوعات', icon: CreditCard },
+                { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
+                { value: 'activity', label: 'سجل النشاط', icon: Activity },
                 { value: 'notes', label: 'الملاحظات', icon: MessageSquare },
               ].map((tab) => (
                 <TabsTrigger 
                   key={tab.value}
                   value={tab.value} 
                   className={cn(
-                    "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white",
+                    "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white whitespace-nowrap",
                     "data-[state=active]:border-coral-500 data-[state=active]:text-coral-600",
                     "data-[state=inactive]:border-transparent data-[state=inactive]:text-neutral-500 hover:text-neutral-900"
                   )}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
+                  {'badge' in tab && tab.badge && (
+                    <Badge variant="destructive" className="mr-1 text-xs h-5 min-w-[20px] px-1.5">
+                      {tab.badge}
+                    </Badge>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -750,6 +1040,12 @@ const CustomerDetailsPageNew = () => {
               </TabsContent>
               <TabsContent value="payments" className="mt-0">
                 <PaymentsTab payments={payments} navigate={navigate} />
+              </TabsContent>
+              <TabsContent value="violations" className="mt-0">
+                <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
+              </TabsContent>
+              <TabsContent value="activity" className="mt-0">
+                <ActivityTab customerId={customerId || ''} companyId={companyId || ''} />
               </TabsContent>
               <TabsContent value="notes" className="mt-0">
                 <NotesTab customer={customer} />

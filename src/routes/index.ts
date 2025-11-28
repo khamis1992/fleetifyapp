@@ -25,6 +25,7 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
+const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
@@ -278,24 +279,36 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/customers/preview',
+    component: CustomersPageNew,
+    lazy: true,
+    exact: true,
+    title: 'Customers Preview',
+    description: 'New customer management design preview',
+    group: 'customers',
+    priority: 12,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/customers/:customerId',
-    component: CustomerDetailsPage,
+    component: CustomerDetailsPageNew,
     lazy: true,
     exact: true,
     title: 'Customer Details',
-    description: 'Customer details page',
+    description: 'Customer details page - New Bento Style Design',
     group: 'customers',
     priority: 13,
     protected: true,
     layout: 'bento',
   },
   {
-    path: '/customers/:customerId/preview',
-    component: CustomerDetailsPageNew,
+    path: '/customers/:customerId/classic',
+    component: CustomerDetailsPage,
     lazy: true,
     exact: true,
-    title: 'Customer Details Preview',
-    description: 'New customer details page design preview',
+    title: 'Customer Details Classic',
+    description: 'Classic customer details page design',
     group: 'customers',
     priority: 13,
     protected: true,
