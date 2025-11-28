@@ -207,12 +207,18 @@ function CustomerRow({
   interactions: FollowUp[];
   onQuickUpdate: (id: string, action: 'complete' | 'postpone') => void;
 }) {
-  // Get customer names
+  // Get customer names - prioritize Arabic, then English, then code
   const getNameAr = () => {
+    // أولاً: الاسم العربي
     if (customer.first_name_ar || customer.last_name_ar) {
       return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     }
-    return customer.customer_code || 'عميل';
+    // ثانياً: الاسم الإنجليزي
+    if (customer.first_name || customer.last_name) {
+      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    // ثالثاً: كود العميل
+    return customer.customer_code || 'عميل غير معرف';
   };
 
   const getNameEn = () => {
