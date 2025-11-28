@@ -82,8 +82,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface Customer {
   id: string;
   customer_code: string;
-  first_name_ar: string;
-  last_name_ar: string;
+  first_name?: string;
+  last_name?: string;
+  first_name_ar?: string;
+  last_name_ar?: string;
   phone: string;
   email?: string;
   company_id: string;
@@ -204,14 +206,34 @@ const CustomerRow = ({
   customerFollowUps: FollowUp[];
   onQuickUpdate: (id: string, action: 'complete' | 'postpone') => void;
 }) => {
-  const customerName = customer.first_name_ar && customer.last_name_ar
-    ? `${customer.first_name_ar} ${customer.last_name_ar}`
-    : customer.first_name_ar || customer.last_name_ar || customer.customer_code;
+  // Get customer name with fallback: Arabic name -> English name -> customer code
+  const getCustomerName = () => {
+    // Try Arabic name first
+    if (customer.first_name_ar || customer.last_name_ar) {
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
+    }
+    // Fallback to English name
+    if (customer.first_name || customer.last_name) {
+      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    // Fallback to customer code
+    return customer.customer_code || 'عميل';
+  };
+  
+  const customerName = getCustomerName();
 
   const getInitials = () => {
-    const first = customer.first_name_ar?.[0] || '';
-    const last = customer.last_name_ar?.[0] || '';
-    return `${first}${last}` || 'ع';
+    // Try Arabic first
+    const firstAr = customer.first_name_ar?.[0] || '';
+    const lastAr = customer.last_name_ar?.[0] || '';
+    if (firstAr || lastAr) return `${firstAr}${lastAr}`;
+    
+    // Fallback to English
+    const firstEn = customer.first_name?.[0] || '';
+    const lastEn = customer.last_name?.[0] || '';
+    if (firstEn || lastEn) return `${firstEn}${lastEn}`.toUpperCase();
+    
+    return 'ع';
   };
 
   const daysToExpiry = contract ? differenceInDays(new Date(contract.end_date), new Date()) : null;
@@ -524,7 +546,7 @@ export default function CustomerCRMNew() {
       const { data, error } = await supabase
         .from('customers')
         .select(`
-          id, customer_code, first_name_ar, last_name_ar, phone, email,
+          id, customer_code, first_name, last_name, first_name_ar, last_name_ar, phone, email,
           company_id, is_active, created_at,
           contracts!inner (id, status)
         `)
@@ -1077,7 +1099,13 @@ export default function CustomerCRMNew() {
               إضافة متابعة جديدة
             </DialogTitle>
             <DialogDescription>
-              {selectedCustomer && `للعميل: ${selectedCustomer.first_name_ar} ${selectedCustomer.last_name_ar}`}
+              {selectedCustomer && `للعميل: ${
+                (selectedCustomer.first_name_ar || selectedCustomer.last_name_ar)
+                  ? `${selectedCustomer.first_name_ar || ''} ${selectedCustomer.last_name_ar || ''}`.trim()
+                  : (selectedCustomer.first_name || selectedCustomer.last_name)
+                    ? `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim()
+                    : selectedCustomer.customer_code || 'عميل'
+              }`}
             </DialogDescription>
           </DialogHeader>
 
@@ -1137,9 +1165,14 @@ export default function CustomerCRMNew() {
           open={callDialogOpen}
           onOpenChange={setCallDialogOpen}
           customerName={
-            callingCustomer.first_name_ar && callingCustomer.last_name_ar
-              ? `${callingCustomer.first_name_ar} ${callingCustomer.last_name_ar}`
-              : callingCustomer.first_name_ar || callingCustomer.last_name_ar || callingCustomer.customer_code || 'عميل'
+            // Arabic name first
+            (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
+              ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
+              // English name fallback
+              : (callingCustomer.first_name || callingCustomer.last_name)
+                ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
+                // Customer code fallback
+                : callingCustomer.customer_code || 'عميل'
           }
           customerPhone={callingCustomer.phone || ''}
           onSaveCall={handleSaveCall}
