@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -6,12 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { ContractWizard } from '@/components/contracts/ContractWizard';
 import {
   Car,
   FileText,
@@ -46,7 +43,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 
 // ===== FAB Menu Component =====
 interface FABMenuProps {
@@ -190,7 +186,7 @@ const BentoDashboard: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const { data: stats } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [showContractWizard, setShowContractWizard] = useState(false);
 
   // Fleet Status Query
   const { data: fleetStatus } = useQuery({
@@ -297,30 +293,37 @@ const BentoDashboard: React.FC = () => {
   };
   const weekDays = getWeekDays();
 
-  // Dialog handlers
-  const handleCreateContract = async (data: any) => {
-    try {
-      // TODO: Implement contract creation logic
-      toast.success('تم إنشاء العقد بنجاح');
-      setSelectedAction(null);
-    } catch (error) {
-      toast.error('حدث خطأ في إنشاء العقد');
-    }
-  };
+  // Function to trigger QuickSearch (Ctrl+K)
+  const triggerQuickSearch = useCallback(() => {
+    const event = new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true,
+    });
+    document.dispatchEvent(event);
+  }, []);
 
-  const handleRegisterPayment = async (data: any) => {
-    try {
-      // TODO: Implement payment registration logic
-      toast.success('تم تسجيل الدفعة بنجاح');
-      setSelectedAction(null);
-    } catch (error) {
-      toast.error('حدث خطأ في تسجيل الدفعة');
+  // Handle FAB action selection
+  const handleActionSelect = useCallback((actionId: string) => {
+    switch (actionId) {
+      case 'payment':
+        // Navigate to quick payment page
+        navigate('/finance/payments/quick');
+        break;
+      case 'contract':
+        // Open contract wizard without navigation
+        setShowContractWizard(true);
+        break;
+      case 'search':
+        // Trigger QuickSearch dialog
+        triggerQuickSearch();
+        break;
+      case 'purchase':
+        // Navigate to purchase orders page
+        navigate('/finance/purchase-orders');
+        break;
     }
-  };
-
-  const handleActionSelect = (actionId: string) => {
-    setSelectedAction(actionId);
-  };
+  }, [navigate, triggerQuickSearch]);
 
   return (
     <div className="min-h-screen bg-neutral-150 p-5">
@@ -662,99 +665,11 @@ const BentoDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Create Contract Dialog */}
-      <Dialog open={selectedAction === 'contract'} onOpenChange={(open) => !open && setSelectedAction(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>إنشاء عقد جديد</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>نوع العقد</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر نوع العقد" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">إيجار يومي</SelectItem>
-                  <SelectItem value="weekly">إيجار أسبوعي</SelectItem>
-                  <SelectItem value="monthly">إيجار شهري</SelectItem>
-                  <SelectItem value="yearly">إيجار سنوي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
-              <Button onClick={() => handleCreateContract({})} className="flex-1">إنشاء</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Register Payment Dialog */}
-      <Dialog open={selectedAction === 'payment'} onOpenChange={(open) => !open && setSelectedAction(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>تسجيل دفعة</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>رقم العقد</Label>
-              <Input placeholder="اختر رقم العقد" />
-            </div>
-            <div>
-              <Label>مبلغ الدفعة</Label>
-              <Input type="number" placeholder="ادخل مبلغ الدفعة" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
-              <Button onClick={() => handleRegisterPayment({})} className="flex-1">تسجيل</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Search Dialog */}
-      <Dialog open={selectedAction === 'search'} onOpenChange={(open) => !open && setSelectedAction(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>بحث متقدم</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>ابحث عن</Label>
-              <Input placeholder="ابحث عن عقد أو عميل أو مركبة" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
-              <Button className="flex-1">بحث</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Purchase Order Dialog */}
-      <Dialog open={selectedAction === 'purchase'} onOpenChange={(open) => !open && setSelectedAction(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>إنشاء أمر شراء</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>البند</Label>
-              <Input placeholder="ادخل اسم البند" />
-            </div>
-            <div>
-              <Label>الكمية</Label>
-              <Input type="number" placeholder="ادخل الكمية" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelectedAction(null)}>إلغاء</Button>
-              <Button className="flex-1">إنشاء</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Contract Wizard */}
+      <ContractWizard
+        open={showContractWizard}
+        onOpenChange={setShowContractWizard}
+      />
     </div>
   );
 };

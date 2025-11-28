@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Plus, CreditCard, FileText, Search, ShoppingCart, X } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { ContractWizard } from '@/components/contracts/ContractWizard';
 
 interface QuickAction {
   label: string;
@@ -22,6 +23,17 @@ interface QuickAction {
 export const QuickActionBar: React.FC = () => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showContractWizard, setShowContractWizard] = useState(false);
+
+  // Function to trigger QuickSearch (Ctrl+K)
+  const triggerQuickSearch = useCallback(() => {
+    const event = new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true,
+    });
+    document.dispatchEvent(event);
+  }, []);
 
   const quickActions: QuickAction[] = [
     {
@@ -37,7 +49,7 @@ export const QuickActionBar: React.FC = () => {
       label: 'إنشاء عقد',
       icon: FileText,
       action: () => {
-        navigate('/contracts', { state: { openCreate: true } });
+        setShowContractWizard(true);
         setIsExpanded(false);
       },
       color: 'text-blue-500',
@@ -46,7 +58,7 @@ export const QuickActionBar: React.FC = () => {
       label: 'البحث',
       icon: Search,
       action: () => {
-        navigate('/search');
+        triggerQuickSearch();
         setIsExpanded(false);
       },
       color: 'text-purple-500',
@@ -160,6 +172,12 @@ export const QuickActionBar: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Contract Wizard */}
+      <ContractWizard
+        open={showContractWizard}
+        onOpenChange={setShowContractWizard}
+      />
     </>
   );
 };

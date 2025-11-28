@@ -23,6 +23,11 @@ import {
   FileCheck,
   PanelLeftClose,
   PanelLeft,
+  PhoneCall,
+  UserCheck,
+  Clock,
+  DollarSign,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,21 +47,34 @@ const navigation: NavItem[] = [
     href: '/dashboard',
   },
   {
+    id: 'customers',
+    label: 'إدارة العملاء',
+    icon: Users,
+    children: [
+      { id: 'customers-list', label: 'قائمة العملاء', href: '/customers' },
+      { id: 'customers-crm', label: 'إدارة العلاقات (CRM)', href: '/customers/crm' },
+    ],
+  },
+  {
     id: 'fleet',
     label: 'إدارة الأسطول',
     icon: Car,
     children: [
       { id: 'vehicles', label: 'المركبات', href: '/fleet' },
-      { id: 'contracts', label: 'العقود', href: '/contracts' },
       { id: 'maintenance', label: 'الصيانة', href: '/fleet/maintenance' },
       { id: 'reservations', label: 'الحجوزات', href: '/fleet/reservations' },
+      { id: 'violations', label: 'المخالفات المرورية', href: '/fleet/traffic-violations' },
+      { id: 'fleet-reports', label: 'تقارير الأسطول', href: '/fleet/reports' },
     ],
   },
   {
-    id: 'customers',
-    label: 'العملاء',
-    icon: Users,
-    href: '/customers',
+    id: 'quotations-contracts',
+    label: 'العروض والعقود',
+    icon: FileText,
+    children: [
+      { id: 'quotations', label: 'عروض الأسعار', href: '/quotations' },
+      { id: 'contracts', label: 'العقود', href: '/contracts' },
+    ],
   },
   {
     id: 'finance',
@@ -64,10 +82,32 @@ const navigation: NavItem[] = [
     icon: Banknote,
     children: [
       { id: 'finance-center', label: 'المركز المالي', href: '/finance' },
-      { id: 'payments-register', label: 'تسجيل دفعة', href: '/finance/payments/register' },
+      { id: 'finance-invoices', label: 'الفواتير', href: '/finance/invoices' },
+      { id: 'payments-register', label: 'تسجيل دفعة', href: '/finance/payments/quick' },
       { id: 'payments-tracking', label: 'تتبع المدفوعات', href: '/finance/payments/tracking' },
-      { id: 'vehicle-installments', label: 'أقساط السيارات', href: '/vehicle-installments' },
-      { id: 'reports', label: 'التقارير', href: '/reports' },
+      { id: 'finance-treasury', label: 'الخزينة والبنوك', href: '/finance/treasury' },
+      { id: 'vehicle-installments', label: 'أقساط السيارات', href: '/fleet/vehicle-installments' },
+      { id: 'finance-reports', label: 'التقارير المالية', href: '/finance/reports' },
+    ],
+  },
+  {
+    id: 'hr',
+    label: 'الموارد البشرية',
+    icon: UserCheck,
+    children: [
+      { id: 'hr-employees', label: 'إدارة الموظفين', href: '/hr/employees' },
+      { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance' },
+      { id: 'hr-payroll', label: 'الرواتب', href: '/hr/payroll' },
+      { id: 'hr-reports', label: 'التقارير', href: '/hr/reports' },
+    ],
+  },
+  {
+    id: 'legal',
+    label: 'الشؤون القانونية',
+    icon: Shield,
+    children: [
+      { id: 'legal-advisor', label: 'المستشار القانوني', href: '/legal/advisor' },
+      { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases' },
     ],
   },
   {
@@ -75,10 +115,14 @@ const navigation: NavItem[] = [
     label: 'العمليات',
     icon: Truck,
     children: [
-      { id: 'violations', label: 'المخالفات المرورية', href: '/fleet/violations' },
       { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits' },
-      { id: 'fleet-reports', label: 'تقارير الأسطول', href: '/fleet/reports' },
     ],
+  },
+  {
+    id: 'reports',
+    label: 'التقارير',
+    icon: BarChart3,
+    href: '/reports',
   },
   {
     id: 'settings',
@@ -93,7 +137,7 @@ const BentoSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['fleet', 'finance']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet', 'finance']);
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) =>
