@@ -1,22 +1,13 @@
 /**
  * CallDialog Component
  * نافذة مكالمة تفاعلية لتسجيل المكالمات مع العملاء
- * 
- * @component
- * @example
- * <CallDialog
- *   open={true}
- *   onOpenChange={setOpen}
- *   customerName="أحمد محمد"
- *   customerPhone="+974 5555 5555"
- *   onSaveCall={handleSaveCall}
- * />
+ * تصميم محسّن ومتناسق مع صفحة CRM
  */
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Phone, Clock, Check, X, PhoneOff } from 'lucide-react';
+import { Phone, Clock, Check, X, PhoneOff, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface CallDialogProps {
@@ -123,144 +114,129 @@ export function CallDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl">
-            {callStatus === 'ringing' && '📞 جاري الاتصال...'}
-            {callStatus === 'in_call' && '🗣️ مكالمة جارية'}
-            {callStatus === 'ended' && '✅ انتهت المكالمة'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Customer Info Card */}
-          <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-white">
-              <span className="text-4xl text-white font-bold">
-                {getInitials(customerName)}
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">{customerName}</h3>
-            <p className="text-xl font-mono text-blue-600 bg-white px-4 py-2 rounded-lg inline-block shadow-sm" dir="ltr">
-              📞 {customerPhone}
-            </p>
+      <DialogContent className="sm:max-w-[380px] p-0 overflow-hidden border-0 shadow-2xl">
+        {/* Header with Customer Info */}
+        <div className="bg-gradient-to-br from-slate-700 to-slate-800 text-white p-5 text-center">
+          {/* Avatar */}
+          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full mx-auto mb-3 flex items-center justify-center shadow-lg ring-3 ring-white/20">
+            <span className="text-2xl text-white font-bold">
+              {getInitials(customerName)}
+            </span>
           </div>
+          
+          {/* Customer Name */}
+          <h3 className="text-lg font-bold mb-1">{customerName}</h3>
+          
+          {/* Phone Number */}
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+            <Phone className="w-3.5 h-3.5 text-green-400" />
+            <span className="text-sm font-mono tracking-wide" dir="ltr">{customerPhone}</span>
+          </div>
+        </div>
 
+        {/* Content */}
+        <div className="p-4 space-y-4 bg-gray-50">
           {/* Timer Display */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Clock className="w-5 h-5 text-green-600" />
-              <span className="text-sm text-green-700 font-medium">مدة المكالمة</span>
+          <div className="bg-white rounded-xl p-4 text-center border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-slate-500" />
+              <span className="text-xs text-slate-600 font-medium">مدة المكالمة</span>
             </div>
-            <div className="text-4xl font-bold text-green-700 font-mono">
+            <div className={`text-3xl font-bold font-mono ${callStatus === 'in_call' ? 'text-green-600' : 'text-slate-700'}`}>
               {formatTime(timer)}
             </div>
           </div>
 
           {/* Notes Textarea */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <span>ملاحظات المكالمة</span>
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+              ملاحظات المكالمة
               {notes.length > 0 && (
-                <span className="text-xs text-gray-500">({notes.length} حرف)</span>
+                <span className="text-[10px] text-slate-400 font-normal">({notes.length} حرف)</span>
               )}
             </label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="اكتب تفاصيل المكالمة، الاتفاقات، أو أي ملاحظات مهمة...&#10;&#10;مثال:&#10;• تم الاتفاق على موعد التجديد&#10;• العميل راضي عن الخدمة&#10;• طلب خصم على الفاتورة القادمة"
-              rows={5}
-              className="resize-none"
+              placeholder="اكتب تفاصيل المكالمة..."
+              rows={3}
+              className="resize-none text-sm bg-white border-gray-200 focus:border-green-500 focus:ring-green-500/20"
               disabled={saving}
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {callStatus === 'ringing' && (
-              <>
-                <Button
-                  onClick={() => {
-                    setCallStatus('in_call');
-                    // فتح تطبيق الهاتف
-                    window.location.href = `tel:${customerPhone}`;
-                  }}
-                  className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg font-semibold"
-                  disabled={saving}
-                >
-                  <Phone className="w-5 h-5 ml-2" />
-                  بدء المكالمة
-                </Button>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleEndCall('no_answer')}
-                    disabled={saving}
-                    className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                  >
-                    <PhoneOff className="w-4 h-4 ml-2" />
-                    {saving ? 'جاري الحفظ...' : 'لم يرد'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleEndCall('busy')}
-                    disabled={saving}
-                    className="border-red-500 text-red-600 hover:bg-red-50"
-                  >
-                    <X className="w-4 h-4 ml-2" />
-                    {saving ? 'جاري الحفظ...' : 'مشغول'}
-                  </Button>
-                </div>
-              </>
-            )}
-
-            {callStatus === 'in_call' && (
-              <Button
-                onClick={() => handleEndCall('answered')}
-                disabled={saving}
-                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold"
-              >
-                <Check className="w-5 h-5 ml-2" />
-                {saving ? 'جاري الحفظ...' : 'إنهاء المكالمة وحفظ'}
-              </Button>
-            )}
-          </div>
-
-          {/* Quick Notes Buttons */}
+          {/* Quick Notes - Only show when in call */}
           {callStatus === 'in_call' && (
-            <div className="border-t pt-4">
-              <p className="text-xs text-gray-500 mb-3 flex items-center gap-2">
-                <span>إضافة سريعة:</span>
-                <span className="text-gray-400">(اضغط لإضافة الملاحظة)</span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {quickNotes.map((quickNote) => (
-                  <Button
+            <div className="space-y-2">
+              <p className="text-[10px] text-slate-500 font-medium">إضافة سريعة:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {quickNotes.slice(0, 3).map((quickNote) => (
+                  <button
                     key={quickNote}
-                    variant="outline"
-                    size="sm"
                     onClick={() => {
                       const separator = notes.trim() ? '\n' : '';
                       setNotes(notes + separator + '• ' + quickNote);
                     }}
-                    className="text-xs hover:bg-blue-50 hover:border-blue-300"
+                    className="text-[10px] px-2 py-1 bg-white border border-gray-200 rounded-md text-slate-600 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors"
                     disabled={saving}
                   >
                     {quickNote}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
           )}
+        </div>
 
-          {/* Help Text */}
+        {/* Action Buttons */}
+        <div className="p-4 pt-0 bg-gray-50 space-y-2">
           {callStatus === 'ringing' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-800 text-center">
-                💡 <strong>نصيحة:</strong> سيتم فتح تطبيق الهاتف تلقائياً عند بدء المكالمة
-              </p>
-            </div>
+            <>
+              <Button
+                onClick={() => {
+                  setCallStatus('in_call');
+                  // فتح تطبيق الهاتف
+                  window.location.href = `tel:${customerPhone}`;
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 h-11 text-base font-semibold shadow-sm"
+                disabled={saving}
+              >
+                <Phone className="w-4 h-4 ml-2" />
+                بدء المكالمة
+              </Button>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleEndCall('no_answer')}
+                  disabled={saving}
+                  className="h-9 text-sm border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
+                >
+                  <PhoneOff className="w-3.5 h-3.5 ml-1.5" />
+                  {saving ? 'جاري...' : 'لم يرد'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleEndCall('busy')}
+                  disabled={saving}
+                  className="h-9 text-sm border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                >
+                  <X className="w-3.5 h-3.5 ml-1.5" />
+                  {saving ? 'جاري...' : 'مشغول'}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {callStatus === 'in_call' && (
+            <Button
+              onClick={() => handleEndCall('answered')}
+              disabled={saving}
+              className="w-full bg-slate-700 hover:bg-slate-800 h-11 text-base font-semibold shadow-sm"
+            >
+              <Check className="w-4 h-4 ml-2" />
+              {saving ? 'جاري الحفظ...' : 'إنهاء وحفظ'}
+            </Button>
           )}
         </div>
       </DialogContent>

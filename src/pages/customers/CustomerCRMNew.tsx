@@ -251,22 +251,24 @@ function CustomerRow({
         <div className="flex items-center gap-4 w-full md:w-5/12">
           <div className="relative">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 
-              ${isNew ? `bg-red-50 ${BRAND_COLOR} ${BRAND_BORDER}` : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+              ${isNew ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
               {getInitials()}
             </div>
-            {isNew && <span className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ${BRAND_BG} text-[8px] text-white border-2 border-white`}>N</span>}
           </div>
 
           <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-gray-900 text-base">{nameAr}</h3>
-              {isNew && (
-                <span className="px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[10px] rounded font-bold border border-purple-100">جديد</span>
-              )}
-            </div>
+            <h3 className="font-bold text-gray-900 text-base">{nameAr}</h3>
             <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-              {nameEn && <span className="font-medium">{nameEn}</span>}
-              {nameEn && <span className="w-1 h-1 bg-gray-300 rounded-full"></span>}
+              {isNew ? (
+                <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] rounded-full font-medium border border-orange-200">
+                  لم يتم الاتصال
+                </span>
+              ) : (
+                <>
+                  {nameEn && <span className="font-medium">{nameEn}</span>}
+                  {nameEn && <span className="w-1 h-1 bg-gray-300 rounded-full"></span>}
+                </>
+              )}
               <span className="font-mono bg-gray-100 px-1 rounded text-gray-600 border flex items-center gap-1">
                 <Hash size={10} /> {contract?.contract_number || customer.customer_code}
               </span>
