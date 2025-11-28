@@ -146,7 +146,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       className="bg-white rounded-2xl border border-neutral-200 p-5 hover:shadow-lg hover:border-coral-200 transition-all duration-300 group cursor-pointer"
       onClick={onView}
     >
-      {/* Header - Avatar and Actions */}
+      {/* Header - Avatar and Info */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -166,8 +166,8 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
             <p className="text-xs text-neutral-500 flex items-center gap-1">
               {customer.customer_type === 'individual' ? (
                 <>
-                  <Briefcase className="w-3 h-3" />
-                  {customer.job_title || 'Account Manager'}
+                  <Users className="w-3 h-3" />
+                  فرد
                 </>
               ) : (
                 <>
@@ -200,29 +200,26 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
       </div>
 
-      {/* Quick Links */}
+      {/* Contract Count & Arrow */}
       <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
-        <div className="flex items-center gap-3">
-          <button 
-            className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-600 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView();
-            }}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            العقود
-          </button>
-          <button 
-            className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-600 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickRent();
-            }}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            المبيعات
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-coral-50 rounded-lg">
+            <FileText className="w-3.5 h-3.5 text-coral-600" />
+            <span className="text-xs font-bold text-coral-600">{contractCount}</span>
+            <span className="text-xs text-coral-500">عقد</span>
+          </div>
+          {contractCount === 0 && (
+            <button 
+              className="flex items-center gap-1 text-xs text-neutral-400 hover:text-coral-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickRent();
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              إنشاء عقد
+            </button>
+          )}
         </div>
 
         <ChevronLeft className="w-4 h-4 text-neutral-300 group-hover:text-coral-500 group-hover:translate-x-[-4px] transition-all" />

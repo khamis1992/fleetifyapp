@@ -32,7 +32,9 @@ const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
 const Fleet = lazy(() => import('@/pages/Fleet'));
+const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageNew'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
+const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
 const Reports = lazy(() => import('@/pages/Reports'));
 const ReportsHub = lazy(() => import('@/pages/reports/ReportsHub'));
 const ReportView = lazy(() => import('@/pages/ReportView'));
@@ -268,23 +270,23 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers',
-    component: Customers,
+    component: CustomersPageNew,
     lazy: true,
     exact: true,
     title: 'Customers',
-    description: 'Customer management',
+    description: 'Customer management - New Card Grid Design',
     group: 'customers',
     priority: 12,
     protected: true,
     layout: 'bento',
   },
   {
-    path: '/customers/preview',
-    component: CustomersPageNew,
+    path: '/customers/classic',
+    component: Customers,
     lazy: true,
     exact: true,
-    title: 'Customers Preview',
-    description: 'New customer management design preview',
+    title: 'Customers Classic',
+    description: 'Classic customer management table view',
     group: 'customers',
     priority: 12,
     protected: true,
@@ -363,12 +365,36 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/fleet/preview',
+    component: FleetPageNew,
+    lazy: true,
+    exact: true,
+    title: 'Fleet Preview',
+    description: 'New fleet management design preview',
+    group: 'fleet',
+    priority: 17,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/fleet/vehicles/:vehicleId',
-    component: VehicleDetailsPage,
+    component: VehicleDetailsPageNew,
     lazy: true,
     exact: true,
     title: 'Vehicle Details',
     description: 'Vehicle details page',
+    group: 'fleet',
+    priority: 18,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/fleet/vehicles/:vehicleId/classic',
+    component: VehicleDetailsPage,
+    lazy: true,
+    exact: true,
+    title: 'Vehicle Details Classic',
+    description: 'Classic vehicle details page design',
     group: 'fleet',
     priority: 18,
     protected: true,

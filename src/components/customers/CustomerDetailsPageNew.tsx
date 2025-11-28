@@ -22,7 +22,6 @@ import { ar } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
-  ExternalLink,
   Edit3,
   FileText,
   Archive,
@@ -721,7 +720,6 @@ const CustomerDetailsPageNew = () => {
 
   // Handlers
   const handleBack = () => navigate('/customers');
-  const handleOpenInNewWindow = () => window.open(`/customers/${customerId}/preview`, '_blank');
   const handleEdit = () => setIsEditDialogOpen(true);
   const handlePrint = () => window.print();
 
@@ -774,11 +772,6 @@ const CustomerDetailsPageNew = () => {
               <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 text-neutral-600 hover:text-neutral-900">
                 <ArrowRight className="w-4 h-4" />
                 العودة للقائمة
-              </Button>
-              <div className="h-5 w-px bg-neutral-200" />
-              <Button variant="ghost" size="sm" onClick={handleOpenInNewWindow} className="gap-2 text-neutral-600 hover:text-neutral-900">
-                <ExternalLink className="w-4 h-4" />
-                فتح في نافذة جديدة
               </Button>
             </div>
 
