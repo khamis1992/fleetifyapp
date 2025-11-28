@@ -1,84 +1,63 @@
 /**
  * صفحة إدارة علاقات العملاء - CRM Modern
- * متابعة العملاء والاتصالات مع الحفاظ على التصميم الحديث
+ * متابعة العملاء والاتصالات مع التصميم الجديد المحسّن
  * 
  * @component CustomerCRMNew
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/components/ui/use-toast';
 import { differenceInDays, format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users,
-  PhoneCall,
-  Phone,
-  MessageSquare,
-  FileText,
-  Calendar,
-  Clock,
-  AlertTriangle,
-  Bell,
-  TrendingUp,
-  CheckCircle,
   Search,
-  X,
-  UserPlus,
-  Filter,
-  Eye,
-  PlusCircle,
-  MoreHorizontal,
-  Smartphone,
-  AlertCircle,
-  Trash2,
+  Phone,
+  MessageCircle,
+  Plus,
   ChevronDown,
-  ChevronUp,
-  DollarSign,
-  Banknote,
-  PhoneOff,
-  PhoneMissed,
-  CheckSquare,
-  XCircle,
   RefreshCw,
+  AlertCircle,
+  Clock,
+  UserCheck,
+  PhoneMissed,
+  PhoneIncoming,
+  Calendar,
+  CheckCircle,
+  MoreHorizontal,
+  X,
+  Save,
+  ArrowLeft,
+  ArrowRight,
+  Filter,
+  Hash,
+  Users,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CallDialog } from '@/components/customers/CallDialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { CallDialog } from '@/components/customers/CallDialog';
 
-// Types
+// --- الثوابت ---
+const ITEMS_PER_PAGE = 15;
+// اللون الأساسي للنظام (الأحمر المرجاني)
+const BRAND_COLOR = "text-[#F15555]";
+const BRAND_BG = "bg-[#F15555]";
+const BRAND_BORDER = "border-[#F15555]";
+const BRAND_RING = "focus:ring-[#F15555]";
+
+// --- الأنواع ---
+type InteractionType = 'phone' | 'message' | 'meeting' | 'general';
+
 interface Customer {
   id: string;
   customer_code: string;
@@ -96,7 +75,7 @@ interface Customer {
 interface FollowUp {
   id: string;
   customer_id: string;
-  note_type: 'phone' | 'message' | 'meeting' | 'general';
+  note_type: InteractionType;
   content: string;
   created_at: string;
   created_by: string;
@@ -123,420 +102,358 @@ interface Invoice {
   due_date: string;
 }
 
-// Smart Filter Options
-const SMART_FILTERS = [
-  { id: 'all', label: 'جميع العملاء', icon: Users, color: 'text-gray-600' },
-  { id: 'urgent', label: '🔥 عاجل - متأخر بالدفع', icon: AlertTriangle, color: 'text-red-600' },
-  { id: 'needs_call', label: '📞 لم يتم الاتصال (7 أيام)', icon: PhoneOff, color: 'text-orange-600' },
-  { id: 'never_contacted', label: '🆕 لم يتصل به أبداً', icon: PhoneMissed, color: 'text-purple-600' },
-  { id: 'expiring', label: '⏰ عقد قريب الانتهاء', icon: Clock, color: 'text-amber-600' },
-];
+// --- المكونات الفرعية ---
 
-// Stat Card Component
-const StatCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
-  color, 
-  bgColor,
-  subtitle,
-  onClick,
-  isActive 
-}: { 
-  title: string; 
-  value: number | string; 
-  icon: any; 
-  color: string; 
-  bgColor: string;
-  subtitle?: string;
-  onClick?: () => void;
-  isActive?: boolean;
-}) => (
-  <motion.div 
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={onClick}
-    className={cn(
-      "bg-white rounded-2xl p-5 border-2 transition-all cursor-pointer",
-      isActive ? "border-blue-500 shadow-lg" : "border-gray-100 hover:border-gray-200 hover:shadow-md"
-    )}
-  >
-    <div className="flex items-start justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
-        {subtitle && (
-          <p className={cn("text-xs mt-1 flex items-center gap-1", color)}>
-            {subtitle}
-          </p>
-        )}
+const StatusBadge = ({ status, type }: { status: string; type: 'payment' | 'contact' }) => {
+  if (type === 'payment') {
+    const styles: Record<string, string> = {
+      paid: 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100',
+      due: 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-100',
+      late: 'bg-red-50 text-red-700 border-red-200 ring-red-100',
+      none: 'bg-gray-50 text-gray-700 border-gray-200 ring-gray-100',
+    };
+    const labels: Record<string, string> = { paid: 'مسدد ✅', due: 'مستحق 💰', late: 'متأخر ⚠️', none: 'لا فواتير 📝' };
+    const style = styles[status] || styles.none;
+
+    return (
+      <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ring-1 ring-inset ${style} shadow-sm`}>
+        {labels[status] || status}
+      </span>
+    );
+  }
+  return null;
+};
+
+const InteractionIcon = ({ type }: { type: InteractionType }) => {
+  const styles: Record<InteractionType, string> = {
+    phone: 'bg-blue-50 text-blue-600',
+    message: 'bg-emerald-50 text-emerald-600',
+    meeting: 'bg-purple-50 text-purple-600',
+    general: 'bg-gray-100 text-gray-600',
+  };
+
+  const Icons: Record<InteractionType, React.ElementType> = {
+    phone: Phone,
+    message: MessageCircle,
+    meeting: UserCheck,
+    general: MoreHorizontal,
+  };
+
+  const Icon = Icons[type];
+
+  return (
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${styles[type]} shadow-sm`}>
+      <Icon size={14} />
+    </div>
+  );
+};
+
+function StatCard({ title, value, icon, color, isUrgent }: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  color: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'yellow';
+  isUrgent?: boolean;
+}) {
+  const colorStyles = {
+    blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
+    green: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
+    red: { bg: 'bg-[#FEF2F2]', text: 'text-[#F15555]', border: 'border-red-100' },
+    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' },
+    purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
+    yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-100' },
+  };
+
+  const style = colorStyles[color];
+
+  return (
+    <div className={`bg-white p-5 rounded-xl border shadow-sm flex flex-col items-start gap-4 transition-all hover:shadow-md ${isUrgent ? 'ring-1 ring-red-100' : ''}`}>
+      <div className="flex justify-between w-full">
+        <div className={`p-2.5 rounded-lg ${style.bg} ${style.text}`}>
+          {icon}
+        </div>
+        {isUrgent && <span className="flex h-2 w-2 rounded-full bg-[#F15555]"></span>}
       </div>
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", bgColor)}>
-        <Icon className={cn("w-6 h-6", color)} />
+      <div>
+        <span className="text-2xl font-black text-gray-800 tracking-tight">{value}</span>
+        <span className="text-xs text-gray-500 font-medium block mt-1">{title}</span>
       </div>
     </div>
-  </motion.div>
-);
+  );
+}
 
-// Customer Row Component
-const CustomerRow = ({ 
-  customer, 
+function CustomerRow({
+  customer,
   contract,
   lastContact,
-  followUpCount,
   paymentStatus,
   isExpanded,
   onToggle,
   onCall,
+  onNote,
   onWhatsApp,
-  onAddNote,
-  customerFollowUps,
+  interactions,
   onQuickUpdate,
 }: {
   customer: Customer;
   contract?: Contract;
   lastContact: number | null;
-  followUpCount: number;
-  paymentStatus: any;
+  paymentStatus: string;
   isExpanded: boolean;
   onToggle: () => void;
   onCall: () => void;
+  onNote: () => void;
   onWhatsApp: () => void;
-  onAddNote: () => void;
-  customerFollowUps: FollowUp[];
+  interactions: FollowUp[];
   onQuickUpdate: (id: string, action: 'complete' | 'postpone') => void;
-}) => {
-  // Get customer name with fallback: Arabic name -> English name -> customer code
-  const getCustomerName = () => {
-    // Try Arabic name first
+}) {
+  // Get customer names
+  const getNameAr = () => {
     if (customer.first_name_ar || customer.last_name_ar) {
       return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     }
-    // Fallback to English name
+    return customer.customer_code || 'عميل';
+  };
+
+  const getNameEn = () => {
     if (customer.first_name || customer.last_name) {
       return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
     }
-    // Fallback to customer code
-    return customer.customer_code || 'عميل';
+    return '';
   };
-  
-  const customerName = getCustomerName();
+
+  const nameAr = getNameAr();
+  const nameEn = getNameEn();
 
   const getInitials = () => {
-    // Try Arabic first
-    const firstAr = customer.first_name_ar?.[0] || '';
-    const lastAr = customer.last_name_ar?.[0] || '';
-    if (firstAr || lastAr) return `${firstAr}${lastAr}`;
-    
-    // Fallback to English
-    const firstEn = customer.first_name?.[0] || '';
-    const lastEn = customer.last_name?.[0] || '';
-    if (firstEn || lastEn) return `${firstEn}${lastEn}`.toUpperCase();
-    
+    if (customer.first_name) {
+      return customer.first_name.substring(0, 2).toUpperCase();
+    }
+    if (customer.first_name_ar) {
+      return customer.first_name_ar.substring(0, 2);
+    }
     return 'ع';
   };
 
-  const daysToExpiry = contract ? differenceInDays(new Date(contract.end_date), new Date()) : null;
-  const isExpiringSoon = daysToExpiry !== null && daysToExpiry <= 30 && daysToExpiry > 0;
-  const needsUrgentCall = lastContact !== null && lastContact > 7;
-  const neverContacted = lastContact === null;
-
-  const getContactStatus = () => {
-    if (neverContacted) return { text: 'لم يتم الاتصال', color: 'text-purple-600 bg-purple-50', icon: PhoneMissed };
-    if (needsUrgentCall) return { text: `منذ ${lastContact} يوم`, color: 'text-red-600 bg-red-50', icon: AlertTriangle };
-    if (lastContact && lastContact > 3) return { text: `منذ ${lastContact} أيام`, color: 'text-orange-600 bg-orange-50', icon: Clock };
-    return { text: lastContact === 0 ? 'اليوم' : `منذ ${lastContact} يوم`, color: 'text-green-600 bg-green-50', icon: CheckCircle };
-  };
-
-  const contactStatus = getContactStatus();
-  const ContactIcon = contactStatus.icon;
-  const pendingFollowUps = customerFollowUps.filter(f => f.is_important);
+  const isNew = lastContact === null;
+  const daysSinceContact = lastContact ?? 0;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "bg-white rounded-2xl border-2 overflow-hidden transition-all",
-        isExpanded ? "border-blue-200 shadow-lg" : "border-gray-100 hover:border-gray-200"
-      )}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`group transition-all duration-200 ${isExpanded ? 'bg-red-50/20' : 'bg-white hover:bg-gray-50'}`}
     >
-      {/* Main Row */}
-      <div className="p-4">
-        <div className="flex items-center gap-4">
-          {/* Avatar */}
-          <Avatar className="w-12 h-12 shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white font-bold">
+      <div className="px-6 py-4 flex flex-col md:flex-row items-center gap-4 cursor-pointer" onClick={onToggle}>
+
+        {/* Section 1: Avatar & Info */}
+        <div className="flex items-center gap-4 w-full md:w-5/12">
+          <div className="relative">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 
+              ${isNew ? `bg-red-50 ${BRAND_COLOR} ${BRAND_BORDER}` : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
               {getInitials()}
-            </AvatarFallback>
-          </Avatar>
+            </div>
+            {isNew && <span className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ${BRAND_BG} text-[8px] text-white border-2 border-white`}>N</span>}
+          </div>
 
-          {/* Customer Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900">{customerName}</h3>
-              {neverContacted && (
-                <Badge className="bg-purple-100 text-purple-700 text-xs">جديد</Badge>
-              )}
-              {needsUrgentCall && (
-                <Badge className="bg-red-100 text-red-700 text-xs">يحتاج اتصال</Badge>
-              )}
-              {isExpiringSoon && (
-                <Badge className="bg-amber-100 text-amber-700 text-xs">عقد قريب الانتهاء</Badge>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-gray-900 text-base">{nameAr}</h3>
+              {isNew && (
+                <span className="px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[10px] rounded font-bold border border-purple-100">جديد</span>
               )}
             </div>
-            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <Smartphone className="w-3.5 h-3.5" />
-                <span dir="ltr">{customer.phone}</span>
+            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+              {nameEn && <span className="font-medium">{nameEn}</span>}
+              {nameEn && <span className="w-1 h-1 bg-gray-300 rounded-full"></span>}
+              <span className="font-mono bg-gray-100 px-1 rounded text-gray-600 border flex items-center gap-1">
+                <Hash size={10} /> {contract?.contract_number || customer.customer_code}
               </span>
-              {contract && (
-                <span className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" />
-                  {contract.contract_number}
-                </span>
-              )}
             </div>
-          </div>
-
-          {/* Contact Status */}
-          <div className={cn("px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0", contactStatus.color)}>
-            <ContactIcon className="w-4 h-4" />
-            <span className="text-sm font-medium">{contactStatus.text}</span>
-          </div>
-
-          {/* Payment Status */}
-          <div className={cn("px-3 py-1.5 rounded-lg shrink-0", paymentStatus.bgColor)}>
-            <span className={cn("text-sm font-medium flex items-center gap-1", paymentStatus.textColor)}>
-              {paymentStatus.icon} {paymentStatus.label}
-            </span>
-          </div>
-
-          {/* Follow-up Count */}
-          <div className="text-center shrink-0 w-16">
-            <p className="text-xl font-bold text-gray-900">{followUpCount}</p>
-            <p className="text-xs text-gray-500">متابعة</p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0"
-                    onClick={(e) => { e.stopPropagation(); onCall(); }}
-                  >
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>اتصال الآن</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 h-9 w-9 p-0"
-                    onClick={(e) => { e.stopPropagation(); onWhatsApp(); }}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>واتساب</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="h-9 w-9 p-0"
-                    onClick={(e) => { e.stopPropagation(); onAddNote(); }}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>إضافة ملاحظة</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <Button 
-              size="sm" 
-              variant="ghost"
-              className="h-9 w-9 p-0"
-              onClick={onToggle}
-            >
-              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
           </div>
         </div>
 
-        {/* Pending Follow-ups Alert */}
-        {pendingFollowUps.length > 0 && !isExpanded && (
-          <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-700">
-                {pendingFollowUps.length} متابعة تحتاج تحديث
-              </span>
-              <div className="flex gap-1 mr-auto">
-                {pendingFollowUps.slice(0, 1).map(f => (
-                  <div key={f.id} className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-green-600 hover:bg-green-100"
-                      onClick={(e) => { e.stopPropagation(); onQuickUpdate(f.id, 'complete'); }}
-                    >
-                      <CheckCircle className="w-3.5 h-3.5 ml-1" />
-                      تم
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-blue-600 hover:bg-blue-100"
-                      onClick={(e) => { e.stopPropagation(); onQuickUpdate(f.id, 'postpone'); }}
-                    >
-                      <Clock className="w-3.5 h-3.5 ml-1" />
-                      تأجيل
-                    </Button>
-                  </div>
-                ))}
-              </div>
+        {/* Section 2: Metrics & Status */}
+        <div className="flex flex-wrap items-center justify-start md:justify-center gap-4 w-full md:w-4/12">
+          <div className="flex flex-col items-center gap-1 min-w-[80px]">
+            <span className="text-[10px] text-gray-400 font-medium">حالة الدفع</span>
+            <StatusBadge status={paymentStatus} type="payment" />
+          </div>
+
+          <div className="w-px h-8 bg-gray-200 hidden md:block"></div>
+
+          <div className="flex flex-col items-center gap-1 min-w-[100px]">
+            <span className="text-[10px] text-gray-400 font-medium">آخر تواصل</span>
+            <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${isNew ? `bg-red-50 ${BRAND_COLOR} border-red-100` : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+              <Clock size={12} />
+              {isNew ? 'لم يتم الاتصال' : `منذ ${daysSinceContact} يوم`}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Section 3: Quick Actions */}
+        <div className="flex items-center justify-end gap-2 w-full md:w-3/12 opacity-80 group-hover:opacity-100 transition-opacity">
+          <button onClick={(e) => { e.stopPropagation(); onCall(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition shadow-sm" title="اتصال">
+            <Phone size={18} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition shadow-sm" title="واتساب">
+            <MessageCircle size={18} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition shadow-sm" title="ملاحظة">
+            <Plus size={18} />
+          </button>
+          <div className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${isExpanded ? `bg-red-50 ${BRAND_COLOR} rotate-180` : 'text-gray-400 hover:bg-gray-100'}`}>
+            <ChevronDown size={20} />
+          </div>
+        </div>
       </div>
 
-      {/* Expanded Content - Call History */}
+      {/* Expanded Content Section */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-gray-100"
+            className="overflow-hidden border-t border-red-100 bg-red-50/10"
           >
-            <div className="p-4 bg-gray-50">
-              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                سجل الاتصالات والمتابعات
-              </h4>
+            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
 
-              {customerFollowUps.length > 0 ? (
-                <div className="space-y-3">
-                  {customerFollowUps.map((followUp) => (
-                    <div 
-                      key={followUp.id} 
-                      className={cn(
-                        "bg-white rounded-xl p-3 border flex items-start gap-3",
-                        followUp.is_important ? "border-orange-200" : "border-gray-200"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                        followUp.note_type === 'phone' ? "bg-green-100 text-green-600" :
-                        followUp.note_type === 'message' ? "bg-blue-100 text-blue-600" :
-                        followUp.note_type === 'meeting' ? "bg-purple-100 text-purple-600" :
-                        "bg-gray-100 text-gray-600"
-                      )}>
-                        {followUp.note_type === 'phone' ? <Phone className="w-4 h-4" /> :
-                         followUp.note_type === 'message' ? <MessageSquare className="w-4 h-4" /> :
-                         followUp.note_type === 'meeting' ? <Users className="w-4 h-4" /> :
-                         <FileText className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium text-gray-900">
-                            {followUp.note_type === 'phone' ? 'مكالمة هاتفية' :
-                             followUp.note_type === 'message' ? 'رسالة' :
-                             followUp.note_type === 'meeting' ? 'اجتماع' : 'ملاحظة'}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {format(new Date(followUp.created_at), 'dd/MM/yyyy - HH:mm')}
-                          </span>
-                          {followUp.is_important && (
-                            <Badge className="bg-orange-100 text-orange-700 text-xs">يحتاج متابعة</Badge>
+              {/* Timeline Column */}
+              <div className="md:col-span-8">
+                <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-6">
+                  <Clock size={14} /> سجل النشاطات والمتابعات
+                </h4>
+
+                <div className="space-y-0 relative pl-4 md:pl-0">
+                  {/* Vertical Line */}
+                  <div className="absolute top-2 bottom-6 right-[19px] w-0.5 bg-gray-200 hidden md:block"></div>
+
+                  {interactions.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl bg-white/50">
+                      <p className="text-sm text-gray-400">لا يوجد سجل متابعات لهذا العميل حتى الآن.</p>
+                      <button onClick={(e) => { e.stopPropagation(); onCall(); }} className={`mt-2 ${BRAND_COLOR} text-xs font-bold hover:underline`}>ابدأ أول اتصال</button>
+                    </div>
+                  ) : (
+                    interactions.map((interaction) => (
+                      <div key={interaction.id} className="group relative flex gap-6 pb-8 last:pb-0">
+                        {/* Icon */}
+                        <div className="hidden md:block relative z-10 bg-white p-1 rounded-full">
+                          <InteractionIcon type={interaction.note_type} />
+                        </div>
+
+                        {/* Content Card */}
+                        <div className="flex-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md group-hover:border-red-100 transition-all">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-gray-800">
+                                {interaction.note_type === 'phone' ? '📞 مكالمة صادرة' : interaction.note_type === 'general' ? '📝 ملاحظة داخلية' : '💬 رسالة واتساب'}
+                              </span>
+                              {interaction.is_important && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-orange-50 text-orange-700 border-orange-100">
+                                  يحتاج متابعة
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-gray-400 font-mono dir-ltr">
+                              {format(new Date(interaction.created_at), 'dd/MM/yyyy - HH:mm')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-relaxed">{interaction.content}</p>
+
+                          {interaction.is_important && (
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-green-600 hover:bg-green-100"
+                                onClick={(e) => { e.stopPropagation(); onQuickUpdate(interaction.id, 'complete'); }}
+                              >
+                                <CheckCircle className="w-3.5 h-3.5 ml-1" />
+                                تم
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-blue-600 hover:bg-blue-100"
+                                onClick={(e) => { e.stopPropagation(); onQuickUpdate(interaction.id, 'postpone'); }}
+                              >
+                                <Clock className="w-3.5 h-3.5 ml-1" />
+                                تأجيل
+                              </Button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2">{followUp.content}</p>
                       </div>
-                      {followUp.is_important && (
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-green-600 hover:bg-green-100"
-                            onClick={() => onQuickUpdate(followUp.id, 'complete')}
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
-                            onClick={() => onQuickUpdate(followUp.id, 'postpone')}
-                          >
-                            <Clock className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions Sidebar */}
+              <div className="md:col-span-4 flex flex-col gap-4">
+                <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm h-full">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">بيانات العقد</h4>
+                  {contract ? (
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                      <div className="bg-white p-2 rounded text-purple-600 shadow-sm">
+                        <Calendar size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-purple-600 font-bold uppercase">تاريخ انتهاء العقد</p>
+                        <p className="text-sm font-bold text-gray-800 font-mono">
+                          {format(new Date(contract.end_date), 'dd/MM/yyyy')}
+                        </p>
+                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-500">
+                      لا يوجد عقد نشط
+                    </div>
+                  )}
+
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">تحديث سريع</h4>
+                  <div className="space-y-2">
+                    <button className="w-full py-2.5 px-3 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 flex items-center justify-center gap-2 transition group">
+                      <CheckCircle size={16} className="text-gray-400 group-hover:text-emerald-600" />
+                      تمت المتابعة بنجاح
+                    </button>
+                    <button className="w-full py-2.5 px-3 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200 flex items-center justify-center gap-2 transition group">
+                      <Clock size={16} className="text-gray-400 group-hover:text-yellow-600" />
+                      تأجيل الموعد ليومين
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-6 text-gray-500">
-                  <PhoneOff className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p>لا توجد اتصالات مسجلة بعد</p>
-                  <Button 
-                    size="sm" 
-                    className="mt-3 bg-green-600 hover:bg-green-700"
-                    onClick={onCall}
-                  >
-                    <Phone className="w-4 h-4 ml-2" />
-                    ابدأ أول اتصال
-                  </Button>
-                </div>
-              )}
+              </div>
+
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
   );
-};
+}
 
-// Main Component
+// --- المكون الرئيسي ---
 export default function CustomerCRMNew() {
   const companyId = useCurrentCompanyId();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // State
+  // UI State
   const [searchTerm, setSearchTerm] = useState('');
-  const [smartFilter, setSmartFilter] = useState('all');
-  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState<'note' | 'call' | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [dialogData, setDialogData] = useState({ content: '', outcome: 'answered' });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Call Dialog State
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callingCustomer, setCallingCustomer] = useState<Customer | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
-
-  // Form state
-  const [followUpForm, setFollowUpForm] = useState({
-    type: 'phone' as 'phone' | 'message' | 'meeting' | 'general',
-    notes: '',
-  });
 
   // Fetch customers
   const { data: customers = [], isLoading, refetch } = useQuery({
@@ -547,12 +464,10 @@ export default function CustomerCRMNew() {
         .from('customers')
         .select(`
           id, customer_code, first_name, last_name, first_name_ar, last_name_ar, phone, email,
-          company_id, is_active, created_at,
-          contracts!inner (id, status)
+          company_id, is_active, created_at
         `)
         .eq('company_id', companyId)
         .eq('is_active', true)
-        .eq('contracts.status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -569,15 +484,16 @@ export default function CustomerCRMNew() {
       const { data, error } = await supabase
         .from('contracts')
         .select('id, contract_number, customer_id, status, start_date, end_date, monthly_amount')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('status', 'active');
       if (error) throw error;
       return data as Contract[];
     },
     enabled: !!companyId,
   });
 
-  // Fetch follow-ups
-  const { data: followUps = [] } = useQuery({
+  // Fetch follow-ups (interactions)
+  const { data: interactions = [] } = useQuery({
     queryKey: ['customer-follow-ups', companyId],
     queryFn: async () => {
       if (!companyId) return [];
@@ -607,24 +523,34 @@ export default function CustomerCRMNew() {
     enabled: !!companyId,
   });
 
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Helper functions
-  const getCustomerFollowUps = useCallback((customerId: string) => {
-    return followUps.filter(f => f.customer_id === customerId);
-  }, [followUps]);
+  const getCustomerInteractions = useCallback((customerId: string) => {
+    return interactions.filter(i => i.customer_id === customerId);
+  }, [interactions]);
 
   const getLastContactDays = useCallback((customerId: string) => {
-    const customerFollowUps = getCustomerFollowUps(customerId);
-    if (customerFollowUps.length === 0) return null;
-    const lastContact = new Date(customerFollowUps[0].created_at);
+    const customerInteractions = getCustomerInteractions(customerId);
+    if (customerInteractions.length === 0) return null;
+    const lastContact = new Date(customerInteractions[0].created_at);
     return differenceInDays(new Date(), lastContact);
-  }, [getCustomerFollowUps]);
+  }, [getCustomerInteractions]);
 
-  const getPaymentStatus = useCallback((customerId: string) => {
+  const getPaymentStatus = useCallback((customerId: string): string => {
     const customerInvoices = invoices.filter(inv => inv.customer_id === customerId);
-    
-    if (customerInvoices.length === 0) {
-      return { label: 'لا توجد فواتير', bgColor: 'bg-gray-100', textColor: 'text-gray-700', icon: '📝' };
-    }
+
+    if (customerInvoices.length === 0) return 'none';
 
     const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
@@ -636,20 +562,9 @@ export default function CustomerCRMNew() {
       return new Date(inv.due_date) < new Date();
     });
 
-    if (totalRemaining === 0) {
-      return { label: 'مسدد', bgColor: 'bg-green-100', textColor: 'text-green-700', icon: '✅' };
-    }
-
-    if (overdueInvoices.length > 0) {
-      return { 
-        label: `متأخر (${overdueInvoices.length})`, 
-        bgColor: 'bg-red-100', 
-        textColor: 'text-red-700', 
-        icon: '⚠️',
-      };
-    }
-
-    return { label: 'مستحق', bgColor: 'bg-orange-100', textColor: 'text-orange-700', icon: '💰' };
+    if (totalRemaining === 0) return 'paid';
+    if (overdueInvoices.length > 0) return 'late';
+    return 'due';
   }, [invoices]);
 
   const getCustomerContract = useCallback((customerId: string) => {
@@ -660,175 +575,134 @@ export default function CustomerCRMNew() {
   const stats = useMemo(() => {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    const todayCalls = followUps.filter(f => 
-      f.note_type === 'phone' && 
-      new Date(f.created_at) >= todayStart
-    ).length;
 
-    const pendingFollowUps = followUps.filter(f => f.is_important).length;
+    const late = customers.filter(c => getPaymentStatus(c.id) === 'late').length;
 
-    const neverContacted = customers.filter(c => {
-      const customerFollowUps = followUps.filter(f => f.customer_id === c.id);
-      return customerFollowUps.length === 0;
-    }).length;
-
-    const needsCall = customers.filter(c => {
+    const needsContact = customers.filter(c => {
       const lastContact = getLastContactDays(c.id);
-      return lastContact !== null && lastContact > 7;
+      if (lastContact === null) return true;
+      return lastContact > 7;
     }).length;
 
-    const overduePayments = customers.filter(c => {
-      const status = getPaymentStatus(c.id);
-      return status.label.includes('متأخر');
-    }).length;
-
-    const expiringContracts = customers.filter(c => {
+    const expiring = customers.filter(c => {
       const contract = getCustomerContract(c.id);
       if (!contract) return false;
-      const daysToExpiry = differenceInDays(new Date(contract.end_date), new Date());
-      return daysToExpiry > 0 && daysToExpiry <= 30;
+      const diff = differenceInDays(new Date(contract.end_date), today);
+      return diff < 30 && diff > 0;
     }).length;
 
-    return {
-      total: customers.length,
-      todayCalls,
-      pendingFollowUps,
-      neverContacted,
-      needsCall,
-      overduePayments,
-      expiringContracts,
-    };
-  }, [customers, followUps, getLastContactDays, getPaymentStatus, getCustomerContract]);
+    const callsToday = interactions.filter(i => {
+      if (!i.created_at) return false;
+      const iDate = new Date(i.created_at);
+      return i.note_type === 'phone' && iDate >= todayStart;
+    }).length;
 
-  // Filtered customers
-  const filteredCustomers = useMemo(() => {
-    let filtered = customers;
+    const newCustomers = customers.filter(c => {
+      const customerInteractions = interactions.filter(i => i.customer_id === c.id);
+      return customerInteractions.length === 0;
+    }).length;
 
-    // Search filter
+    const activeContracts = contracts.length;
+
+    return { total: customers.length, late, needsContact, expiring, callsToday, newCustomers, activeContracts };
+  }, [customers, interactions, contracts, getLastContactDays, getPaymentStatus, getCustomerContract]);
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    let result = customers;
+    const today = new Date();
+
     if (searchTerm) {
-      filtered = filtered.filter(c =>
-        `${c.first_name_ar} ${c.last_name_ar}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phone?.includes(searchTerm) ||
-        c.customer_code?.includes(searchTerm)
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(c =>
+        (c.first_name_ar || '').includes(searchTerm) ||
+        (c.last_name_ar || '').includes(searchTerm) ||
+        `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(lower) ||
+        (c.phone || '').includes(searchTerm) ||
+        (c.customer_code || '').toLowerCase().includes(lower)
       );
     }
 
-    // Smart filter
-    if (smartFilter !== 'all') {
-      if (smartFilter === 'urgent') {
-        filtered = filtered.filter(c => {
-          const status = getPaymentStatus(c.id);
-          return status.label.includes('متأخر');
-        });
-      } else if (smartFilter === 'needs_call') {
-        filtered = filtered.filter(c => {
+    switch (activeFilter) {
+      case 'late':
+        result = result.filter(c => getPaymentStatus(c.id) === 'late');
+        break;
+      case 'needs_contact':
+        result = result.filter(c => {
           const lastContact = getLastContactDays(c.id);
-          return lastContact !== null && lastContact > 7;
+          if (lastContact === null) return true;
+          return lastContact > 7;
         });
-      } else if (smartFilter === 'never_contacted') {
-        filtered = filtered.filter(c => {
-          const customerFollowUps = followUps.filter(f => f.customer_id === c.id);
-          return customerFollowUps.length === 0;
-        });
-      } else if (smartFilter === 'expiring') {
-        filtered = filtered.filter(c => {
+        break;
+      case 'expiring':
+        result = result.filter(c => {
           const contract = getCustomerContract(c.id);
           if (!contract) return false;
-          const daysToExpiry = differenceInDays(new Date(contract.end_date), new Date());
-          return daysToExpiry > 0 && daysToExpiry <= 30;
+          const diff = differenceInDays(new Date(contract.end_date), today);
+          return diff < 30 && diff > 0;
         });
-      }
+        break;
+      case 'new':
+        result = result.filter(c => {
+          const customerInteractions = interactions.filter(i => i.customer_id === c.id);
+          return customerInteractions.length === 0;
+        });
+        break;
     }
-
-    return filtered;
-  }, [customers, searchTerm, smartFilter, followUps, getLastContactDays, getPaymentStatus, getCustomerContract]);
+    return result;
+  }, [customers, searchTerm, activeFilter, interactions, getLastContactDays, getPaymentStatus, getCustomerContract]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredData, currentPage]);
+
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
 
   // Handlers
-  const handleCall = useCallback((customer: Customer) => {
-    setCallingCustomer(customer);
-    setCallDialogOpen(true);
-  }, []);
-
-  const handleWhatsApp = useCallback((customer: Customer) => {
-    if (!customer.phone) {
-      toast({ title: 'خطأ', description: 'لا يوجد رقم هاتف', variant: 'destructive' });
-      return;
-    }
-    const cleanPhone = customer.phone.replace(/\D/g, '');
-    window.open(`https://wa.me/${cleanPhone}`, '_blank');
-  }, [toast]);
-
-  const handleAddNote = useCallback((customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsAddNoteOpen(true);
-  }, []);
-
-  const handleQuickUpdate = async (followUpId: string, action: 'complete' | 'postpone') => {
+  const handleSaveInteraction = async () => {
+    if (!companyId || !selectedCustomerId) return;
     try {
-      const followUp = followUps.find(f => f.id === followUpId);
-      if (!followUp) return;
-
-      const updateContent = action === 'complete' 
-        ? `${followUp.content}\n\n✅ تم التحديث في ${format(new Date(), 'dd/MM/yyyy HH:mm')}`
-        : `${followUp.content}\n\n⏰ تم التأجيل في ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
-
-      const { error } = await supabase
-        .from('customer_notes')
-        .update({ 
-          is_important: action !== 'complete',
-          content: updateContent
-        })
-        .eq('id', followUpId);
+      const { error } = await supabase.from('customer_notes').insert({
+        customer_id: selectedCustomerId,
+        company_id: companyId,
+        note_type: dialogOpen === 'call' ? 'phone' : 'general',
+        title: dialogOpen === 'call' ? 'مكالمة هاتفية' : 'ملاحظة',
+        content: dialogData.content,
+        is_important: dialogOpen === 'call' && dialogData.outcome !== 'answered',
+      });
 
       if (error) throw error;
 
-      toast({
-        title: action === 'complete' ? '✅ تم التحديث' : '⏰ تم التأجيل',
-        description: action === 'complete' ? 'تم وضع علامة مكتمل' : 'سيتم تذكيرك لاحقاً',
-      });
-
+      toast({ title: '✅ تم الحفظ', description: 'تم حفظ السجل بنجاح' });
       queryClient.invalidateQueries({ queryKey: ['customer-follow-ups', companyId] });
+      setDialogOpen(null);
+      setDialogData({ content: '', outcome: 'answered' });
+      setSelectedCustomerId(null);
     } catch (error) {
-      console.error('Error updating follow-up:', error);
-      toast({ title: 'خطأ', description: 'حدث خطأ أثناء التحديث', variant: 'destructive' });
+      console.error("Error saving interaction", error);
+      toast({ title: 'خطأ', description: 'حدث خطأ أثناء الحفظ', variant: 'destructive' });
     }
   };
 
-  const handleSaveFollowUp = async () => {
-    if (!selectedCustomer || !companyId) return;
-    if (!followUpForm.notes.trim()) {
-      toast({ title: 'خطأ', description: 'يرجى إدخال الملاحظات', variant: 'destructive' });
+  const openDialog = (type: 'note' | 'call', customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setDialogOpen(type);
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    if (!phone) {
+      toast({ title: 'خطأ', description: 'لا يوجد رقم هاتف', variant: 'destructive' });
       return;
     }
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
 
-    try {
-      const { error } = await supabase.from('customer_notes').insert({
-        customer_id: selectedCustomer.id,
-        company_id: companyId,
-        note_type: followUpForm.type,
-        title: `متابعة ${followUpForm.type === 'phone' ? 'مكالمة' : followUpForm.type === 'message' ? 'رسالة' : followUpForm.type === 'meeting' ? 'اجتماع' : 'ملاحظة'}`,
-        content: followUpForm.notes,
-        is_important: false,
-      });
-
-      if (error) throw error;
-
-      toast({ title: '✅ تم الحفظ', description: 'تم حفظ المتابعة بنجاح' });
-      queryClient.invalidateQueries({ queryKey: ['customer-follow-ups', companyId] });
-      setIsAddNoteOpen(false);
-      setFollowUpForm({ type: 'phone', notes: '' });
-    } catch (error) {
-      console.error('Error saving follow-up:', error);
-      toast({ title: 'خطأ', description: 'حدث خطأ أثناء الحفظ', variant: 'destructive' });
-    }
+  const handleCall = (customer: Customer) => {
+    setCallingCustomer(customer);
+    setCallDialogOpen(true);
   };
 
   const handleSaveCall = async (notes: string, status: 'answered' | 'no_answer' | 'busy') => {
@@ -862,302 +736,270 @@ export default function CustomerCRMNew() {
     }
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+  const handleQuickUpdate = async (followUpId: string, action: 'complete' | 'postpone') => {
+    try {
+      const followUp = interactions.find(f => f.id === followUpId);
+      if (!followUp) return;
 
-      if (e.key === '/' && !isTyping) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
+      const updateContent = action === 'complete'
+        ? `${followUp.content}\n\n✅ تم التحديث في ${format(new Date(), 'dd/MM/yyyy HH:mm')}`
+        : `${followUp.content}\n\n⏰ تم التأجيل في ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+      const { error } = await supabase
+        .from('customer_notes')
+        .update({
+          is_important: action !== 'complete',
+          content: updateContent
+        })
+        .eq('id', followUpId);
 
+      if (error) throw error;
+
+      toast({
+        title: action === 'complete' ? '✅ تم التحديث' : '⏰ تم التأجيل',
+        description: action === 'complete' ? 'تم وضع علامة مكتمل' : 'سيتم تذكيرك لاحقاً',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['customer-follow-ups', companyId] });
+    } catch (error) {
+      console.error('Error updating follow-up:', error);
+      toast({ title: 'خطأ', description: 'حدث خطأ أثناء التحديث', variant: 'destructive' });
+    }
+  };
+
+  // --- Render ---
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-20 bg-gray-200 rounded-2xl" />
-          <div className="grid grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
-          </div>
-          <div className="space-y-4">
-            {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-2xl" />)}
-          </div>
+      <div className="min-h-screen bg-[#f8f9fa] p-6">
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-3">
+          <RefreshCw className="animate-spin" size={24} />
+          <p>جاري تحميل سجلات العملاء...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">متابعة العملاء والاتصالات</h1>
-              <p className="text-sm text-gray-500">نظام إدارة علاقات العملاء (CRM)</p>
-            </div>
+    <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans" dir="rtl">
 
-            {/* Keyboard Shortcuts */}
-            <div className="hidden lg:flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 text-xs">
-              <kbd className="px-1.5 py-0.5 bg-white border rounded shadow-sm font-mono">/</kbd>
-              <span className="text-gray-500">بحث</span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="relative w-72">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="بحث عن عميل... (اضغط /)"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10 bg-gray-50 border-0 focus-visible:ring-1"
-                />
-              </div>
-              
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => refetch()}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            </div>
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`${BRAND_BG} p-2 rounded-lg text-white shadow-md shadow-red-200`}>
+            <Filter size={20} />
           </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">متابعة العملاء والاتصالات</h1>
+            <p className="text-xs text-gray-500">نظام إدارة علاقات العملاء الذكي</p>
+          </div>
+        </div>
+
+        <div className="flex w-full md:w-auto gap-3 items-center">
+          <div className="relative flex-1 md:w-80 group">
+            <Input
+              ref={searchInputRef}
+              type="text"
+              placeholder="بحث باسم العميل، الهاتف، أو الرمز..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className={`w-full pl-12 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 ${BRAND_RING} ${BRAND_BORDER} outline-none transition-all text-sm`}
+            />
+            <Search className="absolute right-3 top-2.5 text-gray-400 group-focus-within:text-[#F15555] transition-colors" size={18} />
+            <kbd className="absolute left-3 top-2.5 text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 bg-white hidden md:block font-sans">/</kbd>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="p-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition hover:shadow-sm"
+            title="تحديث البيانات"
+          >
+            <RefreshCw size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6">
-        
+      <div className="p-6 max-w-[1600px] mx-auto space-y-8">
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-          <StatCard
-            title="إجمالي العملاء"
-            value={stats.total}
-            icon={Users}
-            color="text-blue-600"
-            bgColor="bg-blue-100"
-            onClick={() => setSmartFilter('all')}
-            isActive={smartFilter === 'all'}
-          />
-          <StatCard
-            title="مكالمات اليوم"
-            value={stats.todayCalls}
-            icon={PhoneCall}
-            color="text-green-600"
-            bgColor="bg-green-100"
-            subtitle={`الهدف: 15 مكالمة`}
-          />
-          <StatCard
-            title="متأخر بالدفع"
-            value={stats.overduePayments}
-            icon={AlertTriangle}
-            color="text-red-600"
-            bgColor="bg-red-100"
-            onClick={() => setSmartFilter('urgent')}
-            isActive={smartFilter === 'urgent'}
-          />
-          <StatCard
-            title="يحتاج اتصال"
-            value={stats.needsCall}
-            icon={PhoneOff}
-            color="text-orange-600"
-            bgColor="bg-orange-100"
-            subtitle="أكثر من 7 أيام"
-            onClick={() => setSmartFilter('needs_call')}
-            isActive={smartFilter === 'needs_call'}
-          />
-          <StatCard
-            title="لم يتصل به"
-            value={stats.neverContacted}
-            icon={PhoneMissed}
-            color="text-purple-600"
-            bgColor="bg-purple-100"
-            onClick={() => setSmartFilter('never_contacted')}
-            isActive={smartFilter === 'never_contacted'}
-          />
-          <StatCard
-            title="عقد قريب الانتهاء"
-            value={stats.expiringContracts}
-            icon={Clock}
-            color="text-amber-600"
-            bgColor="bg-amber-100"
-            onClick={() => setSmartFilter('expiring')}
-            isActive={smartFilter === 'expiring'}
-          />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <StatCard title="إجمالي العملاء" value={stats.total} icon={<UserCheck size={20} />} color="green" />
+          <StatCard title="مكالمات اليوم" value={stats.callsToday} icon={<PhoneIncoming size={20} />} color="blue" />
+          <StatCard title="متأخر بالدفع" value={stats.late} icon={<AlertCircle size={20} />} color="red" isUrgent />
+          <StatCard title="يحتاج اتصال" value={stats.needsContact} icon={<PhoneMissed size={20} />} color="orange" />
+          <StatCard title="عقود نشطة" value={stats.activeContracts} icon={<CheckCircle size={20} />} color="blue" />
+          <StatCard title="عقد قريب الانتهاء" value={stats.expiring} icon={<Clock size={20} />} color="yellow" />
         </div>
 
-        {/* Smart Filters */}
-        <div className="bg-white rounded-2xl p-4 mb-6 border border-gray-100">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-              <Filter className="w-4 h-4" />
-              فلتر:
-            </span>
-            {SMART_FILTERS.map(filter => {
-              const Icon = filter.icon;
-              const count = filter.id === 'urgent' ? stats.overduePayments :
-                           filter.id === 'needs_call' ? stats.needsCall :
-                           filter.id === 'never_contacted' ? stats.neverContacted :
-                           filter.id === 'expiring' ? stats.expiringContracts :
-                           stats.total;
-              
-              return (
-                <Button
-                  key={filter.id}
-                  variant={smartFilter === filter.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSmartFilter(filter.id)}
-                  className={cn(
-                    "gap-2",
-                    smartFilter === filter.id ? "bg-blue-600" : ""
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {filter.label}
-                  <Badge variant="secondary" className={cn(
-                    "text-xs",
-                    smartFilter === filter.id ? "bg-blue-500 text-white" : "bg-gray-100"
-                  )}>
-                    {count}
-                  </Badge>
-                </Button>
-              );
-            })}
+        {/* Filters & Content Wrapper */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          {/* Smart Filters Header */}
+          <div className="border-b bg-gray-50/50 px-6 py-3 flex overflow-x-auto gap-2 scrollbar-hide">
+            {[
+              { id: 'all', label: 'جميع العملاء', count: stats.total },
+              { id: 'late', label: '🔥 عاجل - متأخر', count: stats.late },
+              { id: 'needs_contact', label: '📞 لم يتم الاتصال (7 أيام)', count: stats.needsContact },
+              { id: 'new', label: '🆕 عملاء جدد', count: stats.newCustomers },
+              { id: 'expiring', label: '⏰ عقود قريبة الانتهاء', count: stats.expiring },
+            ].map(filter => (
+              <button
+                key={filter.id}
+                onClick={() => { setActiveFilter(filter.id); setCurrentPage(1); }}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap
+                  ${activeFilter === filter.id
+                    ? `${BRAND_BG} text-white shadow-md shadow-red-200`
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'}
+                `}
+              >
+                {filter.label}
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeFilter === filter.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                  {filter.count}
+                </span>
+              </button>
+            ))}
           </div>
-        </div>
 
-        {/* Customer List */}
-        <div className="space-y-3">
-          {paginatedCustomers.length > 0 ? (
-            paginatedCustomers.map((customer) => (
-              <CustomerRow
-                key={customer.id}
-                customer={customer}
-                contract={getCustomerContract(customer.id)}
-                lastContact={getLastContactDays(customer.id)}
-                followUpCount={getCustomerFollowUps(customer.id).length}
-                paymentStatus={getPaymentStatus(customer.id)}
-                isExpanded={expandedCustomer === customer.id}
-                onToggle={() => setExpandedCustomer(expandedCustomer === customer.id ? null : customer.id)}
-                onCall={() => handleCall(customer)}
-                onWhatsApp={() => handleWhatsApp(customer)}
-                onAddNote={() => handleAddNote(customer)}
-                customerFollowUps={getCustomerFollowUps(customer.id)}
-                onQuickUpdate={handleQuickUpdate}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-              <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">لا يوجد عملاء</h3>
-              <p className="text-gray-500">جرب تغيير الفلتر أو البحث بكلمات مختلفة</p>
+          {/* Customer List */}
+          <div className="divide-y divide-gray-100 min-h-[400px]">
+            {paginatedCustomers.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="text-gray-400" size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">لا توجد نتائج</h3>
+                <p className="text-gray-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
+              </div>
+            ) : (
+              paginatedCustomers.map(customer => (
+                <CustomerRow
+                  key={customer.id}
+                  customer={customer}
+                  contract={getCustomerContract(customer.id)}
+                  lastContact={getLastContactDays(customer.id)}
+                  paymentStatus={getPaymentStatus(customer.id)}
+                  isExpanded={expandedId === customer.id}
+                  onToggle={() => setExpandedId(expandedId === customer.id ? null : customer.id)}
+                  onCall={() => handleCall(customer)}
+                  onNote={() => openDialog('note', customer.id)}
+                  onWhatsApp={() => handleWhatsApp(customer.phone)}
+                  interactions={getCustomerInteractions(customer.id)}
+                  onQuickUpdate={handleQuickUpdate}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Pagination Footer */}
+          {filteredData.length > 0 && (
+            <div className="border-t bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-gray-500">
+                عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} من أصل {filteredData.length} عميل
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  className="p-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowRight size={16} />
+                </button>
+                {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => (
+                  <button
+                    key={idx + 1}
+                    onClick={() => setCurrentPage(idx + 1)}
+                    className={`w-8 h-8 rounded text-sm font-medium transition ${currentPage === idx + 1
+                      ? `${BRAND_BG} text-white`
+                      : 'bg-white border text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  className="p-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+              </div>
             </div>
           )}
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              السابق
-            </Button>
-            <span className="text-sm text-gray-600">
-              صفحة {currentPage} من {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              التالي
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Add Note Dialog */}
-      <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PlusCircle className="w-5 h-5 text-blue-600" />
-              إضافة متابعة جديدة
-            </DialogTitle>
-            <DialogDescription>
-              {selectedCustomer && `للعميل: ${
-                (selectedCustomer.first_name_ar || selectedCustomer.last_name_ar)
-                  ? `${selectedCustomer.first_name_ar || ''} ${selectedCustomer.last_name_ar || ''}`.trim()
-                  : (selectedCustomer.first_name || selectedCustomer.last_name)
-                    ? `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim()
-                    : selectedCustomer.customer_code || 'عميل'
-              }`}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">نوع المتابعة</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { value: 'phone', icon: Phone, label: 'مكالمة' },
-                  { value: 'message', icon: MessageSquare, label: 'رسالة' },
-                  { value: 'meeting', icon: Users, label: 'اجتماع' },
-                  { value: 'general', icon: FileText, label: 'ملاحظة' },
-                ].map(({ value, icon: Icon, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setFollowUpForm(f => ({ ...f, type: value as any }))}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
-                      followUpForm.type === value
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-300"
-                    )}
-                  >
-                    <Icon className="w-5 h-5 text-gray-600" />
-                    <span className="text-xs">{label}</span>
-                  </button>
-                ))}
+      <AnimatePresence>
+        {dialogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border"
+            >
+              <div className="flex justify-between items-center p-5 border-b bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${dialogOpen === 'call' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                    {dialogOpen === 'call' ? <Phone size={20} /> : <MoreHorizontal size={20} />}
+                  </div>
+                  <h3 className="font-bold text-gray-800 text-lg">
+                    {dialogOpen === 'call' ? 'تسجيل مكالمة جديدة' : 'إضافة ملاحظة متابعة'}
+                  </h3>
+                </div>
+                <button onClick={() => setDialogOpen(null)} className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500">
+                  <X size={20} />
+                </button>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">الملاحظات</label>
-              <Textarea
-                rows={4}
-                value={followUpForm.notes}
-                onChange={(e) => setFollowUpForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="اكتب تفاصيل المتابعة..."
-                className="resize-none"
-              />
-            </div>
+              <div className="p-6 space-y-5">
+                {dialogOpen === 'call' && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-3">حالة المكالمة</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: 'answered', label: 'تم الرد ✅', color: 'emerald' },
+                        { id: 'busy', label: 'مشغول ⏳', color: 'orange' },
+                        { id: 'no_answer', label: 'لم يرد 📵', color: 'red' }
+                      ].map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setDialogData({ ...dialogData, outcome: opt.id })}
+                          className={`py-3 text-sm rounded-xl border transition-all ${dialogData.outcome === opt.id
+                            ? `bg-${opt.color}-50 border-${opt.color}-500 text-${opt.color}-700 font-bold ring-1 ring-${opt.color}-500`
+                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">التفاصيل / الملاحظات</label>
+                  <Textarea
+                    value={dialogData.content}
+                    onChange={(e) => setDialogData({ ...dialogData, content: e.target.value })}
+                    className={`w-full p-4 border border-gray-300 rounded-xl focus:ring-2 ${BRAND_RING} outline-none min-h-[120px] text-sm resize-none bg-gray-50 focus:bg-white transition-colors`}
+                    placeholder="اكتب ملخص المكالمة أو الملاحظة هنا..."
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={handleSaveInteraction}
+                    className={`w-full py-3.5 ${BRAND_BG} hover:bg-opacity-90 active:scale-[0.98] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-100`}
+                  >
+                    <Save size={18} />
+                    حفظ السجل
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsAddNoteOpen(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={handleSaveFollowUp} className="bg-blue-600 hover:bg-blue-700">
-              حفظ المتابعة
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
+      </AnimatePresence>
 
       {/* Call Dialog */}
       {callingCustomer && (
@@ -1165,19 +1007,17 @@ export default function CustomerCRMNew() {
           open={callDialogOpen}
           onOpenChange={setCallDialogOpen}
           customerName={
-            // Arabic name first
             (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
               ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
-              // English name fallback
               : (callingCustomer.first_name || callingCustomer.last_name)
                 ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
-                // Customer code fallback
                 : callingCustomer.customer_code || 'عميل'
           }
           customerPhone={callingCustomer.phone || ''}
           onSaveCall={handleSaveCall}
         />
       )}
+
     </div>
   );
 }

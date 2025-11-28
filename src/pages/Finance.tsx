@@ -7,7 +7,6 @@ import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/compo
 
 // Lazy load all finance sub-modules with retry for better reliability
 const FinanceHub = lazyWithRetry(() => import("./finance/FinanceHub"), "FinanceHub");
-const FinanceHubExperimental = lazyWithRetry(() => import("./finance/FinanceHubExperimental"), "FinanceHubExperimental");
 const ReceivePaymentWorkflow = lazyWithRetry(() => import("./finance/operations/ReceivePaymentWorkflow"), "ReceivePaymentWorkflow");
 const Overview = lazyWithRetry(() => import("./finance/Overview"), "Overview");
 const AccountantDashboard = lazyWithRetry(() => import("./finance/AccountantDashboard"), "AccountantDashboard");
@@ -63,25 +62,13 @@ const Finance = () => {
       {/* Redirect from /finance to Finance Hub */}
       <Route index element={<Navigate to="/finance/hub" replace />} />
       
-      {/* Finance Hub - New Unified Interface */}
+      {/* Finance Hub - Unified Interface */}
       <Route 
         path="hub" 
         element={
           <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <FinanceHub />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* Finance Hub Experimental - New Design Test */}
-      <Route 
-        path="hub-test" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinanceHubExperimental />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
