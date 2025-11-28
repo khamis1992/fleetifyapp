@@ -318,7 +318,7 @@ const BentoDashboard: React.FC = () => {
     }
   };
 
-  return (andleActionSelect = (actionId: string) => {
+  const handleActionSelect = (actionId: string) => {
     setSelectedAction(actionId);
   };
 
