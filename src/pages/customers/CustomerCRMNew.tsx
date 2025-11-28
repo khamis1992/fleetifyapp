@@ -6,7 +6,6 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
@@ -45,8 +44,6 @@ import {
   CheckSquare,
   XCircle,
   RefreshCw,
-  LayoutGrid,
-  FlaskConical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -905,24 +902,6 @@ export default function CustomerCRMNew() {
                 />
               </div>
               
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/customers/crm-kanban">
-                      <Button 
-                        variant="outline" 
-                        className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"
-                      >
-                        <FlaskConical className="w-4 h-4" />
-                        <span className="hidden sm:inline">تجربة Kanban</span>
-                        <LayoutGrid className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>جرب التصميم الجديد مع السحب والإفلات</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
               <Button 
                 variant="outline" 
                 size="icon"

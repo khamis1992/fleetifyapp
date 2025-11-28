@@ -5,7 +5,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ContractWizard } from '@/components/contracts/ContractWizard';
@@ -29,6 +29,8 @@ import {
   FilePlus,
   ShoppingCart,
   UserCheck,
+  LayoutGrid,
+  FlaskConical,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -360,6 +362,16 @@ const BentoDashboard: React.FC = () => {
             />
             <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
           </div>
+          
+          {/* Test Dashboard Button */}
+          <Link to="/dashboard-dnd-test">
+            <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-xl border-2 border-purple-200 text-purple-700 text-sm font-medium hover:bg-purple-50 transition-colors">
+              <FlaskConical className="w-4 h-4" />
+              <span className="hidden lg:inline">تجربة</span>
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </Link>
+          
           <button className="relative p-2.5 bg-white rounded-xl border border-neutral-200 hover:bg-neutral-50">
             <Bell className="w-4 h-4 text-neutral-500" />
             <span className="absolute -top-1 -left-1 w-4 h-4 bg-coral-500 rounded-full text-[10px] text-white flex items-center justify-center">
