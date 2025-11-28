@@ -26,7 +26,7 @@ const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
-const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRM'));
+const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
 const Fleet = lazy(() => import('@/pages/Fleet'));
