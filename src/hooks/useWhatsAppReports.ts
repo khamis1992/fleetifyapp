@@ -197,58 +197,134 @@ export const useWhatsAppSettings = () => {
  * Hook للمستلمين
  */
 export const useWhatsAppRecipients = () => {
-  const { settings, saveSettings, companyId } = useWhatsAppSettings();
+  const { settings, companyId, refetch } = useWhatsAppSettings();
   const queryClient = useQueryClient();
 
-  // إضافة مستلم
+  // جلب المستلمين الحاليين من قاعدة البيانات مباشرة
+  const fetchCurrentRecipients = async (): Promise<WhatsAppRecipient[]> => {
+    if (!companyId) return [];
+    
+    const { data, error } = await supabase
+      .from('whatsapp_settings')
+      .select('recipients')
+      .eq('company_id', companyId)
+      .single();
+    
+    if (error || !data) return [];
+    
+    // معالجة البيانات
+    if (typeof data.recipients === 'string') {
+      try {
+        return JSON.parse(data.recipients);
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(data.recipients) ? data.recipients : [];
+  };
+
+  // إضافة مستلم - يجلب البيانات الحالية أولاً ثم يضيف
   const addRecipient = useCallback(async (recipient: Omit<WhatsAppRecipient, 'id'>) => {
+    if (!companyId) {
+      toast.error('لم يتم العثور على معرف الشركة');
+      return null;
+    }
+
     const newRecipient: WhatsAppRecipient = {
       ...recipient,
       id: crypto.randomUUID(),
     };
 
-    const currentRecipients = settings?.recipients || [];
-    await saveSettings({
-      recipients: [...currentRecipients, newRecipient],
-    });
+    try {
+      // جلب المستلمين الحاليين من قاعدة البيانات
+      const currentRecipients = await fetchCurrentRecipients();
+      const updatedRecipients = [...currentRecipients, newRecipient];
 
-    return newRecipient;
-  }, [settings, saveSettings]);
+      // تحديث قاعدة البيانات مباشرة
+      const { error } = await supabase
+        .from('whatsapp_settings')
+        .update({ 
+          recipients: updatedRecipients,
+          updated_at: new Date().toISOString()
+        })
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      // تحديث الكاش
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-settings', companyId] });
+      
+      return newRecipient;
+    } catch (error) {
+      console.error('Error adding recipient:', error);
+      throw error;
+    }
+  }, [companyId, queryClient]);
 
   // تحديث مستلم
   const updateRecipient = useCallback(async (
     recipientId: string,
     updates: Partial<WhatsAppRecipient>
   ) => {
-    const currentRecipients = settings?.recipients || [];
-    const updatedRecipients = currentRecipients.map(r =>
-      r.id === recipientId ? { ...r, ...updates } : r
-    );
+    if (!companyId) return;
 
-    await saveSettings({
-      recipients: updatedRecipients,
-    });
-  }, [settings, saveSettings]);
+    try {
+      const currentRecipients = await fetchCurrentRecipients();
+      const updatedRecipients = currentRecipients.map(r =>
+        r.id === recipientId ? { ...r, ...updates } : r
+      );
+
+      const { error } = await supabase
+        .from('whatsapp_settings')
+        .update({ 
+          recipients: updatedRecipients,
+          updated_at: new Date().toISOString()
+        })
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-settings', companyId] });
+    } catch (error) {
+      console.error('Error updating recipient:', error);
+      throw error;
+    }
+  }, [companyId, queryClient]);
 
   // حذف مستلم
   const removeRecipient = useCallback(async (recipientId: string) => {
-    const currentRecipients = settings?.recipients || [];
-    const filteredRecipients = currentRecipients.filter(r => r.id !== recipientId);
+    if (!companyId) return;
 
-    await saveSettings({
-      recipients: filteredRecipients,
-    });
-  }, [settings, saveSettings]);
+    try {
+      const currentRecipients = await fetchCurrentRecipients();
+      const filteredRecipients = currentRecipients.filter(r => r.id !== recipientId);
+
+      const { error } = await supabase
+        .from('whatsapp_settings')
+        .update({ 
+          recipients: filteredRecipients,
+          updated_at: new Date().toISOString()
+        })
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-settings', companyId] });
+    } catch (error) {
+      console.error('Error removing recipient:', error);
+      throw error;
+    }
+  }, [companyId, queryClient]);
 
   // تبديل حالة المستلم
   const toggleRecipient = useCallback(async (recipientId: string) => {
-    const currentRecipients = settings?.recipients || [];
+    const currentRecipients = await fetchCurrentRecipients();
     const recipient = currentRecipients.find(r => r.id === recipientId);
     
     if (recipient) {
       await updateRecipient(recipientId, { isActive: !recipient.isActive });
     }
-  }, [settings, updateRecipient]);
+  }, [updateRecipient]);
 
   return {
     recipients: settings?.recipients || [],
