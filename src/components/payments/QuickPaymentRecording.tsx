@@ -167,7 +167,9 @@ export function QuickPaymentRecording() {
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
       
-      // Map payment method to payment type
+      // Map UI payment method to database payment_type
+      // payment_method in DB: 'received' or 'made' (direction)
+      // payment_type in DB: 'cash', 'check', 'bank_transfer', 'credit_card', 'online_transfer' (method)
       const paymentTypeMap: Record<string, string> = {
         'cash': 'cash',
         'bank_transfer': 'bank_transfer',
@@ -184,7 +186,7 @@ export function QuickPaymentRecording() {
           invoice_id: selectedInvoice.id,
           amount: amount,
           payment_date: paymentDate,
-          payment_method: paymentMethod,
+          payment_method: 'received', // مستلم من العميل
           payment_number: paymentNumber,
           payment_type: paymentTypeMap[paymentMethod] || 'cash',
           payment_status: 'completed',
