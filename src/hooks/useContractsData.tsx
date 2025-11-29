@@ -116,7 +116,8 @@ export const useContractsData = (filters: any = {}) => {
       status: filters?.status,
       contract_type: filters?.contract_type,
       customer_id: filters?.customer_id,
-      cost_center_id: filters?.cost_center_id
+      cost_center_id: filters?.cost_center_id,
+      search: filters?.search // إضافة البحث للـ queryKey
     }),
     queryFn: async () => {
       try {
@@ -158,6 +159,12 @@ export const useContractsData = (filters: any = {}) => {
           if (filters.status !== 'expiring_soon') {
             countQuery = countQuery.eq('status', filters.status);
           }
+        }
+
+        // Apply search filter to count query as well
+        if (filters?.search && filters.search.trim()) {
+          const searchTerm = filters.search.trim();
+          countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
         }
 
         const { count, error: countError } = await countQuery;
@@ -202,6 +209,13 @@ export const useContractsData = (filters: any = {}) => {
         } else {
           query = query.eq('status', filters.status);
         }
+      }
+
+      // Apply search filter at database level for better performance
+      if (filters?.search && filters.search.trim()) {
+        const searchTerm = filters.search.trim();
+        // Use ilike for case-insensitive search on contract_number
+        query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
       // Apply pagination
