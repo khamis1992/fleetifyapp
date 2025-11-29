@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, DollarSign, Check, X, Loader2 } from 'lucide-react';
+import { Search, DollarSign, Check, X, Loader2, Send, MessageCircle, CheckCircle, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface Customer {
   id: string;
@@ -22,15 +23,28 @@ interface Invoice {
   invoice_date: string;
   due_date: string;
   total_amount: number;
+  balance_due: number;
   status: string;
+  payment_status: string;
   contract_id: string;
   contracts: {
     contract_number: string;
   };
 }
 
+interface PaymentSuccess {
+  paymentId: string;
+  amount: number;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone: string;
+  paymentMethod: string;
+  paymentDate: string;
+}
+
 export function QuickPaymentRecording() {
   const { toast } = useToast();
+  const { companyId } = useUnifiedCompanyAccess();
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -40,6 +54,8 @@ export function QuickPaymentRecording() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<PaymentSuccess | null>(null);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
 
   const searchCustomers = async () => {
     if (!searchTerm.trim()) return;
@@ -89,12 +105,14 @@ export function QuickPaymentRecording() {
           invoice_date,
           due_date,
           total_amount,
+          balance_due,
           status,
+          payment_status,
           contract_id,
           contracts (contract_number)
         `)
         .eq('customer_id', customer.id)
-        .in('status', ['sent', 'unpaid', 'pending', 'overdue', 'partially_paid'])
+        .in('payment_status', ['unpaid', 'partial'])
         .order('due_date', { ascending: true });
 
       if (error) throw error;
@@ -118,7 +136,9 @@ export function QuickPaymentRecording() {
 
   const selectInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
-    setPaymentAmount(invoice.total_amount.toString());
+    // Use balance_due if available, otherwise total_amount
+    const amountDue = invoice.balance_due ?? invoice.total_amount;
+    setPaymentAmount(amountDue.toString());
   };
 
   const processPayment = async () => {
@@ -144,14 +164,16 @@ export function QuickPaymentRecording() {
     setProcessing(true);
     try {
       // 1. Create payment record
+      const paymentDate = new Date().toISOString().split('T')[0];
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .insert({
+          company_id: companyId,
           customer_id: selectedCustomer.id,
           contract_id: selectedInvoice.contract_id,
           invoice_id: selectedInvoice.id,
           payment_amount: amount,
-          payment_date: new Date().toISOString().split('T')[0],
+          payment_date: paymentDate,
           payment_method: paymentMethod,
           status: 'completed',
         })
@@ -160,74 +182,62 @@ export function QuickPaymentRecording() {
 
       if (paymentError) throw paymentError;
 
-      // 2. Update invoice status
-      const newStatus = amount >= selectedInvoice.total_amount ? 'paid' : 'partial';
+      // 2. Update invoice payment_status and balance_due
+      const currentBalance = selectedInvoice.balance_due ?? selectedInvoice.total_amount;
+      const newBalance = Math.max(0, currentBalance - amount);
+      const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
+      
       const { error: invoiceError } = await supabase
         .from('invoices')
-        .update({ status: newStatus })
+        .update({ 
+          payment_status: newPaymentStatus,
+          paid_amount: (selectedInvoice.total_amount - newBalance),
+          balance_due: newBalance
+        })
         .eq('id', selectedInvoice.id);
 
       if (invoiceError) throw invoiceError;
 
-      // 3. Update contract balance
-      const { data: contract, error: contractFetchError } = await supabase
-        .from('contracts')
-        .select('total_paid, balance_due, contract_amount')
-        .eq('id', selectedInvoice.contract_id)
-        .single();
+      // 3. Update contract balance if contract exists
+      if (selectedInvoice.contract_id) {
+        const { data: contract, error: contractFetchError } = await supabase
+          .from('contracts')
+          .select('total_paid, balance_due, contract_amount')
+          .eq('id', selectedInvoice.contract_id)
+          .single();
 
-      if (contractFetchError) throw contractFetchError;
+        if (!contractFetchError && contract) {
+          const newTotalPaid = (contract.total_paid || 0) + amount;
+          const newContractBalance = Math.max(0, (contract.contract_amount || 0) - newTotalPaid);
 
-      const newTotalPaid = (contract.total_paid || 0) + amount;
-      const newBalanceDue = contract.contract_amount - newTotalPaid;
-
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          total_paid: newTotalPaid,
-          balance_due: newBalanceDue,
-          last_payment_date: new Date().toISOString().split('T')[0],
-          payment_status: newBalanceDue <= 0 ? 'paid' : newBalanceDue < contract.contract_amount ? 'partial' : 'unpaid',
-        })
-        .eq('id', selectedInvoice.contract_id);
-
-      if (contractError) throw contractError;
-
-      // 4. Send receipt via WhatsApp
-      if (selectedCustomer.phone) {
-        const message = `
-✅ إيصال دفع
-
-عزيزي ${selectedCustomer.first_name} ${selectedCustomer.last_name || ''},
-
-تم استلام دفعتك بنجاح:
-📄 رقم الفاتورة: ${selectedInvoice.invoice_number}
-💰 المبلغ المدفوع: ${amount.toFixed(2)} ريال
-📅 تاريخ الدفع: ${new Date().toLocaleDateString('ar-EG')}
-💳 طريقة الدفع: ${paymentMethod === 'cash' ? 'نقدي' : paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'أخرى'}
-
-شكراً لتعاملكم معنا.
-        `.trim();
-
-        await supabase.functions.invoke('send-whatsapp-reminders', {
-          body: {
-            phone: selectedCustomer.phone,
-            message: message,
-          },
-        });
+          await supabase
+            .from('contracts')
+            .update({
+              total_paid: newTotalPaid,
+              balance_due: newContractBalance,
+              last_payment_date: paymentDate,
+              payment_status: newContractBalance <= 0 ? 'paid' : newTotalPaid > 0 ? 'partial' : 'unpaid',
+            })
+            .eq('id', selectedInvoice.contract_id);
+        }
       }
 
-      toast({
-        title: 'تم تسجيل الدفعة بنجاح',
-        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ريال وإرسال الإيصال للعميل`,
+      // Show success screen with receipt option
+      setPaymentSuccess({
+        paymentId: payment.id,
+        amount: amount,
+        invoiceNumber: selectedInvoice.invoice_number,
+        customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
+        customerPhone: selectedCustomer.phone,
+        paymentMethod: paymentMethod,
+        paymentDate: paymentDate,
       });
 
-      // Reset form
-      setSelectedCustomer(null);
-      setSelectedInvoice(null);
-      setInvoices([]);
-      setPaymentAmount('');
-      setPaymentMethod('cash');
+      toast({
+        title: 'تم تسجيل الدفعة بنجاح ✅',
+        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق`,
+      });
+
     } catch (error) {
       console.error('Error processing payment:', error);
       toast({
@@ -240,6 +250,91 @@ export function QuickPaymentRecording() {
     }
   };
 
+  const sendReceiptViaWhatsApp = async () => {
+    if (!paymentSuccess || !paymentSuccess.customerPhone) {
+      toast({
+        title: 'لا يوجد رقم هاتف',
+        description: 'لا يمكن إرسال الإيصال لعدم وجود رقم هاتف للعميل',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingReceipt(true);
+    try {
+      const paymentMethodLabel = 
+        paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
+        paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
+        paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
+
+      const message = `
+📄 *سند قبض*
+
+━━━━━━━━━━━━━━━
+
+عزيزي/عزيزتي *${paymentSuccess.customerName}*،
+
+تم استلام دفعتكم بنجاح ✅
+
+📋 *تفاصيل الدفعة:*
+• رقم الفاتورة: ${paymentSuccess.invoiceNumber}
+• المبلغ المدفوع: *${paymentSuccess.amount.toFixed(2)} ر.ق*
+• تاريخ الدفع: ${new Date(paymentSuccess.paymentDate).toLocaleDateString('ar-QA')}
+• طريقة الدفع: ${paymentMethodLabel}
+
+━━━━━━━━━━━━━━━
+
+شكراً لتعاملكم معنا 🙏
+
+_شركة العراف لتأجير السيارات_
+      `.trim();
+
+      // Use Ultramsg API directly
+      const { data: settings } = await supabase
+        .from('whatsapp_settings')
+        .select('ultramsg_instance_id, ultramsg_token')
+        .eq('company_id', companyId)
+        .single();
+
+      if (settings?.ultramsg_instance_id && settings?.ultramsg_token) {
+        const response = await fetch(
+          `https://api.ultramsg.com/${settings.ultramsg_instance_id}/messages/chat`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              token: settings.ultramsg_token,
+              to: paymentSuccess.customerPhone,
+              body: message,
+            }),
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to send WhatsApp message');
+
+        toast({
+          title: 'تم إرسال سند القبض ✅',
+          description: `تم إرسال سند القبض إلى ${paymentSuccess.customerPhone}`,
+        });
+      } else {
+        toast({
+          title: 'إعدادات واتساب غير مكتملة',
+          description: 'يرجى إعداد واتساب من الإعدادات أولاً',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending receipt:', error);
+      toast({
+        title: 'خطأ في إرسال سند القبض',
+        description: 'حدث خطأ أثناء الإرسال، يرجى المحاولة مرة أخرى',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingReceipt(false);
+    }
+  };
+
   const resetForm = () => {
     setSelectedCustomer(null);
     setSelectedInvoice(null);
@@ -248,10 +343,79 @@ export function QuickPaymentRecording() {
     setPaymentMethod('cash');
     setSearchTerm('');
     setCustomers([]);
+    setPaymentSuccess(null);
   };
 
   return (
     <div className="space-y-6">
+      {/* Payment Success Screen */}
+      {paymentSuccess && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              
+              <div>
+                <h3 className="text-2xl font-bold text-green-800">تم تسجيل الدفعة بنجاح!</h3>
+                <p className="text-green-600 mt-1">تم حفظ الدفعة في النظام</p>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 space-y-3 text-right border border-green-200">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-lg">{paymentSuccess.amount.toFixed(2)} ر.ق</span>
+                  <span className="text-muted-foreground">المبلغ المدفوع</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>{paymentSuccess.invoiceNumber}</span>
+                  <span className="text-muted-foreground">رقم الفاتورة</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>{paymentSuccess.customerName}</span>
+                  <span className="text-muted-foreground">العميل</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>{new Date(paymentSuccess.paymentDate).toLocaleDateString('ar-QA')}</span>
+                  <span className="text-muted-foreground">التاريخ</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">هل تريد إرسال سند القبض للعميل؟</p>
+                
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={sendReceiptViaWhatsApp} 
+                    disabled={sendingReceipt || !paymentSuccess.customerPhone}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {sendingReceipt ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : (
+                      <MessageCircle className="h-4 w-4 ml-2" />
+                    )}
+                    إرسال عبر واتساب
+                  </Button>
+                  
+                  <Button variant="outline" onClick={resetForm}>
+                    دفعة جديدة
+                  </Button>
+                </div>
+
+                {!paymentSuccess.customerPhone && (
+                  <p className="text-xs text-amber-600">
+                    ⚠️ لا يوجد رقم هاتف للعميل
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main Payment Form */}
+      {!paymentSuccess && (
       <Card>
         <CardHeader>
           <CardTitle>تسجيل دفعة سريع</CardTitle>
@@ -415,6 +579,7 @@ export function QuickPaymentRecording() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

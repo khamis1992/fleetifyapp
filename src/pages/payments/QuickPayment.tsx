@@ -176,44 +176,6 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                   </CardContent>
                 </Card>
 
-                {/* Quick Entry Features */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="border-dashed">
-                    <CardContent className="p-4 text-center">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Users className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <h3 className="font-semibold mb-1">بحث ذكي</h3>
-                      <p className="text-sm text-muted-foreground">
-                        ابحث عن العملاء بالاسم أو رقم الهاتف
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-dashed">
-                    <CardContent className="p-4 text-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <CreditCard className="h-6 w-6 text-green-600" />
-                      </div>
-                      <h3 className="font-semibold mb-1">دفع فوري</h3>
-                      <p className="text-sm text-muted-foreground">
-                        سجل الدفعات لجميع طرق الدفع
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-dashed">
-                    <CardContent className="p-4 text-center">
-                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <CheckCircle className="h-6 w-6 text-purple-600" />
-                      </div>
-                      <h3 className="font-semibold mb-1">إيصال تلقائي</h3>
-                      <p className="text-sm text-muted-foreground">
-                        إرسال إيصال الدفع عبر واتساب
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
               </TabsContent>
 
               <TabsContent value="payment-history" className="mt-0">
