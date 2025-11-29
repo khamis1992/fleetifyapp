@@ -200,6 +200,14 @@ export function QuickPaymentRecording() {
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
       
+      console.log('Processing payment with:', {
+        companyId,
+        customerId: selectedCustomer.id,
+        invoiceIds: selectedInvoices.map(i => i.id),
+        amount,
+        paymentMethod
+      });
+      
       const paymentTypeMap: Record<string, string> = {
         'cash': 'cash',
         'bank_transfer': 'bank_transfer',
@@ -236,7 +244,11 @@ export function QuickPaymentRecording() {
         .select()
         .single();
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('Payment insert error:', paymentError);
+        throw paymentError;
+      }
+      console.log('Payment created successfully:', payment);
 
       // Update all selected invoices
       let remainingAmount = amount;
@@ -311,11 +323,13 @@ export function QuickPaymentRecording() {
         description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق لـ ${selectedInvoices.length} فاتورة`,
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error processing payment:', error);
+      const errorMessage = error instanceof Error ? error.message : 
+        (error as { message?: string })?.message || 'حدث خطأ غير معروف';
       toast({
         title: 'خطأ في معالجة الدفعة',
-        description: 'حدث خطأ أثناء معالجة الدفعة، يرجى المحاولة مرة أخرى',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
