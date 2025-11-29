@@ -250,6 +250,10 @@ export function QuickPaymentRecording() {
 
       if (paymentError) {
         console.error('Payment insert error:', JSON.stringify(paymentError, null, 2));
+        // Check for duplicate payment error
+        if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
+          throw new Error('⚠️ هذه الدفعة مسجلة بالفعل! لا يمكن تسجيل نفس المبلغ لنفس العميل والعقد في نفس اليوم.');
+        }
         throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message || paymentError.code || JSON.stringify(paymentError)}`);
       }
       console.log('Payment created successfully:', payment);
