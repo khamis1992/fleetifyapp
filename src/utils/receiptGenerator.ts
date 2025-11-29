@@ -85,6 +85,71 @@ export function downloadPDF(blob: Blob, filename: string): void {
 }
 
 /**
+ * Generate standalone HTML file from element
+ */
+export async function generateReceiptHTML(element: HTMLElement): Promise<string> {
+  // Clone the element
+  const clone = element.cloneNode(true) as HTMLElement;
+  
+  // Get computed styles
+  const computedStyle = window.getComputedStyle(element);
+  
+  // Create HTML document
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سند قبض - Payment Receipt</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, Tahoma, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  ${clone.outerHTML}
+</body>
+</html>`;
+  
+  return html;
+}
+
+/**
+ * Download HTML file
+ */
+export function downloadHTML(html: string, filename: string): void {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename.replace('.pdf', '.html');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Convert number to Arabic words
  */
 export function numberToArabicWords(num: number): string {

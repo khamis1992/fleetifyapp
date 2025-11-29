@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { PaymentReceipt } from './PaymentReceipt';
-import { generateReceiptPDF, downloadPDF, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
+import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 
 interface Customer {
   id: string;
@@ -350,21 +350,21 @@ export function QuickPaymentRecording() {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadReceipt = async () => {
     if (!receiptRef.current || !paymentSuccess) return;
     
     setGeneratingPDF(true);
     try {
-      const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
-      downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
+      const html = await generateReceiptHTML(receiptRef.current);
+      downloadHTML(html, `سند-قبض-${paymentSuccess.receiptNumber}.html`);
       toast({
         title: 'تم تحميل السند ✅',
-        description: 'تم حفظ سند القبض بصيغة PDF',
+        description: 'تم حفظ سند القبض بصيغة HTML - يمكن طباعته مباشرة',
       });
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating HTML:', error);
       toast({
-        title: 'خطأ في إنشاء PDF',
+        title: 'خطأ في إنشاء الملف',
         description: 'حدث خطأ أثناء إنشاء الملف',
         variant: 'destructive',
       });
@@ -424,10 +424,10 @@ export function QuickPaymentRecording() {
       }
       phone = phone.replace('+', '');
 
-      // Generate PDF
+      // Generate HTML
       if (receiptRef.current) {
-        const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
-        downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
+        const html = await generateReceiptHTML(receiptRef.current);
+        downloadHTML(html, `سند-قبض-${paymentSuccess.receiptNumber}.html`);
       }
 
       // Open WhatsApp Web
@@ -436,7 +436,7 @@ export function QuickPaymentRecording() {
 
       toast({
         title: 'تم فتح واتساب ويب',
-        description: 'تم تحميل سند القبض، أرفقه في المحادثة ثم اضغط إرسال',
+        description: 'تم تحميل سند القبض HTML، أرفقه في المحادثة ثم اضغط إرسال',
       });
     } catch (error) {
       console.error('Error:', error);
@@ -529,11 +529,11 @@ export function QuickPaymentRecording() {
 
                   <Button 
                     variant="outline" 
-                    onClick={handleDownloadPDF}
+                    onClick={handleDownloadReceipt}
                     disabled={generatingPDF || !showReceipt}
                   >
                     <Download className="h-4 w-4 ml-2" />
-                    تحميل PDF
+                    تحميل السند
                   </Button>
                   
                   <Button variant="ghost" onClick={resetForm}>
