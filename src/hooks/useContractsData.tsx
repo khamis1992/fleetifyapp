@@ -116,7 +116,8 @@ export const useContractsData = (filters: any = {}) => {
       status: filters?.status,
       contract_type: filters?.contract_type,
       customer_id: filters?.customer_id,
-      cost_center_id: filters?.cost_center_id
+      cost_center_id: filters?.cost_center_id,
+      search: filters?.search // إضافة البحث إلى مفتاح الاستعلام
     }),
     queryFn: async () => {
       try {
@@ -136,8 +137,27 @@ export const useContractsData = (filters: any = {}) => {
           page: filters?.page,
           pageSize: filters?.pageSize,
           statusFilter: filters?.status,
+          searchTerm: filters?.search,
           allFilters: filters
         });
+
+      // البحث في قاعدة البيانات - إذا كان هناك نص بحث
+      const searchTerm = filters?.search?.trim() || '';
+      let customerIds: string[] = [];
+      
+      // إذا كان هناك نص بحث، نبحث أولاً عن العملاء المطابقين
+      if (searchTerm) {
+        const { data: matchingCustomers } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('company_id', companyId)
+          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,first_name_ar.ilike.%${searchTerm}%,last_name_ar.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,company_name_ar.ilike.%${searchTerm}%`);
+        
+        if (matchingCustomers && matchingCustomers.length > 0) {
+          customerIds = matchingCustomers.map(c => c.id);
+        }
+        console.log('🔍 [CONTRACTS_QUERY] Found matching customers:', customerIds.length);
+      }
 
       // Get total count if pagination is requested
       let totalCount = 0;
@@ -157,6 +177,15 @@ export const useContractsData = (filters: any = {}) => {
         if (filters?.status && filters.status !== 'all' && filters.status !== '') {
           if (filters.status !== 'expiring_soon') {
             countQuery = countQuery.eq('status', filters.status);
+          }
+        }
+
+        // Apply search filter to count query
+        if (searchTerm) {
+          if (customerIds.length > 0) {
+            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
+          } else {
+            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
           }
         }
 
@@ -201,6 +230,15 @@ export const useContractsData = (filters: any = {}) => {
           // Special handling for expiring_soon - handled in frontend filtering
         } else {
           query = query.eq('status', filters.status);
+        }
+      }
+
+      // Apply search filter at database level
+      if (searchTerm) {
+        if (customerIds.length > 0) {
+          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
+        } else {
+          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
         }
       }
 
