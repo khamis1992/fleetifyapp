@@ -70,12 +70,14 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
 
   logErrorToService = (error: Error, errorInfo: React.ErrorInfo) => {
     // Log error to Sentry with context
-    const errorContext = {
+    const errorLog = {
       route: this.props.routeName,
       componentStack: errorInfo.componentStack,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       errorCount: this.state.errorCount + 1,
+      errorMessage: error.message,
+      errorStack: error.stack,
     };
     
     // Add breadcrumb for debugging
@@ -90,7 +92,7 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
     });
     
     // Capture exception in Sentry
-    captureException(error, errorContext);
+    captureException(error, errorLog);
 
     // For now, log to console in dev
     if (import.meta.env.DEV) {

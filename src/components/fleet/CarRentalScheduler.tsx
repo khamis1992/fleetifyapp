@@ -335,10 +335,10 @@ export default function CarRentalScheduler() {
       // Try to fetch from employees with driver position
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, phone, position, status')
+        .select('id, first_name, last_name, phone, position, is_active')
         .eq('company_id', companyId)
         .ilike('position', '%سائق%')
-        .eq('status', 'active');
+        .eq('is_active', true);
 
       if (error) {
         console.error('Error fetching drivers:', error);
@@ -350,7 +350,7 @@ export default function CarRentalScheduler() {
         name: `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'سائق',
         license: `DL-${emp.id?.slice(0, 6) || '000000'}`,
         phone: emp.phone || '',
-        status: emp.status === 'active' ? 'available' : 'busy',
+        status: emp.is_active ? 'available' : 'busy',
         location: '',
         employeeId: emp.id,
       })) as Driver[];

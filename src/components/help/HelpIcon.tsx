@@ -24,10 +24,18 @@ export const HelpIcon: React.FC<HelpIconProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   
+  // Guard against undefined topic
+  if (!topic) {
+    return null;
+  }
+  
   const helpData = financialHelpContent[topic];
   
   if (!helpData) {
-    console.warn(`Help content not found for topic: ${topic}`);
+    // Only warn in development
+    if (import.meta.env.DEV) {
+      console.warn(`Help content not found for topic: ${topic}`);
+    }
     return null;
   }
 
