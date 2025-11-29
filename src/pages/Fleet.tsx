@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
-import { Plus, Car, AlertTriangle, TrendingUp, Wrench, Calculator, Layers3, Upload, Search, ChevronDown, RotateCcw, Eye, Edit, MoreVertical, ChevronLeft, ChevronRight, Trash2, Copy, Download, FileText, Camera } from "lucide-react"
+import { Plus, Car, AlertTriangle, TrendingUp, Wrench, Calculator, Layers3, Upload, Search, ChevronDown, RotateCcw, Eye, Edit, MoreVertical, ChevronLeft, ChevronRight, Trash2, Copy, Download, FileText, Camera, List, Columns } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { VehicleForm } from "@/components/fleet/VehicleForm"
 import { VehicleGroupManagement } from "@/components/fleet/VehicleGroupManagement"
 import { VehicleCSVUpload } from "@/components/fleet/VehicleCSVUpload"
+import { VehicleSplitView } from "@/components/fleet/VehicleSplitView"
 import { useVehiclesPaginated, VehicleFilters as IVehicleFilters } from "@/hooks/useVehiclesPaginated"
 import { useFleetStatus } from "@/hooks/useFleetStatus"
 import { useAuth } from "@/contexts/AuthContext"
@@ -36,6 +37,7 @@ export default function Fleet() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [searchQuery, setSearchQuery] = useState("")
+  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid') // View mode toggle
   const [filters, setFilters] = useState<IVehicleFilters>({
     excludeMaintenanceStatus: false
   })
@@ -167,7 +169,35 @@ export default function Fleet() {
               <h1 className="text-3xl font-bold text-foreground font-cairo">إدارة الأسطول</h1>
               <p className="text-base text-muted-foreground mt-2 font-tajawal">إدارة أسطول المركبات والصيانة والعمليات</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* View Toggle */}
+              <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-border">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "rounded-lg px-3",
+                    viewMode === 'grid' && "bg-coral-500 text-white hover:bg-coral-600"
+                  )}
+                >
+                  <List className="w-4 h-4 ml-1" />
+                  شبكة
+                </Button>
+                <Button
+                  variant={viewMode === 'split' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('split')}
+                  className={cn(
+                    "rounded-lg px-3",
+                    viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                  )}
+                >
+                  <Columns className="w-4 h-4 ml-1" />
+                  مقسم
+                </Button>
+              </div>
+              
               <Button 
                 onClick={() => setShowVehicleForm(true)}
                 className="bg-gradient-to-r from-primary-dark to-primary hover:shadow-glow transition-all"
@@ -398,8 +428,16 @@ export default function Fleet() {
           </CardContent>
         </Card>
 
-        {/* Vehicles Grid */}
-        {vehiclesLoading ? (
+        {/* Vehicles View - Grid or Split */}
+        {viewMode === 'split' ? (
+          <VehicleSplitView
+            vehicles={vehiclesData?.data || []}
+            isLoading={vehiclesLoading}
+            companyId={user?.profile?.company_id || null}
+            onEditVehicle={handleEditVehicle}
+            onDeleteVehicle={(vehicle) => setVehicleToDelete(vehicle)}
+          />
+        ) : vehiclesLoading ? (
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
@@ -623,7 +661,7 @@ export default function Fleet() {
               عرض <span className="font-semibold">{((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, vehiclesData.count)}</span> من <span className="font-semibold">{vehiclesData.count}</span> مركبة
             </div>
           </>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Car className="h-16 w-16 text-muted-foreground mb-4" />
@@ -639,7 +677,7 @@ export default function Fleet() {
               )}
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         {/* Dialogs */}
         <Dialog open={showVehicleForm} onOpenChange={handleVehicleFormClose}>
