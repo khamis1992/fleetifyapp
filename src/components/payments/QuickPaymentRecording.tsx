@@ -550,8 +550,8 @@ export function QuickPaymentRecording() {
 
               {/* Receipt Preview */}
               {showReceipt && (
-                <div className="mt-6 border rounded-lg overflow-auto bg-gray-100 p-4" style={{ maxHeight: '600px' }}>
-                  <div className="transform scale-75 origin-top">
+                <div className="mt-6 border rounded-lg overflow-auto bg-gray-100 p-2 sm:p-4" style={{ maxHeight: '80vh' }}>
+                  <div className="w-full">
                     <PaymentReceipt
                       ref={receiptRef}
                       receiptNumber={paymentSuccess.receiptNumber}
