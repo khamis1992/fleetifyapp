@@ -542,6 +542,12 @@ const adminItems: NavSection[] = [
     icon: Database,
     requiresSuperAdmin: true,
   },
+  {
+    id: 'admin-whatsapp',
+    name: 'تقارير واتساب',
+    href: '/settings/whatsapp',
+    icon: MessageSquare,
+  },
 ]
 
 // ============================================================================

@@ -69,6 +69,7 @@ const AuditLogsPage = lazy(() => import('@/pages/AuditLogsPage'));
 const PermissionsManagement = lazy(() => import('@/pages/PermissionsManagement'));
 const SubscriptionPage = lazy(() => import('@/pages/SubscriptionPage'));
 const ElectronicSignatureSettings = lazy(() => import('@/pages/settings/ElectronicSignatureSettings'));
+const WhatsAppSettings = lazy(() => import('@/pages/settings/WhatsAppSettings'));
 
 // Property Management pages
 const Properties = lazy(() => import('@/pages/Properties'));
@@ -790,6 +791,18 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
+  {
+    path: '/settings/whatsapp',
+    component: WhatsAppSettings,
+    lazy: true,
+    exact: true,
+    title: 'WhatsApp Reports',
+    description: 'WhatsApp reports and notifications settings',
+    group: 'settings',
+    priority: 57,
+    protected: true,
+    layout: 'bento',
+  },
 
   // === Property Management Routes ===
   {
@@ -891,7 +904,7 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
-    path: '/fleet/violations',
+    path: '/fleet/traffic-violations',
     component: TrafficViolations,
     lazy: true,
     exact: true,
@@ -903,7 +916,7 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
-    path: '/fleet/violations/payments',
+    path: '/fleet/traffic-violations/payments',
     component: TrafficViolationPayments,
     lazy: true,
     exact: true,
