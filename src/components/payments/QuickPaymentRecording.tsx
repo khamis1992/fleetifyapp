@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, DollarSign, Check, X, Loader2, Send, MessageCircle, CheckCircle, Printer } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, DollarSign, Check, X, Loader2, Send, MessageCircle, CheckCircle, Printer, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { PaymentReceipt } from './PaymentReceipt';
+import { generateReceiptPDF, downloadPDF, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 
 interface Customer {
   id: string;
@@ -34,17 +36,20 @@ interface Invoice {
 
 interface PaymentSuccess {
   paymentId: string;
+  receiptNumber: string;
   amount: number;
   invoiceNumber: string;
   customerName: string;
   customerPhone: string;
   paymentMethod: string;
   paymentDate: string;
+  description: string;
 }
 
 export function QuickPaymentRecording() {
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -55,6 +60,8 @@ export function QuickPaymentRecording() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<PaymentSuccess | null>(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const searchCustomers = async () => {
     if (!searchTerm.trim()) return;
@@ -237,14 +244,17 @@ export function QuickPaymentRecording() {
       }
 
       // Show success screen with receipt option
+      const contractNumber = selectedInvoice.contracts?.contract_number || '';
       setPaymentSuccess({
         paymentId: payment.id,
+        receiptNumber: generateReceiptNumber(),
         amount: amount,
         invoiceNumber: selectedInvoice.invoice_number,
         customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
         customerPhone: selectedCustomer.phone,
         paymentMethod: paymentMethod,
         paymentDate: paymentDate,
+        description: `دفعة إيجار - عقد رقم ${contractNumber} - فاتورة ${selectedInvoice.invoice_number}`,
       });
 
       toast({
@@ -264,7 +274,30 @@ export function QuickPaymentRecording() {
     }
   };
 
-  const sendReceiptViaWhatsApp = () => {
+  const handleDownloadPDF = async () => {
+    if (!receiptRef.current || !paymentSuccess) return;
+    
+    setGeneratingPDF(true);
+    try {
+      const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
+      downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
+      toast({
+        title: 'تم تحميل السند ✅',
+        description: 'تم حفظ سند القبض بصيغة PDF',
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'خطأ في إنشاء PDF',
+        description: 'حدث خطأ أثناء إنشاء الملف',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const sendReceiptViaWhatsApp = async () => {
     if (!paymentSuccess || !paymentSuccess.customerPhone) {
       toast({
         title: 'لا يوجد رقم هاتف',
@@ -274,12 +307,27 @@ export function QuickPaymentRecording() {
       return;
     }
 
-    const paymentMethodLabel = 
-      paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
-      paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
-      paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
+    // First, show the receipt for PDF generation
+    setShowReceipt(true);
+    setGeneratingPDF(true);
 
-    const message = `📄 *سند قبض*
+    // Wait a moment for the receipt to render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+      // Generate PDF
+      if (receiptRef.current) {
+        const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
+        // Download the PDF first so user can attach it
+        downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
+      }
+
+      const paymentMethodLabel = 
+        paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
+        paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
+        paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
+
+      const message = `📄 *سند قبض رقم: ${paymentSuccess.receiptNumber}*
 
 ━━━━━━━━━━━━━━━
 
@@ -288,34 +336,49 @@ export function QuickPaymentRecording() {
 تم استلام دفعتكم بنجاح ✅
 
 📋 *تفاصيل الدفعة:*
+• رقم السند: ${paymentSuccess.receiptNumber}
 • رقم الفاتورة: ${paymentSuccess.invoiceNumber}
 • المبلغ المدفوع: *${paymentSuccess.amount.toFixed(2)} ر.ق*
-• تاريخ الدفع: ${new Date(paymentSuccess.paymentDate).toLocaleDateString('ar-QA')}
+• المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
+• تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
 • طريقة الدفع: ${paymentMethodLabel}
 
 ━━━━━━━━━━━━━━━
+
+📎 *مرفق: سند القبض PDF*
+(تم تحميل الملف على جهازك، يرجى إرفاقه في المحادثة)
 
 شكراً لتعاملكم معنا 🙏
 
 _شركة العراف لتأجير السيارات_`;
 
-    // Format phone number (remove leading zeros and add country code if needed)
-    let phone = paymentSuccess.customerPhone.replace(/\s+/g, '').replace(/-/g, '');
-    if (phone.startsWith('0')) {
-      phone = '974' + phone.substring(1); // Qatar country code
-    } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
-      phone = '974' + phone;
+      // Format phone number
+      let phone = paymentSuccess.customerPhone.replace(/\s+/g, '').replace(/-/g, '');
+      if (phone.startsWith('0')) {
+        phone = '974' + phone.substring(1);
+      } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
+        phone = '974' + phone;
+      }
+      phone = phone.replace('+', '');
+
+      // Open WhatsApp Web
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+
+      toast({
+        title: 'تم فتح واتساب ✅',
+        description: 'تم تحميل سند القبض PDF، أرفقه في محادثة واتساب ثم اضغط إرسال',
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء إنشاء السند',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingPDF(false);
     }
-    phone = phone.replace('+', '');
-
-    // Open WhatsApp Web with pre-filled message
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-
-    toast({
-      title: 'تم فتح واتساب ✅',
-      description: 'اضغط إرسال في واتساب لإتمام العملية',
-    });
   };
 
   const resetForm = () => {
@@ -351,6 +414,10 @@ _شركة العراف لتأجير السيارات_`;
                   <span className="text-muted-foreground">المبلغ المدفوع</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
+                  <span className="font-mono">{paymentSuccess.receiptNumber}</span>
+                  <span className="text-muted-foreground">رقم السند</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
                   <span>{paymentSuccess.invoiceNumber}</span>
                   <span className="text-muted-foreground">رقم الفاتورة</span>
                 </div>
@@ -359,7 +426,7 @@ _شركة العراف لتأجير السيارات_`;
                   <span className="text-muted-foreground">العميل</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>{new Date(paymentSuccess.paymentDate).toLocaleDateString('ar-QA')}</span>
+                  <span>{formatReceiptDate(paymentSuccess.paymentDate)}</span>
                   <span className="text-muted-foreground">التاريخ</span>
                 </div>
               </div>
@@ -367,17 +434,38 @@ _شركة العراف لتأجير السيارات_`;
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">هل تريد إرسال سند القبض للعميل؟</p>
                 
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center flex-wrap">
                   <Button 
                     onClick={sendReceiptViaWhatsApp} 
-                    disabled={!paymentSuccess.customerPhone}
+                    disabled={!paymentSuccess.customerPhone || generatingPDF}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    <MessageCircle className="h-4 w-4 ml-2" />
+                    {generatingPDF ? (
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-4 w-4 ml-2" />
+                    )}
                     إرسال عبر واتساب
                   </Button>
                   
-                  <Button variant="outline" onClick={resetForm}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowReceipt(!showReceipt)}
+                  >
+                    <FileText className="h-4 w-4 ml-2" />
+                    {showReceipt ? 'إخفاء السند' : 'معاينة السند'}
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDownloadPDF}
+                    disabled={generatingPDF || !showReceipt}
+                  >
+                    <Download className="h-4 w-4 ml-2" />
+                    تحميل PDF
+                  </Button>
+                  
+                  <Button variant="ghost" onClick={resetForm}>
                     دفعة جديدة
                   </Button>
                 </div>
@@ -388,6 +476,24 @@ _شركة العراف لتأجير السيارات_`;
                   </p>
                 )}
               </div>
+
+              {/* Receipt Preview */}
+              {showReceipt && (
+                <div className="mt-6 border rounded-lg overflow-auto bg-gray-100 p-4" style={{ maxHeight: '600px' }}>
+                  <div className="transform scale-75 origin-top">
+                    <PaymentReceipt
+                      ref={receiptRef}
+                      receiptNumber={paymentSuccess.receiptNumber}
+                      date={formatReceiptDate(paymentSuccess.paymentDate)}
+                      customerName={paymentSuccess.customerName}
+                      amountInWords={numberToArabicWords(paymentSuccess.amount)}
+                      amount={paymentSuccess.amount}
+                      description={paymentSuccess.description}
+                      paymentMethod={paymentSuccess.paymentMethod as 'cash' | 'check' | 'bank_transfer' | 'other'}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
