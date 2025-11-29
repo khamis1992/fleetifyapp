@@ -269,7 +269,14 @@ export const useUpdateContractStatus = () => {
       return { data, contractData };
     },
     onSuccess: async (result, variables) => {
+      // Invalidate all contract-related queries to ensure UI updates immediately
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-details"] });
+      queryClient.invalidateQueries({ queryKey: ["contract"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-contracts-new"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["expiring-contracts"] });
       
       // Log audit trail
       await createAuditLog(

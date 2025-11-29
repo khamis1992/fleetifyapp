@@ -8,22 +8,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, Pause, XCircle, Play } from 'lucide-react';
 import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ContractStatusManagementProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contract: any;
+  onStatusUpdated?: (newStatus: string) => void;
 }
 
 export const ContractStatusManagement: React.FC<ContractStatusManagementProps> = ({
   open,
   onOpenChange,
-  contract
+  contract,
+  onStatusUpdated
 }) => {
+  const queryClient = useQueryClient();
   const [statusData, setStatusData] = React.useState({
     status: contract?.status || 'active',
     reason: ''
   });
+
+  // Update status data when contract changes
+  React.useEffect(() => {
+    if (contract?.status) {
+      setStatusData(prev => ({
+        ...prev,
+        status: contract.status
+      }));
+    }
+  }, [contract?.status]);
 
   const updateStatus = useUpdateContractStatus();
 
@@ -36,6 +50,18 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
         status: statusData.status,
         reason: statusData.reason
       });
+      
+      // Force immediate refetch to update UI
+      await queryClient.refetchQueries({ 
+        queryKey: ['contract-details'],
+        type: 'active'
+      });
+      
+      // Notify parent component about the status change
+      if (onStatusUpdated) {
+        onStatusUpdated(statusData.status);
+      }
+      
       onOpenChange(false);
       
       // Reset form
