@@ -290,7 +290,7 @@ export default function TrafficViolationsRedesigned() {
       <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
         
         {/* --- Statistics Cards --- */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 print:grid-cols-4 print:gap-2">
            {/* Card 1 - Total Violations */}
            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between print:border-gray-300 hover:shadow-md transition-shadow cursor-pointer">
               <div>

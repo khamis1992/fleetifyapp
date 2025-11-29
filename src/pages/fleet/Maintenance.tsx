@@ -409,7 +409,7 @@ export default function Maintenance() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
           {/* Total */}
           <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
             <div className="flex items-center justify-between">

@@ -33,37 +33,37 @@ const UnifiedReports = () => {
         title="خطأ في التقارير المالية"
         context="التقارير المالية"
       >
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
-                <FileText className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="p-2.5 md:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
+                <FileText className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold">التقارير المالية</h1>
+                  <h1 className="text-xl md:text-3xl font-bold">التقارير المالية</h1>
                   <HelpIcon topic="financialReports" />
                 </div>
-                <p className="text-muted-foreground">التقارير المالية الأساسية والتحليلات المتقدمة</p>
+                <p className="text-sm text-muted-foreground">التقارير المالية الأساسية والتحليلات المتقدمة</p>
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
                 <Printer className="h-4 w-4 mr-2" />
-                طباعة
+                <span className="hidden sm:inline">طباعة</span>
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
                 <Download className="h-4 w-4 mr-2" />
-                تصدير PDF
+                <span className="hidden sm:inline">تصدير PDF</span>
               </Button>
             </div>
           </div>
 
           {/* Main Reports Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="flex w-full overflow-x-auto pb-1 md:grid md:grid-cols-5">
               <TabsTrigger value="balance-sheet" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 الميزانية العمومية

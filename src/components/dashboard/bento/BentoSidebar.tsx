@@ -39,6 +39,11 @@ interface NavItem {
   children?: { id: string; label: string; href: string }[];
 }
 
+interface BentoSidebarProps {
+  isMobile?: boolean;
+  onCloseMobile?: () => void;
+}
+
 const navigation: NavItem[] = [
   {
     id: 'dashboard',
@@ -124,12 +129,19 @@ const navigation: NavItem[] = [
   },
 ];
 
-const BentoSidebar: React.FC = () => {
+const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMobile }) => {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet', 'finance']);
+
+  // Handle link click on mobile
+  const handleLinkClick = () => {
+    if (isMobile && onCloseMobile) {
+      onCloseMobile();
+    }
+  };
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) =>
@@ -150,12 +162,15 @@ const BentoSidebar: React.FC = () => {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 72 : 260 }}
-      className="h-screen bg-white border-l border-neutral-200 flex flex-col shadow-sm"
+      animate={{ width: isMobile ? 288 : (collapsed ? 72 : 260) }}
+      className={cn(
+        "h-screen bg-white flex flex-col shadow-sm",
+        isMobile ? "border-none" : "border-l border-neutral-200"
+      )}
     >
       {/* Logo & Collapse */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-100">
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -167,12 +182,14 @@ const BentoSidebar: React.FC = () => {
             <span className="font-bold text-neutral-900">Fleetify</span>
           </motion.div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
-        >
-          {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
+          >
+            {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -193,7 +210,7 @@ const BentoSidebar: React.FC = () => {
                     )}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!collapsed && (
+                    {(!collapsed || isMobile) && (
                       <>
                         <span className="flex-1 text-right">{item.label}</span>
                         <ChevronDown
@@ -206,7 +223,7 @@ const BentoSidebar: React.FC = () => {
                     )}
                   </button>
                   <AnimatePresence>
-                    {expandedItems.includes(item.id) && !collapsed && (
+                    {expandedItems.includes(item.id) && (!collapsed || isMobile) && (
                       <motion.ul
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -217,6 +234,7 @@ const BentoSidebar: React.FC = () => {
                           <li key={child.id}>
                             <NavLink
                               to={child.href}
+                              onClick={handleLinkClick}
                               className={({ isActive }) =>
                                 cn(
                                   'block px-3 py-2 rounded-lg text-sm transition-colors',
@@ -238,6 +256,7 @@ const BentoSidebar: React.FC = () => {
                 // Simple link
                 <NavLink
                   to={item.href!}
+                  onClick={handleLinkClick}
                   className={({ isActive }) =>
                     cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
@@ -248,7 +267,7 @@ const BentoSidebar: React.FC = () => {
                   }
                 >
                   <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {(!collapsed || isMobile) && <span>{item.label}</span>}
                 </NavLink>
               )}
             </li>
@@ -261,13 +280,13 @@ const BentoSidebar: React.FC = () => {
         <div
           className={cn(
             'flex items-center gap-3 p-3 rounded-xl bg-neutral-50',
-            collapsed && 'justify-center'
+            collapsed && !isMobile && 'justify-center'
           )}
         >
           <div className="w-10 h-10 rounded-full bg-coral-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {userInitials}
           </div>
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-neutral-900 truncate">{userName}</p>
               <p className="text-xs text-neutral-400 truncate">{user?.email}</p>
@@ -278,11 +297,11 @@ const BentoSidebar: React.FC = () => {
           onClick={handleSignOut}
           className={cn(
             'w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors',
-            collapsed && 'justify-center'
+            collapsed && !isMobile && 'justify-center'
           )}
         >
           <LogOut className="w-4 h-4" />
-          {!collapsed && <span>تسجيل الخروج</span>}
+          {(!collapsed || isMobile) && <span>تسجيل الخروج</span>}
         </button>
       </div>
     </motion.aside>
