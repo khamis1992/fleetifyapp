@@ -225,8 +225,11 @@ export function QuickPaymentRecording() {
           payment_number: paymentNumber,
           payment_type: paymentTypeMap[paymentMethod] || 'cash',
           payment_status: 'completed',
+          transaction_type: 'receipt', // مستلم من العميل
           currency: 'QAR',
-          notes: `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`,
+          notes: selectedInvoices.length > 1 
+            ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`
+            : `دفعة لفاتورة ${invoiceNumbers}`,
         })
         .select()
         .single();
