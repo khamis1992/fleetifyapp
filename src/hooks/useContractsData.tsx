@@ -65,6 +65,11 @@ interface ContractWithVehicle extends Record<string, any> {
 export const useContractsData = (filters: any = {}) => {
   const { filter, getQueryKey, user, isBrowsingMode, browsedCompany, actualUserCompanyId } = useUnifiedCompanyAccess();
 
+  // Debug: log filters received
+  if (filters?.search) {
+    console.log('📦 [CONTRACTS_DATA] Received filters with search:', filters.search);
+  }
+
   // Fetch statistics separately (all contracts for accurate counts)
   const { data: allContractsForStats } = useQuery({
     queryKey: [...queryKeys.contracts.lists(), 'all-for-stats', filter?.company_id],
@@ -320,7 +325,7 @@ export const useContractsData = (filters: any = {}) => {
     enabled: !!user?.id && !!filter?.company_id,
     keepPreviousData: true,
     retry: 1,
-    staleTime: 1 * 60 * 1000, // البيانات صالحة لمدة دقيقة - تمنع إعادة الجلب المتكررة
+    staleTime: 0, // إعادة الجلب فوراً عند تغير queryKey (خاصة البحث)
     gcTime: 5 * 60 * 1000, // Cache لمدة 5 دقائق
     refetchOnWindowFocus: false, // منع إعادة الجلب عند التركيز على النافذة
   });

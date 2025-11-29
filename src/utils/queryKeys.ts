@@ -49,6 +49,9 @@ export interface CustomerFilters extends PaginationFilters, StatusFilters, Compa
 export interface ContractFilters extends PaginationFilters, StatusFilters, CompanyFilters, DateRangeFilters {
   customerId?: string;
   vehicleId?: string;
+  search?: string;
+  contract_type?: string;
+  cost_center_id?: string;
 }
 
 export interface InvoiceFilters extends PaginationFilters, StatusFilters, CompanyFilters, DateRangeFilters {
