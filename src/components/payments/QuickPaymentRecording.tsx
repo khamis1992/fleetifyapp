@@ -222,31 +222,35 @@ export function QuickPaymentRecording() {
       const firstContractId = selectedInvoices[0].contract_id;
 
       // Create single payment record for all selected invoices
+      const paymentInsertData = {
+        company_id: companyId,
+        customer_id: selectedCustomer.id,
+        contract_id: firstContractId || null,
+        invoice_id: selectedInvoices[0].id,
+        amount: amount,
+        payment_date: paymentDate,
+        payment_method: 'received' as const,
+        payment_number: paymentNumber,
+        payment_type: paymentTypeMap[paymentMethod] || 'cash',
+        payment_status: 'completed' as const,
+        transaction_type: 'receipt' as const,
+        currency: 'QAR',
+        notes: selectedInvoices.length > 1 
+          ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`
+          : `دفعة لفاتورة ${invoiceNumbers}`,
+      };
+      
+      console.log('Payment data to insert:', JSON.stringify(paymentInsertData, null, 2));
+      
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
-        .insert({
-          company_id: companyId,
-          customer_id: selectedCustomer.id,
-          contract_id: firstContractId || null,
-          invoice_id: selectedInvoices[0].id,
-          amount: amount,
-          payment_date: paymentDate,
-          payment_method: 'received' as const,
-          payment_number: paymentNumber,
-          payment_type: paymentTypeMap[paymentMethod] || 'cash',
-          payment_status: 'completed' as const,
-          transaction_type: 'receipt' as const,
-          currency: 'QAR',
-          notes: selectedInvoices.length > 1 
-            ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`
-            : `دفعة لفاتورة ${invoiceNumbers}`,
-        })
+        .insert(paymentInsertData)
         .select()
         .single();
 
       if (paymentError) {
-        console.error('Payment insert error:', paymentError);
-        throw paymentError;
+        console.error('Payment insert error:', JSON.stringify(paymentError, null, 2));
+        throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message || paymentError.code || JSON.stringify(paymentError)}`);
       }
       console.log('Payment created successfully:', payment);
 
@@ -324,9 +328,14 @@ export function QuickPaymentRecording() {
       });
 
     } catch (error: unknown) {
-      console.error('Error processing payment:', error);
-      const errorMessage = error instanceof Error ? error.message : 
-        (error as { message?: string })?.message || 'حدث خطأ غير معروف';
+      console.error('Error processing payment:', JSON.stringify(error, null, 2));
+      let errorMessage = 'حدث خطأ غير معروف';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const errObj = error as { message?: string; code?: string; details?: string };
+        errorMessage = errObj.message || errObj.details || errObj.code || JSON.stringify(error);
+      }
       toast({
         title: 'خطأ في معالجة الدفعة',
         description: errorMessage,
