@@ -4,6 +4,7 @@ import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   RefreshCw,
   Filter,
@@ -65,8 +66,6 @@ import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getCurrencyConfig } from "@/utils/currencyConfig";
-import { PageHelp } from "@/components/help";
-import { ContractsPageHelpContent } from "@/components/help/content/ContractsPageHelp";
 
 function ContractsNew() {
   // State management
@@ -90,7 +89,8 @@ function ContractsNew() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
-  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري - يعمل مباشرة مثل صفحة العملاء
+  const [searchInput, setSearchInput] = useState<string>(""); // State للبحث الفوري - للعرض فقط
+  const debouncedSearch = useDebounce(searchInput, 500); // تأخير 500ms - هذا يُستخدم في الفلترة
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -98,9 +98,9 @@ function ContractsNew() {
   const filters = useMemo(() => {
     const newFilters: any = {};
     
-    // البحث - استخدام searchInput مباشرة (مثل صفحة العملاء)
-    if (searchInput && searchInput.trim()) {
-      newFilters.search = searchInput.trim();
+    // البحث - استخدام debouncedSearch فقط (ليس searchInput)
+    if (debouncedSearch && debouncedSearch.trim()) {
+      newFilters.search = debouncedSearch.trim();
     }
     
     // Status من activeTab
@@ -110,13 +110,10 @@ function ContractsNew() {
       newFilters.status = "cancelled";
     } else if (activeTab === "alerts") {
       newFilters.status = "expiring_soon";
-    } else if (activeTab === "all") {
-      // ✅ تعيين 'all' بشكل واضح لجميع العقود
-      newFilters.status = "all";
     }
     
     return newFilters;
-  }, [searchInput, activeTab]); // يتحدث فقط عند تغيير searchInput أو activeTab
+  }, [debouncedSearch, activeTab]); // يتحدث فقط عند تغيير debouncedSearch أو activeTab
   
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -184,12 +181,10 @@ function ContractsNew() {
     [statistics]
   );
 
-  // Handle pre-selected customer from navigation or openCreate state
+  // Handle pre-selected customer from navigation
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
       setPreselectedCustomerId(location.state.selectedCustomerId || undefined);
-      setShowContractWizard(true);
-    } else if (location.state?.openCreate) {
       setShowContractWizard(true);
     }
   }, [location.state]);
@@ -626,6 +621,11 @@ function ContractsNew() {
                       setSearchInput(e.target.value);
                     }}
                   />
+                  {searchInput && searchInput !== debouncedSearch && (
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -988,14 +988,6 @@ function ContractsNew() {
           }
         }
       `}</style>
-
-      {/* Help System */}
-      <PageHelp
-        title="دليل استخدام صفحة العقود"
-        description="تعرف على كيفية إدارة عقود التأجير بكفاءة"
-      >
-        <ContractsPageHelpContent />
-      </PageHelp>
     </PageCustomizer>
   );
 }
