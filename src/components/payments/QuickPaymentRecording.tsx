@@ -55,7 +55,6 @@ export function QuickPaymentRecording() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<PaymentSuccess | null>(null);
-  const [sendingReceipt, setSendingReceipt] = useState(false);
 
   const searchCustomers = async () => {
     if (!searchTerm.trim()) return;
@@ -265,7 +264,7 @@ export function QuickPaymentRecording() {
     }
   };
 
-  const sendReceiptViaWhatsApp = async () => {
+  const sendReceiptViaWhatsApp = () => {
     if (!paymentSuccess || !paymentSuccess.customerPhone) {
       toast({
         title: 'لا يوجد رقم هاتف',
@@ -275,15 +274,12 @@ export function QuickPaymentRecording() {
       return;
     }
 
-    setSendingReceipt(true);
-    try {
-      const paymentMethodLabel = 
-        paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
-        paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
-        paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
+    const paymentMethodLabel = 
+      paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
+      paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
+      paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
 
-      const message = `
-📄 *سند قبض*
+    const message = `📄 *سند قبض*
 
 ━━━━━━━━━━━━━━━
 
@@ -301,53 +297,25 @@ export function QuickPaymentRecording() {
 
 شكراً لتعاملكم معنا 🙏
 
-_شركة العراف لتأجير السيارات_
-      `.trim();
+_شركة العراف لتأجير السيارات_`;
 
-      // Use Ultramsg API directly
-      const { data: settings } = await supabase
-        .from('whatsapp_settings')
-        .select('ultramsg_instance_id, ultramsg_token')
-        .eq('company_id', companyId)
-        .single();
-
-      if (settings?.ultramsg_instance_id && settings?.ultramsg_token) {
-        const response = await fetch(
-          `https://api.ultramsg.com/${settings.ultramsg_instance_id}/messages/chat`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              token: settings.ultramsg_token,
-              to: paymentSuccess.customerPhone,
-              body: message,
-            }),
-          }
-        );
-
-        if (!response.ok) throw new Error('Failed to send WhatsApp message');
-
-        toast({
-          title: 'تم إرسال سند القبض ✅',
-          description: `تم إرسال سند القبض إلى ${paymentSuccess.customerPhone}`,
-        });
-      } else {
-        toast({
-          title: 'إعدادات واتساب غير مكتملة',
-          description: 'يرجى إعداد واتساب من الإعدادات أولاً',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error sending receipt:', error);
-      toast({
-        title: 'خطأ في إرسال سند القبض',
-        description: 'حدث خطأ أثناء الإرسال، يرجى المحاولة مرة أخرى',
-        variant: 'destructive',
-      });
-    } finally {
-      setSendingReceipt(false);
+    // Format phone number (remove leading zeros and add country code if needed)
+    let phone = paymentSuccess.customerPhone.replace(/\s+/g, '').replace(/-/g, '');
+    if (phone.startsWith('0')) {
+      phone = '974' + phone.substring(1); // Qatar country code
+    } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
+      phone = '974' + phone;
     }
+    phone = phone.replace('+', '');
+
+    // Open WhatsApp Web with pre-filled message
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    toast({
+      title: 'تم فتح واتساب ✅',
+      description: 'اضغط إرسال في واتساب لإتمام العملية',
+    });
   };
 
   const resetForm = () => {
@@ -402,14 +370,10 @@ _شركة العراف لتأجير السيارات_
                 <div className="flex gap-3 justify-center">
                   <Button 
                     onClick={sendReceiptViaWhatsApp} 
-                    disabled={sendingReceipt || !paymentSuccess.customerPhone}
+                    disabled={!paymentSuccess.customerPhone}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {sendingReceipt ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    ) : (
-                      <MessageCircle className="h-4 w-4 ml-2" />
-                    )}
+                    <MessageCircle className="h-4 w-4 ml-2" />
                     إرسال عبر واتساب
                   </Button>
                   
