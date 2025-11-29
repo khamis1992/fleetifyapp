@@ -169,11 +169,11 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         client_email: formData.email,
         case_value: totalClaimAmount,
         // Court tracking fields
-        complaint_number: formData.complaint_number,
-        court_name: formData.court_name,
-        filing_date: formData.filing_date,
-        hearing_date: formData.first_hearing_date,
-        judge_name: formData.judge_name,
+        complaint_number: formData.complaint_number || undefined,
+        court_name: formData.court_name || undefined,
+        filing_date: formData.filing_date || undefined,
+        hearing_date: formData.first_hearing_date || undefined,
+        judge_name: formData.judge_name || undefined,
         case_reference: formData.court_case_number,  // Map court_case_number to case_reference
         legal_fees: 0,
         court_fees: 0,
