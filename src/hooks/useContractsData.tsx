@@ -113,17 +113,17 @@ export const useContractsData = (filters: any = {}) => {
   });
 
   // Fetch contracts with customer data (paginated)
+  // استخدام getQueryKey مثل useCustomers لضمان إعادة الجلب عند تغير البحث
   const { data: contractsResponse, isLoading, refetch } = useQuery({
-    queryKey: queryKeys.contracts.list({
-      page: filters?.page,
-      pageSize: filters?.pageSize,
-      companyId: filter?.company_id,
-      status: filters?.status,
-      contract_type: filters?.contract_type,
-      customer_id: filters?.customer_id,
-      cost_center_id: filters?.cost_center_id,
-      search: filters?.search // إضافة البحث إلى مفتاح الاستعلام
-    }),
+    queryKey: getQueryKey(['contracts'], [
+      filters?.page,
+      filters?.pageSize,
+      filters?.status,
+      filters?.contract_type,
+      filters?.customer_id,
+      filters?.cost_center_id,
+      filters?.search // البحث كجزء من queryKey
+    ]),
     queryFn: async () => {
       try {
         const companyId = filter?.company_id || null;

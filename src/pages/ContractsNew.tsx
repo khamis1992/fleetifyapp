@@ -84,25 +84,13 @@ function ContractsNew() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
-  const [filters, setFilters] = useState<any>({});
-  const [searchInput, setSearchInput] = useState(''); // Local search input state (immediate)
-  const [debouncedSearch, setDebouncedSearch] = useState(''); // Debounced search for API
+  const [searchTerm, setSearchTerm] = useState(''); // Search term state (same as customers page)
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
-  
-  // Debounce search input - only update filters after user stops typing for 500ms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchInput);
-      setFilters((prev: any) => ({ ...prev, search: searchInput || undefined }));
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [searchInput]);
 
   // Hooks
   const location = useLocation();
@@ -114,17 +102,14 @@ function ContractsNew() {
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation();
   const contractDrafts = useContractDrafts();
 
-  // Data fetching with pagination
-  const filtersWithPagination = useMemo(
-    () => ({
-      ...filters,
-      page,
-      pageSize,
-    }),
-    [filters, page, pageSize]
-  );
+  // Filters - similar to customers page
+  const filters = useMemo(() => ({
+    search: searchTerm || undefined,
+    page,
+    pageSize,
+  }), [searchTerm, page, pageSize]);
 
-  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination);
+  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filters);
 
   // Ensure contracts and filteredContracts are arrays
   const safeContracts = useMemo(() => (Array.isArray(contracts) ? contracts : []), [contracts]);
@@ -601,8 +586,11 @@ function ContractsNew() {
                     type="text"
                     placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
                     className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(1); // Reset to first page on search
+                    }}
                   />
                 </div>
 
@@ -612,7 +600,7 @@ function ContractsNew() {
                     <Filter className="w-4 h-4" />
                     <span>تطبيق الفلاتر</span>
                   </Button>
-                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => setFilters({})}>
+                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => { setSearchTerm(''); setPage(1); }}>
                     <XCircle className="w-4 h-4" />
                     <span>مسح الفلاتر</span>
                   </Button>
