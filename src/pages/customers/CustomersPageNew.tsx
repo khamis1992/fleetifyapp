@@ -49,6 +49,8 @@ import {
   MapPin,
   Activity,
   BarChart3,
+  LayoutGrid,
+  Columns,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,6 +83,7 @@ import {
 import { 
   EnhancedCustomerDialog, 
   CustomerCSVUpload,
+  CustomerSplitView,
 } from '@/components/customers';
 import { exportTableToCSV } from '@/utils/exports/csvExport';
 
@@ -294,6 +297,7 @@ const CustomersPageNew: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
 
   // Filters
   const filters: CustomerFilters = {
@@ -434,6 +438,34 @@ const CustomersPageNew: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-neutral-200">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'grid' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4 ml-1" />
+                شبكة
+              </Button>
+              <Button
+                variant={viewMode === 'split' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <Columns className="w-4 h-4 ml-1" />
+                مقسم
+              </Button>
+            </div>
+            
             <Button
               variant="outline"
               className="bg-white gap-2"
@@ -523,8 +555,18 @@ const CustomersPageNew: React.FC = () => {
           </div>
         </div>
 
-        {/* Customer Grid */}
-        {isLoading ? (
+        {/* Customer View - Grid or Split */}
+        {viewMode === 'split' ? (
+          <CustomerSplitView
+            customers={customers}
+            isLoading={isLoading}
+            companyId={companyId}
+            onEditCustomer={handleEditCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
+        ) : isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white rounded-2xl p-5 border border-neutral-200 animate-pulse">
@@ -641,7 +683,7 @@ const CustomersPageNew: React.FC = () => {
               </div>
             )}
           </>
-        )}
+        ))}
       </div>
 
       {/* Dialogs */}
