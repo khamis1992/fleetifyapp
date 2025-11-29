@@ -370,12 +370,19 @@ const WhatsAppSettings: React.FC = () => {
 
   // إضافة/تعديل مستلم
   const handleSaveRecipient = async (data: Omit<WhatsAppRecipient, 'id'>) => {
-    if (editingRecipient) {
-      await updateRecipient(editingRecipient.id, data);
-    } else {
-      await addRecipient(data);
+    try {
+      if (editingRecipient) {
+        await updateRecipient(editingRecipient.id, data);
+        toast.success('تم تحديث المستلم بنجاح');
+      } else {
+        await addRecipient(data);
+        toast.success('تم إضافة المستلم بنجاح');
+      }
+      setEditingRecipient(undefined);
+    } catch (error: any) {
+      console.error('Error saving recipient:', error);
+      toast.error(`فشل في حفظ المستلم: ${error?.message || 'خطأ غير معروف'}`);
     }
-    setEditingRecipient(undefined);
   };
 
   return (

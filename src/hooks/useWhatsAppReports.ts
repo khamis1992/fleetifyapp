@@ -58,11 +58,53 @@ export const useWhatsAppSettings = () => {
         .eq('company_id', companyId)
         .single();
       
+      // PGRST116 = No rows found - هذا طبيعي للشركة الجديدة
       if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching WhatsApp settings:', error);
         throw error;
       }
       
-      return data as ReportScheduleSettings | null;
+      // إذا لم توجد إعدادات، ننشئ إعدادات افتراضية
+      if (!data) {
+        return {
+          id: '',
+          companyId,
+          dailyReportEnabled: true,
+          dailyReportTime: '08:00',
+          dailyReportDays: [0, 1, 2, 3, 4, 5, 6],
+          weeklyReportEnabled: true,
+          weeklyReportDay: 0,
+          weeklyReportTime: '09:00',
+          monthlyReportEnabled: false,
+          monthlyReportDay: 1,
+          monthlyReportTime: '10:00',
+          instantAlertsEnabled: true,
+          alertThreshold: 10000,
+          recipients: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as ReportScheduleSettings;
+      }
+      
+      // تحويل أسماء الحقول من snake_case إلى camelCase
+      return {
+        id: data.id,
+        companyId: data.company_id,
+        dailyReportEnabled: data.daily_report_enabled ?? true,
+        dailyReportTime: data.daily_report_time ?? '08:00',
+        dailyReportDays: data.daily_report_days ?? [0, 1, 2, 3, 4, 5, 6],
+        weeklyReportEnabled: data.weekly_report_enabled ?? true,
+        weeklyReportDay: data.weekly_report_day ?? 0,
+        weeklyReportTime: data.weekly_report_time ?? '09:00',
+        monthlyReportEnabled: data.monthly_report_enabled ?? false,
+        monthlyReportDay: data.monthly_report_day ?? 1,
+        monthlyReportTime: data.monthly_report_time ?? '10:00',
+        instantAlertsEnabled: data.instant_alerts_enabled ?? true,
+        alertThreshold: data.alert_threshold ?? 10000,
+        recipients: Array.isArray(data.recipients) ? data.recipients : [],
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      } as ReportScheduleSettings;
     },
     enabled: !!companyId,
   });
@@ -72,12 +114,31 @@ export const useWhatsAppSettings = () => {
     mutationFn: async (newSettings: Partial<ReportScheduleSettings>) => {
       if (!companyId) throw new Error('Company ID not found');
       
+      // تحويل أسماء الحقول من camelCase إلى snake_case
+      const dbSettings: Record<string, any> = {
+        company_id: companyId,
+        updated_at: new Date().toISOString(),
+      };
+
+      // تحويل الحقول
+      if ('dailyReportEnabled' in newSettings) dbSettings.daily_report_enabled = newSettings.dailyReportEnabled;
+      if ('dailyReportTime' in newSettings) dbSettings.daily_report_time = newSettings.dailyReportTime;
+      if ('dailyReportDays' in newSettings) dbSettings.daily_report_days = newSettings.dailyReportDays;
+      if ('weeklyReportEnabled' in newSettings) dbSettings.weekly_report_enabled = newSettings.weeklyReportEnabled;
+      if ('weeklyReportDay' in newSettings) dbSettings.weekly_report_day = newSettings.weeklyReportDay;
+      if ('weeklyReportTime' in newSettings) dbSettings.weekly_report_time = newSettings.weeklyReportTime;
+      if ('monthlyReportEnabled' in newSettings) dbSettings.monthly_report_enabled = newSettings.monthlyReportEnabled;
+      if ('monthlyReportDay' in newSettings) dbSettings.monthly_report_day = newSettings.monthlyReportDay;
+      if ('monthlyReportTime' in newSettings) dbSettings.monthly_report_time = newSettings.monthlyReportTime;
+      if ('instantAlertsEnabled' in newSettings) dbSettings.instant_alerts_enabled = newSettings.instantAlertsEnabled;
+      if ('alertThreshold' in newSettings) dbSettings.alert_threshold = newSettings.alertThreshold;
+      if ('recipients' in newSettings) dbSettings.recipients = JSON.stringify(newSettings.recipients);
+
       const { error } = await supabase
         .from('whatsapp_settings')
-        .upsert({
-          company_id: companyId,
-          ...newSettings,
-          updated_at: new Date().toISOString(),
+        .upsert(dbSettings, {
+          onConflict: 'company_id',
+          ignoreDuplicates: false,
         });
       
       if (error) throw error;
@@ -86,8 +147,8 @@ export const useWhatsAppSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-settings', companyId] });
       toast.success('تم حفظ الإعدادات بنجاح');
     },
-    onError: (error) => {
-      toast.error('فشل في حفظ الإعدادات');
+    onError: (error: any) => {
+      toast.error(`فشل في حفظ الإعدادات: ${error.message || 'خطأ غير معروف'}`);
       console.error('Save settings error:', error);
     },
   });
