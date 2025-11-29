@@ -5,55 +5,29 @@ import jsPDF from 'jspdf';
  * Generate PDF from HTML element
  */
 export async function generateReceiptPDF(element: HTMLElement, filename: string): Promise<Blob> {
-  // Create canvas from HTML element with improved settings
+  // Create canvas from HTML element
   const canvas = await html2canvas(element, {
-    scale: 3, // Higher quality for better text rendering
+    scale: 2, // Higher quality
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#ffffff',
     logging: false,
-    windowWidth: element.scrollWidth,
-    windowHeight: element.scrollHeight,
-    // Important: wait for fonts to load
-    onclone: (clonedDoc) => {
-      const clonedElement = clonedDoc.body.querySelector('[dir="rtl"]') as HTMLElement;
-      if (clonedElement) {
-        clonedElement.style.fontFamily = 'Arial, Tahoma, sans-serif';
-      }
-    }
   });
 
-  // Calculate dimensions for A4 landscape
-  const imgWidth = 297; // A4 landscape width in mm
-  const imgHeight = 210; // A4 landscape height in mm
-  
-  // Calculate actual image dimensions to fit
-  const canvasWidth = canvas.width;
-  const canvasHeight = canvas.height;
-  const ratio = canvasWidth / canvasHeight;
-  
-  let finalWidth = imgWidth;
-  let finalHeight = imgWidth / ratio;
-  
-  if (finalHeight > imgHeight) {
-    finalHeight = imgHeight;
-    finalWidth = imgHeight * ratio;
-  }
+  // Calculate dimensions (A5 landscape)
+  const imgWidth = 210; // A4 width in mm
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  // Create PDF in landscape
+  // Create PDF
   const pdf = new jsPDF({
-    orientation: 'landscape',
+    orientation: imgHeight > imgWidth ? 'portrait' : 'landscape',
     unit: 'mm',
     format: 'a4'
   });
 
-  // Center the image on the page
-  const xOffset = (imgWidth - finalWidth) / 2;
-  const yOffset = (imgHeight - finalHeight) / 2;
-
   // Add image to PDF
-  const imgData = canvas.toDataURL('image/png', 1.0);
-  pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+  const imgData = canvas.toDataURL('image/png');
+  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
   // Return as blob
   return pdf.output('blob');

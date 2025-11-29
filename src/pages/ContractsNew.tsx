@@ -697,13 +697,7 @@ function ContractsNew() {
                               </div>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleManageStatus(contract)}
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            title="انقر لتغيير حالة العقد"
-                          >
-                            {getStatusBadge(contract.status)}
-                          </button>
+                          {getStatusBadge(contract.status)}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">

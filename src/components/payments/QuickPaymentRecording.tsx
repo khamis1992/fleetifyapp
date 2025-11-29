@@ -383,32 +383,50 @@ export function QuickPaymentRecording() {
       return;
     }
 
+    // First, show the receipt for PDF generation
+    setShowReceipt(true);
     setGeneratingPDF(true);
 
+    // Wait a moment for the receipt to render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
+      // Generate PDF
+      if (receiptRef.current) {
+        const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
+        // Download the PDF first so user can attach it
+        downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
+      }
+
       const paymentMethodLabel = 
         paymentSuccess.paymentMethod === 'cash' ? 'نقدي' : 
         paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
         paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
 
-      // رسالة واتساب محدثة وبسيطة
-      const message = `سند قبض رقم: ${paymentSuccess.receiptNumber}
+      const message = `📄 *سند قبض رقم: ${paymentSuccess.receiptNumber}*
 
-عزيزي/عزيزتي ${paymentSuccess.customerName}،
+━━━━━━━━━━━━━━━
 
-تم استلام دفعتكم بنجاح
+عزيزي/عزيزتي *${paymentSuccess.customerName}*،
 
-تفاصيل الدفعة:
-- رقم السند: ${paymentSuccess.receiptNumber}
-- رقم الفاتورة: ${paymentSuccess.invoiceNumber}
-- المبلغ المدفوع: ${paymentSuccess.amount.toFixed(2)} ر.ق
-- المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
-- تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
-- طريقة الدفع: ${paymentMethodLabel}
+تم استلام دفعتكم بنجاح ✅
 
-شكرا لتعاملكم معنا
+📋 *تفاصيل الدفعة:*
+• رقم السند: ${paymentSuccess.receiptNumber}
+• رقم الفاتورة: ${paymentSuccess.invoiceNumber}
+• المبلغ المدفوع: *${paymentSuccess.amount.toFixed(2)} ر.ق*
+• المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
+• تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
+• طريقة الدفع: ${paymentMethodLabel}
 
-شركة العراف لتأجير السيارات`;
+━━━━━━━━━━━━━━━
+
+📎 *مرفق: سند القبض PDF*
+(تم تحميل الملف على جهازك، يرجى إرفاقه في المحادثة)
+
+شكراً لتعاملكم معنا 🙏
+
+_شركة العراف لتأجير السيارات_`;
 
       // Format phone number
       let phone = paymentSuccess.customerPhone.replace(/\s+/g, '').replace(/-/g, '');
@@ -419,55 +437,19 @@ export function QuickPaymentRecording() {
       }
       phone = phone.replace('+', '');
 
-      // Try to send via Ultramsg API if configured
-      const { data: settings } = await supabase
-        .from('whatsapp_settings')
-        .select('ultramsg_instance_id, ultramsg_token')
-        .eq('company_id', companyId)
-        .single();
-
-      if (settings?.ultramsg_instance_id && settings?.ultramsg_token) {
-        // Use Ultramsg API for direct sending
-        try {
-          const ultramsgUrl = `https://api.ultramsg.com/${settings.ultramsg_instance_id}/messages/chat`;
-          const response = await fetch(ultramsgUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              token: settings.ultramsg_token,
-              to: phone,
-              body: message,
-            }),
-          });
-
-          if (response.ok) {
-            toast({
-              title: 'تم إرسال سند القبض بنجاح ✅',
-              description: 'تم إرسال الإيصال للعميل عبر واتساب',
-            });
-            return;
-          }
-        } catch (apiError) {
-          console.error('Ultramsg API error:', apiError);
-          // Fall back to WhatsApp Web
-        }
-      }
-
-      // Fallback: Open WhatsApp Web
+      // Open WhatsApp Web
       const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
 
       toast({
         title: 'تم فتح واتساب ✅',
-        description: 'سيتم فتح واتساب ويب لإرسال الإيصال',
+        description: 'تم تحميل سند القبض PDF، أرفقه في محادثة واتساب ثم اضغط إرسال',
       });
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: 'خطأ',
-        description: 'حدث خطأ أثناء إرسال السند',
+        description: 'حدث خطأ أثناء إنشاء السند',
         variant: 'destructive',
       });
     } finally {
