@@ -683,7 +683,7 @@ const CustomersPageNew: React.FC = () => {
               </div>
             )}
           </>
-        ))}
+        )}
       </div>
 
       {/* Dialogs */}

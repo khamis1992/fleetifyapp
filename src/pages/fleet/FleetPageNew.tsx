@@ -47,6 +47,8 @@ import {
   Calculator,
   X,
   RotateCcw,
+  LayoutGrid,
+  Columns,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +86,7 @@ import {
 import { VehicleForm } from '@/components/fleet/VehicleForm';
 import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagement';
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
+import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 
 // ===== Vehicle Card Component =====
 interface VehicleCardProps {
@@ -322,6 +325,7 @@ const FleetPageNew: React.FC = () => {
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
 
   // Hooks
   const deleteVehicle = useDeleteVehicle();
@@ -421,6 +425,34 @@ const FleetPageNew: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            {/* View Toggle */}
+            <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-neutral-200">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'grid' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4 ml-1" />
+                شبكة
+              </Button>
+              <Button
+                variant={viewMode === 'split' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <Columns className="w-4 h-4 ml-1" />
+                مقسم
+              </Button>
+            </div>
+            
             <Button
               variant="outline"
               className="bg-white gap-2"
@@ -555,8 +587,16 @@ const FleetPageNew: React.FC = () => {
           </div>
         </div>
 
-        {/* Vehicles Grid */}
-        {vehiclesLoading ? (
+        {/* Vehicles View - Grid or Split */}
+        {viewMode === 'split' ? (
+          <VehicleSplitView
+            vehicles={vehiclesData?.data || []}
+            isLoading={vehiclesLoading}
+            companyId={user?.profile?.company_id || null}
+            onEditVehicle={handleEditVehicle}
+            onDeleteVehicle={(vehicle) => setVehicleToDelete(vehicle)}
+          />
+        ) : vehiclesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white rounded-2xl p-4 border border-neutral-200 animate-pulse">
@@ -643,7 +683,7 @@ const FleetPageNew: React.FC = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-neutral-200">
             <Car className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-neutral-900 mb-2">لا توجد مركبات</h3>
@@ -655,7 +695,7 @@ const FleetPageNew: React.FC = () => {
               إضافة مركبة
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Dialogs */}
