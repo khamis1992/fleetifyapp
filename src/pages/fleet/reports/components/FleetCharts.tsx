@@ -340,43 +340,54 @@ export const UtilizationChart: React.FC<UtilizationChartProps> = ({
       isDark={isDark}
       delay={0.7}
     >
-      <ResponsiveContainer width="100%" height={250}>
-        <RadialBarChart
-          cx="50%"
-          cy="50%"
-          innerRadius="30%"
-          outerRadius="100%"
-          barSize={20}
-          data={data}
-          startAngle={180}
-          endAngle={0}
-        >
-          <RadialBar
-            background
-            dataKey="value"
-            cornerRadius={10}
-          />
-          <Legend
-            iconSize={10}
-            layout="vertical"
-            verticalAlign="middle"
-            align="right"
-            formatter={(value) => (
-              <span className={isDark ? "text-gray-300" : "text-gray-700"}>
-                {value}
+      <div className="flex flex-col items-center">
+        {/* Chart */}
+        <ResponsiveContainer width="100%" height={180}>
+          <RadialBarChart
+            cx="50%"
+            cy="100%"
+            innerRadius="60%"
+            outerRadius="100%"
+            barSize={16}
+            data={data}
+            startAngle={180}
+            endAngle={0}
+          >
+            <RadialBar
+              background
+              dataKey="value"
+              cornerRadius={8}
+            />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}
+              formatter={(value: number) => [`${value.toFixed(1)}%`, '']}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+        
+        {/* Custom Legend - Below Chart */}
+        <div className="flex flex-wrap justify-center gap-4 mt-4 pt-2 border-t border-neutral-100">
+          {data.map((item, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: item.fill }}
+              />
+              <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-neutral-600'}`}>
+                {item.name}
               </span>
-            )}
-          />
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: isDark ? '#1f2937' : '#ffffff',
-              border: 'none',
-              borderRadius: '12px',
-            }}
-            formatter={(value: number) => [`${value.toFixed(1)}%`, '']}
-          />
-        </RadialBarChart>
-      </ResponsiveContainer>
+              <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                {item.value.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </ChartContainer>
   );
 };
