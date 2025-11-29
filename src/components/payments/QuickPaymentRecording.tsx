@@ -165,6 +165,16 @@ export function QuickPaymentRecording() {
     try {
       // 1. Create payment record
       const paymentDate = new Date().toISOString().split('T')[0];
+      const paymentNumber = `PAY-${Date.now()}`;
+      
+      // Map payment method to payment type
+      const paymentTypeMap: Record<string, string> = {
+        'cash': 'cash',
+        'bank_transfer': 'bank_transfer',
+        'check': 'check',
+        'other': 'cash'
+      };
+      
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .insert({
@@ -172,10 +182,13 @@ export function QuickPaymentRecording() {
           customer_id: selectedCustomer.id,
           contract_id: selectedInvoice.contract_id,
           invoice_id: selectedInvoice.id,
-          payment_amount: amount,
+          amount: amount,
           payment_date: paymentDate,
           payment_method: paymentMethod,
-          status: 'completed',
+          payment_number: paymentNumber,
+          payment_type: paymentTypeMap[paymentMethod] || 'cash',
+          payment_status: 'completed',
+          currency: 'QAR',
         })
         .select()
         .single();
