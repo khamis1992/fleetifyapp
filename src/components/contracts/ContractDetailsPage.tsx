@@ -161,7 +161,7 @@ const ContractDetailsPage = () => {
         .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .order('due_date', { ascending: true });
 
       if (error) {
         console.error('❌ [CONTRACT_INVOICES] Error fetching invoices:', error);
