@@ -1,6 +1,7 @@
 /**
  * صفحة إعدادات تقارير واتساب
  * WhatsApp Reports Settings Page
+ * تصميم متوافق مع الداشبورد
  */
 
 import React, { useState, useEffect } from 'react';
@@ -33,7 +34,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -61,17 +61,12 @@ import {
   RefreshCw,
   TestTube,
   Sparkles,
-  Sun,
-  Moon,
   Wifi,
   WifiOff,
   Calendar,
   FileText,
-  AlertTriangle,
   History,
-  Phone,
   User,
-  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -84,12 +79,12 @@ import {
 import { whatsAppService } from '@/services/whatsapp';
 import type { WhatsAppRecipient, AlertType, ReportType } from '@/services/whatsapp/types';
 
-// ألوان الأدوار
+// ألوان الأدوار - متوافقة مع الداشبورد
 const roleColors = {
-  manager: 'bg-violet-500/10 text-violet-500 border-violet-500/30',
-  owner: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
-  accountant: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
-  supervisor: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30',
+  manager: 'bg-coral-100 text-coral-600 border-coral-200',
+  owner: 'bg-amber-100 text-amber-600 border-amber-200',
+  accountant: 'bg-emerald-100 text-emerald-600 border-emerald-200',
+  supervisor: 'bg-blue-100 text-blue-600 border-blue-200',
 };
 
 const roleLabels = {
@@ -99,39 +94,13 @@ const roleLabels = {
   supervisor: 'مشرف',
 };
 
-// Animated Background
-const AnimatedBackground: React.FC<{ isDark: boolean }> = ({ isDark }) => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none">
-    <motion.div
-      className={cn(
-        "absolute w-[500px] h-[500px] rounded-full blur-3xl opacity-20",
-        isDark ? "bg-emerald-600" : "bg-emerald-300"
-      )}
-      animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
-      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      style={{ top: '-5%', right: '-5%' }}
-    />
-    <motion.div
-      className={cn(
-        "absolute w-[400px] h-[400px] rounded-full blur-3xl opacity-20",
-        isDark ? "bg-violet-600" : "bg-violet-300"
-      )}
-      animate={{ x: [0, -30, 0], y: [0, 50, 0] }}
-      transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-      style={{ bottom: '-5%', left: '-5%' }}
-    />
-    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-  </div>
-);
-
 // مكون إضافة/تعديل مستلم
 const RecipientDialog: React.FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recipient?: WhatsAppRecipient;
   onSave: (data: Omit<WhatsAppRecipient, 'id'>) => void;
-  isDark: boolean;
-}> = ({ open, onOpenChange, recipient, onSave, isDark }) => {
+}> = ({ open, onOpenChange, recipient, onSave }) => {
   const [formData, setFormData] = useState({
     name: recipient?.name || '',
     phone: recipient?.phone || '',
@@ -192,15 +161,12 @@ const RecipientDialog: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "max-w-lg",
-        isDark && "bg-gray-900 border-gray-800"
-      )}>
+      <DialogContent className="max-w-lg bg-white border-neutral-200">
         <DialogHeader>
-          <DialogTitle className={isDark ? "text-white" : ""}>
+          <DialogTitle className="text-neutral-900">
             {recipient ? 'تعديل مستلم' : 'إضافة مستلم جديد'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-neutral-500">
             أضف معلومات المستلم وحدد نوع التقارير والتنبيهات
           </DialogDescription>
         </DialogHeader>
@@ -208,33 +174,33 @@ const RecipientDialog: React.FC<{
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>الاسم *</Label>
+              <Label className="text-neutral-700">الاسم *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
                 placeholder="أحمد محمد"
-                className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
               />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف *</Label>
+              <Label className="text-neutral-700">رقم الهاتف *</Label>
               <Input
                 value={formData.phone}
                 onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
                 placeholder="+974 XXXX XXXX"
                 dir="ltr"
-                className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>الدور</Label>
+            <Label className="text-neutral-700">الدور</Label>
             <Select
               value={formData.role}
               onValueChange={(v) => setFormData(p => ({ ...p, role: v as any }))}
             >
-              <SelectTrigger className={isDark ? "bg-gray-800 border-gray-700" : ""}>
+              <SelectTrigger className="border-neutral-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -247,7 +213,7 @@ const RecipientDialog: React.FC<{
           </div>
 
           <div className="space-y-2">
-            <Label>التقارير المطلوبة</Label>
+            <Label className="text-neutral-700">التقارير المطلوبة</Label>
             <div className="flex flex-wrap gap-2">
               {[
                 { type: 'daily' as ReportType, label: 'يومي' },
@@ -259,6 +225,10 @@ const RecipientDialog: React.FC<{
                   variant={formData.reportTypes.includes(type) ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => toggleReportType(type)}
+                  className={formData.reportTypes.includes(type) 
+                    ? 'bg-coral-500 hover:bg-coral-600 text-white' 
+                    : 'border-neutral-200 hover:border-coral-500 hover:text-coral-600'
+                  }
                 >
                   {label}
                 </Button>
@@ -267,7 +237,7 @@ const RecipientDialog: React.FC<{
           </div>
 
           <div className="space-y-2">
-            <Label>التنبيهات المطلوبة</Label>
+            <Label className="text-neutral-700">التنبيهات المطلوبة</Label>
             <div className="flex flex-wrap gap-2">
               {[
                 { type: 'new_contract' as AlertType, label: 'عقد جديد' },
@@ -281,6 +251,10 @@ const RecipientDialog: React.FC<{
                   variant={formData.alertTypes.includes(type) ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => toggleAlertType(type)}
+                  className={formData.alertTypes.includes(type) 
+                    ? 'bg-coral-500 hover:bg-coral-600 text-white' 
+                    : 'border-neutral-200 hover:border-coral-500 hover:text-coral-600'
+                  }
                 >
                   {label}
                 </Button>
@@ -292,16 +266,24 @@ const RecipientDialog: React.FC<{
             <Switch
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData(p => ({ ...p, isActive: checked }))}
+              className="data-[state=checked]:bg-coral-500"
             />
-            <Label>مفعّل</Label>
+            <Label className="text-neutral-700">مفعّل</Label>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="border-neutral-200"
+          >
             إلغاء
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button 
+            onClick={handleSubmit}
+            className="bg-coral-500 hover:bg-coral-600 text-white"
+          >
             {recipient ? 'حفظ التغييرات' : 'إضافة'}
           </Button>
         </DialogFooter>
@@ -312,7 +294,6 @@ const RecipientDialog: React.FC<{
 
 // الصفحة الرئيسية
 const WhatsAppSettings: React.FC = () => {
-  const [isDark, setIsDark] = useState(true);
   const [activeTab, setActiveTab] = useState('connection');
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<WhatsAppRecipient | undefined>();
@@ -355,19 +336,6 @@ const WhatsAppSettings: React.FC = () => {
     }
   };
 
-  // حفظ إعدادات الجدولة
-  const handleSaveSchedule = () => {
-    saveSettings({
-      dailyReportEnabled: settings?.dailyReportEnabled ?? true,
-      dailyReportTime: settings?.dailyReportTime ?? '08:00',
-      weeklyReportEnabled: settings?.weeklyReportEnabled ?? true,
-      weeklyReportDay: settings?.weeklyReportDay ?? 0,
-      weeklyReportTime: settings?.weeklyReportTime ?? '09:00',
-      instantAlertsEnabled: settings?.instantAlertsEnabled ?? true,
-      alertThreshold: settings?.alertThreshold ?? 10000,
-    });
-  };
-
   // إضافة/تعديل مستلم
   const handleSaveRecipient = async (data: Omit<WhatsAppRecipient, 'id'>) => {
     try {
@@ -386,37 +354,28 @@ const WhatsAppSettings: React.FC = () => {
   };
 
   return (
-    <div className={cn(
-      "min-h-screen transition-colors duration-500",
-      isDark ? "bg-gray-950" : "bg-gray-50"
-    )}>
-      <AnimatedBackground isDark={isDark} />
-      
-      <div className="relative z-10 container mx-auto px-4 py-6 max-w-5xl">
-        {/* Header */}
+    <div className="min-h-screen bg-[#f0efed]">
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        {/* Header - بنفس تصميم الداشبورد */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-between mb-8"
         >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur-lg opacity-50" />
-              <div className="relative w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-r from-emerald-500 to-green-500">
-                <MessageSquare className="w-6 h-6 text-white" />
-              </div>
-            </div>
+          <div className="flex items-center gap-4">
+            <motion.div 
+              className="w-12 h-12 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg"
+              whileHover={{ rotate: 10, scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 400 }}
+              style={{ boxShadow: '0 4px 20px rgba(232, 90, 79, 0.3)' }}
+            >
+              <MessageSquare className="w-6 h-6 text-white" />
+            </motion.div>
             <div>
-              <h1 className={cn(
-                "text-2xl font-bold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
+              <h1 className="text-2xl font-bold text-neutral-900">
                 إعدادات تقارير واتساب
               </h1>
-              <p className={cn(
-                "text-sm",
-                isDark ? "text-gray-400" : "text-gray-600"
-              )}>
+              <p className="text-sm text-neutral-500">
                 إدارة التقارير والتنبيهات التلقائية
               </p>
             </div>
@@ -427,50 +386,46 @@ const WhatsAppSettings: React.FC = () => {
             <Badge 
               variant="outline" 
               className={cn(
-                "px-3 py-1",
+                "px-3 py-1.5 font-medium",
                 connected 
-                  ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
-                  : "text-rose-500 border-rose-500/30 bg-rose-500/10"
+                  ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+                  : "text-rose-600 border-rose-200 bg-rose-50"
               )}
             >
-              {connected ? <Wifi className="w-3 h-3 ml-1" /> : <WifiOff className="w-3 h-3 ml-1" />}
+              {connected ? <Wifi className="w-3.5 h-3.5 ml-1.5" /> : <WifiOff className="w-3.5 h-3.5 ml-1.5" />}
               {connected ? 'متصل' : 'غير متصل'}
             </Badge>
-
-            {/* Theme Toggle */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsDark(!isDark)}
-              className={cn(
-                "p-3 rounded-xl",
-                isDark ? "bg-gray-800 text-amber-400" : "bg-white text-gray-700 shadow-lg"
-              )}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </motion.button>
           </div>
         </motion.header>
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={cn(
-            "grid w-full grid-cols-4 mb-6",
-            isDark && "bg-gray-800"
-          )}>
-            <TabsTrigger value="connection" className="gap-2">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white p-1 rounded-xl shadow-sm">
+            <TabsTrigger 
+              value="connection" 
+              className="gap-2 data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg"
+            >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">الاتصال</span>
             </TabsTrigger>
-            <TabsTrigger value="recipients" className="gap-2">
+            <TabsTrigger 
+              value="recipients" 
+              className="gap-2 data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg"
+            >
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">المستلمون</span>
             </TabsTrigger>
-            <TabsTrigger value="schedule" className="gap-2">
+            <TabsTrigger 
+              value="schedule" 
+              className="gap-2 data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg"
+            >
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">الجدولة</span>
             </TabsTrigger>
-            <TabsTrigger value="logs" className="gap-2">
+            <TabsTrigger 
+              value="logs" 
+              className="gap-2 data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg"
+            >
               <History className="w-4 h-4" />
               <span className="hidden sm:inline">السجل</span>
             </TabsTrigger>
@@ -483,45 +438,51 @@ const WhatsAppSettings: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
-                  <CardTitle className={isDark ? "text-white" : ""}>
-                    إعدادات Ultramsg
-                  </CardTitle>
-                  <CardDescription>
-                    أدخل بيانات حساب Ultramsg للاتصال بواتساب
-                  </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center">
+                      <Settings className="w-5 h-5 text-coral-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-neutral-900">إعدادات Ultramsg</CardTitle>
+                      <CardDescription className="text-neutral-500">
+                        أدخل بيانات حساب Ultramsg للاتصال بواتساب
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Instance ID</Label>
+                      <Label className="text-neutral-700">Instance ID</Label>
                       <Input
                         value={instanceId}
                         onChange={(e) => setInstanceId(e.target.value)}
                         placeholder="instance12345"
                         dir="ltr"
-                        className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                        className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Token</Label>
+                      <Label className="text-neutral-700">Token</Label>
                       <Input
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
                         type="password"
                         placeholder="••••••••••"
                         dir="ltr"
-                        className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                        className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
                       />
                     </div>
                   </div>
 
                   <div className="flex gap-3">
-                    <Button onClick={handleInitialize} className="bg-emerald-500 hover:bg-emerald-600">
+                    <Button 
+                      onClick={handleInitialize} 
+                      className="bg-coral-500 hover:bg-coral-600 text-white shadow-md"
+                      style={{ boxShadow: '0 4px 14px rgba(232, 90, 79, 0.3)' }}
+                    >
                       <Wifi className="w-4 h-4 ml-2" />
                       اتصال
                     </Button>
@@ -529,7 +490,7 @@ const WhatsAppSettings: React.FC = () => {
                       variant="outline" 
                       onClick={() => checkStatus()}
                       disabled={checking}
-                      className={isDark ? "border-gray-700" : ""}
+                      className="border-neutral-200 hover:border-coral-500 hover:text-coral-600"
                     >
                       <RefreshCw className={cn("w-4 h-4 ml-2", checking && "animate-spin")} />
                       فحص الاتصال
@@ -538,7 +499,7 @@ const WhatsAppSettings: React.FC = () => {
                       variant="outline"
                       onClick={handleTestMessage}
                       disabled={!connected || isSending}
-                      className={isDark ? "border-gray-700" : ""}
+                      className="border-neutral-200 hover:border-coral-500 hover:text-coral-600"
                     >
                       <TestTube className="w-4 h-4 ml-2" />
                       رسالة اختبار
@@ -547,45 +508,47 @@ const WhatsAppSettings: React.FC = () => {
 
                   {/* Connection Info */}
                   {connected && phone && (
-                    <div className={cn(
-                      "p-4 rounded-xl border",
-                      isDark ? "bg-emerald-500/10 border-emerald-500/30" : "bg-emerald-50 border-emerald-200"
-                    )}>
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-4 rounded-xl bg-emerald-50 border border-emerald-200"
+                    >
                       <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        </div>
                         <div>
-                          <p className={cn("font-medium", isDark ? "text-white" : "text-gray-900")}>
-                            متصل بنجاح
-                          </p>
-                          <p className={cn("text-sm", isDark ? "text-gray-400" : "text-gray-600")}>
-                            الرقم: {phone}
-                          </p>
+                          <p className="font-semibold text-neutral-900">متصل بنجاح</p>
+                          <p className="text-sm text-neutral-500">الرقم: {phone}</p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </CardContent>
               </Card>
 
               {/* Quick Actions */}
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
-                  <CardTitle className={isDark ? "text-white" : ""}>
-                    إرسال يدوي
-                  </CardTitle>
-                  <CardDescription>
-                    إرسال التقارير يدوياً الآن
-                  </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Send className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-neutral-900">إرسال يدوي</CardTitle>
+                      <CardDescription className="text-neutral-500">
+                        إرسال التقارير يدوياً الآن
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-3">
                     <Button
                       onClick={() => sendDailyReport()}
                       disabled={!connected || isSending}
-                      className="bg-violet-500 hover:bg-violet-600"
+                      className="bg-coral-500 hover:bg-coral-600 text-white shadow-md"
+                      style={{ boxShadow: '0 4px 14px rgba(232, 90, 79, 0.3)' }}
                     >
                       <Send className="w-4 h-4 ml-2" />
                       إرسال التقرير اليومي
@@ -594,7 +557,7 @@ const WhatsAppSettings: React.FC = () => {
                       onClick={() => sendWeeklyReport()}
                       disabled={!connected || isSending}
                       variant="outline"
-                      className={isDark ? "border-gray-700" : ""}
+                      className="border-neutral-200 hover:border-coral-500 hover:text-coral-600"
                     >
                       <Send className="w-4 h-4 ml-2" />
                       إرسال التقرير الأسبوعي
@@ -611,26 +574,27 @@ const WhatsAppSettings: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className={isDark ? "text-white" : ""}>
-                        المستلمون
-                      </CardTitle>
-                      <CardDescription>
-                        إدارة قائمة مستلمي التقارير والتنبيهات
-                      </CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-neutral-900">المستلمون</CardTitle>
+                        <CardDescription className="text-neutral-500">
+                          إدارة قائمة مستلمي التقارير والتنبيهات
+                        </CardDescription>
+                      </div>
                     </div>
                     <Button 
                       onClick={() => {
                         setEditingRecipient(undefined);
                         setRecipientDialogOpen(true);
                       }}
-                      className="bg-emerald-500 hover:bg-emerald-600"
+                      className="bg-coral-500 hover:bg-coral-600 text-white shadow-md"
+                      style={{ boxShadow: '0 4px 14px rgba(232, 90, 79, 0.3)' }}
                     >
                       <Plus className="w-4 h-4 ml-2" />
                       إضافة مستلم
@@ -640,56 +604,43 @@ const WhatsAppSettings: React.FC = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {recipients.length === 0 ? (
-                      <div className={cn(
-                        "text-center py-12",
-                        isDark ? "text-gray-400" : "text-gray-500"
-                      )}>
-                        <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>لا يوجد مستلمون</p>
+                      <div className="text-center py-12 text-neutral-400">
+                        <Users className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                        <p className="text-lg font-medium text-neutral-500">لا يوجد مستلمون</p>
                         <p className="text-sm">أضف مستلمين لبدء إرسال التقارير</p>
                       </div>
                     ) : (
-                      recipients.map((recipient) => (
+                      recipients.map((recipient, index) => (
                         <motion.div
                           key={recipient.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className={cn(
-                            "flex items-center justify-between p-4 rounded-xl border",
-                            isDark 
-                              ? "bg-gray-800/50 border-gray-700 hover:bg-gray-800" 
-                              : "bg-gray-50 border-gray-200 hover:bg-white"
-                          )}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 hover:bg-white hover:shadow-md transition-all border border-neutral-100"
                         >
                           <div className="flex items-center gap-4">
                             <div className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center",
-                              recipient.isActive ? "bg-emerald-500/20" : "bg-gray-500/20"
+                              "w-11 h-11 rounded-xl flex items-center justify-center",
+                              recipient.isActive ? "bg-coral-100" : "bg-neutral-200"
                             )}>
                               <User className={cn(
                                 "w-5 h-5",
-                                recipient.isActive ? "text-emerald-500" : "text-gray-500"
+                                recipient.isActive ? "text-coral-600" : "text-neutral-400"
                               )} />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <p className={cn(
-                                  "font-medium",
-                                  isDark ? "text-white" : "text-gray-900"
-                                )}>
+                                <p className="font-semibold text-neutral-900">
                                   {recipient.name}
                                 </p>
                                 <Badge 
                                   variant="outline" 
-                                  className={cn("text-xs", roleColors[recipient.role])}
+                                  className={cn("text-xs font-medium", roleColors[recipient.role])}
                                 >
                                   {roleLabels[recipient.role]}
                                 </Badge>
                               </div>
-                              <p className={cn(
-                                "text-sm",
-                                isDark ? "text-gray-400" : "text-gray-500"
-                              )} dir="ltr">
+                              <p className="text-sm text-neutral-500" dir="ltr">
                                 {recipient.phone}
                               </p>
                             </div>
@@ -699,6 +650,7 @@ const WhatsAppSettings: React.FC = () => {
                             <Switch
                               checked={recipient.isActive}
                               onCheckedChange={() => toggleRecipient(recipient.id)}
+                              className="data-[state=checked]:bg-coral-500"
                             />
                             <Button
                               variant="ghost"
@@ -707,29 +659,34 @@ const WhatsAppSettings: React.FC = () => {
                                 setEditingRecipient(recipient);
                                 setRecipientDialogOpen(true);
                               }}
+                              className="hover:bg-coral-50 hover:text-coral-600"
                             >
                               <Edit3 className="w-4 h-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-rose-500">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                                >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className={isDark ? "bg-gray-900 border-gray-800" : ""}>
+                              <AlertDialogContent className="bg-white">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle className={isDark ? "text-white" : ""}>
+                                  <AlertDialogTitle className="text-neutral-900">
                                     حذف المستلم
                                   </AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogDescription className="text-neutral-500">
                                     هل أنت متأكد من حذف {recipient.name}؟
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogCancel className="border-neutral-200">إلغاء</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => removeRecipient(recipient.id)}
-                                    className="bg-rose-500 hover:bg-rose-600"
+                                    className="bg-rose-500 hover:bg-rose-600 text-white"
                                   >
                                     حذف
                                   </AlertDialogAction>
@@ -754,21 +711,16 @@ const WhatsAppSettings: React.FC = () => {
               className="space-y-6"
             >
               {/* Daily Report */}
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-violet-500/20 rounded-lg">
-                        <Calendar className="w-5 h-5 text-violet-500" />
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-purple-600" />
                       </div>
                       <div>
-                        <CardTitle className={isDark ? "text-white" : ""}>
-                          التقرير اليومي
-                        </CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-neutral-900">التقرير اليومي</CardTitle>
+                        <CardDescription className="text-neutral-500">
                           ملخص يومي لحالة الأسطول والمالية
                         </CardDescription>
                       </div>
@@ -776,18 +728,19 @@ const WhatsAppSettings: React.FC = () => {
                     <Switch
                       checked={settings?.dailyReportEnabled ?? true}
                       onCheckedChange={(checked) => saveSettings({ dailyReportEnabled: checked })}
+                      className="data-[state=checked]:bg-coral-500"
                     />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>وقت الإرسال</Label>
+                      <Label className="text-neutral-700">وقت الإرسال</Label>
                       <Input
                         type="time"
                         value={settings?.dailyReportTime ?? '08:00'}
                         onChange={(e) => saveSettings({ dailyReportTime: e.target.value })}
-                        className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                        className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
                       />
                     </div>
                   </div>
@@ -795,21 +748,16 @@ const WhatsAppSettings: React.FC = () => {
               </Card>
 
               {/* Weekly Report */}
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-500/20 rounded-lg">
-                        <FileText className="w-5 h-5 text-cyan-500" />
+                      <div className="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-cyan-600" />
                       </div>
                       <div>
-                        <CardTitle className={isDark ? "text-white" : ""}>
-                          التقرير الأسبوعي
-                        </CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-neutral-900">التقرير الأسبوعي</CardTitle>
+                        <CardDescription className="text-neutral-500">
                           تحليل شامل للأداء الأسبوعي
                         </CardDescription>
                       </div>
@@ -817,18 +765,19 @@ const WhatsAppSettings: React.FC = () => {
                     <Switch
                       checked={settings?.weeklyReportEnabled ?? true}
                       onCheckedChange={(checked) => saveSettings({ weeklyReportEnabled: checked })}
+                      className="data-[state=checked]:bg-coral-500"
                     />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>يوم الإرسال</Label>
+                      <Label className="text-neutral-700">يوم الإرسال</Label>
                       <Select
                         value={String(settings?.weeklyReportDay ?? 0)}
                         onValueChange={(v) => saveSettings({ weeklyReportDay: parseInt(v) })}
                       >
-                        <SelectTrigger className={isDark ? "bg-gray-800 border-gray-700" : ""}>
+                        <SelectTrigger className="border-neutral-200">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -843,12 +792,12 @@ const WhatsAppSettings: React.FC = () => {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>وقت الإرسال</Label>
+                      <Label className="text-neutral-700">وقت الإرسال</Label>
                       <Input
                         type="time"
                         value={settings?.weeklyReportTime ?? '09:00'}
                         onChange={(e) => saveSettings({ weeklyReportTime: e.target.value })}
-                        className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                        className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
                       />
                     </div>
                   </div>
@@ -856,21 +805,16 @@ const WhatsAppSettings: React.FC = () => {
               </Card>
 
               {/* Instant Alerts */}
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-amber-500/20 rounded-lg">
-                        <Bell className="w-5 h-5 text-amber-500" />
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                        <Bell className="w-5 h-5 text-amber-600" />
                       </div>
                       <div>
-                        <CardTitle className={isDark ? "text-white" : ""}>
-                          التنبيهات الفورية
-                        </CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-neutral-900">التنبيهات الفورية</CardTitle>
+                        <CardDescription className="text-neutral-500">
                           إشعارات فورية للأحداث المهمة
                         </CardDescription>
                       </div>
@@ -878,19 +822,20 @@ const WhatsAppSettings: React.FC = () => {
                     <Switch
                       checked={settings?.instantAlertsEnabled ?? true}
                       onCheckedChange={(checked) => saveSettings({ instantAlertsEnabled: checked })}
+                      className="data-[state=checked]:bg-coral-500"
                     />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label>الحد الأدنى للتنبيه بالمعاملات الكبيرة</Label>
+                    <Label className="text-neutral-700">الحد الأدنى للتنبيه بالمعاملات الكبيرة</Label>
                     <Input
                       type="number"
                       value={settings?.alertThreshold ?? 10000}
                       onChange={(e) => saveSettings({ alertThreshold: parseInt(e.target.value) })}
-                      className={isDark ? "bg-gray-800 border-gray-700" : ""}
+                      className="border-neutral-200 focus:border-coral-500 focus:ring-coral-500"
                     />
-                    <p className={cn("text-xs", isDark ? "text-gray-500" : "text-gray-400")}>
+                    <p className="text-xs text-neutral-400">
                       سيتم إرسال تنبيه للمعاملات التي تتجاوز هذا المبلغ
                     </p>
                   </div>
@@ -905,54 +850,52 @@ const WhatsAppSettings: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className={cn(
-                "backdrop-blur-xl border",
-                isDark ? "bg-gray-900/60 border-gray-800" : "bg-white/80"
-              )}>
+              <Card className="bg-white rounded-[1.25rem] shadow-sm border-0">
                 <CardHeader>
-                  <CardTitle className={isDark ? "text-white" : ""}>
-                    سجل الرسائل
-                  </CardTitle>
-                  <CardDescription>
-                    آخر 20 رسالة تم إرسالها
-                  </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                      <History className="w-5 h-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-neutral-900">سجل الرسائل</CardTitle>
+                      <CardDescription className="text-neutral-500">
+                        آخر 20 رسالة تم إرسالها
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-[500px] overflow-y-auto">
                     {logs.length === 0 ? (
-                      <div className={cn(
-                        "text-center py-12",
-                        isDark ? "text-gray-400" : "text-gray-500"
-                      )}>
-                        <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>لا توجد رسائل في السجل</p>
+                      <div className="text-center py-12 text-neutral-400">
+                        <History className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                        <p className="text-lg font-medium text-neutral-500">لا توجد رسائل في السجل</p>
                       </div>
                     ) : (
-                      logs.map((log: any) => (
-                        <div
+                      logs.map((log: any, index: number) => (
+                        <motion.div
                           key={log.id}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg border",
-                            isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
-                          )}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.03 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 border border-neutral-100"
                         >
                           <div className="flex items-center gap-3">
-                            {log.status === 'sent' ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-rose-500" />
-                            )}
+                            <div className={cn(
+                              "w-9 h-9 rounded-lg flex items-center justify-center",
+                              log.status === 'sent' ? "bg-emerald-100" : "bg-rose-100"
+                            )}>
+                              {log.status === 'sent' ? (
+                                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-rose-600" />
+                              )}
+                            </div>
                             <div>
-                              <p className={cn(
-                                "text-sm font-medium",
-                                isDark ? "text-white" : "text-gray-900"
-                              )}>
+                              <p className="text-sm font-medium text-neutral-900">
                                 {log.message_type}
                               </p>
-                              <p className={cn(
-                                "text-xs",
-                                isDark ? "text-gray-400" : "text-gray-500"
-                              )}>
+                              <p className="text-xs text-neutral-500">
                                 {new Date(log.created_at).toLocaleString('ar-QA')}
                               </p>
                             </div>
@@ -960,14 +903,15 @@ const WhatsAppSettings: React.FC = () => {
                           <Badge 
                             variant="outline"
                             className={cn(
+                              "font-medium",
                               log.status === 'sent'
-                                ? "text-emerald-500 border-emerald-500/30"
-                                : "text-rose-500 border-rose-500/30"
+                                ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+                                : "text-rose-600 border-rose-200 bg-rose-50"
                             )}
                           >
                             {log.status === 'sent' ? 'تم الإرسال' : 'فشل'}
                           </Badge>
-                        </div>
+                        </motion.div>
                       ))
                     )}
                   </div>
@@ -983,7 +927,6 @@ const WhatsAppSettings: React.FC = () => {
           onOpenChange={setRecipientDialogOpen}
           recipient={editingRecipient}
           onSave={handleSaveRecipient}
-          isDark={isDark}
         />
 
         {/* Footer */}
@@ -991,13 +934,10 @@ const WhatsAppSettings: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className={cn(
-            "text-center mt-8 py-4",
-            isDark ? "text-gray-500" : "text-gray-400"
-          )}
+          className="text-center mt-8 py-4"
         >
-          <p className="text-sm flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4" />
+          <p className="text-sm text-neutral-400 flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4 text-coral-400" />
             تقارير واتساب بواسطة Ultramsg
           </p>
         </motion.div>
@@ -1007,4 +947,3 @@ const WhatsAppSettings: React.FC = () => {
 };
 
 export default WhatsAppSettings;
-
