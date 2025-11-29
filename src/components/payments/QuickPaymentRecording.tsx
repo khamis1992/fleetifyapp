@@ -55,7 +55,7 @@ export function QuickPaymentRecording() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
@@ -140,18 +140,45 @@ export function QuickPaymentRecording() {
     }
   };
 
-  const selectInvoice = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
-    // Use balance_due if available, otherwise total_amount
-    const amountDue = invoice.balance_due ?? invoice.total_amount;
-    setPaymentAmount(amountDue.toString());
+  const toggleInvoiceSelection = (invoice: Invoice) => {
+    setSelectedInvoices(prev => {
+      const isSelected = prev.some(i => i.id === invoice.id);
+      if (isSelected) {
+        const newSelection = prev.filter(i => i.id !== invoice.id);
+        // Update payment amount
+        const totalAmount = newSelection.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+        setPaymentAmount(totalAmount > 0 ? totalAmount.toString() : '');
+        return newSelection;
+      } else {
+        const newSelection = [...prev, invoice];
+        // Update payment amount
+        const totalAmount = newSelection.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+        setPaymentAmount(totalAmount.toString());
+        return newSelection;
+      }
+    });
+  };
+
+  const selectAllInvoices = () => {
+    if (selectedInvoices.length === invoices.length) {
+      setSelectedInvoices([]);
+      setPaymentAmount('');
+    } else {
+      setSelectedInvoices(invoices);
+      const totalAmount = invoices.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+      setPaymentAmount(totalAmount.toString());
+    }
+  };
+
+  const getTotalSelectedAmount = () => {
+    return selectedInvoices.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
   };
 
   const processPayment = async () => {
-    if (!selectedCustomer || !selectedInvoice || !paymentAmount) {
+    if (!selectedCustomer || selectedInvoices.length === 0 || !paymentAmount) {
       toast({
         title: 'بيانات ناقصة',
-        description: 'يرجى التأكد من اختيار العميل والفاتورة وإدخال المبلغ',
+        description: 'يرجى التأكد من اختيار العميل وفاتورة واحدة على الأقل وإدخال المبلغ',
         variant: 'destructive',
       });
       return;
@@ -169,66 +196,80 @@ export function QuickPaymentRecording() {
 
     setProcessing(true);
     try {
-      // 1. Create payment record
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
       
-      // Map UI payment method to database payment_type
-      // payment_method in DB: 'received' or 'made' (direction)
-      // payment_type in DB: 'cash', 'check', 'bank_transfer', 'credit_card', 'online_transfer' (method)
       const paymentTypeMap: Record<string, string> = {
         'cash': 'cash',
         'bank_transfer': 'bank_transfer',
         'check': 'check',
         'other': 'cash'
       };
-      
+
+      // Group invoices by contract
+      const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter(Boolean))];
+      const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
+      const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
+
+      // Create single payment record for all selected invoices
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .insert({
           company_id: companyId,
           customer_id: selectedCustomer.id,
-          contract_id: selectedInvoice.contract_id,
-          invoice_id: selectedInvoice.id,
+          contract_id: selectedInvoices[0].contract_id, // Use first contract
+          invoice_id: selectedInvoices[0].id, // Primary invoice
           amount: amount,
           payment_date: paymentDate,
-          payment_method: 'received', // مستلم من العميل
+          payment_method: 'received',
           payment_number: paymentNumber,
           payment_type: paymentTypeMap[paymentMethod] || 'cash',
           payment_status: 'completed',
           currency: 'QAR',
+          notes: `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`,
         })
         .select()
         .single();
 
       if (paymentError) throw paymentError;
 
-      // 2. Update invoice payment_status and balance_due
-      const currentBalance = selectedInvoice.balance_due ?? selectedInvoice.total_amount;
-      const newBalance = Math.max(0, currentBalance - amount);
-      const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
-      
-      const { error: invoiceError } = await supabase
-        .from('invoices')
-        .update({ 
-          payment_status: newPaymentStatus,
-          paid_amount: (selectedInvoice.total_amount - newBalance),
-          balance_due: newBalance
-        })
-        .eq('id', selectedInvoice.id);
+      // Update all selected invoices
+      let remainingAmount = amount;
+      for (const invoice of selectedInvoices) {
+        const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
+        const amountToApply = Math.min(remainingAmount, invoiceBalance);
+        const newBalance = Math.max(0, invoiceBalance - amountToApply);
+        const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
+        
+        await supabase
+          .from('invoices')
+          .update({ 
+            payment_status: newPaymentStatus,
+            paid_amount: (invoice.total_amount - newBalance),
+            balance_due: newBalance
+          })
+          .eq('id', invoice.id);
 
-      if (invoiceError) throw invoiceError;
+        remainingAmount -= amountToApply;
+        if (remainingAmount <= 0) break;
+      }
 
-      // 3. Update contract balance if contract exists
-      if (selectedInvoice.contract_id) {
+      // Update all affected contracts
+      for (const contractId of contractIds) {
         const { data: contract, error: contractFetchError } = await supabase
           .from('contracts')
           .select('total_paid, balance_due, contract_amount')
-          .eq('id', selectedInvoice.contract_id)
+          .eq('id', contractId)
           .single();
 
         if (!contractFetchError && contract) {
-          const newTotalPaid = (contract.total_paid || 0) + amount;
+          // Calculate amount applied to this contract's invoices
+          const contractInvoices = selectedInvoices.filter(inv => inv.contract_id === contractId);
+          const contractPaymentAmount = contractInvoices.reduce((sum, inv) => {
+            return sum + Math.min(inv.balance_due ?? inv.total_amount, amount / selectedInvoices.length);
+          }, 0);
+
+          const newTotalPaid = (contract.total_paid || 0) + contractPaymentAmount;
           const newContractBalance = Math.max(0, (contract.contract_amount || 0) - newTotalPaid);
 
           await supabase
@@ -239,27 +280,30 @@ export function QuickPaymentRecording() {
               last_payment_date: paymentDate,
               payment_status: newContractBalance <= 0 ? 'paid' : newTotalPaid > 0 ? 'partial' : 'unpaid',
             })
-            .eq('id', selectedInvoice.contract_id);
+            .eq('id', contractId);
         }
       }
 
-      // Show success screen with receipt option
-      const contractNumber = selectedInvoice.contracts?.contract_number || '';
+      // Show success screen
       setPaymentSuccess({
         paymentId: payment.id,
         receiptNumber: generateReceiptNumber(),
         amount: amount,
-        invoiceNumber: selectedInvoice.invoice_number,
+        invoiceNumber: selectedInvoices.length > 1 
+          ? `${selectedInvoices.length} فواتير` 
+          : selectedInvoices[0].invoice_number,
         customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
         customerPhone: selectedCustomer.phone,
         paymentMethod: paymentMethod,
         paymentDate: paymentDate,
-        description: `دفعة إيجار - عقد رقم ${contractNumber} - فاتورة ${selectedInvoice.invoice_number}`,
+        description: selectedInvoices.length > 1 
+          ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
+          : `دفعة إيجار - عقد رقم ${contractNumbers} - فاتورة ${invoiceNumbers}`,
       });
 
       toast({
         title: 'تم تسجيل الدفعة بنجاح ✅',
-        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق`,
+        description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق لـ ${selectedInvoices.length} فاتورة`,
       });
 
     } catch (error) {
@@ -383,13 +427,14 @@ _شركة العراف لتأجير السيارات_`;
 
   const resetForm = () => {
     setSelectedCustomer(null);
-    setSelectedInvoice(null);
+    setSelectedInvoices([]);
     setInvoices([]);
     setPaymentAmount('');
     setPaymentMethod('cash');
     setSearchTerm('');
     setCustomers([]);
     setPaymentSuccess(null);
+    setShowReceipt(false);
   };
 
   return (
@@ -545,7 +590,7 @@ _شركة العراف لتأجير السيارات_`;
           )}
 
           {/* Step 2: Show Selected Customer and Invoices */}
-          {selectedCustomer && !selectedInvoice && (
+          {selectedCustomer && selectedInvoices.length === 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -561,38 +606,57 @@ _شركة العراف لتأجير السيارات_`;
               </div>
 
               <div className="space-y-2">
-                <Label>اختر الفاتورة المراد دفعها</Label>
+                <div className="flex items-center justify-between">
+                  <Label>اختر الفواتير المراد دفعها (يمكنك تحديد أكثر من فاتورة)</Label>
+                  {invoices.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={selectAllInvoices}>
+                      {selectedInvoices.length === invoices.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                    </Button>
+                  )}
+                </div>
                 {invoices.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     لا توجد فواتير غير مدفوعة لهذا العميل
                   </div>
                 ) : (
-                  <div className="border rounded-lg divide-y">
+                  <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
                     {invoices.map((invoice) => {
                       const isOverdue = new Date(invoice.due_date) < new Date();
+                      const isSelected = selectedInvoices.some(i => i.id === invoice.id);
+                      const balanceDue = invoice.balance_due ?? invoice.total_amount;
                       return (
                         <div
                           key={invoice.id}
-                          className="p-3 hover:bg-accent cursor-pointer"
-                          onClick={() => selectInvoice(invoice)}
+                          className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-green-50 border-r-4 border-r-green-500' : 'hover:bg-accent'}`}
+                          onClick={() => toggleInvoiceSelection(invoice)}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{invoice.invoice_number}</div>
-                              <div className="text-sm text-muted-foreground">
-                                عقد: {invoice.contracts?.contract_number}
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium">{invoice.invoice_number}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    عقد: {invoice.contracts?.contract_number}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    تاريخ الاستحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG')}
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <div className="text-lg font-bold">{balanceDue.toFixed(2)} ريال</div>
+                                  {isOverdue && (
+                                    <Badge variant="destructive" className="mt-1">
+                                      متأخر
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                تاريخ الاستحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG')}
-                              </div>
-                            </div>
-                            <div className="text-left">
-                              <div className="text-lg font-bold">{invoice.total_amount.toFixed(2)} ريال</div>
-                              {isOverdue && (
-                                <Badge variant="destructive" className="mt-1">
-                                  متأخر
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -600,24 +664,58 @@ _شركة العراف لتأجير السيارات_`;
                     })}
                   </div>
                 )}
+
+                {/* Show proceed button when invoices are selected */}
+                {selectedInvoices.length > 0 && (
+                  <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-medium text-green-800">
+                        تم تحديد {selectedInvoices.length} فاتورة
+                      </span>
+                      <span className="text-xl font-bold text-green-700">
+                        {getTotalSelectedAmount().toFixed(2)} ر.ق
+                      </span>
+                    </div>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => {/* Move to step 3 - already selected */}}
+                    >
+                      <Check className="h-4 w-4 ml-2" />
+                      متابعة للدفع
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Step 3: Payment Details */}
-          {selectedCustomer && selectedInvoice && (
+          {selectedCustomer && selectedInvoices.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>الفاتورة المختارة</Label>
-                  <div className="text-lg font-medium">{selectedInvoice.invoice_number}</div>
-                  <div className="text-sm text-muted-foreground">
-                    المبلغ الإجمالي: {selectedInvoice.total_amount.toFixed(2)} ريال
+                  <Label>الفواتير المختارة ({selectedInvoices.length})</Label>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {selectedInvoices.map(inv => inv.invoice_number).join(' - ')}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedInvoice(null)}>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedInvoices([])}>
                   <X className="h-4 w-4" />
                 </Button>
+              </div>
+
+              {/* Summary of selected invoices */}
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                {selectedInvoices.map((invoice) => (
+                  <div key={invoice.id} className="flex justify-between items-center text-sm">
+                    <span>{invoice.invoice_number}</span>
+                    <span className="font-medium">{(invoice.balance_due ?? invoice.total_amount).toFixed(2)} ر.ق</span>
+                  </div>
+                ))}
+                <div className="border-t pt-2 flex justify-between items-center font-bold">
+                  <span>المجموع</span>
+                  <span className="text-green-600">{getTotalSelectedAmount().toFixed(2)} ر.ق</span>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -654,7 +752,7 @@ _شركة العراف لتأجير السيارات_`;
                   ) : (
                     <Check className="h-4 w-4 ml-2" />
                   )}
-                  تأكيد الدفعة
+                  تأكيد الدفعة ({selectedInvoices.length} فاتورة)
                 </Button>
                 <Button variant="outline" onClick={resetForm}>
                   إلغاء
