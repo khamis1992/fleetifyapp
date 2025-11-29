@@ -179,14 +179,18 @@ export interface Invoice {
   id: string;
   invoice_number: string;
   invoice_date: string;
+  due_date?: string;
   customer_id: string;
   customer?: {
     first_name_ar?: string;
     last_name_ar?: string;
+    full_name?: string;
     company_name_ar?: string;
     phone?: string;
   };
-  amount: number;
+  // Support both field names
+  amount?: number;
+  total_amount?: number;
   description?: string;
   notes?: string;
   items?: Array<{
@@ -198,23 +202,28 @@ export interface Invoice {
 }
 
 export const convertInvoiceToPrintable = (invoice: Invoice): PrintableDocumentData => {
+  // Support multiple customer name fields
   const customerName = invoice.customer?.company_name_ar || 
+    invoice.customer?.full_name ||
     `${invoice.customer?.first_name_ar || ''} ${invoice.customer?.last_name_ar || ''}`.trim() ||
     'عميل';
 
+  // Support both amount and total_amount fields
+  const invoiceAmount = Number(invoice.amount) || Number(invoice.total_amount) || 0;
+
   return {
     type: 'invoice',
-    documentNumber: invoice.invoice_number,
-    date: invoice.invoice_date,
+    documentNumber: invoice.invoice_number || 'غير محدد',
+    date: invoice.invoice_date || invoice.due_date || new Date().toISOString(),
     customer: {
       name: customerName,
       phone: invoice.customer?.phone
     },
-    amount: invoice.amount,
+    amount: invoiceAmount,
     currency: 'QAR',
     items: invoice.items || [{
-      description: invoice.description || 'خدمات',
-      total: invoice.amount
+      description: invoice.description || 'فاتورة إيجار شهري',
+      total: invoiceAmount
     }],
     notes: invoice.notes
   };

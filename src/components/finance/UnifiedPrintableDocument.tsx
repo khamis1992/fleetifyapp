@@ -176,7 +176,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
   };
 
   useEffect(() => {
-    setAmountInWords(convertAmountToWords(data.amount));
+    setAmountInWords(convertAmountToWords(data.amount || 0));
   }, [data.amount]);
 
   const handlePrint = () => {
@@ -396,10 +396,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
                       <td className="border border-gray-300 p-2">{item.description}</td>
                       <td className="border border-gray-300 p-2 text-center">{item.quantity || 1}</td>
                       <td className="border border-gray-300 p-2 text-center">
-                        {(item.unitPrice || item.total).toLocaleString('ar-QA')}
+                        {(item.unitPrice || item.total || 0).toLocaleString('ar-QA')}
                       </td>
                       <td className="border border-gray-300 p-2 text-center font-bold">
-                        {item.total.toLocaleString('ar-QA')}
+                        {(item.total || 0).toLocaleString('ar-QA')}
                       </td>
                     </tr>
                   ))}
@@ -454,7 +454,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-3xl font-extrabold text-[#004d40]">
-                  {data.amount.toLocaleString('ar-QA')}
+                  {(data.amount || 0).toLocaleString('ar-QA')}
                 </span>
                 <Badge className="text-xl font-bold bg-[#004d40] text-white px-3 py-1">
                   {currency}
