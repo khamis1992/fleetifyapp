@@ -85,12 +85,24 @@ function ContractsNew() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [filters, setFilters] = useState<any>({});
+  const [searchInput, setSearchInput] = useState(''); // Local search input state (immediate)
+  const [debouncedSearch, setDebouncedSearch] = useState(''); // Debounced search for API
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
+  
+  // Debounce search input - only update filters after user stops typing for 500ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setFilters((prev: any) => ({ ...prev, search: searchInput || undefined }));
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Hooks
   const location = useLocation();
@@ -589,7 +601,8 @@ function ContractsNew() {
                     type="text"
                     placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
                     className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                    onChange={(e) => setFilters((prev: any) => ({ ...prev, search: e.target.value }))}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </div>
 
