@@ -2,32 +2,69 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 /**
+ * انتظار تحميل جميع الصور في العنصر
+ */
+async function waitForImages(element: HTMLElement): Promise<void> {
+  const images = element.querySelectorAll('img');
+  const promises = Array.from(images).map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // تجاهل الصور التي فشل تحميلها
+    });
+  });
+  await Promise.all(promises);
+}
+
+/**
  * Generate PDF from HTML element
  */
 export async function generateReceiptPDF(element: HTMLElement, filename: string): Promise<Blob> {
+  // انتظار تحميل جميع الصور
+  await waitForImages(element);
+  
+  // انتظار قليل للتأكد من اكتمال الرسم
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
   // Create canvas from HTML element
   const canvas = await html2canvas(element, {
-    scale: 2, // Higher quality
+    scale: 2,
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#ffffff',
     logging: false,
+    imageTimeout: 15000,
+    removeContainer: true,
   });
 
-  // Calculate dimensions (A5 landscape)
-  const imgWidth = 210; // A4 width in mm
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  // Calculate dimensions for A4 landscape
+  const pdfWidth = 297; // A4 landscape width in mm
+  const pdfHeight = 210; // A4 landscape height in mm
+  
+  // Calculate scaling to fit the content
+  const canvasRatio = canvas.width / canvas.height;
+  let imgWidth = pdfWidth - 20; // margins
+  let imgHeight = imgWidth / canvasRatio;
+  
+  if (imgHeight > pdfHeight - 20) {
+    imgHeight = pdfHeight - 20;
+    imgWidth = imgHeight * canvasRatio;
+  }
 
-  // Create PDF
+  // Create PDF in landscape
   const pdf = new jsPDF({
-    orientation: imgHeight > imgWidth ? 'portrait' : 'landscape',
+    orientation: 'landscape',
     unit: 'mm',
     format: 'a4'
   });
 
+  // Center the image
+  const xOffset = (pdfWidth - imgWidth) / 2;
+  const yOffset = (pdfHeight - imgHeight) / 2;
+
   // Add image to PDF
-  const imgData = canvas.toDataURL('image/png');
-  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+  const imgData = canvas.toDataURL('image/png', 1.0);
+  pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
 
   // Return as blob
   return pdf.output('blob');

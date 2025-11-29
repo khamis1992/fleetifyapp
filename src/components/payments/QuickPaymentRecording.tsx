@@ -387,8 +387,8 @@ export function QuickPaymentRecording() {
     setShowReceipt(true);
     setGeneratingPDF(true);
 
-    // Wait a moment for the receipt to render
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for the receipt to render and images to load
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
       // Generate PDF
@@ -403,30 +403,24 @@ export function QuickPaymentRecording() {
         paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
         paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
 
-      const message = `📄 *سند قبض رقم: ${paymentSuccess.receiptNumber}*
+      // رسالة واتساب محدثة
+      const message = `سند قبض رقم: ${paymentSuccess.receiptNumber}
 
-━━━━━━━━━━━━━━━
+عزيزي/عزيزتي ${paymentSuccess.customerName}،
 
-عزيزي/عزيزتي *${paymentSuccess.customerName}*،
+تم استلام دفعتكم بنجاح
 
-تم استلام دفعتكم بنجاح ✅
+تفاصيل الدفعة:
+- رقم السند: ${paymentSuccess.receiptNumber}
+- رقم الفاتورة: ${paymentSuccess.invoiceNumber}
+- المبلغ المدفوع: ${paymentSuccess.amount.toFixed(2)} ر.ق
+- المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
+- تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
+- طريقة الدفع: ${paymentMethodLabel}
 
-📋 *تفاصيل الدفعة:*
-• رقم السند: ${paymentSuccess.receiptNumber}
-• رقم الفاتورة: ${paymentSuccess.invoiceNumber}
-• المبلغ المدفوع: *${paymentSuccess.amount.toFixed(2)} ر.ق*
-• المبلغ كتابة: ${numberToArabicWords(paymentSuccess.amount)}
-• تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
-• طريقة الدفع: ${paymentMethodLabel}
+شكرا لتعاملكم معنا
 
-━━━━━━━━━━━━━━━
-
-📎 *مرفق: سند القبض PDF*
-(تم تحميل الملف على جهازك، يرجى إرفاقه في المحادثة)
-
-شكراً لتعاملكم معنا 🙏
-
-_شركة العراف لتأجير السيارات_`;
+شركة العراف لتأجير السيارات`;
 
       // Format phone number
       let phone = paymentSuccess.customerPhone.replace(/\s+/g, '').replace(/-/g, '');
@@ -442,7 +436,7 @@ _شركة العراف لتأجير السيارات_`;
       window.open(whatsappUrl, '_blank');
 
       toast({
-        title: 'تم فتح واتساب ✅',
+        title: 'تم فتح واتساب',
         description: 'تم تحميل سند القبض PDF، أرفقه في محادثة واتساب ثم اضغط إرسال',
       });
     } catch (error) {

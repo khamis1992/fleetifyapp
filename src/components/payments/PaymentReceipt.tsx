@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
 
 interface PaymentReceiptProps {
   receiptNumber: string;
@@ -11,6 +11,23 @@ interface PaymentReceiptProps {
   managerName?: string;
 }
 
+// دالة لتحويل الصورة إلى Base64
+async function imageToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error loading image:', url, error);
+    return '';
+  }
+}
+
 export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   receiptNumber,
   date,
@@ -21,16 +38,37 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   paymentMethod,
   managerName = 'خميس هاشم الجبر'
 }, ref) => {
+  const [logoBase64, setLogoBase64] = useState<string>('');
+  const [stampBase64, setStampBase64] = useState<string>('');
+  const [signatureBase64, setSignatureBase64] = useState<string>('');
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // تحميل الصور وتحويلها إلى Base64 عند التحميل
+  useEffect(() => {
+    async function loadImages() {
+      const [logo, stamp, signature] = await Promise.all([
+        imageToBase64('/receipts/logo.png'),
+        imageToBase64('/receipts/stamp.png'),
+        imageToBase64('/receipts/signature.png'),
+      ]);
+      setLogoBase64(logo);
+      setStampBase64(stamp);
+      setSignatureBase64(signature);
+      setImagesLoaded(true);
+    }
+    loadImages();
+  }, []);
+
   return (
     <div 
       ref={ref}
       dir="rtl" 
       style={{
-        fontFamily: 'Cairo, sans-serif',
+        fontFamily: 'Arial, Tahoma, sans-serif',
         background: 'white',
-        width: '210mm',
-        minHeight: '148mm',
-        padding: '10mm',
+        width: '794px', // A4 width in pixels at 96 DPI
+        minHeight: '560px',
+        padding: '40px',
         position: 'relative',
         border: '3px double #1f2937',
         borderRadius: '8px',
@@ -48,34 +86,34 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       }}>
         {/* بيانات الشركة يمين */}
         <div style={{ textAlign: 'right', width: '33%' }}>
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px' }}>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px', margin: 0 }}>
             شركة العراف لتأجير السيارات <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#4b5563' }}>ذ.م.م</span>
           </h1>
-          <p style={{ fontSize: '12px', color: '#374151' }}>س.ت: 146832</p>
-          <p style={{ fontSize: '10px', color: '#4b5563', marginTop: '4px' }}>أم صلال محمد – الشارع التجاري</p>
-          <p style={{ fontSize: '10px', color: '#4b5563' }}>مبنى (79) – الطابق الأول – مكتب (2)</p>
+          <p style={{ fontSize: '12px', color: '#374151', margin: '4px 0' }}>س.ت: 146832</p>
+          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0' }}>أم صلال محمد – الشارع التجاري</p>
+          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0' }}>مبنى (79) – الطابق الأول – مكتب (2)</p>
         </div>
 
         {/* الشعار وسط */}
         <div style={{ width: '33%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 16px' }}>
-          <img 
-            src="/receipts/logo.png" 
-            alt="شعار الشركة" 
-            style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
+          {logoBase64 && (
+            <img 
+              src={logoBase64}
+              alt="شعار الشركة" 
+              style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }}
+              crossOrigin="anonymous"
+            />
+          )}
         </div>
 
         {/* العنوان إنجليزي يسار */}
         <div style={{ textAlign: 'left', width: '33%' }} dir="ltr">
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px' }}>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px', margin: 0 }}>
             Al-Araf Car Rental <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#4b5563' }}>L.L.C</span>
           </h1>
-          <p style={{ fontSize: '12px', color: '#374151' }}>C.R: 146832</p>
-          <p style={{ fontSize: '10px', color: '#4b5563', marginTop: '4px' }}>Umm Salal Mohammed, Commercial St.</p>
-          <p style={{ fontSize: '10px', color: '#4b5563' }}>Bldg (79), 1st Floor, Office (2)</p>
+          <p style={{ fontSize: '12px', color: '#374151', margin: '4px 0' }}>C.R: 146832</p>
+          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0' }}>Umm Salal Mohammed, Commercial St.</p>
+          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0' }}>Bldg (79), 1st Floor, Office (2)</p>
         </div>
       </header>
 
@@ -97,12 +135,12 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       {/* بيانات السند */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '18px' }}>رقم: .No</span>
+          <span style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '18px' }}>رقم: No.</span>
           <span style={{ color: '#dc2626', fontFamily: 'monospace', fontSize: '20px', fontWeight: 'bold' }}>{receiptNumber}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 'bold', color: '#1f2937' }}>التاريخ: Date</span>
-          <span style={{ borderBottom: '1px solid #9ca3af', width: '120px', textAlign: 'center', fontFamily: 'monospace' }}>{date}</span>
+          <span style={{ borderBottom: '1px solid #9ca3af', padding: '0 20px', textAlign: 'center', fontFamily: 'monospace' }}>{date}</span>
         </div>
       </div>
 
@@ -110,40 +148,34 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       <div style={{ padding: '0 16px', fontSize: '16px' }}>
         
         {/* المستلم منه */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '20px' }}>
-          <span style={{ fontWeight: 'bold', color: '#1e3a8a', marginLeft: '8px', whiteSpace: 'nowrap', width: '120px' }}>استلمنا من السيد/</span>
-          <div style={{ 
-            borderBottom: '2px dotted #9ca3af', 
-            flexGrow: 1, 
-            textAlign: 'center', 
-            color: '#1f2937', 
-            fontWeight: 'bold',
-            paddingBottom: '4px'
-          }}>{customerName}</div>
-          <span style={{ fontWeight: 'bold', color: '#6b7280', marginRight: '8px', whiteSpace: 'nowrap', width: '120px', textAlign: 'left', fontSize: '12px' }} dir="ltr">Received From Mr.</span>
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>استلمنا من السيد/</td>
+              <td style={{ borderBottom: '2px dotted #9ca3af', textAlign: 'center', fontWeight: 'bold', color: '#1f2937', padding: '4px' }}>{customerName}</td>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#6b7280', textAlign: 'left', paddingRight: '8px', fontSize: '12px' }} dir="ltr">Received From Mr.</td>
+            </tr>
+          </tbody>
+        </table>
 
         {/* المبلغ */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '20px' }}>
-          <span style={{ fontWeight: 'bold', color: '#1e3a8a', marginLeft: '8px', whiteSpace: 'nowrap', width: '120px' }}>مبلغ وقدره/</span>
-          <div style={{ 
-            borderBottom: '2px dotted #9ca3af', 
-            flexGrow: 1, 
-            textAlign: 'center', 
-            color: '#1f2937', 
-            fontWeight: 'bold',
-            paddingBottom: '4px'
-          }}>{amountInWords}</div>
-          <span style={{ fontWeight: 'bold', color: '#6b7280', marginRight: '8px', whiteSpace: 'nowrap', width: '120px', textAlign: 'left', fontSize: '12px' }} dir="ltr">The Sum of</span>
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>مبلغ وقدره/</td>
+              <td style={{ borderBottom: '2px dotted #9ca3af', textAlign: 'center', fontWeight: 'bold', color: '#1f2937', padding: '4px' }}>{amountInWords}</td>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#6b7280', textAlign: 'left', paddingRight: '8px', fontSize: '12px' }} dir="ltr">The Sum of</td>
+            </tr>
+          </tbody>
+        </table>
 
         {/* المربع الرقمي للمبلغ */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', margin: '8px 16px' }}>
           <div style={{
             border: '2px solid #1f2937',
             borderRadius: '4px',
             padding: '4px 16px',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
             backgroundColor: '#f9fafb'
@@ -154,17 +186,15 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
         </div>
 
         {/* وذلك عن */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '20px' }}>
-          <span style={{ fontWeight: 'bold', color: '#1e3a8a', marginLeft: '8px', whiteSpace: 'nowrap', width: '120px' }}>وذلك عن/</span>
-          <div style={{ 
-            borderBottom: '2px dotted #9ca3af', 
-            flexGrow: 1, 
-            textAlign: 'center', 
-            color: '#1f2937',
-            paddingBottom: '4px'
-          }}>{description}</div>
-          <span style={{ fontWeight: 'bold', color: '#6b7280', marginRight: '8px', whiteSpace: 'nowrap', width: '120px', textAlign: 'left', fontSize: '12px' }} dir="ltr">Being</span>
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>وذلك عن/</td>
+              <td style={{ borderBottom: '2px dotted #9ca3af', textAlign: 'center', color: '#1f2937', padding: '4px' }}>{description}</td>
+              <td style={{ width: '130px', fontWeight: 'bold', color: '#6b7280', textAlign: 'left', paddingRight: '8px', fontSize: '12px' }} dir="ltr">Being</td>
+            </tr>
+          </tbody>
+        </table>
 
         {/* طريقة الدفع */}
         <div style={{
@@ -180,15 +210,48 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
         }}>
           <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>طريقة الدفع Payment Mode:</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={paymentMethod === 'cash'} readOnly style={{ width: '18px', height: '18px' }} />
+            <span style={{ 
+              width: '18px', 
+              height: '18px', 
+              border: '2px solid #333',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: paymentMethod === 'cash' ? '#1e3a8a' : 'white',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>{paymentMethod === 'cash' ? '✓' : ''}</span>
             <span>نقداً Cash</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={paymentMethod === 'check'} readOnly style={{ width: '18px', height: '18px' }} />
+            <span style={{ 
+              width: '18px', 
+              height: '18px', 
+              border: '2px solid #333',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: paymentMethod === 'check' ? '#1e3a8a' : 'white',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>{paymentMethod === 'check' ? '✓' : ''}</span>
             <span>شيك Cheque</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={paymentMethod === 'bank_transfer'} readOnly style={{ width: '18px', height: '18px' }} />
+            <span style={{ 
+              width: '18px', 
+              height: '18px', 
+              border: '2px solid #333',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: paymentMethod === 'bank_transfer' ? '#1e3a8a' : 'white',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>{paymentMethod === 'bank_transfer' ? '✓' : ''}</span>
             <span>تحويل Transfer</span>
           </label>
         </div>
@@ -205,70 +268,69 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       }}>
         
         {/* المستلم */}
-        <div style={{ textAlign: 'center', width: '33%' }}>
+        <div style={{ textAlign: 'center', width: '30%' }}>
           <p style={{ fontWeight: 'bold', color: '#1f2937', marginBottom: '48px' }}>المستلم Receiver</p>
-          <div style={{ borderTop: '1px solid #9ca3af', width: '66%', margin: '0 auto', paddingTop: '4px' }}>
-            <p style={{ fontSize: '12px', color: '#6b7280' }}>التوقيع Signature</p>
+          <div style={{ borderTop: '1px solid #9ca3af', width: '80%', margin: '0 auto', paddingTop: '4px' }}>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>التوقيع Signature</p>
           </div>
         </div>
 
         {/* المحاسب */}
-        <div style={{ textAlign: 'center', width: '33%', position: 'relative' }}>
+        <div style={{ textAlign: 'center', width: '30%', position: 'relative' }}>
           {/* الختم */}
-          <div style={{
-            position: 'absolute',
-            top: '-100px',
-            left: '50%',
-            transform: 'translateX(-50%) rotate(-10deg)',
-            opacity: 0.9,
-            width: '120px',
-            height: '120px',
-            zIndex: 10
-          }}>
-            <img 
-              src="/receipts/stamp.png" 
-              alt="ختم الشركة" 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
+          {stampBase64 && (
+            <div style={{
+              position: 'absolute',
+              top: '-80px',
+              left: '50%',
+              transform: 'translateX(-50%) rotate(-10deg)',
+              opacity: 0.85,
+              width: '100px',
+              height: '100px',
+              zIndex: 10
+            }}>
+              <img 
+                src={stampBase64}
+                alt="ختم الشركة" 
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
           <p style={{ fontWeight: 'bold', color: '#1f2937', marginBottom: '48px', position: 'relative', zIndex: 20 }}>المحاسب Accountant</p>
-          <div style={{ borderTop: '1px solid #9ca3af', width: '66%', margin: '0 auto', paddingTop: '4px', position: 'relative', zIndex: 20 }}>
-            <p style={{ fontSize: '12px', color: '#6b7280' }}>التوقيع Signature</p>
+          <div style={{ borderTop: '1px solid #9ca3af', width: '80%', margin: '0 auto', paddingTop: '4px', position: 'relative', zIndex: 20 }}>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>التوقيع Signature</p>
           </div>
         </div>
 
         {/* المدير العام */}
-        <div style={{ textAlign: 'center', width: '33%', position: 'relative' }}>
-          <p style={{ fontWeight: 'bold', color: '#1e3a8a' }}>المدير العام General Manager</p>
-          <p style={{ fontWeight: 'bold', fontSize: '16px', color: '#1f2937', marginTop: '4px' }}>{managerName}</p>
+        <div style={{ textAlign: 'center', width: '30%', position: 'relative' }}>
+          <p style={{ fontWeight: 'bold', color: '#1e3a8a', margin: 0 }}>المدير العام General Manager</p>
+          <p style={{ fontWeight: 'bold', fontSize: '16px', color: '#1f2937', margin: '4px 0' }}>{managerName}</p>
           
           {/* التوقيع */}
-          <div style={{
-            position: 'relative',
-            width: '120px',
-            height: '60px',
-            margin: '8px auto'
-          }}>
-            <img 
-              src="/receipts/signature.png" 
-              alt="توقيع المدير" 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'contain',
-                mixBlendMode: 'multiply'
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
+          {signatureBase64 && (
+            <div style={{
+              position: 'relative',
+              width: '100px',
+              height: '50px',
+              margin: '8px auto'
+            }}>
+              <img 
+                src={signatureBase64}
+                alt="توقيع المدير" 
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'contain'
+                }}
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
           
-          <div style={{ borderTop: '1px solid #9ca3af', width: '66%', margin: '0 auto', paddingTop: '4px' }}>
-            <p style={{ fontSize: '12px', color: '#6b7280' }}>التوقيع Signature</p>
+          <div style={{ borderTop: '1px solid #9ca3af', width: '80%', margin: '0 auto', paddingTop: '4px' }}>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>التوقيع Signature</p>
           </div>
         </div>
       </footer>
@@ -276,14 +338,12 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       {/* تذييل الصفحة */}
       <div style={{
         position: 'absolute',
-        bottom: '0',
+        bottom: '8px',
         left: '0',
         right: '0',
         textAlign: 'center',
-        padding: '8px',
         fontSize: '10px',
-        color: '#9ca3af',
-        borderTop: '1px solid #e5e7eb'
+        color: '#9ca3af'
       }}>
         Al-Araf Car Rental System - Generated Document
       </div>
@@ -294,4 +354,3 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
 PaymentReceipt.displayName = 'PaymentReceipt';
 
 export default PaymentReceipt;
-
