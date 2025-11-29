@@ -276,12 +276,13 @@ export const useWhatsAppReports = () => {
     setIsSending(true);
     try {
       await reportScheduler.initialize(companyId);
-      const result = await reportScheduler.sendDailyReport();
+      // forceManual: true لتجاوز التحقق من تفعيل التقارير وإرسال لجميع المستلمين النشطين
+      const result = await reportScheduler.sendDailyReport(true);
       
       if (result.success) {
         toast.success(`تم إرسال التقرير اليومي إلى ${result.sentCount} مستلم`);
       } else {
-        toast.error('فشل في إرسال التقرير');
+        toast.error('فشل في إرسال التقرير - تأكد من وجود مستلمين نشطين واتصال واتساب');
       }
       
       return result;
@@ -304,12 +305,13 @@ export const useWhatsAppReports = () => {
     setIsSending(true);
     try {
       await reportScheduler.initialize(companyId);
-      const result = await reportScheduler.sendWeeklyReport();
+      // forceManual: true لتجاوز التحقق من تفعيل التقارير وإرسال لجميع المستلمين النشطين
+      const result = await reportScheduler.sendWeeklyReport(true);
       
       if (result.success) {
         toast.success(`تم إرسال التقرير الأسبوعي إلى ${result.sentCount} مستلم`);
       } else {
-        toast.error('فشل في إرسال التقرير');
+        toast.error('فشل في إرسال التقرير - تأكد من وجود مستلمين نشطين واتصال واتساب');
       }
       
       return result;

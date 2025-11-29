@@ -288,21 +288,31 @@ class ReportScheduler {
 
   /**
    * إرسال التقرير اليومي
+   * @param forceManual - تجاوز التحقق من تفعيل التقارير (للإرسال اليدوي)
    */
-  async sendDailyReport(): Promise<{ success: boolean; sentCount: number }> {
-    if (!this.settings?.dailyReportEnabled) {
+  async sendDailyReport(forceManual: boolean = false): Promise<{ success: boolean; sentCount: number }> {
+    // للإرسال اليدوي، لا نتحقق من تفعيل التقارير
+    if (!forceManual && !this.settings?.dailyReportEnabled) {
       return { success: false, sentCount: 0 };
     }
 
     const reportData = await this.fetchDailyReportData();
     if (!reportData) {
+      console.error('Failed to fetch daily report data');
       return { success: false, sentCount: 0 };
     }
 
     const message = generateDailyReport(reportData);
-    const recipients = this.settings.recipients?.filter(
-      r => r.isActive && r.reportTypes.includes('daily')
-    ) || [];
+    
+    // للإرسال اليدوي، نرسل لجميع المستلمين النشطين
+    const recipients = forceManual 
+      ? (this.settings?.recipients?.filter(r => r.isActive) || [])
+      : (this.settings?.recipients?.filter(r => r.isActive && r.reportTypes.includes('daily')) || []);
+
+    if (recipients.length === 0) {
+      console.warn('No active recipients found');
+      return { success: false, sentCount: 0 };
+    }
 
     let sentCount = 0;
     for (const recipient of recipients) {
@@ -322,21 +332,31 @@ class ReportScheduler {
 
   /**
    * إرسال التقرير الأسبوعي
+   * @param forceManual - تجاوز التحقق من تفعيل التقارير (للإرسال اليدوي)
    */
-  async sendWeeklyReport(): Promise<{ success: boolean; sentCount: number }> {
-    if (!this.settings?.weeklyReportEnabled) {
+  async sendWeeklyReport(forceManual: boolean = false): Promise<{ success: boolean; sentCount: number }> {
+    // للإرسال اليدوي، لا نتحقق من تفعيل التقارير
+    if (!forceManual && !this.settings?.weeklyReportEnabled) {
       return { success: false, sentCount: 0 };
     }
 
     const reportData = await this.fetchWeeklyReportData();
     if (!reportData) {
+      console.error('Failed to fetch weekly report data');
       return { success: false, sentCount: 0 };
     }
 
     const message = generateWeeklyReport(reportData);
-    const recipients = this.settings.recipients?.filter(
-      r => r.isActive && r.reportTypes.includes('weekly')
-    ) || [];
+    
+    // للإرسال اليدوي، نرسل لجميع المستلمين النشطين
+    const recipients = forceManual 
+      ? (this.settings?.recipients?.filter(r => r.isActive) || [])
+      : (this.settings?.recipients?.filter(r => r.isActive && r.reportTypes.includes('weekly')) || []);
+
+    if (recipients.length === 0) {
+      console.warn('No active recipients found');
+      return { success: false, sentCount: 0 };
+    }
 
     let sentCount = 0;
     for (const recipient of recipients) {

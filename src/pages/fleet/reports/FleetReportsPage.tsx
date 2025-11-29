@@ -259,46 +259,43 @@ const FleetReportsPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <div className="bg-gradient-to-l from-coral-500 via-coral-600 to-orange-500 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <BarChart3 className="w-7 h-7" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">تقارير وتحليلات الأسطول</h1>
-                  <p className="text-white/80 text-sm mt-1">
-                    تحليلات شاملة وتقارير مفصلة لأداء الأسطول
-                  </p>
-                </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-coral-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-7 h-7 text-white" />
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="bg-white/20 hover:bg-white/30 text-white border-0"
-                >
-                  <RefreshCw className="w-4 h-4 ml-2" />
-                  تحديث
-                </Button>
-                <div className="relative">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="bg-white/20 hover:bg-white/30 text-white border-0"
-                  >
-                    <Bell className="w-5 h-5" />
-                  </Button>
-                  {maintenanceAlerts.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
-                      {maintenanceAlerts.length}
-                    </span>
-                  )}
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold text-neutral-900">تقارير وتحليلات الأسطول</h1>
+                <p className="text-neutral-500 text-sm mt-1">
+                  تحليلات شاملة وتقارير مفصلة لأداء الأسطول
+                </p>
               </div>
             </div>
-          </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="bg-white gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                تحديث
+              </Button>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-white"
+                >
+                  <Bell className="w-5 h-5" />
+                </Button>
+                {maintenanceAlerts.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+                    {maintenanceAlerts.length}
+                  </span>
+                )}
+              </div>
+            </div>
         </motion.header>
 
         {/* Quick Stats */}
