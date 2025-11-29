@@ -231,15 +231,20 @@ async function calculateDelinquentCustomersDynamically(
   filters?: UseDelinquentCustomersFilters
 ): Promise<DelinquentCustomer[]> {
   // Step 1: Get all active contracts with customer and vehicle info
+  // Using actual column names from contracts table
   let contractsQuery = supabase
     .from('contracts')
     .select(`
       id,
       contract_number,
       start_date,
-      monthly_rent,
+      monthly_amount,
+      balance_due,
+      days_overdue,
+      payment_status,
       vehicle_id,
       customer_id,
+      license_plate,
       customers!inner(
         id,
         customer_code,
@@ -259,7 +264,8 @@ async function calculateDelinquentCustomersDynamically(
     `)
     .eq('company_id', companyId)
     .eq('status', 'active')
-    .order('start_date', { ascending: true });
+    .gt('balance_due', 0)  // Only get contracts with outstanding balance
+    .order('balance_due', { ascending: false });
 
   const { data: contracts, error: contractsError } = await contractsQuery;
 
@@ -332,6 +338,7 @@ async function calculateDelinquentCustomersDynamically(
   }
 
   // Step 5: Process each contract to identify delinquent customers
+  // Using balance_due and days_overdue directly from contract table
   const today = new Date();
   const delinquentCustomers: DelinquentCustomer[] = [];
 
@@ -343,35 +350,29 @@ async function calculateDelinquentCustomersDynamically(
       // Validate contract data
       if (!contract.start_date) continue;
 
-      // Calculate expected payments
-      const contractStartDate = new Date(contract.start_date);
-      if (isNaN(contractStartDate.getTime())) continue; // Invalid date
+      // Use balance_due directly from contract (already filtered for > 0)
+      const overdueAmount = parseFloat(contract.balance_due as any) || 0;
+      const monthlyAmount = parseFloat(contract.monthly_amount as any) || 0;
       
+      // Skip if no overdue amount (safety check)
+      if (overdueAmount <= 0) continue;
+
+      // Calculate months unpaid from balance and monthly amount
+      const monthsUnpaid = monthlyAmount > 0 ? Math.ceil(overdueAmount / monthlyAmount) : 1;
+      
+      // Calculate expected payments since start
+      const contractStartDate = new Date(contract.start_date);
       const monthsSinceStart = Math.floor(
         (today.getTime() - contractStartDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
       );
       const expectedPayments = Math.max(0, monthsSinceStart);
+      
+      // Use days_overdue from contract if available, otherwise calculate
+      const daysOverdue = contract.days_overdue || 0;
 
       // Get actual payments for this customer
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
       const actualPayments = customerPayments.length;
-
-      // Calculate months unpaid
-      const monthsUnpaid = expectedPayments - actualPayments;
-
-      // Skip if customer is not delinquent (paid all expected months)
-      if (monthsUnpaid <= 0) continue;
-
-      // Calculate overdue amount
-      const overdueAmount = monthsUnpaid * (contract.monthly_rent || 0);
-
-      // Calculate days overdue (from last expected payment date)
-      const lastExpectedPaymentDate = new Date(today);
-      lastExpectedPaymentDate.setDate(5); // Assume payments due on 5th of each month
-      if (today.getDate() < 5) {
-        lastExpectedPaymentDate.setMonth(lastExpectedPaymentDate.getMonth() - 1);
-      }
-      const daysOverdue = Math.floor((today.getTime() - lastExpectedPaymentDate.getTime()) / (1000 * 60 * 60 * 24));
 
       // Calculate penalty
       const latePenalty = calculatePenalty(overdueAmount, daysOverdue);
@@ -409,6 +410,9 @@ async function calculateDelinquentCustomersDynamically(
       // Get last payment info
       const lastPayment = customerPayments[0];
 
+      // Use license_plate from contract or plate_number from vehicles
+      const vehiclePlate = contract.license_plate || contract.vehicles?.plate_number || null;
+
       // Build delinquent customer object
       const delinquentCustomer: DelinquentCustomer = {
         customer_id: contract.customer_id,
@@ -425,9 +429,9 @@ async function calculateDelinquentCustomersDynamically(
         contract_id: contract.id,
         contract_number: contract.contract_number || '',
         contract_start_date: contract.start_date,
-        monthly_rent: contract.monthly_rent || 0,
+        monthly_rent: monthlyAmount,  // Using monthly_amount
         vehicle_id: contract.vehicle_id,
-        vehicle_plate: contract.vehicles?.plate_number || null,
+        vehicle_plate: vehiclePlate,
 
         months_unpaid: monthsUnpaid,
         overdue_amount: overdueAmount,

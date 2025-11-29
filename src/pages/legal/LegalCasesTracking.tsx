@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   BarChart,
   Bar,
   PieChart,
@@ -40,9 +59,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { useLegalCases, useLegalCaseStats } from '@/hooks/useLegalCases';
+import { useLegalCases, useLegalCaseStats, LegalCase } from '@/hooks/useLegalCases';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
@@ -213,6 +233,7 @@ const KPICard: React.FC<KPICardProps> = ({
 // --- Main Component ---
 export const LegalCasesTracking: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('view') || 'dashboard';
   const setActiveTab = (tab: string) => setSearchParams({ view: tab });
@@ -225,9 +246,60 @@ export const LegalCasesTracking: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Case details and editing states
+  const [selectedCase, setSelectedCase] = useState<LegalCase | null>(null);
+  const [showCaseDetails, setShowCaseDetails] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [caseToDelete, setCaseToDelete] = useState<LegalCase | null>(null);
 
   const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
   const { user } = useAuth();
+  
+  // Delete case mutation
+  const deleteCaseMutation = useMutation({
+    mutationFn: async (caseId: string) => {
+      const { error } = await supabase
+        .from('legal_cases')
+        .delete()
+        .eq('id', caseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+      toast.success('تم حذف القضية بنجاح');
+      setShowDeleteDialog(false);
+      setCaseToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(`فشل في حذف القضية: ${error.message}`);
+    },
+  });
+
+  // Handlers for case actions
+  const handleViewDetails = useCallback((legalCase: LegalCase) => {
+    setSelectedCase(legalCase);
+    setShowCaseDetails(true);
+  }, []);
+
+  const handleEditCase = useCallback((legalCase: LegalCase) => {
+    // TODO: Implement full edit functionality
+    toast.info(`تعديل القضية ${legalCase.case_number}`, {
+      description: 'سيتم تفعيل هذه الميزة قريباً'
+    });
+  }, []);
+
+  const handleDeleteCase = useCallback((legalCase: LegalCase) => {
+    setCaseToDelete(legalCase);
+    setShowDeleteDialog(true);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
+    if (caseToDelete) {
+      deleteCaseMutation.mutate(caseToDelete.id);
+    }
+  }, [caseToDelete, deleteCaseMutation]);
 
   const { data: casesResponse, isLoading, error } = useLegalCases(
     {
@@ -658,16 +730,25 @@ export const LegalCasesTracking: React.FC = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2">
+                        <DropdownMenuItem 
+                          className="gap-2 cursor-pointer"
+                          onClick={() => handleViewDetails(item as LegalCase)}
+                        >
                           <Eye size={14} />
                           عرض التفاصيل
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2">
+                        <DropdownMenuItem 
+                          className="gap-2 cursor-pointer"
+                          onClick={() => handleEditCase(item as LegalCase)}
+                        >
                           <Edit size={14} />
                           تعديل
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="gap-2 text-red-600">
+                        <DropdownMenuItem 
+                          className="gap-2 text-red-600 cursor-pointer"
+                          onClick={() => handleDeleteCase(item as LegalCase)}
+                        >
                           <Trash2 size={14} />
                           حذف
                         </DropdownMenuItem>
@@ -970,12 +1051,138 @@ export const LegalCasesTracking: React.FC = () => {
         onSuccess={handleCaseCreated}
       />
 
+
       {/* Triggers Config Dialog */}
       <AutoCreateCaseTriggersConfig
         open={showTriggersConfig}
         onOpenChange={setShowTriggersConfig}
         companyId={companyId || ''}
       />
+
+      {/* Case Details Dialog */}
+      <Dialog open={showCaseDetails} onOpenChange={setShowCaseDetails}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gavel className="w-5 h-5 text-[#E55B5B]" />
+              تفاصيل القضية: {selectedCase?.case_number}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCase?.case_title_ar || selectedCase?.case_title}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedCase && (
+            <div className="space-y-6">
+              {/* Case Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">رقم القضية</p>
+                  <p className="font-medium">{selectedCase.case_number}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">نوع القضية</p>
+                  <p className="font-medium">{getTypeLabel(selectedCase.case_type)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">الحالة</p>
+                  <StatusBadge status={selectedCase.case_status} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">قيمة المطالبة</p>
+                  <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.total_costs)}</p>
+                </div>
+              </div>
+
+              {/* Client Info */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  معلومات العميل
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">اسم العميل</p>
+                    <p className="font-medium">{selectedCase.client_name || 'غير محدد'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedCase.description && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3">الوصف</h4>
+                  <p className="text-gray-600 text-sm">{selectedCase.description}</p>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4" />
+                  التواريخ
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">تاريخ الإنشاء</p>
+                    <p className="font-medium">
+                      {format(new Date(selectedCase.created_at), 'dd MMM yyyy', { locale: ar })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCaseDetails(false)}
+            >
+              إغلاق
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedCase) {
+                  setShowCaseDetails(false);
+                  handleEditCase(selectedCase);
+                }
+              }}
+              className="bg-[#E55B5B] hover:bg-[#d64545]"
+            >
+              <Edit className="w-4 h-4 ml-2" />
+              تعديل القضية
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              تأكيد حذف القضية
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              هل أنت متأكد من حذف القضية <strong>{caseToDelete?.case_number}</strong>؟
+              <br />
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteCaseMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteCaseMutation.isPending ? 'جاري الحذف...' : 'حذف'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
