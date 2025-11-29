@@ -383,7 +383,7 @@ export function QuickPaymentRecording() {
       return;
     }
 
-    // First, show the receipt for image generation
+    // Show the receipt for PDF generation
     setShowReceipt(true);
     setGeneratingPDF(true);
 
@@ -424,68 +424,19 @@ export function QuickPaymentRecording() {
       }
       phone = phone.replace('+', '');
 
-      // Check if Ultramsg is configured
-      const { data: settings } = await supabase
-        .from('whatsapp_settings')
-        .select('ultramsg_instance_id, ultramsg_token')
-        .eq('company_id', companyId)
-        .single();
-
-      if (settings?.ultramsg_instance_id && settings?.ultramsg_token && receiptRef.current) {
-        // Generate image from receipt using html2canvas
-        const html2canvas = (await import('html2canvas')).default;
-        const canvas = await html2canvas(receiptRef.current, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-        });
-        
-        // Convert to base64
-        const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
-        
-        // Send image via Ultramsg API
-        const ultramsgUrl = `https://api.ultramsg.com/${settings.ultramsg_instance_id}/messages/image`;
-        const response = await fetch(ultramsgUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            token: settings.ultramsg_token,
-            to: phone,
-            image: `data:image/png;base64,${imageBase64}`,
-            caption: message,
-          }),
-        });
-
-        const result = await response.json();
-        console.log('Ultramsg response:', result);
-
-        if (response.ok && result.sent === 'true') {
-          toast({
-            title: 'تم إرسال سند القبض بنجاح ✅',
-            description: 'تم إرسال الإيصال مع الصورة للعميل عبر واتساب',
-          });
-          return;
-        } else {
-          console.error('Ultramsg error:', result);
-          // Fall back to WhatsApp Web
-        }
-      }
-
-      // Fallback: Generate PDF and open WhatsApp Web
+      // Generate PDF
       if (receiptRef.current) {
         const blob = await generateReceiptPDF(receiptRef.current, `receipt-${paymentSuccess.receiptNumber}.pdf`);
         downloadPDF(blob, `سند-قبض-${paymentSuccess.receiptNumber}.pdf`);
       }
 
+      // Open WhatsApp Web
       const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
 
       toast({
-        title: 'تم فتح واتساب',
-        description: 'تم تحميل سند القبض PDF، أرفقه في محادثة واتساب ثم اضغط إرسال',
+        title: 'تم فتح واتساب ويب',
+        description: 'تم تحميل سند القبض، أرفقه في المحادثة ثم اضغط إرسال',
       });
     } catch (error) {
       console.error('Error:', error);
