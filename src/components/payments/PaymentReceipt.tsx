@@ -9,6 +9,13 @@ interface PaymentReceiptProps {
   description: string;
   paymentMethod: 'cash' | 'check' | 'bank_transfer' | 'other';
   managerName?: string;
+  // إضافة خيار لتغيير عنوان المستند
+  documentTitle?: {
+    ar: string;
+    en: string;
+  };
+  // إضافة خيار لإخفاء طريقة الدفع (للفواتير غير المدفوعة)
+  hidePaymentMethod?: boolean;
 }
 
 // دالة لتحويل الصورة إلى Base64
@@ -36,7 +43,9 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   amount,
   description,
   paymentMethod,
-  managerName = 'خميس هاشم الجبر'
+  managerName = 'خميس هاشم الجبر',
+  documentTitle = { ar: 'سند قبض', en: 'PAYMENT VOUCHER' },
+  hidePaymentMethod = false
 }, ref) => {
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [stampBase64, setStampBase64] = useState<string>('');
@@ -328,8 +337,8 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
       {/* عنوان السند */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'clamp(16px, 4vw, 32px)' }}>
         <span className="receipt-title-box">
-          <h2 style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 'bold', color: '#1e3a8a', margin: 0 }}>سند قبض</h2>
-          <h3 style={{ fontSize: 'clamp(12px, 2.5vw, 16px)', fontWeight: 'bold', color: '#4b5563', letterSpacing: '2px', margin: 0 }}>PAYMENT VOUCHER</h3>
+          <h2 style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 'bold', color: '#1e3a8a', margin: 0 }}>{documentTitle.ar}</h2>
+          <h3 style={{ fontSize: 'clamp(12px, 2.5vw, 16px)', fontWeight: 'bold', color: '#4b5563', letterSpacing: '2px', margin: 0 }}>{documentTitle.en}</h3>
         </span>
       </div>
 
@@ -390,57 +399,59 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
         </table>
 
         {/* طريقة الدفع */}
-        <div className="payment-mode-container">
-          <span style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: 'clamp(11px, 2.2vw, 14px)' }}>طريقة الدفع:</span>
-          <label className="payment-mode-label">
-            <span style={{ 
-              width: '16px', 
-              height: '16px', 
-              border: '2px solid #333',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: paymentMethod === 'cash' ? '#1e3a8a' : 'white',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              flexShrink: 0
-            }}>{paymentMethod === 'cash' ? '✓' : ''}</span>
-            <span>نقداً Cash</span>
-          </label>
-          <label className="payment-mode-label">
-            <span style={{ 
-              width: '16px', 
-              height: '16px', 
-              border: '2px solid #333',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: paymentMethod === 'check' ? '#1e3a8a' : 'white',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              flexShrink: 0
-            }}>{paymentMethod === 'check' ? '✓' : ''}</span>
-            <span>شيك Cheque</span>
-          </label>
-          <label className="payment-mode-label">
-            <span style={{ 
-              width: '16px', 
-              height: '16px', 
-              border: '2px solid #333',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: paymentMethod === 'bank_transfer' ? '#1e3a8a' : 'white',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              flexShrink: 0
-            }}>{paymentMethod === 'bank_transfer' ? '✓' : ''}</span>
-            <span>تحويل Transfer</span>
-          </label>
-        </div>
+        {!hidePaymentMethod && (
+          <div className="payment-mode-container">
+            <span style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: 'clamp(11px, 2.2vw, 14px)' }}>طريقة الدفع:</span>
+            <label className="payment-mode-label">
+              <span style={{ 
+                width: '16px', 
+                height: '16px', 
+                border: '2px solid #333',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: paymentMethod === 'cash' ? '#1e3a8a' : 'white',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>{paymentMethod === 'cash' ? '✓' : ''}</span>
+              <span>نقداً Cash</span>
+            </label>
+            <label className="payment-mode-label">
+              <span style={{ 
+                width: '16px', 
+                height: '16px', 
+                border: '2px solid #333',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: paymentMethod === 'check' ? '#1e3a8a' : 'white',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>{paymentMethod === 'check' ? '✓' : ''}</span>
+              <span>شيك Cheque</span>
+            </label>
+            <label className="payment-mode-label">
+              <span style={{ 
+                width: '16px', 
+                height: '16px', 
+                border: '2px solid #333',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: paymentMethod === 'bank_transfer' ? '#1e3a8a' : 'white',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>{paymentMethod === 'bank_transfer' ? '✓' : ''}</span>
+              <span>تحويل Transfer</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {/* التذييل */}
