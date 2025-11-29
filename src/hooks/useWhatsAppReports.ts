@@ -126,6 +126,19 @@ export const useWhatsAppSettings = () => {
     enabled: !!companyId,
   });
 
+  // تهيئة خدمة واتساب تلقائياً عند تحميل الإعدادات
+  useEffect(() => {
+    if (settings?.ultramsgInstanceId && settings?.ultramsgToken) {
+      // تهيئة الخدمة إذا كانت البيانات موجودة
+      if (!whatsAppService.isInitialized()) {
+        whatsAppService.initialize({
+          instanceId: settings.ultramsgInstanceId,
+          token: settings.ultramsgToken,
+        });
+      }
+    }
+  }, [settings?.ultramsgInstanceId, settings?.ultramsgToken]);
+
   // حفظ الإعدادات
   const saveSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<ReportScheduleSettings>) => {
@@ -493,6 +506,15 @@ export const useWhatsAppConnectionStatus = () => {
   });
 
   const checkStatus = useCallback(async () => {
+    // التحقق من تهيئة الخدمة أولاً
+    if (!whatsAppService.isInitialized()) {
+      setStatus({
+        connected: false,
+        checking: false,
+      });
+      return { connected: false };
+    }
+
     setStatus(prev => ({ ...prev, checking: true }));
     
     try {
@@ -511,6 +533,37 @@ export const useWhatsAppConnectionStatus = () => {
       return { connected: false };
     }
   }, []);
+
+  // فحص الحالة تلقائياً عند تحميل المكون
+  useEffect(() => {
+    // تأخير صغير للسماح للخدمة بالتهيئة
+    const timer = setTimeout(() => {
+      if (whatsAppService.isInitialized()) {
+        checkStatus();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [checkStatus]);
+
+  // إعادة فحص الحالة عندما تتم تهيئة الخدمة
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (whatsAppService.isInitialized() && !status.connected && !status.checking) {
+        checkStatus();
+      }
+    }, 2000);
+
+    // توقف بعد 10 محاولات (20 ثانية)
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+    }, 20000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [status.connected, status.checking, checkStatus]);
 
   return {
     ...status,

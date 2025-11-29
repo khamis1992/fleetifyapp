@@ -34,6 +34,13 @@ class WhatsAppService {
   }
 
   /**
+   * التحقق من حالة التهيئة
+   */
+  isInitialized(): boolean {
+    return this.config !== null;
+  }
+
+  /**
    * تنسيق رقم الهاتف للواتساب
    */
   private formatPhoneNumber(phone: string): string {
