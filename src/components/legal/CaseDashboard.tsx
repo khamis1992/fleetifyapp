@@ -28,6 +28,41 @@ import { useLegalCases, useLegalCaseStats } from '@/hooks/useLegalCases';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
 
+// Helper functions - moved outside component to avoid temporal dead zone issues
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    active: 'نشطة',
+    closed: 'مغلقة',
+    suspended: 'معلقة',
+    on_hold: 'قيد الانتظار',
+  };
+  return labels[status] || status;
+};
+
+const getPriorityLabel = (priority: string): string => {
+  const labels: Record<string, string> = {
+    urgent: 'عاجل',
+    high: 'عالي',
+    medium: 'متوسط',
+    low: 'منخفض',
+  };
+  return labels[priority] || priority;
+};
+
+const statusColors: Record<string, string> = {
+  active: '#ef4444',
+  closed: '#10b981',
+  suspended: '#f59e0b',
+  on_hold: '#8b5cf6',
+};
+
+const priorityColors: Record<string, string> = {
+  urgent: '#ef4444',
+  high: '#f97316',
+  medium: '#eab308',
+  low: '#10b981',
+};
+
 export const CaseDashboard: React.FC = () => {
   const { data: casesResponse, isLoading } = useLegalCases();
   const cases = casesResponse?.data || [];
@@ -123,40 +158,6 @@ export const CaseDashboard: React.FC = () => {
       priorityBreakdown,
     };
   }, [cases]);
-
-  const statusColors: Record<string, string> = {
-    active: '#ef4444',
-    closed: '#10b981',
-    suspended: '#f59e0b',
-    on_hold: '#8b5cf6',
-  };
-
-  const priorityColors: Record<string, string> = {
-    urgent: '#ef4444',
-    high: '#f97316',
-    medium: '#eab308',
-    low: '#10b981',
-  };
-
-  const getStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-      active: 'نشطة',
-      closed: 'مغلقة',
-      suspended: 'معلقة',
-      on_hold: 'قيد الانتظار',
-    };
-    return labels[status] || status;
-  };
-
-  const getPriorityLabel = (priority: string): string => {
-    const labels: Record<string, string> = {
-      urgent: 'عاجل',
-      high: 'عالي',
-      medium: 'متوسط',
-      low: 'منخفض',
-    };
-    return labels[priority] || priority;
-  };
 
   if (isLoading) {
     return (

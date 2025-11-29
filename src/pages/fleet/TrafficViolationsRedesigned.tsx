@@ -1,25 +1,31 @@
-import React, { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import {
-  Plus,
-  Search,
-  FileText,
-  DollarSign,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Clock,
-  CreditCard,
-  Upload,
-  ChevronLeft,
-  ChevronRight,
-  Download,
+import React, { useState, useMemo, lazy, Suspense, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Search, 
+  Plus, 
+  X, 
+  FileWarning, 
+  Trash2, 
+  FileText, 
+  DollarSign, 
+  CheckCircle, 
+  AlertCircle,
+  Car,
+  User,
+  Calendar,
+  Printer,
+  ChevronDown,
+  MessageSquare,
   Eye,
+  CreditCard,
   Edit,
-  Settings2,
-  RotateCcw,
-  Save,
+  Download,
+  Upload,
+  Clock,
+  XCircle,
   BarChart,
-  List
+  List,
+  Filter
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,15 +35,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useTrafficViolations, TrafficViolation } from '@/hooks/useTrafficViolations';
+import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useUpdatePaymentStatus } from '@/hooks/useTrafficViolations';
 import { TrafficViolationSidePanel } from '@/components/fleet/TrafficViolationSidePanel';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useVehicles } from '@/hooks/useVehicles';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { PageHelp } from "@/components/help";
-import { TrafficViolationsPageHelpContent } from "@/components/help/content";
-import '@/styles/traffic-violations-theme.css';
+import { toast } from 'sonner';
 
 // Lazy load heavy components for better performance
 const TrafficViolationForm = lazy(() =>
@@ -51,184 +58,163 @@ const TrafficViolationPDFImport = lazy(() =>
 );
 
 export default function TrafficViolationsRedesigned() {
+  const navigate = useNavigate();
+  
   // State Management
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
-  const [violationTypeFilter, setViolationTypeFilter] = useState<string>('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [amountFrom, setAmountFrom] = useState('');
-  const [amountTo, setAmountTo] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterCar, setFilterCar] = useState<string>('all');
+  const [filterCustomer, setFilterCustomer] = useState<string>('all');
+  
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalData, setModalData] = useState<TrafficViolation | null>(null);
   const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
   const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
-  const [selectAll, setSelectAll] = useState(false);
-
+  
   // Data Fetching
-  const { data: violations = [], isLoading } = useTrafficViolations({ limit: 10000, offset: 0 });
+  const { data: violations = [], isLoading, refetch } = useTrafficViolations({ limit: 10000, offset: 0 });
+  const { data: vehicles = [] } = useVehicles({ limit: 500 });
+  const deleteViolationMutation = useDeleteTrafficViolation();
+  const updatePaymentStatusMutation = useUpdatePaymentStatus();
   const { formatCurrency } = useCurrencyFormatter();
 
-  // Memoized statistics
-  const stats = useMemo(() => {
-    const total = violations.length;
-    const pending = violations.filter(v => v.status === 'pending').length;
-    const confirmed = violations.filter(v => v.status === 'confirmed').length;
-    const cancelled = violations.filter(v => v.status === 'cancelled').length;
-    const totalAmount = violations.reduce((sum, v) => sum + (v.amount || 0), 0);
-    const paidAmount = violations.filter(v => v.payment_status === 'paid').reduce((sum, v) => sum + (v.amount || 0), 0);
-    const unpaidAmount = violations.filter(v => v.payment_status === 'unpaid').reduce((sum, v) => sum + (v.amount || 0), 0);
-    const partiallyPaidAmount = violations.filter(v => v.payment_status === 'partially_paid').reduce((sum, v) => sum + (v.amount || 0), 0);
+  // Fetch customers for filter
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers-for-filter'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name')
+        .eq('is_active', true)
+        .order('first_name')
+        .limit(200);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-    return {
-      total,
-      pending,
-      confirmed,
-      cancelled,
-      totalAmount,
-      paidAmount,
-      unpaidAmount,
-      partiallyPaidAmount,
-      averageAmount: total > 0 ? totalAmount / total : 0,
-      paidPercentage: total > 0 ? (violations.filter(v => v.payment_status === 'paid').length / total) * 100 : 0,
-      unpaidPercentage: total > 0 ? (violations.filter(v => v.payment_status === 'unpaid').length / total) * 100 : 0,
-      pendingPercentage: total > 0 ? (pending / total) * 100 : 0
-    };
+  // Helper Functions
+  const getCarName = useCallback((violation: TrafficViolation) => {
+    if (violation.vehicles) {
+      return `${violation.vehicles.make} ${violation.vehicles.model} (${violation.vehicles.plate_number})`;
+    }
+    if (violation.vehicle_plate) {
+      return violation.vehicle_plate;
+    }
+    return 'غير معروف';
+  }, []);
+  
+  const getCustomerName = useCallback((violation: TrafficViolation) => {
+    if (violation.customers) {
+      const fullName = `${violation.customers.first_name || ''} ${violation.customers.last_name || ''}`.trim();
+      return fullName || violation.customers.company_name || 'غير محدد';
+    }
+    if (violation.contracts?.customers) {
+      const fullName = `${violation.contracts.customers.first_name || ''} ${violation.contracts.customers.last_name || ''}`.trim();
+      return fullName || violation.contracts.customers.company_name || 'غير محدد';
+    }
+    return 'غير محدد';
+  }, []);
+
+  // Filtering Logic
+  const filteredViolations = useMemo(() => {
+    return violations.filter(v => {
+      const matchesSearch = 
+        v.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        getCarName(v).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getCustomerName(v).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.violation_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.location?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = filterStatus === 'all' || v.payment_status === filterStatus;
+      const matchesCar = filterCar === 'all' || v.vehicle_id === filterCar || v.vehicle_plate === filterCar;
+      const matchesCustomer = filterCustomer === 'all' || v.customer_id === filterCustomer;
+
+      return matchesSearch && matchesStatus && matchesCar && matchesCustomer;
+    });
+  }, [violations, searchTerm, filterStatus, filterCar, filterCustomer, getCarName, getCustomerName]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const total = violations.reduce((acc, v) => acc + (v.amount || 0), 0);
+    const unpaidTotal = violations.filter(v => v.payment_status === 'unpaid').reduce((acc, v) => acc + (v.amount || 0), 0);
+    const paidCount = violations.filter(v => v.payment_status === 'paid').length;
+    const unpaidCount = violations.filter(v => v.payment_status === 'unpaid').length;
+    return { total, unpaidTotal, paidCount, unpaidCount, totalCount: violations.length };
   }, [violations]);
 
-  // Advanced filtering
-  const filteredViolations = useMemo(() => {
-    return violations.filter(violation => {
-      // Search filter
-      const matchesSearch = searchTerm === '' ||
-        violation.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        violation.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        violation.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        violation.vehicle_plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        violation.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        violation.customers?.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Handlers
+  const handleOpenModal = useCallback((violation: TrafficViolation | null = null) => {
+    setModalData(violation);
+    setIsModalOpen(true);
+  }, []);
 
-      // Status filters
-      const matchesStatus = statusFilter === 'all' || violation.status === statusFilter;
-      const matchesPaymentStatus = paymentStatusFilter === 'all' || violation.payment_status === paymentStatusFilter;
-      const matchesViolationType = violationTypeFilter === 'all' || violation.violation_type === violationTypeFilter;
-
-      // Date filter
-      const matchesDateFrom = !dateFrom || new Date(violation.penalty_date) >= new Date(dateFrom);
-      const matchesDateTo = !dateTo || new Date(violation.penalty_date) <= new Date(dateTo);
-
-      // Amount filter
-      const matchesAmountFrom = !amountFrom || (violation.amount || 0) >= parseFloat(amountFrom);
-      const matchesAmountTo = !amountTo || (violation.amount || 0) <= parseFloat(amountTo);
-
-      return matchesSearch && matchesStatus && matchesPaymentStatus && matchesViolationType &&
-        matchesDateFrom && matchesDateTo && matchesAmountFrom && matchesAmountTo;
-    });
-  }, [violations, searchTerm, statusFilter, paymentStatusFilter, violationTypeFilter, dateFrom, dateTo, amountFrom, amountTo]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredViolations.length / pageSize);
-  const paginatedViolations = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredViolations.slice(startIndex, endIndex);
-  }, [filteredViolations, currentPage, pageSize]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, paymentStatusFilter, violationTypeFilter, dateFrom, dateTo, amountFrom, amountTo]);
-
-  // Counter animation effect
-  useEffect(() => {
-    const counters = document.querySelectorAll('.counter');
-    counters.forEach(counter => {
-      const target = parseInt(counter.textContent?.replace(/[^0-9]/g, '') || '0');
-      if (target) {
-        animateCounter(counter as HTMLElement, target);
+  const handleDelete = useCallback(async (id: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
+      try {
+        await deleteViolationMutation.mutateAsync(id);
+        toast.success('تم حذف المخالفة بنجاح');
+      } catch (error) {
+        toast.error('حدث خطأ أثناء حذف المخالفة');
       }
-    });
-  }, [stats]);
-
-  // Helper functions
-  const animateCounter = (element: HTMLElement, target: number, duration = 800) => {
-    const start = 0;
-    const increment = target / (duration / 16);
-    let current = start;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        element.textContent = target.toLocaleString('en-US');
-        clearInterval(timer);
-      } else {
-        element.textContent = Math.floor(current).toLocaleString('en-US');
-      }
-    }, 16);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge className="status-pending"><Clock className="w-3 h-3 ml-1" />في الانتظار</Badge>;
-      case 'confirmed':
-        return <Badge className="status-confirmed"><CheckCircle className="w-3 h-3 ml-1" />مؤكدة</Badge>;
-      case 'cancelled':
-        return <Badge className="status-cancelled"><XCircle className="w-3 h-3 ml-1" />ملغاة</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
     }
-  };
+  }, [deleteViolationMutation]);
 
-  const getPaymentStatusBadge = (paymentStatus: string) => {
-    switch (paymentStatus) {
-      case 'paid':
-        return <Badge className="payment-paid">✅ مدفوع</Badge>;
-      case 'unpaid':
-        return <Badge className="payment-unpaid">❌ غير مدفوع</Badge>;
-      case 'partially_paid':
-        return <Badge className="payment-partial">🟠 جزئي</Badge>;
-      default:
-        return <Badge variant="outline">{paymentStatus}</Badge>;
+  const handleMarkAsPaid = useCallback(async (violation: TrafficViolation) => {
+    try {
+      await updatePaymentStatusMutation.mutateAsync({
+        id: violation.id,
+        paymentStatus: 'paid'
+      });
+      toast.success('تم تحديث حالة الدفع بنجاح');
+    } catch (error) {
+      toast.error('حدث خطأ أثناء تحديث حالة الدفع');
     }
-  };
+  }, [updatePaymentStatusMutation]);
 
-  const resetFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setPaymentStatusFilter('all');
-    setViolationTypeFilter('all');
-    setDateFrom('');
-    setDateTo('');
-    setAmountFrom('');
-    setAmountTo('');
-  };
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
 
-  const handleOpenSidePanel = (violation: TrafficViolation) => {
+  const handleOpenSidePanel = useCallback((violation: TrafficViolation) => {
     setSelectedViolation(violation);
     setIsSidePanelOpen(true);
-  };
+  }, []);
 
-  const handleSelectAll = (checked: boolean) => {
-    setSelectAll(checked);
-    // Here you would implement the logic to select/deselect all checkboxes
-  };
+  const handleNavigateToVehicle = useCallback((vehicleId: string) => {
+    if (vehicleId) {
+      navigate(`/fleet/${vehicleId}`);
+    }
+  }, [navigate]);
+
+  const handleNavigateToCustomer = useCallback((customerId: string) => {
+    if (customerId) {
+      navigate(`/customers/${customerId}`);
+    }
+  }, [navigate]);
+
+  const handleNavigateToContract = useCallback((contractId: string) => {
+    if (contractId) {
+      navigate(`/contracts/${contractId}`);
+    }
+  }, [navigate]);
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex items-center justify-center min-h-[200px]">
-          <LoadingSpinner size="lg" />
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-800" dir="rtl">
+      
       {/* Side Panel */}
       <TrafficViolationSidePanel
         violation={selectedViolation}
@@ -242,7 +228,7 @@ export default function TrafficViolationsRedesigned() {
       />
 
       {/* Payments Dialog */}
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<LoadingSpinner size="sm" />}>
         <TrafficViolationPaymentsDialog
           violation={selectedViolation}
           open={isPaymentsDialogOpen}
@@ -250,562 +236,450 @@ export default function TrafficViolationsRedesigned() {
         />
       </Suspense>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-slide-down">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-primary" />
-            المخالفات المرورية
-          </h1>
-          <p className="text-muted-foreground mt-1">إدارة ومتابعة المخالفات المرورية للأسطول</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="btn-hover">
-            <Download className="w-4 h-4 ml-2" />
-            تصدير
-          </Button>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button className="btn-hover">
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة مخالفة جديدة
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>إضافة مخالفة مرورية جديدة</DialogTitle>
-              </DialogHeader>
-              <Suspense fallback={<LoadingSpinner size="sm" />}>
-                <TrafficViolationForm onSuccess={() => setIsFormOpen(false)} />
-              </Suspense>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Total Violations */}
-        <Card className="stat-card animate-slide-up" style={{ animationDelay: '0ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المخالفات</CardTitle>
-            <FileText className="w-5 h-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold counter">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-yellow-600">{stats.pending} في الانتظار</span> ·
-              <span className="text-green-600 mr-1">{stats.confirmed} مؤكدة</span>
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Total Amount */}
-        <Card className="stat-card animate-slide-up" style={{ animationDelay: '80ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المبلغ</CardTitle>
-            <DollarSign className="w-5 h-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold counter">{formatCurrency(stats.totalAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              متوسط {formatCurrency(stats.averageAmount)} للمخالفة
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Paid Amount */}
-        <Card className="stat-card animate-slide-up" style={{ animationDelay: '160ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المبلغ المدفوع</CardTitle>
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600 counter">{formatCurrency(stats.paidAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(stats.paidPercentage)}% نسبة
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Unpaid Amount */}
-        <Card className="stat-card animate-slide-up" style={{ animationDelay: '240ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المبلغ المستحق</CardTitle>
-            <XCircle className="w-5 h-5 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600 counter">{formatCurrency(stats.unpaidAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(stats.unpaidPercentage)}% نسبة
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Pending */}
-        <Card className="stat-card animate-slide-up" style={{ animationDelay: '320ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">معلقة</CardTitle>
-            <Clock className="w-5 h-5 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-600 counter">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground mt-1 animate-pulse-slow">
-              {Math.round(stats.pendingPercentage)}% من الإجمالي
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Card className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-        <Tabs defaultValue="list" className="w-full">
-          <div className="border-b">
-            <TabsList className="w-full h-auto flex justify-start gap-1 p-2 bg-transparent">
-              <TabsTrigger value="list" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                <List className="w-4 h-4" />
-                قائمة المخالفات
-              </TabsTrigger>
-              <TabsTrigger value="import" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Upload className="w-4 h-4" />
-                استيراد PDF
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                <BarChart className="w-4 h-4" />
-                التقارير
-              </TabsTrigger>
-              <TabsTrigger value="payments" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                <CreditCard className="w-4 h-4" />
-                المدفوعات
-              </TabsTrigger>
-            </TabsList>
+      {/* --- Top Navbar --- */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="bg-red-50 p-2 rounded-lg">
+            <FileWarning className="w-6 h-6 text-red-600" />
           </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">إدارة المخالفات المرورية</h1>
+            <p className="text-xs text-gray-500">نظام تتبع وإدارة غرامات المركبات</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+           <button 
+             onClick={handlePrint}
+             className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2"
+           >
+             <Printer className="w-4 h-4" /> <span className="hidden md:inline">طباعة تقرير</span>
+           </button>
+           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+             <DialogTrigger asChild>
+               <button 
+                 onClick={() => handleOpenModal(null)} 
+                 className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-200 transition flex items-center gap-2"
+               >
+                 <Plus className="w-5 h-5" /> تسجيل مخالفة
+               </button>
+             </DialogTrigger>
+             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+               <DialogHeader>
+                 <DialogTitle>{modalData ? 'تعديل المخالفة' : 'تسجيل مخالفة جديدة'}</DialogTitle>
+               </DialogHeader>
+               <Suspense fallback={<LoadingSpinner size="sm" />}>
+                 <TrafficViolationForm 
+                   violation={modalData} 
+                   onSuccess={() => {
+                     setIsModalOpen(false);
+                     refetch();
+                   }} 
+                 />
+               </Suspense>
+             </DialogContent>
+           </Dialog>
+        </div>
+      </header>
 
-          {/* Tab Content: List */}
-          <TabsContent value="list" className="space-y-6 mt-0">
-            {/* Search and Filters */}
-            <div className="p-6 border-b animate-slide-up" style={{ animationDelay: '300ms' }}>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Search className="w-5 h-5" />
-                البحث والتصفية المتقدمة
-              </h3>
+      {/* Print Header (Only visible when printing) */}
+      <div className="hidden print:block p-8 border-b border-gray-200 text-center mb-6">
+        <h1 className="text-2xl font-bold mb-2">تقرير المخالفات المرورية</h1>
+        <p className="text-gray-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('ar-SA')}</p>
+      </div>
 
-              {/* Search Bar */}
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="البحث: رقم المخالفة، العميل، رقم اللوحة، رقم العقد..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
-                  />
-                </div>
+      <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
+        
+        {/* --- Statistics Cards --- */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
+           {/* Card 1 - Total Violations */}
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between print:border-gray-300 hover:shadow-md transition-shadow cursor-pointer">
+              <div>
+                <p className="text-gray-500 text-sm mb-1">إجمالي الغرامات</p>
+                <h3 className="text-2xl font-black text-gray-800">{formatCurrency(stats.total)}</h3>
+                <p className="text-xs text-gray-400 mt-1">{stats.totalCount} مخالفة</p>
               </div>
-
-              {/* Date Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">من تاريخ</label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">إلى تاريخ</label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
-                </div>
+              <div className="bg-blue-50 p-3 rounded-xl print:bg-transparent"><DollarSign className="w-6 h-6 text-blue-600 print:text-black" /></div>
+           </div>
+           
+           {/* Card 2 - Unpaid Amount */}
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between print:border-gray-300 hover:shadow-md transition-shadow cursor-pointer">
+              <div>
+                <p className="text-gray-500 text-sm mb-1">المبالغ غير المدفوعة</p>
+                <h3 className="text-2xl font-black text-red-600">{formatCurrency(stats.unpaidTotal)}</h3>
+                <p className="text-xs text-gray-400 mt-1">{stats.unpaidCount} مخالفة</p>
               </div>
+              <div className="bg-red-50 p-3 rounded-xl print:bg-transparent"><AlertCircle className="w-6 h-6 text-red-600 print:text-black" /></div>
+           </div>
 
-              {/* Status Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">حالة المخالفة</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الحالات</SelectItem>
-                      <SelectItem value="pending">في الانتظار</SelectItem>
-                      <SelectItem value="confirmed">مؤكدة</SelectItem>
-                      <SelectItem value="cancelled">ملغاة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">حالة الدفع</label>
-                  <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع حالات الدفع</SelectItem>
-                      <SelectItem value="paid">مدفوعة</SelectItem>
-                      <SelectItem value="unpaid">غير مدفوعة</SelectItem>
-                      <SelectItem value="partially_paid">مدفوعة جزئياً</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">نوع المخالفة</label>
-                  <Select value={violationTypeFilter} onValueChange={setViolationTypeFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الأنواع</SelectItem>
-                      <SelectItem value="speeding">تجاوز السرعة</SelectItem>
-                      <SelectItem value="seatbelt">عدم ربط الحزام</SelectItem>
-                      <SelectItem value="mobile">استخدام الجوال</SelectItem>
-                      <SelectItem value="parking">مخالفة وقوف</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+           {/* Card 3 - Paid Count */}
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between print:border-gray-300 hover:shadow-md transition-shadow cursor-pointer">
+              <div>
+                <p className="text-gray-500 text-sm mb-1">مخالفات مسددة</p>
+                <h3 className="text-2xl font-black text-green-600">{stats.paidCount}</h3>
+                <p className="text-xs text-gray-400 mt-1">{stats.totalCount > 0 ? Math.round((stats.paidCount / stats.totalCount) * 100) : 0}% من الإجمالي</p>
               </div>
+              <div className="bg-green-50 p-3 rounded-xl print:bg-transparent"><CheckCircle className="w-6 h-6 text-green-600 print:text-black" /></div>
+           </div>
 
-              {/* Amount Range */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">المبلغ من (ر.س)</label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={amountFrom}
-                    onChange={(e) => setAmountFrom(e.target.value)}
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">المبلغ إلى (ر.س)</label>
-                  <Input
-                    type="number"
-                    placeholder="10000"
-                    value={amountTo}
-                    onChange={(e) => setAmountTo(e.target.value)}
-                    min="0"
-                  />
-                </div>
+           {/* Card 4 - Pending Count */}
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between print:border-gray-300 hover:shadow-md transition-shadow cursor-pointer">
+              <div>
+                <p className="text-gray-500 text-sm mb-1">مخالفات معلقة</p>
+                <h3 className="text-2xl font-black text-orange-500">{stats.unpaidCount}</h3>
+                <p className="text-xs text-gray-400 mt-1">{stats.totalCount > 0 ? Math.round((stats.unpaidCount / stats.totalCount) * 100) : 0}% من الإجمالي</p>
               </div>
+              <div className="bg-orange-50 p-3 rounded-xl print:bg-transparent"><FileWarning className="w-6 h-6 text-orange-500 print:text-black" /></div>
+           </div>
+        </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={resetFilters} variant="outline" className="btn-hover flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  إعادة تعيين
-                </Button>
-                <Button variant="outline" className="btn-hover flex items-center gap-2">
-                  <Save className="w-4 h-4" />
-                  حفظ الفلتر
-                </Button>
-                <Button variant="outline" className="btn-hover flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  تحميل فلتر
-                </Button>
-              </div>
+        {/* --- Tabs Section --- */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <Tabs defaultValue="list" className="w-full">
+            <div className="border-b border-gray-100 px-4 pt-2">
+              <TabsList className="h-auto flex justify-start gap-1 p-1 bg-transparent">
+                <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                  <List className="w-4 h-4" />
+                  قائمة المخالفات
+                </TabsTrigger>
+                <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                  <Upload className="w-4 h-4" />
+                  استيراد PDF
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                  <BarChart className="w-4 h-4" />
+                  التقارير
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Table Section */}
-            <div className="p-6">
-              {/* Table Header Actions */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-semibold">قائمة المخالفات ({filteredViolations.length})</h3>
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">عرض:</label>
-                    <Select value={pageSize.toString()} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                        <SelectItem value="200">200</SelectItem>
-                        <SelectItem value="500">500</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="btn-hover flex items-center gap-2">
-                  <Settings2 className="w-4 h-4" />
-                  تخصيص الأعمدة
-                </Button>
+            {/* Tab Content: List */}
+            <TabsContent value="list" className="mt-0">
+              {/* --- Advanced Filters Area --- */}
+              <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-gray-50 p-4 border-b border-gray-100 print:hidden">
+                 
+                 {/* Search */}
+                 <div className="relative w-full xl:w-80">
+                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                   <input 
+                     type="text" 
+                     placeholder="بحث: رقم المخالفة، المركبة، العميل..." 
+                     className="w-full pr-10 pl-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none transition"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                   />
+                 </div>
+                 
+                 {/* Dropdowns */}
+                 <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
+                   
+                   {/* Car Filter */}
+                   <div className="relative w-full md:w-48">
+                     <Car className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+                     <select 
+                       value={filterCar} 
+                       onChange={(e) => setFilterCar(e.target.value)}
+                       className="w-full pr-9 pl-8 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                     >
+                       <option value="all">جميع المركبات</option>
+                       {vehicles.map(v => (
+                         <option key={v.id} value={v.id}>{v.make} {v.model} - {v.plate_number}</option>
+                       ))}
+                     </select>
+                     <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                   </div>
+
+                   {/* Customer Filter */}
+                   <div className="relative w-full md:w-48">
+                     <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+                     <select 
+                       value={filterCustomer} 
+                       onChange={(e) => setFilterCustomer(e.target.value)}
+                       className="w-full pr-9 pl-8 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                     >
+                       <option value="all">جميع العملاء</option>
+                       {customers.map(c => (
+                         <option key={c.id} value={c.id}>
+                           {c.company_name || `${c.first_name || ''} ${c.last_name || ''}`.trim()}
+                         </option>
+                       ))}
+                     </select>
+                     <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                   </div>
+
+                   {/* Status Filter */}
+                   <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
+                      {[
+                        { value: 'all', label: 'الكل' },
+                        { value: 'paid', label: 'مدفوعة' },
+                        { value: 'unpaid', label: 'غير مدفوعة' }
+                      ].map(status => (
+                        <button 
+                          key={status.value}
+                          onClick={() => setFilterStatus(status.value)}
+                          className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-sm font-bold transition whitespace-nowrap ${
+                            filterStatus === status.value 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                   </div>
+
+                 </div>
               </div>
 
-              {/* Bulk Actions */}
-              <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="selectAll"
-                  className="w-4 h-4 rounded border-border"
-                  checked={selectAll}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-                <label htmlFor="selectAll" className="text-sm font-medium cursor-pointer">
-                  اختيار الكل
-                </label>
-                <div className="border-r border-border h-5 mr-2"></div>
-                <span className="text-sm text-muted-foreground">إجراءات جماعية:</span>
-                <Button variant="outline" size="sm" className="btn-hover">تأكيد</Button>
-                <Button variant="outline" size="sm" className="btn-hover">إلغاء</Button>
-                <Button variant="outline" size="sm" className="btn-hover">تصدير</Button>
-                <Button variant="outline" size="sm" className="btn-hover">طباعة</Button>
-              </div>
-
-              {/* Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12 text-right">
-                          <input type="checkbox" className="w-4 h-4 rounded" />
-                        </TableHead>
-                        <TableHead className="text-right">رقم المخالفة</TableHead>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">نوع المخالفة</TableHead>
-                        <TableHead className="text-right">المبلغ</TableHead>
-                        <TableHead className="text-right">رقم اللوحة</TableHead>
-                        <TableHead className="text-right">العميل</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                        <TableHead className="text-right">الدفع</TableHead>
-                        <TableHead className="text-right">الإجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedViolations.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            لا توجد مخالفات مطابقة للبحث
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        paginatedViolations.map((violation, index) => (
-                          <TableRow
-                            key={violation.id}
-                            className="table-row animate-slide-right"
-                            style={{ animationDelay: `${index * 30}ms` }}
-                          >
-                            <TableCell>
-                              <input type="checkbox" className="w-4 h-4 rounded" />
-                            </TableCell>
-                            <TableCell className="font-mono font-semibold">{violation.penalty_number}</TableCell>
-                            <TableCell>
+              {/* --- Table View --- */}
+              <div className="overflow-x-auto print:overflow-visible">
+                <table className="w-full text-right print:text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-medium text-xs uppercase tracking-wider print:bg-gray-100 print:text-black">
+                    <tr>
+                      <th className="px-6 py-4">رقم المخالفة / التاريخ</th>
+                      <th className="px-6 py-4">المركبة</th>
+                      <th className="px-6 py-4">العميل</th>
+                      <th className="px-6 py-4">التفاصيل</th>
+                      <th className="px-6 py-4">القيمة</th>
+                      <th className="px-6 py-4">الحالة</th>
+                      <th className="px-6 py-4 text-center print:hidden">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm print:divide-gray-200">
+                    {filteredViolations.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-gray-400">
+                          <div className="flex flex-col items-center gap-2">
+                            <FileWarning className="w-10 h-10 opacity-20" />
+                            <p>لا توجد سجلات مطابقة للفلاتر الحالية</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredViolations.map(violation => (
+                        <tr key={violation.id} className="hover:bg-gray-50 transition group print:break-inside-avoid">
+                          <td className="px-6 py-4">
+                            <div className="font-mono font-bold text-gray-800">{violation.penalty_number}</div>
+                            <div className="text-gray-400 text-xs mt-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3"/> 
                               {violation.penalty_date && format(new Date(violation.penalty_date), 'dd/MM/yyyy', { locale: ar })}
-                            </TableCell>
-                            <TableCell>{violation.violation_type || violation.reason || '-'}</TableCell>
-                            <TableCell className="font-bold text-primary">{formatCurrency(violation.amount || 0)}</TableCell>
-                            <TableCell className="font-mono">
-                              {violation.vehicles?.plate_number || violation.vehicle_plate || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {(() => {
-                                // محاولة الحصول على اسم العميل من customers مباشرة
-                                if (violation.customers) {
-                                  const fullName = `${violation.customers.first_name || ''} ${violation.customers.last_name || ''}`.trim();
-                                  return fullName || violation.customers.company_name || '-';
-                                }
-                                // محاولة الحصول على اسم العميل من خلال العقد
-                                if (violation.contracts?.customers) {
-                                  const fullName = `${violation.contracts.customers.first_name || ''} ${violation.contracts.customers.last_name || ''}`.trim();
-                                  return fullName || violation.contracts.customers.company_name || '-';
-                                }
-                                return '-';
-                              })()}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(violation.status)}</TableCell>
-                            <TableCell>{getPaymentStatusBadge(violation.payment_status || 'unpaid')}</TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="btn-hover p-2"
-                                  onClick={() => handleOpenSidePanel(violation)}
-                                  title="عرض التفاصيل"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="btn-hover p-2"
-                                  onClick={() => {
-                                    setSelectedViolation(violation);
-                                    setIsPaymentsDialogOpen(true);
-                                  }}
-                                  title="إضافة دفعة"
-                                >
-                                  <CreditCard className="w-4 h-4" />
-                                </Button>
-                                {violation.status === 'pending' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="btn-hover p-2"
-                                    title="تعديل"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div 
+                              className="flex items-center gap-2 cursor-pointer hover:text-blue-600 transition"
+                              onClick={() => violation.vehicle_id && handleNavigateToVehicle(violation.vehicle_id)}
+                            >
+                              <div className="p-1.5 bg-gray-100 rounded-full print:hidden"><Car className="w-4 h-4 text-gray-500" /></div>
+                              <span className="font-medium text-gray-700 hover:underline">{getCarName(violation)}</span>
+                            </div>
+                            {violation.contract_id && (
+                              <div 
+                                className="text-xs text-blue-600 mt-1 cursor-pointer hover:underline"
+                                onClick={() => handleNavigateToContract(violation.contract_id!)}
+                              >
+                                عقد: {violation.contracts?.contract_number || 'عرض العقد'}
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                             <div 
+                               className="flex items-center gap-2 cursor-pointer hover:text-blue-600 transition"
+                               onClick={() => violation.customer_id && handleNavigateToCustomer(violation.customer_id)}
+                             >
+                              <div className="p-1.5 bg-gray-100 rounded-full print:hidden"><User className="w-4 h-4 text-gray-500" /></div>
+                              <span className="text-gray-600 hover:underline">{getCustomerName(violation)}</span>
+                            </div>
+                            {violation.customers?.phone && (
+                              <div className="text-xs text-gray-400 mt-1">{violation.customers.phone}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-gray-800 font-medium">{violation.violation_type || violation.reason || '-'}</div>
+                            {violation.location && (
+                              <div className="text-xs text-gray-500 mt-1">📍 {violation.location}</div>
+                            )}
+                            {violation.notes && (
+                               <div className="text-xs text-gray-500 mt-1 flex items-start gap-1 max-w-[200px] print:max-w-none">
+                                 <MessageSquare className="w-3 h-3 flex-shrink-0 mt-0.5 print:hidden" /> 
+                                 <span className="truncate print:whitespace-normal">{violation.notes}</span>
+                               </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 font-bold text-red-600 text-base">{formatCurrency(violation.amount || 0)}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              violation.payment_status === 'paid' 
+                                ? 'bg-green-100 text-green-700 print:bg-transparent print:text-black print:border print:border-green-500' 
+                                : violation.payment_status === 'partially_paid'
+                                ? 'bg-yellow-100 text-yellow-700 print:bg-transparent print:text-black print:border print:border-yellow-500'
+                                : 'bg-red-100 text-red-700 print:bg-transparent print:text-black print:border print:border-red-500'
+                            }`}>
+                              {violation.payment_status === 'paid' ? <CheckCircle className="w-3 h-3 print:hidden"/> : <AlertCircle className="w-3 h-3 print:hidden"/>}
+                              {violation.payment_status === 'paid' ? 'مدفوعة' : violation.payment_status === 'partially_paid' ? 'جزئي' : 'غير مدفوعة'}
+                            </span>
+                            {/* Status Badge */}
+                            {violation.status && violation.status !== 'confirmed' && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium mt-1 ${
+                                violation.status === 'pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-50 text-gray-500'
+                              }`}>
+                                {violation.status === 'pending' ? 'قيد المراجعة' : violation.status === 'cancelled' ? 'ملغاة' : violation.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 print:hidden">
+                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => handleOpenSidePanel(violation)} 
+                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition" 
+                                title="عرض التفاصيل"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setSelectedViolation(violation);
+                                  setIsPaymentsDialogOpen(true);
+                                }} 
+                                className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition" 
+                                title="إضافة دفعة"
+                              >
+                                <CreditCard className="w-4 h-4" />
+                              </button>
+                              {violation.status === 'pending' && (
+                                <button 
+                                  onClick={() => handleOpenModal(violation)} 
+                                  className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition" 
+                                  title="تعديل"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => handleDelete(violation.id)} 
+                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" 
+                                title="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Pagination */}
-              {filteredViolations.length > pageSize && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-muted-foreground">
-                    عرض {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredViolations.length)} من {filteredViolations.length} مخالفة
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="btn-hover"
-                    >
-                      الأولى
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="btn-hover"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <div className="flex gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setCurrentPage(pageNum)}
-                            className="btn-hover"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
-                      {totalPages > 5 && currentPage < totalPages - 2 && (
-                        <>
-                          <span className="px-2 py-2 text-sm">...</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
-                            className="btn-hover"
-                          >
-                            {totalPages}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className="btn-hover"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="btn-hover"
-                    >
-                      الأخيرة
-                    </Button>
-                  </div>
+              {/* Results Count */}
+              {filteredViolations.length > 0 && (
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 text-sm text-gray-500 print:hidden">
+                  عرض {filteredViolations.length} من {violations.length} مخالفة
                 </div>
               )}
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Tab Content: Import */}
-          <TabsContent value="import" className="p-6">
-            <div className="text-center max-w-md mx-auto space-y-4">
-              <div className="w-24 h-24 mx-auto bg-muted rounded-full flex items-center justify-center">
-                <Upload className="w-12 h-12 text-muted-foreground" />
+            {/* Tab Content: Import */}
+            <TabsContent value="import" className="p-6">
+              <div className="text-center max-w-md mx-auto space-y-4">
+                <div className="w-24 h-24 mx-auto bg-red-50 rounded-full flex items-center justify-center">
+                  <Upload className="w-12 h-12 text-red-400" />
+                </div>
+                <h3 className="text-xl font-bold">استيراد مخالفات من PDF</h3>
+                <p className="text-gray-500">قم بتحميل ملف PDF يحتوي على المخالفات المرورية وسيتم استخراجها تلقائياً</p>
+                <Suspense fallback={<LoadingSpinner size="lg" />}>
+                  <TrafficViolationPDFImport />
+                </Suspense>
               </div>
-              <h3 className="text-xl font-bold">استيراد مخالفات من PDF</h3>
-              <p className="text-muted-foreground">قم بتحميل ملف PDF يحتوي على المخالفات المرورية</p>
-              <Suspense fallback={<LoadingSpinner size="lg" />}>
-                <TrafficViolationPDFImport />
-              </Suspense>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Tab Content: Reports */}
-          <TabsContent value="reports" className="p-6">
-            <h3 className="text-xl font-bold mb-4">التقارير والإحصائيات</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle>تقرير المخالفات الشهري</CardTitle>
-                  <CardDescription>عرض جميع المخالفات خلال الشهر الحالي</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full btn-hover">عرض التقرير</Button>
-                </CardContent>
-              </Card>
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle>تقرير المدفوعات</CardTitle>
-                  <CardDescription>ملخص المدفوعات والمبالغ المستحقة</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full btn-hover">عرض التقرير</Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            {/* Tab Content: Reports */}
+            <TabsContent value="reports" className="p-6">
+              <h3 className="text-xl font-bold mb-6">التقارير والإحصائيات</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-gray-200">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <BarChart className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">تقرير المخالفات الشهري</CardTitle>
+                        <CardDescription>عرض جميع المخالفات خلال الشهر الحالي</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">عرض التقرير</Button>
+                  </CardContent>
+                </Card>
 
-          {/* Tab Content: Payments */}
-          <TabsContent value="payments" className="p-6">
-            <h3 className="text-xl font-bold mb-4">إدارة المدفوعات</h3>
-            <p className="text-muted-foreground">عرض وإدارة جميع مدفوعات المخالفات المرورية</p>
-          </TabsContent>
-        </Tabs>
-      </Card>
-    <PageHelp 
-      title="مساعدة - المخالفات المرورية"
-      description="تعلم كيفية إدارة المخالفات المرورية بشكل فعال"
-    >
-      <TrafficViolationsPageHelpContent />
-    </PageHelp>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-gray-200">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-50 rounded-lg">
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">تقرير المدفوعات</CardTitle>
+                        <CardDescription>ملخص المدفوعات والمبالغ المستحقة</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">عرض التقرير</Button>
+                  </CardContent>
+                </Card>
 
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-gray-200">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-50 rounded-lg">
+                        <Car className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">تقرير المركبات</CardTitle>
+                        <CardDescription>المخالفات حسب المركبة</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">عرض التقرير</Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+          body, #root, .min-h-screen {
+            background: white !important;
+            height: auto !important;
+            overflow: visible !important;
+            width: 100% !important;
+            position: static !important;
+          }
+          .print\\:hidden { display: none !important; }
+          .print\\:block { display: block !important; }
+          .print\\:text-black { color: black !important; }
+          .print\\:border-gray-300 { border-color: #d1d5db !important; }
+          .print\\:bg-transparent { background: transparent !important; }
+          .print\\:overflow-visible { overflow: visible !important; }
+          .print\\:whitespace-normal { white-space: normal !important; }
+          
+          /* Reset margins */
+          @page { margin: 1cm; }
+          
+          /* Ensure table prints nicely */
+          tr { break-inside: avoid; }
+          
+          /* Hide scrollbars */
+          ::-webkit-scrollbar { display: none; }
+        }
+      `}</style>
     </div>
   );
 }
-

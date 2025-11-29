@@ -40,6 +40,13 @@ export interface TrafficViolation {
     start_date?: string;
     end_date?: string;
     customer_id?: string;
+    customers?: {
+      id?: string;
+      first_name?: string;
+      last_name?: string;
+      company_name?: string;
+      phone?: string;
+    };
   };
   agreements?: {
     id: string;
