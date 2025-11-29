@@ -16,6 +16,11 @@ interface PaymentReceiptProps {
   };
   // إضافة خيار لإخفاء طريقة الدفع (للفواتير غير المدفوعة)
   hidePaymentMethod?: boolean;
+  // معلومات الدفع الإضافية
+  totalAmount?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  showPaymentDetails?: boolean;
 }
 
 // دالة لتحويل الصورة إلى Base64
@@ -45,7 +50,11 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   paymentMethod,
   managerName = 'خميس هاشم الجبر',
   documentTitle = { ar: 'سند قبض', en: 'PAYMENT VOUCHER' },
-  hidePaymentMethod = false
+  hidePaymentMethod = false,
+  totalAmount,
+  paidAmount,
+  remainingAmount,
+  showPaymentDetails = false
 }, ref) => {
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [stampBase64, setStampBase64] = useState<string>('');
@@ -386,6 +395,64 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
             <span style={{ fontSize: 'clamp(16px, 3.5vw, 20px)', fontWeight: 'bold', fontFamily: 'monospace' }}>{amount.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* تفاصيل الدفع - المبلغ الإجمالي والمدفوع والمتبقي */}
+        {showPaymentDetails && totalAmount !== undefined && (
+          <div style={{
+            margin: '16px 8px',
+            padding: '12px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+          }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, 1fr)', 
+              gap: '12px',
+              textAlign: 'center'
+            }}>
+              {/* المبلغ الإجمالي */}
+              <div>
+                <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
+                  المبلغ الإجمالي
+                  <br />
+                  <span style={{ fontSize: '0.85em' }}>Total Amount</span>
+                </div>
+                <div style={{ fontSize: 'clamp(14px, 3vw, 18px)', fontWeight: 'bold', color: '#1e3a8a' }}>
+                  {totalAmount.toFixed(2)} <span style={{ fontSize: '0.7em' }}>QAR</span>
+                </div>
+              </div>
+              
+              {/* المبلغ المدفوع */}
+              <div>
+                <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
+                  المبلغ المدفوع
+                  <br />
+                  <span style={{ fontSize: '0.85em' }}>Paid Amount</span>
+                </div>
+                <div style={{ fontSize: 'clamp(14px, 3vw, 18px)', fontWeight: 'bold', color: '#16a34a' }}>
+                  {(paidAmount || 0).toFixed(2)} <span style={{ fontSize: '0.7em' }}>QAR</span>
+                </div>
+              </div>
+              
+              {/* المبلغ المتبقي */}
+              <div>
+                <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
+                  المبلغ المتبقي
+                  <br />
+                  <span style={{ fontSize: '0.85em' }}>Remaining</span>
+                </div>
+                <div style={{ 
+                  fontSize: 'clamp(14px, 3vw, 18px)', 
+                  fontWeight: 'bold', 
+                  color: (remainingAmount || 0) > 0 ? '#dc2626' : '#16a34a' 
+                }}>
+                  {(remainingAmount || 0).toFixed(2)} <span style={{ fontSize: '0.7em' }}>QAR</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* وذلك عن */}
         <table className="receipt-table">

@@ -110,8 +110,13 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     ? { ar: 'سند قبض', en: 'PAYMENT VOUCHER' }
     : { ar: 'فاتورة مستحقة', en: 'DUE INVOICE' };
 
-  // الحصول على المبلغ
-  const invoiceAmount = Number(invoice.total_amount) || Number(invoice.amount) || 0;
+  // الحصول على المبالغ
+  const totalAmount = Number(invoice.total_amount) || Number(invoice.amount) || 0;
+  const paidAmount = Number(invoice.paid_amount) || 0;
+  const remainingAmount = totalAmount - paidAmount;
+  
+  // المبلغ المعروض في السند (للفواتير المدفوعة نعرض المبلغ المدفوع، للمستحقة نعرض المتبقي)
+  const displayAmount = isPaid ? paidAmount : remainingAmount > 0 ? remainingAmount : totalAmount;
   
   // تنسيق التاريخ
   const invoiceDate = invoice.invoice_date || invoice.due_date || new Date().toISOString();
@@ -144,12 +149,16 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             receiptNumber={invoice.invoice_number || 'غير محدد'}
             date={formattedDate}
             customerName={customerName}
-            amountInWords={numberToArabicWords(invoiceAmount)}
-            amount={invoiceAmount}
+            amountInWords={numberToArabicWords(displayAmount)}
+            amount={displayAmount}
             description={description}
             paymentMethod={invoice.payment_method || 'cash'}
             documentTitle={documentTitle}
             hidePaymentMethod={!isPaid}
+            totalAmount={totalAmount}
+            paidAmount={paidAmount}
+            remainingAmount={remainingAmount}
+            showPaymentDetails={remainingAmount > 0 || paidAmount > 0}
           />
         </div>
       </DialogContent>
