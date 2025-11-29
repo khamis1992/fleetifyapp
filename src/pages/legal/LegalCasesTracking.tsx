@@ -116,13 +116,14 @@ const CHART_COLORS = {
 // --- Status Badge Component ---
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   let style = "bg-gray-100 text-gray-600";
-  if (status.includes("حكم") || status.includes("تنفيذ") || status === "closed" || status === "won") {
+  const s = status || '';
+  if (s.includes("حكم") || s.includes("تنفيذ") || s === "closed" || s === "won") {
     style = "bg-green-100 text-green-700";
-  } else if (status.includes("جاري") || status.includes("جلسة") || status.includes("شرطة") || status === "active") {
+  } else if (s.includes("جاري") || s.includes("جلسة") || s.includes("شرطة") || s === "active") {
     style = "bg-blue-100 text-blue-700";
-  } else if (status.includes("خبير") || status.includes("تحقيق") || status === "on_hold" || status === "suspended") {
+  } else if (s.includes("خبير") || s.includes("تحقيق") || s === "on_hold" || s === "suspended") {
     style = "bg-yellow-100 text-yellow-700";
-  } else if (status === "urgent" || status === "high") {
+  } else if (s === "urgent" || s === "high") {
     style = "bg-red-100 text-red-700";
   }
   
@@ -141,7 +142,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   
   return (
     <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${style}`}>
-      {getStatusLabel(status)}
+      {getStatusLabel(s)}
     </span>
   );
 };
