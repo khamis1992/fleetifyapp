@@ -26,6 +26,7 @@ export { DriverLicenseManager } from './DriverLicenseManager';
 // مكونات مساعدة
 export { CustomerDisplayName } from './CustomerDisplayName';
 export { MobileCustomerCard } from './MobileCustomerCard';
+export { CustomerSplitView } from './CustomerSplitView';
 
 export { AccountingSettings } from './AccountingSettings';
 export { AccountLinking } from './AccountLinking';

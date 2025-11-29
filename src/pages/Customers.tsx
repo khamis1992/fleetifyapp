@@ -51,6 +51,9 @@ import {
   MoreVertical,
   ChevronRight,
   ChevronLeft,
+  LayoutGrid,
+  List,
+  Columns,
 } from 'lucide-react';
 import {
   Table,
@@ -78,7 +81,8 @@ import {
   CustomerDetailsDialog, 
   BulkDeleteCustomersDialog, 
   CustomerCSVUpload, 
-  CustomerImportWizard
+  CustomerImportWizard,
+  CustomerSplitView,
 } from '@/components/customers';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
@@ -117,6 +121,7 @@ const Customers = () => {
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50); // Reduced to 50 for faster initial load
+  const [viewMode, setViewMode] = useState<'table' | 'split'>('table'); // View mode toggle
 
   // Build filters for the query
   const filters: CustomerFilters = {
@@ -969,13 +974,43 @@ const Customers = () => {
             <h1 className="text-3xl font-bold mb-2">إدارة العملاء</h1>
             <p className="text-muted-foreground">إدارة شاملة لجميع عملاء النظام</p>
           </div>
-          <Button 
-            onClick={handleCreateCustomer}
-            className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>إضافة عميل جديد</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-border">
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'table' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <List className="w-4 h-4 ml-1" />
+                جدول
+              </Button>
+              <Button
+                variant={viewMode === 'split' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  "rounded-lg px-3",
+                  viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                )}
+              >
+                <Columns className="w-4 h-4 ml-1" />
+                مقسم
+              </Button>
+            </div>
+            
+            <Button 
+              onClick={handleCreateCustomer}
+              className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl"
+            >
+              <UserPlus className="w-5 h-5" />
+              <span>إضافة عميل جديد</span>
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters Section */}
@@ -1098,7 +1133,18 @@ const Customers = () => {
           </Card>
         </div>
 
-        {/* Customer Table with Virtual Scrolling */}
+        {/* Customer View - Table or Split */}
+        {viewMode === 'split' ? (
+          <CustomerSplitView
+            customers={customers}
+            isLoading={isLoading}
+            companyId={companyId}
+            onEditCustomer={handleEditCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
+        ) : (
         <Card className="rounded-2xl border border-border shadow-sm overflow-hidden">
           <CardContent className="p-0">
             {isLoading ? (
@@ -1339,6 +1385,7 @@ const Customers = () => {
             )}
           </CardContent>
         </Card>
+        )}
         </div>
       </PageCustomizer>
       
