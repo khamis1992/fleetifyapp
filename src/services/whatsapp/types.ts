@@ -75,6 +75,10 @@ export interface ReportScheduleSettings {
   // المستلمون
   recipients: WhatsAppRecipient[];
   
+  // إعدادات Ultramsg
+  ultramsgInstanceId?: string;
+  ultramsgToken?: string;
+  
   createdAt: string;
   updatedAt: string;
 }

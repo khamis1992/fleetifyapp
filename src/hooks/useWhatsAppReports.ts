@@ -116,6 +116,9 @@ export const useWhatsAppSettings = () => {
         instantAlertsEnabled: data.instant_alerts_enabled ?? true,
         alertThreshold: data.alert_threshold ?? 10000,
         recipients: parsedRecipients,
+        // إعدادات Ultramsg
+        ultramsgInstanceId: data.ultramsg_instance_id ?? '',
+        ultramsgToken: data.ultramsg_token ?? '',
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       } as ReportScheduleSettings;
@@ -147,6 +150,9 @@ export const useWhatsAppSettings = () => {
       if ('instantAlertsEnabled' in newSettings) dbSettings.instant_alerts_enabled = newSettings.instantAlertsEnabled;
       if ('alertThreshold' in newSettings) dbSettings.alert_threshold = newSettings.alertThreshold;
       if ('recipients' in newSettings) dbSettings.recipients = newSettings.recipients;
+      // إعدادات Ultramsg
+      if ('ultramsgInstanceId' in newSettings) dbSettings.ultramsg_instance_id = newSettings.ultramsgInstanceId;
+      if ('ultramsgToken' in newSettings) dbSettings.ultramsg_token = newSettings.ultramsgToken;
 
       const { error } = await supabase
         .from('whatsapp_settings')

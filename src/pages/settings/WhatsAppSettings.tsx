@@ -297,8 +297,9 @@ const WhatsAppSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('connection');
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<WhatsAppRecipient | undefined>();
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Ultramsg credentials
+  // Ultramsg credentials - يتم تحميلها من الإعدادات
   const [instanceId, setInstanceId] = useState('');
   const [token, setToken] = useState('');
   
@@ -309,23 +310,50 @@ const WhatsAppSettings: React.FC = () => {
   const { logs } = useWhatsAppMessageLogs(20);
   const { connected, phone, checking, checkStatus } = useWhatsAppConnectionStatus();
 
-  // تحميل الإعدادات المحفوظة
+  // تحميل الإعدادات المحفوظة وتهيئة الخدمة تلقائياً
   useEffect(() => {
-    if (settings) {
-      // يمكن تحميل Instance ID و Token من settings إذا كانت محفوظة
+    if (settings && !isInitialized) {
+      // تحميل بيانات Ultramsg من الإعدادات
+      if (settings.ultramsgInstanceId) {
+        setInstanceId(settings.ultramsgInstanceId);
+      }
+      if (settings.ultramsgToken) {
+        setToken(settings.ultramsgToken);
+      }
+      
+      // تهيئة الخدمة تلقائياً إذا كانت البيانات موجودة
+      if (settings.ultramsgInstanceId && settings.ultramsgToken) {
+        whatsAppService.initialize({ 
+          instanceId: settings.ultramsgInstanceId, 
+          token: settings.ultramsgToken 
+        });
+        setIsInitialized(true);
+        checkStatus();
+      }
     }
-  }, [settings]);
+  }, [settings, isInitialized, checkStatus]);
 
-  // تهيئة الخدمة
-  const handleInitialize = () => {
+  // تهيئة الخدمة يدوياً وحفظ الإعدادات
+  const handleInitialize = async () => {
     if (!instanceId || !token) {
       toast.error('يرجى إدخال Instance ID و Token');
       return;
     }
     
-    whatsAppService.initialize({ instanceId, token });
-    checkStatus();
-    toast.success('تم تهيئة الخدمة');
+    // حفظ الإعدادات في قاعدة البيانات
+    try {
+      await saveSettings({
+        ultramsgInstanceId: instanceId,
+        ultramsgToken: token,
+      });
+      
+      whatsAppService.initialize({ instanceId, token });
+      setIsInitialized(true);
+      checkStatus();
+      toast.success('تم تهيئة الخدمة وحفظ الإعدادات');
+    } catch (error) {
+      toast.error('فشل في حفظ الإعدادات');
+    }
   };
 
   // إرسال رسالة اختبار
