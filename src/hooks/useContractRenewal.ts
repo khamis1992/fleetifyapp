@@ -238,7 +238,7 @@ export const useUpdateContractStatus = () => {
       // Get contract details first to check if it has a vehicle
       const { data: contractData, error: contractError } = await supabase
         .from("contracts")
-        .select("contract_number, vehicle_id, status as old_status")
+        .select("contract_number, vehicle_id, old_status:status")
         .eq("id", contractId)
         .single();
       
