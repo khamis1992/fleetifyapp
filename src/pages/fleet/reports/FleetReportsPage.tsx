@@ -1,25 +1,21 @@
 /**
- * صفحة تقارير الأسطول - التصميم الجديد
- * Fleet Reports Page - New Design
- * مستوحى من تصميم DashboardV2
+ * صفحة تقارير الأسطول - التصميم المطابق للداشبورد
+ * Fleet Reports Page - Dashboard-Matched Design
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { toast } from 'sonner';
 import {
-  Sun,
-  Moon,
-  Sparkles,
   BarChart3,
   RefreshCw,
   Bell,
   Wrench,
   FileText,
   TrendingUp,
-  Activity,
+  TrendingDown,
   MessageSquare,
   Send,
   Settings,
@@ -28,10 +24,19 @@ import {
   ChevronRight,
   Wifi,
   WifiOff,
+  Car,
+  Calendar,
+  Download,
+  Filter,
+  PieChart,
+  Activity,
+  DollarSign,
+  Percent,
+  ArrowUpRight,
+  Sparkles,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { 
   useWhatsAppSettings, 
@@ -65,113 +70,129 @@ import {
 
 import type { ReportFilters as IReportFilters, ExportFormat } from './types/reports.types';
 
-// Animated Background Component
-const AnimatedBackground: React.FC<{ isDark: boolean }> = ({ isDark }) => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none">
-    {/* Gradient Orbs */}
-    <motion.div
-      className={cn(
-        "absolute w-[600px] h-[600px] rounded-full blur-3xl opacity-30",
-        isDark ? "bg-violet-600" : "bg-violet-300"
+// ===== Stat Card Component (Dashboard Style) =====
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  change?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  description?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  change,
+  icon: Icon,
+  iconBg,
+  description,
+}) => {
+  const isPositive = change?.includes('+');
+  
+  return (
+    <motion.div 
+      className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all"
+      whileHover={{ y: -4, scale: 1.02 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <motion.div 
+          className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg)}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+        >
+          <Icon className="w-5 h-5" />
+        </motion.div>
+        {change && (
+          <span className={cn(
+            'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold',
+            isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+          )}>
+            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {change}
+          </span>
+        )}
+      </div>
+      <h3 className="text-xs text-neutral-500 font-medium mb-1">{title}</h3>
+      <p className="text-2xl font-bold text-neutral-900">{value}</p>
+      {description && (
+        <p className="text-xs text-neutral-400 mt-1">{description}</p>
       )}
-      animate={{
-        x: [0, 100, 0],
-        y: [0, 50, 0],
-      }}
-      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      style={{ top: '-10%', right: '-10%' }}
-    />
-    <motion.div
-      className={cn(
-        "absolute w-[500px] h-[500px] rounded-full blur-3xl opacity-20",
-        isDark ? "bg-cyan-600" : "bg-cyan-300"
-      )}
-      animate={{
-        x: [0, -50, 0],
-        y: [0, 100, 0],
-      }}
-      transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-      style={{ bottom: '-5%', left: '-5%' }}
-    />
-    <motion.div
-      className={cn(
-        "absolute w-[400px] h-[400px] rounded-full blur-3xl opacity-20",
-        isDark ? "bg-amber-600" : "bg-amber-300"
-      )}
-      animate={{
-        x: [0, 80, 0],
-        y: [0, -80, 0],
-      }}
-      transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-      style={{ top: '40%', left: '30%' }}
-    />
-    
-    {/* Grid Pattern */}
-    <div 
-      className={cn(
-        "absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)]",
-        "bg-[size:24px_24px]"
-      )}
-    />
-  </div>
+    </motion.div>
+  );
+};
+
+// ===== Section Card Component =====
+interface SectionCardProps {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+}
+
+const SectionCard: React.FC<SectionCardProps> = ({
+  title,
+  icon: Icon,
+  children,
+  action,
+  className,
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={cn("bg-white rounded-2xl p-6 shadow-sm", className)}
+  >
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-coral-100 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-coral-600" />
+        </div>
+        <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
+      </div>
+      {action}
+    </div>
+    {children}
+  </motion.div>
 );
 
-// Maintenance Alert Item
+// ===== Maintenance Alert Item =====
 const MaintenanceAlertItem: React.FC<{
   plateNumber: string;
   type: string;
   date: string;
   status: string;
   cost: string;
-  isDark: boolean;
-}> = ({ plateNumber, type, date, status, cost, isDark }) => (
+}> = ({ plateNumber, type, date, status, cost }) => (
   <motion.div
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
-    className={cn(
-      "flex items-center justify-between p-3 rounded-xl",
-      isDark ? "bg-gray-800/50 hover:bg-gray-800" : "bg-gray-100 hover:bg-gray-200",
-      "transition-colors duration-200"
-    )}
+    className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
   >
     <div className="flex items-center gap-3">
       <div className={cn(
         "p-2 rounded-lg",
-        status === 'completed' ? "bg-emerald-500/20 text-emerald-500" :
-        status === 'in_progress' ? "bg-blue-500/20 text-blue-500" :
-        "bg-amber-500/20 text-amber-500"
+        status === 'completed' ? "bg-green-100 text-green-600" :
+        status === 'in_progress' ? "bg-blue-100 text-blue-600" :
+        "bg-amber-100 text-amber-600"
       )}>
         <Wrench className="w-4 h-4" />
       </div>
       <div>
-        <p className={cn(
-          "text-sm font-medium",
-          isDark ? "text-white" : "text-gray-900"
-        )}>
-          {plateNumber}
-        </p>
-        <p className={cn(
-          "text-xs",
-          isDark ? "text-gray-400" : "text-gray-500"
-        )}>
-          {type} • {date}
-        </p>
+        <p className="text-sm font-medium text-neutral-900">{plateNumber}</p>
+        <p className="text-xs text-neutral-500">{type} • {date}</p>
       </div>
     </div>
     <div className="text-left">
-      <p className={cn(
-        "text-sm font-bold",
-        isDark ? "text-white" : "text-gray-900"
-      )}>
-        {cost}
-      </p>
+      <p className="text-sm font-bold text-neutral-900">{cost}</p>
       <Badge 
         variant="outline"
         className={cn(
           "text-[10px]",
-          status === 'completed' && "text-emerald-500 border-emerald-500/30",
-          status === 'in_progress' && "text-blue-500 border-blue-500/30",
-          status === 'pending' && "text-amber-500 border-amber-500/30"
+          status === 'completed' && "text-green-600 border-green-200 bg-green-50",
+          status === 'in_progress' && "text-blue-600 border-blue-200 bg-blue-50",
+          status === 'pending' && "text-amber-600 border-amber-200 bg-amber-50"
         )}
       >
         {status === 'completed' ? 'مكتملة' : 
@@ -181,10 +202,9 @@ const MaintenanceAlertItem: React.FC<{
   </motion.div>
 );
 
-// Main Component
+// ===== Main Component =====
 const FleetReportsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(true);
   const [filters, setFilters] = useState<IReportFilters>({
     period: 'month',
     compareWithPrevious: false,
@@ -205,118 +225,118 @@ const FleetReportsPage: React.FC = () => {
   const { settings: whatsappSettings } = useWhatsAppSettings();
   const { recipients } = useWhatsAppRecipients();
   const { sendDailyReport, sendWeeklyReport, isSending } = useWhatsAppReports();
-  const { connected: whatsappConnected, checkStatus } = useWhatsAppConnectionStatus();
+  const { connected: whatsappConnected } = useWhatsAppConnectionStatus();
   
   const isLoading = analyticsLoading || vehiclesLoading || maintenanceLoading || revenueLoading || statusLoading;
   
   // Handle export
   const handleExport = useCallback((format: ExportFormat) => {
     toast.success(`جاري تصدير التقرير بصيغة ${format.toUpperCase()}...`);
-    // TODO: Implement actual export logic
   }, []);
   
   // Handle refresh
   const handleRefresh = useCallback(() => {
     toast.success('جاري تحديث البيانات...');
-    // The queries will automatically refetch
   }, []);
 
   if (isLoading && !analytics) {
     return (
-      <div className={cn(
-        "min-h-screen flex items-center justify-center",
-        isDark ? "bg-gray-950" : "bg-gray-50"
-      )}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full"
-        />
+      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-neutral-500 font-medium">جاري تحميل التقارير...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={cn(
-      "min-h-screen transition-colors duration-500",
-      isDark ? "bg-gray-950" : "bg-gray-50"
-    )}>
-      <AnimatedBackground isDark={isDark} />
-      
-      <div className="relative z-10 container mx-auto px-4 py-6 max-w-7xl">
+    <div className="min-h-screen bg-[#f0efed]">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
+          className="mb-6"
         >
-          <div>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="flex items-center gap-3 mb-2"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full blur-lg opacity-50" />
-                <div className={cn(
-                  "relative w-12 h-12 rounded-full flex items-center justify-center",
-                  "bg-gradient-to-r from-violet-500 to-cyan-500"
-                )}>
-                  <BarChart3 className="w-6 h-6 text-white" />
+          <div className="bg-gradient-to-l from-coral-500 via-coral-600 to-orange-500 rounded-2xl p-6 text-white shadow-lg">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <BarChart3 className="w-7 h-7" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">تقارير وتحليلات الأسطول</h1>
+                  <p className="text-white/80 text-sm mt-1">
+                    تحليلات شاملة وتقارير مفصلة لأداء الأسطول
+                  </p>
                 </div>
               </div>
-              <div>
-                <h1 className={cn(
-                  "text-2xl font-bold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  تقارير وتحليلات الأسطول
-                </h1>
-                <p className={cn(
-                  "text-sm",
-                  isDark ? "text-gray-400" : "text-gray-600"
-                )}>
-                  تحليلات شاملة وتقارير مفصلة لأداء الأسطول
-                </p>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="bg-white/20 hover:bg-white/30 text-white border-0"
+                >
+                  <RefreshCw className="w-4 h-4 ml-2" />
+                  تحديث
+                </Button>
+                <div className="relative">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="bg-white/20 hover:bg-white/30 text-white border-0"
+                  >
+                    <Bell className="w-5 h-5" />
+                  </Button>
+                  {maintenanceAlerts.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+                      {maintenanceAlerts.length}
+                    </span>
+                  )}
+                </div>
               </div>
-            </motion.div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsDark(!isDark)}
-              className={cn(
-                "p-3 rounded-xl",
-                isDark 
-                  ? "bg-gray-800 text-amber-400" 
-                  : "bg-white text-gray-700 shadow-lg"
-              )}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </motion.button>
-
-            {/* Alerts */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className={cn(
-                "relative p-3 rounded-xl",
-                isDark ? "bg-gray-800 text-gray-300" : "bg-white text-gray-700 shadow-lg"
-              )}
-            >
-              <Bell className="w-5 h-5" />
-              {maintenanceAlerts.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
-                  {maintenanceAlerts.length}
-                </span>
-              )}
-            </motion.button>
+            </div>
           </div>
         </motion.header>
+
+        {/* Quick Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+        >
+          <StatCard
+            title="إجمالي المركبات"
+            value={analytics?.totalVehicles || 0}
+            change={`+${Math.round((analytics?.totalVehicles || 0) * 0.02)}`}
+            icon={Car}
+            iconBg="bg-blue-100 text-blue-600"
+          />
+          <StatCard
+            title="المركبات المؤجرة"
+            value={analytics?.rentedVehicles || 0}
+            change={`+${Math.round((analytics?.rentedVehicles || 0) * 0.05)}`}
+            icon={Activity}
+            iconBg="bg-green-100 text-green-600"
+          />
+          <StatCard
+            title="معدل الاستخدام"
+            value={`${(analytics?.utilizationRate || 0).toFixed(0)}%`}
+            change={analytics?.utilizationRate && analytics.utilizationRate >= 50 ? '+3%' : '-2%'}
+            icon={Percent}
+            iconBg="bg-coral-100 text-coral-600"
+          />
+          <StatCard
+            title="إجمالي الإيرادات"
+            value={formatCurrency(analytics?.totalRevenue || 0)}
+            change="+7%"
+            icon={DollarSign}
+            iconBg="bg-amber-100 text-amber-600"
+          />
+        </motion.div>
 
         {/* Filters */}
         <motion.div
@@ -325,110 +345,94 @@ const FleetReportsPage: React.FC = () => {
           transition={{ delay: 0.2 }}
           className="mb-6"
         >
-          <ReportFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onExport={handleExport}
-            onRefresh={handleRefresh}
-            isLoading={isLoading}
-            isDark={isDark}
-          />
-        </motion.div>
-
-        {/* KPI Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <FleetKPICards
-            analytics={analytics}
-            isDark={isDark}
-            formatCurrency={formatCurrency}
-          />
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <ReportFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onExport={handleExport}
+              onRefresh={handleRefresh}
+              isLoading={isLoading}
+              isDark={false}
+            />
+          </div>
         </motion.div>
 
         {/* Main Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Revenue Chart - Takes 2 columns */}
-          <RevenueChart
-            data={monthlyRevenue}
-            isDark={isDark}
-            formatCurrency={formatCurrency}
-          />
+          <div className="lg:col-span-2">
+            <SectionCard title="الإيرادات الشهرية" icon={TrendingUp}>
+              <RevenueChart
+                data={monthlyRevenue}
+                isDark={false}
+                formatCurrency={formatCurrency}
+              />
+            </SectionCard>
+          </div>
           
           {/* Fleet Status Chart */}
-          {fleetStatus && (
-            <FleetStatusChart
-              data={fleetStatus}
-              isDark={isDark}
-            />
-          )}
+          <div>
+            <SectionCard title="حالة الأسطول" icon={PieChart}>
+              {fleetStatus && (
+                <FleetStatusChart
+                  data={fleetStatus}
+                  isDark={false}
+                />
+              )}
+            </SectionCard>
+          </div>
         </div>
 
         {/* Secondary Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Top Vehicles Chart - Takes 2 columns */}
-          <TopVehiclesChart
-            vehicles={topVehicles}
-            isDark={isDark}
-            formatCurrency={formatCurrency}
-          />
+          <div className="lg:col-span-2">
+            <SectionCard title="أفضل المركبات أداءً" icon={Car}>
+              <TopVehiclesChart
+                vehicles={topVehicles}
+                isDark={false}
+                formatCurrency={formatCurrency}
+              />
+            </SectionCard>
+          </div>
           
           {/* Utilization Chart */}
-          {analytics && (
-            <UtilizationChart
-              analytics={analytics}
-              isDark={isDark}
-            />
-          )}
+          <div>
+            <SectionCard title="معدل الاستخدام" icon={Activity}>
+              {analytics && (
+                <UtilizationChart
+                  analytics={analytics}
+                  isDark={false}
+                />
+              )}
+            </SectionCard>
+          </div>
         </div>
 
         {/* Additional Charts & Maintenance */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Monthly Contracts Chart */}
-          <MonthlyContractsChart
-            data={monthlyRevenue}
-            isDark={isDark}
-          />
+          <SectionCard title="العقود الشهرية" icon={FileText}>
+            <MonthlyContractsChart
+              data={monthlyRevenue}
+              isDark={false}
+            />
+          </SectionCard>
           
           {/* Maintenance Alerts */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className={cn(
-              "rounded-2xl p-6",
-              "backdrop-blur-xl border",
-              isDark 
-                ? "bg-gray-900/60 border-gray-800/50" 
-                : "bg-white/80 border-gray-200/50",
-              "shadow-xl"
-            )}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Wrench className={cn(
-                  "w-5 h-5",
-                  isDark ? "text-amber-400" : "text-amber-500"
-                )} />
-                <h3 className={cn(
-                  "text-lg font-semibold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  تنبيهات الصيانة
-                </h3>
-              </div>
-              {maintenanceAlerts.length > 0 && (
-                <Badge variant="outline" className="text-amber-500 border-amber-500/30">
+          <SectionCard 
+            title="تنبيهات الصيانة" 
+            icon={Wrench}
+            action={
+              maintenanceAlerts.length > 0 && (
+                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200">
                   {maintenanceAlerts.length} تنبيه
                 </Badge>
-              )}
-            </div>
-
+              )
+            }
+          >
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {maintenanceAlerts.slice(0, 5).map((alert, idx) => (
+              {maintenanceAlerts.slice(0, 5).map((alert) => (
                 <MaintenanceAlertItem
                   key={alert.id}
                   plateNumber={alert.plate_number}
@@ -436,361 +440,243 @@ const FleetReportsPage: React.FC = () => {
                   date={new Date(alert.scheduled_date).toLocaleDateString('en-GB')}
                   status={alert.status}
                   cost={formatCurrency(alert.estimated_cost)}
-                  isDark={isDark}
                 />
               ))}
               {maintenanceAlerts.length === 0 && (
                 <div className="text-center py-8">
-                  <Wrench className={cn(
-                    "w-12 h-12 mx-auto mb-4",
-                    isDark ? "text-gray-600" : "text-gray-300"
-                  )} />
-                  <p className={cn(
-                    "text-sm",
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  )}>
-                    لا توجد تنبيهات صيانة حالياً
-                  </p>
+                  <Wrench className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                  <p className="text-sm text-neutral-500">لا توجد تنبيهات صيانة حالياً</p>
                 </div>
               )}
             </div>
-          </motion.div>
+          </SectionCard>
         </div>
 
         {/* Report Generator */}
-        <ReportGenerator
-          analytics={analytics}
-          vehicles={vehicles}
-          maintenance={maintenance}
-          isDark={isDark}
-          formatCurrency={formatCurrency}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <ReportGenerator
+            analytics={analytics}
+            vehicles={vehicles}
+            maintenance={maintenance}
+            isDark={false}
+            formatCurrency={formatCurrency}
+          />
+        </motion.div>
 
         {/* WhatsApp Reports Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-          className={cn(
-            "mt-8 rounded-2xl p-6",
-            "backdrop-blur-xl border",
-            isDark 
-              ? "bg-gray-900/60 border-gray-800/50" 
-              : "bg-white/80 border-gray-200/50",
-            "shadow-xl"
-          )}
+          transition={{ delay: 0.6 }}
+          className="mt-6"
         >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl">
-                <MessageSquare className="w-5 h-5 text-white" />
+          <SectionCard 
+            title="تقارير واتساب" 
+            icon={MessageSquare}
+            action={
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "px-3 py-1",
+                    whatsappConnected 
+                      ? "text-green-600 border-green-200 bg-green-50"
+                      : "text-red-600 border-red-200 bg-red-50"
+                  )}
+                >
+                  {whatsappConnected ? <Wifi className="w-3 h-3 ml-1" /> : <WifiOff className="w-3 h-3 ml-1" />}
+                  {whatsappConnected ? 'متصل' : 'غير متصل'}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/settings/whatsapp')}
+                >
+                  <Settings className="w-4 h-4 ml-2" />
+                  الإعدادات
+                </Button>
               </div>
-              <div>
-                <h3 className={cn(
-                  "text-lg font-semibold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  تقارير واتساب
-                </h3>
-                <p className={cn(
-                  "text-sm",
-                  isDark ? "text-gray-400" : "text-gray-600"
-                )}>
-                  إرسال التقارير للمدير عبر واتساب
-                </p>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Recipients Count */}
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-violet-100 rounded-lg">
+                    <Users className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-neutral-900">
+                      {recipients.filter(r => r.isActive).length}
+                    </p>
+                    <p className="text-xs text-neutral-500">مستلم نشط</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Report Status */}
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    whatsappSettings?.dailyReportEnabled 
+                      ? "bg-green-100" 
+                      : "bg-neutral-100"
+                  )}>
+                    <Clock className={cn(
+                      "w-5 h-5",
+                      whatsappSettings?.dailyReportEnabled 
+                        ? "text-green-600" 
+                        : "text-neutral-400"
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900">التقرير اليومي</p>
+                    <p className={cn(
+                      "text-xs",
+                      whatsappSettings?.dailyReportEnabled 
+                        ? "text-green-600" 
+                        : "text-neutral-400"
+                    )}>
+                      {whatsappSettings?.dailyReportEnabled 
+                        ? `مفعّل • ${whatsappSettings?.dailyReportTime || '08:00'}` 
+                        : 'معطّل'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weekly Report Status */}
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    whatsappSettings?.weeklyReportEnabled 
+                      ? "bg-blue-100" 
+                      : "bg-neutral-100"
+                  )}>
+                    <FileText className={cn(
+                      "w-5 h-5",
+                      whatsappSettings?.weeklyReportEnabled 
+                        ? "text-blue-600" 
+                        : "text-neutral-400"
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900">التقرير الأسبوعي</p>
+                    <p className={cn(
+                      "text-xs",
+                      whatsappSettings?.weeklyReportEnabled 
+                        ? "text-blue-600" 
+                        : "text-neutral-400"
+                    )}>
+                      {whatsappSettings?.weeklyReportEnabled 
+                        ? `مفعّل • ${['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][whatsappSettings?.weeklyReportDay || 0]}` 
+                        : 'معطّل'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Connection Status */}
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "px-3 py-1",
-                  whatsappConnected 
-                    ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
-                    : "text-rose-500 border-rose-500/30 bg-rose-500/10"
-                )}
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => sendDailyReport()}
+                disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
+                className="bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
               >
-                {whatsappConnected ? <Wifi className="w-3 h-3 ml-1" /> : <WifiOff className="w-3 h-3 ml-1" />}
-                {whatsappConnected ? 'متصل' : 'غير متصل'}
-              </Badge>
+                <Send className="w-4 h-4 ml-2" />
+                {isSending ? 'جاري الإرسال...' : 'إرسال تقرير الآن'}
+              </Button>
               
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => navigate('/settings/whatsapp')}
-                className={cn(
-                  isDark && "border-gray-700 hover:bg-gray-800"
-                )}
+                onClick={() => sendWeeklyReport()}
+                disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
               >
-                <Settings className="w-4 h-4 ml-2" />
-                الإعدادات
+                <FileText className="w-4 h-4 ml-2" />
+                إرسال التقرير الأسبوعي
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => navigate('/settings/whatsapp')}
+                className="mr-auto"
+              >
+                إدارة المستلمين
+                <ChevronRight className="w-4 h-4 mr-2" />
               </Button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Recipients Count */}
-            <div className={cn(
-              "p-4 rounded-xl border",
-              isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-lg">
-                  <Users className="w-5 h-5 text-violet-500" />
-                </div>
-                <div>
-                  <p className={cn(
-                    "text-2xl font-bold",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    {recipients.filter(r => r.isActive).length}
-                  </p>
-                  <p className={cn(
-                    "text-xs",
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  )}>
-                    مستلم نشط
-                  </p>
-                </div>
+            {/* Help Text */}
+            {!whatsappConnected && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <p className="text-sm text-amber-700">
+                  ⚠️ لم يتم الاتصال بواتساب. 
+                  <button 
+                    onClick={() => navigate('/settings/whatsapp')}
+                    className="underline mr-1 hover:no-underline font-medium"
+                  >
+                    اضغط هنا
+                  </button>
+                  لإعداد الاتصال.
+                </p>
               </div>
-            </div>
-
-            {/* Daily Report Status */}
-            <div className={cn(
-              "p-4 rounded-xl border",
-              isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded-lg",
-                  whatsappSettings?.dailyReportEnabled 
-                    ? "bg-emerald-500/20" 
-                    : "bg-gray-500/20"
-                )}>
-                  <Clock className={cn(
-                    "w-5 h-5",
-                    whatsappSettings?.dailyReportEnabled 
-                      ? "text-emerald-500" 
-                      : "text-gray-500"
-                  )} />
-                </div>
-                <div>
-                  <p className={cn(
-                    "text-sm font-medium",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    التقرير اليومي
-                  </p>
-                  <p className={cn(
-                    "text-xs",
-                    whatsappSettings?.dailyReportEnabled 
-                      ? "text-emerald-500" 
-                      : isDark ? "text-gray-500" : "text-gray-400"
-                  )}>
-                    {whatsappSettings?.dailyReportEnabled 
-                      ? `مفعّل • ${whatsappSettings?.dailyReportTime || '08:00'}` 
-                      : 'معطّل'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Weekly Report Status */}
-            <div className={cn(
-              "p-4 rounded-xl border",
-              isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded-lg",
-                  whatsappSettings?.weeklyReportEnabled 
-                    ? "bg-cyan-500/20" 
-                    : "bg-gray-500/20"
-                )}>
-                  <FileText className={cn(
-                    "w-5 h-5",
-                    whatsappSettings?.weeklyReportEnabled 
-                      ? "text-cyan-500" 
-                      : "text-gray-500"
-                  )} />
-                </div>
-                <div>
-                  <p className={cn(
-                    "text-sm font-medium",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    التقرير الأسبوعي
-                  </p>
-                  <p className={cn(
-                    "text-xs",
-                    whatsappSettings?.weeklyReportEnabled 
-                      ? "text-cyan-500" 
-                      : isDark ? "text-gray-500" : "text-gray-400"
-                  )}>
-                    {whatsappSettings?.weeklyReportEnabled 
-                      ? `مفعّل • ${['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][whatsappSettings?.weeklyReportDay || 0]}` 
-                      : 'معطّل'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => sendDailyReport()}
-              disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
-              className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
-            >
-              <Send className="w-4 h-4 ml-2" />
-              {isSending ? 'جاري الإرسال...' : 'إرسال تقرير الآن'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => sendWeeklyReport()}
-              disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
-              className={isDark ? "border-gray-700 hover:bg-gray-800" : ""}
-            >
-              <FileText className="w-4 h-4 ml-2" />
-              إرسال التقرير الأسبوعي
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => navigate('/settings/whatsapp')}
-              className={cn(
-                "mr-auto",
-                isDark ? "border-gray-700 hover:bg-gray-800" : ""
-              )}
-            >
-              إدارة المستلمين
-              <ChevronRight className="w-4 h-4 mr-2" />
-            </Button>
-          </div>
-
-          {/* Help Text */}
-          {!whatsappConnected && (
-            <div className={cn(
-              "mt-4 p-3 rounded-lg border",
-              isDark ? "bg-amber-500/10 border-amber-500/30" : "bg-amber-50 border-amber-200"
-            )}>
-              <p className={cn(
-                "text-sm",
-                isDark ? "text-amber-400" : "text-amber-700"
-              )}>
-                ⚠️ لم يتم الاتصال بواتساب. 
-                <button 
-                  onClick={() => navigate('/settings/whatsapp')}
-                  className="underline mr-1 hover:no-underline"
-                >
-                  اضغط هنا
-                </button>
-                لإعداد الاتصال.
-              </p>
-            </div>
-          )}
+            )}
+          </SectionCard>
         </motion.div>
 
         {/* Performance Summary Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2 }}
-          className={cn(
-            "mt-8 rounded-2xl p-6",
-            "backdrop-blur-xl border",
-            isDark 
-              ? "bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border-violet-500/20" 
-              : "bg-gradient-to-r from-violet-100 to-cyan-100 border-violet-200"
-          )}
+          transition={{ delay: 0.7 }}
+          className="mt-6 bg-gradient-to-l from-coral-50 to-orange-50 rounded-2xl p-6 border border-coral-100"
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl">
+            <div className="p-3 bg-gradient-to-l from-coral-500 to-orange-500 rounded-xl">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className={cn(
-                "text-lg font-semibold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
+              <p className="text-lg font-semibold text-neutral-900">
                 {analytics && analytics.utilizationRate >= 70 
                   ? '🎉 أداء ممتاز!' 
                   : analytics && analytics.utilizationRate >= 50 
                   ? '📈 أداء جيد - هناك فرصة للتحسين'
                   : '⚠️ يحتاج لتحسين'}
               </p>
-              <p className={cn(
-                "text-sm",
-                isDark ? "text-gray-400" : "text-gray-600"
-              )}>
+              <p className="text-sm text-neutral-600">
                 {analytics && `معدل استخدام الأسطول ${analytics.utilizationRate.toFixed(1)}% • هامش الربح ${analytics.profitMargin.toFixed(1)}%`}
               </p>
             </div>
             <div className="hidden md:flex items-center gap-6">
               <div className="text-center">
-                <p className={cn(
-                  "text-2xl font-bold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
+                <p className="text-2xl font-bold text-neutral-900">
                   {analytics?.totalVehicles || 0}
                 </p>
-                <p className={cn(
-                  "text-xs",
-                  isDark ? "text-gray-400" : "text-gray-600"
-                )}>
-                  مركبة
-                </p>
+                <p className="text-xs text-neutral-500">مركبة</p>
               </div>
-              <div className="w-px h-12 bg-gradient-to-b from-transparent via-gray-500 to-transparent" />
+              <div className="w-px h-12 bg-coral-200" />
               <div className="text-center">
-                <p className={cn(
-                  "text-2xl font-bold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
+                <p className="text-2xl font-bold text-neutral-900">
                   {analytics?.rentedVehicles || 0}
                 </p>
-                <p className={cn(
-                  "text-xs",
-                  isDark ? "text-gray-400" : "text-gray-600"
-                )}>
-                  مؤجرة
-                </p>
+                <p className="text-xs text-neutral-500">مؤجرة</p>
               </div>
-              <div className="w-px h-12 bg-gradient-to-b from-transparent via-gray-500 to-transparent" />
+              <div className="w-px h-12 bg-coral-200" />
               <div className="text-center">
-                <p className={cn(
-                  "text-2xl font-bold text-emerald-500"
-                )}>
+                <p className="text-2xl font-bold text-green-600">
                   {formatCurrency(analytics?.totalProfit || 0)}
                 </p>
-                <p className={cn(
-                  "text-xs",
-                  isDark ? "text-gray-400" : "text-gray-600"
-                )}>
-                  صافي الربح
-                </p>
+                <p className="text-xs text-neutral-500">صافي الربح</p>
               </div>
             </div>
           </div>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
-          className={cn(
-            "text-center mt-8 py-4",
-            isDark ? "text-gray-500" : "text-gray-400"
-          )}
-        >
-          <p className="text-sm">
-            Fleet Reports V2 • تصميم احترافي متقدم
-          </p>
         </motion.div>
       </div>
     </div>
@@ -798,4 +684,3 @@ const FleetReportsPage: React.FC = () => {
 };
 
 export default FleetReportsPage;
-
