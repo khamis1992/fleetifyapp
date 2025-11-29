@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car, FileEdit, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Card, CardContent } from '@/components/ui/card';
 import { NativeCard, NativeCardContent } from '@/components/ui/native';
-import { Badge } from '@/components/ui/badge';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { NumberDisplay } from '@/components/ui/NumberDisplay';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
 import { useContractValidationBadges, useContractIssuesCount } from '@/hooks/useContractValidationBadges';
+import { ContractStatusBadge } from './ContractStatusBadge';
+import { ContractStatusManagement } from './ContractStatusManagement';
+import { Badge } from '@/components/ui/badge';
 
 interface ContractCardProps {
   contract: any;
@@ -41,11 +43,14 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   showDeleteButton = false,
   showAmendButton = true
 }) => {
-  const { getStatusColor, getStatusIcon, getContractTypeLabel, getCustomerName } = useContractHelpers();
+  const { getContractTypeLabel, getCustomerName } = useContractHelpers();
   const { formatCurrency } = useCurrencyFormatter();
   const { isMobile } = useSimpleBreakpoint();
   const validationIssues = useContractValidationBadges(contract);
   const issuesCount = useContractIssuesCount(contract);
+  
+  // State for inline status management dialog
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
 
   const CardWrapper = isMobile ? NativeCard : Card;
   const ContentWrapper = isMobile ? NativeCardContent : CardContent;
@@ -85,17 +90,15 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                   )}
                 </div>
               )}
-              <Badge className={getStatusColor(contract.status)}>
-                {getStatusIcon(contract.status)}
-                <span className="ml-1">
-                  {contract.status === 'active' ? 'نشط' :
-                   contract.status === 'draft' ? 'مسودة' :
-                   contract.status === 'expired' ? 'منتهي' :
-                   contract.status === 'suspended' ? 'معلق' :
-                   contract.status === 'cancelled' ? 'ملغي' :
-                   contract.status === 'renewed' ? 'مجدد' : contract.status}
-                </span>
-              </Badge>
+              <ContractStatusBadge 
+                status={contract.status} 
+                clickable={true}
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  setIsStatusDialogOpen(true);
+                }}
+                className="cursor-pointer hover:scale-105 transition-transform"
+              />
             </div>
           </div>
 
@@ -286,6 +289,13 @@ export const ContractCard: React.FC<ContractCardProps> = ({
           </div>
         </div>
       </ContentWrapper>
+      
+      {/* Inline Status Management Dialog */}
+      <ContractStatusManagement
+        open={isStatusDialogOpen}
+        onOpenChange={setIsStatusDialogOpen}
+        contract={contract}
+      />
     </CardWrapper>
   );
 };

@@ -4,7 +4,7 @@ import { CheckCircle, Clock, Pause, AlertCircle, XCircle, RefreshCw, FileText, F
 interface ContractStatusBadgeProps {
   status: string
   className?: string
-  onClick?: () => void
+  onClick?: (e?: React.MouseEvent) => void
   clickable?: boolean
 }
 
@@ -76,8 +76,8 @@ export const ContractStatusBadge = ({ status, className, onClick, clickable = fa
   return (
     <Badge 
       variant={config.variant} 
-      className={`${config.className} ${className} ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-      onClick={clickable ? onClick : undefined}
+      className={`${config.className} ${className} ${clickable ? 'cursor-pointer hover:opacity-80 hover:scale-105 transition-all' : ''}`}
+      onClick={clickable ? (e) => onClick?.(e) : undefined}
     >
       <Icon className="h-3 w-3 mr-1" />
       {config.label}
