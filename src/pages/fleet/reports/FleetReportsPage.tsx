@@ -296,6 +296,7 @@ const FleetReportsPage: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
         </motion.header>
 
         {/* Quick Stats */}
