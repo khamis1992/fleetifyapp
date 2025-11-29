@@ -144,22 +144,32 @@ function ContractsNew() {
   };
 
   // Data fetching with pagination - محسّن بشكل أفضل
+  // ✅ الاعتماد على debouncedSearch مباشرة لمنع التحديث المتكرر عند كل حرف
   const filtersWithPagination = useMemo(() => {
+    const newFilters: any = {};
+    
+    // البحث - استخدام debouncedSearch فقط
+    if (debouncedSearch && debouncedSearch.trim()) {
+      newFilters.search = debouncedSearch.trim();
+    }
+    
+    // Status من activeTab
+    if (activeTab === "active") {
+      newFilters.status = "active";
+    } else if (activeTab === "cancelled") {
+      newFilters.status = "cancelled";
+    } else if (activeTab === "alerts") {
+      newFilters.status = "expiring_soon";
+    }
+    
     return {
-      ...filters,
+      ...newFilters,
       page,
       pageSize,
     };
   }, [
-    filters.search, 
-    filters.status, 
-    filters.contract_type, 
-    filters.customer_id, 
-    filters.cost_center_id,
-    filters.start_date,
-    filters.end_date,
-    filters.min_amount,
-    filters.max_amount,
+    debouncedSearch,  // ✅ استخدام debouncedSearch بدلاً من filters.search
+    activeTab,        // ✅ استخدام activeTab مباشرة
     page, 
     pageSize
   ]);
