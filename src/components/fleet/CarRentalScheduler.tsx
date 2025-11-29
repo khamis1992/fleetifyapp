@@ -107,6 +107,14 @@ const CAR_TYPES = [
   { id: 'van', label: 'فان' },
 ];
 
+const VEHICLE_STATUSES = [
+  { id: 'all', label: 'كل الحالات' },
+  { id: 'available', label: 'متوفرة ✅' },
+  { id: 'rented', label: 'مؤجرة' },
+  { id: 'reserved', label: 'محجوزة' },
+  { id: 'maintenance', label: 'صيانة 🔧' },
+];
+
 // ===== Helper Functions =====
 const getToday = () => {
   const d = new Date();
@@ -151,6 +159,7 @@ export default function CarRentalScheduler() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalData, setModalData] = useState<any>(null);
   const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'available', 'rented', 'maintenance'
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Drivers State
@@ -490,9 +499,11 @@ export default function CarRentalScheduler() {
       
       const matchesType = filterType === 'all' || vehicle.vehicle_type === filterType;
       
-      return matchesSearch && matchesType;
+      const matchesStatus = filterStatus === 'all' || vehicle.status === filterStatus;
+      
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [vehicles, searchTerm, filterType]);
+  }, [vehicles, searchTerm, filterType, filterStatus]);
 
   // Filter drivers
   const filteredDrivers = useMemo(() => {
@@ -911,15 +922,27 @@ export default function CarRentalScheduler() {
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-400" />
-                  <select 
-                    value={filterType} 
-                    onChange={(e) => setFilterType(e.target.value)} 
-                    className="text-sm bg-transparent border-none focus:ring-0 text-gray-600 font-medium cursor-pointer"
-                  >
-                    {CAR_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                  </select>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <select 
+                      value={filterType} 
+                      onChange={(e) => setFilterType(e.target.value)} 
+                      className="text-sm bg-transparent border-none focus:ring-0 text-gray-600 font-medium cursor-pointer"
+                    >
+                      {CAR_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+                    <Car className="w-4 h-4 text-gray-400" />
+                    <select 
+                      value={filterStatus} 
+                      onChange={(e) => setFilterStatus(e.target.value)} 
+                      className="text-sm bg-transparent border-none focus:ring-0 text-gray-600 font-medium cursor-pointer"
+                    >
+                      {VEHICLE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3 text-xs font-medium">
@@ -934,9 +957,14 @@ export default function CarRentalScheduler() {
             <div className="flex-1 overflow-hidden flex flex-col relative select-none bg-white">
               {/* Timeline Header */}
               <div className="flex border-b border-gray-200 bg-white relative z-30 shadow-sm flex-none">
-                <div className="w-64 flex-shrink-0 p-3 font-bold text-gray-700 border-l border-gray-200 bg-gray-50 flex items-center gap-2 text-sm">
-                  <LayoutGrid className="w-4 h-4 text-gray-400" />
-                  السيارة
+                <div className="w-64 flex-shrink-0 p-3 font-bold text-gray-700 border-l border-gray-200 bg-gray-50 flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="w-4 h-4 text-gray-400" />
+                    السيارات
+                  </div>
+                  <span className="text-xs bg-coral-100 text-coral-600 px-2 py-0.5 rounded-full font-bold">
+                    {filteredCars.length}
+                  </span>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="flex" style={{ width: `${daysToShow * cellWidth}px` }}>
@@ -977,6 +1005,9 @@ export default function CarRentalScheduler() {
                     <div className="w-64 flex-shrink-0 px-4 py-2 border-l border-gray-200 flex flex-col justify-center bg-white z-40 relative group-hover:bg-gray-50 transition">
                       <div className="font-bold text-gray-800 text-sm truncate flex items-center gap-2">
                         {car.make} {car.model}
+                        {car.status === 'available' && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
+                        {car.status === 'rented' && <div className="w-2 h-2 rounded-full bg-blue-500"></div>}
+                        {car.status === 'reserved' && <div className="w-2 h-2 rounded-full bg-yellow-500"></div>}
                         {car.status === 'maintenance' && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>}
                       </div>
                       <div className="flex items-center justify-between mt-1">
