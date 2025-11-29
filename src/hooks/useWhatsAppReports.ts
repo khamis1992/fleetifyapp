@@ -87,6 +87,20 @@ export const useWhatsAppSettings = () => {
       }
       
       // تحويل أسماء الحقول من snake_case إلى camelCase
+      // معالجة recipients - قد تكون string أو array
+      let parsedRecipients: WhatsAppRecipient[] = [];
+      if (data.recipients) {
+        if (typeof data.recipients === 'string') {
+          try {
+            parsedRecipients = JSON.parse(data.recipients);
+          } catch {
+            parsedRecipients = [];
+          }
+        } else if (Array.isArray(data.recipients)) {
+          parsedRecipients = data.recipients;
+        }
+      }
+      
       return {
         id: data.id,
         companyId: data.company_id,
@@ -101,7 +115,7 @@ export const useWhatsAppSettings = () => {
         monthlyReportTime: data.monthly_report_time ?? '10:00',
         instantAlertsEnabled: data.instant_alerts_enabled ?? true,
         alertThreshold: data.alert_threshold ?? 10000,
-        recipients: Array.isArray(data.recipients) ? data.recipients : [],
+        recipients: parsedRecipients,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       } as ReportScheduleSettings;
@@ -132,7 +146,7 @@ export const useWhatsAppSettings = () => {
       if ('monthlyReportTime' in newSettings) dbSettings.monthly_report_time = newSettings.monthlyReportTime;
       if ('instantAlertsEnabled' in newSettings) dbSettings.instant_alerts_enabled = newSettings.instantAlertsEnabled;
       if ('alertThreshold' in newSettings) dbSettings.alert_threshold = newSettings.alertThreshold;
-      if ('recipients' in newSettings) dbSettings.recipients = JSON.stringify(newSettings.recipients);
+      if ('recipients' in newSettings) dbSettings.recipients = newSettings.recipients;
 
       const { error } = await supabase
         .from('whatsapp_settings')
@@ -166,7 +180,7 @@ export const useWhatsAppSettings = () => {
     isLoading,
     error,
     companyId,
-    saveSettings: saveSettingsMutation.mutate,
+    saveSettings: saveSettingsMutation.mutateAsync,
     isSaving: saveSettingsMutation.isPending,
     refetch,
     initializeService,
