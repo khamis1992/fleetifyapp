@@ -3,6 +3,7 @@ import { FileText, Receipt } from "lucide-react";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { extractVehicleNumber, extractCustomerName } from "@/utils/invoiceHelpers";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -122,18 +123,11 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
   const invoiceDate = invoice.invoice_date || invoice.due_date || new Date().toISOString();
   const formattedDate = format(new Date(invoiceDate), 'dd/MM/yyyy');
   
-  // الحصول على اسم العميل
-  const customerName = invoice.customer?.full_name || 
-    invoice.customer?.company_name_ar ||
-    `${invoice.customer?.first_name_ar || ''} ${invoice.customer?.last_name_ar || ''}`.trim() ||
-    'عميل';
+  // الحصول على اسم العميل (باستخدام الدالة المركزية)
+  const customerName = extractCustomerName(invoice);
 
-  // الحصول على رقم المركبة من بيانات العقد أو الفاتورة
-  const vehicleNumber = invoice.vehicle?.plate_number || 
-    invoice.contract?.vehicle?.plate_number ||
-    invoice.vehicle_number ||
-    invoice.contract?.vehicle_number ||
-    '';
+  // الحصول على رقم المركبة (باستخدام الدالة المركزية)
+  const vehicleNumber = extractVehicleNumber(invoice);
 
   // وصف الفاتورة
   const description = invoice.description || `فاتورة إيجار شهري - ${format(new Date(invoiceDate), 'MMMM yyyy', { locale: ar })}`;

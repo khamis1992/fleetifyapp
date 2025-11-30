@@ -28,6 +28,8 @@ export interface RentalPaymentReceipt {
   company_id: string;
   customer_id: string;
   customer_name: string;
+  customer_phone?: string;
+  vehicle_number?: string; // رقم المركبة
   month: string;
   rent_amount: number;
   payment_date: string;
@@ -43,6 +45,19 @@ export interface RentalPaymentReceipt {
   vehicle_id?: string;
   contract_id?: string;
   vehicle?: VehicleInfo;
+  customer?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    first_name_ar?: string;
+    last_name_ar?: string;
+    phone?: string;
+  };
+  contract?: {
+    id: string;
+    contract_number?: string;
+    vehicle_number?: string;
+  };
 }
 
 /**
@@ -212,7 +227,8 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
             id,
             contract_number,
             contract_amount,
-            status
+            status,
+            vehicle_number
           ),
           vehicle:vehicles!vehicle_id(
             id,
@@ -231,6 +247,13 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
 
       const { data, error } = await query;
 
+      // Map vehicle_number and customer_phone from related objects
+      const mappedData = (data || []).map(receipt => ({
+        ...receipt,
+        vehicle_number: receipt.contract?.vehicle_number || receipt.vehicle?.plate_number || '',
+        customer_phone: receipt.customer?.phone || ''
+      }));
+
       if (error) {
         console.error('❌ Error fetching rental receipts:', error);
         Sentry.captureException(error, {
@@ -248,10 +271,10 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
         category: 'rental_payments',
         message: 'Rental payment receipts fetched successfully',
         level: 'info',
-        data: { count: data?.length || 0 }
+        data: { count: mappedData?.length || 0 }
       });
 
-      return (data || []) as RentalPaymentReceipt[];
+      return mappedData as RentalPaymentReceipt[];
     },
     enabled: !!companyId,
     staleTime: 5 * 1000, // 5 seconds for real-time updates
@@ -295,7 +318,8 @@ export const useAllRentalPaymentReceipts = () => {
             id,
             contract_number,
             contract_amount,
-            status
+            status,
+            vehicle_number
           ),
           vehicle:vehicles!vehicle_id(
             id,
@@ -321,14 +345,21 @@ export const useAllRentalPaymentReceipts = () => {
         throw error;
       }
 
+      // Map vehicle_number and customer_phone from related objects
+      const mappedData = (data || []).map(receipt => ({
+        ...receipt,
+        vehicle_number: receipt.contract?.vehicle_number || receipt.vehicle?.plate_number || '',
+        customer_phone: receipt.customer?.phone || ''
+      }));
+
       Sentry.addBreadcrumb({
         category: 'rental_payments',
         message: 'All rental payment receipts fetched successfully',
         level: 'info',
-        data: { count: data?.length || 0 }
+        data: { count: mappedData?.length || 0 }
       });
 
-      return (data || []) as RentalPaymentReceipt[];
+      return mappedData as RentalPaymentReceipt[];
     },
     enabled: !!companyId,
     staleTime: 10 * 1000, // 10 seconds

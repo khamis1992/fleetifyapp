@@ -31,6 +31,10 @@ interface Invoice {
   contract_id: string | null;
   contracts: {
     contract_number: string;
+    vehicle_number: string | null;
+    vehicles: {
+      plate_number: string;
+    } | null;
   } | null;
 }
 
@@ -44,6 +48,7 @@ interface PaymentSuccess {
   paymentMethod: string;
   paymentDate: string;
   description: string;
+  vehicleNumber: string;
 }
 
 export function QuickPaymentRecording() {
@@ -116,7 +121,13 @@ export function QuickPaymentRecording() {
           status,
           payment_status,
           contract_id,
-          contracts (contract_number)
+          contracts (
+            contract_number,
+            vehicle_number,
+            vehicles:vehicle_id (
+              plate_number
+            )
+          )
         `)
         .eq('customer_id', customer.id)
         .in('payment_status', ['unpaid', 'partial'])
@@ -309,6 +320,10 @@ export function QuickPaymentRecording() {
         }
       }
 
+      // استخراج رقم المركبة من أول فاتورة
+      const vehicleNumber = selectedInvoices[0]?.contracts?.vehicle_number || 
+                           selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
+
       // Show success screen
       setPaymentSuccess({
         paymentId: payment.id,
@@ -324,6 +339,7 @@ export function QuickPaymentRecording() {
         description: selectedInvoices.length > 1 
           ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
           : `دفعة إيجار - عقد رقم ${contractNumbers} - فاتورة ${invoiceNumbers}`,
+        vehicleNumber: vehicleNumber,
       });
 
       toast({
@@ -561,6 +577,7 @@ export function QuickPaymentRecording() {
                       amount={paymentSuccess.amount}
                       description={paymentSuccess.description}
                       paymentMethod={paymentSuccess.paymentMethod as 'cash' | 'check' | 'bank_transfer' | 'other'}
+                      vehicleNumber={paymentSuccess.vehicleNumber}
                     />
                   </div>
                 </div>
