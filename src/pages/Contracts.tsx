@@ -36,7 +36,7 @@ import {
 
 // Component imports
 import { BulkInvoiceGenerationDialog } from "@/components/contracts/BulkInvoiceGenerationDialog";
-import { ContractWizard } from "@/components/contracts/ContractWizard";
+import { SimpleContractWizard } from "@/components/contracts/SimpleContractWizard";
 import { ContractTemplateManager } from "@/components/contracts/ContractTemplateManager";
 import { ContractRenewalDialog } from "@/components/contracts/ContractRenewalDialog";
 import { ContractStatusManagement } from "@/components/contracts/ContractStatusManagement";
@@ -840,14 +840,12 @@ function ContractsNew() {
 
       <ContractExportDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
 
-      <ContractWizard
+      <SimpleContractWizard
         open={showContractWizard}
         onOpenChange={setShowContractWizard}
         onSubmit={handleContractSubmit}
         preselectedCustomerId={preselectedCustomerId}
         preselectedVehicleId={preselectedVehicleId}
-        draftIdToLoad={draftIdToLoad}
-        contractToEdit={contractToEdit}
       />
 
       <ExpressContractForm open={showExpressMode} onOpenChange={setShowExpressMode} onSubmit={handleContractSubmit} />
