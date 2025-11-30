@@ -48,7 +48,7 @@ export const useCustomerInvoices = (customerId: string) => {
             contract_number,
             vehicle_number,
             vehicles:vehicle_id (
-              license_plate,
+              plate_number,
               make,
               model
             )
@@ -66,7 +66,7 @@ export const useCustomerInvoices = (customerId: string) => {
       return (data || []).map(invoice => ({
         ...invoice,
         vehicle_number: invoice.contracts?.vehicle_number || 
-                       invoice.contracts?.vehicles?.license_plate || ''
+                       invoice.contracts?.vehicles?.plate_number || ''
       }));
     },
     enabled: !!customerId

@@ -129,8 +129,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     'عميل';
 
   // الحصول على رقم المركبة من بيانات العقد أو الفاتورة
-  const vehicleNumber = invoice.vehicle?.license_plate || 
-    invoice.contract?.vehicle?.license_plate ||
+  const vehicleNumber = invoice.vehicle?.plate_number || 
+    invoice.contract?.vehicle?.plate_number ||
     invoice.vehicle_number ||
     invoice.contract?.vehicle_number ||
     '';

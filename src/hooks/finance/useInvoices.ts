@@ -83,7 +83,7 @@ const INVOICE_SELECT_FIELDS = `
     contract_number,
     vehicle_number,
     vehicles:vehicle_id (
-      license_plate,
+      plate_number,
       make,
       model
     )
@@ -179,7 +179,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         const mappedData = (data || []).map((invoice: any) => ({
           ...invoice,
           vehicle_number: invoice.contracts?.vehicle_number || 
-                         invoice.contracts?.vehicles?.license_plate || ''
+                         invoice.contracts?.vehicles?.plate_number || ''
         }));
 
         // Return with pagination info if pagination is requested

@@ -1056,9 +1056,9 @@ const ContractDetailsPage = () => {
             onOpenChange={setIsPreviewDialogOpen}
             invoice={{
               ...selectedInvoice,
-              vehicle_number: contract?.vehicle_number || contract?.vehicles?.license_plate || '',
+              vehicle_number: contract?.vehicle_number || contract?.vehicle?.plate_number || '',
               contract: {
-                vehicle_number: contract?.vehicle_number || contract?.vehicles?.license_plate || ''
+                vehicle_number: contract?.vehicle_number || contract?.vehicle?.plate_number || ''
               }
             }}
           />
