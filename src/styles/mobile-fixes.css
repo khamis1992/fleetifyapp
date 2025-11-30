@@ -220,29 +220,63 @@
   }
   
   /* ==========================================
-     12. OVERFLOW - Prevent horizontal scroll only
+     12. OVERFLOW & SCROLL - Critical Mobile Fixes
      ========================================== */
   
-  body,
+  /* Root elements must allow scrolling */
   html {
     overflow-x: hidden;
-    overflow-y: auto;
-    max-width: 100vw;
+    overflow-y: scroll !important;
+    height: auto !important;
+    min-height: 100%;
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* Ensure main content areas can scroll */
+  body {
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+    max-width: 100vw;
+    position: relative;
+    /* Prevent iOS rubber-band scroll issues */
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Main content areas MUST scroll */
   main {
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Add padding for fixed bottom navigation */
+    padding-bottom: 80px !important;
+  }
+  
+  /* Flex containers should not block scroll */
+  .flex-1 {
+    overflow-y: auto !important;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
   
-  /* Fix for pages with fixed height */
-  [class*="min-h-screen"],
-  [class*="h-screen"] {
+  /* Fix for pages with fixed height - CRITICAL */
+  [class*="min-h-screen"] {
     min-height: 100vh !important;
     height: auto !important;
+    overflow-y: visible !important;
+  }
+  
+  [class*="h-screen"] {
+    height: auto !important;
+    min-height: 100vh;
     overflow-y: auto !important;
+  }
+  
+  /* Desktop layout containers on mobile */
+  .min-h-screen.flex {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
   }
   
   /* Specific fix for CRM page */
@@ -250,6 +284,23 @@
     overflow-y: auto !important;
     height: auto !important;
     min-height: 100vh !important;
+  }
+  
+  /* Ensure outlet/children content scrolls */
+  [class*="Outlet"],
+  [class*="outlet"] {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Remove any touch-action restrictions that block scrolling */
+  * {
+    touch-action: pan-x pan-y !important;
+  }
+  
+  /* But allow pinch zoom on specific elements */
+  img, .zoomable {
+    touch-action: manipulation !important;
   }
   
   /* ==========================================

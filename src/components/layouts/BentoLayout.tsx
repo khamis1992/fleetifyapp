@@ -97,7 +97,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex-1 overflow-auto pt-14 lg:pt-0"
+        className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div className="p-4 md:p-6 min-h-screen">
           {children}

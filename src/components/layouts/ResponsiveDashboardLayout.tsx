@@ -15,6 +15,7 @@ import { ResponsiveContainer } from '@/components/ui/responsive-container';
 import ForcePasswordChangeDialog from '@/components/auth/ForcePasswordChangeDialog';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { LocationBasedKey } from '@/components/common/LocationBasedKey';
+import { cn } from '@/lib/utils';
 
 export const ResponsiveDashboardLayout: React.FC = () => {
   const { user, loading, validateSession } = useAuth();
@@ -118,7 +119,11 @@ export const ResponsiveDashboardLayout: React.FC = () => {
           />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className={cn(
+            "flex-1 overflow-y-auto overflow-x-hidden",
+            "-webkit-overflow-scrolling-touch",
+            isMobile && "pb-24" // Add padding for bottom navigation
+          )}>
             <ResponsiveContainer 
               className="py-4 md:py-6 lg:py-8"
               padding={isMobile ? 'sm' : isTablet ? 'default' : 'lg'}
