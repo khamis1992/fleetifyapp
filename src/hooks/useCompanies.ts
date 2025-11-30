@@ -16,6 +16,18 @@ export interface Company {
   address?: string;
   country?: string;
   city?: string;
+  active_modules?: string[];
+  business_type?: string;
+  currency?: string;
+  commercial_register?: string;
+  license_number?: string;
+  address_ar?: string;
+  office_latitude?: number;
+  office_longitude?: number;
+  allowed_radius?: number;
+  work_start_time?: string;
+  work_end_time?: string;
+  auto_checkout_enabled?: boolean;
 }
 
 export const useCompanies = () => {
@@ -33,7 +45,7 @@ export const useCompanies = () => {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name, name_ar, email, phone, subscription_status, subscription_plan, created_at, address, country, city')
+        .select('id, name, name_ar, email, phone, subscription_status, subscription_plan, created_at, address, address_ar, country, city, active_modules, business_type, currency, commercial_register, license_number, office_latitude, office_longitude, allowed_radius, work_start_time, work_end_time, auto_checkout_enabled')
         .order('name');
       
       if (error) {

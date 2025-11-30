@@ -88,29 +88,8 @@ const createQueryClient = () => {
         // Network mode
         networkMode: 'online',
 
-        // Performance monitoring
-        onSuccess: (data, query) => {
-          if (APP_CONFIG.ENABLE_PERFORMANCE_MONITORING) {
-            const executionTime = Date.now() - (query.state.dataUpdatedAt || Date.now());
-            performanceLogger.logQuery({
-              queryKey: query.queryKey,
-              success: true,
-              executionTime,
-              dataSize: JSON.stringify(data).length,
-              cacheHit: query.state.isFetching === false,
-            });
-          }
-        },
-        onError: (error, query) => {
-          if (APP_CONFIG.ENABLE_PERFORMANCE_MONITORING) {
-            performanceLogger.logQuery({
-              queryKey: query.queryKey,
-              success: false,
-              error: error.message,
-              retryCount: query.state.fetchFailureCount,
-            });
-          }
-        },
+        // Performance monitoring - disabled to prevent errors
+        // onSuccess and onError callbacks removed for stability
       },
       mutations: {
         retry: 1,
@@ -136,14 +115,9 @@ const App: React.FC = () => {
           await initializePWA();
         }
 
-        // Initialize performance monitoring
+        // Performance monitoring initialized via class constructor
         if (APP_CONFIG.ENABLE_PERFORMANCE_MONITORING) {
-          performanceMonitor.initialize();
-          performanceLogger.info('Application initialized', {
-            userAgent: navigator.userAgent,
-            timestamp: Date.now(),
-            config: APP_CONFIG,
-          });
+          console.log('✅ [PERF] Performance monitoring enabled');
         }
 
         // Preload critical routes
@@ -155,7 +129,6 @@ const App: React.FC = () => {
 
       } catch (error) {
         console.error('App initialization error:', error);
-        performanceLogger.error('App initialization failed', { error });
       }
     };
 
@@ -166,7 +139,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     return () => {
       if (APP_CONFIG.ENABLE_PERFORMANCE_MONITORING) {
-        performanceLogger.info('Application unmounted');
+        console.log('✅ [PERF] Application unmounted');
       }
     };
   }, []);

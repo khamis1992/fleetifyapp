@@ -41,6 +41,35 @@ import { CustomerSelector } from '@/components/shared/CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
 import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
+import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
+import { UserPlus } from 'lucide-react';
+
+// Quick Customer Button Component
+const QuickCustomerButton: React.FC<{
+  onCustomerCreated: (customer: { id: string; full_name: string }) => void;
+}> = ({ onCustomerCreated }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="text-coral-600 hover:text-coral-700 hover:bg-coral-50 gap-1"
+      >
+        <UserPlus className="h-4 w-4" />
+        إضافة عميل جديد
+      </Button>
+      <QuickCustomerForm
+        open={open}
+        onOpenChange={setOpen}
+        onCustomerCreated={onCustomerCreated}
+      />
+    </>
+  );
+};
 
 // Account Display Component
 const AccountDisplay: React.FC<{ data: unknown }> = ({ data }) => {
@@ -353,6 +382,9 @@ export const CustomerVehicleStep: React.FC = () => {
                 onValueChange={(customerId) => updateData({ customer_id: customerId })}
                 placeholder="ابحث عن مستأجر أو اختر..."
                 disabled={false}
+              />
+              <QuickCustomerButton 
+                onCustomerCreated={(customer) => updateData({ customer_id: customer.id })}
               />
             </div>
             

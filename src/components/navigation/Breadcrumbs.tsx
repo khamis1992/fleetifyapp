@@ -235,14 +235,64 @@ export const Breadcrumbs: React.FC = () => {
     // Check for exact match first
     let items = BREADCRUMB_ROUTES[location.pathname];
 
-    // Handle dynamic routes (e.g., /fleet/vehicles/:vehicleId)
-    if (!items && location.pathname.startsWith('/fleet/vehicles/')) {
-      const vehicleId = location.pathname.split('/fleet/vehicles/')[1];
-      if (vehicleId) {
+    // Handle dynamic routes
+    if (!items) {
+      // Vehicle details
+      if (location.pathname.startsWith('/fleet/vehicles/')) {
         items = [
           { label: 'لوحة التحكم', path: '/dashboard' },
           { label: 'إدارة الأسطول', path: '/fleet' },
           { label: 'تفاصيل المركبة', path: undefined, isActive: true },
+        ];
+      }
+      // Customer details
+      else if (location.pathname.startsWith('/customers/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'العملاء', path: '/customers' },
+          { label: 'تفاصيل العميل', path: undefined, isActive: true },
+        ];
+      }
+      // Contract details
+      else if (location.pathname.startsWith('/contracts/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'العقود', path: '/contracts' },
+          { label: 'تفاصيل العقد', path: undefined, isActive: true },
+        ];
+      }
+      // Invoice details
+      else if (location.pathname.startsWith('/finance/invoices/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'المالية', path: '/finance' },
+          { label: 'الفواتير', path: '/finance/invoices' },
+          { label: 'تفاصيل الفاتورة', path: undefined, isActive: true },
+        ];
+      }
+      // Payment details
+      else if (location.pathname.startsWith('/finance/payments/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'المالية', path: '/finance' },
+          { label: 'المدفوعات', path: '/finance/payments' },
+          { label: 'تفاصيل الدفعة', path: undefined, isActive: true },
+        ];
+      }
+      // Legal case details
+      else if (location.pathname.startsWith('/legal/cases/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'الشؤون القانونية', path: '/legal/cases' },
+          { label: 'تفاصيل القضية', path: undefined, isActive: true },
+        ];
+      }
+      // Employee details
+      else if (location.pathname.startsWith('/hr/employees/')) {
+        items = [
+          { label: 'لوحة التحكم', path: '/dashboard' },
+          { label: 'الموارد البشرية', path: '/hr/employees' },
+          { label: 'تفاصيل الموظف', path: undefined, isActive: true },
         ];
       }
     }

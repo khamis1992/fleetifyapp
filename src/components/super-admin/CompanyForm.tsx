@@ -14,10 +14,11 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Building2, Mail, Phone, MapPin, CreditCard, Settings, Users, Briefcase } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, CreditCard, Settings, Users, Briefcase, Puzzle } from 'lucide-react';
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 import { BusinessTypeSelector, businessTypes } from './BusinessTypeSelector';
-import { BusinessType } from '@/types/modules';
+import { CompanyModulesManager } from './CompanyModulesManager';
+import { BusinessType, ModuleName } from '@/types/modules';
 
 const companySchema = z.object({
   name: z.string().min(2, 'اسم الشركة مطلوب (حد أدنى حرفين)'),
@@ -60,6 +61,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const { currency: companyCurrency } = useCompanyCurrency();
+  const [activeModules, setActiveModules] = React.useState<ModuleName[]>(['core', 'finance']);
 
   const {
     register,
@@ -119,19 +121,20 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         work_end_time: company.work_end_time || '17:00:00',
         auto_checkout_enabled: company.auto_checkout_enabled ?? true,
       });
+      // تعيين الوحدات المفعلة
+      setActiveModules(company.active_modules || ['core', 'finance']);
     } else if (!company && open) {
       // Reset form for new company
       reset();
+      // إعادة تعيين الوحدات للافتراضية
+      const selectedBusinessType = businessTypes.find(bt => bt.type === 'car_rental');
+      setActiveModules(selectedBusinessType?.modules || ['core', 'finance']);
     }
   }, [company, open, reset]);
 
   const onSubmit = async (data: CompanyFormData) => {
     setLoading(true);
     try {
-      // Get selected business type modules
-      const selectedBusinessType = businessTypes.find(bt => bt.type === data.business_type);
-      const activeModules = selectedBusinessType?.modules || ['core', 'finance'];
-
       const formattedData = {
         name: data.name,
         email: data.email || null,
@@ -220,8 +223,9 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="business" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="business">نوع النشاط</TabsTrigger>
+              <TabsTrigger value="modules">الوحدات</TabsTrigger>
               <TabsTrigger value="basic">المعلومات الأساسية</TabsTrigger>
               <TabsTrigger value="contact">معلومات الاتصال</TabsTrigger>
               <TabsTrigger value="subscription">الاشتراك</TabsTrigger>
@@ -243,6 +247,26 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                   <BusinessTypeSelector
                     selectedType={watch('business_type')}
                     onTypeSelect={(type) => setValue('business_type', type)}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="modules" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Puzzle className="h-4 w-4" />
+                    إدارة الوحدات
+                  </CardTitle>
+                  <CardDescription>
+                    تفعيل أو تعطيل الوحدات المتاحة لهذه الشركة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CompanyModulesManager
+                    activeModules={activeModules}
+                    onModulesChange={setActiveModules}
                   />
                 </CardContent>
               </Card>

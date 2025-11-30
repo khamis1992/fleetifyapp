@@ -16,9 +16,23 @@ import {
   Globe,
   Clock,
   Navigation,
-  Shield
+  Puzzle,
+  Car,
+  Calculator,
+  FileText,
+  Users,
+  UserCheck,
+  Package,
+  ShoppingCart,
+  Truck,
+  Heart,
+  Clipboard,
+  ChefHat,
+  ClipboardList
 } from 'lucide-react';
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
+import { ModuleName } from '@/types/modules';
+import { MODULE_REGISTRY } from '@/modules/moduleRegistry';
 
 
 interface Company {
@@ -43,7 +57,27 @@ interface Company {
   work_start_time?: string;
   work_end_time?: string;
   auto_checkout_enabled?: boolean;
+  active_modules?: ModuleName[];
 }
+
+// خريطة الأيقونات للوحدات
+const MODULE_ICONS: Record<ModuleName, React.ComponentType<{ className?: string }>> = {
+  core: Settings,
+  finance: Calculator,
+  vehicles: Car,
+  properties: Building2,
+  contracts: FileText,
+  customers: Users,
+  tenants: UserCheck,
+  inventory: Package,
+  sales: ShoppingCart,
+  suppliers: Truck,
+  patients: Heart,
+  appointments: Calendar,
+  medical_records: Clipboard,
+  menu: ChefHat,
+  orders: ClipboardList
+};
 
 interface CompanyDetailsDialogProps {
   open: boolean;
@@ -288,6 +322,34 @@ export const CompanyDetailsDialog: React.FC<CompanyDetailsDialogProps> = ({
                   <p className="text-sm font-medium text-muted-foreground mb-1">العملة</p>
                   <p>{company.currency || companyCurrency}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Modules */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Puzzle className="h-4 w-4" />
+                الوحدات المفعلة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {company.active_modules && company.active_modules.length > 0 ? (
+                  company.active_modules.map((moduleName) => {
+                    const config = MODULE_REGISTRY[moduleName];
+                    const Icon = MODULE_ICONS[moduleName];
+                    return (
+                      <Badge key={moduleName} variant="default" className="gap-1.5 py-1.5 px-3">
+                        {Icon && <Icon className="h-3.5 w-3.5" />}
+                        {config?.display_name_ar || moduleName}
+                      </Badge>
+                    );
+                  })
+                ) : (
+                  <span className="text-sm text-muted-foreground">لا توجد وحدات مفعلة</span>
+                )}
               </div>
             </CardContent>
           </Card>

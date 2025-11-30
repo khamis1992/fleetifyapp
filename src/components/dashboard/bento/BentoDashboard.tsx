@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { SkeletonMetrics, SkeletonWidget } from '@/components/loaders';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -263,13 +264,13 @@ const BentoDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: stats } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const [fabOpen, setFabOpen] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
   const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
   // Fleet Status Query
-  const { data: fleetStatus } = useQuery({
+  const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
     queryKey: ['fleet-status-bento', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return null;
@@ -451,62 +452,70 @@ const BentoDashboard: React.FC = () => {
       <div className="grid grid-cols-12 gap-4">
         
         {/* Stats Row - 4 Interactive cards */}
-        <div className="col-span-3">
-          <StatCard
-            title="إجمالي المركبات"
-            value={stats?.totalVehicles || 0}
-            change={stats?.vehiclesChange}
-            icon={Car}
-            iconBg="bg-coral-100 text-coral-600"
-            progressLabel="نشاط المركبات"
-            progressValue={stats?.vehicleActivityRate || 85}
-            progressColor="bg-coral-500"
-            linkTo="/fleet"
-            sparklineData={revenueData?.map(item => item.value) || []}
-          />
-        </div>
+        {statsLoading ? (
+          <div className="col-span-12">
+            <SkeletonMetrics count={4} columns={{ sm: 2, md: 2, lg: 4 }} />
+          </div>
+        ) : (
+          <>
+            <div className="col-span-3">
+              <StatCard
+                title="إجمالي المركبات"
+                value={stats?.totalVehicles || 0}
+                change={stats?.vehiclesChange}
+                icon={Car}
+                iconBg="bg-coral-100 text-coral-600"
+                progressLabel="نشاط المركبات"
+                progressValue={stats?.vehicleActivityRate || 85}
+                progressColor="bg-coral-500"
+                linkTo="/fleet"
+                sparklineData={revenueData?.map(item => item.value) || []}
+              />
+            </div>
 
-        <div className="col-span-3">
-          <StatCard
-            title="العقود النشطة"
-            value={stats?.activeContracts || 0}
-            change={stats?.contractsChange}
-            icon={FileText}
-            iconBg="bg-blue-100 text-blue-600"
-            progressLabel="معدل الإكمال"
-            progressValue={stats?.contractCompletionRate || 78}
-            progressColor="bg-blue-500"
-            linkTo="/contracts"
-            sparklineData={revenueData?.map(item => item.value) || []}
-          />
-        </div>
+            <div className="col-span-3">
+              <StatCard
+                title="العقود النشطة"
+                value={stats?.activeContracts || 0}
+                change={stats?.contractsChange}
+                icon={FileText}
+                iconBg="bg-blue-100 text-blue-600"
+                progressLabel="معدل الإكمال"
+                progressValue={stats?.contractCompletionRate || 78}
+                progressColor="bg-blue-500"
+                linkTo="/contracts"
+                sparklineData={revenueData?.map(item => item.value) || []}
+              />
+            </div>
 
-        <div className="col-span-3">
-          <StatCard
-            title="إجمالي العملاء"
-            value={stats?.totalCustomers || 0}
-            change={stats?.customersChange}
-            icon={Users}
-            iconBg="bg-green-100 text-green-600"
-            progressLabel="رضا العملاء"
-            progressValue={stats?.customerSatisfactionRate || 92}
-            progressColor="bg-green-500"
-            linkTo="/customers"
-            sparklineData={revenueData?.map(item => item.value) || []}
-          />
-        </div>
+            <div className="col-span-3">
+              <StatCard
+                title="إجمالي العملاء"
+                value={stats?.totalCustomers || 0}
+                change={stats?.customersChange}
+                icon={Users}
+                iconBg="bg-green-100 text-green-600"
+                progressLabel="رضا العملاء"
+                progressValue={stats?.customerSatisfactionRate || 92}
+                progressColor="bg-green-500"
+                linkTo="/customers"
+                sparklineData={revenueData?.map(item => item.value) || []}
+              />
+            </div>
 
-        <div className="col-span-3">
-          <StatCard
-            title="إيرادات الشهر"
-            value={formatCurrency(stats?.monthlyRevenue || 0)}
-            change={stats?.revenueChange}
-            icon={Banknote}
-            iconBg="bg-amber-100 text-amber-600"
-            linkTo="/finance"
-            sparklineData={revenueData?.map(item => item.value) || []}
-          />
-        </div>
+            <div className="col-span-3">
+              <StatCard
+                title="إيرادات الشهر"
+                value={formatCurrency(stats?.monthlyRevenue || 0)}
+                change={stats?.revenueChange}
+                icon={Banknote}
+                iconBg="bg-amber-100 text-amber-600"
+                linkTo="/finance"
+                sparklineData={revenueData?.map(item => item.value) || []}
+              />
+            </div>
+          </>
+        )}
 
         {/* Interactive Financial Performance Chart */}
         <motion.div 

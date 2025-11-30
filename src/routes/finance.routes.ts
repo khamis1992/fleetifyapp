@@ -1,0 +1,275 @@
+/**
+ * Finance Routes
+ * Routes for financial management, invoices, payments, etc.
+ */
+
+import { lazy } from 'react';
+import type { RouteConfig } from './types';
+
+// Lazy loaded components
+const Finance = lazy(() => import('@/pages/Finance'));
+const FinanceHub = lazy(() => import('@/pages/finance/FinanceHub'));
+const ChartOfAccounts = lazy(() => import('@/pages/finance/ChartOfAccounts'));
+const ChartOfAccountsUpgrade = lazy(() => import('@/pages/finance/ChartOfAccountsUpgrade'));
+const Ledger = lazy(() => import('@/pages/finance/Ledger'));
+const JournalEntries = lazy(() => import('@/pages/finance/JournalEntries'));
+const Invoices = lazy(() => import('@/pages/finance/Invoices'));
+const InvoiceDetails = lazy(() => import('@/pages/finance/InvoiceDetails'));
+const Payments = lazy(() => import('@/pages/finance/Payments'));
+const Treasury = lazy(() => import('@/pages/finance/Treasury'));
+const BankReconciliation = lazy(() => import('@/pages/finance/BankReconciliation'));
+const FinancialReports = lazy(() => import('@/pages/finance/FinancialReports'));
+const ARAgingReport = lazy(() => import('@/pages/finance/ARAgingReport'));
+const APAgingReport = lazy(() => import('@/pages/finance/APAgingReport'));
+const PaymentTracking = lazy(() => import('@/pages/finance/PaymentTracking'));
+const Vendors = lazy(() => import('@/pages/finance/Vendors'));
+const VendorCategories = lazy(() => import('@/pages/finance/VendorCategories'));
+const PurchaseOrders = lazy(() => import('@/pages/finance/PurchaseOrders'));
+const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
+
+export const financeRoutes: RouteConfig[] = [
+  {
+    path: '/finance',
+    component: Finance,
+    lazy: true,
+    exact: true,
+    title: 'المالية',
+    description: 'Finance management',
+    group: 'finance',
+    priority: 50,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/hub',
+    component: FinanceHub,
+    lazy: true,
+    exact: true,
+    title: 'المركز المالي',
+    description: 'Finance hub',
+    group: 'finance',
+    priority: 51,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/chart-of-accounts',
+    component: ChartOfAccounts,
+    lazy: true,
+    exact: true,
+    title: 'دليل الحسابات',
+    description: 'Chart of accounts',
+    group: 'finance',
+    priority: 52,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/chart-of-accounts-upgrade',
+    component: ChartOfAccountsUpgrade,
+    lazy: true,
+    exact: true,
+    title: 'ترقية دليل الحسابات',
+    description: 'Chart of accounts upgrade',
+    group: 'finance',
+    priority: 53,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/ledger',
+    component: Ledger,
+    lazy: true,
+    exact: true,
+    title: 'دفتر الأستاذ',
+    description: 'General ledger',
+    group: 'finance',
+    priority: 54,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/journal-entries',
+    component: JournalEntries,
+    lazy: true,
+    exact: true,
+    title: 'القيود اليومية',
+    description: 'Journal entries',
+    group: 'finance',
+    priority: 55,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/invoices',
+    component: Invoices,
+    lazy: true,
+    exact: true,
+    title: 'الفواتير',
+    description: 'Invoices',
+    group: 'finance',
+    priority: 56,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/invoices/:invoiceId',
+    component: InvoiceDetails,
+    lazy: true,
+    exact: true,
+    title: 'تفاصيل الفاتورة',
+    description: 'Invoice details',
+    group: 'finance',
+    priority: 57,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/payments',
+    component: Payments,
+    lazy: true,
+    exact: true,
+    title: 'المدفوعات',
+    description: 'Payments',
+    group: 'finance',
+    priority: 58,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/payments/quick',
+    component: QuickPayment,
+    lazy: true,
+    exact: true,
+    title: 'تسجيل دفعة سريعة',
+    description: 'Quick payment',
+    group: 'finance',
+    priority: 59,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/treasury',
+    component: Treasury,
+    lazy: true,
+    exact: true,
+    title: 'الخزينة والبنوك',
+    description: 'Treasury and banks',
+    group: 'finance',
+    priority: 60,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/bank-reconciliation',
+    component: BankReconciliation,
+    lazy: true,
+    exact: true,
+    title: 'تسوية البنوك',
+    description: 'Bank reconciliation',
+    group: 'finance',
+    priority: 61,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/reports',
+    component: FinancialReports,
+    lazy: true,
+    exact: true,
+    title: 'التقارير المالية',
+    description: 'Financial reports',
+    group: 'finance',
+    priority: 62,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/ar-aging',
+    component: ARAgingReport,
+    lazy: true,
+    exact: true,
+    title: 'الذمم المدينة',
+    description: 'Accounts receivable aging',
+    group: 'finance',
+    priority: 63,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/ap-aging',
+    component: APAgingReport,
+    lazy: true,
+    exact: true,
+    title: 'الذمم الدائنة',
+    description: 'Accounts payable aging',
+    group: 'finance',
+    priority: 64,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/payment-tracking',
+    component: PaymentTracking,
+    lazy: true,
+    exact: true,
+    title: 'تتبع المدفوعات',
+    description: 'Payment tracking',
+    group: 'finance',
+    priority: 65,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/vendors',
+    component: Vendors,
+    lazy: true,
+    exact: true,
+    title: 'الموردين',
+    description: 'Vendors',
+    group: 'finance',
+    priority: 66,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/vendor-categories',
+    component: VendorCategories,
+    lazy: true,
+    exact: true,
+    title: 'تصنيفات الموردين',
+    description: 'Vendor categories',
+    group: 'finance',
+    priority: 67,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/finance/purchase-orders',
+    component: PurchaseOrders,
+    lazy: true,
+    exact: true,
+    title: 'أوامر الشراء',
+    description: 'Purchase orders',
+    group: 'finance',
+    priority: 68,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/financial-tracking',
+    component: FinancialTracking,
+    lazy: true,
+    exact: true,
+    title: 'التتبع المالي',
+    description: 'Financial tracking',
+    group: 'finance',
+    priority: 69,
+    protected: true,
+    layout: 'bento',
+  },
+];
+
+export default financeRoutes;
+

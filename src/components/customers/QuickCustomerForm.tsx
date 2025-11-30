@@ -1,282 +1,304 @@
-/**
- * Quick Customer Creation Component
- * 
- * Minimal two-field form for rapid customer creation:
- * - Name + Phone only (required)
- * - Auto-generated customer code
- * - "Add Details Later" workflow
- * - 80% faster than full form
- */
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { MobileInput } from '@/components/mobile';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Zap, User, Phone, AlertCircle, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, User, Phone, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// Validation schema
+const quickCustomerSchema = z.object({
+  full_name: z.string().min(2, 'الاسم يجب أن يكون أكثر من حرفين'),
+  phone: z.string().min(8, 'رقم الهاتف غير صحيح'),
+  national_id: z.string().min(5, 'الرقم الشخصي غير صحيح'),
+});
+
+type QuickCustomerFormData = z.infer<typeof quickCustomerSchema>;
 
 interface QuickCustomerFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: (customerId: string, customerData: any) => void;
+  onCustomerCreated?: (customer: { id: string; full_name: string }) => void;
 }
 
 export const QuickCustomerForm: React.FC<QuickCustomerFormProps> = ({
   open,
   onOpenChange,
-  onSuccess
+  onCustomerCreated,
 }) => {
-  const { toast } = useToast();
-  const [isCreating, setIsCreating] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: ''
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    checking: boolean;
+    exists: boolean;
+    existingCustomer?: { id: string; full_name: string };
+  }>({ checking: false, exists: false });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<QuickCustomerFormData>({
+    resolver: zodResolver(quickCustomerSchema),
+    defaultValues: {
+      full_name: '',
+      phone: '',
+      national_id: '',
+    },
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Reset form when dialog opens
+  const nationalId = watch('national_id');
+
+  // Check for duplicate national_id
   React.useEffect(() => {
-    if (open) {
-      setFormData({ name: '', phone: '' });
-      setErrors({});
-    }
-  }, [open]);
+    const checkDuplicate = async () => {
+      if (!nationalId || nationalId.length < 5 || !user?.profile?.company_id) {
+        setDuplicateCheck({ checking: false, exists: false });
+        return;
+      }
 
-  // Validate form
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
+      setDuplicateCheck({ checking: true, exists: false });
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'الاسم مطلوب';
-    }
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, full_name')
+        .eq('company_id', user.profile.company_id)
+        .eq('national_id', nationalId)
+        .maybeSingle();
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب';
-    } else if (formData.phone.length < 8) {
-      newErrors.phone = 'رقم الهاتف يجب أن يكون 8 أرقام على الأقل';
-    }
+      if (error) {
+        console.error('Error checking duplicate:', error);
+        setDuplicateCheck({ checking: false, exists: false });
+        return;
+      }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+      if (data) {
+        setDuplicateCheck({
+          checking: false,
+          exists: true,
+          existingCustomer: { id: data.id, full_name: data.full_name },
+        });
+      } else {
+        setDuplicateCheck({ checking: false, exists: false });
+      }
+    };
 
-  // Generate unique customer code
-  const generateCustomerCode = async (companyId: string): Promise<string> => {
-    const prefix = 'IND';
-    const year = new Date().getFullYear().toString().slice(-2);
-    
-    // Get count of existing customers
-    const { count, error } = await supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .like('customer_code', `${prefix}-${year}-%`);
+    const timer = setTimeout(checkDuplicate, 500);
+    return () => clearTimeout(timer);
+  }, [nationalId, user?.profile?.company_id]);
 
-    if (error) {
-      console.error('Error counting customers:', error);
-      // Fallback to timestamp-based code
-      return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
-    }
+  // Create customer mutation
+  const createCustomerMutation = useMutation({
+    mutationFn: async (data: QuickCustomerFormData) => {
+      if (!user?.profile?.company_id) {
+        throw new Error('Company ID not found');
+      }
 
-    const nextNumber = (count || 0) + 1;
-    return `${prefix}-${year}-${nextNumber.toString().padStart(4, '0')}`;
-  };
-
-  // Create customer
-  const handleCreate = async () => {
-    if (!validate()) return;
-
-    setIsCreating(true);
-
-    try {
-      // Get user's company
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
-
-      // Generate customer code
-      const customerCode = await generateCustomerCode(profile.company_id);
-
-      // Create customer with minimal data
-      const { data: newCustomer, error: createError } = await supabase
+      const { data: newCustomer, error } = await supabase
         .from('customers')
         .insert({
-          company_id: profile.company_id,
-          customer_code: customerCode,
-          first_name_ar: formData.name,
-          phone: formData.phone,
-          customer_type: 'individual',
-          is_active: true,
-          // Add note that details need to be completed later
-          notes: 'تم الإنشاء السريع - يحتاج إلى استكمال البيانات'
+          full_name: data.full_name,
+          phone: data.phone,
+          national_id: data.national_id,
+          company_id: user.profile.company_id,
+          status: 'active',
         })
-        .select()
+        .select('id, full_name')
         .single();
 
-      if (createError) throw createError;
-
-      toast({
-        title: '✅ تم إنشاء العميل بنجاح',
-        description: `رقم العميل: ${customerCode}`,
-      });
-
-      // Call success callback
-      onSuccess?.(newCustomer.id, newCustomer);
-
-      // Close dialog
+      if (error) throw error;
+      return newCustomer;
+    },
+    onSuccess: (newCustomer) => {
+      toast.success('تم إضافة العميل بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      reset();
       onOpenChange(false);
-
-    } catch (error: any) {
+      onCustomerCreated?.(newCustomer);
+    },
+    onError: (error: Error) => {
       console.error('Error creating customer:', error);
-      toast({
-        title: '❌ فشل إنشاء العميل',
-        description: error.message || 'حدث خطأ غير متوقع',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreating(false);
+      toast.error('حدث خطأ أثناء إضافة العميل');
+    },
+  });
+
+  const onSubmit = (data: QuickCustomerFormData) => {
+    if (duplicateCheck.exists) {
+      toast.error('العميل موجود مسبقاً بهذا الرقم الشخصي');
+      return;
+    }
+    createCustomerMutation.mutate(data);
+  };
+
+  const handleUseExisting = () => {
+    if (duplicateCheck.existingCustomer) {
+      onOpenChange(false);
+      onCustomerCreated?.(duplicateCheck.existingCustomer);
+      reset();
     }
   };
 
-  // Handle Enter key
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isCreating) {
-      handleCreate();
-    }
+  const handleClose = () => {
+    reset();
+    setDuplicateCheck({ checking: false, exists: false });
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-500" />
+            <User className="h-5 w-5 text-coral-500" />
             إضافة عميل سريع
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
-              أسرع 80%
-            </Badge>
           </DialogTitle>
           <DialogDescription>
-            اسم ورقم الهاتف فقط - يمكن إضافة التفاصيل لاحقاً
+            أدخل البيانات الأساسية للعميل. يمكنك إضافة باقي التفاصيل لاحقاً.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Name Field */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Full Name */}
           <div className="space-y-2">
-            <Label htmlFor="quick-name" className="flex items-center gap-2">
+            <Label htmlFor="full_name" className="flex items-center gap-1">
               <User className="h-4 w-4" />
-              الاسم *
+              الاسم الكامل <span className="text-red-500">*</span>
             </Label>
-            <MobileInput
-              id="quick-name"
-              fieldType="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              onKeyPress={handleKeyPress}
-              placeholder="مثال: أحمد محمد"
-              showValidation
-              validationError={errors.name}
-              autoFocus
+            <Input
+              id="full_name"
+              {...register('full_name')}
+              placeholder="أدخل اسم العميل"
+              className={cn(errors.full_name && 'border-red-500')}
             />
+            {errors.full_name && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {errors.full_name.message}
+              </p>
+            )}
           </div>
 
-          {/* Phone Field */}
+          {/* Phone */}
           <div className="space-y-2">
-            <Label htmlFor="quick-phone" className="flex items-center gap-2">
+            <Label htmlFor="phone" className="flex items-center gap-1">
               <Phone className="h-4 w-4" />
-              رقم الهاتف *
+              رقم الهاتف <span className="text-red-500">*</span>
             </Label>
-            <MobileInput
-              id="quick-phone"
-              fieldType="mobile"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              onKeyPress={handleKeyPress}
-              placeholder="مثال: 50123456"
-              showValidation
-              validationError={errors.phone}
+            <Input
+              id="phone"
+              {...register('phone')}
+              placeholder="+974 5555 5555"
+              className={cn(errors.phone && 'border-red-500')}
               dir="ltr"
             />
-          </div>
-
-          {/* Info Alert */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-1">
-                <p className="font-medium">سيتم إنشاء العميل تلقائياً مع:</p>
-                <ul className="text-sm text-muted-foreground space-y-1 mr-4">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-3 w-3 text-green-600" />
-                    رقم عميل تلقائي
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-3 w-3 text-green-600" />
-                    نوع العميل: فردي
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-3 w-3 text-green-600" />
-                    حالة نشط
-                  </li>
-                </ul>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 يمكنك إضافة البطاقة المدنية والعنوان وباقي التفاصيل لاحقاً
-                </p>
-              </div>
-            </AlertDescription>
-          </Alert>
-
-          {/* Time Comparison */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <p className="font-medium text-green-900">الوقت المتوقع</p>
-                <p className="text-xs text-green-700">النموذج الكامل: 2-3 دقائق</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-2xl text-green-600">15 ثانية</p>
-                <p className="text-xs text-green-700">الإضافة السريعة ⚡</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isCreating}
-          >
-            إلغاء
-          </Button>
-          <Button
-            onClick={handleCreate}
-            disabled={isCreating || !formData.name.trim() || !formData.phone.trim()}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {isCreating ? (
-              <>جاري الإنشاء...</>
-            ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2" />
-                إضافة سريعة
-              </>
+            {errors.phone && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {errors.phone.message}
+              </p>
             )}
-          </Button>
-        </DialogFooter>
+          </div>
+
+          {/* National ID */}
+          <div className="space-y-2">
+            <Label htmlFor="national_id" className="flex items-center gap-1">
+              <CreditCard className="h-4 w-4" />
+              الرقم الشخصي <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="national_id"
+                {...register('national_id')}
+                placeholder="أدخل الرقم الشخصي"
+                className={cn(
+                  errors.national_id && 'border-red-500',
+                  duplicateCheck.exists && 'border-amber-500'
+                )}
+                dir="ltr"
+              />
+              {duplicateCheck.checking && (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-neutral-400" />
+              )}
+              {!duplicateCheck.checking && duplicateCheck.exists && (
+                <AlertCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+              )}
+              {!duplicateCheck.checking && !duplicateCheck.exists && nationalId && nationalId.length >= 5 && (
+                <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              )}
+            </div>
+            {errors.national_id && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {errors.national_id.message}
+              </p>
+            )}
+            
+            {/* Duplicate Warning */}
+            {duplicateCheck.exists && duplicateCheck.existingCustomer && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 mb-2">
+                  ⚠️ العميل موجود مسبقاً: <strong>{duplicateCheck.existingCustomer.full_name}</strong>
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUseExisting}
+                  className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                >
+                  استخدام العميل الموجود
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || duplicateCheck.exists || duplicateCheck.checking}
+              className="bg-coral-500 hover:bg-coral-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 ml-2" />
+                  حفظ ومتابعة
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default QuickCustomerForm;

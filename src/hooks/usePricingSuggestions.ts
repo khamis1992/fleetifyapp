@@ -14,12 +14,24 @@ interface PricingSuggestion {
     value: number;
     type: 'base' | 'adjustment' | 'discount';
   }[];
+  // New: Customer-specific pricing
+  customerHistory?: {
+    lastPrice: number;
+    lastDate: string;
+    contractCount: number;
+    averagePrice: number;
+  };
+  // New: Vehicle default price
+  vehicleDefaultPrice?: number;
+  // New: Similar contracts average
+  similarContractsAverage?: number;
 }
 
 interface UsePricingSuggestionsParams {
   contractType: string;
   rentalDays: number;
   vehicleId?: string;
+  customerId?: string; // NEW: Customer ID for history lookup
   enabled?: boolean;
 }
 
@@ -27,37 +39,89 @@ interface UsePricingSuggestionsParams {
  * Custom hook for smart pricing suggestions based on historical data
  *
  * Features:
- * - Analyzes last 5 similar contracts
- * - Applies seasonal adjustments (15% peak season)
- * - Applies duration discounts (10% for 7+ days, 20% for 30+ days)
- * - Returns confidence level based on sample size
+ * - Customer history: Last price used with this customer
+ * - Similar contracts: Average of last 5 similar contracts
+ * - Vehicle default: Default price from vehicle record
+ * - Seasonal adjustments (15% peak season)
+ * - Duration discounts (10% for 7+ days, 20% for 30+ days)
  *
  * @example
  * const { data: pricing } = usePricingSuggestions({
  *   contractType: 'weekly_rental',
  *   rentalDays: 7,
- *   vehicleId: 'uuid'
+ *   vehicleId: 'uuid',
+ *   customerId: 'uuid'
  * });
  */
 export function usePricingSuggestions({
   contractType,
   rentalDays,
   vehicleId,
+  customerId,
   enabled = true
 }: UsePricingSuggestionsParams) {
   const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ['pricing-suggestions', companyId, contractType, rentalDays, vehicleId],
+    queryKey: ['pricing-suggestions', companyId, contractType, rentalDays, vehicleId, customerId],
     queryFn: async (): Promise<PricingSuggestion> => {
       if (!companyId || !contractType || rentalDays <= 0) {
         throw new Error('Missing required parameters');
       }
 
-      // 1. Fetch similar contracts from the last 6 months
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+      // === 1. Fetch Customer History (NEW) ===
+      let customerHistory: PricingSuggestion['customerHistory'] = undefined;
+      
+      if (customerId) {
+        const { data: customerContracts, error: customerError } = await supabase
+          .from('contracts')
+          .select('contract_amount, rental_days, start_date, daily_rate')
+          .eq('company_id', companyId)
+          .eq('customer_id', customerId)
+          .not('contract_amount', 'is', null)
+          .gt('contract_amount', 0)
+          .order('start_date', { ascending: false })
+          .limit(10);
+
+        if (!customerError && customerContracts && customerContracts.length > 0) {
+          const lastContract = customerContracts[0];
+          const totalAmount = customerContracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0);
+          
+          customerHistory = {
+            lastPrice: lastContract.contract_amount || 0,
+            lastDate: lastContract.start_date,
+            contractCount: customerContracts.length,
+            averagePrice: Math.round(totalAmount / customerContracts.length),
+          };
+        }
+      }
+
+      // === 2. Fetch Vehicle Default Price (NEW) ===
+      let vehicleDefaultPrice: number | undefined = undefined;
+      
+      if (vehicleId && vehicleId !== 'none') {
+        const { data: vehicle, error: vehicleError } = await supabase
+          .from('vehicles')
+          .select('daily_rate, weekly_rate, monthly_rate')
+          .eq('id', vehicleId)
+          .single();
+
+        if (!vehicleError && vehicle) {
+          // Get rate based on rental duration
+          if (rentalDays >= 30 && vehicle.monthly_rate) {
+            vehicleDefaultPrice = vehicle.monthly_rate;
+          } else if (rentalDays >= 7 && vehicle.weekly_rate) {
+            vehicleDefaultPrice = vehicle.weekly_rate * Math.ceil(rentalDays / 7);
+          } else if (vehicle.daily_rate) {
+            vehicleDefaultPrice = vehicle.daily_rate * rentalDays;
+          }
+        }
+      }
+
+      // === 3. Fetch Similar Contracts ===
       let query = supabase
         .from('contracts')
         .select('contract_amount, rental_days, start_date, vehicle_id')
@@ -67,7 +131,7 @@ export function usePricingSuggestions({
         .not('contract_amount', 'is', null)
         .gt('contract_amount', 0)
         .order('start_date', { ascending: false })
-        .limit(10); // Get more for better filtering
+        .limit(10);
 
       // If vehicle specified, prioritize that vehicle's history
       if (vehicleId && vehicleId !== 'none') {
@@ -81,16 +145,16 @@ export function usePricingSuggestions({
         throw error;
       }
 
-      // 2. Filter contracts with similar duration (±20%)
+      // Filter contracts with similar duration (±20%)
       const durationRange = rentalDays * 0.2;
       const similarContracts = (contracts || []).filter(
         (contract) =>
           contract.rental_days >= rentalDays - durationRange &&
           contract.rental_days <= rentalDays + durationRange
-      ).slice(0, 5); // Take top 5
+      ).slice(0, 5);
 
-      // 3. Calculate base price (average of similar contracts)
-      let basePrice = 0;
+      // Calculate similar contracts average
+      let similarContractsAverage: number | undefined = undefined;
       const sampleSize = similarContracts.length;
 
       if (sampleSize > 0) {
@@ -98,80 +162,101 @@ export function usePricingSuggestions({
           (sum, contract) => sum + (contract.contract_amount || 0),
           0
         );
-        basePrice = totalPrice / sampleSize;
-      } else {
-        // Fallback: Calculate based on average daily rate from all contracts
-        const { data: allContracts } = await supabase
-          .from('contracts')
-          .select('contract_amount, rental_days')
-          .eq('company_id', companyId)
-          .eq('contract_type', contractType)
-          .gte('start_date', sixMonthsAgo.toISOString())
-          .not('contract_amount', 'is', null)
-          .gt('contract_amount', 0)
-          .limit(20);
-
-        if (allContracts && allContracts.length > 0) {
-          const avgDailyRate =
-            allContracts.reduce(
-              (sum, c) => sum + (c.contract_amount || 0) / (c.rental_days || 1),
-              0
-            ) / allContracts.length;
-          basePrice = avgDailyRate * rentalDays;
-        } else {
-          // Ultimate fallback: rough estimate based on contract type
-          const fallbackRates: Record<string, number> = {
-            daily_rental: 150,
-            weekly_rental: 900,
-            monthly_rental: 3000,
-            long_term_rental: 2500,
-            short_term_rental: 500,
-          };
-          basePrice = fallbackRates[contractType] || 1000;
-        }
+        similarContractsAverage = Math.round(totalPrice / sampleSize);
       }
 
-      // 4. Apply seasonal adjustment (15% increase for peak season)
-      // Peak season: Summer (June, July, August) and Winter holidays (December, January)
+      // === 4. Determine Base Price (Priority: Customer History > Similar Contracts > Vehicle Default) ===
+      let basePrice = 0;
+      let basePriceSource = 'fallback';
+
+      if (customerHistory && customerHistory.lastPrice > 0) {
+        // Priority 1: Use customer's last price
+        basePrice = customerHistory.lastPrice;
+        basePriceSource = 'customer_history';
+      } else if (similarContractsAverage && similarContractsAverage > 0) {
+        // Priority 2: Use similar contracts average
+        basePrice = similarContractsAverage;
+        basePriceSource = 'similar_contracts';
+      } else if (vehicleDefaultPrice && vehicleDefaultPrice > 0) {
+        // Priority 3: Use vehicle default price
+        basePrice = vehicleDefaultPrice;
+        basePriceSource = 'vehicle_default';
+      } else {
+        // Fallback: rough estimate based on contract type
+        const fallbackRates: Record<string, number> = {
+          daily: 150 * rentalDays,
+          daily_rental: 150 * rentalDays,
+          weekly: 900 * Math.ceil(rentalDays / 7),
+          weekly_rental: 900 * Math.ceil(rentalDays / 7),
+          monthly: 3000 * Math.ceil(rentalDays / 30),
+          monthly_rental: 3000 * Math.ceil(rentalDays / 30),
+          long_term_rental: 2500,
+          short_term_rental: 500,
+        };
+        basePrice = fallbackRates[contractType] || 1000;
+        basePriceSource = 'fallback';
+      }
+
+      // === 5. Apply Seasonal Adjustment ===
       const currentMonth = new Date().getMonth() + 1;
       const isPeakSeason = [12, 1, 6, 7, 8].includes(currentMonth);
       const seasonalAdjustment = isPeakSeason ? basePrice * 0.15 : 0;
 
-      // 5. Apply duration discounts
+      // === 6. Apply Duration Discounts ===
       let durationDiscount = 0;
       if (rentalDays >= 30) {
-        durationDiscount = (basePrice + seasonalAdjustment) * 0.2; // 20% discount for 30+ days
+        durationDiscount = (basePrice + seasonalAdjustment) * 0.2;
       } else if (rentalDays >= 7) {
-        durationDiscount = (basePrice + seasonalAdjustment) * 0.1; // 10% discount for 7+ days
+        durationDiscount = (basePrice + seasonalAdjustment) * 0.1;
       }
 
-      // 6. Calculate final suggested price
-      const suggestedPrice = Math.round(
-        basePrice + seasonalAdjustment - durationDiscount
-      );
+      // === 7. Calculate Final Suggested Price ===
+      const suggestedPrice = Math.round(basePrice + seasonalAdjustment - durationDiscount);
 
-      // 7. Determine confidence level
+      // === 8. Determine Confidence Level ===
       let confidence: 'high' | 'medium' | 'low' = 'low';
-      if (sampleSize >= 4) {
+      if (customerHistory && customerHistory.contractCount >= 2) {
+        confidence = 'high'; // Customer history is most reliable
+      } else if (sampleSize >= 4) {
         confidence = 'high';
-      } else if (sampleSize >= 2) {
+      } else if (sampleSize >= 2 || customerHistory) {
         confidence = 'medium';
       }
 
-      // 8. Create breakdown for transparency
-      const breakdown = [
-        {
-          label: 'السعر الأساسي (متوسط عقود مشابهة)',
+      // === 9. Create Breakdown ===
+      const breakdown: PricingSuggestion['breakdown'] = [];
+
+      if (basePriceSource === 'customer_history' && customerHistory) {
+        breakdown.push({
+          label: `آخر سعر مع العميل (${new Date(customerHistory.lastDate).toLocaleDateString('ar-QA')})`,
+          value: Math.round(customerHistory.lastPrice),
+          type: 'base',
+        });
+      } else if (basePriceSource === 'similar_contracts') {
+        breakdown.push({
+          label: `متوسط العقود المشابهة (${sampleSize} عقود)`,
           value: Math.round(basePrice),
-          type: 'base' as const,
-        },
-      ];
+          type: 'base',
+        });
+      } else if (basePriceSource === 'vehicle_default') {
+        breakdown.push({
+          label: 'السعر الافتراضي للمركبة',
+          value: Math.round(basePrice),
+          type: 'base',
+        });
+      } else {
+        breakdown.push({
+          label: 'السعر التقديري',
+          value: Math.round(basePrice),
+          type: 'base',
+        });
+      }
 
       if (seasonalAdjustment > 0) {
         breakdown.push({
-          label: isPeakSeason ? 'تعديل الموسم (موسم ذروة +15%)' : 'تعديل الموسم',
+          label: 'تعديل الموسم (موسم ذروة +15%)',
           value: Math.round(seasonalAdjustment),
-          type: 'adjustment' as const,
+          type: 'adjustment',
         });
       }
 
@@ -180,7 +265,7 @@ export function usePricingSuggestions({
         breakdown.push({
           label: `خصم المدة (${rentalDays} يوم - ${discountPercent})`,
           value: -Math.round(durationDiscount),
-          type: 'discount' as const,
+          type: 'discount',
         });
       }
 
@@ -192,9 +277,14 @@ export function usePricingSuggestions({
         confidence,
         sampleSize,
         breakdown,
+        customerHistory,
+        vehicleDefaultPrice: vehicleDefaultPrice ? Math.round(vehicleDefaultPrice) : undefined,
+        similarContractsAverage,
       };
     },
     enabled: enabled && !!companyId && !!contractType && rentalDays > 0,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
+
+export default usePricingSuggestions;
