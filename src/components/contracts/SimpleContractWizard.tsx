@@ -89,9 +89,14 @@ interface SimpleContractWizardProps {
 
 interface Customer {
   id: string;
-  full_name: string;
-  phone_number?: string;
+  first_name: string | null;
+  last_name: string | null;
+  first_name_ar: string | null;
+  last_name_ar: string | null;
+  phone: string;
   national_id?: string;
+  // Computed display name
+  full_name?: string;
 }
 
 interface Vehicle {
@@ -119,7 +124,7 @@ const Step1CustomerVehicle: React.FC<{
 
   const filteredCustomers = customers.filter(c => 
     c.full_name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    c.phone_number?.includes(customerSearch) ||
+    c.phone?.includes(customerSearch) ||
     c.national_id?.includes(customerSearch)
   );
 
@@ -169,7 +174,7 @@ const Step1CustomerVehicle: React.FC<{
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
               <div>
                 <p className="font-semibold text-green-900">{selectedCustomer.full_name}</p>
-                <p className="text-sm text-green-700">{selectedCustomer.phone_number}</p>
+                <p className="text-sm text-green-700">{selectedCustomer.phone}</p>
               </div>
               <Button
                 type="button"
@@ -200,7 +205,7 @@ const Step1CustomerVehicle: React.FC<{
                     className="w-full p-3 text-right bg-white border rounded-lg hover:border-coral-300 hover:bg-coral-50/50 transition-colors"
                   >
                     <p className="font-medium">{customer.full_name}</p>
-                    <p className="text-sm text-neutral-500">{customer.phone_number}</p>
+                    <p className="text-sm text-neutral-500">{customer.phone}</p>
                   </button>
                 ))
               )}
@@ -497,7 +502,7 @@ const Step3Review: React.FC<{
               </div>
               <div>
                 <p className="font-semibold">{customer.full_name}</p>
-                <p className="text-sm text-neutral-500">{customer.phone_number}</p>
+                <p className="text-sm text-neutral-500">{customer.phone}</p>
               </div>
             </div>
           ) : (
@@ -604,7 +609,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
 
   const stepTitles = ['العميل والمركبة', 'التفاصيل والتسعير', 'المراجعة والإرسال'];
 
-  // Load customers
+  // Load customers with correct column names
   useEffect(() => {
     if (!companyId) return;
     
@@ -612,13 +617,25 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
       setIsLoadingCustomers(true);
       const { data, error } = await supabase
         .from('customers')
-        .select('id, full_name, phone_number, national_id')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
         .eq('company_id', companyId)
-        .order('full_name')
-        .limit(100);
+        .eq('is_active', true)
+        .order('first_name_ar', { nullsFirst: false })
+        .limit(200);
 
       if (!error && data) {
-        setCustomers(data);
+        // Map data to include computed full_name for display
+        const customersWithFullName = data.map(c => ({
+          ...c,
+          full_name: c.first_name_ar && c.last_name_ar 
+            ? `${c.first_name_ar} ${c.last_name_ar}`.trim()
+            : c.first_name && c.last_name 
+              ? `${c.first_name} ${c.last_name}`.trim()
+              : c.first_name_ar || c.first_name || 'عميل غير مسمى'
+        }));
+        setCustomers(customersWithFullName);
+      } else if (error) {
+        console.error('Error loading customers:', error);
       }
       setIsLoadingCustomers(false);
     };
