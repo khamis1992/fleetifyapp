@@ -174,11 +174,14 @@ function ContractsNew() {
     pageSize
   ]);
 
-  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } = useContractsData(filtersWithPagination);
+  const { contracts, filteredContracts, isLoading, isFetching, refetch, statistics, pagination } = useContractsData(filtersWithPagination);
 
   // Ensure contracts and filteredContracts are arrays
   const safeContracts = useMemo(() => (Array.isArray(contracts) ? contracts : []), [contracts]);
   const safeFilteredContracts = useMemo(() => (Array.isArray(filteredContracts) ? filteredContracts : []), [filteredContracts]);
+  
+  // Track if this is initial load (no data yet) vs. refetch (data exists)
+  const isInitialLoading = isLoading && safeFilteredContracts.length === 0;
   const safeStatistics = useMemo(
     () =>
       statistics || {
@@ -399,7 +402,9 @@ function ContractsNew() {
     return `${vehicleInfo}${plate ? ` | ${plate}` : ""}`;
   };
 
-  if (isLoading) {
+  // Only show full-page loading on initial load (no data yet)
+  // For subsequent searches, keep showing existing data
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -631,7 +636,8 @@ function ContractsNew() {
                       setSearchInput(e.target.value);
                     }}
                   />
-                  {searchInput && searchInput !== debouncedSearch && (
+                  {/* Show spinner while typing (before debounce) OR while fetching data */}
+                  {((searchInput && searchInput !== debouncedSearch) || (isFetching && !isInitialLoading)) && (
                     <div className="absolute left-4 top-1/2 -translate-y-1/2">
                       <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>

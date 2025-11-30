@@ -37,7 +37,7 @@ import { useCustomerLinkedAccounts } from '@/hooks/useCustomerAccounts'
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { getRateTypeLabel } from '@/hooks/useContractCalculations'
 import { usePricingSuggestions } from '@/hooks/usePricingSuggestions'
-import { TenantSelector } from './TenantSelector'
+import { CustomerSelector } from '@/components/shared/CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
 import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
@@ -345,13 +345,16 @@ export const CustomerVehicleStep: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Tenant Selection with Search and Create */}
-            <TenantSelector
-              value={data.customer_id}
-              onValueChange={(tenantId) => updateData({ customer_id: tenantId })}
-              placeholder="ابحث عن مستأجر أو أنشئ جديد..."
-              disabled={false}
-            />
+            {/* Customer Selection with Search */}
+            <div className="space-y-2">
+              <Label>المستأجر *</Label>
+              <CustomerSelector
+                value={data.customer_id}
+                onValueChange={(customerId) => updateData({ customer_id: customerId })}
+                placeholder="ابحث عن مستأجر أو اختر..."
+                disabled={false}
+              />
+            </div>
             
             <div className="space-y-2">
               <Label htmlFor="vehicle_id">المركبة</Label>

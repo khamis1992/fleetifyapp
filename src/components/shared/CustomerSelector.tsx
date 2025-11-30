@@ -32,29 +32,41 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const { companyId, user } = useUnifiedCompanyAccess();
 
+  // Fetch customers list with search
   const { data: customers, isLoading } = useQuery({
-    queryKey: ['customers-selector', companyId],
+    queryKey: ['customers-selector', companyId, searchValue],
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
       if (!companyId) throw new Error('Company not found');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select(`
           id,
           customer_type,
           first_name,
           last_name,
+          first_name_ar,
+          last_name_ar,
           company_name,
+          company_name_ar,
           phone,
           email,
           is_active
         `)
         .eq('company_id', companyId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .eq('is_active', true);
+
+      // Add search filter if search value exists
+      if (searchValue && searchValue.trim()) {
+        const search = searchValue.trim();
+        query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,first_name_ar.ilike.%${search}%,last_name_ar.ilike.%${search}%,company_name.ilike.%${search}%,company_name_ar.ilike.%${search}%,phone.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
 
       if (error) throw error;
       return data;
@@ -62,13 +74,47 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     enabled: !!user?.id && !!companyId,
   });
 
-  const selectedCustomer = customers?.find(customer => customer.id === value);
+  // Separately fetch the selected customer by ID to ensure it's always available
+  const { data: selectedCustomerData } = useQuery({
+    queryKey: ['customer-by-id', value],
+    queryFn: async () => {
+      if (!value) return null;
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          id,
+          customer_type,
+          first_name,
+          last_name,
+          first_name_ar,
+          last_name_ar,
+          company_name,
+          company_name_ar,
+          phone,
+          email,
+          is_active
+        `)
+        .eq('id', value)
+        .single();
+
+      if (error) return null;
+      return data;
+    },
+    enabled: !!value,
+  });
+
+  // Use selectedCustomerData if available, otherwise find from list
+  const selectedCustomer = selectedCustomerData || customers?.find(customer => customer.id === value);
 
   const getCustomerDisplayName = (customer: any) => {
     if (customer.customer_type === 'individual') {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+      // Prefer Arabic names, fallback to English
+      const firstName = customer.first_name_ar || customer.first_name || '';
+      const lastName = customer.last_name_ar || customer.last_name || '';
+      return `${firstName} ${lastName}`.trim() || 'عميل غير مسمى';
     }
-    return customer.company_name || 'عميل غير مسمى';
+    return customer.company_name_ar || customer.company_name || 'عميل غير مسمى';
   };
 
   const getCustomerSecondaryInfo = (customer: any) => {
@@ -106,13 +152,19 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full min-w-[400px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="بحث عن عميل..." />
-          <CommandEmpty>لم يتم العثور على عملاء.</CommandEmpty>
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder="بحث عن عميل..." 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandEmpty>
+            {isLoading ? 'جاري البحث...' : 'لم يتم العثور على عملاء.'}
+          </CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {isLoading ? (
               <CommandItem disabled>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 space-x-reverse">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                   <span>جاري التحميل...</span>
                 </div>

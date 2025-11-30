@@ -114,7 +114,7 @@ export const useContractsData = (filters: any = {}) => {
 
   // Fetch contracts with customer data (paginated)
   // استخدام getQueryKey مثل useCustomers لضمان إعادة الجلب عند تغير البحث
-  const { data: contractsResponse, isLoading, refetch } = useQuery({
+  const { data: contractsResponse, isLoading, isFetching, refetch } = useQuery({
     queryKey: getQueryKey(['contracts'], [
       filters?.page,
       filters?.pageSize,
@@ -559,6 +559,7 @@ export const useContractsData = (filters: any = {}) => {
     contracts,
     filteredContracts,
     isLoading,
+    isFetching,
     refetch,
     statistics,
     pagination: paginationInfo
