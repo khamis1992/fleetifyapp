@@ -21,6 +21,8 @@ interface PaymentReceiptProps {
   paidAmount?: number;
   remainingAmount?: number;
   showPaymentDetails?: boolean;
+  // معلومات المركبة
+  vehicleNumber?: string;
 }
 
 // دالة لتحويل الصورة إلى Base64
@@ -54,7 +56,8 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   totalAmount,
   paidAmount,
   remainingAmount,
-  showPaymentDetails = false
+  showPaymentDetails = false,
+  vehicleNumber
 }, ref) => {
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [stampBase64, setStampBase64] = useState<string>('');
@@ -376,6 +379,19 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
             </tr>
           </tbody>
         </table>
+
+        {/* رقم المركبة */}
+        {vehicleNumber && (
+          <table className="receipt-table">
+            <tbody>
+              <tr>
+                <td className="label-cell" style={{ fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>رقم المركبة/</td>
+                <td className="value-cell">{vehicleNumber}</td>
+                <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">Vehicle No.</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
 
         {/* المبلغ */}
         <table className="receipt-table">

@@ -804,7 +804,10 @@ const CustomerDetailsPageNew = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button className="bg-coral-500 hover:bg-coral-600 text-white gap-2">
+              <Button 
+                onClick={handleEdit}
+                className="bg-coral-500 hover:bg-coral-600 text-white gap-2"
+              >
                 <Edit3 className="w-4 h-4" />
                 تعديل
               </Button>

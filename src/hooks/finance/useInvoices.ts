@@ -64,6 +64,7 @@ const INVOICE_SELECT_FIELDS = `
   due_date,
   customer_id,
   vendor_id,
+  contract_id,
   invoice_type,
   subtotal,
   tax_amount,
@@ -76,7 +77,17 @@ const INVOICE_SELECT_FIELDS = `
   payment_status,
   notes,
   created_at,
-  updated_at
+  updated_at,
+  contracts:contract_id (
+    id,
+    contract_number,
+    vehicle_number,
+    vehicles:vehicle_id (
+      license_plate,
+      make,
+      model
+    )
+  )
 `;
 
 export const useInvoices = (filters?: InvoiceFilters) => {
@@ -164,10 +175,17 @@ export const useInvoices = (filters?: InvoiceFilters) => {
           throw error;
         }
 
+        // Map vehicle number to invoices
+        const mappedData = (data || []).map((invoice: any) => ({
+          ...invoice,
+          vehicle_number: invoice.contracts?.vehicle_number || 
+                         invoice.contracts?.vehicles?.license_plate || ''
+        }));
+
         // Return with pagination info if pagination is requested
         if (filters?.page || filters?.pageSize) {
           return {
-            data: data || [],
+            data: mappedData,
             pagination: {
               page,
               pageSize,
@@ -178,7 +196,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
           };
         }
 
-        return data || [];
+        return mappedData;
       } catch (error) {
         Sentry.captureException(error);
         throw error;

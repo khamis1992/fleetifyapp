@@ -51,6 +51,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
@@ -1053,7 +1054,13 @@ const ContractDetailsPage = () => {
           <InvoicePreviewDialog
             open={isPreviewDialogOpen}
             onOpenChange={setIsPreviewDialogOpen}
-            invoice={selectedInvoice}
+            invoice={{
+              ...selectedInvoice,
+              vehicle_number: contract?.vehicle_number || contract?.vehicles?.license_plate || '',
+              contract: {
+                vehicle_number: contract?.vehicle_number || contract?.vehicles?.license_plate || ''
+              }
+            }}
           />
         </>
       )}

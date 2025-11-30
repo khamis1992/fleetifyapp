@@ -41,7 +41,19 @@ export const useCustomerInvoices = (customerId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
-        .select('*')
+        .select(`
+          *,
+          contracts:contract_id (
+            id,
+            contract_number,
+            vehicle_number,
+            vehicles:vehicle_id (
+              license_plate,
+              make,
+              model
+            )
+          )
+        `)
         .eq('customer_id', customerId)
         .order('invoice_date', { ascending: false });
 
@@ -50,7 +62,12 @@ export const useCustomerInvoices = (customerId: string) => {
         throw error;
       }
 
-      return data || [];
+      // Map vehicle number to invoice
+      return (data || []).map(invoice => ({
+        ...invoice,
+        vehicle_number: invoice.contracts?.vehicle_number || 
+                       invoice.contracts?.vehicles?.license_plate || ''
+      }));
     },
     enabled: !!customerId
   });

@@ -128,6 +128,13 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
     `${invoice.customer?.first_name_ar || ''} ${invoice.customer?.last_name_ar || ''}`.trim() ||
     'عميل';
 
+  // الحصول على رقم المركبة من بيانات العقد أو الفاتورة
+  const vehicleNumber = invoice.vehicle?.license_plate || 
+    invoice.contract?.vehicle?.license_plate ||
+    invoice.vehicle_number ||
+    invoice.contract?.vehicle_number ||
+    '';
+
   // وصف الفاتورة
   const description = invoice.description || `فاتورة إيجار شهري - ${format(new Date(invoiceDate), 'MMMM yyyy', { locale: ar })}`;
 
@@ -159,6 +166,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             paidAmount={paidAmount}
             remainingAmount={remainingAmount}
             showPaymentDetails={remainingAmount > 0 || paidAmount > 0}
+            vehicleNumber={vehicleNumber}
           />
         </div>
       </DialogContent>
