@@ -285,10 +285,33 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         min-width: 44px;
       }
       
-      /* Optimize scrolling */
-      * {
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
+      /* CRITICAL: Enable scrolling on mobile */
+      html, body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+      }
+      
+      #root {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-height: 100vh !important;
+        height: auto !important;
+      }
+      
+      /* Only apply overscroll to body, not all elements */
+      body {
+        overscroll-behavior-y: contain;
+      }
+      
+      /* Ensure main scrolls */
+      main {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 100px !important;
       }
       
       /* Reduce repaints */

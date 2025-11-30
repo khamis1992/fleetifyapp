@@ -360,13 +360,8 @@ export default function Maintenance() {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [])
 
-  // Prevent body scroll when panel is open
-  useEffect(() => {
-    document.body.style.overflow = sidePanelOpen ? 'hidden' : 'auto'
-    return () => {
-      document.body.style.overflow = 'auto'
-    }
-  }, [sidePanelOpen])
+  // Note: Removed body scroll lock to fix mobile scrolling issues
+  // The side panel now uses proper overlay instead of blocking scroll
 
   if (maintenanceLoading) {
     return (

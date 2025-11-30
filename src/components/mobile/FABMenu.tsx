@@ -39,18 +39,8 @@ export function FABMenu({ isOpen, onClose, actions }: FABMenuProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent scroll when menu is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  // Note: Removed body scroll lock to fix mobile scrolling issues
+  // The FAB menu now uses proper overlay that doesn't block page scroll
 
   // Handle action click
   const handleActionClick = useCallback(

@@ -1,21 +1,22 @@
 /**
  * Simple Contract Wizard - 3 Steps Version
- * Simplified contract creation flow:
+ * Redesigned to match Dashboard color scheme (coral-500 theme)
+ * 
+ * Steps:
  * 1. العميل والمركبة (Customer & Vehicle)
  * 2. التفاصيل والتسعير (Details & Pricing)
  * 3. المراجعة والإرسال (Review & Submit)
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,8 +31,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Send, 
-  Save, 
-  Clock,
   User,
   Car,
   DollarSign,
@@ -40,6 +39,10 @@ import {
   Check,
   Plus,
   Loader2,
+  Search,
+  Sparkles,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,27 +53,20 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 // Import our new components
 import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { PricingSuggestions } from '@/components/contracts/PricingSuggestions';
-import { CollapsibleSection, AdvancedOptions } from '@/components/ui/collapsible-section';
+import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
 
 // === Schema ===
 const contractSchema = z.object({
-  // Step 1: Customer & Vehicle
   customer_id: z.string().min(1, 'يجب اختيار العميل'),
   vehicle_id: z.string().optional(),
-  
-  // Step 2: Details & Pricing
   contract_type: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'corporate']),
   start_date: z.string().min(1, 'تاريخ البدء مطلوب'),
   end_date: z.string().min(1, 'تاريخ الانتهاء مطلوب'),
   rental_days: z.number().min(1, 'مدة الإيجار مطلوبة'),
   contract_amount: z.number().min(0, 'مبلغ العقد مطلوب'),
-  
-  // Optional fields
   notes: z.string().optional(),
   deposit_amount: z.number().optional(),
-  
-  // Late fines (advanced)
   late_fines_enabled: z.boolean().optional(),
   late_fine_rate: z.number().optional(),
   late_fine_grace_period: z.number().optional(),
@@ -95,7 +91,6 @@ interface Customer {
   last_name_ar: string | null;
   phone: string;
   national_id?: string;
-  // Computed display name
   full_name?: string;
 }
 
@@ -108,6 +103,61 @@ interface Vehicle {
   status: string;
   daily_rate?: number;
 }
+
+// === Step Progress Indicator ===
+const StepIndicator: React.FC<{
+  currentStep: number;
+  totalSteps: number;
+  stepTitles: string[];
+}> = ({ currentStep, totalSteps, stepTitles }) => {
+  return (
+    <div className="relative">
+      {/* Progress bar background */}
+      <div className="absolute top-5 left-0 right-0 h-1 bg-neutral-200 rounded-full mx-8" />
+      
+      {/* Progress bar fill */}
+      <motion.div 
+        className="absolute top-5 right-0 h-1 bg-gradient-to-l from-coral-500 to-orange-400 rounded-full mx-8"
+        initial={{ width: '0%' }}
+        animate={{ width: `${((currentStep) / (totalSteps - 1)) * 100}%` }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      />
+      
+      {/* Step circles */}
+      <div className="flex justify-between relative">
+        {stepTitles.map((title, index) => {
+          const isCompleted = index < currentStep;
+          const isCurrent = index === currentStep;
+          
+          return (
+            <div key={index} className="flex flex-col items-center z-10">
+              <motion.div
+                className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
+                  isCompleted && 'bg-gradient-to-br from-coral-500 to-orange-500 border-coral-500 text-white shadow-lg shadow-coral-500/30',
+                  isCurrent && 'bg-white border-coral-500 text-coral-600 shadow-lg shadow-coral-500/20',
+                  !isCompleted && !isCurrent && 'bg-neutral-100 border-neutral-300 text-neutral-400'
+                )}
+                animate={{ scale: isCurrent ? 1.1 : 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                {isCompleted ? <Check className="w-5 h-5" /> : index + 1}
+              </motion.div>
+              <span className={cn(
+                'mt-2 text-xs font-medium',
+                isCurrent && 'text-coral-600',
+                isCompleted && 'text-neutral-700',
+                !isCompleted && !isCurrent && 'text-neutral-400'
+              )}>
+                {title}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // === Step 1: Customer & Vehicle ===
 const Step1CustomerVehicle: React.FC<{
@@ -123,7 +173,7 @@ const Step1CustomerVehicle: React.FC<{
   const [vehicleSearch, setVehicleSearch] = useState('');
 
   const filteredCustomers = customers.filter(c => 
-    c.full_name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    c.full_name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
     c.phone?.includes(customerSearch) ||
     c.national_id?.includes(customerSearch)
   );
@@ -138,31 +188,42 @@ const Step1CustomerVehicle: React.FC<{
   const selectedVehicle = vehicles.find(v => v.id === formData.vehicle_id);
 
   return (
-    <div className="space-y-6">
-      {/* Customer Selection */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="h-5 w-5 text-coral-500" />
-            اختيار العميل
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      {/* Customer Selection Card */}
+      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-l from-coral-50 to-orange-50 px-5 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+              <User className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-neutral-900">اختيار العميل</h3>
+              <p className="text-sm text-neutral-500">ابحث عن عميل موجود أو أضف عميل جديد</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-5 space-y-4">
           {/* Search & Quick Add */}
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <div className="flex-1 relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <Input
                 placeholder="ابحث بالاسم أو رقم الهاتف..."
                 value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
-                className="h-11"
+                className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-coral-400 focus:ring-coral-400/20"
               />
             </div>
             <Button
               type="button"
-              variant="outline"
               onClick={() => setShowQuickCustomer(true)}
-              className="h-11 gap-2"
+              className="h-12 gap-2 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all"
             >
               <Plus className="h-4 w-4" />
               عميل جديد
@@ -170,121 +231,189 @@ const Step1CustomerVehicle: React.FC<{
           </div>
 
           {/* Selected Customer Display */}
-          {selectedCustomer ? (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-green-900">{selectedCustomer.full_name}</p>
-                <p className="text-sm text-green-700">{selectedCustomer.phone}</p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onUpdate({ customer_id: '' })}
+          <AnimatePresence mode="wait">
+            {selectedCustomer ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-4 bg-gradient-to-l from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center justify-between"
               >
-                تغيير
-              </Button>
-            </div>
-          ) : (
-            /* Customer List */
-            <div className="max-h-48 overflow-auto space-y-2">
-              {isLoadingCustomers ? (
-                <div className="text-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-neutral-400" />
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-green-900">{selectedCustomer.full_name}</p>
+                    <p className="text-sm text-green-700">{selectedCustomer.phone}</p>
+                  </div>
                 </div>
-              ) : filteredCustomers.length === 0 ? (
-                <div className="text-center py-4 text-neutral-500">
-                  لا توجد نتائج
-                </div>
-              ) : (
-                filteredCustomers.slice(0, 5).map((customer) => (
-                  <button
-                    key={customer.id}
-                    type="button"
-                    onClick={() => onUpdate({ customer_id: customer.id })}
-                    className="w-full p-3 text-right bg-white border rounded-lg hover:border-coral-300 hover:bg-coral-50/50 transition-colors"
-                  >
-                    <p className="font-medium">{customer.full_name}</p>
-                    <p className="text-sm text-neutral-500">{customer.phone}</p>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onUpdate({ customer_id: '' })}
+                  className="text-green-700 hover:text-green-900 hover:bg-green-100"
+                >
+                  تغيير
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="max-h-56 overflow-auto space-y-2 scrollbar-thin scrollbar-thumb-neutral-200"
+              >
+                {isLoadingCustomers ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-coral-500 mb-2" />
+                    <p className="text-neutral-500 text-sm">جاري تحميل العملاء...</p>
+                  </div>
+                ) : filteredCustomers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
+                    <Search className="h-10 w-10 mb-2" />
+                    <p>لا توجد نتائج</p>
+                  </div>
+                ) : (
+                  filteredCustomers.slice(0, 6).map((customer, index) => (
+                    <motion.button
+                      key={customer.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0, transition: { delay: index * 0.05 } }}
+                      type="button"
+                      onClick={() => onUpdate({ customer_id: customer.id })}
+                      className="w-full p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-coral-300 hover:bg-coral-50/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-coral-100 flex items-center justify-center transition-colors">
+                          <User className="h-5 w-5 text-neutral-500 group-hover:text-coral-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-neutral-900">{customer.full_name}</p>
+                          <p className="text-sm text-neutral-500">{customer.phone}</p>
+                        </div>
+                        <ChevronLeft className="h-5 w-5 text-neutral-300 group-hover:text-coral-500 transition-colors" />
+                      </div>
+                    </motion.button>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
-      {/* Vehicle Selection */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Car className="h-5 w-5 text-coral-500" />
-            اختيار المركبة
-            <Badge variant="secondary" className="text-xs">اختياري</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Vehicle Selection Card */}
+      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-l from-blue-50 to-indigo-50 px-5 py-4 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Car className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-neutral-900">اختيار المركبة</h3>
+                <p className="text-sm text-neutral-500">اختر مركبة من الأسطول المتاح</p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-0">
+              اختياري
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="p-5 space-y-4">
           {/* Search */}
-          <Input
-            placeholder="ابحث برقم اللوحة أو الموديل..."
-            value={vehicleSearch}
-            onChange={(e) => setVehicleSearch(e.target.value)}
-            className="h-11"
-          />
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+            <Input
+              placeholder="ابحث برقم اللوحة أو الموديل..."
+              value={vehicleSearch}
+              onChange={(e) => setVehicleSearch(e.target.value)}
+              className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-blue-400 focus:ring-blue-400/20"
+            />
+          </div>
 
           {/* Selected Vehicle Display */}
-          {selectedVehicle ? (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-blue-900">
-                  {selectedVehicle.make} {selectedVehicle.model} ({selectedVehicle.year})
-                </p>
-                <p className="text-sm text-blue-700">{selectedVehicle.plate_number}</p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onUpdate({ vehicle_id: '' })}
+          <AnimatePresence mode="wait">
+            {selectedVehicle ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-4 bg-gradient-to-l from-blue-50 to-indigo-50 border border-blue-200 rounded-xl flex items-center justify-between"
               >
-                تغيير
-              </Button>
-            </div>
-          ) : (
-            /* Vehicle Grid */
-            <div className="grid grid-cols-2 gap-3 max-h-64 overflow-auto">
-              {isLoadingVehicles ? (
-                <div className="col-span-2 text-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-neutral-400" />
-                </div>
-              ) : availableVehicles.length === 0 ? (
-                <div className="col-span-2 text-center py-4 text-neutral-500">
-                  لا توجد مركبات متاحة
-                </div>
-              ) : (
-                availableVehicles.slice(0, 6).map((vehicle) => (
-                  <button
-                    key={vehicle.id}
-                    type="button"
-                    onClick={() => onUpdate({ vehicle_id: vehicle.id })}
-                    className="p-3 text-right bg-white border rounded-lg hover:border-coral-300 hover:bg-coral-50/50 transition-colors"
-                  >
-                    <p className="font-medium text-sm">
-                      {vehicle.make} {vehicle.model}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <Car className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-blue-900">
+                      {selectedVehicle.make} {selectedVehicle.model} ({selectedVehicle.year})
                     </p>
-                    <p className="text-xs text-neutral-500">{vehicle.plate_number}</p>
-                    {vehicle.daily_rate && (
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {vehicle.daily_rate} ر.ق/يوم
-                      </Badge>
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <p className="text-sm text-blue-700">{selectedVehicle.plate_number}</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onUpdate({ vehicle_id: '' })}
+                  className="text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                >
+                  تغيير
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-2 gap-3 max-h-56 overflow-auto scrollbar-thin scrollbar-thumb-neutral-200"
+              >
+                {isLoadingVehicles ? (
+                  <div className="col-span-2 flex flex-col items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                    <p className="text-neutral-500 text-sm">جاري تحميل المركبات...</p>
+                  </div>
+                ) : availableVehicles.length === 0 ? (
+                  <div className="col-span-2 flex flex-col items-center justify-center py-8 text-neutral-400">
+                    <Car className="h-10 w-10 mb-2" />
+                    <p>لا توجد مركبات متاحة</p>
+                  </div>
+                ) : (
+                  availableVehicles.slice(0, 8).map((vehicle, index) => (
+                    <motion.button
+                      key={vehicle.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1, transition: { delay: index * 0.03 } }}
+                      type="button"
+                      onClick={() => onUpdate({ vehicle_id: vehicle.id })}
+                      className="p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                          <Car className="h-5 w-5 text-neutral-500 group-hover:text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-neutral-900 text-sm truncate">
+                            {vehicle.make} {vehicle.model}
+                          </p>
+                          <p className="text-xs text-neutral-500">{vehicle.plate_number}</p>
+                        </div>
+                      </div>
+                      {vehicle.daily_rate && (
+                        <Badge className="mt-2 bg-gradient-to-l from-coral-100 to-orange-100 text-coral-700 border-0">
+                          {vehicle.daily_rate} ر.ق/يوم
+                        </Badge>
+                      )}
+                    </motion.button>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       {/* Quick Customer Dialog */}
       <QuickCustomerForm
@@ -294,7 +423,7 @@ const Step1CustomerVehicle: React.FC<{
           onUpdate({ customer_id: customerId });
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 
@@ -305,7 +434,6 @@ const Step2DetailsPricing: React.FC<{
 }> = ({ formData, onUpdate }) => {
   const { formatCurrency } = useCurrencyFormatter();
 
-  // Calculate rental days when dates change
   useEffect(() => {
     if (formData.start_date && formData.end_date) {
       const start = new Date(formData.start_date);
@@ -317,57 +445,100 @@ const Step2DetailsPricing: React.FC<{
     }
   }, [formData.start_date, formData.end_date]);
 
-  return (
-    <div className="space-y-6">
-      {/* Contract Type */}
-      <FormField label="نوع العقد" required>
-        <Select
-          value={formData.contract_type}
-          onValueChange={(value) => onUpdate({ contract_type: value as ContractFormData['contract_type'] })}
-        >
-          <SelectTrigger className="h-11">
-            <SelectValue placeholder="اختر نوع العقد" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="daily">يومي</SelectItem>
-            <SelectItem value="weekly">أسبوعي</SelectItem>
-            <SelectItem value="monthly">شهري</SelectItem>
-            <SelectItem value="yearly">سنوي</SelectItem>
-            <SelectItem value="corporate">شركات</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormField>
+  const contractTypes = [
+    { value: 'daily', label: 'يومي', icon: '📅' },
+    { value: 'weekly', label: 'أسبوعي', icon: '📆' },
+    { value: 'monthly', label: 'شهري', icon: '🗓️' },
+    { value: 'yearly', label: 'سنوي', icon: '📅' },
+    { value: 'corporate', label: 'شركات', icon: '🏢' },
+  ];
 
-      {/* Dates */}
-      <div className="grid grid-cols-2 gap-4">
-        <FormField label="تاريخ البدء" required>
-          <Input
-            type="date"
-            value={formData.start_date || ''}
-            onChange={(e) => onUpdate({ start_date: e.target.value })}
-            className="h-11"
-          />
-        </FormField>
-        <FormField label="تاريخ الانتهاء" required>
-          <Input
-            type="date"
-            value={formData.end_date || ''}
-            onChange={(e) => onUpdate({ end_date: e.target.value })}
-            min={formData.start_date}
-            className="h-11"
-          />
-        </FormField>
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      {/* Contract Type Selection */}
+      <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
+        <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+          <FileText className="h-5 w-5 text-coral-500" />
+          نوع العقد
+        </h3>
+        <div className="grid grid-cols-5 gap-2">
+          {contractTypes.map((type) => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => onUpdate({ contract_type: type.value as ContractFormData['contract_type'] })}
+              className={cn(
+                'p-3 rounded-xl border-2 transition-all text-center',
+                formData.contract_type === type.value
+                  ? 'border-coral-500 bg-gradient-to-br from-coral-50 to-orange-50 shadow-lg shadow-coral-500/20'
+                  : 'border-neutral-200 bg-white hover:border-coral-200 hover:bg-coral-50/30'
+              )}
+            >
+              <div className="text-2xl mb-1">{type.icon}</div>
+              <div className={cn(
+                'text-sm font-medium',
+                formData.contract_type === type.value ? 'text-coral-700' : 'text-neutral-600'
+              )}>
+                {type.label}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Duration Display */}
-      {formData.rental_days && formData.rental_days > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg">
-          <Calendar className="h-5 w-5 text-neutral-500" />
-          <span className="text-neutral-700">
-            مدة العقد: <strong>{formData.rental_days} يوم</strong>
-          </span>
+      {/* Dates Card */}
+      <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
+        <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-coral-500" />
+          مدة العقد
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-neutral-600 mb-2 block">تاريخ البدء</Label>
+            <Input
+              type="date"
+              value={formData.start_date || ''}
+              onChange={(e) => onUpdate({ start_date: e.target.value })}
+              className="h-12 rounded-xl border-neutral-200 focus:border-coral-400"
+            />
+          </div>
+          <div>
+            <Label className="text-neutral-600 mb-2 block">تاريخ الانتهاء</Label>
+            <Input
+              type="date"
+              value={formData.end_date || ''}
+              onChange={(e) => onUpdate({ end_date: e.target.value })}
+              min={formData.start_date}
+              className="h-12 rounded-xl border-neutral-200 focus:border-coral-400"
+            />
+          </div>
         </div>
-      )}
+
+        {/* Duration Display */}
+        <AnimatePresence>
+          {formData.rental_days && formData.rental_days > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 p-4 bg-gradient-to-l from-coral-50 to-orange-50 rounded-xl flex items-center gap-3"
+            >
+              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow">
+                <Clock className="h-6 w-6 text-coral-500" />
+              </div>
+              <div>
+                <p className="text-neutral-600">مدة العقد</p>
+                <p className="text-2xl font-bold text-coral-600">{formData.rental_days} <span className="text-base font-normal">يوم</span></p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Pricing Suggestions */}
       {formData.contract_type && formData.rental_days && formData.rental_days > 0 && (
@@ -381,82 +552,105 @@ const Step2DetailsPricing: React.FC<{
         />
       )}
 
-      {/* Contract Amount */}
-      <FormField label="مبلغ العقد" required>
-        <div className="relative">
-          <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
-          <Input
-            type="number"
-            value={formData.contract_amount || ''}
-            onChange={(e) => onUpdate({ contract_amount: Number(e.target.value) })}
-            className="h-11 pr-10"
-            placeholder="أدخل المبلغ"
-          />
-        </div>
-        {formData.contract_amount && formData.rental_days && (
-          <p className="text-sm text-neutral-500 mt-1">
-            ≈ {formatCurrency(formData.contract_amount / formData.rental_days)} / يوم
-          </p>
-        )}
-      </FormField>
+      {/* Contract Amount Card */}
+      <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
+        <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-coral-500" />
+          المبلغ والملاحظات
+        </h3>
+        
+        <div className="space-y-4">
+          <div>
+            <Label className="text-neutral-600 mb-2 block">مبلغ العقد *</Label>
+            <div className="relative">
+              <DollarSign className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Input
+                type="number"
+                value={formData.contract_amount || ''}
+                onChange={(e) => onUpdate({ contract_amount: Number(e.target.value) })}
+                className="h-14 pr-12 text-xl font-bold rounded-xl border-neutral-200 focus:border-coral-400"
+                placeholder="أدخل المبلغ"
+              />
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">ر.ق</span>
+            </div>
+            {formData.contract_amount && formData.rental_days && (
+              <p className="text-sm text-neutral-500 mt-2 flex items-center gap-1">
+                <Sparkles className="h-4 w-4 text-coral-400" />
+                ≈ {formatCurrency(formData.contract_amount / formData.rental_days)} / يوم
+              </p>
+            )}
+          </div>
 
-      {/* Notes */}
-      <FormField label="ملاحظات">
-        <Textarea
-          value={formData.notes || ''}
-          onChange={(e) => onUpdate({ notes: e.target.value })}
-          placeholder="أي ملاحظات إضافية..."
-          rows={3}
-        />
-      </FormField>
+          <div>
+            <Label className="text-neutral-600 mb-2 block">ملاحظات</Label>
+            <Textarea
+              value={formData.notes || ''}
+              onChange={(e) => onUpdate({ notes: e.target.value })}
+              placeholder="أي ملاحظات إضافية..."
+              rows={3}
+              className="rounded-xl border-neutral-200 focus:border-coral-400"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Advanced Options */}
       <AdvancedOptions storageKey="contract_advanced">
         <div className="space-y-4">
-          <FormField label="مبلغ الضمان">
+          <div>
+            <Label className="text-neutral-600 mb-2 block">مبلغ الضمان</Label>
             <Input
               type="number"
               value={formData.deposit_amount || ''}
               onChange={(e) => onUpdate({ deposit_amount: Number(e.target.value) })}
-              className="h-11"
+              className="h-12 rounded-xl"
               placeholder="اختياري"
             />
-          </FormField>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
             <input
               type="checkbox"
               id="late_fines_enabled"
               checked={formData.late_fines_enabled || false}
               onChange={(e) => onUpdate({ late_fines_enabled: e.target.checked })}
-              className="h-5 w-5 rounded"
+              className="h-5 w-5 rounded text-coral-500 focus:ring-coral-400"
             />
-            <Label htmlFor="late_fines_enabled">تفعيل غرامات التأخير</Label>
+            <Label htmlFor="late_fines_enabled" className="cursor-pointer">تفعيل غرامات التأخير</Label>
           </div>
 
-          {formData.late_fines_enabled && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-lg">
-              <FormField label="نسبة الغرامة %">
-                <Input
-                  type="number"
-                  value={formData.late_fine_rate || 5}
-                  onChange={(e) => onUpdate({ late_fine_rate: Number(e.target.value) })}
-                  className="h-10"
-                />
-              </FormField>
-              <FormField label="فترة السماح (أيام)">
-                <Input
-                  type="number"
-                  value={formData.late_fine_grace_period || 3}
-                  onChange={(e) => onUpdate({ late_fine_grace_period: Number(e.target.value) })}
-                  className="h-10"
-                />
-              </FormField>
-            </div>
-          )}
+          <AnimatePresence>
+            {formData.late_fines_enabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="grid grid-cols-2 gap-4 p-4 bg-amber-50 rounded-xl border border-amber-200"
+              >
+                <div>
+                  <Label className="text-amber-700 mb-2 block text-sm">نسبة الغرامة %</Label>
+                  <Input
+                    type="number"
+                    value={formData.late_fine_rate || 5}
+                    onChange={(e) => onUpdate({ late_fine_rate: Number(e.target.value) })}
+                    className="h-10 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <Label className="text-amber-700 mb-2 block text-sm">فترة السماح (أيام)</Label>
+                  <Input
+                    type="number"
+                    value={formData.late_fine_grace_period || 3}
+                    onChange={(e) => onUpdate({ late_fine_grace_period: Number(e.target.value) })}
+                    className="h-10 rounded-lg"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </AdvancedOptions>
-    </div>
+    </motion.div>
   );
 };
 
@@ -480,99 +674,144 @@ const Step3Review: React.FC<{
   };
 
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
-          <FileText className="h-8 w-8 text-green-600" />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-5"
+    >
+      {/* Success Header */}
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="text-center py-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200"
+      >
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring' }}
+          className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full mb-4 shadow-lg shadow-green-500/40"
+        >
+          <FileText className="h-10 w-10 text-white" />
+        </motion.div>
+        <h3 className="text-xl font-bold text-neutral-900">مراجعة العقد</h3>
+        <p className="text-neutral-500 mt-1">تأكد من صحة البيانات قبل الإرسال</p>
+      </motion.div>
+
+      {/* Customer Info Card */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-neutral-500">العميل</span>
+          <Badge className="bg-coral-100 text-coral-700 border-0">إلزامي</Badge>
         </div>
-        <h3 className="text-lg font-bold">مراجعة العقد</h3>
-        <p className="text-neutral-500">تأكد من صحة البيانات قبل الإرسال</p>
-      </div>
-
-      {/* Customer Info */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-neutral-500">العميل</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {customer ? (
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-coral-100 rounded-lg">
-                <User className="h-5 w-5 text-coral-600" />
-              </div>
-              <div>
-                <p className="font-semibold">{customer.full_name}</p>
-                <p className="text-sm text-neutral-500">{customer.phone}</p>
-              </div>
+        {customer ? (
+          <div className="flex items-center gap-4 mt-3">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-coral-100 to-orange-100 flex items-center justify-center">
+              <User className="h-7 w-7 text-coral-600" />
             </div>
-          ) : (
-            <p className="text-neutral-500">لم يتم اختيار عميل</p>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <p className="font-bold text-lg text-neutral-900">{customer.full_name}</p>
+              <p className="text-neutral-500">{customer.phone}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 mt-3 text-red-500">
+            <AlertCircle className="h-5 w-5" />
+            <span>لم يتم اختيار عميل</span>
+          </div>
+        )}
+      </motion.div>
 
-      {/* Vehicle Info */}
+      {/* Vehicle Info Card */}
       {vehicle && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-neutral-500">المركبة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Car className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold">{vehicle.make} {vehicle.model}</p>
-                <p className="text-sm text-neutral-500">{vehicle.plate_number}</p>
-              </div>
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm"
+        >
+          <span className="text-sm text-neutral-500">المركبة</span>
+          <div className="flex items-center gap-4 mt-3">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+              <Car className="h-7 w-7 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="font-bold text-lg text-neutral-900">{vehicle.make} {vehicle.model}</p>
+              <p className="text-neutral-500">{vehicle.plate_number} • {vehicle.year}</p>
+            </div>
+          </div>
+        </motion.div>
       )}
 
-      {/* Contract Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-neutral-500">تفاصيل العقد</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between">
+      {/* Contract Details Card */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm"
+      >
+        <div className="p-5 border-b border-neutral-100">
+          <span className="text-sm text-neutral-500">تفاصيل العقد</span>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex justify-between items-center py-2">
             <span className="text-neutral-500">نوع العقد</span>
-            <span className="font-medium">{contractTypeLabels[formData.contract_type || 'daily']}</span>
+            <Badge className="bg-neutral-100 text-neutral-700 border-0 text-sm">
+              {contractTypeLabels[formData.contract_type || 'daily']}
+            </Badge>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center py-2 border-t border-neutral-100">
             <span className="text-neutral-500">تاريخ البدء</span>
-            <span className="font-medium">{formData.start_date}</span>
+            <span className="font-medium text-neutral-900">{formData.start_date}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center py-2 border-t border-neutral-100">
             <span className="text-neutral-500">تاريخ الانتهاء</span>
-            <span className="font-medium">{formData.end_date}</span>
+            <span className="font-medium text-neutral-900">{formData.end_date}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center py-2 border-t border-neutral-100">
             <span className="text-neutral-500">المدة</span>
-            <span className="font-medium">{formData.rental_days} يوم</span>
+            <Badge className="bg-coral-100 text-coral-700 border-0">
+              {formData.rental_days} يوم
+            </Badge>
           </div>
-          <div className="flex justify-between pt-2 border-t">
-            <span className="text-neutral-900 font-semibold">المبلغ الإجمالي</span>
-            <span className="text-coral-600 font-bold text-lg">
+        </div>
+        
+        {/* Total Amount */}
+        <div className="bg-gradient-to-l from-coral-500 to-orange-500 p-5">
+          <div className="flex justify-between items-center text-white">
+            <span className="font-medium">المبلغ الإجمالي</span>
+            <span className="text-3xl font-bold">
               {formatCurrency(formData.contract_amount || 0)}
             </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </motion.div>
 
-      {/* Late Fines Info */}
-      {formData.late_fines_enabled && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="py-3">
-            <p className="text-sm text-amber-800">
-              ⚠️ غرامات التأخير مفعلة: {formData.late_fine_rate}% بعد {formData.late_fine_grace_period} أيام
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+      {/* Late Fines Warning */}
+      <AnimatePresence>
+        {formData.late_fines_enabled && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800">غرامات التأخير مفعلة</p>
+              <p className="text-sm text-amber-700 mt-1">
+                {formData.late_fine_rate}% بعد {formData.late_fine_grace_period} أيام من تاريخ الانتهاء
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
@@ -605,11 +844,9 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   });
 
   const totalSteps = 3;
-  const progress = ((currentStep + 1) / totalSteps) * 100;
-
   const stepTitles = ['العميل والمركبة', 'التفاصيل والتسعير', 'المراجعة والإرسال'];
 
-  // Load customers with correct column names
+  // Load customers
   useEffect(() => {
     if (!companyId) return;
     
@@ -624,7 +861,6 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
         .limit(200);
 
       if (!error && data) {
-        // Map data to include computed full_name for display
         const customersWithFullName = data.map(c => ({
           ...c,
           full_name: c.first_name_ar && c.last_name_ar 
@@ -634,8 +870,6 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
               : c.first_name_ar || c.first_name || 'عميل غير مسمى'
         }));
         setCustomers(customersWithFullName);
-      } else if (error) {
-        console.error('Error loading customers:', error);
       }
       setIsLoadingCustomers(false);
     };
@@ -701,7 +935,6 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
       if (onSubmit) {
         await onSubmit(formData as ContractFormData);
       } else {
-        // Default submission logic
         const { error } = await supabase.from('contracts').insert({
           company_id: companyId,
           customer_id: formData.customer_id,
@@ -768,50 +1001,42 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-coral-500" />
-            إنشاء عقد جديد
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Progress */}
-        <div className="space-y-2 py-2">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">{stepTitles[currentStep]}</span>
-            <span className="text-neutral-500">{currentStep + 1} من {totalSteps}</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-xs">
-            {stepTitles.map((title, index) => (
-              <span
-                key={index}
-                className={cn(
-                  'flex items-center gap-1',
-                  index === currentStep && 'text-coral-600 font-medium',
-                  index < currentStep && 'text-green-600'
-                )}
-              >
-                {index < currentStep && <Check className="h-3 w-3" />}
-                {title}
-              </span>
-            ))}
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col bg-[#f0efed] p-0">
+        {/* Header */}
+        <div className="bg-white px-6 py-5 border-b border-neutral-200">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              إنشاء عقد جديد
+            </DialogTitle>
+          </DialogHeader>
+          
+          {/* Step Indicator */}
+          <div className="mt-6">
+            <StepIndicator 
+              currentStep={currentStep} 
+              totalSteps={totalSteps} 
+              stepTitles={stepTitles} 
+            />
           </div>
         </div>
 
         {/* Step Content */}
-        <div className="py-4 min-h-[400px]">
-          {renderStep()}
+        <div className="flex-1 overflow-y-auto p-6">
+          <AnimatePresence mode="wait">
+            {renderStep()}
+          </AnimatePresence>
         </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t">
+        {/* Navigation Footer */}
+        <div className="bg-white px-6 py-4 border-t border-neutral-200 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handlePrev}
             disabled={currentStep === 0 || isSubmitting}
-            className="gap-2"
+            className="gap-2 h-12 px-6 rounded-xl border-neutral-300 hover:bg-neutral-100"
           >
             <ChevronRight className="h-4 w-4" />
             السابق
@@ -821,16 +1046,16 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleSubmit}
               disabled={!canProceed() || isSubmitting}
-              className="gap-2 bg-coral-500 hover:bg-coral-600"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   جاري الإرسال...
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                   إرسال العقد
                 </>
               )}
@@ -839,10 +1064,10 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="gap-2"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all disabled:opacity-50 disabled:shadow-none"
             >
               التالي
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
         </div>
@@ -852,4 +1077,3 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
 };
 
 export default SimpleContractWizard;
-

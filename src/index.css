@@ -1157,3 +1157,62 @@ All colors MUST be HSL.
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
 }
+
+/* ==========================================
+   CRITICAL: Mobile Scroll Fix
+   Must be at the END to override everything
+   ========================================== */
+@media (max-width: 768px) {
+  /* Force scroll on ALL mobile devices */
+  html, body {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100% !important;
+    position: relative !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+  }
+  
+  /* CRITICAL: Override Radix UI scroll lock */
+  body[data-scroll-locked] {
+    overflow: auto !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Fix for root element */
+  #root {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Main containers must scroll */
+  main, 
+  [class*="flex-1"],
+  [class*="min-h-screen"] {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Remove any fixed positioning that blocks scroll */
+  .min-h-screen.flex {
+    position: relative !important;
+    overflow: visible !important;
+  }
+  
+  /* Ensure content padding for bottom nav */
+  main {
+    padding-bottom: 100px !important;
+  }
+  
+  /* Prevent any element from blocking touch scroll */
+  * {
+    touch-action: pan-y pan-x !important;
+  }
+}

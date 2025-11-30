@@ -5,7 +5,15 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Sheet = SheetPrimitive.Root
+// Use modal={false} to prevent scroll lock on mobile
+const Sheet: React.FC<React.ComponentPropsWithoutRef<typeof SheetPrimitive.Root>> = ({ 
+  children, 
+  ...props 
+}) => (
+  <SheetPrimitive.Root modal={false} {...props}>
+    {children}
+  </SheetPrimitive.Root>
+)
 
 const SheetTrigger = SheetPrimitive.Trigger
 

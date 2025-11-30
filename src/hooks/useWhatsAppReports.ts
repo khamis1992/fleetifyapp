@@ -253,14 +253,17 @@ export const useWhatsAppRecipients = () => {
       const currentRecipients = await fetchCurrentRecipients();
       const updatedRecipients = [...currentRecipients, newRecipient];
 
-      // تحديث قاعدة البيانات مباشرة
+      // استخدام upsert لإنشاء السجل إذا لم يكن موجوداً
       const { error } = await supabase
         .from('whatsapp_settings')
-        .update({ 
+        .upsert({ 
+          company_id: companyId,
           recipients: updatedRecipients,
           updated_at: new Date().toISOString()
-        })
-        .eq('company_id', companyId);
+        }, {
+          onConflict: 'company_id',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
@@ -287,13 +290,17 @@ export const useWhatsAppRecipients = () => {
         r.id === recipientId ? { ...r, ...updates } : r
       );
 
+      // استخدام upsert لضمان وجود السجل
       const { error } = await supabase
         .from('whatsapp_settings')
-        .update({ 
+        .upsert({ 
+          company_id: companyId,
           recipients: updatedRecipients,
           updated_at: new Date().toISOString()
-        })
-        .eq('company_id', companyId);
+        }, {
+          onConflict: 'company_id',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
@@ -312,13 +319,17 @@ export const useWhatsAppRecipients = () => {
       const currentRecipients = await fetchCurrentRecipients();
       const filteredRecipients = currentRecipients.filter(r => r.id !== recipientId);
 
+      // استخدام upsert لضمان وجود السجل
       const { error } = await supabase
         .from('whatsapp_settings')
-        .update({ 
+        .upsert({ 
+          company_id: companyId,
           recipients: filteredRecipients,
           updated_at: new Date().toISOString()
-        })
-        .eq('company_id', companyId);
+        }, {
+          onConflict: 'company_id',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
