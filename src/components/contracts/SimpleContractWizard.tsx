@@ -64,6 +64,7 @@ const contractSchema = z.object({
   start_date: z.string().min(1, 'تاريخ البدء مطلوب'),
   end_date: z.string().min(1, 'تاريخ الانتهاء مطلوب'),
   rental_days: z.number().min(1, 'مدة الإيجار مطلوبة'),
+  monthly_amount: z.number().min(0, 'الإيجار الشهري مطلوب'),
   contract_amount: z.number().min(0, 'مبلغ العقد مطلوب'),
   notes: z.string().optional(),
   deposit_amount: z.number().optional(),
@@ -440,10 +441,16 @@ const Step2DetailsPricing: React.FC<{
       const end = new Date(formData.end_date);
       const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       if (days > 0 && days !== formData.rental_days) {
-        onUpdate({ rental_days: days });
+        // إعادة حساب إجمالي العقد إذا كان الإيجار الشهري موجود
+        const months = Math.ceil(days / 30);
+        const totalAmount = formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount;
+        onUpdate({ 
+          rental_days: days,
+          contract_amount: totalAmount
+        });
       }
     }
-  }, [formData.start_date, formData.end_date]);
+  }, [formData.start_date, formData.end_date, formData.monthly_amount]);
 
   const contractTypes = [
     { value: 'daily', label: 'يومي', icon: '📅' },
@@ -552,34 +559,67 @@ const Step2DetailsPricing: React.FC<{
         />
       )}
 
-      {/* Contract Amount Card */}
+      {/* Monthly Rent & Contract Amount Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-coral-500" />
-          المبلغ والملاحظات
+          الإيجار الشهري
         </h3>
         
         <div className="space-y-4">
+          {/* Monthly Amount Input */}
           <div>
-            <Label className="text-neutral-600 mb-2 block">مبلغ العقد *</Label>
+            <Label className="text-neutral-600 mb-2 block">قيمة الإيجار الشهري *</Label>
             <div className="relative">
               <DollarSign className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <Input
                 type="number"
-                value={formData.contract_amount || ''}
-                onChange={(e) => onUpdate({ contract_amount: Number(e.target.value) })}
+                value={formData.monthly_amount || ''}
+                onChange={(e) => {
+                  const monthlyAmount = Number(e.target.value);
+                  // حساب عدد الأشهر من عدد الأيام
+                  const months = formData.rental_days ? Math.ceil(formData.rental_days / 30) : 1;
+                  const totalAmount = monthlyAmount * months;
+                  onUpdate({ 
+                    monthly_amount: monthlyAmount,
+                    contract_amount: totalAmount 
+                  });
+                }}
                 className="h-14 pr-12 text-xl font-bold rounded-xl border-neutral-200 focus:border-coral-400"
-                placeholder="أدخل المبلغ"
+                placeholder="أدخل الإيجار الشهري"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">ر.ق</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">ر.ق/شهر</span>
             </div>
-            {formData.contract_amount && formData.rental_days && (
-              <p className="text-sm text-neutral-500 mt-2 flex items-center gap-1">
-                <Sparkles className="h-4 w-4 text-coral-400" />
-                ≈ {formatCurrency(formData.contract_amount / formData.rental_days)} / يوم
-              </p>
-            )}
           </div>
+
+          {/* Total Contract Amount Display */}
+          {formData.monthly_amount && formData.rental_days && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-gradient-to-l from-coral-50 to-orange-50 rounded-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow">
+                    <Sparkles className="h-5 w-5 text-coral-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
+                    <p className="text-xs text-neutral-500">
+                      {formData.monthly_amount} × {Math.ceil(formData.rental_days / 30)} شهر
+                    </p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-coral-600">{formatCurrency(formData.contract_amount || 0)}</p>
+                  <p className="text-xs text-neutral-500">
+                    ≈ {formatCurrency((formData.contract_amount || 0) / formData.rental_days)} / يوم
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <div>
             <Label className="text-neutral-600 mb-2 block">ملاحظات</Label>
@@ -781,10 +821,25 @@ const Step3Review: React.FC<{
           </div>
         </div>
         
-        {/* Total Amount */}
-        <div className="bg-gradient-to-l from-coral-500 to-orange-500 p-5">
-          <div className="flex justify-between items-center text-white">
-            <span className="font-medium">المبلغ الإجمالي</span>
+        {/* Monthly & Total Amount */}
+        <div className="bg-gradient-to-l from-coral-500 to-orange-500 p-5 space-y-3">
+          {formData.monthly_amount && (
+            <div className="flex justify-between items-center text-white/90">
+              <span className="font-medium">الإيجار الشهري</span>
+              <span className="text-xl font-bold">
+                {formatCurrency(formData.monthly_amount)} / شهر
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between items-center text-white border-t border-white/20 pt-3">
+            <div>
+              <span className="font-medium">المبلغ الإجمالي</span>
+              {formData.monthly_amount && formData.rental_days && (
+                <p className="text-xs text-white/70">
+                  {formData.monthly_amount} × {Math.ceil(formData.rental_days / 30)} شهر
+                </p>
+              )}
+            </div>
             <span className="text-3xl font-bold">
               {formatCurrency(formData.contract_amount || 0)}
             </span>
