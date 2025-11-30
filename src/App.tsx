@@ -16,7 +16,7 @@ import { FABProvider } from '@/contexts/FABContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
 
 // UI Components
-import { SimpleToaster } from '@/components/ui/simple-toaster';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Routing System
@@ -180,7 +180,7 @@ const App: React.FC = () => {
                               )}
 
                               {/* Global Toast Notifications */}
-                              <SimpleToaster />
+                              <Toaster />
                             </div>
                           </RouteErrorBoundary>
                         </RouteProvider>
