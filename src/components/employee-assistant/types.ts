@@ -8,7 +8,8 @@ export type WorkflowType =
   | 'payment_recording'
   | 'vehicle_return' 
   | 'new_customer'
-  | 'new_invoice';
+  | 'new_invoice'
+  | 'maintenance';
 
 export type StepStatus = 
   | 'pending' 

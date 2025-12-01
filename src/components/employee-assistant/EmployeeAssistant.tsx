@@ -38,6 +38,9 @@ import type {
 } from './types';
 import { contractWorkflow } from './workflows/contractWorkflow';
 import { paymentWorkflow } from './workflows/paymentWorkflow';
+import { vehicleReturnWorkflow } from './workflows/vehicleReturnWorkflow';
+import { newCustomerWorkflow } from './workflows/newCustomerWorkflow';
+import { invoiceWorkflow } from './workflows/invoiceWorkflow';
 
 // أيقونة حسب مستوى التنبيه
 const AlertIcon: React.FC<{ level: AlertLevel; className?: string }> = ({ level, className }) => {
@@ -310,6 +313,12 @@ export const EmployeeAssistant: React.FC<EmployeeAssistantProps> = ({
         return contractWorkflow;
       case 'payment_recording':
         return paymentWorkflow;
+      case 'vehicle_return':
+        return vehicleReturnWorkflow;
+      case 'new_customer':
+        return newCustomerWorkflow;
+      case 'new_invoice':
+        return invoiceWorkflow;
       default:
         return contractWorkflow;
     }

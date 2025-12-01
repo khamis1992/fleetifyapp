@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { FloatingAssistant } from "@/components/employee-assistant"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -803,6 +804,13 @@ const Invoices = () => {
           </Suspense>
         </TabsContent>
       </Tabs>
+
+      {/* مساعد الموظف لإنشاء فاتورة */}
+      <FloatingAssistant
+        workflowType="new_invoice"
+        data={{}}
+        position="left"
+      />
     </div>
     </PageCustomizer>
   )
