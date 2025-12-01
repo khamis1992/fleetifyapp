@@ -9,8 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import EmployeeDialog from '@/components/hr/EmployeeDialog';
-import EditEmployeeDialog from '@/components/hr/EditEmployeeDialog';
+import { UnifiedEmployeeDialog } from '@/components/hr/UnifiedEmployeeDialog';
 import DeleteEmployeeConfirmDialog from '@/components/hr/DeleteEmployeeConfirmDialog';
 import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
@@ -638,18 +637,22 @@ const { user } = useAuth();
         )}
       </div>
 
-      <EmployeeDialog
+      {/* نموذج إضافة موظف جديد - الموحد */}
+      <UnifiedEmployeeDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleAddEmployee}
         isLoading={addEmployeeMutation.isPending || isCreatingAccount}
+        mode="create"
       />
 
-      <EditEmployeeDialog
+      {/* نموذج تعديل موظف - الموحد */}
+      <UnifiedEmployeeDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onSubmit={handleUpdateEmployee}
         isLoading={updateEmployeeMutation.isPending}
+        mode="edit"
         employee={selectedEmployee}
       />
 
