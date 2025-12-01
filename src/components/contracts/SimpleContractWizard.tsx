@@ -55,6 +55,7 @@ import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
 import { PricingSuggestions } from '@/components/contracts/PricingSuggestions';
 import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
+import { EmployeeAssistant } from '@/components/employee-assistant';
 
 // === Schema ===
 const contractSchema = z.object({
@@ -82,6 +83,7 @@ interface SimpleContractWizardProps {
   onSubmit?: (data: ContractFormData) => Promise<void>;
   preselectedCustomerId?: string;
   preselectedVehicleId?: string;
+  showAssistant?: boolean;
 }
 
 interface Customer {
@@ -877,6 +879,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   onSubmit,
   preselectedCustomerId,
   preselectedVehicleId,
+  showAssistant = true,
 }) => {
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();
@@ -886,6 +889,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const [formData, setFormData] = useState<Partial<ContractFormData>>({
     customer_id: preselectedCustomerId || '',
@@ -1054,17 +1058,46 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
     }
   };
 
+  // بيانات المساعد
+  const assistantData = {
+    customer: customers.find(c => c.id === formData.customer_id),
+    vehicle: vehicles.find(v => v.id === formData.vehicle_id),
+    payment_method: 'cash', // يمكن تعديلها حسب اختيار المستخدم
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col bg-[#f0efed] p-0">
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-hidden flex flex-col bg-[#f0efed] p-0 transition-all",
+        isAssistantOpen ? "max-w-5xl" : "max-w-2xl"
+      )}>
         {/* Header */}
         <div className="bg-white px-6 py-5 border-b border-neutral-200">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
-                <FileText className="h-5 w-5 text-white" />
+            <DialogTitle className="flex items-center justify-between text-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                إنشاء عقد جديد
               </div>
-              إنشاء عقد جديد
+              {showAssistant && (
+                <Button
+                  type="button"
+                  variant={isAssistantOpen ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsAssistantOpen(!isAssistantOpen)}
+                  className={cn(
+                    "gap-2 rounded-xl transition-all",
+                    isAssistantOpen 
+                      ? "bg-gradient-to-l from-coral-500 to-orange-500 text-white shadow-lg shadow-coral-500/30" 
+                      : "border-coral-200 text-coral-600 hover:bg-coral-50"
+                  )}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {isAssistantOpen ? 'إخفاء المساعد' : 'مساعد الموظف'}
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
           
@@ -1078,10 +1111,39 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
           </div>
         </div>
 
-        {/* Step Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <AnimatePresence mode="wait">
-            {renderStep()}
+        {/* Content with Assistant */}
+        <div className="flex-1 overflow-hidden flex">
+          {/* Step Content */}
+          <div className={cn(
+            "flex-1 overflow-y-auto p-6 transition-all",
+            isAssistantOpen ? "w-1/2" : "w-full"
+          )}>
+            <AnimatePresence mode="wait">
+              {renderStep()}
+            </AnimatePresence>
+          </div>
+          
+          {/* Employee Assistant Panel */}
+          <AnimatePresence>
+            {isAssistantOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "50%", opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="border-r border-neutral-200 overflow-y-auto bg-white"
+              >
+                <div className="p-4">
+                  <EmployeeAssistant
+                    workflowType="new_contract"
+                    data={assistantData}
+                    onComplete={() => {
+                      // يمكن إضافة منطق إضافي هنا
+                    }}
+                  />
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
