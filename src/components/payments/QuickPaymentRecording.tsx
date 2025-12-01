@@ -129,7 +129,7 @@ export function QuickPaymentRecording() {
           contract_id,
           contracts (
             contract_number,
-            vehicle_number,
+            vehicle_id,
             vehicles:vehicle_id (
               plate_number
             )
