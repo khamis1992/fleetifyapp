@@ -10,7 +10,9 @@ export type WorkflowType =
   | 'new_customer'
   | 'new_invoice'
   | 'maintenance'
-  | 'reservation';
+  | 'reservation'
+  | 'traffic_violation'
+  | 'new_vehicle';
 
 export type StepStatus = 
   | 'pending' 

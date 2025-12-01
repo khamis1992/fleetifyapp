@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Vehicle } from '@/hooks/useVehicles';
+import { FloatingAssistant } from '@/components/employee-assistant';
 import {
   Car,
   Plus,
@@ -760,6 +761,12 @@ const FleetPageNew: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* مساعد الموظف لإضافة مركبة جديدة */}
+      <FloatingAssistant 
+        workflowType="new_vehicle" 
+        data={{}}
+      />
     </div>
   );
 };

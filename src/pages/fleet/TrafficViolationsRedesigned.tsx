@@ -27,6 +27,7 @@ import {
   List,
   Filter
 } from 'lucide-react';
+import { FloatingAssistant } from '@/components/employee-assistant';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -680,6 +681,24 @@ export default function TrafficViolationsRedesigned() {
           ::-webkit-scrollbar { display: none; }
         }
       `}</style>
+
+      {/* مساعد الموظف للمخالفات المرورية */}
+      <FloatingAssistant 
+        workflowType="traffic_violation" 
+        data={{
+          vehicle_id: selectedViolation?.vehicle_id,
+          vehicle: {
+            plate_number: selectedViolation?.vehicle?.plate_number,
+          },
+          violation_number: selectedViolation?.violation_number,
+          violation_date: selectedViolation?.violation_date,
+          violation_type: selectedViolation?.violation_type,
+          amount: selectedViolation?.fine_amount,
+          status: selectedViolation?.payment_status,
+          driver_name: selectedViolation?.customer?.first_name_ar || selectedViolation?.customer?.first_name,
+          customer_id: selectedViolation?.customer_id,
+        }}
+      />
     </div>
   );
 }

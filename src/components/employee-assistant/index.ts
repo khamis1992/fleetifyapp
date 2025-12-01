@@ -13,6 +13,8 @@ export { newCustomerWorkflow } from './workflows/newCustomerWorkflow';
 export { invoiceWorkflow } from './workflows/invoiceWorkflow';
 export { maintenanceWorkflow } from './workflows/maintenanceWorkflow';
 export { reservationWorkflow } from './workflows/reservationWorkflow';
+export { trafficViolationWorkflow } from './workflows/trafficViolationWorkflow';
+export { newVehicleWorkflow } from './workflows/newVehicleWorkflow';
 
 export type * from './types';
 
