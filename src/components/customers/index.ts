@@ -1,10 +1,11 @@
 // نظام إدارة العملاء الموحد - ملف التصدير الرئيسي
-export { EnhancedCustomerForm, EnhancedCustomerDialog } from './EnhancedCustomerForm';
+export { EnhancedCustomerForm, EnhancedCustomerDialog, QuickCustomerDialog } from './EnhancedCustomerForm';
 
 // مكونات أساسية للعملاء
 export { CreateCustomerDialog } from './CreateCustomerDialog';
 export { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
 export { DuplicateCustomerDialog } from './DuplicateCustomerDialog';
+/** @deprecated استخدم EnhancedCustomerDialog مع variant="quick" بدلاً منه */
 export { QuickCustomerForm } from './QuickCustomerForm';
 export { CustomerCreationOptionsDialog } from './CustomerCreationOptionsDialog';
 

@@ -51,7 +51,7 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 // Import our new components
-import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
+import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { PricingSuggestions } from '@/components/contracts/PricingSuggestions';
 import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
@@ -418,12 +418,14 @@ const Step1CustomerVehicle: React.FC<{
         </div>
       </div>
 
-      {/* Quick Customer Dialog */}
-      <QuickCustomerForm
+      {/* Quick Customer Dialog - موحد مع نظام العملاء */}
+      <EnhancedCustomerDialog
         open={showQuickCustomer}
         onOpenChange={setShowQuickCustomer}
-        onCustomerCreated={(customerId) => {
-          onUpdate({ customer_id: customerId });
+        variant="quick"
+        context="contract"
+        onSuccess={(customer) => {
+          onUpdate({ customer_id: customer.id });
         }}
       />
     </motion.div>

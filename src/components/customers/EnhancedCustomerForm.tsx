@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -16,6 +17,8 @@ import { useCreateCustomer } from '@/hooks/useEnhancedCustomers';
 import { useCustomerOperations } from '@/hooks/business/useCustomerOperations';
 import { createCustomerSchema } from '@/schemas/customer.schema';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   User, 
@@ -728,7 +731,8 @@ export const EnhancedCustomerDialog: React.FC<{
   onSuccess?: (customer: any) => void;
   onCancel?: () => void;
   context?: 'standalone' | 'contract' | 'invoice' | 'maintenance';
-}> = ({ open, onOpenChange, editingCustomer, onSuccess, onCancel, context }) => {
+  variant?: 'full' | 'quick';
+}> = ({ open, onOpenChange, editingCustomer, onSuccess, onCancel, context, variant = 'full' }) => {
   const handleClose = () => {
     onOpenChange(false);
     if (onCancel) {
@@ -743,6 +747,19 @@ export const EnhancedCustomerDialog: React.FC<{
     }
   };
 
+  // Quick variant - simplified form
+  if (variant === 'quick') {
+    return (
+      <QuickCustomerDialogContent
+        open={open}
+        onOpenChange={onOpenChange}
+        onSuccess={handleSuccess}
+        onCancel={handleClose}
+      />
+    );
+  }
+
+  // Full variant - complete multi-step form
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
@@ -764,3 +781,275 @@ export const EnhancedCustomerDialog: React.FC<{
     </Dialog>
   );
 };
+
+// Quick Customer Dialog - simplified version for contract wizard
+const QuickCustomerDialogContent: React.FC<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: (customer: any) => void;
+  onCancel: () => void;
+}> = ({ open, onOpenChange, onSuccess, onCancel }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [duplicateCheck, setDuplicateCheck] = React.useState<{
+    checking: boolean;
+    exists: boolean;
+    existingCustomer?: { id: string; first_name_ar: string; last_name_ar: string };
+  }>({ checking: false, exists: false });
+
+  const quickSchema = z.object({
+    full_name: z.string().min(2, 'الاسم يجب أن يكون أكثر من حرفين'),
+    phone: z.string().min(8, 'رقم الهاتف غير صحيح'),
+    national_id: z.string().min(5, 'الرقم الشخصي غير صحيح'),
+  });
+
+  const form = useForm({
+    resolver: zodResolver(quickSchema),
+    defaultValues: {
+      full_name: '',
+      phone: '',
+      national_id: '',
+    },
+  });
+
+  const nationalId = form.watch('national_id');
+
+  // Check for duplicate national_id
+  React.useEffect(() => {
+    const checkDuplicate = async () => {
+      if (!nationalId || nationalId.length < 5 || !user?.profile?.company_id) {
+        setDuplicateCheck({ checking: false, exists: false });
+        return;
+      }
+
+      setDuplicateCheck({ checking: true, exists: false });
+
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name_ar, last_name_ar')
+        .eq('company_id', user.profile.company_id)
+        .eq('national_id', nationalId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking duplicate:', error);
+        setDuplicateCheck({ checking: false, exists: false });
+        return;
+      }
+
+      if (data) {
+        setDuplicateCheck({ checking: false, exists: true, existingCustomer: data });
+      } else {
+        setDuplicateCheck({ checking: false, exists: false });
+      }
+    };
+
+    const debounceTimer = setTimeout(checkDuplicate, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [nationalId, user?.profile?.company_id]);
+
+  const onSubmit = async (data: any) => {
+    if (!user?.profile?.company_id) {
+      toast.error('خطأ في جلب بيانات الشركة');
+      return;
+    }
+
+    // If duplicate exists, use existing customer
+    if (duplicateCheck.exists && duplicateCheck.existingCustomer) {
+      onSuccess({
+        id: duplicateCheck.existingCustomer.id,
+        full_name: `${duplicateCheck.existingCustomer.first_name_ar} ${duplicateCheck.existingCustomer.last_name_ar}`,
+      });
+      form.reset();
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Split full name
+      const nameParts = data.full_name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const { data: newCustomer, error } = await supabase
+        .from('customers')
+        .insert({
+          company_id: user.profile.company_id,
+          first_name: firstName,
+          last_name: lastName,
+          first_name_ar: firstName,
+          last_name_ar: lastName,
+          phone: data.phone,
+          national_id: data.national_id,
+          license_number: data.national_id,
+          customer_type: 'individual',
+          is_active: true,
+        })
+        .select('id, first_name_ar, last_name_ar')
+        .single();
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-customers'] });
+
+      toast.success('تم إضافة العميل بنجاح');
+      
+      onSuccess({
+        id: newCustomer.id,
+        full_name: `${newCustomer.first_name_ar} ${newCustomer.last_name_ar}`,
+      });
+      form.reset();
+    } catch (error: any) {
+      console.error('Error creating customer:', error);
+      toast.error(error.message || 'فشل في إضافة العميل');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUseExisting = () => {
+    if (duplicateCheck.existingCustomer) {
+      onSuccess({
+        id: duplicateCheck.existingCustomer.id,
+        full_name: `${duplicateCheck.existingCustomer.first_name_ar} ${duplicateCheck.existingCustomer.last_name_ar}`,
+      });
+      form.reset();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-coral-500" />
+            إضافة عميل سريع
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Full Name */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <User className="h-4 w-4 text-neutral-500" />
+              الاسم الكامل
+            </label>
+            <Input
+              {...form.register('full_name')}
+              placeholder="أدخل اسم العميل"
+              className="text-right"
+            />
+            {form.formState.errors.full_name && (
+              <p className="text-xs text-red-500">{form.formState.errors.full_name.message as string}</p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Phone className="h-4 w-4 text-neutral-500" />
+              رقم الهاتف
+            </label>
+            <Input
+              {...form.register('phone')}
+              placeholder="أدخل رقم الهاتف"
+              className="text-right"
+              dir="ltr"
+            />
+            {form.formState.errors.phone && (
+              <p className="text-xs text-red-500">{form.formState.errors.phone.message as string}</p>
+            )}
+          </div>
+
+          {/* National ID */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-neutral-500" />
+              الرقم الشخصي / رخصة القيادة
+            </label>
+            <div className="relative">
+              <Input
+                {...form.register('national_id')}
+                placeholder="أدخل الرقم الشخصي"
+                className={cn(
+                  "text-right",
+                  duplicateCheck.exists && "border-amber-500 focus-visible:ring-amber-500"
+                )}
+                dir="ltr"
+              />
+              {duplicateCheck.checking && (
+                <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-coral-500 border-t-transparent" />
+                </div>
+              )}
+              {duplicateCheck.exists && (
+                <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+              )}
+            </div>
+            {form.formState.errors.national_id && (
+              <p className="text-xs text-red-500">{form.formState.errors.national_id.message as string}</p>
+            )}
+          </div>
+
+          {/* Duplicate Warning */}
+          {duplicateCheck.exists && duplicateCheck.existingCustomer && (
+            <Alert className="border-amber-200 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                <div className="flex flex-col gap-2">
+                  <span>
+                    العميل موجود بالفعل: {duplicateCheck.existingCustomer.first_name_ar} {duplicateCheck.existingCustomer.last_name_ar}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUseExisting}
+                    className="w-fit border-amber-300 text-amber-700 hover:bg-amber-100"
+                  >
+                    <CheckCircle className="h-4 w-4 ml-1" />
+                    استخدام العميل الموجود
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 bg-coral-500 hover:bg-coral-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent ml-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 ml-2" />
+                  {duplicateCheck.exists ? 'إضافة كعميل جديد' : 'إضافة العميل'}
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+            >
+              إلغاء
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Legacy alias for backward compatibility
+export { EnhancedCustomerDialog as QuickCustomerDialog };

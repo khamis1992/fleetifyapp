@@ -41,7 +41,7 @@ import { CustomerSelector } from '@/components/shared/CustomerSelector'
 import { useCustomer } from '@/hooks/useCustomers'
 import { VehicleSelector } from '@/components/vehicle-installments/VehicleSelector'
 import { ContractFormWithDuplicateCheck } from './ContractFormWithDuplicateCheck';
-import { QuickCustomerForm } from '@/components/customers/QuickCustomerForm';
+import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { UserPlus } from 'lucide-react';
 
 // Quick Customer Button Component
@@ -62,10 +62,12 @@ const QuickCustomerButton: React.FC<{
         <UserPlus className="h-4 w-4" />
         إضافة عميل جديد
       </Button>
-      <QuickCustomerForm
+      <EnhancedCustomerDialog
         open={open}
         onOpenChange={setOpen}
-        onCustomerCreated={onCustomerCreated}
+        variant="quick"
+        context="contract"
+        onSuccess={(customer) => onCustomerCreated({ id: customer.id, full_name: customer.full_name })}
       />
     </>
   );
