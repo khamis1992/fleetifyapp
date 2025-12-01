@@ -39,6 +39,7 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>عقد إيجار سيارة - ${contract.contract_number || ''}</title>
+        <link rel="icon" href="${window.location.origin}/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
         <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           /* إعدادات الصفحة للطباعة */
@@ -384,6 +385,7 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
       <head>
         <meta charset="UTF-8">
         <title>معاينة العقد - ${contract.contract_number || ''}</title>
+        <link rel="icon" href="${window.location.origin}/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
         <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
         <style>
           body {
