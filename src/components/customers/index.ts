@@ -5,8 +5,7 @@ export { EnhancedCustomerForm, EnhancedCustomerDialog, QuickCustomerDialog } fro
 export { CreateCustomerDialog } from './CreateCustomerDialog';
 export { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
 export { DuplicateCustomerDialog } from './DuplicateCustomerDialog';
-/** @deprecated استخدم EnhancedCustomerDialog مع variant="quick" بدلاً منه */
-export { QuickCustomerForm } from './QuickCustomerForm';
+// QuickCustomerForm تم حذفه - استخدم EnhancedCustomerDialog مع variant="quick"
 export { CustomerCreationOptionsDialog } from './CustomerCreationOptionsDialog';
 
 // مكونات إدارة الحسابات
