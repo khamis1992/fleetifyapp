@@ -35,6 +35,7 @@ import {
   Package,
   PhoneCall,
   LayoutDashboard,
+  ListTodo,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -403,6 +404,16 @@ export function CarRentalSidebar() {
 
               {/* Booking System Section with Submenu */}
               {/* REMOVED - Booking System is now under Fleet Management */}
+
+              {/* Task Management */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className="h-10">
+                  <NavLink to="/tasks" className={getNavClassName}>
+                    <ListTodo className="h-4 w-4" />
+                    {(!collapsed || isMobile) && <span className="font-medium">إدارة المهام</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
               {/* Reports */}
               <SidebarMenuItem>

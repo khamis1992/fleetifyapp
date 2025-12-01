@@ -152,6 +152,9 @@ const FixVehicleData = lazy(() => import('@/pages/FixVehicleData'));
 // Help & Documentation pages
 const HelpHub = lazy(() => import('@/pages/help/HelpHub'));
 
+// Task Management pages
+const TasksPage = lazy(() => import('@/pages/tasks/TasksPage'));
+
 // Performance monitoring
 const PerformanceMonitor = lazy(() => import('@/components/performance').then(m => ({ default: m.PerformanceMonitor })));
 
@@ -1480,6 +1483,20 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',
+  },
+
+  // === Task Management Routes ===
+  {
+    path: '/tasks',
+    component: TasksPage,
+    lazy: true,
+    exact: true,
+    title: 'إدارة المهام',
+    description: 'Task management - Kanban board and task tracking',
+    group: 'utilities',
+    priority: 145,
+    protected: true,
+    layout: 'bento',
   },
 
   // === Help & Documentation Routes ===

@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import BentoSidebar from '@/components/dashboard/bento/BentoSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
 
 interface BentoLayoutProps {
   children?: React.ReactNode;
@@ -60,7 +61,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
         <span className="font-bold text-neutral-900">Fleetify</span>
-        <div className="w-10" /> {/* Spacer for centering */}
+        <TaskNotificationBell />
       </div>
 
       {/* Mobile Sidebar Overlay */}
