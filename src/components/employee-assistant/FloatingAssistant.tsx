@@ -40,6 +40,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
     new_customer: 'مساعد إضافة عميل',
     new_invoice: 'مساعد إنشاء فاتورة',
     maintenance: 'مساعد الصيانة',
+    reservation: 'مساعد الحجوزات',
   };
 
   const displayTitle = title || workflowTitles[workflowType] || 'مساعد الموظف';

@@ -76,6 +76,7 @@ import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { FloatingAssistant } from '@/components/employee-assistant';
 
 /**
  * مكون صفحة تفاصيل العقد الرئيسية
@@ -1070,6 +1071,27 @@ const ContractDetailsPage = () => {
         open={isStatusManagementOpen}
         onOpenChange={setIsStatusManagementOpen}
         contract={contract || {}}
+      />
+
+      {/* مساعد الموظف لإعادة المركبة */}
+      <FloatingAssistant 
+        workflowType="vehicle_return" 
+        data={{
+          contract_id: contract?.id,
+          contract_number: contract?.contract_number,
+          customer_id: contract?.customer_id,
+          customer_name: contract?.customer ? 
+            `${contract.customer.first_name_ar || contract.customer.first_name} ${contract.customer.last_name_ar || contract.customer.last_name}` 
+            : undefined,
+          vehicle_id: contract?.vehicle_id,
+          vehicle_plate: contract?.vehicle?.plate_number,
+          vehicle_make: contract?.vehicle?.make,
+          vehicle_model: contract?.vehicle?.model,
+          start_date: contract?.start_date,
+          end_date: contract?.end_date,
+          total_amount: contract?.total_amount,
+          status: contract?.status,
+        }}
       />
     </div>
   );

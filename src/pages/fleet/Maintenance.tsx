@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { cn } from "@/lib/utils"
 import { PageHelp } from "@/components/help";
 import { MaintenancePageHelpContent } from "@/components/help/content";
+import { FloatingAssistant } from "@/components/employee-assistant";
 
 // Lazy load heavy components
 const SmartAlertsPanel = lazy(() => 
@@ -1010,6 +1011,18 @@ export default function Maintenance() {
       </Suspense>
     <PageHelp content={<MaintenancePageHelpContent />} />
 
+      {/* مساعد الموظف للصيانة */}
+      <FloatingAssistant 
+        workflowType="maintenance" 
+        data={{
+          vehicle_id: selectedVehicleId,
+          vehicle: selectedMaintenance?.vehicles,
+          maintenance_type: selectedMaintenance?.maintenance_type,
+          problem_description: selectedMaintenance?.description,
+          parts_cost: selectedMaintenance?.estimated_cost,
+          status: selectedMaintenance?.status,
+        }}
+      />
     </div>
   )
 }
