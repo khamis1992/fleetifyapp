@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { ContractWizard } from '@/components/contracts/ContractWizard';
+import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 
 interface QuickAction {
   label: string;
@@ -173,8 +173,8 @@ export const QuickActionBar: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* Contract Wizard */}
-      <ContractWizard
+      {/* Contract Wizard - الموحد مع صفحة العقود */}
+      <SimpleContractWizard
         open={showContractWizard}
         onOpenChange={setShowContractWizard}
       />

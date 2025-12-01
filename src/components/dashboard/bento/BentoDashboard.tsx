@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { ContractWizard } from '@/components/contracts/ContractWizard';
+import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { Sparkline } from './Sparkline';
 import {
@@ -1010,8 +1010,8 @@ const BentoDashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Contract Wizard */}
-      <ContractWizard
+      {/* Contract Wizard - الموحد مع صفحة العقود */}
+      <SimpleContractWizard
         open={showContractWizard}
         onOpenChange={setShowContractWizard}
       />
