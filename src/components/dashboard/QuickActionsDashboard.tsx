@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
 import { VehicleForm } from '@/components/fleet/VehicleForm';
-import { EnhancedContractForm } from '@/components/contracts/EnhancedContractForm';
+import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { toast } from 'sonner';
 
 interface QuickAction {
@@ -452,11 +452,10 @@ const QuickActionsDashboard: React.FC = () => {
         }}
       />
 
-      {/* Contract Creation Dialog */}
-      <EnhancedContractForm
+      {/* Contract Creation Dialog - الموحد */}
+      <SimpleContractWizard
         open={showCreateContract}
         onOpenChange={setShowCreateContract}
-        onSubmit={handleContractCreated}
       />
     </>
   );
