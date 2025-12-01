@@ -5,9 +5,10 @@
 
 export type WorkflowType = 
   | 'new_contract' 
-  | 'payment_recording' 
+  | 'payment_recording'
   | 'vehicle_return' 
-  | 'new_customer';
+  | 'new_customer'
+  | 'new_invoice';
 
 export type StepStatus = 
   | 'pending' 

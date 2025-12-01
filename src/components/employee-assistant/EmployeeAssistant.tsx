@@ -37,6 +37,7 @@ import type {
   AlertLevel
 } from './types';
 import { contractWorkflow } from './workflows/contractWorkflow';
+import { paymentWorkflow } from './workflows/paymentWorkflow';
 
 // أيقونة حسب مستوى التنبيه
 const AlertIcon: React.FC<{ level: AlertLevel; className?: string }> = ({ level, className }) => {
@@ -307,6 +308,8 @@ export const EmployeeAssistant: React.FC<EmployeeAssistantProps> = ({
     switch (workflowType) {
       case 'new_contract':
         return contractWorkflow;
+      case 'payment_recording':
+        return paymentWorkflow;
       default:
         return contractWorkflow;
     }

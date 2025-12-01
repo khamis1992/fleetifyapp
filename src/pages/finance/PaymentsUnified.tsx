@@ -5,6 +5,7 @@ import { PaymentForm } from "@/components/finance/PaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
 import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
 import { PaymentTracking } from "@/components/finance/PaymentTracking";
+import { PaymentAssistantPanel } from "@/components/finance/PaymentAssistantPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -548,6 +549,16 @@ const PaymentsUnified = () => {
           payment={selectedPayment}
           open={isPreviewDialogOpen}
           onOpenChange={setIsPreviewDialogOpen}
+        />
+
+        {/* مساعد الموظف للدفعات */}
+        <PaymentAssistantPanel
+          paymentData={{
+            amount: 0,
+            payment_method: 'cash',
+          }}
+          mode="floating"
+          position="left"
         />
       </div>
     </FinanceErrorBoundary>
