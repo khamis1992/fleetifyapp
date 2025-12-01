@@ -74,11 +74,17 @@ export function QuickPaymentRecording() {
 
     setSearching(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select('id, first_name, last_name, phone')
-        .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
-        .limit(10);
+        .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+      
+      // فلترة حسب الشركة الحالية
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data, error } = await query.limit(10);
 
       if (error) throw error;
 
