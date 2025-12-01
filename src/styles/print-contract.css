@@ -1,0 +1,189 @@
+/**
+ * أنماط طباعة العقد الرسمي - A4
+ * Official Contract Print Styles
+ */
+
+/* إخفاء كل شيء عند الطباعة ما عدا المحتوى المطلوب */
+@media print {
+  /* إخفاء العناصر غير المطلوبة */
+  body > *:not(.print-container),
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  .sidebar,
+  .navbar,
+  .tabs,
+  .tab-list,
+  button:not(.print-only),
+  [role="tablist"],
+  [data-state],
+  .fixed,
+  .sticky {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* إظهار فقط حاوية الطباعة */
+  .print-container,
+  .print-container * {
+    visibility: visible !important;
+  }
+
+  .print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* إعدادات الصفحة */
+  @page {
+    size: A4 portrait;
+    margin: 2cm 1.5cm;
+  }
+
+  /* إعدادات الخط الأساسية */
+  body {
+    font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif !important;
+    font-size: 12pt !important;
+    line-height: 1.8 !important;
+    color: #000 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* تحسين العناوين */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* منع قطع الجداول */
+  table {
+    page-break-inside: avoid !important;
+  }
+
+  /* منع قطع المواد والبنود */
+  .article,
+  .party-box,
+  .clause-box,
+  .signatures,
+  .declarations,
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* فواصل الصفحات */
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* تحسين الجداول */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 8px !important;
+    text-align: right !important;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  /* إخفاء الروابط */
+  a {
+    text-decoration: none !important;
+    color: #000 !important;
+  }
+
+  /* تحسين الألوان للطباعة */
+  * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* استثناء الخلفيات المهمة */
+  .header,
+  th,
+  .total-row {
+    background-color: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* التوقيعات */
+  .signature-box {
+    min-height: 120px !important;
+    page-break-inside: avoid !important;
+  }
+
+  .stamp-box {
+    border: 2px dashed #666 !important;
+    width: 100px !important;
+    height: 100px !important;
+  }
+
+  /* تحسين النص */
+  p, li, td, th {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+}
+
+/* نافذة معاينة الطباعة */
+.print-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.print-preview-header {
+  background: #1a1a1a;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.print-preview-content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.print-preview-page {
+  background: white;
+  width: 21cm;
+  min-height: 29.7cm;
+  padding: 2cm 1.5cm;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  margin: 0 auto;
+}
+
