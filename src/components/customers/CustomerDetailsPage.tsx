@@ -65,7 +65,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { PaymentForm } from '@/components/finance/PaymentForm';
+import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
 import {
   Dialog,
@@ -1550,13 +1550,13 @@ const CustomerDetailsPage = () => {
         </div>
       </main>
 
-      {/* نموذج تسجيل دفعة جديدة */}
-      <PaymentForm
+      {/* نموذج تسجيل دفعة جديدة - الموحد */}
+      <UnifiedPaymentForm
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
+        type="customer_payment"
         customerId={customerId}
         contractId={selectedContract?.id}
-        type="receipt"
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['customer-payments', customerId] });
           queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });

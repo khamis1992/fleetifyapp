@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePayments } from "@/hooks/useFinance";
 import { usePaymentsSummary } from "@/hooks/usePaymentsSummary";
-import { PaymentForm } from "@/components/finance/PaymentForm";
+import { UnifiedPaymentForm } from "@/components/finance/UnifiedPaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
 import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
 import { PaymentTracking } from "@/components/finance/PaymentTracking";
@@ -527,22 +527,18 @@ const PaymentsUnified = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Create Payment Dialog */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>تسجيل دفعة جديدة</DialogTitle>
-            </DialogHeader>
-            <PaymentForm
-              onSuccess={() => {
-                setIsCreateDialogOpen(false);
-                refetch();
-                toast.success('تم تسجيل الدفعة بنجاح');
-              }}
-              onCancel={() => setIsCreateDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        {/* Create Payment Dialog - الموحد */}
+        <UnifiedPaymentForm
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          type="customer_payment"
+          onSuccess={() => {
+            setIsCreateDialogOpen(false);
+            refetch();
+            toast.success('تم تسجيل الدفعة بنجاح');
+          }}
+          onCancel={() => setIsCreateDialogOpen(false)}
+        />
 
         {/* Payment Preview Dialog */}
         <PaymentPreviewDialog

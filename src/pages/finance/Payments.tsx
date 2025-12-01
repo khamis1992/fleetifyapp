@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePayments } from "@/hooks/useFinance";
-import { PaymentForm } from "@/components/finance/PaymentForm";
+import { UnifiedPaymentForm } from "@/components/finance/UnifiedPaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
 import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
 
@@ -427,11 +427,11 @@ const Payments = () => {
           </TabsContent>
         </Tabs>
 
-        {/* نموذج إنشاء دفعة جديدة */}
-        <PaymentForm
+        {/* نموذج إنشاء دفعة جديدة - الموحد */}
+        <UnifiedPaymentForm
           open={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
-          type="payment"
+          type="customer_payment"
         />
 
         {/* نظام رفع المدفوعات الموحد */}
