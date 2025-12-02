@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
-import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
+import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,6 +69,50 @@ export function QuickPaymentRecording() {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [readyToPay, setReadyToPay] = useState(false);
+  const [showAllInvoices, setShowAllInvoices] = useState(false);
+
+  // Filter invoices to show current and next month only (unless showAllInvoices)
+  const filteredInvoices = useMemo(() => {
+    if (showAllInvoices) return invoices;
+    
+    const now = new Date();
+    const currentMonthStart = startOfMonth(now);
+    const nextMonthEnd = endOfMonth(addMonths(now, 1));
+    
+    return invoices.filter(invoice => {
+      const dueDate = invoice.due_date ? new Date(invoice.due_date) : new Date(invoice.invoice_date);
+      // Show overdue invoices + current month + next month
+      return isBefore(dueDate, now) || isWithinInterval(dueDate, { start: currentMonthStart, end: nextMonthEnd });
+    });
+  }, [invoices, showAllInvoices]);
+
+  // Check for overdue invoices
+  const overdueInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
+      return dueDate && isBefore(dueDate, new Date());
+    });
+  }, [invoices]);
+
+  // Check if user selected a future invoice while there are overdue ones
+  const hasFutureSelectionWithOverdue = useMemo(() => {
+    if (overdueInvoices.length === 0) return false;
+    
+    const now = new Date();
+    const selectedFuture = selectedInvoices.some(inv => {
+      const dueDate = inv.due_date ? new Date(inv.due_date) : null;
+      return dueDate && !isBefore(dueDate, now);
+    });
+    
+    const hasUnselectedOverdue = overdueInvoices.some(overdue => 
+      !selectedInvoices.some(sel => sel.id === overdue.id)
+    );
+    
+    return selectedFuture && hasUnselectedOverdue;
+  }, [selectedInvoices, overdueInvoices]);
+
+  // Count hidden invoices
+  const hiddenInvoicesCount = invoices.length - filteredInvoices.length;
 
   const searchCustomers = async () => {
     if (!searchTerm.trim()) return;
@@ -663,13 +708,28 @@ export function QuickPaymentRecording() {
                     </Button>
                   )}
                 </div>
+
+                {/* Warning for selecting future invoices while overdue exist */}
+                {hasFutureSelectionWithOverdue && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-amber-800 font-medium text-sm">تنبيه: توجد فواتير سابقة مستحقة</p>
+                      <p className="text-amber-700 text-xs mt-1">
+                        يوجد {overdueInvoices.length} فاتورة متأخرة. يُفضل دفع الفواتير المتأخرة أولاً.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {invoices.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     لا توجد فواتير غير مدفوعة لهذا العميل
                   </div>
                 ) : (
-                  <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
-                    {invoices.map((invoice) => {
+                  <div className="space-y-2">
+                    <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
+                    {filteredInvoices.map((invoice) => {
                       const isOverdue = invoice.due_date ? new Date(invoice.due_date) < new Date() : false;
                       const isSelected = selectedInvoices.some(i => i.id === invoice.id);
                       const balanceDue = invoice.balance_due ?? invoice.total_amount;
@@ -711,6 +771,30 @@ export function QuickPaymentRecording() {
                         </div>
                       );
                     })}
+                    </div>
+                    
+                    {/* Show more invoices button */}
+                    {!showAllInvoices && hiddenInvoicesCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => setShowAllInvoices(true)}
+                      >
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                        عرض {hiddenInvoicesCount} فاتورة إضافية
+                      </Button>
+                    )}
+                    {showAllInvoices && hiddenInvoicesCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-gray-600 hover:text-gray-700"
+                        onClick={() => setShowAllInvoices(false)}
+                      >
+                        إخفاء الفواتير المستقبلية
+                      </Button>
+                    )}
                   </div>
                 )}
 

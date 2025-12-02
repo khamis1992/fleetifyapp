@@ -50,6 +50,16 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -1681,14 +1691,84 @@ interface PaymentScheduleTabProps {
 
 const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: PaymentScheduleTabProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const [isPaymentPreviewOpen, setIsPaymentPreviewOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [paymentToCancel, setPaymentToCancel] = useState<any | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Handle payment view
   const handlePaymentView = useCallback((payment: any) => {
     setSelectedPayment(payment);
     setIsPaymentPreviewOpen(true);
   }, []);
+
+  // Handle cancel payment - إلغاء الدفعة وإرجاع الفاتورة لحالة مستحقة
+  const handleCancelPayment = async (payment: any) => {
+    setIsCancelling(true);
+    try {
+      // 1. تحديث حالة الدفعة إلى ملغاة
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .update({ 
+          payment_status: 'cancelled',
+          notes: (payment.notes || '') + ' [تم إلغاء الدفعة]'
+        })
+        .eq('id', payment.id);
+
+      if (paymentError) throw paymentError;
+
+      // 2. إذا كانت الدفعة مرتبطة بفاتورة، إرجاع الفاتورة لحالة مستحقة
+      if (payment.invoice_id) {
+        const { error: invoiceError } = await supabase
+          .from('invoices')
+          .update({ 
+            payment_status: 'unpaid',
+            status: 'pending',
+            paid_amount: 0,
+            balance_due: supabase.rpc ? undefined : payment.amount
+          })
+          .eq('id', payment.invoice_id);
+
+        if (invoiceError) throw invoiceError;
+      }
+
+      // 3. تحديث المبلغ المدفوع في العقد
+      if (contract.id) {
+        const newTotalPaid = Math.max(0, (contract.total_paid || 0) - payment.amount);
+        const { error: contractError } = await supabase
+          .from('contracts')
+          .update({ total_paid: newTotalPaid })
+          .eq('id', contract.id);
+
+        if (contractError) throw contractError;
+      }
+
+      // 4. تحديث البيانات
+      queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+
+      toast({
+        title: 'تم إلغاء الدفعة',
+        description: 'تم إلغاء الدفعة وإرجاع الفاتورة لحالة مستحقة بنجاح',
+      });
+
+      setIsCancelDialogOpen(false);
+      setPaymentToCancel(null);
+    } catch (error) {
+      console.error('Error cancelling payment:', error);
+      toast({
+        title: 'خطأ في إلغاء الدفعة',
+        description: 'حدث خطأ أثناء إلغاء الدفعة',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   // Handle payment print
   const handlePaymentPrint = useCallback((payment: any) => {
@@ -1842,31 +1922,37 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                     <Button 
                       variant="link" 
                       size="sm" 
-                      className="text-red-600"
+                      className="text-blue-600"
                       onClick={() => {
-                        // عرض تفاصيل الدفعة المدفوعة
-                        toast({
-                          title: 'الدفعة المدفوعة',
-                          description: `تم دفع مبلغ ${formatCurrency(payment.amount)} في ${format(payment.dueDate, 'dd/MM/yyyy')}`,
+                        // البحث عن الدفعة الفعلية المرتبطة بهذه الفترة
+                        const actualPayment = payments.find(p => {
+                          const paymentDate = new Date(p.payment_date);
+                          return paymentDate.getMonth() === payment.dueDate.getMonth() &&
+                                 paymentDate.getFullYear() === payment.dueDate.getFullYear();
                         });
+                        if (actualPayment) {
+                          handlePaymentView(actualPayment);
+                        } else {
+                          toast({
+                            title: 'الدفعة المدفوعة',
+                            description: `تم دفع مبلغ ${formatCurrency(payment.amount)} في ${format(payment.dueDate, 'dd/MM/yyyy')}`,
+                          });
+                        }
                       }}
                     >
                       عرض
                     </Button>
                   ) : payment.status === 'pending' ? (
                     <Button 
-                      variant="link" 
+                      variant="default" 
                       size="sm" 
-                      className="text-green-600 font-medium"
+                      className="bg-green-600 hover:bg-green-700 text-white font-medium"
                       onClick={() => {
-                        // فتح نافذة الدفع
-                        toast({
-                          title: 'دفع مستحق',
-                          description: `المبلغ المستحق: ${formatCurrency(payment.amount)}`,
-                        });
-                        // يمكن هنا فتح نافذة الدفع
+                        // الانتقال لصفحة تسجيل الدفعة مع بيانات العقد
+                        navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
                       }}
                     >
+                      <CreditCard className="h-4 w-4 ml-1" />
                       دفع
                     </Button>
                   ) : (
@@ -1975,6 +2061,20 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                           <Printer className="h-4 w-4" />
                           طباعة
                         </Button>
+                        {payment.payment_status === 'completed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setPaymentToCancel(payment);
+                              setIsCancelDialogOpen(true);
+                            }}
+                            className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            إلغاء
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -2022,32 +2122,111 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
             </DialogHeader>
             <div className="p-4">
               {(() => {
-                const { UnifiedPrintableDocument } = require('@/components/finance');
-                const { convertReceiptToPrintable } = require('@/utils/printHelper');
-                
-                const receiptData = {
-                  id: selectedPayment.id,
-                  customer_name: contract.customer_name || 'عميل',
-                  customer_phone: contract.customer_phone,
-                  vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
-                  month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
-                  payment_date: selectedPayment.payment_date,
-                  rent_amount: selectedPayment.amount,
-                  fine: 0,
-                  total_paid: selectedPayment.amount,
-                  payment_method: selectedPayment.payment_method,
-                  reference_number: selectedPayment.reference_number,
-                  notes: selectedPayment.notes
-                };
-                
-                const printableData = convertReceiptToPrintable(receiptData);
-                
-                return <UnifiedPrintableDocument data={printableData} />;
+                try {
+                  const { UnifiedPrintableDocument } = require('@/components/finance');
+                  const { convertReceiptToPrintable } = require('@/utils/printHelper');
+                  
+                  const receiptData = {
+                    id: selectedPayment.id,
+                    customer_name: contract.customer_name || 'عميل',
+                    customer_phone: contract.customer_phone,
+                    vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
+                    month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
+                    payment_date: selectedPayment.payment_date,
+                    rent_amount: selectedPayment.amount,
+                    fine: 0,
+                    total_paid: selectedPayment.amount,
+                    payment_method: selectedPayment.payment_method,
+                    reference_number: selectedPayment.reference_number,
+                    notes: selectedPayment.notes
+                  };
+                  
+                  const printableData = convertReceiptToPrintable(receiptData);
+                  
+                  return <UnifiedPrintableDocument data={printableData} />;
+                } catch (error) {
+                  console.error('Error loading receipt:', error);
+                  return (
+                    <div className="p-6 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">رقم الدفعة</p>
+                          <p className="font-semibold">{selectedPayment.payment_number}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">المبلغ</p>
+                          <p className="font-semibold text-green-600">{formatCurrency(selectedPayment.amount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">تاريخ الدفع</p>
+                          <p className="font-semibold">{format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy')}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">طريقة الدفع</p>
+                          <p className="font-semibold">{getPaymentMethodLabel(selectedPayment.payment_method)}</p>
+                        </div>
+                        {selectedPayment.reference_number && (
+                          <div>
+                            <p className="text-sm text-gray-500">رقم المرجع</p>
+                            <p className="font-semibold">{selectedPayment.reference_number}</p>
+                          </div>
+                        )}
+                        {selectedPayment.notes && (
+                          <div className="col-span-2">
+                            <p className="text-sm text-gray-500">ملاحظات</p>
+                            <p className="font-semibold">{selectedPayment.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
               })()}
             </div>
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Cancel Payment Confirmation Dialog */}
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              تأكيد إلغاء الدفعة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>هل أنت متأكد من إلغاء هذه الدفعة؟</p>
+              {paymentToCancel && (
+                <div className="bg-red-50 p-3 rounded-lg mt-2">
+                  <p><strong>رقم الدفعة:</strong> {paymentToCancel.payment_number}</p>
+                  <p><strong>المبلغ:</strong> {formatCurrency(paymentToCancel.amount)}</p>
+                </div>
+              )}
+              <p className="text-sm text-amber-600 mt-2">
+                ⚠️ سيتم إرجاع الفاتورة المرتبطة إلى حالة "مستحقة" في قسم الفواتير
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => paymentToCancel && handleCancelPayment(paymentToCancel)}
+              disabled={isCancelling}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                'تأكيد الإلغاء'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
