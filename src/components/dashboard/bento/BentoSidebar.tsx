@@ -28,6 +28,7 @@ import {
   Clock,
   DollarSign,
   Shield,
+  ListTodo,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -114,6 +115,12 @@ const navigation: NavItem[] = [
     children: [
       { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits' },
     ],
+  },
+  {
+    id: 'tasks',
+    label: 'إدارة المهام',
+    icon: ListTodo,
+    href: '/tasks',
   },
   {
     id: 'reports',
