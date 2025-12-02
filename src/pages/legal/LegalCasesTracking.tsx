@@ -770,7 +770,7 @@ export const LegalCasesTracking: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 font-medium text-gray-800">
-                    {formatCurrency(item.total_costs)}
+                    {formatCurrency(item.case_value || item.total_costs || 0)}
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <StatusBadge status={item.case_status} />

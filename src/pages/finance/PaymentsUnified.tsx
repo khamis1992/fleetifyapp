@@ -226,6 +226,25 @@ const PaymentsUnified = () => {
     return payment.contract_number || payment.contracts?.contract_number || '-';
   };
 
+  // Helper function to get invoice month from payment
+  const getInvoiceMonth = (payment: any): string => {
+    if (payment.invoices?.due_date) {
+      return format(new Date(payment.invoices.due_date), 'MMMM yyyy', { locale: ar });
+    }
+    if (payment.invoices?.invoice_date) {
+      return format(new Date(payment.invoices.invoice_date), 'MMMM yyyy', { locale: ar });
+    }
+    return '';
+  };
+
+  // Navigate to contract details payments tab
+  const navigateToContractPayments = (payment: any) => {
+    const contractNumber = payment.contracts?.contract_number || payment.contract_number;
+    if (contractNumber) {
+      navigate(`/contracts/${contractNumber}?tab=payments`);
+    }
+  };
+
   // Date range filter logic
   const getDateRange = (range: string): { start: Date; end: Date } | null => {
     const now = new Date();
@@ -981,10 +1000,18 @@ const PaymentsUnified = () => {
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
                                   transition={{ delay: index * 0.02 }}
-                                  className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors group"
+                                  className="border-b border-neutral-100 hover:bg-coral-50/30 transition-colors group cursor-pointer"
+                                  onClick={() => navigateToContractPayments(payment)}
                                 >
-                                  <TableCell className="font-semibold text-neutral-900 whitespace-nowrap">
-                                    <span className="font-mono text-sm">{payment.payment_number}</span>
+                                  <TableCell className="whitespace-nowrap">
+                                    <div className="flex flex-col">
+                                      <span className="font-mono text-sm font-semibold text-neutral-900">{payment.payment_number}</span>
+                                      {getInvoiceMonth(payment) && (
+                                        <span className="text-[10px] text-coral-600 font-medium mt-0.5">
+                                          فاتورة {getInvoiceMonth(payment)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="whitespace-nowrap">
                                     <div className="flex items-center gap-2">
@@ -1023,7 +1050,8 @@ const PaymentsUnified = () => {
                                   <TableCell className="whitespace-nowrap">
                                     <div className="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                                       <motion.button 
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           setSelectedPayment(payment);
                                           setIsPreviewDialogOpen(true);
                                         }}
@@ -1035,7 +1063,10 @@ const PaymentsUnified = () => {
                                         <Eye className="h-4 w-4" />
                                       </motion.button>
                                       <motion.button 
-                                        onClick={() => sendReceiptViaWhatsApp(payment)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          sendReceiptViaWhatsApp(payment);
+                                        }}
                                         disabled={sendingWhatsApp === payment.id}
                                         className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors disabled:opacity-50"
                                         whileHover={{ scale: 1.1 }}

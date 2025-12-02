@@ -738,6 +738,12 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
               last_name,
               company_name,
               customer_type
+            ),
+            invoices:invoice_id (
+              id,
+              invoice_number,
+              due_date,
+              invoice_date
             )
           `)
           .eq("company_id", companyId)

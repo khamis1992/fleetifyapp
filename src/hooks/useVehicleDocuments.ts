@@ -72,6 +72,7 @@ export const useCreateVehicleRegistration = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-registration'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] });
       toast({
         title: "تم إضافة الاستمارة",
         description: "تم حفظ بيانات الاستمارة بنجاح.",
@@ -112,6 +113,7 @@ export const useUpdateVehicleRegistration = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-registration'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] });
       toast({
         title: "تم تحديث الاستمارة",
         description: "تم تحديث بيانات الاستمارة بنجاح.",

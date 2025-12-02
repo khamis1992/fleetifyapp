@@ -134,12 +134,12 @@ export const useConvertToLegal = () => {
 
       const { contract, notes, priority = 'high', caseType = 'payment_collection' } = params;
 
-      // التحقق من عدم وجود قضية سابقة مفتوحة
+      // التحقق من عدم وجود قضية سابقة مفتوحة (نشطة أو تحت الإجراء أو معلقة)
       const { data: existingCase } = await supabase
         .from('legal_cases')
         .select('id, case_number, case_status')
         .eq('contract_id', contract.id)
-        .in('case_status', ['active', 'pending', 'on_hold'])
+        .in('case_status', ['active', 'pending', 'on_hold', 'under_review'])
         .maybeSingle();
 
       if (existingCase) {
@@ -183,7 +183,7 @@ export const useConvertToLegal = () => {
           case_title: `تحصيل مستحقات عقد ${contract.contract_number}`,
           case_title_ar: `تحصيل مستحقات عقد ${contract.contract_number}`,
           case_type: caseType,
-          case_status: 'active',
+          case_status: 'pending',  // تحت الإجراء - لم تُفتح في المحكمة بعد
           priority,
           client_id: contract.customer_id,
           client_name: customerName,

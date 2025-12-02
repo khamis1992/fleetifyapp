@@ -357,10 +357,11 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
                 <AlertDescription className="text-blue-800">
                   <strong>عند التأكيد:</strong>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                    <li>سيتم إنشاء قضية قانونية جديدة بالبيانات أعلاه</li>
+                    <li>سيتم إنشاء قضية قانونية جديدة بحالة "تحت الإجراء"</li>
                     <li>ستتغير حالة العقد إلى "تحت الإجراء القانوني"</li>
                     <li>ستصبح المركبة "متوفرة" للتأجير</li>
                     <li>سيتم تسجيل العملية في سجل العقد</li>
+                    <li>يمكنك لاحقاً تغيير حالة القضية إلى "نشطة" عند فتحها في المحكمة</li>
                   </ul>
                 </AlertDescription>
               </Alert>

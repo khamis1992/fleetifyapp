@@ -76,6 +76,7 @@ export const useCreateVehicleInsurance = () => {
     onSuccess: () => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] });
       toast({
         title: "تم إضافة التأمين",
         description: "تم حفظ بيانات التأمين بنجاح.",
@@ -116,6 +117,7 @@ export const useUpdateVehicleInsurance = () => {
     onSuccess: () => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] });
       toast({
         title: "تم تحديث التأمين",
         description: "تم تحديث بيانات التأمين بنجاح.",
