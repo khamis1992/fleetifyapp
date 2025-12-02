@@ -313,6 +313,72 @@ const PaymentsUnified = () => {
 
   const CHART_COLORS = ['#e85a4f', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
 
+  // Computed stats from payments data
+  const computedStats = useMemo(() => {
+    if (!payments || payments.length === 0) {
+      return {
+        total_payments: 0,
+        payments_count: 0,
+        pending_amount: 0,
+        pending_count: 0,
+        today_payments: 0,
+        today_count: 0,
+        completed_amount: 0,
+        completed_count: 0
+      };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    let total_payments = 0;
+    let pending_amount = 0;
+    let pending_count = 0;
+    let today_payments = 0;
+    let today_count = 0;
+    let completed_amount = 0;
+    let completed_count = 0;
+
+    payments.forEach(payment => {
+      const amount = payment.amount || 0;
+      total_payments += amount;
+
+      // Pending payments
+      if (payment.payment_status === 'pending') {
+        pending_amount += amount;
+        pending_count++;
+      }
+
+      // Completed payments
+      if (payment.payment_status === 'completed' || payment.payment_status === 'cleared') {
+        completed_amount += amount;
+        completed_count++;
+      }
+
+      // Today's payments
+      if (payment.payment_date) {
+        const paymentDate = new Date(payment.payment_date);
+        if (paymentDate >= today && paymentDate <= todayEnd) {
+          today_payments += amount;
+          today_count++;
+        }
+      }
+    });
+
+    return {
+      total_payments,
+      payments_count: payments.length,
+      pending_amount,
+      pending_count,
+      today_payments,
+      today_count,
+      completed_amount,
+      completed_count
+    };
+  }, [payments]);
+
   // Utility functions
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -463,34 +529,34 @@ const PaymentsUnified = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   title="إجمالي المدفوعات"
-                  value={formatCurrency(summary?.total_payments || 0)}
-                  subtitle={`${summary?.payments_count || payments?.length || 0} دفعة`}
+                  value={formatCurrency(computedStats.total_payments)}
+                  subtitle={`${computedStats.payments_count} دفعة`}
                   icon={Banknote}
                   iconBg="bg-coral-100 text-coral-600"
                 />
                 <StatCard
                   title="مدفوعات معلقة"
-                  value={formatCurrency(summary?.pending_amount || 0)}
-                  subtitle={`${summary?.pending_count || 0} معلقة`}
+                  value={formatCurrency(computedStats.pending_amount)}
+                  subtitle={`${computedStats.pending_count} معلقة`}
                   icon={Clock}
                   iconBg="bg-amber-100 text-amber-600"
-                  trend={summary?.pending_count > 0 ? 'down' : 'neutral'}
+                  trend={computedStats.pending_count > 0 ? 'down' : 'neutral'}
                 />
                 <StatCard
-                  title="مدفوعات متأخرة"
+                  title="عقود متأخرة"
                   value={formatCurrency(summary?.overdue_amount || 0)}
-                  subtitle={`${summary?.overdue_count || 0} متأخرة`}
+                  subtitle={`${summary?.overdue_count || 0} عقد`}
                   icon={AlertCircle}
                   iconBg="bg-red-100 text-red-600"
-                  trend={summary?.overdue_count > 0 ? 'down' : 'neutral'}
+                  trend={(summary?.overdue_count || 0) > 0 ? 'down' : 'neutral'}
                 />
                 <StatCard
                   title="مدفوعات اليوم"
-                  value={formatCurrency(summary?.today_payments || 0)}
-                  subtitle={`${summary?.today_count || 0} دفعة`}
+                  value={formatCurrency(computedStats.today_payments)}
+                  subtitle={`${computedStats.today_count} دفعة`}
                   icon={CheckCircle}
                   iconBg="bg-green-100 text-green-600"
-                  change={summary?.today_count > 0 ? `+${summary?.today_count}` : undefined}
+                  change={computedStats.today_count > 0 ? `+${computedStats.today_count}` : undefined}
                   trend="up"
                 />
               </div>
