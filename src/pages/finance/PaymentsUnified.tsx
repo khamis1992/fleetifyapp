@@ -40,12 +40,13 @@ import {
   ChevronLeft,
   ArrowLeftRight,
   XCircle,
-  Printer,
   Calendar,
   ChevronRight,
   User,
   FileSignature,
-  Download
+  Download,
+  MessageCircle,
+  Loader2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -56,6 +57,7 @@ import { format, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, is
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { numberToArabicWords } from '@/utils/receiptGenerator';
 
 // ===== Stat Card Component =====
 interface StatCardProps {
@@ -179,6 +181,9 @@ const PaymentsUnified = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  
+  // WhatsApp sending state
+  const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
 
   const { data: payments, isLoading: paymentsLoading, error, refetch } = usePayments();
   const { data: summary, isLoading: summaryLoading } = usePaymentsSummary();
@@ -426,6 +431,81 @@ const PaymentsUnified = () => {
       case 'receipt': return 'bg-green-100 text-green-700';
       case 'payment': return 'bg-coral-100 text-coral-700';
       default: return 'bg-neutral-100 text-neutral-600';
+    }
+  };
+
+  // Send receipt via WhatsApp
+  const sendReceiptViaWhatsApp = async (payment: any) => {
+    // Get customer phone
+    const customerPhone = payment.customer_phone || payment.customers?.phone;
+    const customerName = getCustomerName(payment);
+    const contractNumber = getContractNumber(payment);
+    
+    if (!customerPhone) {
+      toast.error('لا يوجد رقم هاتف', {
+        description: 'لا يمكن إرسال السند لعدم وجود رقم هاتف للعميل'
+      });
+      return;
+    }
+
+    setSendingWhatsApp(payment.id);
+
+    try {
+      const paymentMethodLabel = 
+        payment.payment_method === 'cash' ? 'نقدي' : 
+        payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' : 
+        payment.payment_method === 'check' ? 'شيك' : 
+        payment.payment_method === 'credit_card' ? 'بطاقة ائتمان' : 'أخرى';
+
+      const paymentDate = payment.payment_date 
+        ? format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })
+        : format(new Date(), 'dd/MM/yyyy', { locale: ar });
+
+      // رسالة واتساب
+      const message = `سند قبض رقم: ${payment.payment_number}
+
+عزيزي/عزيزتي ${customerName}،
+
+تم استلام دفعتكم بنجاح ✅
+
+تفاصيل الدفعة:
+━━━━━━━━━━━━━━━
+• رقم السند: ${payment.payment_number}
+• رقم العقد: ${contractNumber}
+• المبلغ المدفوع: ${formatCurrency(payment.amount)}
+• المبلغ كتابة: ${numberToArabicWords(payment.amount)}
+• تاريخ الدفع: ${paymentDate}
+• طريقة الدفع: ${paymentMethodLabel}
+━━━━━━━━━━━━━━━
+
+شكرا لتعاملكم معنا 🙏
+
+شركة العراف لتأجير السيارات
+📞 للاستفسارات: +974 XXXXXXXX`;
+
+      // Format phone number for Qatar
+      let phone = customerPhone.replace(/\s+/g, '').replace(/-/g, '');
+      if (phone.startsWith('0')) {
+        phone = '974' + phone.substring(1);
+      } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
+        phone = '974' + phone;
+      }
+      phone = phone.replace('+', '');
+
+      // Open WhatsApp Web
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+
+      toast.success('تم فتح واتساب ويب', {
+        description: `جارٍ إرسال سند القبض للعميل ${customerName}`
+      });
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      toast.error('خطأ', {
+        description: 'حدث خطأ أثناء فتح واتساب'
+      });
+    } finally {
+      setSendingWhatsApp(null);
     }
   };
 
@@ -908,17 +988,18 @@ const PaymentsUnified = () => {
                                         <Eye className="h-4 w-4" />
                                       </motion.button>
                                       <motion.button 
-                                        onClick={() => {
-                                          setSelectedPayment(payment);
-                                          setIsPreviewDialogOpen(true);
-                                          setTimeout(() => window.print(), 500);
-                                        }}
-                                        className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                        onClick={() => sendReceiptViaWhatsApp(payment)}
+                                        disabled={sendingWhatsApp === payment.id}
+                                        className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors disabled:opacity-50"
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        title="طباعة"
+                                        title="إرسال عبر واتساب"
                                       >
-                                        <Printer className="h-4 w-4" />
+                                        {sendingWhatsApp === payment.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <MessageCircle className="h-4 w-4" />
+                                        )}
                                       </motion.button>
                                     </div>
                                   </TableCell>

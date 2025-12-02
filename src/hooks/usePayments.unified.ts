@@ -58,6 +58,7 @@ export interface Payment {
     last_name: string;
     company_name?: string;
     customer_type: string;
+    phone?: string;
   };
   vendors?: {
     vendor_name: string;
@@ -169,7 +170,8 @@ export const usePayments = (filters?: PaymentFilters) => {
               first_name,
               last_name,
               company_name,
-              customer_type
+              customer_type,
+              phone
             ),
             vendors (
               vendor_name
