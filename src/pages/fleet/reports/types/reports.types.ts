@@ -23,7 +23,8 @@ export type ReportType =
   | 'operational-efficiency'
   | 'profitability'
   | 'forecasting'
-  | 'traffic-violations';
+  | 'traffic-violations'
+  | 'insurance-registration';
 
 // تنسيق التصدير
 export type ExportFormat = 'pdf' | 'excel' | 'csv' | 'html';

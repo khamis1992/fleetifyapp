@@ -19,6 +19,7 @@ import {
   Download,
   Eye,
   Sparkles,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { 
@@ -28,11 +29,14 @@ import type {
   VehicleReportData,
   MaintenanceReportData,
 } from '../types/reports.types';
+import type { VehicleInsuranceRegistrationData, InsuranceRegistrationSummary } from '../hooks/useFleetReports';
 
 interface ReportGeneratorProps {
   analytics: FleetAnalyticsSummary | null;
   vehicles: VehicleReportData[];
   maintenance: MaintenanceReportData[];
+  insuranceReport?: VehicleInsuranceRegistrationData[];
+  insuranceSummary?: InsuranceRegistrationSummary | null;
   isDark: boolean;
   formatCurrency: (value: number) => string;
 }
@@ -92,6 +96,15 @@ const reportTemplates: CustomReport[] = [
     color: 'indigo',
     isAvailable: true,
   },
+  {
+    id: 'insurance-registration',
+    type: 'insurance-registration',
+    title: 'التأمين والاستمارة',
+    description: 'تقرير حالة التأمين والاستمارة لجميع المركبات',
+    icon: 'Shield',
+    color: 'blue',
+    isAvailable: true,
+  },
 ];
 
 const iconMap = {
@@ -102,6 +115,7 @@ const iconMap = {
   TrendingUp,
   Calendar,
   AlertTriangle,
+  Shield,
 };
 
 const colorMap = {
@@ -111,12 +125,15 @@ const colorMap = {
   cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-500', border: 'border-cyan-500/30' },
   rose: { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'border-rose-500/30' },
   indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'border-indigo-500/30' },
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'border-blue-500/30' },
 };
 
 export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   analytics,
   vehicles,
   maintenance,
+  insuranceReport = [],
+  insuranceSummary,
   isDark,
   formatCurrency,
 }) => {
@@ -154,6 +171,10 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
       case 'forecasting':
         title = 'تقرير التوقعات';
         content = generateForecastingReport();
+        break;
+      case 'insurance-registration':
+        title = 'تقرير التأمين والاستمارة';
+        content = generateInsuranceRegistrationReport();
         break;
       default:
         toast.error('نوع التقرير غير معروف');
@@ -444,6 +465,124 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           <li>📈 توسيع قاعدة العملاء</li>
         </ul>
       </div>
+    `;
+  };
+
+  const generateInsuranceRegistrationReport = () => {
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case 'valid': return 'ساري';
+        case 'expiring_soon': return 'ينتهي قريباً';
+        case 'expired': return 'منتهي';
+        default: return 'لا يوجد';
+      }
+    };
+
+    const getStatusClass = (status: string) => {
+      switch (status) {
+        case 'valid': return 'status-available';
+        case 'expiring_soon': return 'status-maintenance';
+        case 'expired': return 'status-rented';
+        default: return '';
+      }
+    };
+
+    return `
+      <div class="summary-stats">
+        <div class="stat-card success">
+          <div class="stat-value">${insuranceSummary?.fully_compliant || 0}</div>
+          <div class="stat-label">مكتمل (تأمين + استمارة)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${insuranceSummary?.with_valid_insurance || 0}</div>
+          <div class="stat-label">تأمين ساري</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${insuranceSummary?.with_valid_registration || 0}</div>
+          <div class="stat-label">استمارة سارية</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value">${insuranceSummary?.needs_attention || 0}</div>
+          <div class="stat-label">يحتاج اهتمام</div>
+        </div>
+      </div>
+
+      <div class="analysis-section">
+        <h3>📊 ملخص الحالة</h3>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-label">إجمالي المركبات:</span>
+            <span class="metric-value">${insuranceSummary?.total_vehicles || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">تأمين ينتهي قريباً:</span>
+            <span class="metric-value" style="color: #f59e0b;">${insuranceSummary?.with_expiring_insurance || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">تأمين منتهي:</span>
+            <span class="metric-value" style="color: #ef4444;">${insuranceSummary?.with_expired_insurance || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">بدون تأمين:</span>
+            <span class="metric-value">${insuranceSummary?.without_insurance || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">استمارة تنتهي قريباً:</span>
+            <span class="metric-value" style="color: #f59e0b;">${insuranceSummary?.with_expiring_registration || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">استمارة منتهية:</span>
+            <span class="metric-value" style="color: #ef4444;">${insuranceSummary?.with_expired_registration || 0}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">بدون استمارة:</span>
+            <span class="metric-value">${insuranceSummary?.without_registration || 0}</span>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>رقم اللوحة</th>
+            <th>المركبة</th>
+            <th>حالة التأمين</th>
+            <th>الأيام المتبقية</th>
+            <th>حالة الاستمارة</th>
+            <th>الأيام المتبقية</th>
+            <th>الحالة العامة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${insuranceReport.map(vehicle => `
+            <tr>
+              <td><strong>${vehicle.plate_number}</strong></td>
+              <td>${vehicle.make} ${vehicle.model} ${vehicle.year}</td>
+              <td class="${getStatusClass(vehicle.insurance_status)}">${getStatusLabel(vehicle.insurance_status)}</td>
+              <td>${vehicle.insurance_days_remaining !== undefined ? vehicle.insurance_days_remaining + ' يوم' : '-'}</td>
+              <td class="${getStatusClass(vehicle.registration_status)}">${getStatusLabel(vehicle.registration_status)}</td>
+              <td>${vehicle.registration_days_remaining !== undefined ? vehicle.registration_days_remaining + ' يوم' : '-'}</td>
+              <td class="${vehicle.insurance_status === 'valid' && vehicle.registration_status === 'valid' ? 'profitable' : 'not-profitable'}">
+                ${vehicle.insurance_status === 'valid' && vehicle.registration_status === 'valid' ? '✅ مكتمل' : '⚠️ يحتاج مراجعة'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      ${(insuranceSummary?.needs_attention || 0) > 0 ? `
+        <div class="analysis-section">
+          <h3>⚠️ التنبيهات والتوصيات</h3>
+          <ul class="recommendations">
+            ${(insuranceSummary?.with_expired_insurance || 0) > 0 ? `<li class="warning">🔴 يوجد ${insuranceSummary?.with_expired_insurance} مركبة بتأمين منتهي - يجب التجديد فوراً</li>` : ''}
+            ${(insuranceSummary?.with_expiring_insurance || 0) > 0 ? `<li class="info">🟡 يوجد ${insuranceSummary?.with_expiring_insurance} مركبة تأمينها ينتهي خلال 30 يوم</li>` : ''}
+            ${(insuranceSummary?.with_expired_registration || 0) > 0 ? `<li class="warning">🔴 يوجد ${insuranceSummary?.with_expired_registration} مركبة باستمارة منتهية - يجب التجديد فوراً</li>` : ''}
+            ${(insuranceSummary?.with_expiring_registration || 0) > 0 ? `<li class="info">🟡 يوجد ${insuranceSummary?.with_expiring_registration} مركبة استمارتها تنتهي خلال 30 يوم</li>` : ''}
+            ${(insuranceSummary?.without_insurance || 0) > 0 ? `<li class="warning">⚪ يوجد ${insuranceSummary?.without_insurance} مركبة بدون تأمين مسجل</li>` : ''}
+            ${(insuranceSummary?.without_registration || 0) > 0 ? `<li class="warning">⚪ يوجد ${insuranceSummary?.without_registration} مركبة بدون استمارة مسجلة</li>` : ''}
+          </ul>
+        </div>
+      ` : ''}
     `;
   };
 

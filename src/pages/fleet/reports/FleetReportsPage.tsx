@@ -636,6 +636,8 @@ const FleetReportsPage: React.FC = () => {
             analytics={analytics}
             vehicles={vehicles}
             maintenance={maintenance}
+            insuranceReport={insuranceReport}
+            insuranceSummary={insuranceSummary}
             isDark={false}
             formatCurrency={formatCurrency}
           />
