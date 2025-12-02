@@ -46,8 +46,21 @@ import {
   FileSignature,
   Download,
   MessageCircle,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
@@ -184,6 +197,10 @@ const PaymentsUnified = () => {
   
   // WhatsApp sending state
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+  
+  // Delete payment state
+  const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: payments, isLoading: paymentsLoading, error, refetch } = usePayments();
   const { data: summary, isLoading: summaryLoading } = usePaymentsSummary();
@@ -431,6 +448,36 @@ const PaymentsUnified = () => {
       case 'receipt': return 'bg-green-100 text-green-700';
       case 'payment': return 'bg-coral-100 text-coral-700';
       default: return 'bg-neutral-100 text-neutral-600';
+    }
+  };
+
+  // Delete payment
+  const handleDeletePayment = async () => {
+    if (!paymentToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', paymentToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('تم حذف الدفعة بنجاح', {
+        description: `تم حذف السند رقم ${paymentToDelete.payment_number}`
+      });
+      
+      // Refresh the payments list
+      refetch();
+      setPaymentToDelete(null);
+    } catch (error: any) {
+      console.error('Error deleting payment:', error);
+      toast.error('خطأ في حذف الدفعة', {
+        description: error.message || 'حدث خطأ أثناء حذف الدفعة'
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1001,6 +1048,15 @@ const PaymentsUnified = () => {
                                           <MessageCircle className="h-4 w-4" />
                                         )}
                                       </motion.button>
+                                      <motion.button 
+                                        onClick={() => setPaymentToDelete(payment)}
+                                        className="w-8 h-8 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        title="حذف الدفعة"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </motion.button>
                                     </div>
                                   </TableCell>
                                 </motion.tr>
@@ -1301,6 +1357,56 @@ const PaymentsUnified = () => {
             mode="floating"
             position="left"
           />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={!!paymentToDelete} onOpenChange={(open) => !open && setPaymentToDelete(null)}>
+            <AlertDialogContent dir="rtl">
+              <AlertDialogHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <AlertDialogTitle className="text-xl">
+                    هل أنت متأكد من حذف هذه الدفعة؟
+                  </AlertDialogTitle>
+                </div>
+                <AlertDialogDescription className="text-right space-y-2">
+                  <p>سيتم حذف الدفعة التالية نهائياً:</p>
+                  {paymentToDelete && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
+                      <p><strong>رقم السند:</strong> {paymentToDelete.payment_number}</p>
+                      <p><strong>المبلغ:</strong> {formatCurrency(paymentToDelete.amount)}</p>
+                      <p><strong>العميل:</strong> {getCustomerName(paymentToDelete)}</p>
+                      <p><strong>التاريخ:</strong> {format(new Date(paymentToDelete.payment_date), 'dd/MM/yyyy', { locale: ar })}</p>
+                    </div>
+                  )}
+                  <p className="text-red-600 font-medium">
+                    ⚠️ لا يمكن التراجع عن هذا الإجراء!
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2 flex-row-reverse">
+                <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeletePayment}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      جارٍ الحذف...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      نعم، احذف الدفعة
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </FinanceErrorBoundary>
