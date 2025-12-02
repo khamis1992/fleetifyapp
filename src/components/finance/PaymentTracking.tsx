@@ -260,7 +260,7 @@ export const PaymentTracking: React.FC = () => {
   };
 
   // Check if there is any data
-  const hasData = invoiceTimelines && invoiceTimelines.length > 0;
+  const hasData = invoiceTimeline && invoiceTimeline.length > 0;
 
   return (
     <div className="space-y-6">
@@ -273,7 +273,7 @@ export const PaymentTracking: React.FC = () => {
       </div>
 
       {/* Show message if no data */}
-      {!isLoading && !hasData && (
+      {!timelineLoading && !hasData && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -291,7 +291,7 @@ export const PaymentTracking: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(reconciliationSummary?.total_amount || 0).toLocaleString()} ر.ق
+              {(reconciliationSummary?.total_payments_amount || 0).toLocaleString()} ر.ق
             </div>
             <p className="text-xs text-muted-foreground">
               {reconciliationSummary?.total_completed_payments || 0} دفعة

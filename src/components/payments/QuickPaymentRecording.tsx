@@ -86,29 +86,41 @@ export function QuickPaymentRecording() {
     });
   }, [invoices, showAllInvoices]);
 
-  // Check for overdue invoices
+  // Check for overdue invoices (past due date)
   const overdueInvoices = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+    
     return invoices.filter(invoice => {
-      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
-      return dueDate && isBefore(dueDate, new Date());
+      if (!invoice.due_date) return false;
+      const dueDate = new Date(invoice.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
     });
   }, [invoices]);
 
   // Check if user selected a future invoice while there are overdue ones
   const hasFutureSelectionWithOverdue = useMemo(() => {
     if (overdueInvoices.length === 0) return false;
+    if (selectedInvoices.length === 0) return false;
     
-    const now = new Date();
-    const selectedFuture = selectedInvoices.some(inv => {
-      const dueDate = inv.due_date ? new Date(inv.due_date) : null;
-      return dueDate && !isBefore(dueDate, now);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if any selected invoice is NOT overdue (i.e., future or current)
+    const selectedFutureOrCurrent = selectedInvoices.some(inv => {
+      if (!inv.due_date) return false;
+      const dueDate = new Date(inv.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate >= today; // Due date is today or in the future
     });
     
+    // Check if there are unselected overdue invoices
     const hasUnselectedOverdue = overdueInvoices.some(overdue => 
       !selectedInvoices.some(sel => sel.id === overdue.id)
     );
     
-    return selectedFuture && hasUnselectedOverdue;
+    return selectedFutureOrCurrent && hasUnselectedOverdue;
   }, [selectedInvoices, overdueInvoices]);
 
   // Count hidden invoices
@@ -800,22 +812,38 @@ export function QuickPaymentRecording() {
 
                 {/* Show proceed button when invoices are selected */}
                 {selectedInvoices.length > 0 && (
-                  <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-medium text-green-800">
-                        تم تحديد {selectedInvoices.length} فاتورة
-                      </span>
-                      <span className="text-xl font-bold text-green-700">
-                        {getTotalSelectedAmount().toFixed(2)} ر.ق
-                      </span>
+                  <div className="mt-4 space-y-3">
+                    {/* Warning before payment if selecting future invoice with overdue ones */}
+                    {hasFutureSelectionWithOverdue && (
+                      <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 flex items-start gap-3 animate-pulse">
+                        <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-amber-800 font-bold">⚠️ تنبيه هام!</p>
+                          <p className="text-amber-700 text-sm mt-1">
+                            لديك {overdueInvoices.length} فاتورة متأخرة غير مدفوعة. 
+                            يُنصح بدفع الفواتير المتأخرة أولاً قبل دفع الفواتير المستقبلية.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-green-800">
+                          تم تحديد {selectedInvoices.length} فاتورة
+                        </span>
+                        <span className="text-xl font-bold text-green-700">
+                          {getTotalSelectedAmount().toFixed(2)} ر.ق
+                        </span>
+                      </div>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        onClick={() => setReadyToPay(true)}
+                      >
+                        <Check className="h-4 w-4 ml-2" />
+                        متابعة للدفع ({selectedInvoices.length} فاتورة)
+                      </Button>
                     </div>
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => setReadyToPay(true)}
-                    >
-                      <Check className="h-4 w-4 ml-2" />
-                      متابعة للدفع ({selectedInvoices.length} فاتورة)
-                    </Button>
                   </div>
                 )}
               </div>
