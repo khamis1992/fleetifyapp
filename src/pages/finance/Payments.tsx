@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePayments } from "@/hooks/useFinance";
 import { UnifiedPaymentForm } from "@/components/finance/UnifiedPaymentForm";
 import { FinanceErrorBoundary } from "@/components/finance/FinanceErrorBoundary";
@@ -6,7 +7,6 @@ import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog"
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Table, 
@@ -17,9 +17,8 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Search, Filter, BarChart3, CreditCard, Eye, FileText, Brain } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Search, Filter, BarChart3, CreditCard, Eye, Brain, TrendingUp, TrendingDown, Banknote, CheckCircle2, Clock, XCircle, ArrowLeftRight, ChevronLeft, Home } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,8 +28,76 @@ import { BulkDeletePaymentsDialog } from "@/components/finance/payments/BulkDele
 import { ProfessionalPaymentSystem } from "@/components/finance/ProfessionalPaymentSystem";
 import { useSimpleBreakpoint } from "@/hooks/use-mobile-simple";
 import { HelpIcon } from '@/components/help/HelpIcon';
+import { cn } from "@/lib/utils";
+
+// ===== Stat Card Component =====
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  change?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  trend?: 'up' | 'down' | 'neutral';
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  change,
+  icon: Icon,
+  iconBg,
+  trend = 'neutral',
+}) => {
+  return (
+    <motion.div 
+      className="bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-all h-full flex flex-col"
+      whileHover={{ y: -2, scale: 1.01 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <motion.div 
+          className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg)}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Icon className="w-5 h-5" />
+        </motion.div>
+        {change && (
+          <motion.span 
+            className={cn(
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
+              trend === 'up' ? 'bg-green-100 text-green-600' : 
+              trend === 'down' ? 'bg-red-100 text-red-600' : 
+              'bg-neutral-100 text-neutral-600'
+            )}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", delay: 0.2 }}
+          >
+            {trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : 
+             trend === 'down' ? <TrendingDown className="w-2.5 h-2.5" /> : null}
+            {change}
+          </motion.span>
+        )}
+      </div>
+      <p className="text-xs text-neutral-500 font-medium mb-1">{title}</p>
+      <motion.p 
+        className="text-2xl font-bold text-neutral-900 leading-none"
+        key={String(value)}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {value}
+      </motion.p>
+    </motion.div>
+  );
+};
 
 const Payments = () => {
+  const navigate = useNavigate();
   // حالة البحث والتصفية
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -50,17 +117,9 @@ const Payments = () => {
     end: ""
   });
 
-  
-
   const { data: payments, isLoading, error, refetch } = usePayments();
   const { formatCurrency } = useCurrencyFormatter();
   const { isMobile } = useSimpleBreakpoint();
-
-  console.log("🔍 [Payments Page] حالة التحميل:", {
-    isLoading,
-    error: error?.message,
-    paymentsCount: payments?.length || 0
-  });
 
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = payment.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,14 +132,20 @@ const Payments = () => {
     return matchesSearch && matchesStatus && matchesMethod;
   }) || [];
 
+  // Calculate stats
+  const totalAmount = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const completedPayments = filteredPayments.filter(p => p.payment_status === 'completed').length;
+  const pendingPayments = filteredPayments.filter(p => p.payment_status === 'pending').length;
+  const receiptsCount = filteredPayments.filter(p => (p as any).transaction_type === 'receipt').length;
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-success/10 text-success border-success/20';
-      case 'cleared': return 'bg-success/10 text-success border-success/20';
-      case 'pending': return 'bg-warning/10 text-warning border-warning/20';
-      case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'bounced': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted text-muted-foreground';
+      case 'completed': return 'bg-green-100 text-green-700 border-green-200';
+      case 'cleared': return 'bg-green-100 text-green-700 border-green-200';
+      case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
+      case 'bounced': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-neutral-100 text-neutral-600';
     }
   };
 
@@ -116,9 +181,9 @@ const Payments = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'receipt': return 'bg-success/10 text-success border-success/20';
-      case 'payment': return 'bg-primary/10 text-primary border-primary/20';
-      default: return 'bg-muted text-muted-foreground';
+      case 'receipt': return 'bg-green-100 text-green-700';
+      case 'payment': return 'bg-coral-100 text-coral-700';
+      default: return 'bg-neutral-100 text-neutral-600';
     }
   };
 
@@ -127,131 +192,170 @@ const Payments = () => {
     <FinanceErrorBoundary
       error={error ? new Error(error.message || 'خطأ في تحميل المدفوعات') : null}
       isLoading={isLoading}
-      onRetry={() => {
-        console.log("🔄 [Payments Page] إعادة تحميل المدفوعات");
-        refetch();
-      }}
+      onRetry={() => refetch()}
       title="خطأ في المدفوعات"
       context="صفحة المدفوعات"
     >
-      <div className="container mx-auto p-6">
-        <div className="space-y-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/finance">المالية</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>المدفوعات</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
-              <CreditCard className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>المدفوعات</h1>
-                <HelpIcon topic="debitCredit" />
-              </div>
-              <p className="text-muted-foreground text-sm">إدارة المدفوعات والمقبوضات مع النظام الموحد المتطور</p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-[#f0efed]" dir="rtl">
+        <div className="p-5 space-y-5">
           
-          {/* Desktop Action Buttons */}
-          {!isMobile && (
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                دفع جديد
-              </Button>
-            </div>
-          )}
-
-          {/* Mobile Action Buttons */}
-          {isMobile && (
-            <Button 
-              size="lg"
-              className="h-12 text-base w-full"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              دفع جديد
-            </Button>
-          )}
-        </div>
-
-          
-          <Tabs defaultValue="list" className="w-full">
-           <TabsList className="grid w-full grid-cols-2">
-             <TabsTrigger value="list" className="flex items-center gap-2">
-               <CreditCard className="h-4 w-4" />
-               قائمة المدفوعات
-             </TabsTrigger>
-             <TabsTrigger value="analytics" className="flex items-center gap-2">
-               <BarChart3 className="h-4 w-4" />
-               التحليلات والتقارير
-             </TabsTrigger>
-           </TabsList>
-
-          <TabsContent value="analytics" className="mt-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>فلترة التقارير</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">من تاريخ</label>
-                      <Input
-                        type="date"
-                        value={dateRange.start}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">إلى تاريخ</label>
-                      <Input
-                        type="date"
-                        value={dateRange.end}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Header */}
+          <motion.div 
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {/* Breadcrumb & Title */}
+            <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => navigate('/finance/hub')}
+                className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ChevronLeft className="w-5 h-5 text-neutral-600" />
+              </motion.button>
               
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-coral-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-coral-500/30">
+                  <CreditCard className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-neutral-900">المدفوعات وسندات القبض</h1>
+                    <HelpIcon topic="debitCredit" />
+                  </div>
+                  <p className="text-xs text-neutral-500">إدارة المدفوعات والمقبوضات</p>
+                </div>
+              </div>
             </div>
-          </TabsContent>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <motion.button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors shadow-lg shadow-coral-500/30"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Plus className="w-4 h-4" />
+                <span>سند جديد</span>
+              </motion.button>
+            </div>
+          </motion.div>
 
-          <TabsContent value="list" className="mt-6">
-            {/* فلاتر البحث */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
-                  البحث والفلتر
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard
+              title="إجمالي المدفوعات"
+              value={filteredPayments.length}
+              icon={CreditCard}
+              iconBg="bg-coral-100 text-coral-600"
+            />
+            <StatCard
+              title="المبلغ الإجمالي"
+              value={formatCurrency(totalAmount)}
+              icon={Banknote}
+              iconBg="bg-green-100 text-green-600"
+              change="+12%"
+              trend="up"
+            />
+            <StatCard
+              title="مكتملة"
+              value={completedPayments}
+              icon={CheckCircle2}
+              iconBg="bg-blue-100 text-blue-600"
+            />
+            <StatCard
+              title="سندات القبض"
+              value={receiptsCount}
+              icon={ArrowLeftRight}
+              iconBg="bg-amber-100 text-amber-600"
+            />
+          </div>
+            
+          {/* Tabs */}
+          <Tabs defaultValue="list" className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <TabsList className="bg-white rounded-xl p-1 shadow-sm">
+                <TabsTrigger 
+                  value="list" 
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  قائمة المدفوعات
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="analytics" 
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  التحليلات والتقارير
+                </TabsTrigger>
+              </TabsList>
+            </motion.div>
+
+            <TabsContent value="analytics" className="mt-5">
+              <motion.div 
+                className="bg-white rounded-[1.25rem] p-5 shadow-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h3 className="font-bold text-neutral-900 text-sm mb-4">فلترة التقارير</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-neutral-500 mb-2 block">من تاريخ</label>
                     <Input
-                      placeholder="البحث برقم الدفع أو المرجع أو رقم العقد..."
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="rounded-xl border-neutral-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-neutral-500 mb-2 block">إلى تاريخ</label>
+                    <Input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="rounded-xl border-neutral-200"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="list" className="mt-5 space-y-4">
+              {/* Search & Filters */}
+              <motion.div 
+                className="bg-white rounded-[1.25rem] p-5 shadow-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="w-4 h-4 text-coral-500" />
+                  <h3 className="font-bold text-neutral-900 text-sm">البحث والفلتر</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+                    <Input
+                      placeholder="ابحث برقم الدفع أو المرجع..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pr-10 rounded-xl border-neutral-200 focus:ring-2 focus:ring-coral-500/20"
                     />
                   </div>
                   
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl border-neutral-200">
                       <SelectValue placeholder="حالة الدفع" />
                     </SelectTrigger>
                     <SelectContent>
@@ -263,215 +367,246 @@ const Payments = () => {
                   </Select>
 
                   <Select value={filterMethod} onValueChange={setFilterMethod}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl border-neutral-200">
                       <SelectValue placeholder="طريقة الدفع" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">جميع الطرق</SelectItem>
                       <SelectItem value="cash">نقدي</SelectItem>
                       <SelectItem value="check">شيك</SelectItem>
-                       <SelectItem value="bank_transfer">حوالة بنكية</SelectItem>
-                       <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
-                       <SelectItem value="debit_card">بطاقة خصم</SelectItem>
+                      <SelectItem value="bank_transfer">حوالة بنكية</SelectItem>
+                      <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
+                      <SelectItem value="debit_card">بطاقة خصم</SelectItem>
                     </SelectContent>
                   </Select>
 
-                  <Button variant="outline" onClick={() => {
-                    setSearchTerm("");
-                    setFilterStatus("");
-                    setFilterMethod("");
-                  }}>
+                  <motion.button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setFilterStatus("");
+                      setFilterMethod("");
+                    }}
+                    className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-200 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     مسح الفلاتر
-                  </Button>
+                  </motion.button>
                 </div>
-              </CardContent>
-            </Card>
+              </motion.div>
 
-            {/* جدول المدفوعات */}
-            <Card>
-              <CardHeader>
-                <CardTitle>قائمة المدفوعات</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  إجمالي {filteredPayments.length} دفعة
-                </p>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex flex-col justify-center items-center py-12 space-y-4">
-                    <LoadingSpinner size="lg" />
-                    <div className="text-center">
-                      <p className="text-muted-foreground mb-2">جارى تحميل المدفوعات...</p>
-                      <p className="text-sm text-muted-foreground">يتم البحث في قاعدة البيانات</p>
-                    </div>
+              {/* Payments Table */}
+              <motion.div 
+                className="bg-white rounded-[1.25rem] shadow-sm overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                <div className="p-5 border-b border-neutral-100">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-neutral-900 text-sm">قائمة المدفوعات</h3>
+                    <span className="text-xs text-neutral-500 bg-neutral-100 px-3 py-1 rounded-full">
+                      {filteredPayments.length} سجل
+                    </span>
                   </div>
-                ) : error ? (
-                  <div className="text-center py-12 space-y-4">
-                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                      <p className="text-destructive font-medium mb-2">حدث خطأ في تحميل المدفوعات</p>
-                      <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
-                      <div className="space-x-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => refetch()}
-                          className="mr-2"
-                        >
-                          إعادة المحاولة
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => window.location.reload()}
-                        >
-                          إعادة تحميل الصفحة
-                        </Button>
+                </div>
+                
+                <div className="p-4">
+                  {isLoading ? (
+                    <div className="flex flex-col justify-center items-center py-12 space-y-4">
+                      <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="text-center">
+                        <p className="text-neutral-600 mb-1 font-medium">جارى تحميل المدفوعات...</p>
+                        <p className="text-xs text-neutral-400">يتم البحث في قاعدة البيانات</p>
                       </div>
                     </div>
-                  </div>
-                ) : filteredPayments.length === 0 ? (
-                  <div className="text-center py-8">
-                    <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">لا توجد مدفوعات</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setIsCreateDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      إنشاء أول دفعة
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>رقم الدفع</TableHead>
-                              <TableHead>النوع</TableHead>
-                              <TableHead>التاريخ</TableHead>
-                              <TableHead>المبلغ</TableHead>
-                              <TableHead>طريقة الدفع</TableHead>
-                              <TableHead>الحالة</TableHead>
-                              <TableHead>رقم المرجع</TableHead>
-                              <TableHead>رقم العقد</TableHead>
-                              <TableHead>الإجراءات</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                      <TableBody>
-                        {filteredPayments.map((payment) => (
-                            <TableRow key={payment.id}>
-                              <TableCell className="font-medium">
-                                {payment.payment_number}
-                              </TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor((payment as any).transaction_type)}`}>
-                                  {getTypeLabel((payment as any).transaction_type)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {new Date(payment.payment_date).toLocaleDateString('en-GB')}
-                              </TableCell>
-                               <TableCell className="font-mono">
-                                 {formatCurrency(payment.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                               </TableCell>
-                              <TableCell>
-                                 <Badge variant="outline">
-                                   {getMethodLabel(payment.payment_type || payment.payment_method)}
-                                 </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.payment_status)}`}>
-                                  {getStatusLabel(payment.payment_status)}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {payment.reference_number || '-'}
-                              </TableCell>
-                              <TableCell>
-                                {(payment as any).contracts ? (
-                                  <div className="flex flex-col">
-                                    <Badge variant="outline" className="w-fit">
-                                      {(payment as any).contracts.contract_number}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground mt-1">
-                                      {(payment as any).contracts.status === 'active' ? 'نشط' : 
-                                       (payment as any).contracts.status === 'completed' ? 'مكتمل' :
-                                       (payment as any).contracts.status === 'cancelled' ? 'ملغي' : 
-                                       (payment as any).contracts.status || '-'}
-                                    </span>
-                                  </div>
-                                ) : (payment as any).contract_id ? (
-                                  <span className="text-muted-foreground text-sm">-</span>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedPayment(payment);
-                                    setIsPreviewDialogOpen(true);
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                         ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  ) : error ? (
+                    <div className="text-center py-12 space-y-4">
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <XCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+                        <p className="text-red-700 font-medium mb-2">حدث خطأ في تحميل المدفوعات</p>
+                        <p className="text-sm text-neutral-500 mb-4">{error.message}</p>
+                        <div className="flex justify-center gap-2">
+                          <motion.button 
+                            onClick={() => refetch()}
+                            className="px-4 py-2 bg-coral-500 text-white rounded-lg text-sm font-medium"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            إعادة المحاولة
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : filteredPayments.length === 0 ? (
+                    <div className="text-center py-12">
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring" }}
+                      >
+                        <div className="w-16 h-16 bg-coral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <CreditCard className="w-8 h-8 text-coral-500" />
+                        </div>
+                        <p className="text-neutral-600 font-medium mb-2">لا توجد مدفوعات</p>
+                        <p className="text-xs text-neutral-400 mb-4">ابدأ بإنشاء أول سند قبض أو صرف</p>
+                        <motion.button 
+                          onClick={() => setIsCreateDialogOpen(true)}
+                          className="px-5 py-2.5 bg-coral-500 text-white rounded-full text-sm font-semibold inline-flex items-center gap-2"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Plus className="h-4 w-4" />
+                          إنشاء سند جديد
+                        </motion.button>
+                      </motion.div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-neutral-50 hover:bg-neutral-50">
+                            <TableHead className="text-right font-semibold text-neutral-700">رقم السند</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">النوع</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">التاريخ</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">المبلغ</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">طريقة الدفع</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">الحالة</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">رقم المرجع</TableHead>
+                            <TableHead className="text-right font-semibold text-neutral-700">رقم العقد</TableHead>
+                            <TableHead className="text-center font-semibold text-neutral-700">عرض</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <AnimatePresence>
+                            {filteredPayments.map((payment, index) => (
+                              <motion.tr
+                                key={payment.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ delay: index * 0.02 }}
+                                className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors"
+                              >
+                                <TableCell className="font-semibold text-neutral-900">
+                                  {payment.payment_number}
+                                </TableCell>
+                                <TableCell>
+                                  <span className={cn(
+                                    "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold",
+                                    getTypeColor((payment as any).transaction_type)
+                                  )}>
+                                    {getTypeLabel((payment as any).transaction_type)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-neutral-600">
+                                  {new Date(payment.payment_date).toLocaleDateString('en-GB')}
+                                </TableCell>
+                                <TableCell className="font-mono font-semibold text-neutral-900">
+                                  {formatCurrency(payment.amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="inline-flex items-center px-2.5 py-1 bg-neutral-100 rounded-lg text-xs font-medium text-neutral-700">
+                                    {getMethodLabel(payment.payment_type || payment.payment_method)}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className={cn(
+                                    "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border",
+                                    getStatusColor(payment.payment_status)
+                                  )}>
+                                    {getStatusLabel(payment.payment_status)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-neutral-500 text-sm">
+                                  {payment.reference_number || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  {(payment as any).contracts ? (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium w-fit">
+                                        {(payment as any).contracts.contract_number}
+                                      </span>
+                                      <span className="text-[10px] text-neutral-400">
+                                        {(payment as any).contracts.status === 'active' ? 'نشط' : 
+                                         (payment as any).contracts.status === 'completed' ? 'مكتمل' :
+                                         (payment as any).contracts.status === 'cancelled' ? 'ملغي' : 
+                                         (payment as any).contracts.status || '-'}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-neutral-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <motion.button 
+                                    onClick={() => {
+                                      setSelectedPayment(payment);
+                                      setIsPreviewDialogOpen(true);
+                                    }}
+                                    className="w-8 h-8 bg-coral-50 text-coral-600 rounded-lg flex items-center justify-center hover:bg-coral-100 transition-colors mx-auto"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </motion.button>
+                                </TableCell>
+                              </motion.tr>
+                            ))}
+                          </AnimatePresence>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
 
-        {/* نموذج إنشاء دفعة جديدة - الموحد */}
-        <UnifiedPaymentForm
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-          type="customer_payment"
-        />
+          {/* نموذج إنشاء دفعة جديدة - الموحد */}
+          <UnifiedPaymentForm
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+            type="customer_payment"
+          />
 
-        {/* نظام رفع المدفوعات الموحد */}
-        <UnifiedPaymentUpload 
-          open={isUnifiedUploadOpen}
-          onOpenChange={setIsUnifiedUploadOpen}
-          onUploadComplete={() => {
-            setIsUnifiedUploadOpen(false);
-            // تحديث البيانات بعد الرفع - سيتم تحديثها تلقائياً بواسطة React Query
-          }}
-        />
-        
-        <BulkDeletePaymentsDialog
-          isOpen={isBulkDeleteOpen}
-          onClose={() => setIsBulkDeleteOpen(false)}
-          totalPayments={payments?.length || 0}
-        />
+          {/* نظام رفع المدفوعات الموحد */}
+          <UnifiedPaymentUpload 
+            open={isUnifiedUploadOpen}
+            onOpenChange={setIsUnifiedUploadOpen}
+            onUploadComplete={() => {
+              setIsUnifiedUploadOpen(false);
+            }}
+          />
+          
+          <BulkDeletePaymentsDialog
+            isOpen={isBulkDeleteOpen}
+            onClose={() => setIsBulkDeleteOpen(false)}
+            totalPayments={payments?.length || 0}
+          />
 
-        {/* مكون معاينة تفاصيل الدفعة */}
-        <PaymentPreviewDialog 
-          payment={selectedPayment} 
-          open={isPreviewDialogOpen} 
-          onOpenChange={setIsPreviewDialogOpen} 
-        />
+          {/* مكون معاينة تفاصيل الدفعة */}
+          <PaymentPreviewDialog 
+            payment={selectedPayment} 
+            open={isPreviewDialogOpen} 
+            onOpenChange={setIsPreviewDialogOpen} 
+          />
 
-        {/* نافذة النظام الاحترافي */}
-        <Dialog open={isProfessionalSystemOpen} onOpenChange={setIsProfessionalSystemOpen}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-purple-500" />
-                النظام الاحترافي للمدفوعات
-              </DialogTitle>
-            </DialogHeader>
-            <ProfessionalPaymentSystem />
-          </DialogContent>
-        </Dialog>
-          </div>
+          {/* نافذة النظام الاحترافي */}
+          <Dialog open={isProfessionalSystemOpen} onOpenChange={setIsProfessionalSystemOpen}>
+            <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-coral-500" />
+                  النظام الاحترافي للمدفوعات
+                </DialogTitle>
+              </DialogHeader>
+              <ProfessionalPaymentSystem />
+            </DialogContent>
+          </Dialog>
         </div>
-      </FinanceErrorBoundary>
+      </div>
+    </FinanceErrorBoundary>
   );
 };
 
