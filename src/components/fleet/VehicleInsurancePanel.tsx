@@ -174,51 +174,47 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     إضافة تأمين
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl bg-[#f8f7f5] border-0 shadow-2xl">
-                  <DialogHeader className="pb-4 border-b border-neutral-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
-                        <Shield className="h-6 w-6 text-white" />
+                <DialogContent className="max-w-xl bg-[#f8f7f5] border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader className="pb-3 border-b border-neutral-200 sticky top-0 bg-[#f8f7f5] z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <DialogTitle className="text-xl font-bold text-neutral-900">إضافة بوليصة تأمين جديدة</DialogTitle>
-                        <DialogDescription className="text-neutral-500">
-                          تسجيل بيانات التأمين وتفاصيل البوليصة
+                        <DialogTitle className="text-lg font-bold text-neutral-900">إضافة بوليصة تأمين</DialogTitle>
+                        <DialogDescription className="text-neutral-500 text-xs">
+                          تسجيل بيانات التأمين
                         </DialogDescription>
                       </div>
                     </div>
                   </DialogHeader>
-                  <form onSubmit={insuranceForm.handleSubmit(onInsuranceSubmit)} className="space-y-6 pt-4">
-                    {/* Basic Info Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-coral-500"></div>
-                        معلومات التأمين الأساسية
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="insurance_company" className="text-neutral-600 text-sm">شركة التأمين</Label>
+                  <form onSubmit={insuranceForm.handleSubmit(onInsuranceSubmit)} className="space-y-3 pt-3">
+                    {/* Basic Info + Financial in one section */}
+                    <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="insurance_company" className="text-neutral-600 text-xs">شركة التأمين *</Label>
                           <Input
                             id="insurance_company"
-                            placeholder="أدخل اسم شركة التأمين"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                            placeholder="اسم الشركة"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
                             {...insuranceForm.register("insurance_company", { required: true })}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="policy_number" className="text-neutral-600 text-sm">رقم البوليصة</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor="policy_number" className="text-neutral-600 text-xs">رقم البوليصة *</Label>
                           <Input
                             id="policy_number"
-                            placeholder="أدخل رقم البوليصة"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                            placeholder="رقم البوليصة"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
                             {...insuranceForm.register("policy_number", { required: true })}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="coverage_type" className="text-neutral-600 text-sm">نوع التأمين</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor="coverage_type" className="text-neutral-600 text-xs">نوع التأمين</Label>
                           <select
                             id="coverage_type"
-                            className="w-full h-10 px-3 rounded-md bg-neutral-50 border border-neutral-200 focus:border-coral-500 focus:ring-2 focus:ring-coral-500/20 outline-none transition-colors"
+                            className="w-full h-9 px-2 text-sm rounded-md bg-neutral-50 border border-neutral-200 focus:border-coral-500 outline-none"
                             {...insuranceForm.register("coverage_type")}
                           >
                             <option value="comprehensive">شامل</option>
@@ -229,144 +225,122 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                       </div>
                     </div>
 
-                    {/* Financial Info Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        المعلومات المالية
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4">
+                    {/* Financial + Dates combined */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
+                        <h4 className="text-xs font-medium text-neutral-500 mb-2">المعلومات المالية</h4>
                         <div className="space-y-2">
-                          <Label htmlFor="premium_amount" className="text-neutral-600 text-sm">قسط التأمين (ر.ق)</Label>
-                          <Input
-                            id="premium_amount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("premium_amount", { valueAsNumber: true })}
-                          />
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-neutral-600 text-[10px]">القسط</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0"
+                                className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                                {...insuranceForm.register("premium_amount", { valueAsNumber: true })}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-neutral-600 text-[10px]">التغطية</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0"
+                                className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                                {...insuranceForm.register("coverage_amount", { valueAsNumber: true })}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-neutral-600 text-[10px]">التحمل</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0"
+                                className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                                {...insuranceForm.register("deductible_amount", { valueAsNumber: true })}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="coverage_amount" className="text-neutral-600 text-sm">مبلغ التغطية (ر.ق)</Label>
-                          <Input
-                            id="coverage_amount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("coverage_amount", { valueAsNumber: true })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="deductible_amount" className="text-neutral-600 text-sm">مبلغ التحمل (ر.ق)</Label>
-                          <Input
-                            id="deductible_amount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("deductible_amount", { valueAsNumber: true })}
-                          />
+                      </div>
+
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
+                        <h4 className="text-xs font-medium text-neutral-500 mb-2">فترة التأمين</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-neutral-600 text-[10px]">من</Label>
+                            <Input
+                              type="date"
+                              className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                              {...insuranceForm.register("start_date")}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-neutral-600 text-[10px]">إلى</Label>
+                            <Input
+                              type="date"
+                              className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                              {...insuranceForm.register("end_date")}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Dates Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        فترة التأمين
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="start_date" className="text-neutral-600 text-sm">تاريخ البداية</Label>
-                          <Input
-                            id="start_date"
-                            type="date"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("start_date")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="end_date" className="text-neutral-600 text-sm">تاريخ الانتهاء</Label>
-                          <Input
-                            id="end_date"
-                            type="date"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("end_date")}
-                          />
-                        </div>
+                    {/* Contact Info - Collapsible style */}
+                    <details className="bg-white rounded-lg shadow-sm border border-neutral-100 group">
+                      <summary className="p-3 cursor-pointer text-xs font-medium text-neutral-500 hover:text-neutral-700 list-none flex items-center justify-between">
+                        <span>بيانات الاتصال (اختياري)</span>
+                        <span className="text-[10px] text-neutral-400">انقر للتوسيع</span>
+                      </summary>
+                      <div className="px-3 pb-3 grid grid-cols-3 gap-2">
+                        <Input
+                          placeholder="شخص الاتصال"
+                          className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                          {...insuranceForm.register("contact_person")}
+                        />
+                        <Input
+                          placeholder="رقم الهاتف"
+                          className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                          {...insuranceForm.register("contact_phone")}
+                          dir="ltr"
+                        />
+                        <Input
+                          type="email"
+                          placeholder="البريد الإلكتروني"
+                          className="h-8 text-sm bg-neutral-50 border-neutral-200"
+                          {...insuranceForm.register("contact_email")}
+                        />
                       </div>
-                    </div>
+                    </details>
 
-                    {/* Contact Info Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                        بيانات الاتصال (اختياري)
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="contact_person" className="text-neutral-600 text-sm">شخص الاتصال</Label>
-                          <Input
-                            id="contact_person"
-                            placeholder="الاسم"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("contact_person")}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="contact_phone" className="text-neutral-600 text-sm">رقم الهاتف</Label>
-                          <Input
-                            id="contact_phone"
-                            placeholder="+974 XXXX XXXX"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("contact_phone")}
-                            dir="ltr"
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-2">
-                          <Label htmlFor="contact_email" className="text-neutral-600 text-sm">البريد الإلكتروني</Label>
-                          <Input
-                            id="contact_email"
-                            type="email"
-                            placeholder="email@example.com"
-                            className="bg-neutral-50 border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
-                            {...insuranceForm.register("contact_email")}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="space-y-2">
-                      <Label htmlFor="notes" className="text-neutral-600 text-sm">ملاحظات</Label>
-                      <textarea
-                        id="notes"
-                        className="w-full p-3 rounded-xl bg-white border border-neutral-200 focus:border-coral-500 focus:ring-2 focus:ring-coral-500/20 outline-none transition-colors resize-none"
-                        rows={3}
-                        placeholder="أي ملاحظات إضافية..."
-                        {...insuranceForm.register("notes")}
-                      />
-                    </div>
+                    {/* Notes - smaller */}
+                    <textarea
+                      className="w-full p-2 text-sm rounded-lg bg-white border border-neutral-200 focus:border-coral-500 outline-none resize-none"
+                      rows={2}
+                      placeholder="ملاحظات (اختياري)..."
+                      {...insuranceForm.register("notes")}
+                    />
 
                     {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+                    <div className="flex justify-end gap-2 pt-2 border-t border-neutral-200">
                       <Button 
                         type="button" 
                         variant="outline" 
+                        size="sm"
                         onClick={() => setShowInsuranceForm(false)}
-                        className="px-6 border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                        className="px-4 border-neutral-300 text-neutral-600"
                       >
                         إلغاء
                       </Button>
                       <Button 
                         type="submit" 
+                        size="sm"
                         disabled={createInsurance.isPending}
-                        className="px-6 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white shadow-lg shadow-coral-500/25"
+                        className="px-4 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white"
                       >
-                        {createInsurance.isPending ? "جاري الحفظ..." : "حفظ التأمين"}
+                        {createInsurance.isPending ? "جاري الحفظ..." : "حفظ"}
                       </Button>
                     </div>
                   </form>
@@ -494,82 +468,68 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     إضافة استمارة
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg bg-[#f8f7f5] border-0 shadow-2xl">
-                  <DialogHeader className="pb-4 border-b border-neutral-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                        <FileText className="h-6 w-6 text-white" />
+                <DialogContent className="max-w-md bg-[#f8f7f5] border-0 shadow-2xl">
+                  <DialogHeader className="pb-3 border-b border-neutral-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <DialogTitle className="text-xl font-bold text-neutral-900">إضافة استمارة جديدة</DialogTitle>
-                        <DialogDescription className="text-neutral-500">
+                        <DialogTitle className="text-lg font-bold text-neutral-900">إضافة استمارة</DialogTitle>
+                        <DialogDescription className="text-neutral-500 text-xs">
                           تسجيل بيانات استمارة المركبة
                         </DialogDescription>
                       </div>
                     </div>
                   </DialogHeader>
-                  <form onSubmit={registrationForm.handleSubmit(onRegistrationSubmit)} className="space-y-6 pt-4">
-                    {/* Document Info Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        بيانات الاستمارة
-                      </h4>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="document_name" className="text-neutral-600 text-sm">اسم الوثيقة</Label>
+                  <form onSubmit={registrationForm.handleSubmit(onRegistrationSubmit)} className="space-y-3 pt-3">
+                    {/* Document Info */}
+                    <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-neutral-600 text-xs">اسم الوثيقة *</Label>
                           <Input
-                            id="document_name"
                             placeholder="استمارة المركبة"
-                            className="bg-neutral-50 border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-blue-500"
                             {...registrationForm.register("document_name", { required: true })}
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="document_number" className="text-neutral-600 text-sm">رقم الاستمارة</Label>
-                            <Input
-                              id="document_number"
-                              placeholder="أدخل رقم الاستمارة"
-                              className="bg-neutral-50 border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
-                              {...registrationForm.register("document_number", { required: true })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="issuing_authority" className="text-neutral-600 text-sm">الجهة المصدرة</Label>
-                            <Input
-                              id="issuing_authority"
-                              placeholder="إدارة المرور"
-                              className="bg-neutral-50 border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
-                              {...registrationForm.register("issuing_authority")}
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="text-neutral-600 text-xs">رقم الاستمارة *</Label>
+                          <Input
+                            placeholder="رقم الاستمارة"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-blue-500"
+                            {...registrationForm.register("document_number", { required: true })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-neutral-600 text-xs">الجهة المصدرة</Label>
+                          <Input
+                            placeholder="إدارة المرور"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-blue-500"
+                            {...registrationForm.register("issuing_authority")}
+                          />
                         </div>
                       </div>
                     </div>
 
-                    {/* Dates Section */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-neutral-100">
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        فترة صلاحية الاستمارة
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="issue_date" className="text-neutral-600 text-sm">تاريخ الإصدار</Label>
+                    {/* Dates */}
+                    <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
+                      <h4 className="text-xs font-medium text-neutral-500 mb-2">فترة الصلاحية</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-neutral-600 text-[10px]">تاريخ الإصدار</Label>
                           <Input
-                            id="issue_date"
                             type="date"
-                            className="bg-neutral-50 border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
+                            className="h-8 text-sm bg-neutral-50 border-neutral-200"
                             {...registrationForm.register("issue_date", { required: true })}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="expiry_date" className="text-neutral-600 text-sm">تاريخ الانتهاء</Label>
+                        <div className="space-y-1">
+                          <Label className="text-neutral-600 text-[10px]">تاريخ الانتهاء</Label>
                           <Input
-                            id="expiry_date"
                             type="date"
-                            className="bg-neutral-50 border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
+                            className="h-8 text-sm bg-neutral-50 border-neutral-200"
                             {...registrationForm.register("expiry_date", { required: true })}
                           />
                         </div>
@@ -577,33 +537,31 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     </div>
 
                     {/* Document Link */}
-                    <div className="space-y-2">
-                      <Label htmlFor="document_url" className="text-neutral-600 text-sm">رابط الوثيقة (اختياري)</Label>
-                      <Input
-                        id="document_url"
-                        type="url"
-                        placeholder="https://drive.google.com/..."
-                        className="bg-white border-neutral-200 focus:border-blue-500 focus:ring-blue-500/20"
-                        {...registrationForm.register("document_url")}
-                      />
-                    </div>
+                    <Input
+                      type="url"
+                      placeholder="رابط الوثيقة (اختياري)"
+                      className="h-9 text-sm bg-white border-neutral-200 focus:border-blue-500"
+                      {...registrationForm.register("document_url")}
+                    />
 
                     {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+                    <div className="flex justify-end gap-2 pt-2 border-t border-neutral-200">
                       <Button 
                         type="button" 
                         variant="outline" 
+                        size="sm"
                         onClick={() => setShowRegistrationForm(false)}
-                        className="px-6 border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                        className="px-4 border-neutral-300 text-neutral-600"
                       >
                         إلغاء
                       </Button>
                       <Button 
                         type="submit" 
+                        size="sm"
                         disabled={createRegistration.isPending}
-                        className="px-6 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                        className="px-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
                       >
-                        {createRegistration.isPending ? "جاري الحفظ..." : "حفظ الاستمارة"}
+                        {createRegistration.isPending ? "جاري الحفظ..." : "حفظ"}
                       </Button>
                     </div>
                   </form>
