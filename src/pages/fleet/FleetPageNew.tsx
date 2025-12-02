@@ -557,20 +557,46 @@ const FleetPageNew: React.FC = () => {
               </SelectContent>
             </Select>
 
-            {/* Type Filter */}
+            {/* Status Filter */}
             <Select 
-              value={filters.type || "all"}
-              onValueChange={(v) => handleFilterChange('type', v === 'all' ? undefined : v)}
+              value={filters.status || "all"}
+              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v)}
             >
               <SelectTrigger className="w-full md:w-[160px] h-12 rounded-xl">
-                <SelectValue placeholder="نوع المركبة" />
+                <SelectValue placeholder="حالة المركبة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="sedan">سيدان</SelectItem>
-                <SelectItem value="suv">SUV</SelectItem>
-                <SelectItem value="truck">شاحنة</SelectItem>
-                <SelectItem value="van">فان</SelectItem>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="available">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    متاحة
+                  </span>
+                </SelectItem>
+                <SelectItem value="rented">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    مؤجرة
+                  </span>
+                </SelectItem>
+                <SelectItem value="maintenance">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    صيانة
+                  </span>
+                </SelectItem>
+                <SelectItem value="out_of_service">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                    خارج الخدمة
+                  </span>
+                </SelectItem>
+                <SelectItem value="reserved">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    محجوزة
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
 
