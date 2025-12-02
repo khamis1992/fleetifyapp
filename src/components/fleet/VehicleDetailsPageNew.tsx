@@ -654,7 +654,7 @@ const VehicleDetailsPageNew = () => {
                       className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Shield className="w-4 h-4" />
-                      التأمين
+                      التأمين والاستمارة
                     </TabsTrigger>
                     <TabsTrigger
                       value="documents"

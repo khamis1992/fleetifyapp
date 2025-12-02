@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
-import { Plus, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Calendar, AlertTriangle, FileText, Car } from "lucide-react";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { useVehicleInsurance, useCreateVehicleInsurance } from "@/hooks/useVehicleInsurance";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface VehicleInsurancePanelProps {
   vehicleId: string;
@@ -65,7 +66,31 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
   };
 
   if (isLoading) {
-    return <div>Loading insurance...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="p-3 bg-muted rounded-lg">
+                  <Skeleton className="h-3 w-20 mb-2" />
+                  <Skeleton className="h-5 w-28" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const activeInsurance = insurance?.find(p => p.is_active);
@@ -76,8 +101,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">تأمين المركبة</CardTitle>
-            <CardDescription>إدارة بوالص التأمين وتواريخ التجديد</CardDescription>
+            <CardTitle className="text-lg">التأمين والاستمارة</CardTitle>
+            <CardDescription>إدارة بوالص التأمين واستمارة المركبة وتواريخ التجديد</CardDescription>
           </div>
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>

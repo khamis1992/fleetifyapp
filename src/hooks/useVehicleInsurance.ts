@@ -31,7 +31,7 @@ export const useVehicleInsurance = (vehicleId: string) => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['vehicle-insurance', vehicleId],
+    queryKey: ['vehicle-insurance', vehicleId, user?.profile?.company_id],
     queryFn: async (): Promise<VehicleInsurance[]> => {
       if (!user?.profile?.company_id) {
         return [];
@@ -52,6 +52,8 @@ export const useVehicleInsurance = (vehicleId: string) => {
       return data || [];
     },
     enabled: !!user?.profile?.company_id && !!vehicleId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (garbage collection time)
   });
 };
 
