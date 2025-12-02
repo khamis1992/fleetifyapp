@@ -1,14 +1,16 @@
 import React, { useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CreditCard } from "lucide-react";
-import { UnifiedPrintableDocument, PrintableDocumentData } from "@/components/finance/UnifiedPrintableDocument";
+import { Receipt } from "lucide-react";
+import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 interface PaymentData {
   id?: string;
   payment_number?: string;
   payment_date?: string;
   amount?: number;
-  payment_method?: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card';
+  payment_method?: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'debit_card' | 'other';
   reference_number?: string;
   check_number?: string;
   bank_account?: string;
@@ -27,57 +29,159 @@ interface PaymentPreviewDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// دالة تحويل الرقم إلى كلمات عربية
+function numberToArabicWords(amount: number): string {
+  const arabicOnes = [
+    "", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة",
+    "عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", 
+    "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"
+  ];
+  
+  const arabicTens = [
+    "", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"
+  ];
+  
+  const arabicHundreds = [
+    "", "مائة", "مئتان", "ثلاثمائة", "أربعمائة", "خمسمائة", 
+    "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"
+  ];
+  
+  if (amount === 0) return "صفر ريال قطري فقط";
+  
+  const intAmount = Math.floor(amount);
+  const decimal = Math.round((amount - intAmount) * 100);
+  
+  const convertLessThanThousand = (num: number): string => {
+    if (num === 0) return "";
+    
+    if (num < 20) {
+      return arabicOnes[num];
+    } else if (num < 100) {
+      const ten = Math.floor(num / 10);
+      const unit = num % 10;
+      if (unit === 0) {
+        return arabicTens[ten];
+      } else {
+        return arabicOnes[unit] + " و " + arabicTens[ten];
+      }
+    } else {
+      const hundred = Math.floor(num / 100);
+      const remainder = num % 100;
+      if (remainder === 0) {
+        return arabicHundreds[hundred];
+      } else {
+        return arabicHundreds[hundred] + " و " + convertLessThanThousand(remainder);
+      }
+    }
+  };
+  
+  let result = "";
+  
+  if (intAmount < 1000) {
+    result = convertLessThanThousand(intAmount);
+  } else {
+    const thousands = Math.floor(intAmount / 1000);
+    const remainder = intAmount % 1000;
+    
+    if (thousands > 0) {
+      let thousandWord = "";
+      if (thousands === 1) {
+        thousandWord = "ألف";
+      } else if (thousands === 2) {
+        thousandWord = "ألفان";
+      } else if (thousands > 2 && thousands < 11) {
+        thousandWord = arabicOnes[thousands] + " آلاف";
+      } else {
+        thousandWord = convertLessThanThousand(thousands) + " ألف";
+      }
+      
+      result = thousandWord;
+      if (remainder > 0) {
+        result += " و " + convertLessThanThousand(remainder);
+      }
+    } else {
+      result = convertLessThanThousand(intAmount);
+    }
+  }
+  
+  result += " ريال قطري";
+  
+  if (decimal > 0) {
+    result += " و " + decimal + " درهم";
+  }
+  
+  result += " فقط لا غير";
+  
+  return result;
+}
+
 export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
   payment,
   open,
   onOpenChange
 }) => {
-  // Convert payment data to printable format
-  const printableData: PrintableDocumentData | null = useMemo(() => {
+  // تحويل بيانات الدفعة إلى صيغة PaymentReceipt
+  const receiptData = useMemo(() => {
     if (!payment) return null;
 
+    const amount = payment.amount || 0;
+    const paymentDate = payment.payment_date || new Date().toISOString();
+    const formattedDate = format(new Date(paymentDate), 'dd/MM/yyyy');
+    
+    // تحديد طريقة الدفع
+    let paymentMethod: 'cash' | 'check' | 'bank_transfer' | 'other' = 'cash';
+    if (payment.payment_method === 'check') {
+      paymentMethod = 'check';
+    } else if (payment.payment_method === 'bank_transfer') {
+      paymentMethod = 'bank_transfer';
+    } else if (payment.payment_method === 'credit_card' || payment.payment_method === 'debit_card') {
+      paymentMethod = 'other';
+    }
+
+    // وصف الدفعة
+    const description = payment.notes || 
+      (payment.contract_number ? `إيجار - عقد رقم ${payment.contract_number}` : 
+       `دفعة إيجار - ${format(new Date(paymentDate), 'MMMM yyyy', { locale: ar })}`);
+
     return {
-      type: 'voucher' as const,
-      documentNumber: payment.payment_number || payment.reference_number || payment.id?.substring(0, 8).toUpperCase() || '00000',
-      date: payment.payment_date || new Date().toISOString(),
-      customer: {
-        name: payment.customer_name || 'عميل',
-        phone: payment.customer_phone,
-        vehicle_number: payment.vehicle_number,
-      },
-      amount: payment.amount || 0,
-      currency: payment.currency || 'QAR',
-      paymentMethod: payment.payment_method === 'bank_transfer' ? 'bank_transfer' 
-        : payment.payment_method === 'credit_card' ? 'credit_card'
-        : payment.payment_method === 'check' ? 'check'
-        : payment.payment_method === 'debit_card' ? 'credit_card'
-        : 'cash',
-      checkDetails: payment.payment_method === 'check' ? {
-        checkNumber: payment.check_number,
-        bankName: payment.bank_account,
-      } : undefined,
-      notes: payment.notes || (payment.contract_number ? `إيجار - عقد رقم ${payment.contract_number}` : 'دفعة إيجار'),
-      reference: payment.contract_number,
+      receiptNumber: payment.payment_number || payment.reference_number || payment.id?.substring(0, 8).toUpperCase() || '00000',
+      date: formattedDate,
+      customerName: payment.customer_name || 'عميل',
+      amountInWords: numberToArabicWords(amount),
+      amount: amount,
+      description: description,
+      paymentMethod: paymentMethod,
+      vehicleNumber: payment.vehicle_number,
     };
   }, [payment]);
 
-  if (!payment || !printableData) return null;
+  if (!payment || !receiptData) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            سند قبض #{payment.payment_number || payment.reference_number || ''}
+            <Receipt className="h-5 w-5 text-green-600" />
+            سند قبض #{receiptData.receiptNumber}
           </DialogTitle>
           <DialogDescription>
-            معاينة سند القبض قبل الطباعة
+            معاينة سند القبض قبل الطباعة أو التحميل
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="p-4">
-          <UnifiedPrintableDocument data={printableData} />
+
+        <div className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '70vh' }}>
+          <PaymentReceipt
+            receiptNumber={receiptData.receiptNumber}
+            date={receiptData.date}
+            customerName={receiptData.customerName}
+            amountInWords={receiptData.amountInWords}
+            amount={receiptData.amount}
+            description={receiptData.description}
+            paymentMethod={receiptData.paymentMethod}
+            vehicleNumber={receiptData.vehicleNumber}
+            documentTitle={{ ar: 'سند قبض', en: 'PAYMENT VOUCHER' }}
+          />
         </div>
       </DialogContent>
     </Dialog>
