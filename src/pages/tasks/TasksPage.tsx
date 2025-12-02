@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BentoLayout } from '@/components/layouts/BentoLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,7 +165,7 @@ export default function TasksPage() {
   ];
 
   return (
-    <BentoLayout>
+    <div className="min-h-screen bg-[#f0efed]">
       <div className="p-6 space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -590,7 +589,7 @@ export default function TasksPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </BentoLayout>
+    </div>
   );
 }
 
