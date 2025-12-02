@@ -19,12 +19,12 @@ interface VehicleInsurancePanelProps {
 }
 
 interface InsuranceFormData {
-  insurance_company: string;
-  policy_number: string;
-  coverage_type: string;
-  start_date: string;
-  end_date: string;
-  premium_amount: number;
+  insurance_company?: string;
+  policy_number?: string;
+  coverage_type?: string;
+  start_date?: string;
+  end_date?: string;
+  premium_amount?: number;
   coverage_amount?: number;
   deductible_amount?: number;
   contact_person?: string;
@@ -34,11 +34,11 @@ interface InsuranceFormData {
 }
 
 interface RegistrationFormData {
-  document_name: string;
-  document_number: string;
-  issue_date: string;
-  expiry_date: string;
-  issuing_authority: string;
+  document_name?: string;
+  document_number?: string;
+  issue_date?: string;
+  expiry_date?: string;
+  issuing_authority?: string;
   document_url?: string;
 }
 
@@ -193,21 +193,21 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <Label htmlFor="insurance_company" className="text-neutral-600 text-xs">شركة التأمين *</Label>
+                          <Label htmlFor="insurance_company" className="text-neutral-600 text-xs">شركة التأمين</Label>
                           <Input
                             id="insurance_company"
                             placeholder="اسم الشركة"
                             className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
-                            {...insuranceForm.register("insurance_company", { required: true })}
+                            {...insuranceForm.register("insurance_company")}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor="policy_number" className="text-neutral-600 text-xs">رقم البوليصة *</Label>
+                          <Label htmlFor="policy_number" className="text-neutral-600 text-xs">رقم البوليصة</Label>
                           <Input
                             id="policy_number"
                             placeholder="رقم البوليصة"
                             className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
-                            {...insuranceForm.register("policy_number", { required: true })}
+                            {...insuranceForm.register("policy_number")}
                           />
                         </div>
                         <div className="space-y-1">
@@ -487,19 +487,19 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-100">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2 space-y-1">
-                          <Label className="text-neutral-600 text-xs">اسم الوثيقة *</Label>
+                          <Label className="text-neutral-600 text-xs">اسم الوثيقة</Label>
                           <Input
                             placeholder="استمارة المركبة"
                             className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-blue-500"
-                            {...registrationForm.register("document_name", { required: true })}
+                            {...registrationForm.register("document_name")}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-neutral-600 text-xs">رقم الاستمارة *</Label>
+                          <Label className="text-neutral-600 text-xs">رقم الاستمارة</Label>
                           <Input
                             placeholder="رقم الاستمارة"
                             className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-blue-500"
-                            {...registrationForm.register("document_number", { required: true })}
+                            {...registrationForm.register("document_number")}
                           />
                         </div>
                         <div className="space-y-1">
@@ -522,7 +522,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           <Input
                             type="date"
                             className="h-8 text-sm bg-neutral-50 border-neutral-200"
-                            {...registrationForm.register("issue_date", { required: true })}
+                            {...registrationForm.register("issue_date")}
                           />
                         </div>
                         <div className="space-y-1">
@@ -530,7 +530,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           <Input
                             type="date"
                             className="h-8 text-sm bg-neutral-50 border-neutral-200"
-                            {...registrationForm.register("expiry_date", { required: true })}
+                            {...registrationForm.register("expiry_date")}
                           />
                         </div>
                       </div>

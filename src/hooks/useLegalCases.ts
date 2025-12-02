@@ -7,6 +7,7 @@ import { toast } from "sonner";
 export interface LegalCase {
   id: string;
   company_id: string;
+  contract_id?: string;  // معرف العقد المرتبط
   case_number: string;
   case_title: string;
   case_title_ar?: string;

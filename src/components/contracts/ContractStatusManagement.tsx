@@ -79,6 +79,7 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
       case 'active': return <Play className="h-4 w-4 text-green-600" />;
       case 'suspended': return <Pause className="h-4 w-4 text-yellow-600" />;
       case 'cancelled': return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'under_legal_procedure': return <AlertTriangle className="h-4 w-4 text-purple-600" />;
       default: return <AlertTriangle className="h-4 w-4" />;
     }
   };
@@ -90,6 +91,7 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
       case 'cancelled': return 'ملغي';
       case 'expired': return 'منتهي';
       case 'renewed': return 'مجدد';
+      case 'under_legal_procedure': return 'تحت الإجراء القانوني';
       default: return status;
     }
   };

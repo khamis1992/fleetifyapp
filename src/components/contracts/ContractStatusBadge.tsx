@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Pause, AlertCircle, XCircle, RefreshCw, FileText, FileQuestion } from "lucide-react"
+import { CheckCircle, Clock, Pause, AlertCircle, XCircle, RefreshCw, FileText, FileQuestion, Scale } from "lucide-react"
 
 interface ContractStatusBadgeProps {
   status: string
@@ -59,6 +59,13 @@ export const ContractStatusBadge = ({ status, className, onClick, clickable = fa
           className: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
           icon: RefreshCw,
           label: 'مجدد'
+        }
+      case 'under_legal_procedure':
+        return {
+          variant: 'destructive' as const,
+          className: 'bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-300',
+          icon: Scale,
+          label: 'تحت الإجراء القانوني'
         }
       default:
         return {

@@ -46,6 +46,7 @@ import {
   Check,
   FilePlus,
   Loader2,
+  Scale,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -63,6 +64,7 @@ import { OfficialContractView } from './OfficialContractView';
 import { LateFinesTab } from './LateFinesTab';
 import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
+import { ConvertToLegalDialog } from './ConvertToLegalDialog';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
@@ -100,6 +102,7 @@ const ContractDetailsPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isStatusManagementOpen, setIsStatusManagementOpen] = useState(false);
+  const [isConvertToLegalOpen, setIsConvertToLegalOpen] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -581,7 +584,25 @@ const ContractDetailsPage = () => {
                       <FileEdit className="w-4 h-4" />
                       تعديل العقد
                     </Button>
+                    <Button
+                      onClick={() => setIsConvertToLegalOpen(true)}
+                      variant="outline"
+                      className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-50"
+                    >
+                      <Scale className="w-4 h-4" />
+                      تحويل للشؤون القانونية
+                    </Button>
                   </>
+                )}
+                {contract.status === 'under_legal_procedure' && (
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-50"
+                    disabled
+                  >
+                    <Scale className="w-4 h-4" />
+                    تحت الإجراء القانوني
+                  </Button>
                 )}
                 <Button
                   variant="outline"
@@ -1072,6 +1093,34 @@ const ContractDetailsPage = () => {
         onOpenChange={setIsStatusManagementOpen}
         contract={contract || {}}
       />
+
+      {/* Dialog تحويل للشؤون القانونية */}
+      {contract && (
+        <ConvertToLegalDialog
+          open={isConvertToLegalOpen}
+          onOpenChange={setIsConvertToLegalOpen}
+          contract={{
+            id: contract.id,
+            contract_number: contract.contract_number,
+            customer_id: contract.customer_id,
+            vehicle_id: contract.vehicle_id,
+            company_id: contract.company_id,
+            contract_amount: contract.contract_amount || 0,
+            total_paid: contract.total_paid || 0,
+            balance_due: (contract.contract_amount || 0) - (contract.total_paid || 0),
+            late_fine_amount: contract.late_fine_amount || 0,
+            monthly_amount: contract.monthly_amount || 0,
+            start_date: contract.start_date,
+            end_date: contract.end_date,
+            status: contract.status,
+            customer: contract.customer,
+            vehicle: contract.vehicle,
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+          }}
+        />
+      )}
 
       {/* مساعد الموظف لإعادة المركبة */}
       <FloatingAssistant 
