@@ -444,26 +444,30 @@ export const LegalCasesTracking: React.FC = () => {
     ].filter(item => item.value > 0);
   }, [stats]);
 
-  // Generate upcoming hearings from cases
+  // Generate upcoming hearings from real hearing_date in cases
   const upcomingHearings = useMemo(() => {
     if (!cases || cases.length === 0) return [];
     const today = new Date();
     
     return cases
-      .filter(c => c.case_status === 'active')
-      .slice(0, 5)
-      .map((c, index) => {
-        const hearingDate = addDays(new Date(c.created_at), 45 + (index * 7));
+      .filter(c => c.hearing_date) // Only cases with hearing dates
+      .map(c => {
+        const hearingDate = new Date(c.hearing_date!);
+        const daysUntil = differenceInDays(hearingDate, today);
         return {
           date: format(hearingDate, 'yyyy-MM-dd'),
-          time: `0${9 + index}:00 ص`,
+          displayDate: format(hearingDate, 'dd MMM yyyy', { locale: ar }),
+          time: '09:00 ص',
           caseId: c.case_number,
           title: c.case_title_ar || c.case_title || 'جلسة محكمة',
-          location: 'المحكمة المدنية',
-          daysUntil: differenceInDays(hearingDate, today),
+          location: c.court_name || 'غير محدد',
+          daysUntil,
+          status: c.case_status,
+          caseRef: c.case_reference,
         };
       })
-      .filter(h => h.daysUntil >= 0 && h.daysUntil <= 30);
+      .filter(h => h.daysUntil >= -7) // Include past 7 days and future
+      .sort((a, b) => a.daysUntil - b.daysUntil); // Sort by nearest date
   }, [cases]);
 
   const handleCaseCreated = () => {
@@ -732,7 +736,7 @@ export const LegalCasesTracking: React.FC = () => {
               <TableHead className="px-6 py-4 font-medium">نوع القضية</TableHead>
               <TableHead className="px-6 py-4 font-medium">المطالبة</TableHead>
               <TableHead className="px-6 py-4 font-medium">الحالة</TableHead>
-              <TableHead className="px-6 py-4 font-medium">تاريخ الإنشاء</TableHead>
+              <TableHead className="px-6 py-4 font-medium">موعد الجلسة</TableHead>
               <TableHead className="px-6 py-4 font-medium"></TableHead>
             </TableRow>
           </TableHeader>
@@ -768,7 +772,14 @@ export const LegalCasesTracking: React.FC = () => {
                     <StatusBadge status={item.case_status} />
                   </TableCell>
                   <TableCell className="px-6 py-4 text-gray-500">
-                    {format(new Date(item.created_at), 'dd MMM yyyy', { locale: ar })}
+                    {item.hearing_date ? (
+                      <span className="flex items-center gap-1">
+                        <CalendarDays size={14} className="text-[#E55B5B]" />
+                        {format(new Date(item.hearing_date), 'dd MMM yyyy', { locale: ar })}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">غير محدد</span>
+                    )}
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <DropdownMenu>
@@ -866,114 +877,182 @@ export const LegalCasesTracking: React.FC = () => {
   );
 
   // --- Calendar View ---
-  const CalendarView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-      <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-gray-800">جدول الجلسات</h3>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm">
-              <Printer size={18} />
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs">
-              اليوم
-            </Button>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {upcomingHearings.length > 0 ? (
-            upcomingHearings.map((event, idx) => (
-              <div
-                key={idx}
-                className="flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-[#E55B5B]/30 hover:shadow-sm transition-all bg-white"
-              >
-                <div className="flex flex-col items-center justify-center bg-red-50 text-[#E55B5B] rounded-lg w-16 h-16 shrink-0">
-                  <span className="text-xs font-medium">
-                    {event.date.split('-')[1]} / {event.date.split('-')[0]}
-                  </span>
-                  <span className="text-xl font-bold">{event.date.split('-')[2]}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-gray-800">{event.title}</h4>
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">{event.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-[#E55B5B] font-medium">{event.caseId}</span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-sm text-gray-500">{event.location}</span>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="self-center">
-                  التفاصيل
-                </Button>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-12 text-gray-400">
-              <CalendarDays className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>لا توجد جلسات قادمة</p>
-            </div>
-          )}
-        </div>
-      </div>
+  const CalendarView = () => {
+    // Get upcoming hearings (cases with hearing dates)
+    const futureHearings = upcomingHearings.filter(h => h.daysUntil >= 0);
+    const pastHearings = upcomingHearings.filter(h => h.daysUntil < 0);
+    const nextHearing = futureHearings[0];
 
-      <div className="space-y-6">
-        {/* Next Hearing Card */}
-        {upcomingHearings.length > 0 && (
-          <div className="bg-[#E55B5B] text-white rounded-xl p-6 shadow-lg shadow-red-200">
-            <h3 className="font-bold text-lg mb-1">الجلسة القادمة</h3>
-            <p className="text-red-100 text-sm mb-4">
-              باقي {upcomingHearings[0]?.daysUntil || 0} يوم
-            </p>
-            <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm mb-4 border border-white/20">
-              <div className="text-2xl font-bold mb-1">
-                {upcomingHearings[0]?.date.split('-')[2]}
-              </div>
-              <div className="text-sm opacity-90">
-                {format(new Date(upcomingHearings[0]?.date || new Date()), 'MMMM، yyyy', { locale: ar })}
-              </div>
-              <div className="mt-2 text-sm font-medium">{upcomingHearings[0]?.title}</div>
-            </div>
-            <Button
-              variant="secondary"
-              className="w-full py-2.5 bg-white text-[#E55B5B] rounded-lg font-medium text-sm hover:bg-red-50 transition-colors"
-            >
-              عرض تفاصيل القضية
-            </Button>
-          </div>
-        )}
+    // Generate task reminders from cases with upcoming hearings
+    const caseTaskReminders = useMemo(() => {
+      return futureHearings.slice(0, 5).map(h => ({
+        id: h.caseId,
+        title: `جلسة ${h.caseId} - ${h.title}`,
+        dueDate: h.displayDate,
+        daysUntil: h.daysUntil,
+        completed: false,
+      }));
+    }, [futureHearings]);
 
-        {/* Tasks Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h3 className="font-bold text-gray-800 mb-4 text-sm">تذكيرات المهام</h3>
-          <div className="space-y-3">
-            {['تجديد تأمين مركبة (قضية 001)', 'سداد رسوم فحص فني', 'مراجعة تقرير الشرطة'].map((task, i) => (
-              <div key={i} className="flex items-center gap-3">
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-gray-800">جدول الجلسات</h3>
+            <div className="flex gap-2">
+              <Badge variant="outline" className="text-xs">
+                {futureHearings.length} جلسة قادمة
+              </Badge>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {futureHearings.length > 0 ? (
+              futureHearings.map((event, idx) => (
                 <div
+                  key={idx}
                   className={cn(
-                    "w-5 h-5 rounded border flex items-center justify-center cursor-pointer",
-                    i === 0 ? 'bg-[#E55B5B] border-[#E55B5B] text-white' : 'border-gray-300'
+                    "flex gap-4 p-4 rounded-xl border transition-all bg-white",
+                    event.daysUntil <= 3 
+                      ? "border-red-200 bg-red-50/50" 
+                      : "border-gray-100 hover:border-[#E55B5B]/30 hover:shadow-sm"
                   )}
                 >
-                  {i === 0 && <CheckCircle2 size={12} />}
+                  <div className={cn(
+                    "flex flex-col items-center justify-center rounded-lg w-16 h-16 shrink-0",
+                    event.daysUntil <= 3 ? "bg-red-100 text-red-600" : "bg-red-50 text-[#E55B5B]"
+                  )}>
+                    <span className="text-xl font-bold">{event.date.split('-')[2]}</span>
+                    <span className="text-xs font-medium">
+                      {format(new Date(event.date), 'MMM', { locale: ar })}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-bold text-gray-800">{event.title}</h4>
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded",
+                        event.daysUntil === 0 
+                          ? "bg-red-100 text-red-600 font-bold" 
+                          : event.daysUntil <= 3 
+                            ? "bg-yellow-100 text-yellow-700" 
+                            : "bg-gray-100 text-gray-500"
+                      )}>
+                        {event.daysUntil === 0 ? 'اليوم' : event.daysUntil === 1 ? 'غداً' : `بعد ${event.daysUntil} يوم`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-sm text-[#E55B5B] font-medium">{event.caseId}</span>
+                      {event.caseRef && (
+                        <>
+                          <span className="text-gray-300">|</span>
+                          <span className="text-xs text-gray-500">{event.caseRef}</span>
+                        </>
+                      )}
+                      <span className="text-gray-300">|</span>
+                      <span className="text-sm text-gray-500">{event.location}</span>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="self-center"
+                    onClick={() => {
+                      const caseItem = cases.find(c => c.case_number === event.caseId);
+                      if (caseItem) handleViewDetails(caseItem as LegalCase);
+                    }}
+                  >
+                    التفاصيل
+                  </Button>
                 </div>
-                <span className={cn("text-sm", i === 0 ? 'text-gray-400 line-through' : 'text-gray-600')}>
-                  {task}
-                </span>
+              ))
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                <CalendarDays className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p className="font-medium">لا توجد جلسات قادمة</p>
+                <p className="text-sm mt-2">قم بإضافة مواعيد الجلسات في القضايا</p>
               </div>
-            ))}
+            )}
           </div>
-          <Button
-            variant="outline"
-            className="w-full mt-4 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50"
-          >
-            + إضافة مهمة جديدة
-          </Button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Next Hearing Card */}
+          {nextHearing ? (
+            <div className="bg-[#E55B5B] text-white rounded-xl p-6 shadow-lg shadow-red-200">
+              <h3 className="font-bold text-lg mb-1">الجلسة القادمة</h3>
+              <p className="text-red-100 text-sm mb-4">
+                {nextHearing.daysUntil === 0 ? 'اليوم!' : nextHearing.daysUntil === 1 ? 'غداً' : `باقي ${nextHearing.daysUntil} يوم`}
+              </p>
+              <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm mb-4 border border-white/20">
+                <div className="text-2xl font-bold mb-1">
+                  {nextHearing.displayDate}
+                </div>
+                <div className="mt-2 text-sm font-medium">{nextHearing.title}</div>
+                <div className="mt-1 text-xs opacity-80">{nextHearing.caseId} - {nextHearing.location}</div>
+              </div>
+              <Button
+                variant="secondary"
+                className="w-full py-2.5 bg-white text-[#E55B5B] rounded-lg font-medium text-sm hover:bg-red-50 transition-colors"
+                onClick={() => {
+                  const caseItem = cases.find(c => c.case_number === nextHearing.caseId);
+                  if (caseItem) handleViewDetails(caseItem as LegalCase);
+                }}
+              >
+                عرض تفاصيل القضية
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-gray-100 text-gray-500 rounded-xl p-6 border border-gray-200">
+              <div className="text-center">
+                <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <h3 className="font-medium">لا توجد جلسات قادمة</h3>
+                <p className="text-xs mt-1">أضف مواعيد الجلسات في القضايا</p>
+              </div>
+            </div>
+          )}
+
+          {/* Tasks Card - Linked to real case hearings */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="font-bold text-gray-800 mb-4 text-sm flex items-center gap-2">
+              <Clock size={16} className="text-[#E55B5B]" />
+              تذكيرات المهام
+            </h3>
+            <div className="space-y-3">
+              {caseTaskReminders.length > 0 ? (
+                caseTaskReminders.map((task, i) => (
+                  <div key={task.id} className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded border flex items-center justify-center",
+                        task.daysUntil <= 3 ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                      )}
+                    >
+                      {task.daysUntil <= 1 && <AlertTriangle size={12} className="text-red-500" />}
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-700 block">{task.title}</span>
+                      <span className="text-xs text-gray-400">{task.dueDate}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-400 text-sm">
+                  لا توجد تذكيرات حالياً
+                </div>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              className="w-full mt-4 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50"
+              onClick={() => navigate('/tasks')}
+            >
+              إدارة المهام
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // --- Settings View ---
   const SettingsView = () => (
@@ -1172,15 +1251,42 @@ export const LegalCasesTracking: React.FC = () => {
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
-                  التواريخ
+                  التواريخ والمواعيد
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">موعد الجلسة القادمة</p>
+                    {selectedCase.hearing_date ? (
+                      <p className="font-medium text-[#E55B5B] flex items-center gap-2">
+                        <Gavel className="w-4 h-4" />
+                        {format(new Date(selectedCase.hearing_date), 'dd MMM yyyy', { locale: ar })}
+                      </p>
+                    ) : (
+                      <p className="text-gray-400">لم يحدد بعد</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">تاريخ رفع الدعوى</p>
+                    {selectedCase.filing_date ? (
+                      <p className="font-medium">
+                        {format(new Date(selectedCase.filing_date), 'dd MMM yyyy', { locale: ar })}
+                      </p>
+                    ) : (
+                      <p className="text-gray-400">غير محدد</p>
+                    )}
+                  </div>
                   <div className="space-y-1">
                     <p className="text-sm text-gray-500">تاريخ الإنشاء</p>
                     <p className="font-medium">
                       {format(new Date(selectedCase.created_at), 'dd MMM yyyy', { locale: ar })}
                     </p>
                   </div>
+                  {selectedCase.court_name && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500">المحكمة</p>
+                      <p className="font-medium">{selectedCase.court_name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

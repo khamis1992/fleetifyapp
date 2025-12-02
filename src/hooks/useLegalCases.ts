@@ -104,8 +104,8 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
 
       let query = supabase
         .from('legal_cases')
-        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, total_costs, created_at, description', { count: 'exact' })
-        .order('created_at', { ascending: false })
+        .select('id, case_number, case_title, case_title_ar, case_type, case_status, priority, client_id, client_name, total_costs, created_at, hearing_date, filing_date, court_name, case_reference, description', { count: 'exact' })
+        .order('hearing_date', { ascending: true, nullsFirst: false })
         .range(from, to);
 
       // Apply company filter
