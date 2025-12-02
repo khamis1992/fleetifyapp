@@ -158,12 +158,19 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
 
       const totalClaimAmount = calculateTotalClaim();
 
+      console.log('📝 Creating legal case with data:', {
+        case_title: formData.case_title,
+        customer_id: formData.customer_id,
+        customer_name: formData.customer_name,
+      });
+
       await createCaseMutation.mutateAsync({
         case_title: formData.case_title,
         case_type: formData.case_type,
         priority: formData.priority,
         case_status: 'active',
         description: formData.description,
+        client_id: formData.customer_id || undefined,  // Add client_id
         client_name: formData.customer_name,
         client_phone: formData.phone,
         client_email: formData.email,
@@ -174,7 +181,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         filing_date: formData.filing_date || undefined,
         hearing_date: formData.first_hearing_date || undefined,
         judge_name: formData.judge_name || undefined,
-        case_reference: formData.court_case_number,  // Map court_case_number to case_reference
+        case_reference: formData.court_case_number || undefined,  // Map court_case_number to case_reference
         legal_fees: 0,
         court_fees: 0,
         other_expenses: 0,
@@ -182,22 +189,21 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         is_confidential: false,
         legal_team: [],
         tags: [],
-        notes: `Customer ID: ${formData.customer_id}
-الرقم الوطني: ${formData.national_id}
-رقم الهاتف: ${formData.phone}
-Selected الفواتير: ${formData.selected_invoices.length}
-Selected العقود: ${formData.selected_contracts.length}
-ملفات الأدلة: ${formData.evidence_files.length}
+        notes: `الرقم الوطني: ${formData.national_id || '-'}
+رقم الهاتف: ${formData.phone || '-'}
+عدد الفواتير المحددة: ${formData.selected_invoices.length}
+عدد العقود المحددة: ${formData.selected_contracts.length}
+عدد ملفات الأدلة: ${formData.evidence_files.length}
 النتيجة المتوقعة: ${formData.expected_outcome}`,
       });
 
-      toast.success('تم إنشاء القضية بنجاح');
+      console.log('✅ Legal case created successfully');
       onSuccess?.();
       onOpenChange(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating legal case:', error);
-      toast.error('Failed to create legal case');
+      console.error('❌ Error creating legal case:', error);
+      toast.error('فشل في إنشاء القضية. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -811,7 +817,10 @@ interface Customer {
   id: string;
   first_name?: string | null;
   last_name?: string | null;
+  first_name_ar?: string | null;
+  last_name_ar?: string | null;
   company_name?: string | null;
+  company_name_ar?: string | null;
   email?: string | null;
   phone?: string;
   address?: string | null;
@@ -819,13 +828,25 @@ interface Customer {
   emergency_contact_name?: string | null;
 }
 
-// Helper to get full customer name
+// Helper to get full customer name - prioritizing Arabic names
 const getCustomerName = (customer: Customer): string => {
+  // Arabic company name first
+  if (customer.company_name_ar) return customer.company_name_ar;
   if (customer.company_name) return customer.company_name;
+  
+  // Arabic personal name
+  if (customer.first_name_ar || customer.last_name_ar) {
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
+    return `${firstName} ${lastName}`.trim() || 'غير معروف';
+  }
+  
+  // English personal name
   if (customer.first_name && customer.last_name) 
     return `${customer.first_name} ${customer.last_name}`;
   if (customer.first_name) return customer.first_name;
-  return 'Unknown';
+  
+  return 'غير معروف';
 };
 
 interface CustomerInfoStepProps {
@@ -848,9 +869,9 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
         setLoading(true);
         const { data, error } = await supabase
           .from('customers')
-          .select('id, first_name, last_name, company_name, email, phone, address, national_id, emergency_contact_name')
+          .select('id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, email, phone, address, national_id, emergency_contact_name')
           .eq('is_active', true)
-          .order('company_name, first_name');
+          .order('first_name_ar', { nullsFirst: false });
 
         if (error) throw error;
         setCustomers((data as any) || []);
@@ -924,8 +945,22 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     const search = searchTerm.toLowerCase();
     const filtered = customers.filter(customer => {
       const fullName = getCustomerName(customer);
+      // Search in both Arabic and English names
+      const firstNameAr = customer.first_name_ar?.toLowerCase() || '';
+      const lastNameAr = customer.last_name_ar?.toLowerCase() || '';
+      const firstName = customer.first_name?.toLowerCase() || '';
+      const lastName = customer.last_name?.toLowerCase() || '';
+      const companyNameAr = customer.company_name_ar?.toLowerCase() || '';
+      const companyName = customer.company_name?.toLowerCase() || '';
+      
       return (
         fullName.toLowerCase().includes(search) ||
+        firstNameAr.includes(search) ||
+        lastNameAr.includes(search) ||
+        firstName.includes(search) ||
+        lastName.includes(search) ||
+        companyNameAr.includes(search) ||
+        companyName.includes(search) ||
         (customer.phone && customer.phone.includes(search)) ||
         (customer.email && customer.email.toLowerCase().includes(search)) ||
         (customer.national_id && customer.national_id.includes(search))
