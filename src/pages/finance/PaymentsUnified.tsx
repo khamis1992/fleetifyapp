@@ -1048,8 +1048,12 @@ const PaymentsUnified = () => {
                                           <MessageCircle className="h-4 w-4" />
                                         )}
                                       </motion.button>
+                                      {/* Delete Payment Button */}
                                       <motion.button 
-                                        onClick={() => setPaymentToDelete(payment)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPaymentToDelete(payment);
+                                        }}
                                         className="w-8 h-8 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors"
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
