@@ -284,3 +284,173 @@ export const useVehiclesNeedingMaintenance = () => {
   }, [maintenance]);
 };
 
+// تقرير التأمين والاستمارة - Vehicle Insurance and Registration Report
+export interface VehicleInsuranceRegistrationData {
+  id: string;
+  plate_number: string;
+  make: string;
+  model: string;
+  year: number;
+  status: string;
+  // Insurance data
+  has_insurance: boolean;
+  insurance_company?: string;
+  insurance_expiry?: string;
+  insurance_days_remaining?: number;
+  insurance_status: 'valid' | 'expiring_soon' | 'expired' | 'none';
+  // Registration data
+  has_registration: boolean;
+  registration_number?: string;
+  registration_expiry?: string;
+  registration_days_remaining?: number;
+  registration_status: 'valid' | 'expiring_soon' | 'expired' | 'none';
+}
+
+export const useInsuranceRegistrationReport = () => {
+  const { data: companyId } = useCompanyId();
+  
+  return useQuery({
+    queryKey: ['fleet-insurance-registration-report', companyId],
+    queryFn: async (): Promise<VehicleInsuranceRegistrationData[]> => {
+      if (!companyId) return [];
+      
+      // جلب المركبات
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model, year, status')
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+      
+      if (vehiclesError) throw vehiclesError;
+      if (!vehicles?.length) return [];
+      
+      // جلب بيانات التأمين
+      const { data: insuranceData } = await supabase
+        .from('vehicle_insurance')
+        .select('vehicle_id, insurance_company, end_date, is_active')
+        .in('vehicle_id', vehicles.map(v => v.id))
+        .eq('is_active', true);
+      
+      // جلب بيانات الاستمارة
+      const { data: registrationData } = await supabase
+        .from('vehicle_documents')
+        .select('vehicle_id, document_number, expiry_date, is_active')
+        .in('vehicle_id', vehicles.map(v => v.id))
+        .eq('document_type', 'registration')
+        .eq('is_active', true);
+      
+      const today = new Date();
+      const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      const getStatus = (expiryDate: string | null): 'valid' | 'expiring_soon' | 'expired' | 'none' => {
+        if (!expiryDate) return 'none';
+        const expiry = new Date(expiryDate);
+        if (expiry < today) return 'expired';
+        if (expiry <= thirtyDaysFromNow) return 'expiring_soon';
+        return 'valid';
+      };
+      
+      const getDaysRemaining = (expiryDate: string | null): number | undefined => {
+        if (!expiryDate) return undefined;
+        const expiry = new Date(expiryDate);
+        const diff = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return diff;
+      };
+      
+      return vehicles.map(vehicle => {
+        const insurance = insuranceData?.find(i => i.vehicle_id === vehicle.id);
+        const registration = registrationData?.find(r => r.vehicle_id === vehicle.id);
+        
+        return {
+          id: vehicle.id,
+          plate_number: vehicle.plate_number,
+          make: vehicle.make,
+          model: vehicle.model,
+          year: vehicle.year,
+          status: vehicle.status,
+          // Insurance
+          has_insurance: !!insurance,
+          insurance_company: insurance?.insurance_company,
+          insurance_expiry: insurance?.end_date,
+          insurance_days_remaining: getDaysRemaining(insurance?.end_date || null),
+          insurance_status: getStatus(insurance?.end_date || null),
+          // Registration
+          has_registration: !!registration,
+          registration_number: registration?.document_number,
+          registration_expiry: registration?.expiry_date,
+          registration_days_remaining: getDaysRemaining(registration?.expiry_date || null),
+          registration_status: getStatus(registration?.expiry_date || null),
+        };
+      });
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ملخص التأمين والاستمارة
+export interface InsuranceRegistrationSummary {
+  total_vehicles: number;
+  // Insurance
+  with_valid_insurance: number;
+  with_expiring_insurance: number;
+  with_expired_insurance: number;
+  without_insurance: number;
+  // Registration
+  with_valid_registration: number;
+  with_expiring_registration: number;
+  with_expired_registration: number;
+  without_registration: number;
+  // Combined
+  fully_compliant: number; // has both valid insurance and registration
+  needs_attention: number; // has expiring or expired
+}
+
+export const useInsuranceRegistrationSummary = () => {
+  const { data: report, isLoading } = useInsuranceRegistrationReport();
+  
+  const summary = useMemo((): InsuranceRegistrationSummary | null => {
+    if (!report) return null;
+    
+    const total_vehicles = report.length;
+    
+    // Insurance counts
+    const with_valid_insurance = report.filter(v => v.insurance_status === 'valid').length;
+    const with_expiring_insurance = report.filter(v => v.insurance_status === 'expiring_soon').length;
+    const with_expired_insurance = report.filter(v => v.insurance_status === 'expired').length;
+    const without_insurance = report.filter(v => v.insurance_status === 'none').length;
+    
+    // Registration counts
+    const with_valid_registration = report.filter(v => v.registration_status === 'valid').length;
+    const with_expiring_registration = report.filter(v => v.registration_status === 'expiring_soon').length;
+    const with_expired_registration = report.filter(v => v.registration_status === 'expired').length;
+    const without_registration = report.filter(v => v.registration_status === 'none').length;
+    
+    // Combined
+    const fully_compliant = report.filter(v => 
+      v.insurance_status === 'valid' && v.registration_status === 'valid'
+    ).length;
+    
+    const needs_attention = report.filter(v => 
+      v.insurance_status === 'expiring_soon' || v.insurance_status === 'expired' ||
+      v.registration_status === 'expiring_soon' || v.registration_status === 'expired'
+    ).length;
+    
+    return {
+      total_vehicles,
+      with_valid_insurance,
+      with_expiring_insurance,
+      with_expired_insurance,
+      without_insurance,
+      with_valid_registration,
+      with_expiring_registration,
+      with_expired_registration,
+      without_registration,
+      fully_compliant,
+      needs_attention,
+    };
+  }, [report]);
+  
+  return { data: summary, isLoading };
+};
+

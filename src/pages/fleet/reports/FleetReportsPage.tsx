@@ -34,6 +34,10 @@ import {
   Percent,
   ArrowUpRight,
   Sparkles,
+  Shield,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +70,8 @@ import {
   useFleetStatus,
   useTopPerformingVehicles,
   useVehiclesNeedingMaintenance,
+  useInsuranceRegistrationReport,
+  useInsuranceRegistrationSummary,
 } from './hooks/useFleetReports';
 
 import type { ReportFilters as IReportFilters, ExportFormat } from './types/reports.types';
@@ -220,6 +226,8 @@ const FleetReportsPage: React.FC = () => {
   const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus();
   const topVehicles = useTopPerformingVehicles(8);
   const maintenanceAlerts = useVehiclesNeedingMaintenance();
+  const { data: insuranceReport = [], isLoading: insuranceLoading } = useInsuranceRegistrationReport();
+  const { data: insuranceSummary } = useInsuranceRegistrationSummary();
   
   // WhatsApp hooks
   const { settings: whatsappSettings } = useWhatsAppSettings();
@@ -449,6 +457,174 @@ const FleetReportsPage: React.FC = () => {
             </div>
           </SectionCard>
         </div>
+
+        {/* Insurance & Registration Report Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="mb-6"
+        >
+          <SectionCard 
+            title="تقرير التأمين والاستمارة" 
+            icon={Shield}
+            action={
+              insuranceSummary && insuranceSummary.needs_attention > 0 && (
+                <Badge className="bg-red-100 text-red-700 hover:bg-red-200">
+                  {insuranceSummary.needs_attention} يحتاج اهتمام
+                </Badge>
+              )
+            }
+          >
+            {/* Summary Cards */}
+            {insuranceSummary && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">مكتمل</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-700">{insuranceSummary.fully_compliant}</p>
+                  <p className="text-xs text-green-600">تأمين واستمارة ساريين</p>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                    <span className="text-xs text-blue-600 font-medium">تأمين ساري</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-700">{insuranceSummary.with_valid_insurance}</p>
+                  <p className="text-xs text-blue-600">من {insuranceSummary.total_vehicles} مركبة</p>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-5 h-5 text-indigo-600" />
+                    <span className="text-xs text-indigo-600 font-medium">استمارة سارية</span>
+                  </div>
+                  <p className="text-2xl font-bold text-indigo-700">{insuranceSummary.with_valid_registration}</p>
+                  <p className="text-xs text-indigo-600">من {insuranceSummary.total_vehicles} مركبة</p>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                    <span className="text-xs text-amber-600 font-medium">يحتاج اهتمام</span>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-700">{insuranceSummary.needs_attention}</p>
+                  <p className="text-xs text-amber-600">منتهي أو ينتهي قريباً</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Vehicles Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">المركبة</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">التأمين</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">الاستمارة</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {insuranceReport.slice(0, 10).map((vehicle) => (
+                    <tr key={vehicle.id} className="hover:bg-neutral-50 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center">
+                            <Car className="w-5 h-5 text-neutral-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">{vehicle.plate_number}</p>
+                            <p className="text-xs text-neutral-500">{vehicle.make} {vehicle.model} {vehicle.year}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {vehicle.insurance_status === 'valid' && (
+                          <Badge className="bg-green-100 text-green-700">
+                            <CheckCircle2 className="w-3 h-3 ml-1" />
+                            ساري ({vehicle.insurance_days_remaining} يوم)
+                          </Badge>
+                        )}
+                        {vehicle.insurance_status === 'expiring_soon' && (
+                          <Badge className="bg-amber-100 text-amber-700">
+                            <AlertCircle className="w-3 h-3 ml-1" />
+                            ينتهي قريباً ({vehicle.insurance_days_remaining} يوم)
+                          </Badge>
+                        )}
+                        {vehicle.insurance_status === 'expired' && (
+                          <Badge className="bg-red-100 text-red-700">
+                            <XCircle className="w-3 h-3 ml-1" />
+                            منتهي
+                          </Badge>
+                        )}
+                        {vehicle.insurance_status === 'none' && (
+                          <Badge variant="outline" className="text-neutral-500">
+                            لا يوجد
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {vehicle.registration_status === 'valid' && (
+                          <Badge className="bg-green-100 text-green-700">
+                            <CheckCircle2 className="w-3 h-3 ml-1" />
+                            سارية ({vehicle.registration_days_remaining} يوم)
+                          </Badge>
+                        )}
+                        {vehicle.registration_status === 'expiring_soon' && (
+                          <Badge className="bg-amber-100 text-amber-700">
+                            <AlertCircle className="w-3 h-3 ml-1" />
+                            تنتهي قريباً ({vehicle.registration_days_remaining} يوم)
+                          </Badge>
+                        )}
+                        {vehicle.registration_status === 'expired' && (
+                          <Badge className="bg-red-100 text-red-700">
+                            <XCircle className="w-3 h-3 ml-1" />
+                            منتهية
+                          </Badge>
+                        )}
+                        {vehicle.registration_status === 'none' && (
+                          <Badge variant="outline" className="text-neutral-500">
+                            لا يوجد
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {vehicle.insurance_status === 'valid' && vehicle.registration_status === 'valid' ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                            <CheckCircle2 className="w-4 h-4" />
+                            مكتمل
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+                            <AlertCircle className="w-4 h-4" />
+                            يحتاج مراجعة
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {insuranceReport.length === 0 && !insuranceLoading && (
+                <div className="text-center py-8">
+                  <Shield className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                  <p className="text-sm text-neutral-500">لا توجد بيانات للعرض</p>
+                </div>
+              )}
+              {insuranceReport.length > 10 && (
+                <div className="text-center py-4 border-t border-neutral-100">
+                  <p className="text-xs text-neutral-500">
+                    عرض 10 من {insuranceReport.length} مركبة
+                  </p>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        </motion.div>
 
         {/* Report Generator */}
         <motion.div
