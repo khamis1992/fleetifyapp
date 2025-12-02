@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Base payment schema
 export const basePaymentSchema = z.object({
-  payment_number: z.string().min(1, 'رقم الدفعة مطلوب'),
+  payment_number: z.string().optional(), // سيتم توليده تلقائياً إذا لم يُحدد
   payment_date: z.string().min(1, 'تاريخ الدفع مطلوب'),
   amount: z.number().min(0.001, 'المبلغ يجب أن يكون أكبر من صفر'),
   payment_method: z.enum(['cash', 'check', 'bank_transfer', 'credit_card', 'debit_card'], {
@@ -46,16 +46,21 @@ export const unifiedPaymentSchema = z.discriminatedUnion('type', [
   invoicePaymentSchema,
 ]);
 
+// Helper to transform empty strings to undefined for optional UUID fields
+const optionalUuid = z.string().optional().transform(val => 
+  val && val.length > 0 ? val : undefined
+).pipe(z.string().uuid().optional());
+
 // Enhanced payment schema with additional fields
 export const enhancedPaymentSchema = basePaymentSchema.extend({
-  cost_center_id: z.string().uuid().optional(),
-  bank_id: z.string().uuid().optional(),
-  account_id: z.string().uuid().optional(),
-  customer_id: z.string().uuid().optional(),
-  vendor_id: z.string().uuid().optional(),
-  invoice_id: z.string().uuid().optional(),
-  contract_id: z.string().uuid().optional(),
-  purchase_order_id: z.string().uuid().optional(),
+  cost_center_id: optionalUuid,
+  bank_id: optionalUuid,
+  account_id: optionalUuid,
+  customer_id: optionalUuid,
+  vendor_id: optionalUuid,
+  invoice_id: optionalUuid,
+  contract_id: optionalUuid,
+  purchase_order_id: optionalUuid,
   type: z.enum(['receipt', 'payment', 'invoice_payment']),
   transaction_type: z.enum(['customer_payment', 'vendor_payment', 'invoice_payment']).optional(),
   payment_status: z.enum(['pending', 'completed', 'cancelled']).default('completed'),

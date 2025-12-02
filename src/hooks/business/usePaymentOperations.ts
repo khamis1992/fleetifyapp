@@ -69,29 +69,36 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         await validateAccountBalance(validatedData);
       }
 
-      // Prepare payment data for database 
-      const paymentData = {
+      // Generate payment number if not provided
+      const paymentNumber = validatedData.payment_number && validatedData.payment_number.length > 0 
+        ? validatedData.payment_number 
+        : await generatePaymentNumber(validatedData.type);
+
+      // Prepare payment data for database - only include non-empty optional fields
+      const paymentData: Record<string, any> = {
         amount: validatedData.amount,
-        payment_number: validatedData.payment_number || await generatePaymentNumber(validatedData.type),
+        payment_number: paymentNumber,
         payment_date: validatedData.payment_date,
         payment_method: validatedData.payment_method,
-        reference_number: validatedData.reference_number,
-        check_number: validatedData.check_number,
         currency: validatedData.currency || 'QAR',
-        notes: validatedData.notes,
         payment_type: validatedData.type,
+        transaction_type: validatedData.type === 'receipt' ? 'receipt' : 'payment',
         payment_status: requireApproval ? 'pending' : 'completed',
         company_id: companyId,
         created_by: user?.id,
-        // Optional fields based on payment type
-        customer_id: validatedData.customer_id,
-        vendor_id: validatedData.vendor_id,
-        invoice_id: validatedData.invoice_id,
-        contract_id: validatedData.contract_id,
-        cost_center_id: validatedData.cost_center_id,
-        bank_id: validatedData.bank_id,
-        account_id: validatedData.account_id,
       };
+
+      // Add optional fields only if they have valid values
+      if (validatedData.reference_number) paymentData.reference_number = validatedData.reference_number;
+      if (validatedData.check_number) paymentData.check_number = validatedData.check_number;
+      if (validatedData.notes) paymentData.notes = validatedData.notes;
+      if (validatedData.customer_id) paymentData.customer_id = validatedData.customer_id;
+      if (validatedData.vendor_id) paymentData.vendor_id = validatedData.vendor_id;
+      if (validatedData.invoice_id) paymentData.invoice_id = validatedData.invoice_id;
+      if (validatedData.contract_id) paymentData.contract_id = validatedData.contract_id;
+      if (validatedData.cost_center_id) paymentData.cost_center_id = validatedData.cost_center_id;
+      if (validatedData.bank_id) paymentData.bank_id = validatedData.bank_id;
+      if (validatedData.account_id) paymentData.account_id = validatedData.account_id;
 
       // Insert payment
       const { data: insertedPayment, error } = await supabase
