@@ -19,7 +19,7 @@ interface VehicleInsurancePanelProps {
 interface InsuranceFormData {
   insurance_company: string;
   policy_number: string;
-  policy_type: string;
+  coverage_type: string;
   start_date: string;
   end_date: string;
   premium_amount: number;
@@ -42,7 +42,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
     defaultValues: {
       insurance_company: "",
       policy_number: "",
-      policy_type: "comprehensive",
+      coverage_type: "comprehensive",
       start_date: new Date().toISOString().split('T')[0],
       end_date: "",
       premium_amount: 0,
@@ -135,11 +135,11 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                     />
                   </div>
                   <div>
-                    <Label htmlFor="policy_type">نوع التأمين</Label>
+                    <Label htmlFor="coverage_type">نوع التأمين</Label>
                     <select
-                      id="policy_type"
+                      id="coverage_type"
                       className="w-full p-2 border rounded"
-                      {...form.register("policy_type")}
+                      {...form.register("coverage_type")}
                     >
                       <option value="comprehensive">شامل</option>
                       <option value="third_party">طرف ثالث</option>
@@ -264,8 +264,8 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">نوع التأمين</p>
                 <p className="font-semibold">
-                  {activeInsurance.policy_type === 'comprehensive' ? 'شامل' : 
-                   activeInsurance.policy_type === 'third_party' ? 'طرف ثالث' : 'تصادم'}
+                  {activeInsurance.coverage_type === 'comprehensive' ? 'شامل' : 
+                   activeInsurance.coverage_type === 'third_party' ? 'طرف ثالث' : 'تصادم'}
                 </p>
               </div>
               <div className="p-3 bg-muted rounded-lg">

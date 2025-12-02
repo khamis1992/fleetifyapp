@@ -1,17 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 export interface VehicleInsurance {
   id: string;
-  company_id: string;
   vehicle_id: string;
   insurance_company: string;
-  insurance_company_ar?: string;
   policy_number: string;
-  policy_type: string;
+  coverage_type: string; // 'comprehensive' | 'third_party' | 'collision'
   start_date: string;
   end_date: string;
   premium_amount: number;
@@ -21,6 +18,7 @@ export interface VehicleInsurance {
   contact_phone?: string;
   contact_email?: string;
   policy_document_url?: string;
+  status?: string;
   is_active: boolean;
   notes?: string;
   created_at: string;
@@ -28,19 +26,16 @@ export interface VehicleInsurance {
 }
 
 export const useVehicleInsurance = (vehicleId: string) => {
-  const { user } = useAuth();
-  
   return useQuery({
-    queryKey: ['vehicle-insurance', vehicleId, user?.profile?.company_id],
+    queryKey: ['vehicle-insurance', vehicleId],
     queryFn: async (): Promise<VehicleInsurance[]> => {
-      if (!user?.profile?.company_id) {
+      if (!vehicleId) {
         return [];
       }
 
       const { data, error } = await supabase
         .from('vehicle_insurance')
         .select('*')
-        .eq('company_id', user.profile.company_id)
         .eq('vehicle_id', vehicleId)
         .order('created_at', { ascending: false });
 
@@ -51,7 +46,7 @@ export const useVehicleInsurance = (vehicleId: string) => {
 
       return data || [];
     },
-    enabled: !!user?.profile?.company_id && !!vehicleId,
+    enabled: !!vehicleId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (garbage collection time)
   });
@@ -59,22 +54,15 @@ export const useVehicleInsurance = (vehicleId: string) => {
 
 export const useCreateVehicleInsurance = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+    mutationFn: async (insuranceData: Omit<VehicleInsurance, 'id' | 'created_at' | 'updated_at'>) => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Mutation started", level: "info" });
-      if (!user?.profile?.company_id) {
-        throw new Error('Company ID is required');
-      }
 
       const { data, error } = await supabase
         .from('vehicle_insurance')
-        .insert({
-          ...insuranceData,
-          company_id: user.profile.company_id,
-        })
+        .insert(insuranceData)
         .select()
         .single();
 
@@ -85,7 +73,7 @@ export const useCreateVehicleInsurance = () => {
 
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       Sentry.addBreadcrumb({ category: "vehicleinsurance", message: "Operation completed", level: "info" });
       queryClient.invalidateQueries({ queryKey: ['vehicle-insurance'] });
       toast({
