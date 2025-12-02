@@ -21,6 +21,20 @@ interface PaymentData {
   contract_number?: string;
   vehicle_number?: string;
   customer_id?: string;
+  // Relations from usePayments hook
+  customers?: {
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+    customer_type?: string;
+    phone?: string;
+  };
+  contracts?: {
+    contract_number?: string;
+  };
+  invoices?: {
+    invoice_number?: string;
+  };
 }
 
 interface PaymentPreviewDialogProps {
@@ -138,15 +152,32 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
       paymentMethod = 'other';
     }
 
+    // استخراج اسم العميل من البيانات المتاحة
+    let customerName = payment.customer_name;
+    if (!customerName && payment.customers) {
+      // إذا كان العميل شركة
+      if (payment.customers.company_name) {
+        customerName = payment.customers.company_name;
+      } 
+      // إذا كان العميل فرد
+      else if (payment.customers.first_name || payment.customers.last_name) {
+        customerName = `${payment.customers.first_name || ''} ${payment.customers.last_name || ''}`.trim();
+      }
+    }
+    customerName = customerName || 'عميل';
+
+    // استخراج رقم العقد
+    const contractNumber = payment.contract_number || payment.contracts?.contract_number;
+
     // وصف الدفعة
     const description = payment.notes || 
-      (payment.contract_number ? `إيجار - عقد رقم ${payment.contract_number}` : 
+      (contractNumber ? `إيجار - عقد رقم ${contractNumber}` : 
        `دفعة إيجار - ${format(new Date(paymentDate), 'MMMM yyyy', { locale: ar })}`);
 
     return {
       receiptNumber: payment.payment_number || payment.reference_number || payment.id?.substring(0, 8).toUpperCase() || '00000',
       date: formattedDate,
-      customerName: payment.customer_name || 'عميل',
+      customerName: customerName,
       amountInWords: numberToArabicWords(amount),
       amount: amount,
       description: description,
