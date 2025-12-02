@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { TestTube, AlertTriangle, FileText, Eye, EyeOff, DollarSign, Brain, Check, ChevronsUpDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
 import { useBanks } from "@/hooks/useTreasury";
 import { useCostCenters } from "@/hooks/useCostCenters";
@@ -73,6 +76,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const [showJournalPreviewDialog, setShowJournalPreviewDialog] = useState(false);
   const [journalPreview, setJournalPreview] = useState<PaymentJournalPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [accountSearchOpen, setAccountSearchOpen] = useState(false);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
 
   // Business logic hook
   const { 
@@ -141,6 +146,25 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   const watchedValues = form.watch();
   const paymentMethod = form.watch('payment_method');
+
+  // Filter accounts based on search query
+  const filteredAccounts = useMemo(() => {
+    if (!entryAllowedAccounts) return [];
+    if (!accountSearchQuery) return entryAllowedAccounts;
+    
+    const query = accountSearchQuery.toLowerCase();
+    return entryAllowedAccounts.filter(account => 
+      account.account_code?.toLowerCase().includes(query) ||
+      account.account_name?.toLowerCase().includes(query) ||
+      account.account_name_ar?.toLowerCase().includes(query)
+    );
+  }, [entryAllowedAccounts, accountSearchQuery]);
+
+  // Get selected account details
+  const selectedAccount = useMemo(() => {
+    const accountId = form.watch('account_id');
+    return entryAllowedAccounts?.find(acc => acc.id === accountId);
+  }, [entryAllowedAccounts, form.watch('account_id')]);
 
   // Generate mock data for testing
   const fillMockData = () => {
@@ -577,30 +601,84 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                     <CardTitle>الحسابات والتصنيفات</CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Account */}
+                    {/* Account - with search */}
                     <FormField
                       control={form.control}
                       name="account_id"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel>الحساب المحاسبي</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="اختر الحساب المحاسبي" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {entryAllowedAccounts?.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  <div className="flex items-center justify-between w-full">
-                                    <span>{account.account_code} - {account.account_name}</span>
-                                    <AccountLevelBadge accountLevel={account.account_level} isHeader={false} />
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Popover open={accountSearchOpen} onOpenChange={setAccountSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={accountSearchOpen}
+                                  className={cn(
+                                    "w-full justify-between h-auto min-h-[40px] py-2",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {selectedAccount ? (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-mono text-sm">{selectedAccount.account_code}</span>
+                                      <span>-</span>
+                                      <span>{selectedAccount.account_name}</span>
+                                      <AccountLevelBadge accountLevel={selectedAccount.account_level} isHeader={false} />
+                                    </div>
+                                  ) : (
+                                    <span>ابحث واختر الحساب المحاسبي...</span>
+                                  )}
+                                  <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[400px] p-0" align="start">
+                              <Command shouldFilter={false}>
+                                <div className="flex items-center border-b px-3">
+                                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  <CommandInput 
+                                    placeholder="ابحث برقم أو اسم الحساب..." 
+                                    value={accountSearchQuery}
+                                    onValueChange={setAccountSearchQuery}
+                                    className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                                  />
+                                </div>
+                                <CommandList>
+                                  <CommandEmpty>لا توجد نتائج للبحث</CommandEmpty>
+                                  <CommandGroup className="max-h-[300px] overflow-auto">
+                                    {filteredAccounts.map((account) => (
+                                      <CommandItem
+                                        key={account.id}
+                                        value={account.id}
+                                        onSelect={() => {
+                                          field.onChange(account.id);
+                                          setAccountSearchOpen(false);
+                                          setAccountSearchQuery('');
+                                        }}
+                                        className="flex items-center justify-between cursor-pointer"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <Check
+                                            className={cn(
+                                              "h-4 w-4",
+                                              field.value === account.id ? "opacity-100" : "opacity-0"
+                                            )}
+                                          />
+                                          <span className="font-mono text-sm text-muted-foreground">
+                                            {account.account_code}
+                                          </span>
+                                          <span>{account.account_name}</span>
+                                        </div>
+                                        <AccountLevelBadge accountLevel={account.account_level} isHeader={false} />
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
