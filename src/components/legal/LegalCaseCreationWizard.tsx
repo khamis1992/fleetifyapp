@@ -660,10 +660,16 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   return (
     <div className="space-y-6">
       {!formData.customer_id ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            يرجى اختيار العميل في الخطوة السابقة لعرض المبالغ المستحقة.
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            <strong>العميل غير مسجل في النظام</strong>
+            <br />
+            <span className="text-sm">
+              لم يتم اختيار عميل من القائمة. يمكنك المتابعة لإنشاء القضية بالبيانات المدخلة يدوياً.
+              <br />
+              اضغط "التالي" للمتابعة أو عد للخطوة السابقة لاختيار عميل مسجل.
+            </span>
           </AlertDescription>
         </Alert>
       ) : loading ? (
@@ -991,17 +997,19 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
   return (
     <div className="space-y-4">
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          اختر عميلاً موجوداً أو أدخل معلومات العميل يدوياً. يمكن تعديل التفاصيل أدناه.
+      <Alert className="border-blue-200 bg-blue-50">
+        <AlertCircle className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-800">
+          <strong>يمكنك اختيار عميل من القائمة أو إدخال البيانات يدوياً.</strong>
+          <br />
+          <span className="text-sm">في حال عدم وجود العميل في النظام، أدخل اسمه ورقم هاتفه أدناه مباشرة.</span>
         </AlertDescription>
       </Alert>
 
       {/* Customer Search & Selection */}
       <div className="space-y-3">
         <Label htmlFor="customer_search" className="text-base font-semibold mb-2 block">
-          البحث واختيار العميل
+          البحث واختيار العميل <span className="text-muted-foreground font-normal text-sm">(اختياري)</span>
         </Label>
         
         {/* Search Input */}
@@ -1069,14 +1077,18 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 
       <div>
         <Label htmlFor="customer_name" className="text-base font-semibold mb-2 block">
-          اسم العميل *
+          اسم العميل <span className="text-red-500">*</span>
         </Label>
         <Input
           id="customer_name"
           value={formData.customer_name}
           onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-          placeholder="Enter or select customer name"
+          placeholder="أدخل اسم العميل يدوياً أو اختر من القائمة أعلاه"
+          className={!formData.customer_name ? 'border-red-300' : ''}
         />
+        {!formData.customer_name && (
+          <p className="text-xs text-red-500 mt-1">هذا الحقل مطلوب</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
