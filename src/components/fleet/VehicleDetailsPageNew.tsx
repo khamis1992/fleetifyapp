@@ -8,7 +8,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -52,6 +52,8 @@ import {
   Smartphone,
   Navigation,
   MoreVertical,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,6 +61,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
 import { VehicleDocumentsPanel } from './VehicleDocumentsPanel';
@@ -66,6 +74,15 @@ import { VehicleInsurancePanel } from './VehicleInsurancePanel';
 import { VehicleForm } from './VehicleForm';
 import { MaintenanceForm } from './MaintenanceForm';
 import { TrafficViolationForm } from './TrafficViolationForm';
+
+// ===== Status Options =====
+const STATUS_OPTIONS = [
+  { value: 'available', label: 'متاحة', bg: 'bg-green-500', text: 'text-white' },
+  { value: 'rented', label: 'مؤجرة', bg: 'bg-purple-500', text: 'text-white' },
+  { value: 'maintenance', label: 'صيانة', bg: 'bg-amber-500', text: 'text-white' },
+  { value: 'out_of_service', label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white' },
+  { value: 'reserved', label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white' },
+];
 
 // ===== Status Config =====
 const getStatusConfig = (status: string) => {
@@ -144,6 +161,35 @@ const VehicleDetailsPageNew = () => {
   const [showViolationForm, setShowViolationForm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
+  // Mutation لتحديث حالة المركبة
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      if (!vehicleId || !companyId) throw new Error('معرف المركبة أو الشركة مفقود');
+
+      const { data, error } = await supabase
+        .from('vehicles')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', vehicleId)
+        .eq('company_id', companyId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-details', vehicleId, companyId] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      toast.success('تم تحديث حالة المركبة بنجاح');
+      setIsStatusDropdownOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error updating vehicle status:', error);
+      toast.error('حدث خطأ أثناء تحديث حالة المركبة');
+    },
+  });
 
   // جلب بيانات المركبة من قاعدة البيانات
   const { data: vehicle, isLoading: loadingVehicle, error: vehicleError } = useQuery({
@@ -424,9 +470,44 @@ const VehicleDetailsPageNew = () => {
                       </div>
                     )}
                   </div>
-                  <Badge className={cn("text-sm px-4 py-1.5 rounded-full", statusConfig.bg, statusConfig.text)}>
-                    {statusConfig.label}
-                  </Badge>
+                  {/* Status Badge - Clickable to Change Status */}
+                  <DropdownMenu open={isStatusDropdownOpen} onOpenChange={setIsStatusDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className={cn(
+                          "flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full cursor-pointer transition-all hover:opacity-90 hover:scale-105",
+                          statusConfig.bg, 
+                          statusConfig.text
+                        )}
+                        disabled={updateStatusMutation.isPending}
+                      >
+                        {updateStatusMutation.isPending ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : null}
+                        {statusConfig.label}
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[160px]">
+                      {STATUS_OPTIONS.map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onClick={() => updateStatusMutation.mutate(option.value)}
+                          disabled={option.value === vehicle.status || updateStatusMutation.isPending}
+                          className={cn(
+                            "cursor-pointer flex items-center gap-2",
+                            option.value === vehicle.status && "bg-neutral-100"
+                          )}
+                        >
+                          <span className={cn("w-2.5 h-2.5 rounded-full", option.bg)} />
+                          {option.label}
+                          {option.value === vehicle.status && (
+                            <CheckCircle className="w-4 h-4 mr-auto text-green-600" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 
                 {/* Quick Stats */}
