@@ -377,15 +377,59 @@ export const LegalCasesTracking: React.FC = () => {
     ];
   }, [stats]);
 
-  // Financial data for chart
-  const financialData = useMemo(() => [
-    { name: 'يناير', recovered: 40000, claimed: 65000 },
-    { name: 'فبراير', recovered: 30000, claimed: 45000 },
-    { name: 'مارس', recovered: 55000, claimed: 80000 },
-    { name: 'أبريل', recovered: 45000, claimed: 50000 },
-    { name: 'مايو', recovered: 60000, claimed: 95000 },
-    { name: 'يونيو', recovered: 75000, claimed: 85000 },
-  ], []);
+  // Financial data for chart - Real data from cases
+  const financialData = useMemo(() => {
+    if (!cases || cases.length === 0) {
+      return [];
+    }
+
+    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const monthlyData: Record<number, { claimed: number; recovered: number }> = {};
+    
+    // Initialize last 6 months
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (now.getMonth() - i + 12) % 12;
+      monthlyData[monthIndex] = { claimed: 0, recovered: 0 };
+    }
+
+    // Aggregate data by month
+    cases.forEach(legalCase => {
+      const createdDate = new Date(legalCase.created_at);
+      const monthIndex = createdDate.getMonth();
+      
+      // Only include if within the last 6 months
+      const monthsAgo = (now.getMonth() - monthIndex + 12) % 12;
+      if (monthsAgo < 6 || (now.getMonth() < monthIndex && now.getMonth() + 12 - monthIndex < 6)) {
+        if (!monthlyData[monthIndex]) {
+          monthlyData[monthIndex] = { claimed: 0, recovered: 0 };
+        }
+        
+        // Add case_value to claimed
+        const caseValue = parseFloat(String(legalCase.case_value || 0));
+        monthlyData[monthIndex].claimed += caseValue;
+        
+        // If case is closed/settled/won, add to recovered
+        const closedStatuses = ['closed', 'won', 'settled'];
+        if (closedStatuses.includes(legalCase.case_status || '')) {
+          monthlyData[monthIndex].recovered += caseValue;
+        }
+      }
+    });
+
+    // Convert to array format for chart
+    const result = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (now.getMonth() - i + 12) % 12;
+      result.push({
+        name: monthNames[monthIndex],
+        claimed: monthlyData[monthIndex]?.claimed || 0,
+        recovered: monthlyData[monthIndex]?.recovered || 0,
+      });
+    }
+    
+    return result;
+  }, [cases]);
 
   // Case types data for pie chart
   const caseTypesData = useMemo(() => {
@@ -467,27 +511,34 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-base font-bold text-gray-800">التحليل المالي للقضايا (التعويضات vs المطالبات)</h3>
-            <select className="text-xs bg-gray-50 border-none rounded-lg px-3 py-1.5 text-gray-500 outline-none cursor-pointer">
-              <option>آخر 6 أشهر</option>
-              <option>2024</option>
-            </select>
+            <Badge variant="outline" className="text-xs">
+              آخر 6 أشهر
+            </Badge>
           </div>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={financialData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <Tooltip
-                  cursor={{ fill: '#f9fafb' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [formatCurrency(value), '']}
-                />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#FCA5A5" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="recovered" name="تم تحصيله" fill="#4ADE80" radius={[4, 4, 0, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
+            {financialData.length > 0 && financialData.some(d => d.claimed > 0 || d.recovered > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={financialData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [formatCurrency(value), '']}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#FCA5A5" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="recovered" name="تم تحصيله" fill="#4ADE80" radius={[4, 4, 0, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <DollarSign size={48} className="mb-3 opacity-50" />
+                <p className="text-sm font-medium">لا توجد بيانات مالية بعد</p>
+                <p className="text-xs mt-1">قم بإضافة قيم المطالبات في القضايا</p>
+              </div>
+            )}
           </div>
         </div>
 
