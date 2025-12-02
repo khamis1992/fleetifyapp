@@ -600,13 +600,15 @@ export const LegalCasesTracking: React.FC = () => {
         <Card className="bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Car className="w-4 h-4 text-blue-500" />
-              مركبات في قضايا
+              <Scale className="w-4 h-4 text-blue-500" />
+              إجمالي القضايا
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">{cases.length || 0}</div>
-            <p className="text-xs text-gray-400">مركبة مرتبطة بقضايا قانونية</p>
+            <div className="text-2xl font-bold text-gray-800">{stats?.total || 0}</div>
+            <p className="text-xs text-gray-400">
+              {stats?.active || 0} نشطة • {stats?.closed || 0} مغلقة
+            </p>
           </CardContent>
         </Card>
         
@@ -633,8 +635,10 @@ export const LegalCasesTracking: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">{upcomingHearings.length}</div>
-            <p className="text-xs text-gray-400">جلسة خلال الشهر</p>
+            <div className="text-2xl font-bold text-gray-800">
+              {upcomingHearings.filter(h => h.daysUntil >= 0).length}
+            </div>
+            <p className="text-xs text-gray-400">جلسة محكمة قادمة</p>
           </CardContent>
         </Card>
       </div>
