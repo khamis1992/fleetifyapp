@@ -227,7 +227,8 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: async (input: CreateTaskInput) => {
       const companyId = user?.profile?.company_id;
-      if (!companyId || !user?.id) {
+      const profileId = user?.profile?.id;
+      if (!companyId || !profileId) {
         throw new Error('لم يتم تحديد الشركة أو المستخدم');
       }
 
@@ -239,7 +240,7 @@ export function useCreateTask() {
         .insert({
           ...taskData,
           company_id: companyId,
-          created_by: user.id,
+          created_by: profileId, // Use profile.id instead of auth user.id
         })
         .select()
         .single();
@@ -264,7 +265,7 @@ export function useCreateTask() {
       }
 
       // Create notification for assignee if assigned
-      if (input.assigned_to && input.assigned_to !== user.id) {
+      if (input.assigned_to && input.assigned_to !== profileId) {
         await supabase.from('task_notifications').insert({
           task_id: task.id,
           user_id: input.assigned_to,
@@ -305,7 +306,7 @@ export function useUpdateTask() {
       if (error) throw error;
 
       // Handle assignee change notification
-      if (taskData.assigned_to && taskData.assigned_to !== user?.id) {
+      if (taskData.assigned_to && taskData.assigned_to !== user?.profile?.id) {
         await supabase.from('task_notifications').insert({
           task_id: id,
           user_id: taskData.assigned_to,
@@ -408,13 +409,14 @@ export function useAddTaskComment() {
 
   return useMutation({
     mutationFn: async ({ taskId, content }: { taskId: string; content: string }) => {
-      if (!user?.id) throw new Error('المستخدم غير مسجل');
+      const profileId = user?.profile?.id;
+      if (!profileId) throw new Error('المستخدم غير مسجل');
 
       const { data, error } = await supabase
         .from('task_comments')
         .insert({
           task_id: taskId,
-          user_id: user.id,
+          user_id: profileId, // Use profile.id instead of auth user.id
           content,
         })
         .select()
