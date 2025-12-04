@@ -3,9 +3,11 @@
  * AI Chat Widget Component
  * 
  * مساعد افتراضي ذكي يجيب على أسئلة الموظفين حول النظام
+ * مع دعم التنقل التلقائي والجولات التفاعلية
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle,
@@ -20,12 +22,59 @@ import {
   ChevronDown,
   Lightbulb,
   HelpCircle,
+  ExternalLink,
+  Play,
+  Navigation,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAIChatAssistant, ChatMessage } from '@/hooks/useAIChatAssistant';
+import { PAGE_ROUTES } from '@/lib/ai-knowledge-base';
+import { useToast } from '@/components/ui/use-toast';
+
+// ===== أنواع الإجراءات =====
+interface ActionButton {
+  type: 'nav' | 'tour';
+  id: string;
+  label: string;
+}
+
+// دالة لاستخراج الإجراءات من النص
+const parseActions = (text: string): { cleanText: string; actions: ActionButton[] } => {
+  const actions: ActionButton[] = [];
+  
+  // استخراج إجراءات التنقل [NAV:route:label]
+  const navRegex = /\[NAV:([a-zA-Z]+):([^\]]+)\]/g;
+  let match;
+  while ((match = navRegex.exec(text)) !== null) {
+    actions.push({
+      type: 'nav',
+      id: match[1],
+      label: match[2],
+    });
+  }
+  
+  // استخراج إجراءات الجولات [TOUR:id:label]
+  const tourRegex = /\[TOUR:([a-zA-Z-]+):([^\]]+)\]/g;
+  while ((match = tourRegex.exec(text)) !== null) {
+    actions.push({
+      type: 'tour',
+      id: match[1],
+      label: match[2],
+    });
+  }
+  
+  // إزالة الإجراءات من النص
+  const cleanText = text
+    .replace(/\[NAV:[^\]]+\]/g, '')
+    .replace(/\[TOUR:[^\]]+\]/g, '')
+    .trim();
+  
+  return { cleanText, actions };
+};
 
 // الأسئلة المقترحة
 const SUGGESTED_QUESTIONS = [
@@ -53,23 +102,92 @@ const parseMarkdown = (text: string): string => {
     .replace(/\n/g, '<br/>');
 };
 
-// Formatted message component
-const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
-  const htmlContent = parseMarkdown(content);
+// مكون أزرار الإجراءات
+const ActionButtons: React.FC<{
+  actions: ActionButton[];
+  onNavigate: (routeKey: string) => void;
+  onStartTour: (tourId: string) => void;
+}> = ({ actions, onNavigate, onStartTour }) => {
+  if (actions.length === 0) return null;
+
   return (
-    <div 
-      className="text-sm leading-relaxed prose prose-sm max-w-none
-        [&_strong]:font-bold [&_strong]:text-inherit
-        [&_em]:italic
-        [&_li]:my-1 [&_li]:mr-4
-        [&_br]:block [&_br]:content-[''] [&_br]:mt-1"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
+    <div className="mt-3 pt-3 border-t border-neutral-100 space-y-2">
+      <p className="text-xs text-neutral-500 flex items-center gap-1 mb-2">
+        <Sparkles className="w-3 h-3" />
+        إجراءات سريعة
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {actions.map((action, idx) => (
+          <Button
+            key={idx}
+            size="sm"
+            variant={action.type === 'nav' ? 'outline' : 'default'}
+            className={cn(
+              'h-8 text-xs gap-1.5 rounded-full',
+              action.type === 'nav'
+                ? 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300'
+                : 'bg-gradient-to-r from-coral-500 to-orange-500 text-white hover:from-coral-600 hover:to-orange-600'
+            )}
+            onClick={() => {
+              if (action.type === 'nav') {
+                onNavigate(action.id);
+              } else {
+                onStartTour(action.id);
+              }
+            }}
+          >
+            {action.type === 'nav' ? (
+              <>
+                <MapPin className="w-3 h-3" />
+                انتقل إلى {action.label}
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3" />
+                جولة: {action.label}
+              </>
+            )}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Formatted message component with action support
+const FormattedMessage: React.FC<{
+  content: string;
+  onNavigate: (routeKey: string) => void;
+  onStartTour: (tourId: string) => void;
+}> = ({ content, onNavigate, onStartTour }) => {
+  const { cleanText, actions } = useMemo(() => parseActions(content), [content]);
+  const htmlContent = parseMarkdown(cleanText);
+  
+  return (
+    <div>
+      <div 
+        className="text-sm leading-relaxed prose prose-sm max-w-none
+          [&_strong]:font-bold [&_strong]:text-inherit
+          [&_em]:italic
+          [&_li]:my-1 [&_li]:mr-4
+          [&_br]:block [&_br]:content-[''] [&_br]:mt-1"
+        dangerouslySetInnerHTML={{ __html: htmlContent }}
+      />
+      <ActionButtons
+        actions={actions}
+        onNavigate={onNavigate}
+        onStartTour={onStartTour}
+      />
+    </div>
   );
 };
 
 // Message Bubble Component
-const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
+const MessageBubble: React.FC<{
+  message: ChatMessage;
+  onNavigate: (routeKey: string) => void;
+  onStartTour: (tourId: string) => void;
+}> = ({ message, onNavigate, onStartTour }) => {
   const isUser = message.role === 'user';
   
   return (
@@ -93,7 +211,7 @@ const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
 
       {/* Message Content */}
       <div className={cn(
-        'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm',
+        'max-w-[85%] rounded-2xl px-4 py-3 shadow-sm',
         isUser 
           ? 'bg-gradient-to-br from-coral-500 to-orange-500 text-white rounded-br-md'
           : 'bg-white border border-neutral-200 text-neutral-800 rounded-bl-md'
@@ -110,7 +228,11 @@ const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
                 {message.content}
               </div>
             ) : (
-              <FormattedMessage content={message.content} />
+              <FormattedMessage
+                content={message.content}
+                onNavigate={onNavigate}
+                onStartTour={onStartTour}
+              />
             )}
             {message.isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-current animate-pulse mr-1" />
@@ -181,8 +303,11 @@ const WelcomeMessage: React.FC<{ onSuggestionClick: (q: string) => void }> = ({
 export const AIChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [activeTourId, setActiveTourId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   const {
     messages,
@@ -203,6 +328,40 @@ export const AIChatWidget: React.FC = () => {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
+
+  // التنقل للصفحة المطلوبة
+  const handleNavigate = (routeKey: string) => {
+    const route = PAGE_ROUTES[routeKey as keyof typeof PAGE_ROUTES];
+    if (route) {
+      setIsOpen(false); // إغلاق المحادثة
+      navigate(route);
+      toast({
+        title: '📍 تم التنقل',
+        description: `انتقلت إلى الصفحة المطلوبة`,
+      });
+    } else {
+      toast({
+        title: '⚠️ خطأ',
+        description: 'لم يتم العثور على الصفحة',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // بدء جولة تفاعلية
+  const handleStartTour = (tourId: string) => {
+    // تخزين معرف الجولة للاستخدام لاحقاً
+    setActiveTourId(tourId);
+    setIsOpen(false);
+    
+    toast({
+      title: '🎯 جولة تفاعلية',
+      description: 'سيتم تفعيل نظام الإرشاد التفاعلي قريباً',
+    });
+    
+    // يمكن ربطه مع TourProvider لاحقاً
+    console.log('Starting tour:', tourId);
+  };
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -317,7 +476,12 @@ export const AIChatWidget: React.FC = () => {
                 ) : (
                   <>
                     {messages.map((message) => (
-                      <MessageBubble key={message.id} message={message} />
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        onNavigate={handleNavigate}
+                        onStartTour={handleStartTour}
+                      />
                     ))}
                     <div ref={messagesEndRef} />
                   </>
