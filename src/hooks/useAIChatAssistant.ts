@@ -24,6 +24,10 @@ export interface ChatMessage {
   isStreaming?: boolean;
 }
 
+export interface UseAIChatAssistantOptions {
+  systemStatsPrompt?: string;
+}
+
 export interface UseAIChatAssistantReturn {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -36,7 +40,8 @@ export interface UseAIChatAssistantReturn {
 // Generate unique ID
 const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-export const useAIChatAssistant = (): UseAIChatAssistantReturn => {
+export const useAIChatAssistant = (options?: UseAIChatAssistantOptions): UseAIChatAssistantReturn => {
+  const { systemStatsPrompt = '' } = options || {};
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +80,13 @@ export const useAIChatAssistant = (): UseAIChatAssistantReturn => {
 
     try {
       // Build conversation history for API
+      // Include system stats if available
+      const systemContent = systemStatsPrompt 
+        ? `${getSystemPrompt()}\n\n${systemStatsPrompt}`
+        : getSystemPrompt();
+        
       const conversationHistory = [
-        { role: 'system', content: getSystemPrompt() },
+        { role: 'system', content: systemContent },
         ...messages.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: content.trim() }
       ];
@@ -209,7 +219,7 @@ export const useAIChatAssistant = (): UseAIChatAssistantReturn => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, systemStatsPrompt]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

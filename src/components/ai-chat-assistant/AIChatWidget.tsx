@@ -35,6 +35,8 @@ import { useAIChatAssistant, ChatMessage } from '@/hooks/useAIChatAssistant';
 import { PAGE_ROUTES } from '@/lib/ai-knowledge-base';
 import { useToast } from '@/components/ui/use-toast';
 import { useLocation } from 'react-router-dom';
+import { useTourGuide } from '@/components/tour-guide';
+import { useSystemStats, generateStatsPrompt } from '@/hooks/useSystemStats';
 
 // ===== أنواع الإجراءات =====
 interface ActionButton {
@@ -395,12 +397,18 @@ const WelcomeMessage: React.FC<{
 export const AIChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [activeTourId, setActiveTourId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  // جلب إحصائيات النظام الحقيقية
+  const { data: systemStats } = useSystemStats();
+  const statsPrompt = useMemo(() => generateStatsPrompt(systemStats), [systemStats]);
+  
+  // نظام الجولات التفاعلية
+  const { startTour, navigateTo } = useTourGuide();
   
   const {
     messages,
@@ -408,7 +416,7 @@ export const AIChatWidget: React.FC = () => {
     sendMessage,
     clearChat,
     stopGeneration,
-  } = useAIChatAssistant();
+  } = useAIChatAssistant({ systemStatsPrompt: statsPrompt });
 
   // الحصول على معلومات الصفحة الحالية
   const currentPageInfo = useMemo(() => {
@@ -448,17 +456,34 @@ export const AIChatWidget: React.FC = () => {
 
   // بدء جولة تفاعلية
   const handleStartTour = (tourId: string) => {
-    // تخزين معرف الجولة للاستخدام لاحقاً
-    setActiveTourId(tourId);
-    setIsOpen(false);
+    setIsOpen(false); // إغلاق المحادثة أولاً
+    
+    // تحديد المسار المناسب للجولة
+    const tourRoutes: Record<string, string> = {
+      'add-vehicle': '/fleet',
+      'create-contract': '/contracts',
+      'renew-insurance': '/fleet',
+      'create-payment': '/finance/payments',
+      'add-customer': '/customers',
+      'dashboard-overview': '/dashboard',
+    };
+    
+    const targetRoute = tourRoutes[tourId];
+    if (targetRoute && location.pathname !== targetRoute) {
+      // التنقل للصفحة المناسبة أولاً ثم بدء الجولة
+      navigate(targetRoute);
+      setTimeout(() => {
+        startTour(tourId);
+      }, 500);
+    } else {
+      // بدء الجولة مباشرة
+      startTour(tourId);
+    }
     
     toast({
       title: '🎯 جولة تفاعلية',
-      description: 'سيتم تفعيل نظام الإرشاد التفاعلي قريباً',
+      description: `بدأت جولة "${tourId}" - اتبع الإرشادات على الشاشة`,
     });
-    
-    // يمكن ربطه مع TourProvider لاحقاً
-    console.log('Starting tour:', tourId);
   };
 
   // تنفيذ إجراء سريع
