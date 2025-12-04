@@ -34,10 +34,11 @@ import { cn } from '@/lib/utils';
 import { useAIChatAssistant, ChatMessage } from '@/hooks/useAIChatAssistant';
 import { PAGE_ROUTES } from '@/lib/ai-knowledge-base';
 import { useToast } from '@/components/ui/use-toast';
+import { useLocation } from 'react-router-dom';
 
 // ===== أنواع الإجراءات =====
 interface ActionButton {
-  type: 'nav' | 'tour';
+  type: 'nav' | 'tour' | 'action';
   id: string;
   label: string;
 }
@@ -66,14 +67,59 @@ const parseActions = (text: string): { cleanText: string; actions: ActionButton[
       label: match[2],
     });
   }
+
+  // استخراج الإجراءات السريعة [ACTION:action_id:label]
+  const actionRegex = /\[ACTION:([a-zA-Z-]+):([^\]]+)\]/g;
+  while ((match = actionRegex.exec(text)) !== null) {
+    actions.push({
+      type: 'action',
+      id: match[1],
+      label: match[2],
+    });
+  }
   
   // إزالة الإجراءات من النص
   const cleanText = text
     .replace(/\[NAV:[^\]]+\]/g, '')
     .replace(/\[TOUR:[^\]]+\]/g, '')
+    .replace(/\[ACTION:[^\]]+\]/g, '')
     .trim();
   
   return { cleanText, actions };
+};
+
+// ===== معلومات الصفحات للسياق =====
+const PAGE_INFO: Record<string, { name: string; section: string; suggestions: string[] }> = {
+  '/dashboard': {
+    name: 'الرئيسية',
+    section: 'عام',
+    suggestions: ['ما هي إحصائيات اليوم؟', 'كم عدد العقود النشطة؟'],
+  },
+  '/fleet': {
+    name: 'المركبات',
+    section: 'الأسطول',
+    suggestions: ['كيف أضيف مركبة جديدة؟', 'كيف أجدد التأمين؟'],
+  },
+  '/customers': {
+    name: 'العملاء',
+    section: 'العملاء',
+    suggestions: ['كيف أضيف عميل جديد؟', 'كيف أبحث عن عميل؟'],
+  },
+  '/contracts': {
+    name: 'العقود',
+    section: 'العقود',
+    suggestions: ['كيف أنشئ عقد جديد؟', 'كيف أجدد عقد؟'],
+  },
+  '/finance/payments': {
+    name: 'المدفوعات',
+    section: 'المالية',
+    suggestions: ['كيف أنشئ سند قبض؟', 'كيف أرسل سند عبر واتساب؟'],
+  },
+  '/tasks': {
+    name: 'المهام',
+    section: 'المهام',
+    suggestions: ['كيف أنشئ مهمة جديدة؟', 'ما هي مهامي اليوم؟'],
+  },
 };
 
 // الأسئلة المقترحة
@@ -107,46 +153,71 @@ const ActionButtons: React.FC<{
   actions: ActionButton[];
   onNavigate: (routeKey: string) => void;
   onStartTour: (tourId: string) => void;
-}> = ({ actions, onNavigate, onStartTour }) => {
+  onQuickAction: (actionId: string) => void;
+}> = ({ actions, onNavigate, onStartTour, onQuickAction }) => {
   if (actions.length === 0) return null;
+
+  const getButtonStyle = (type: 'nav' | 'tour' | 'action') => {
+    switch (type) {
+      case 'nav':
+        return 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300';
+      case 'tour':
+        return 'border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300';
+      case 'action':
+        return 'bg-gradient-to-r from-coral-500 to-orange-500 text-white hover:from-coral-600 hover:to-orange-600 border-0';
+    }
+  };
+
+  const getIcon = (type: 'nav' | 'tour' | 'action') => {
+    switch (type) {
+      case 'nav':
+        return <MapPin className="w-3 h-3" />;
+      case 'tour':
+        return <Play className="w-3 h-3" />;
+      case 'action':
+        return <Sparkles className="w-3 h-3" />;
+    }
+  };
+
+  const getLabel = (action: ActionButton) => {
+    switch (action.type) {
+      case 'nav':
+        return `انتقل: ${action.label}`;
+      case 'tour':
+        return `جولة: ${action.label}`;
+      case 'action':
+        return `⚡ ${action.label}`;
+    }
+  };
 
   return (
     <div className="mt-3 pt-3 border-t border-neutral-100 space-y-2">
       <p className="text-xs text-neutral-500 flex items-center gap-1 mb-2">
         <Sparkles className="w-3 h-3" />
-        إجراءات سريعة
+        إجراءات تفاعلية
       </p>
       <div className="flex flex-wrap gap-2">
         {actions.map((action, idx) => (
           <Button
             key={idx}
             size="sm"
-            variant={action.type === 'nav' ? 'outline' : 'default'}
+            variant={action.type === 'action' ? 'default' : 'outline'}
             className={cn(
-              'h-8 text-xs gap-1.5 rounded-full',
-              action.type === 'nav'
-                ? 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300'
-                : 'bg-gradient-to-r from-coral-500 to-orange-500 text-white hover:from-coral-600 hover:to-orange-600'
+              'h-8 text-xs gap-1.5 rounded-full transition-all',
+              getButtonStyle(action.type)
             )}
             onClick={() => {
               if (action.type === 'nav') {
                 onNavigate(action.id);
-              } else {
+              } else if (action.type === 'tour') {
                 onStartTour(action.id);
+              } else {
+                onQuickAction(action.id);
               }
             }}
           >
-            {action.type === 'nav' ? (
-              <>
-                <MapPin className="w-3 h-3" />
-                انتقل إلى {action.label}
-              </>
-            ) : (
-              <>
-                <Play className="w-3 h-3" />
-                جولة: {action.label}
-              </>
-            )}
+            {getIcon(action.type)}
+            {getLabel(action)}
           </Button>
         ))}
       </div>
@@ -159,7 +230,8 @@ const FormattedMessage: React.FC<{
   content: string;
   onNavigate: (routeKey: string) => void;
   onStartTour: (tourId: string) => void;
-}> = ({ content, onNavigate, onStartTour }) => {
+  onQuickAction: (actionId: string) => void;
+}> = ({ content, onNavigate, onStartTour, onQuickAction }) => {
   const { cleanText, actions } = useMemo(() => parseActions(content), [content]);
   const htmlContent = parseMarkdown(cleanText);
   
@@ -177,6 +249,7 @@ const FormattedMessage: React.FC<{
         actions={actions}
         onNavigate={onNavigate}
         onStartTour={onStartTour}
+        onQuickAction={onQuickAction}
       />
     </div>
   );
@@ -187,7 +260,8 @@ const MessageBubble: React.FC<{
   message: ChatMessage;
   onNavigate: (routeKey: string) => void;
   onStartTour: (tourId: string) => void;
-}> = ({ message, onNavigate, onStartTour }) => {
+  onQuickAction: (actionId: string) => void;
+}> = ({ message, onNavigate, onStartTour, onQuickAction }) => {
   const isUser = message.role === 'user';
   
   return (
@@ -232,6 +306,7 @@ const MessageBubble: React.FC<{
                 content={message.content}
                 onNavigate={onNavigate}
                 onStartTour={onStartTour}
+                onQuickAction={onQuickAction}
               />
             )}
             {message.isStreaming && (
@@ -255,49 +330,66 @@ const MessageBubble: React.FC<{
   );
 };
 
-// Welcome Message Component
-const WelcomeMessage: React.FC<{ onSuggestionClick: (q: string) => void }> = ({ 
-  onSuggestionClick 
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="text-center py-6 px-4"
-  >
-    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
-      <Sparkles className="h-8 w-8 text-white" />
-    </div>
-    
-    <h3 className="text-lg font-bold text-neutral-800 mb-2">
-      مرحباً! أنا مساعدك الذكي 🤖
-    </h3>
-    
-    <p className="text-sm text-neutral-600 mb-6 max-w-xs mx-auto">
-      يمكنني مساعدتك في استخدام النظام والإجابة على أسئلتك
-    </p>
-    
-    {/* Suggested Questions */}
-    <div className="space-y-2">
-      <p className="text-xs text-neutral-500 flex items-center justify-center gap-1">
-        <Lightbulb className="h-3 w-3" />
-        أسئلة مقترحة
-      </p>
-      <div className="flex flex-wrap justify-center gap-2">
-        {SUGGESTED_QUESTIONS.slice(0, 4).map((q, i) => (
-          <Button
-            key={i}
-            variant="outline"
-            size="sm"
-            className="text-xs h-auto py-2 px-3 rounded-full hover:bg-coral-50 hover:border-coral-300 hover:text-coral-600 transition-colors"
-            onClick={() => onSuggestionClick(q)}
-          >
-            {q}
-          </Button>
-        ))}
+// Welcome Message Component with Page Context
+const WelcomeMessage: React.FC<{
+  onSuggestionClick: (q: string) => void;
+  currentPage?: { name: string; section: string; suggestions: string[] };
+}> = ({ onSuggestionClick, currentPage }) => {
+  // دمج الاقتراحات السياقية مع الاقتراحات العامة
+  const contextualSuggestions = currentPage?.suggestions || [];
+  const allSuggestions = [...contextualSuggestions, ...SUGGESTED_QUESTIONS.slice(0, 4 - contextualSuggestions.length)];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center py-6 px-4"
+    >
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+        <Sparkles className="h-8 w-8 text-white" />
       </div>
-    </div>
-  </motion.div>
-);
+      
+      <h3 className="text-lg font-bold text-neutral-800 mb-2">
+        مرحباً! أنا مساعدك الذكي 🤖
+      </h3>
+      
+      <p className="text-sm text-neutral-600 mb-4 max-w-xs mx-auto">
+        يمكنني مساعدتك في استخدام النظام والإجابة على أسئلتك
+      </p>
+
+      {/* Page Context Badge */}
+      {currentPage && (
+        <div className="mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-full">
+            <MapPin className="w-3 h-3" />
+            أنت في: {currentPage.name}
+          </span>
+        </div>
+      )}
+      
+      {/* Suggested Questions */}
+      <div className="space-y-2">
+        <p className="text-xs text-neutral-500 flex items-center justify-center gap-1">
+          <Lightbulb className="h-3 w-3" />
+          {currentPage ? 'اقتراحات لهذه الصفحة' : 'أسئلة مقترحة'}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {allSuggestions.slice(0, 4).map((q, i) => (
+            <Button
+              key={i}
+              variant="outline"
+              size="sm"
+              className="text-xs h-auto py-2 px-3 rounded-full hover:bg-coral-50 hover:border-coral-300 hover:text-coral-600 transition-colors"
+              onClick={() => onSuggestionClick(q)}
+            >
+              {q}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // Main Chat Widget
 export const AIChatWidget: React.FC = () => {
@@ -307,6 +399,7 @@ export const AIChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const {
@@ -316,6 +409,11 @@ export const AIChatWidget: React.FC = () => {
     clearChat,
     stopGeneration,
   } = useAIChatAssistant();
+
+  // الحصول على معلومات الصفحة الحالية
+  const currentPageInfo = useMemo(() => {
+    return PAGE_INFO[location.pathname] || null;
+  }, [location.pathname]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -361,6 +459,62 @@ export const AIChatWidget: React.FC = () => {
     
     // يمكن ربطه مع TourProvider لاحقاً
     console.log('Starting tour:', tourId);
+  };
+
+  // تنفيذ إجراء سريع
+  const handleQuickAction = (actionId: string) => {
+    console.log('🚀 Quick action:', actionId);
+    setIsOpen(false); // إغلاق المحادثة
+
+    // تحديد الإجراء والتنفيذ
+    const actionRoutes: Record<string, string> = {
+      'open-add-vehicle': '/fleet',
+      'open-add-customer': '/customers',
+      'open-add-contract': '/contracts',
+      'open-add-payment': '/finance/payments',
+      'open-add-invoice': '/finance/invoices',
+      'open-add-task': '/tasks',
+      'search-vehicle': '/fleet',
+      'search-customer': '/customers',
+      'search-contract': '/contracts',
+      'show-dashboard': '/dashboard',
+      'show-reports': '/fleet/reports',
+    };
+
+    const targetRoute = actionRoutes[actionId];
+    if (targetRoute) {
+      navigate(targetRoute);
+      
+      // رسالة توضيحية للمستخدم
+      const actionMessages: Record<string, { title: string; description: string }> = {
+        'open-add-vehicle': { title: '🚗 إضافة مركبة', description: 'اضغط على زر "إضافة مركبة" لبدء الإضافة' },
+        'open-add-customer': { title: '👤 إضافة عميل', description: 'اضغط على زر "إضافة عميل" لبدء الإضافة' },
+        'open-add-contract': { title: '📄 إنشاء عقد', description: 'اضغط على زر "إنشاء عقد جديد" لبدء الإنشاء' },
+        'open-add-payment': { title: '💳 سند جديد', description: 'اضغط على زر "سند جديد" لإنشاء سند قبض أو صرف' },
+        'open-add-invoice': { title: '🧾 فاتورة جديدة', description: 'اضغط على زر "إنشاء فاتورة" لبدء الإنشاء' },
+        'open-add-task': { title: '✅ مهمة جديدة', description: 'اضغط على زر "إضافة مهمة" لإنشاء مهمة' },
+        'search-vehicle': { title: '🔍 بحث', description: 'استخدم خانة البحث للعثور على المركبة' },
+        'search-customer': { title: '🔍 بحث', description: 'استخدم خانة البحث للعثور على العميل' },
+        'search-contract': { title: '🔍 بحث', description: 'استخدم خانة البحث للعثور على العقد' },
+        'show-dashboard': { title: '🏠 الرئيسية', description: 'تم الانتقال إلى لوحة التحكم' },
+        'show-reports': { title: '📊 التقارير', description: 'تم الانتقال إلى صفحة التقارير' },
+      };
+
+      const message = actionMessages[actionId] || { title: '✅ تم', description: 'تم تنفيذ الإجراء' };
+      
+      setTimeout(() => {
+        toast({
+          title: message.title,
+          description: message.description,
+        });
+      }, 300);
+    } else {
+      toast({
+        title: '⚠️ خطأ',
+        description: 'إجراء غير معروف',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSend = async () => {
@@ -472,7 +626,10 @@ export const AIChatWidget: React.FC = () => {
               {/* Messages Area */}
               <ScrollArea className="flex-1 px-4 py-4">
                 {messages.length === 0 ? (
-                  <WelcomeMessage onSuggestionClick={handleSuggestionClick} />
+                  <WelcomeMessage
+                    onSuggestionClick={handleSuggestionClick}
+                    currentPage={currentPageInfo || undefined}
+                  />
                 ) : (
                   <>
                     {messages.map((message) => (
@@ -481,6 +638,7 @@ export const AIChatWidget: React.FC = () => {
                         message={message}
                         onNavigate={handleNavigate}
                         onStartTour={handleStartTour}
+                        onQuickAction={handleQuickAction}
                       />
                     ))}
                     <div ref={messagesEndRef} />
