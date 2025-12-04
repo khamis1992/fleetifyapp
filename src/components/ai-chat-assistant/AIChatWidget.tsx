@@ -37,6 +37,37 @@ const SUGGESTED_QUESTIONS = [
   'كيف أضيف مركبة جديدة؟',
 ];
 
+// Simple Markdown to HTML parser
+const parseMarkdown = (text: string): string => {
+  return text
+    // Bold: **text** or ***text***
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong>$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text*
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    // Numbered lists: 1. text
+    .replace(/^(\d+)\.\s+(.+)$/gm, '<li class="list-decimal mr-5">$2</li>')
+    // Bullet points: - text
+    .replace(/^[-•]\s+(.+)$/gm, '<li class="list-disc mr-5">$1</li>')
+    // Line breaks
+    .replace(/\n/g, '<br/>');
+};
+
+// Formatted message component
+const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
+  const htmlContent = parseMarkdown(content);
+  return (
+    <div 
+      className="text-sm leading-relaxed prose prose-sm max-w-none
+        [&_strong]:font-bold [&_strong]:text-inherit
+        [&_em]:italic
+        [&_li]:my-1 [&_li]:mr-4
+        [&_br]:block [&_br]:content-[''] [&_br]:mt-1"
+      dangerouslySetInnerHTML={{ __html: htmlContent }}
+    />
+  );
+};
+
 // Message Bubble Component
 const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
   const isUser = message.role === 'user';
@@ -73,8 +104,14 @@ const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
             <span className="text-sm">جاري التفكير...</span>
           </div>
         ) : (
-          <div className="text-sm whitespace-pre-wrap leading-relaxed">
-            {message.content}
+          <div>
+            {isUser ? (
+              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                {message.content}
+              </div>
+            ) : (
+              <FormattedMessage content={message.content} />
+            )}
             {message.isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-current animate-pulse mr-1" />
             )}
