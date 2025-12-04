@@ -203,11 +203,11 @@ export const AIChatWidget: React.FC = () => {
               <MessageCircle className="h-6 w-6" />
             </Button>
             
-            {/* Pulse Animation */}
-            <span className="absolute top-0 left-0 h-14 w-14 rounded-full bg-coral-500 animate-ping opacity-30" />
+            {/* Pulse Animation - pointer-events-none to allow clicking the button */}
+            <span className="absolute top-0 left-0 h-14 w-14 rounded-full bg-coral-500 animate-ping opacity-30 pointer-events-none" />
             
             {/* Badge */}
-            <span className="absolute -top-1 -right-1 flex h-5 w-5">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 pointer-events-none">
               <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
               <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500 items-center justify-center">
                 <HelpCircle className="h-3 w-3 text-white" />
