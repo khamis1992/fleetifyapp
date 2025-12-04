@@ -3,6 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Helper functions for labels
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    pending: 'معلقة',
+    in_progress: 'قيد التنفيذ',
+    completed: 'مكتملة',
+    cancelled: 'ملغاة',
+    on_hold: 'متوقفة',
+  };
+  return labels[status] || status;
+};
+
+const getPriorityLabel = (priority: string): string => {
+  const labels: Record<string, string> = {
+    low: 'منخفضة',
+    medium: 'متوسطة',
+    high: 'عالية',
+    urgent: 'عاجلة',
+  };
+  return labels[priority] || priority;
+};
+
 // Types
 export interface Task {
   id: string;
@@ -264,6 +286,14 @@ export function useCreateTask() {
         }
       }
 
+      // Log activity: Task Created
+      await supabase.from('task_activity_log').insert({
+        task_id: task.id,
+        user_id: profileId,
+        action: 'created',
+        description: `تم إنشاء المهمة "${task.title}"`,
+      }).catch(err => console.error('Error logging activity:', err));
+
       // Create notification for assignee if assigned
       if (input.assigned_to && input.assigned_to !== profileId) {
         await supabase.from('task_notifications').insert({
@@ -277,8 +307,9 @@ export function useCreateTask() {
 
       return task as Task;
     },
-    onSuccess: () => {
+    onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task-activity', task.id] });
       toast.success('تم إنشاء المهمة بنجاح');
     },
     onError: (error: Error) => {
@@ -305,6 +336,32 @@ export function useUpdateTask() {
 
       if (error) throw error;
 
+      // Log activity: Task Updated
+      const profileId = user?.profile?.id;
+      if (profileId) {
+        // Build description based on what was changed
+        const changes: string[] = [];
+        if (taskData.title) changes.push('العنوان');
+        if (taskData.description !== undefined) changes.push('الوصف');
+        if (taskData.status) changes.push(`الحالة إلى "${getStatusLabel(taskData.status)}"`);
+        if (taskData.priority) changes.push(`الأولوية إلى "${getPriorityLabel(taskData.priority)}"`);
+        if (taskData.due_date) changes.push('تاريخ الاستحقاق');
+        if (taskData.assigned_to) changes.push('المسؤول');
+
+        const description = changes.length > 0
+          ? `تم تحديث: ${changes.join('، ')}`
+          : 'تم تحديث المهمة';
+
+        await supabase.from('task_activity_log').insert({
+          task_id: id,
+          user_id: profileId,
+          action: 'updated',
+          description,
+          old_value: null,
+          new_value: taskData,
+        }).catch(err => console.error('Error logging activity:', err));
+      }
+
       // Handle assignee change notification
       if (taskData.assigned_to && taskData.assigned_to !== user?.profile?.id) {
         await supabase.from('task_notifications').insert({
@@ -321,6 +378,7 @@ export function useUpdateTask() {
     onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['task-activity', task.id] });
       toast.success('تم تحديث المهمة بنجاح');
     },
     onError: (error: Error) => {
@@ -356,22 +414,40 @@ export function useDeleteTask() {
 // Hook: Update Task Status
 export function useUpdateTaskStatus() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: Task['status'] }) => {
       const { data, error } = await supabase
         .from('tasks')
-        .update({ status })
+        .update({ 
+          status,
+          ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+        })
         .eq('id', taskId)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Log activity: Status Changed
+      const profileId = user?.profile?.id;
+      if (profileId) {
+        await supabase.from('task_activity_log').insert({
+          task_id: taskId,
+          user_id: profileId,
+          action: 'status_changed',
+          description: `تم تغيير الحالة إلى "${getStatusLabel(status)}"`,
+          new_value: { status },
+        }).catch(err => console.error('Error logging activity:', err));
+      }
+
       return data as Task;
     },
     onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['task-activity', task.id] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'حدث خطأ أثناء تحديث حالة المهمة');
@@ -423,10 +499,20 @@ export function useAddTaskComment() {
         .single();
 
       if (error) throw error;
+
+      // Log activity: Comment Added
+      await supabase.from('task_activity_log').insert({
+        task_id: taskId,
+        user_id: profileId,
+        action: 'comment_added',
+        description: 'تمت إضافة تعليق جديد',
+      }).catch(err => console.error('Error logging activity:', err));
+
       return data as TaskComment;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['task-activity', variables.taskId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'حدث خطأ أثناء إضافة التعليق');
