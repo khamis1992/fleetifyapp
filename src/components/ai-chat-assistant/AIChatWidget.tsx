@@ -347,8 +347,8 @@ const WelcomeMessage: React.FC<{
       animate={{ opacity: 1, y: 0 }}
       className="text-center py-6 px-4"
     >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
-        <Sparkles className="h-8 w-8 text-white" />
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <Bot className="h-8 w-8 text-white" />
       </div>
       
       <h3 className="text-lg font-bold text-neutral-800 mb-2">
@@ -381,7 +381,7 @@ const WelcomeMessage: React.FC<{
               key={i}
               variant="outline"
               size="sm"
-              className="text-xs h-auto py-2 px-3 rounded-full hover:bg-coral-50 hover:border-coral-300 hover:text-coral-600 transition-colors"
+              className="text-xs h-auto py-2 px-3 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
               onClick={() => onSuggestionClick(q)}
             >
               {q}
@@ -562,30 +562,30 @@ export const AIChatWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - على اليمين لتجنب التعارض مع مساعد الموظفين */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 left-6 z-[9999]"
+            className="fixed bottom-6 right-6 z-[9999]"
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="h-14 w-14 rounded-full bg-gradient-to-br from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/40 hover:shadow-coral-500/50 transition-all hover:scale-110"
+              className="h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/40 hover:shadow-blue-500/50 transition-all hover:scale-110"
             >
-              <MessageCircle className="h-6 w-6" />
+              <Bot className="h-6 w-6" />
             </Button>
             
             {/* Pulse Animation - pointer-events-none to allow clicking the button */}
-            <span className="absolute top-0 left-0 h-14 w-14 rounded-full bg-coral-500 animate-ping opacity-30 pointer-events-none" />
+            <span className="absolute top-0 right-0 h-14 w-14 rounded-full bg-blue-500 animate-ping opacity-30 pointer-events-none" />
             
-            {/* Badge */}
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 pointer-events-none">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
-              <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500 items-center justify-center">
-                <HelpCircle className="h-3 w-3 text-white" />
+            {/* AI Badge */}
+            <span className="absolute -top-1 -left-1 flex h-5 w-5 pointer-events-none">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 items-center justify-center">
+                <Sparkles className="h-3 w-3 text-white" />
               </span>
             </span>
           </motion.div>
@@ -605,16 +605,16 @@ export const AIChatWidget: React.FC = () => {
               onClick={() => setIsOpen(false)}
             />
             
-            {/* Chat Window */}
+            {/* Chat Window - على اليمين */}
             <motion.div
               initial={{ opacity: 0, y: 100, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 100, scale: 0.9 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-6 left-6 z-[9999] w-[380px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-neutral-50 rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
+              className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-neutral-50 rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
             >
               {/* Header */}
-              <div className="bg-gradient-to-l from-coral-500 to-orange-500 px-4 py-3 flex items-center justify-between flex-shrink-0">
+              <div className="bg-gradient-to-l from-blue-500 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                     <Bot className="h-5 w-5 text-white" />
@@ -681,7 +681,7 @@ export const AIChatWidget: React.FC = () => {
                           key={i}
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7 px-3 rounded-full whitespace-nowrap hover:bg-coral-50 hover:border-coral-300"
+                          className="text-xs h-7 px-3 rounded-full whitespace-nowrap hover:bg-blue-50 hover:border-blue-300"
                           onClick={() => handleSuggestionClick(q)}
                         >
                           {q}
@@ -701,7 +701,7 @@ export const AIChatWidget: React.FC = () => {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="اكتب سؤالك هنا..."
-                    className="flex-1 bg-neutral-50 border-neutral-200 focus:border-coral-400 focus:ring-coral-400 rounded-full px-4 h-10"
+                    className="flex-1 bg-neutral-50 border-neutral-200 focus:border-blue-400 focus:ring-blue-400 rounded-full px-4 h-10"
                     disabled={isLoading}
                     dir="rtl"
                   />
@@ -718,7 +718,7 @@ export const AIChatWidget: React.FC = () => {
                     <Button
                       onClick={handleSend}
                       disabled={!inputValue.trim()}
-                      className="h-10 w-10 rounded-full bg-gradient-to-br from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 disabled:opacity-50"
+                      className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50"
                     >
                       <Send className="h-5 w-5" />
                     </Button>
