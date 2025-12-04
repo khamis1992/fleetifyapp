@@ -7,9 +7,15 @@ import { useState, useCallback, useRef } from 'react';
 import { getSystemPrompt } from '@/lib/ai-knowledge-base';
 
 // Z.AI API Configuration
+// For Coding Plan use: https://api.z.ai/api/coding/paas/v4/chat/completions
+// For General Plan use: https://api.z.ai/api/paas/v4/chat/completions
 const ZAI_API_URL = 'https://api.z.ai/api/paas/v4/chat/completions';
+const ZAI_CODING_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
 const MODEL = 'glm-4.6';
+
+// Try Coding endpoint first, then fallback to general
+const API_ENDPOINTS = [ZAI_CODING_URL, ZAI_API_URL];
 
 export interface ChatMessage {
   id: string;
@@ -76,26 +82,58 @@ export const useAIChatAssistant = (): UseAIChatAssistantReturn => {
         { role: 'user', content: content.trim() }
       ];
 
-      const response = await fetch(ZAI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Language': 'ar-SA,ar',
-          'Authorization': `Bearer ${ZAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: conversationHistory,
-          temperature: 0.7,
-          stream: true,
-          max_tokens: 2048,
-        }),
-        signal: abortControllerRef.current.signal,
-      });
+      const requestBody = {
+        model: MODEL,
+        messages: conversationHistory,
+        temperature: 0.7,
+        stream: true,
+        max_tokens: 2048,
+      };
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept-Language': 'en-US,en',
+        'Authorization': `Bearer ${ZAI_API_KEY}`,
+      };
+
+      // Try endpoints in order (Coding first, then General)
+      let response: Response | null = null;
+      let lastError: Error | null = null;
+
+      for (const apiUrl of API_ENDPOINTS) {
+        try {
+          console.log(`🤖 Trying AI endpoint: ${apiUrl}`);
+          response = await fetch(apiUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestBody),
+            signal: abortControllerRef.current.signal,
+          });
+
+          if (response.ok) {
+            console.log(`✅ AI endpoint successful: ${apiUrl}`);
+            break;
+          } else if (response.status === 429 || response.status === 401 || response.status === 403) {
+            // Rate limit or auth issue - try next endpoint
+            const errorText = await response.text();
+            console.warn(`⚠️ Endpoint ${apiUrl} returned ${response.status}: ${errorText}`);
+            lastError = new Error(`API Error: ${response.status} - ${errorText}`);
+            response = null;
+            continue;
+          } else {
+            const errorText = await response.text();
+            throw new Error(`API Error: ${response.status} - ${errorText}`);
+          }
+        } catch (fetchError) {
+          if ((fetchError as Error).name === 'AbortError') throw fetchError;
+          console.warn(`⚠️ Failed to reach ${apiUrl}:`, fetchError);
+          lastError = fetchError as Error;
+          response = null;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error('All API endpoints failed');
       }
 
       // Handle streaming response
