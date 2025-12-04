@@ -605,6 +605,14 @@ export default function CustomerCRMNew() {
       return i.note_type === 'phone' && iDate >= todayStart;
     }).length;
 
+    // الاتصالات هذا الشهر
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const callsThisMonth = interactions.filter(i => {
+      if (!i.created_at) return false;
+      const iDate = new Date(i.created_at);
+      return i.note_type === 'phone' && iDate >= monthStart;
+    }).length;
+
     const newCustomers = customers.filter(c => {
       const customerInteractions = interactions.filter(i => i.customer_id === c.id);
       return customerInteractions.length === 0;
@@ -612,7 +620,7 @@ export default function CustomerCRMNew() {
 
     const activeContracts = contracts.length;
 
-    return { total: customers.length, late, needsContact, expiring, callsToday, newCustomers, activeContracts };
+    return { total: customers.length, late, needsContact, expiring, callsToday, callsThisMonth, newCustomers, activeContracts };
   }, [customers, interactions, contracts, getLastContactDays, getPaymentStatus, getCustomerContract]);
 
   // Filtered data
@@ -829,7 +837,7 @@ export default function CustomerCRMNew() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard title="إجمالي العملاء" value={stats.total} icon={<UserCheck size={20} />} color="green" />
+          <StatCard title="الاتصالات هذا الشهر" value={stats.callsThisMonth} icon={<Phone size={20} />} color="green" />
           <StatCard title="مكالمات اليوم" value={stats.callsToday} icon={<PhoneIncoming size={20} />} color="blue" />
           <StatCard title="متأخر بالدفع" value={stats.late} icon={<AlertCircle size={20} />} color="red" isUrgent />
           <StatCard title="يحتاج اتصال" value={stats.needsContact} icon={<PhoneMissed size={20} />} color="orange" />
