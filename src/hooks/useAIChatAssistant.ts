@@ -6,16 +6,15 @@
 import { useState, useCallback, useRef } from 'react';
 import { getSystemPrompt } from '@/lib/ai-knowledge-base';
 
-// Z.AI API Configuration
-// For Coding Plan use: https://api.z.ai/api/coding/paas/v4/chat/completions
-// For General Plan use: https://api.z.ai/api/paas/v4/chat/completions
-const ZAI_API_URL = 'https://api.z.ai/api/paas/v4/chat/completions';
-const ZAI_CODING_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+// Z.AI API Configuration - Using GLM Coding Plan
+// Coding Plan MUST use: https://api.z.ai/api/coding/paas/v4/chat/completions
+// General Plan uses: https://api.z.ai/api/paas/v4/chat/completions (NOT for Coding Plan!)
+const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
 const MODEL = 'glm-4.6';
 
-// Try Coding endpoint first, then fallback to general
-const API_ENDPOINTS = [ZAI_CODING_URL, ZAI_API_URL];
+// Using only Coding endpoint for Coding Plan subscription
+const API_ENDPOINTS = [ZAI_API_URL];
 
 export interface ChatMessage {
   id: string;
