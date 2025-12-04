@@ -941,7 +941,6 @@ export const EnhancedCustomerDialog: React.FC<{
         <FloatingAssistant
           workflowType="new_customer"
           data={{}}
-          position="left"
         />
       </DialogContent>
     </Dialog>

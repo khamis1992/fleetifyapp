@@ -562,14 +562,14 @@ export const AIChatWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button - على اليمين لتجنب التعارض مع مساعد الموظفين */}
+      {/* Floating Button - المساعد الذكي على اليسار */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-[9999]"
+            className="fixed bottom-6 left-6 z-[9999]"
           >
             <Button
               onClick={() => setIsOpen(true)}
@@ -579,10 +579,10 @@ export const AIChatWidget: React.FC = () => {
             </Button>
             
             {/* Pulse Animation - pointer-events-none to allow clicking the button */}
-            <span className="absolute top-0 right-0 h-14 w-14 rounded-full bg-blue-500 animate-ping opacity-30 pointer-events-none" />
+            <span className="absolute top-0 left-0 h-14 w-14 rounded-full bg-blue-500 animate-ping opacity-30 pointer-events-none" />
             
             {/* AI Badge */}
-            <span className="absolute -top-1 -left-1 flex h-5 w-5 pointer-events-none">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 pointer-events-none">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
               <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 items-center justify-center">
                 <Sparkles className="h-3 w-3 text-white" />
@@ -605,13 +605,13 @@ export const AIChatWidget: React.FC = () => {
               onClick={() => setIsOpen(false)}
             />
             
-            {/* Chat Window - على اليمين */}
+            {/* Chat Window - على اليسار */}
             <motion.div
               initial={{ opacity: 0, y: 100, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 100, scale: 0.9 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-neutral-50 rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
+              className="fixed bottom-6 left-6 z-[9999] w-[380px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-neutral-50 rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
             >
               {/* Header */}
               <div className="bg-gradient-to-l from-blue-500 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">

@@ -809,7 +809,6 @@ const Invoices = () => {
       <FloatingAssistant
         workflowType="new_invoice"
         data={{}}
-        position="left"
       />
     </div>
     </PageCustomizer>

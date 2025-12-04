@@ -26,7 +26,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
   workflowType,
   data = {},
   title,
-  position = 'left',
+  position = 'right', // Changed to right to avoid conflict with AI assistant on left
   defaultOpen = false,
   onComplete,
   className

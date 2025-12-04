@@ -1475,7 +1475,6 @@ const Customers = () => {
       <FloatingAssistant
         workflowType="new_customer"
         data={{}}
-        position="left"
       />
 
       {/* Help System */}

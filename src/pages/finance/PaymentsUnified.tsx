@@ -1390,7 +1390,6 @@ const PaymentsUnified = () => {
               payment_method: 'cash',
             }}
             mode="floating"
-            position="left"
           />
 
           {/* Delete Confirmation Dialog */}
