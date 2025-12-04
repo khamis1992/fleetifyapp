@@ -4,7 +4,7 @@
  * Now with full mobile responsive support
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -12,6 +12,9 @@ import BentoSidebar from '@/components/dashboard/bento/BentoSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
+
+// Lazy load AI Chat Widget for performance
+const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
 
 interface BentoLayoutProps {
   children?: React.ReactNode;
@@ -105,6 +108,11 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           {children}
         </div>
       </motion.main>
+
+      {/* AI Chat Assistant Widget */}
+      <Suspense fallback={null}>
+        <AIChatWidget />
+      </Suspense>
     </div>
   );
 };
