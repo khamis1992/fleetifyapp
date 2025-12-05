@@ -39,8 +39,38 @@ export interface AuditTrailStats {
   tablesAffected: number;
 }
 
+// Map action names from audit_logs to audit_trail format
+const mapAction = (action: string): 'INSERT' | 'UPDATE' | 'DELETE' => {
+  const actionMap: Record<string, 'INSERT' | 'UPDATE' | 'DELETE'> = {
+    'CREATE': 'INSERT',
+    'INSERT': 'INSERT',
+    'UPDATE': 'UPDATE',
+    'DELETE': 'DELETE',
+    'APPROVE': 'UPDATE',
+    'REJECT': 'UPDATE',
+    'CANCEL': 'UPDATE',
+  };
+  return actionMap[action] || 'UPDATE';
+};
+
+// Map resource_type to table_name
+const mapResourceType = (resourceType: string): string => {
+  const resourceMap: Record<string, string> = {
+    'payment': 'payments',
+    'invoice': 'invoices',
+    'contract': 'contracts',
+    'customer': 'customers',
+    'vehicle': 'vehicles',
+    'journal_entry': 'journal_entries',
+    'account': 'chart_of_accounts',
+    'employee': 'employees',
+  };
+  return resourceMap[resourceType] || resourceType;
+};
+
 /**
  * Hook لجلب سجل التدقيق
+ * يستخدم جدول audit_logs بدلاً من audit_trail
  */
 export function useAuditTrail(filters?: AuditTrailFilters, limit = 100) {
   const { user } = useAuth();
@@ -51,38 +81,79 @@ export function useAuditTrail(filters?: AuditTrailFilters, limit = 100) {
     queryFn: async (): Promise<{ entries: AuditTrailEntry[]; stats: AuditTrailStats } | null> => {
       if (!companyId) return null;
 
-      // Build query
+      // Build query using audit_logs table
       let query = supabase
-        .from('audit_trail')
+        .from('audit_logs')
         .select('*')
         .eq('company_id', companyId)
-        .order('changed_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       // Apply filters
       if (filters?.tableName) {
-        query = query.eq('table_name', filters.tableName);
+        // Map table_name back to resource_type
+        const resourceType = Object.entries({
+          'payments': 'payment',
+          'invoices': 'invoice',
+          'contracts': 'contract',
+          'customers': 'customer',
+          'vehicles': 'vehicle',
+          'journal_entries': 'journal_entry',
+          'chart_of_accounts': 'account',
+          'employees': 'employee',
+        }).find(([k]) => k === filters.tableName)?.[1] || filters.tableName;
+        
+        query = query.eq('resource_type', resourceType);
       }
       if (filters?.action) {
-        query = query.eq('action', filters.action);
+        // Map audit_trail action to audit_logs action
+        const actionMap: Record<string, string[]> = {
+          'INSERT': ['CREATE'],
+          'UPDATE': ['UPDATE', 'APPROVE', 'REJECT', 'CANCEL'],
+          'DELETE': ['DELETE'],
+        };
+        const actions = actionMap[filters.action] || [filters.action];
+        query = query.in('action', actions);
       }
       if (filters?.userId) {
         query = query.eq('user_id', filters.userId);
       }
       if (filters?.startDate) {
-        query = query.gte('changed_at', filters.startDate);
+        query = query.gte('created_at', filters.startDate);
       }
       if (filters?.endDate) {
-        query = query.lte('changed_at', filters.endDate);
+        query = query.lte('created_at', filters.endDate);
       }
       if (filters?.searchTerm) {
-        query = query.or(`user_email.ilike.%${filters.searchTerm}%,user_name.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%,record_id.ilike.%${filters.searchTerm}%`);
+        query = query.or(`user_email.ilike.%${filters.searchTerm}%,user_name.ilike.%${filters.searchTerm}%,changes_summary.ilike.%${filters.searchTerm}%,entity_name.ilike.%${filters.searchTerm}%,resource_id.ilike.%${filters.searchTerm}%`);
       }
 
-      const { data: entries, error } = await query;
+      const { data: rawEntries, error } = await query;
 
       if (error) throw error;
-      if (!entries) return null;
+      if (!rawEntries) return null;
+
+      // Transform audit_logs format to AuditTrailEntry format
+      const entries: AuditTrailEntry[] = rawEntries.map((entry: any) => ({
+        id: entry.id,
+        company_id: entry.company_id,
+        table_name: mapResourceType(entry.resource_type || ''),
+        record_id: entry.resource_id || entry.id,
+        action: mapAction(entry.action),
+        user_id: entry.user_id,
+        user_email: entry.user_email,
+        user_name: entry.user_name,
+        changed_at: entry.created_at,
+        old_values: entry.old_values,
+        new_values: entry.new_values,
+        changed_fields: entry.old_values && entry.new_values 
+          ? Object.keys(entry.new_values).filter(k => entry.old_values[k] !== entry.new_values[k])
+          : null,
+        ip_address: entry.ip_address,
+        user_agent: entry.user_agent,
+        description: entry.changes_summary || entry.notes || entry.entity_name,
+        created_at: entry.created_at,
+      }));
 
       // Calculate statistics
       const stats: AuditTrailStats = {
