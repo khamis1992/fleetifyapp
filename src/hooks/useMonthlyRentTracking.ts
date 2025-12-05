@@ -43,7 +43,7 @@ export const useMonthlyRentTracking = (year: number, month: number) => {
           contract_number,
           customer_id,
           vehicle_id,
-          monthly_rent,
+          monthly_amount,
           start_date,
           end_date,
           status,
@@ -109,7 +109,7 @@ export const useMonthlyRentTracking = (year: number, month: number) => {
             )[0].payment_date
           : null;
 
-        const monthlyRent = contract.monthly_rent || 0;
+        const monthlyRent = contract.monthly_amount || 0;
         const amountDue = monthlyRent - totalPaid;
 
         // Determine payment status
