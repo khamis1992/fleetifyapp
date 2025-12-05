@@ -69,7 +69,7 @@ const JournalEntries = () => {
                 </Button>
                 
                 <Button variant="outline" asChild>
-                  <Link to="/finance/dashboard">
+                  <Link to="/finance/hub">
                     العودة للوحة المالية
                   </Link>
                 </Button>

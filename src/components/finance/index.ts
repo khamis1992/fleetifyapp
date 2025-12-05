@@ -1,5 +1,4 @@
 // النظام المالي الموحد - ملف التصدير الرئيسي
-export { UnifiedFinancialDashboard } from './UnifiedFinancialDashboard';
 export { UnifiedPaymentForm } from './UnifiedPaymentForm';
 export { FinancialAlertsSystem } from './FinancialAlertsSystem';
 export { AdvancedFinancialReports } from './AdvancedFinancialReports';

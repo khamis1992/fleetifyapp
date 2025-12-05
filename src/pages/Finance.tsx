@@ -47,7 +47,6 @@ const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), 
 const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
 const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
 const MonthlyRentTracking = lazyWithRetry(() => import("./finance/MonthlyRentTracking"), "MonthlyRentTracking");
-const UnifiedFinancialDashboard = lazyWithRetry(() => import("./finance/UnifiedFinancialDashboard"), "UnifiedFinancialDashboard");
 const UnifiedReports = lazyWithRetry(() => import("./finance/UnifiedReports"), "UnifiedReports");
 const UnifiedPayments = lazyWithRetry(() => import("./finance/UnifiedPayments"), "UnifiedPayments");
 const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
@@ -495,16 +494,6 @@ const Finance = () => {
         } 
       />
       {/* Unified Finance Modules */}
-      <Route 
-        path="unified-dashboard" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedFinancialDashboard />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
       <Route 
         path="unified-reports" 
         element={

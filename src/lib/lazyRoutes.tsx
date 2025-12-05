@@ -85,11 +85,6 @@ export const LazySuperAdminReports = lazy(() => import('@/pages/super-admin/Repo
 export const LazyLandingManagement = lazy(() => import('@/pages/super-admin/LandingManagement'));
 
 // ==================== Unified Components (Heavy) ====================
-export const LazyUnifiedFinancialDashboard = lazy(() => 
-  import('@/components/finance/UnifiedFinancialDashboard').then(module => ({ 
-    default: module.UnifiedFinancialDashboard 
-  }))
-);
 
 export const LazyEnhancedLegalAIInterface = lazy(() => 
   import('@/components/legal/EnhancedLegalAIInterface_v2').then(module => ({ 
