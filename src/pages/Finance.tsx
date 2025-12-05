@@ -33,7 +33,6 @@ const Vendors = lazyWithRetry(() => import("./finance/Vendors"), "Vendors");
 const VendorCategories = lazyWithRetry(() => import("./finance/VendorCategories"), "VendorCategories");
 const FinancialAnalysis = lazyWithRetry(() => import("./finance/FinancialAnalysis"), "FinancialAnalysis");
 const AccountMappings = lazyWithRetry(() => import("./finance/AccountMappings"), "AccountMappings");
-const JournalEntries = lazyWithRetry(() => import("./finance/JournalEntries"), "JournalEntries");
 const NewEntry = lazyWithRetry(() => import("./finance/NewEntry"), "NewEntry");
 const JournalEntriesSettings = lazyWithRetry(() => import("./finance/settings/JournalEntriesSettings"), "JournalEntriesSettings");
 const AccountsSettings = lazyWithRetry(() => import("./finance/settings/AccountsSettings"), "AccountsSettings");

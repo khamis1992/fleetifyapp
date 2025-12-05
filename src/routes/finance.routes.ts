@@ -12,7 +12,6 @@ const FinanceHub = lazy(() => import('@/pages/finance/FinanceHub'));
 const ChartOfAccounts = lazy(() => import('@/pages/finance/ChartOfAccounts'));
 const ChartOfAccountsUpgrade = lazy(() => import('@/pages/finance/ChartOfAccountsUpgrade'));
 const Ledger = lazy(() => import('@/pages/finance/Ledger'));
-const JournalEntries = lazy(() => import('@/pages/finance/JournalEntries'));
 const Invoices = lazy(() => import('@/pages/finance/Invoices'));
 const InvoiceDetails = lazy(() => import('@/pages/finance/InvoiceDetails'));
 const Payments = lazy(() => import('@/pages/finance/Payments'));
@@ -91,11 +90,11 @@ export const financeRoutes: RouteConfig[] = [
   },
   {
     path: '/finance/journal-entries',
-    component: JournalEntries,
+    component: Ledger,
     lazy: true,
     exact: true,
     title: 'القيود اليومية',
-    description: 'Journal entries',
+    description: 'Journal entries - redirects to Ledger',
     group: 'finance',
     priority: 55,
     protected: true,

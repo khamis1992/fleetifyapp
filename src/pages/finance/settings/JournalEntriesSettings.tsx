@@ -13,7 +13,7 @@ export default function JournalEntriesSettings() {
           <h1 className="text-3xl font-bold">إدارة القيود المحاسبية</h1>
           <p className="text-muted-foreground">إنشاء وإدارة القيود المحاسبية</p>
         </div>
-        <Button onClick={() => navigate("/finance/journal-entries/new")} className="gap-2">
+        <Button onClick={() => navigate("/finance/new-entry")} className="gap-2">
           <Plus className="h-4 w-4" />
           قيد جديد
         </Button>
@@ -21,7 +21,7 @@ export default function JournalEntriesSettings() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-              onClick={() => navigate("/finance/journal-entries/new")}>
+              onClick={() => navigate("/finance/new-entry")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />
@@ -34,7 +34,7 @@ export default function JournalEntriesSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate("/finance/journal-entries")}>
+              onClick={() => navigate("/finance/ledger")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -47,7 +47,7 @@ export default function JournalEntriesSettings() {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate("/finance/journal-entries?search=true")}>
+              onClick={() => navigate("/finance/ledger")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />

@@ -331,7 +331,7 @@ const FinanceHub: React.FC = () => {
     { title: 'الموردون', description: 'إدارة حسابات الموردين', icon: Building, color: 'text-teal-600', bgColor: 'bg-teal-100', path: '/finance/vendors' },
     { title: 'الموازنات', description: 'التخطيط والرقابة المالية', icon: PiggyBank, color: 'text-orange-600', bgColor: 'bg-orange-100', path: '/finance/budgets' },
     { title: 'الأصول الثابتة', description: 'إدارة وإهلاك الأصول', icon: Briefcase, color: 'text-slate-600', bgColor: 'bg-slate-100', path: '/finance/assets' },
-    { title: 'القيود اليومية', description: 'سجل القيود المحاسبية', icon: History, color: 'text-violet-600', bgColor: 'bg-violet-100', path: '/finance/journal-entries' },
+    { title: 'القيود اليومية', description: 'سجل القيود المحاسبية', icon: History, color: 'text-violet-600', bgColor: 'bg-violet-100', path: '/finance/ledger' },
     { title: 'الودائع', description: 'إدارة الودائع والتأمينات', icon: Shield, color: 'text-cyan-600', bgColor: 'bg-cyan-100', path: '/finance/deposits' },
     { title: 'الحاسبة المالية', description: 'حساب القروض والفوائد', icon: Calculator, color: 'text-lime-600', bgColor: 'bg-lime-100', path: '/finance/calculator' },
     { title: 'متابعة الإيجارات', description: 'تتبع الإيجارات الشهرية', icon: Calendar, color: 'text-fuchsia-600', bgColor: 'bg-fuchsia-100', path: '/finance/monthly-rent-tracking' },

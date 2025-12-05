@@ -112,7 +112,7 @@ const FinanceHub: React.FC = () => {
           value: 0, // TODO: Add pending entries count
           icon: FileText,
           color: 'bg-yellow-100 text-yellow-600',
-          action: () => navigate('/finance/journal-entries'),
+          action: () => navigate('/finance/ledger'),
         },
         {
           title: 'تسويات مطلوبة',
@@ -404,7 +404,7 @@ const FinanceHub: React.FC = () => {
             <Button
               variant="outline"
               className="h-auto py-4 flex flex-col items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-              onClick={() => navigate('/finance/journal-entries')}
+              onClick={() => navigate('/finance/ledger')}
             >
               <Calculator className="w-5 h-5" />
               <span className="text-xs">القيود اليومية</span>
