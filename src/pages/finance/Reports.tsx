@@ -1,31 +1,20 @@
 import { useState } from "react"
 import { PageCustomizer } from "@/components/PageCustomizer"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
   FileText, 
   Download, 
   Calendar, 
   TrendingUp, 
-  TrendingDown,
-  DollarSign, 
-  PieChart, 
-  Eye, 
   BarChart3,
   FileBarChart,
   Clock,
   Filter,
-  HelpCircle,
-  CheckCircle,
-  Building,
-  Users,
-  Sparkles,
-  Banknote
+  PieChart
 } from "lucide-react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis"
 import { CostCenterReports } from "@/components/finance/CostCenterReports"
-import { CashFlowReport } from "@/components/finance/CashFlowReport"
 import { PayablesReport } from "@/components/finance/PayablesReport"
 import { ReceivablesReport } from "@/components/finance/ReceivablesReport"
 import { PayrollReportsPanel } from "@/components/finance/PayrollReportsPanel"
@@ -33,141 +22,12 @@ import { TrialBalanceReport } from "@/components/finance/TrialBalanceReport"
 import { IncomeStatementReport } from "@/components/finance/IncomeStatementReport"
 import { BalanceSheetReport } from "@/components/finance/BalanceSheetReport"
 import { CashFlowStatementReport } from "@/components/finance/CashFlowStatementReport"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { exportToHTML } from "@/hooks/useFinancialReportsExport"
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
-import { EnhancedFinancialReportsViewer } from "@/components/finance/EnhancedFinancialReportsViewer"
 import { HelpIcon } from '@/components/help/HelpIcon'
-import { cn } from "@/lib/utils"
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState("balance-sheet")
-  const { data: balanceSheetData, isLoading: balanceLoading } = useBalanceSheet()
-  const { data: incomeStatementData, isLoading: incomeLoading } = useIncomeStatement()
-  const { formatCurrency } = useCurrencyFormatter()
-
-  // Export functions for balance sheet and income statement
-  const handleExportBalanceSheet = () => {
-    if (!balanceSheetData) return
-
-    const tableContent = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
-        <div>
-          <h3 style="font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">الأصول</h3>
-          <table style="width: 100%;">
-            <tbody>
-              ${balanceSheetData.assets?.map((account: any) => `
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${account.account_name_translated || account.account_name}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
-                </tr>
-              `).join('') || ''}
-              <tr style="background-color: #f5f5f5; font-weight: bold;">
-                <td style="padding: 12px; border-top: 2px solid #333;">إجمالي الأصول</td>
-                <td style="padding: 12px; border-top: 2px solid #333; text-align: left;">
-                  ${formatCurrency(balanceSheetData.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div>
-          <h3 style="font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">الخصوم وحقوق الملكية</h3>
-          <table style="width: 100%;">
-            <tbody>
-              <tr style="background-color: #f8f9fa;">
-                <td colspan="2" style="padding: 8px; font-weight: bold;">الخصوم</td>
-              </tr>
-              ${balanceSheetData.liabilities?.map((account: any) => `
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
-                </tr>
-              `).join('') || ''}
-              <tr style="background-color: #f8f9fa;">
-                <td colspan="2" style="padding: 8px; font-weight: bold;">حقوق الملكية</td>
-              </tr>
-              ${balanceSheetData.equity?.map((account: any) => `
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${formatCurrency(Number(account.current_balance))}</td>
-                </tr>
-              `).join('') || ''}
-              <tr style="background-color: #f5f5f5; font-weight: bold;">
-                <td style="padding: 12px; border-top: 2px solid #333;">إجمالي الخصوم وحقوق الملكية</td>
-                <td style="padding: 12px; border-top: 2px solid #333; text-align: left;">
-                  ${formatCurrency(
-                    (balanceSheetData.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
-                    (balanceSheetData.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `
-
-    exportToHTML(tableContent, "الميزانية العمومية", "اسم الشركة")
-  }
-
-  const handleExportIncomeStatement = () => {
-    if (!incomeStatementData) return
-
-    const tableContent = `
-      <table style="max-width: 600px; margin: 0 auto;">
-        <tbody>
-          <tr style="background-color: #f8f9fa;">
-            <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 16px;">الإيرادات</td>
-          </tr>
-          ${incomeStatementData.revenue?.map((account: any) => `
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #22c55e;">${formatCurrency(Number(account.current_balance))}</td>
-            </tr>
-          `).join('') || ''}
-          <tr style="border-bottom: 2px solid #333;">
-            <td style="padding: 12px; font-weight: bold;">إجمالي الإيرادات</td>
-            <td style="padding: 12px; font-weight: bold; text-align: left; color: #22c55e;">
-              ${formatCurrency(incomeStatementData.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-            </td>
-          </tr>
-          
-          <tr style="background-color: #f8f9fa;">
-            <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 16px;">المصروفات</td>
-          </tr>
-          ${incomeStatementData.expenses?.map((account: any) => `
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; padding-left: 20px;">${account.account_name_translated || account.account_name}</td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: #ef4444;">${formatCurrency(Number(account.current_balance))}</td>
-            </tr>
-          `).join('') || ''}
-          <tr style="border-bottom: 2px solid #333;">
-            <td style="padding: 12px; font-weight: bold;">إجمالي المصروفات</td>
-            <td style="padding: 12px; font-weight: bold; text-align: left; color: #ef4444;">
-              ${formatCurrency(incomeStatementData.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-            </td>
-          </tr>
-          
-          <tr style="border-top: 4px solid #333; background-color: #f0f9ff;">
-            <td style="padding: 15px; font-weight: bold; font-size: 18px;">صافي الربح (الخسارة)</td>
-            <td style="padding: 15px; font-weight: bold; font-size: 18px; text-align: left;">
-              ${formatCurrency(
-                (incomeStatementData.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) -
-                (incomeStatementData.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-              )}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    `
-
-    exportToHTML(tableContent, "قائمة الدخل", "اسم الشركة")
-  }
+  const [activeTab, setActiveTab] = useState("trial-balance")
 
   const reportTypes = [
     {
@@ -325,19 +185,15 @@ const Reports = () => {
 
       {/* Financial Reports Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-12">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="trial-balance">ميزان المراجعة</TabsTrigger>
           <TabsTrigger value="income-statement-enhanced">قائمة الدخل</TabsTrigger>
-          <TabsTrigger value="balance-sheet-enhanced">قائمة المركز المالي</TabsTrigger>
+          <TabsTrigger value="balance-sheet-enhanced">المركز المالي</TabsTrigger>
           <TabsTrigger value="cash-flow-enhanced">التدفقات النقدية</TabsTrigger>
-          <TabsTrigger value="enhanced">التقارير المحسّنة</TabsTrigger>
           <TabsTrigger value="payroll">الرواتب</TabsTrigger>
           <TabsTrigger value="cost-centers">مراكز التكلفة</TabsTrigger>
           <TabsTrigger value="receivables">المدينة</TabsTrigger>
           <TabsTrigger value="payables">الدائنة</TabsTrigger>
-          <TabsTrigger value="cash-flow">التدفقات (قديم)</TabsTrigger>
-          <TabsTrigger value="income-statement">قائمة الدخل (قديم)</TabsTrigger>
-          <TabsTrigger value="balance-sheet">الميزانية (قديم)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trial-balance" className="space-y-6">
@@ -356,252 +212,20 @@ const Reports = () => {
           <CashFlowStatementReport />
         </TabsContent>
 
-        <TabsContent value="enhanced" className="space-y-6">
-          <EnhancedFinancialReportsViewer />
-        </TabsContent>
-
-
-        <TabsContent value="balance-sheet" className="space-y-6">
-          <Card className="border-0 shadow-card">
-            <CardHeader className="border-b border-border pb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-xl mb-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    الميزانية العمومية
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    عرض الأصول والخصوم وحقوق الملكية كما في {new Date().toLocaleDateString('ar-QA')}
-                  </CardDescription>
-                </div>
-                <Button onClick={handleExportBalanceSheet} className="gap-2 bg-gradient-to-br from-primary to-primary-dark">
-                  <Download className="h-4 w-4" />
-                  تحميل التقرير
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {balanceLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <LoadingSpinner />
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Assets */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-primary">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-lg">الأصول</h3>
-                      </div>
-                      <Table>
-                        <TableBody>
-                          {balanceSheetData?.assets?.map((account: any, index: number) => (
-                            <TableRow 
-                              key={account.id}
-                              className="hover:bg-accent/50 transition-colors"
-                            >
-                              <TableCell className="font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                              <TableCell className="text-left font-semibold">
-                                <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-gradient-to-br from-accent-light to-accent font-bold">
-                            <TableCell className="text-lg">إجمالي الأصول</TableCell>
-                            <TableCell className="text-left text-lg">
-                              <span className="text-success">
-                                {formatCurrency(balanceSheetData?.assets?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Liabilities and Equity */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-warning">
-                        <TrendingDown className="h-5 w-5 text-warning" />
-                        <h3 className="font-bold text-lg">الخصوم وحقوق الملكية</h3>
-                      </div>
-                      <Table>
-                        <TableBody>
-                          <TableRow className="bg-muted/50">
-                            <TableCell className="font-bold" colSpan={2}>الخصوم</TableCell>
-                          </TableRow>
-                          {balanceSheetData?.liabilities?.map((account: any) => (
-                            <TableRow 
-                              key={account.id}
-                              className="hover:bg-accent/50 transition-colors"
-                            >
-                              <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                              <TableCell className="text-left font-semibold">
-                                <span className="text-muted-foreground">{formatCurrency(Number(account.current_balance))}</span>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-muted/50">
-                            <TableCell className="font-bold" colSpan={2}>حقوق الملكية</TableCell>
-                          </TableRow>
-                          {balanceSheetData?.equity?.map((account: any) => (
-                            <TableRow 
-                              key={account.id}
-                              className="hover:bg-accent/50 transition-colors"
-                            >
-                              <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                              <TableCell className="text-left font-semibold">
-                                <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-gradient-to-br from-accent-light to-accent font-bold">
-                            <TableCell className="text-lg">إجمالي الخصوم وحقوق الملكية</TableCell>
-                            <TableCell className="text-left text-lg">
-                              <span className="text-success">
-                                {formatCurrency(
-                                  (balanceSheetData?.liabilities?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) +
-                                  (balanceSheetData?.equity?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                                )}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                  
-                  {/* Balance Verification */}
-                  <div className="mt-6 p-4 rounded-lg bg-success/10 border border-success/20">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-success text-white">
-                        <CheckCircle className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-success">الميزانية متوازنة</p>
-                        <p className="text-sm text-muted-foreground">إجمالي الأصول = إجمالي الخصوم وحقوق الملكية</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="income-statement" className="space-y-6">
-          <Card className="border-0 shadow-card">
-            <CardHeader className="border-b border-border pb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-xl mb-2">
-                    <PieChart className="h-5 w-5 text-success" />
-                    قائمة الدخل
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    عرض الإيرادات والمصروفات للفترة المنتهية في {new Date().toLocaleDateString('ar-QA')}
-                  </CardDescription>
-                </div>
-                <Button onClick={handleExportIncomeStatement} className="gap-2 bg-gradient-to-br from-primary to-primary-dark">
-                  <Download className="h-4 w-4" />
-                  تحميل التقرير
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {incomeLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <LoadingSpinner />
-                </div>
-              ) : (
-                <div className="max-w-4xl mx-auto">
-                  <Table>
-                    <TableBody>
-                      <TableRow className="bg-success/10">
-                        <TableCell className="font-bold text-success" colSpan={2}>
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4" />
-                            الإيرادات
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {incomeStatementData?.revenue?.map((account: any) => (
-                        <TableRow key={account.id} className="hover:bg-accent/50 transition-colors">
-                          <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-left font-semibold">
-                            <span className="text-success">{formatCurrency(Number(account.current_balance))}</span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-success/20 font-bold border-b-2 border-success">
-                        <TableCell>إجمالي الإيرادات</TableCell>
-                        <TableCell className="text-left">
-                          <span className="text-success">
-                            {formatCurrency(incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-
-                      <TableRow className="bg-destructive/10">
-                        <TableCell className="font-bold text-destructive pt-6" colSpan={2}>
-                          <div className="flex items-center gap-2">
-                            <TrendingDown className="h-4 w-4" />
-                            المصروفات
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {incomeStatementData?.expenses?.map((account: any) => (
-                        <TableRow key={account.id} className="hover:bg-accent/50 transition-colors">
-                          <TableCell className="pr-8 font-medium">{account.account_name_translated || account.account_name}</TableCell>
-                          <TableCell className="text-left font-semibold">
-                            <span className="text-destructive">{formatCurrency(Number(account.current_balance))}</span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-destructive/20 font-bold border-b-2 border-destructive">
-                        <TableCell>إجمالي المصروفات</TableCell>
-                        <TableCell className="text-left">
-                          <span className="text-destructive">
-                            {formatCurrency(incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-
-                      <TableRow className="bg-gradient-to-br from-primary to-primary-dark text-white">
-                        <TableCell className="font-bold text-xl py-6">صافي الربح</TableCell>
-                        <TableCell className="text-left font-bold text-xl py-6">
-                          {formatCurrency(
-                            (incomeStatementData?.revenue?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0) -
-                            (incomeStatementData?.expenses?.reduce((sum: number, acc: any) => sum + Number(acc.current_balance), 0) || 0)
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="cash-flow" className="space-y-6">
-          <CashFlowReport companyName="اسم الشركة" />
-        </TabsContent>
-
-        <TabsContent value="payables" className="space-y-6">
-          <PayablesReport companyName="اسم الشركة" />
-        </TabsContent>
-
-        <TabsContent value="receivables" className="space-y-6">
-          <ReceivablesReport companyName="اسم الشركة" />
+        <TabsContent value="payroll" className="space-y-6">
+          <PayrollReportsPanel />
         </TabsContent>
 
         <TabsContent value="cost-centers" className="space-y-6">
           <CostCenterReports />
         </TabsContent>
 
-        <TabsContent value="payroll" className="space-y-6">
-          <PayrollReportsPanel />
+        <TabsContent value="receivables" className="space-y-6">
+          <ReceivablesReport companyName="اسم الشركة" />
+        </TabsContent>
+
+        <TabsContent value="payables" className="space-y-6">
+          <PayablesReport companyName="اسم الشركة" />
         </TabsContent>
       </Tabs>
     </div>
