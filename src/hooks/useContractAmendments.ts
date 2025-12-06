@@ -79,6 +79,8 @@ export const useContractAmendments = (contractId?: string) => {
   // Create amendment
   const createAmendmentMutation = useMutation({
     mutationFn: async (data: CreateAmendmentData) => {
+      console.log('📝 [CREATE_AMENDMENT] Starting...', { data });
+      
       if (!user?.id) throw new Error('User not authenticated');
 
       // Get company_id from profile
@@ -88,7 +90,11 @@ export const useContractAmendments = (contractId?: string) => {
         .eq('user_id', user.id)
         .single();
 
-      if (profileError || !profile) throw new Error('Company not found');
+      if (profileError || !profile) {
+        console.error('❌ [CREATE_AMENDMENT] Profile error:', profileError);
+        throw new Error('Company not found');
+      }
+      console.log('✅ [CREATE_AMENDMENT] Profile found:', profile);
 
       // Get contract details for current values
       const { data: contract, error: contractError } = await supabase
@@ -97,7 +103,11 @@ export const useContractAmendments = (contractId?: string) => {
         .eq('id', data.contract_id)
         .single();
 
-      if (contractError || !contract) throw new Error('Contract not found');
+      if (contractError || !contract) {
+        console.error('❌ [CREATE_AMENDMENT] Contract error:', contractError);
+        throw new Error('Contract not found');
+      }
+      console.log('✅ [CREATE_AMENDMENT] Contract found:', contract.contract_number);
 
       // Generate amendment number
       const { data: amendmentNumber, error: numberError } = await supabase
@@ -106,7 +116,11 @@ export const useContractAmendments = (contractId?: string) => {
           p_contract_id: data.contract_id
         });
 
-      if (numberError) throw numberError;
+      if (numberError) {
+        console.error('❌ [CREATE_AMENDMENT] Number generation error:', numberError);
+        throw numberError;
+      }
+      console.log('✅ [CREATE_AMENDMENT] Amendment number generated:', amendmentNumber);
 
       // Calculate amount difference if financial changes
       let amountDifference = 0;
@@ -117,29 +131,61 @@ export const useContractAmendments = (contractId?: string) => {
         requiresPaymentAdjustment = amountDifference !== 0;
       }
 
+      // Also check monthly_amount for calculating difference
+      if (data.new_values.monthly_amount && data.original_values.monthly_amount) {
+        const monthlyDiff = Number(data.new_values.monthly_amount) - Number(data.original_values.monthly_amount);
+        if (monthlyDiff !== 0) {
+          amountDifference = monthlyDiff;
+          requiresPaymentAdjustment = true;
+        }
+      }
+
+      // Prepare insert data
+      const insertData = {
+        company_id: profile.company_id,
+        contract_id: data.contract_id,
+        amendment_number: amendmentNumber,
+        amendment_type: data.amendment_type,
+        amendment_reason: data.amendment_reason,
+        original_values: data.original_values,
+        new_values: data.new_values,
+        amount_difference: amountDifference,
+        requires_payment_adjustment: requiresPaymentAdjustment,
+        requires_customer_signature: data.requires_customer_signature || false,
+        effective_date: data.effective_date || null,
+        created_by: user.id,
+        status: 'pending'
+      };
+      
+      console.log('📤 [CREATE_AMENDMENT] Inserting data:', insertData);
+
       // Create amendment
       const { data: newAmendment, error: createError } = await supabase
         .from('contract_amendments' as any)
-        .insert({
-          company_id: profile.company_id,
-          contract_id: data.contract_id,
-          amendment_number: amendmentNumber,
-          amendment_type: data.amendment_type,
-          amendment_reason: data.amendment_reason,
-          original_values: data.original_values,
-          new_values: data.new_values,
-          amount_difference: amountDifference,
-          requires_payment_adjustment: requiresPaymentAdjustment,
-          requires_customer_signature: data.requires_customer_signature || false,
-          effective_date: data.effective_date || null,
-          created_by: user.id,
-          status: 'pending'
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error('❌ [CREATE_AMENDMENT] Insert error:', {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint
+        });
+        
+        // Provide more specific error messages
+        if (createError.code === '23505') {
+          throw new Error('رقم التعديل موجود مسبقاً');
+        } else if (createError.code === '42501') {
+          throw new Error('لا تملك صلاحية إنشاء تعديلات العقود');
+        } else if (createError.message) {
+          throw new Error(createError.message);
+        }
+        throw createError;
+      }
 
+      console.log('✅ [CREATE_AMENDMENT] Success:', newAmendment);
       return newAmendment as unknown as ContractAmendment;
     },
     onSuccess: (data) => {
