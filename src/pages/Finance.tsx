@@ -20,11 +20,8 @@ const GeneralLedger = lazyWithRetry(() => import("./finance/GeneralLedger"), "Ge
 const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
-const Invoices = lazyWithRetry(() => import("./finance/Invoices"), "Invoices");
-const Payments = lazyWithRetry(() => import("./finance/Payments"), "Payments");
-const PaymentsDashboard = lazyWithRetry(() => import("./finance/PaymentsDashboard"), "PaymentsDashboard");
-// ⭐ NEW: Unified Payments - دمج 3 صفحات في واحدة
-const PaymentsUnified = lazyWithRetry(() => import("./finance/PaymentsUnified"), "PaymentsUnified");
+// ⭐ مركز الفواتير والمدفوعات الموحد (بديل Invoices + PaymentsUnified)
+const BillingCenter = lazyWithRetry(() => import("./finance/BillingCenter"), "BillingCenter");
 const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
 const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
@@ -216,48 +213,20 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      {/* ⭐ مركز الفواتير والمدفوعات الموحد */}
       <Route 
-        path="invoices" 
+        path="billing" 
         element={
           <ProtectedFinanceRoute permission="finance.invoices.view">
             <Suspense fallback={<PageSkeletonFallback />}>
-              <Invoices />
+              <BillingCenter />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="invoices/scan" 
-        element={
-          <ProtectedFinanceRoute permission="finance.invoices.create">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <InvoiceScannerDashboard />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      {/* ⭐ NEW: Unified Payments Page (replaces 3 old pages) */}
-      <Route
-        path="payments"
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <PaymentsUnified />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        }
-      />
-      {/* Keep old routes as backup (can be removed later) */}
-      <Route
-        path="payments-old"
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Payments />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        }
-      />
+      {/* Redirects from old routes */}
+      <Route path="invoices" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="payments" element={<Navigate to="/finance/billing" replace />} />
       <Route
         path="payments-dashboard"
         element={

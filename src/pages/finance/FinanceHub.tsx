@@ -48,6 +48,7 @@ import {
   Wallet,
   PiggyBank,
   BarChart3,
+  Receipt,
   LineChart,
   ArrowDownLeft,
   ArrowUpLeft,
@@ -312,15 +313,14 @@ const FinanceHub: React.FC = () => {
   // Quick Actions
   const quickActions: QuickAction[] = [
     { id: 'receive', label: 'استلام دفعة', icon: ArrowDownLeft, color: 'text-green-600', bgColor: 'bg-green-100', path: '/finance/operations/receive-payment' },
-    { id: 'pay', label: 'صرف دفعة', icon: ArrowUpLeft, color: 'text-red-600', bgColor: 'bg-red-100', path: '/finance/payments' },
-    { id: 'invoice', label: 'إنشاء فاتورة', icon: FileText, color: 'text-blue-600', bgColor: 'bg-blue-100', path: '/finance/invoices' },
+    { id: 'pay', label: 'صرف دفعة', icon: ArrowUpLeft, color: 'text-red-600', bgColor: 'bg-red-100', path: '/finance/billing' },
+    { id: 'invoice', label: 'إنشاء فاتورة', icon: FileText, color: 'text-blue-600', bgColor: 'bg-blue-100', path: '/finance/billing' },
     { id: 'entry', label: 'قيد جديد', icon: Calculator, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/new-entry' },
   ];
 
   // All Finance Modules - Complete list from original design
   const modules = [
-    { title: 'الفواتير', description: 'إدارة فواتير العملاء', icon: FileText, color: 'text-blue-600', bgColor: 'bg-blue-100', path: '/finance/invoices', badge: '12 معلق' },
-    { title: 'المدفوعات', description: 'تتبع المقبوضات والمصروفات', icon: CreditCard, color: 'text-green-600', bgColor: 'bg-green-100', path: '/finance/payments' },
+    { title: 'الفواتير والمدفوعات', description: 'إدارة الفواتير والمقبوضات', icon: Receipt, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/billing' },
     { title: 'دليل الحسابات', description: 'شجرة الحسابات المحاسبية', icon: BookOpen, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/chart-of-accounts' },
     { title: 'دفتر الأستاذ', description: 'سجل الحركات المالية', icon: Calculator, color: 'text-amber-600', bgColor: 'bg-amber-100', path: '/finance/ledger' },
     { title: 'الخزينة والبنوك', description: 'إدارة النقدية والحسابات البنكية', icon: Landmark, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/treasury' },
@@ -351,7 +351,7 @@ const FinanceHub: React.FC = () => {
         title: 'فواتير متأخرة',
         description: `${overdueInvoices.length} فاتورة تجاوزت تاريخ الاستحقاق`,
         action: 'عرض',
-        onAction: () => navigate('/finance/invoices?status=overdue')
+        onAction: () => navigate('/finance/billing')
       });
     }
     
@@ -362,7 +362,7 @@ const FinanceHub: React.FC = () => {
         title: 'فواتير معلقة',
         description: `لديك ${pendingInvoicesCount} فاتورة معلقة بإجمالي ${formatCurrency(pendingInvoicesTotal)}`,
         action: 'عرض',
-        onAction: () => navigate('/finance/invoices?status=pending')
+        onAction: () => navigate('/finance/billing')
       });
     }
     
@@ -507,7 +507,7 @@ const FinanceHub: React.FC = () => {
               icon={FileText}
               iconBg="bg-amber-100 text-amber-600"
               subtitle={formatCurrency(pendingInvoicesTotal)}
-              onClick={() => navigate('/finance/invoices')}
+              onClick={() => navigate('/finance/billing')}
             />
           </div>
           <div className="col-span-6 lg:col-span-3">
@@ -639,7 +639,7 @@ const FinanceHub: React.FC = () => {
                   <Button 
                     variant="outline" 
                     className="w-full mt-4"
-                    onClick={() => navigate('/finance/invoices')}
+                    onClick={() => navigate('/finance/billing')}
                   >
                     عرض جميع الفواتير
                     <ChevronRight className="w-4 h-4 mr-1" />
