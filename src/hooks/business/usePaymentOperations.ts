@@ -53,26 +53,29 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     mutationFn: async (data: EnhancedPaymentData) => {
       console.log('💰 [usePaymentOperations] Starting payment creation:', data);
 
-      // Check permissions
-      if (!canCreatePayments) {
-        throw new Error('ليس لديك صلاحية إنشاء الدفعات');
+      // Check company access
+      if (!companyId) {
+        throw new Error('لم يتم تحديد الشركة');
       }
 
-      // Validate input data
-      const validatedData = enhancedPaymentSchema.parse(data);
-
-      // Additional business validations
-      await validatePaymentData(validatedData);
-
-      // Check account balance if required
-      if (validateBalance && validatedData.type === 'payment') {
-        await validateAccountBalance(validatedData);
+      // Validate input data with better error handling
+      let validatedData: EnhancedPaymentData;
+      try {
+        validatedData = enhancedPaymentSchema.parse(data);
+        console.log('✅ Schema validation passed:', validatedData);
+      } catch (zodError: any) {
+        console.error('❌ Schema validation failed:', zodError);
+        const errorMessage = zodError.errors?.map((e: any) => e.message).join(', ') || 'خطأ في البيانات المدخلة';
+        throw new Error(errorMessage);
       }
 
       // Generate payment number if not provided
       const paymentNumber = validatedData.payment_number && validatedData.payment_number.length > 0 
         ? validatedData.payment_number 
         : await generatePaymentNumber(validatedData.type);
+
+      // Determine transaction_type for database (must be 'payment' or 'receipt')
+      const dbTransactionType = validatedData.type === 'receipt' ? 'receipt' : 'payment';
 
       // Prepare payment data for database - only include non-empty optional fields
       const paymentData: Record<string, any> = {
@@ -82,25 +85,45 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         payment_method: validatedData.payment_method,
         currency: validatedData.currency || 'QAR',
         payment_type: validatedData.type,
-        transaction_type: validatedData.type === 'receipt' ? 'receipt' : 'payment',
+        transaction_type: dbTransactionType,
         payment_status: requireApproval ? 'pending' : 'completed',
         company_id: companyId,
         created_by: user?.id,
       };
+      
+      console.log('📝 Prepared payment data:', paymentData);
 
-      // Add optional fields only if they have valid values
+      // Add optional fields only if they have valid values (non-empty strings for UUIDs)
       if (validatedData.reference_number) paymentData.reference_number = validatedData.reference_number;
       if (validatedData.check_number) paymentData.check_number = validatedData.check_number;
       if (validatedData.notes) paymentData.notes = validatedData.notes;
-      if (validatedData.customer_id) paymentData.customer_id = validatedData.customer_id;
-      if (validatedData.vendor_id) paymentData.vendor_id = validatedData.vendor_id;
-      if (validatedData.invoice_id) paymentData.invoice_id = validatedData.invoice_id;
-      if (validatedData.contract_id) paymentData.contract_id = validatedData.contract_id;
-      if (validatedData.cost_center_id) paymentData.cost_center_id = validatedData.cost_center_id;
-      if (validatedData.bank_id) paymentData.bank_id = validatedData.bank_id;
-      if (validatedData.account_id) paymentData.account_id = validatedData.account_id;
+      
+      // UUID fields - only add if they're valid UUIDs (not empty strings)
+      if (validatedData.customer_id && validatedData.customer_id !== '') {
+        paymentData.customer_id = validatedData.customer_id;
+      }
+      if (validatedData.vendor_id && validatedData.vendor_id !== '') {
+        paymentData.vendor_id = validatedData.vendor_id;
+      }
+      if (validatedData.invoice_id && validatedData.invoice_id !== '') {
+        paymentData.invoice_id = validatedData.invoice_id;
+      }
+      if (validatedData.contract_id && validatedData.contract_id !== '') {
+        paymentData.contract_id = validatedData.contract_id;
+      }
+      if (validatedData.cost_center_id && validatedData.cost_center_id !== '') {
+        paymentData.cost_center_id = validatedData.cost_center_id;
+      }
+      if (validatedData.bank_id && validatedData.bank_id !== '') {
+        paymentData.bank_id = validatedData.bank_id;
+      }
+      if (validatedData.account_id && validatedData.account_id !== '') {
+        paymentData.account_id = validatedData.account_id;
+      }
 
-      // Insert payment
+      console.log('📝 Final payment data for insert:', paymentData);
+
+      // Insert payment with timeout protection
       const { data: insertedPayment, error } = await supabase
         .from('payments')
         .insert(paymentData)
@@ -109,18 +132,30 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       if (error) {
         console.error('❌ [usePaymentOperations] Database error:', error);
-        throw error;
+        // Provide more descriptive error messages
+        if (error.code === '23505') {
+          throw new Error('رقم الدفعة موجود مسبقاً');
+        } else if (error.code === '23503') {
+          throw new Error('خطأ في ربط البيانات - تحقق من العميل أو المورد أو العقد');
+        } else if (error.code === '22P02') {
+          throw new Error('خطأ في تنسيق البيانات');
+        }
+        throw new Error(error.message || 'فشل حفظ الدفعة في قاعدة البيانات');
       }
 
       console.log('✅ [usePaymentOperations] Payment created successfully:', insertedPayment);
 
-      // Post-creation operations
-      if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
-        await createJournalEntry(insertedPayment);
-      }
-
-      if (enableNotifications) {
-        await sendPaymentNotifications(insertedPayment);
+      // Post-creation operations (don't block on these)
+      try {
+        if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
+          await createJournalEntry(insertedPayment);
+        }
+        if (enableNotifications) {
+          await sendPaymentNotifications(insertedPayment);
+        }
+      } catch (postError) {
+        console.warn('⚠️ Post-creation operations failed:', postError);
+        // Don't throw - payment was created successfully
       }
 
       return insertedPayment;

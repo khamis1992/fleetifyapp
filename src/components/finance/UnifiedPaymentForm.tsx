@@ -97,10 +97,21 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const { data: costCenters } = useCostCenters();
   const { data: banks } = useBanks();
   const { data: entryAllowedAccounts } = useEntryAllowedAccounts();
-  const { data: contracts } = useActiveContracts(customerId, vendorId);
   const { currency: companyCurrency } = useCompanyCurrency();
   const { data: customers } = useCustomers();
   const { data: vendors } = useVendors();
+  
+  // Watch customer_id to dynamically load contracts
+  const watchedCustomerId = form.watch('customer_id');
+  const watchedVendorId = form.watch('vendor_id');
+  
+  // Use watched values or props for contracts - only fetch if we have a valid UUID
+  const effectiveCustomerId = (watchedCustomerId && watchedCustomerId !== 'none' && watchedCustomerId !== '') 
+    ? watchedCustomerId : customerId;
+  const effectiveVendorId = (watchedVendorId && watchedVendorId !== 'none' && watchedVendorId !== '') 
+    ? watchedVendorId : vendorId;
+  
+  const { data: contracts } = useActiveContracts(effectiveCustomerId, effectiveVendorId);
 
   // Determine payment subtype based on context
   const getPaymentSubtype = (): 'receipt' | 'payment' => {
@@ -117,7 +128,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   const paymentSubtype = getPaymentSubtype();
 
-  // Form setup
+  // Form setup - Note: 'type' must be 'receipt' | 'payment' | 'invoice_payment' (not 'customer_payment')
   const form = useForm({
     resolver: zodResolver(enhancedPaymentSchema),
     defaultValues: {
@@ -131,10 +142,10 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
       cost_center_id: '',
       bank_id: '',
       account_id: '',
-      currency: companyCurrency,
+      currency: companyCurrency || 'QAR',
       notes: '',
-      type: paymentSubtype,
-      transaction_type: type,
+      type: paymentSubtype, // 'receipt' or 'payment' based on context
+      transaction_type: type, // Original type from props for tracking
       customer_id: customerId || '',
       vendor_id: vendorId || '',
       invoice_id: invoiceId || '',
@@ -408,25 +419,28 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                       )}
                     />
 
-                    {/* Customer Selection - for vendor payments */}
-                    {type === 'vendor_payment' && !customerId && (
+                    {/* Customer Selection - show when no customer is pre-selected */}
+                    {!customerId && (
                       <FormField
                         control={form.control}
                         name="customer_id"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>العميل (اختياري)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select 
+                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                              value={field.value || 'none'}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر العميل" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">بدون ربط بعميل</SelectItem>
+                                <SelectItem value="none">بدون ربط بعميل</SelectItem>
                                 {(Array.isArray(customers) ? customers : customers?.data || []).map((customer: any) => (
                                   <SelectItem key={customer.id} value={customer.id}>
-                                    {customer.customer_name}
+                                    {customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.customer_name || 'عميل'}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -437,22 +451,25 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                       />
                     )}
 
-                    {/* Vendor Selection - for customer payments */}
-                    {type === 'customer_payment' && !vendorId && (
+                    {/* Vendor Selection - show when no vendor is pre-selected */}
+                    {!vendorId && (
                       <FormField
                         control={form.control}
                         name="vendor_id"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>المورد (اختياري)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select 
+                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                              value={field.value || 'none'}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر المورد" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">بدون ربط بمورد</SelectItem>
+                                <SelectItem value="none">بدون ربط بمورد</SelectItem>
                                 {vendors?.map((vendor) => (
                                   <SelectItem key={vendor.id} value={vendor.id}>
                                     {vendor.vendor_name}
@@ -474,14 +491,17 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>العقد (اختياري)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select 
+                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                              value={field.value || 'none'}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر العقد" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">بدون ربط بعقد</SelectItem>
+                                <SelectItem value="none">بدون ربط بعقد</SelectItem>
                                 {contracts.map((contract: any) => (
                                   <SelectItem key={contract.id} value={contract.id}>
                                     {contract.contract_number}
@@ -736,8 +756,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                       )}
                     />
 
-                    {/* Contract */}
-                    {(customerId || vendorId) && (
+                    {/* Contract - show when customer or vendor is selected */}
+                    {(effectiveCustomerId || effectiveVendorId) && contracts && contracts.length > 0 && (
                       <FormField
                         control={form.control}
                         name="contract_id"
@@ -759,16 +779,20 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                                 ربط ذكي
                               </Button>
                             </FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select 
+                              onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                              value={field.value || 'none'}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر العقد" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="none">بدون ربط بعقد</SelectItem>
                                 {contracts?.map(contract => (
                                   <SelectItem key={contract.id} value={contract.id}>
-                                    {contract.contract_number} - {contract.description}
+                                    {contract.contract_number} {contract.customer?.first_name ? `- ${contract.customer.first_name}` : ''}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
