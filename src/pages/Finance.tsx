@@ -9,7 +9,6 @@ import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/compo
 const FinanceHub = lazyWithRetry(() => import("./finance/FinanceHub"), "FinanceHub");
 const ReceivePaymentWorkflow = lazyWithRetry(() => import("./finance/operations/ReceivePaymentWorkflow"), "ReceivePaymentWorkflow");
 const Overview = lazyWithRetry(() => import("./finance/Overview"), "Overview");
-const AccountantDashboard = lazyWithRetry(() => import("./finance/AccountantDashboard"), "AccountantDashboard");
 const AlertsPage = lazyWithRetry(() => import("./finance/AlertsPage"), "AlertsPage");
 const JournalPermissions = lazyWithRetry(() => import("./finance/JournalPermissions"), "JournalPermissions");
 const FinancialRatios = lazyWithRetry(() => import("./finance/FinancialRatios"), "FinancialRatios");
@@ -101,16 +100,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="accountant-dashboard" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <AccountantDashboard />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      <Route path="accountant-dashboard" element={<Navigate to="/finance/hub" replace />} />
       <Route 
         path="alerts" 
         element={

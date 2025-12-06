@@ -326,7 +326,7 @@ const FinanceHub: React.FC = () => {
     { title: 'الخزينة والبنوك', description: 'إدارة النقدية والحسابات البنكية', icon: Landmark, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/treasury' },
     { title: 'التقارير المالية', description: 'تقارير وتحليلات شاملة', icon: BarChart3, color: 'text-indigo-600', bgColor: 'bg-indigo-100', path: '/finance/reports' },
     { title: 'التحليل المالي', description: 'تحليل الأداء والاتجاهات', icon: LineChart, color: 'text-emerald-600', bgColor: 'bg-emerald-100', path: '/finance/analysis' },
-    { title: 'لوحة المحاسب', description: 'نظرة شاملة للحالة المالية', icon: Activity, color: 'text-sky-600', bgColor: 'bg-sky-100', path: '/finance/accountant-dashboard' },
+    { title: 'سجل التدقيق', description: 'تتبع جميع التعديلات المحاسبية', icon: Activity, color: 'text-sky-600', bgColor: 'bg-sky-100', path: '/finance/audit-trail' },
     { title: 'مراكز التكلفة', description: 'توزيع المصروفات والإيرادات', icon: Target, color: 'text-pink-600', bgColor: 'bg-pink-100', path: '/finance/cost-centers' },
     { title: 'الموردون', description: 'إدارة حسابات الموردين', icon: Building, color: 'text-teal-600', bgColor: 'bg-teal-100', path: '/finance/vendors' },
     { title: 'الموازنات', description: 'التخطيط والرقابة المالية', icon: PiggyBank, color: 'text-orange-600', bgColor: 'bg-orange-100', path: '/finance/budgets' },

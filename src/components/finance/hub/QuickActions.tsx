@@ -121,9 +121,9 @@ export const QuickActions: React.FC = () => {
     },
     {
       icon: DollarSign,
-      label: 'لوحة المحاسب',
-      description: 'نظرة شاملة على الحالة المالية',
-      action: () => navigate('/finance/accountant-dashboard'),
+      label: 'سجل التدقيق',
+      description: 'تتبع جميع التعديلات المحاسبية',
+      action: () => navigate('/finance/audit-trail'),
       roles: ['accountant', 'manager', 'admin'],
     },
 
