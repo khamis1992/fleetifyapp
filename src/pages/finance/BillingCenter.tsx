@@ -541,20 +541,16 @@ const BillingCenter = () => {
       </Dialog>
 
       {/* Create Payment Dialog */}
-      <Dialog open={isCreatePaymentOpen} onOpenChange={setIsCreatePaymentOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>تسجيل دفعة جديدة</DialogTitle>
-          </DialogHeader>
-          <UnifiedPaymentForm
-            onSuccess={() => {
-              setIsCreatePaymentOpen(false);
-              queryClient.invalidateQueries({ queryKey: ['payments'] });
-            }}
-            onCancel={() => setIsCreatePaymentOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <UnifiedPaymentForm
+        open={isCreatePaymentOpen}
+        onOpenChange={setIsCreatePaymentOpen}
+        type="customer_payment"
+        onSuccess={() => {
+          setIsCreatePaymentOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }}
+        onCancel={() => setIsCreatePaymentOpen(false)}
+      />
 
       {/* Invoice Preview */}
       {selectedInvoice && isPreviewOpen && (
