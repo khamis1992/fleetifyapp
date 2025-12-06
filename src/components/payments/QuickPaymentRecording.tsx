@@ -542,6 +542,74 @@ export function QuickPaymentRecording() {
     setReadyToPay(false);
   };
 
+  // دالة جديدة: إعادة تعيين النموذج مع الإبقاء على نفس العميل
+  const newPaymentSameCustomer = async () => {
+    if (!selectedCustomer) {
+      resetForm();
+      return;
+    }
+
+    // حفظ بيانات العميل
+    const currentCustomer = selectedCustomer;
+    
+    // إعادة تعيين حالة الدفعة
+    setSelectedInvoices([]);
+    setPaymentAmount('');
+    setPaymentMethod('cash');
+    setPaymentSuccess(null);
+    setShowReceipt(false);
+    setReadyToPay(false);
+
+    // إعادة جلب الفواتير للعميل الحالي
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          due_date,
+          total_amount,
+          balance_due,
+          status,
+          payment_status,
+          contract_id,
+          contracts (
+            contract_number,
+            vehicle_id,
+            vehicles:vehicle_id (
+              plate_number
+            )
+          )
+        `)
+        .eq('customer_id', currentCustomer.id)
+        .in('payment_status', ['unpaid', 'partial'])
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+
+      setInvoices(data || []);
+      if (data && data.length === 0) {
+        toast({
+          title: 'لا توجد فواتير مستحقة',
+          description: 'لم يتبقى فواتير غير مدفوعة لهذا العميل',
+        });
+      } else {
+        toast({
+          title: 'تم تحديث الفواتير',
+          description: `تم تحميل ${data?.length || 0} فاتورة للعميل ${currentCustomer.first_name}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء جلب الفواتير',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Payment Success Screen */}
@@ -615,8 +683,11 @@ export function QuickPaymentRecording() {
                     تحميل السند
                   </Button>
                   
+                  <Button variant="outline" onClick={newPaymentSameCustomer}>
+                    دفعة جديدة (نفس العميل)
+                  </Button>
                   <Button variant="ghost" onClick={resetForm}>
-                    دفعة جديدة
+                    عميل آخر
                   </Button>
                 </div>
 
