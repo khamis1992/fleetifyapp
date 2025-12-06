@@ -12,9 +12,8 @@ const FinanceHub = lazy(() => import('@/pages/finance/FinanceHub'));
 const ChartOfAccounts = lazy(() => import('@/pages/finance/ChartOfAccounts'));
 const ChartOfAccountsUpgrade = lazy(() => import('@/pages/finance/ChartOfAccountsUpgrade'));
 const Ledger = lazy(() => import('@/pages/finance/Ledger'));
-const Invoices = lazy(() => import('@/pages/finance/Invoices'));
+const BillingCenter = lazy(() => import('@/pages/finance/BillingCenter'));
 const InvoiceDetails = lazy(() => import('@/pages/finance/InvoiceDetails'));
-const Payments = lazy(() => import('@/pages/finance/Payments'));
 const Treasury = lazy(() => import('@/pages/finance/Treasury'));
 const BankReconciliation = lazy(() => import('@/pages/finance/BankReconciliation'));
 const FinancialReports = lazy(() => import('@/pages/finance/FinancialReports'));
@@ -101,12 +100,12 @@ export const financeRoutes: RouteConfig[] = [
     layout: 'bento',
   },
   {
-    path: '/finance/invoices',
-    component: Invoices,
+    path: '/finance/billing',
+    component: BillingCenter,
     lazy: true,
     exact: true,
-    title: 'الفواتير',
-    description: 'Invoices',
+    title: 'الفواتير والمدفوعات',
+    description: 'Billing Center',
     group: 'finance',
     priority: 56,
     protected: true,
@@ -126,11 +125,11 @@ export const financeRoutes: RouteConfig[] = [
   },
   {
     path: '/finance/payments',
-    component: Payments,
+    component: BillingCenter,
     lazy: true,
     exact: true,
     title: 'المدفوعات',
-    description: 'Payments',
+    description: 'Payments - redirects to Billing Center',
     group: 'finance',
     priority: 58,
     protected: true,

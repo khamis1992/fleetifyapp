@@ -33,7 +33,7 @@ const lazyLoad = <T extends ComponentType<any>>(
 // Page-level lazy loading
 export const LazyPages = {
   // Finance Module
-  Invoices: lazyLoad(() => import('../pages/finance/Invoices')),
+  BillingCenter: lazyLoad(() => import('../pages/finance/BillingCenter')),
   FinancialTracking: lazyLoad(() => import('../pages/FinancialTracking')),
   Payments: lazyLoad(() => import('../pages/PaymentRegistration')),
   Collections: lazyLoad(() => import('../pages/Collections')),

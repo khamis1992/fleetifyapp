@@ -60,8 +60,7 @@ export const LazyContractDetails = lazyWithRetry(() => import('@/components/cont
 // === Finance Pages ===
 export const LazyFinance = lazyWithRetry(() => import('@/pages/Finance'));
 export const LazyFinanceHub = lazyWithRetry(() => import('@/pages/finance/FinanceHub'));
-export const LazyInvoices = lazyWithRetry(() => import('@/pages/finance/Invoices'));
-export const LazyPayments = lazyWithRetry(() => import('@/pages/finance/Payments'));
+export const LazyBillingCenter = lazyWithRetry(() => import('@/pages/finance/BillingCenter'));
 export const LazyChartOfAccounts = lazyWithRetry(() => import('@/pages/finance/ChartOfAccounts'));
 export const LazyTreasury = lazyWithRetry(() => import('@/pages/finance/Treasury'));
 
@@ -106,8 +105,7 @@ export function prefetchCustomerComponents() {
 // Prefetch finance-related components
 export function prefetchFinanceComponents() {
   prefetch(() => import('@/pages/finance/FinanceHub'));
-  prefetch(() => import('@/pages/finance/Invoices'));
-  prefetch(() => import('@/pages/finance/Payments'));
+  prefetch(() => import('@/pages/finance/BillingCenter'));
 }
 
 // Prefetch contract-related components
