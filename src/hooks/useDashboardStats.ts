@@ -198,74 +198,81 @@ export const useDashboardStats = () => {
       // previousMonthRevenue معرف بالفعل في السطر 53
 
       // Vehicle rental revenue (if vehicles module enabled)
-      // حساب إجمالي الإيجار الشهري لجميع العقود النشطة في الشهر الحالي
+      // ✅ تحسين: حساب الإيرادات الفعلية من المدفوعات المستلمة (موحد مع التقارير المالية)
       if (isVehiclesEnabled) {
-        const { data: monthlyContracts } = await supabase
-          .from('contracts')
-          .select('monthly_amount, status, start_date, end_date')
+        // الإيرادات الفعلية = المدفوعات المستلمة في الشهر الحالي
+        const { data: currentMonthPayments } = await supabase
+          .from('payments')
+          .select('amount, payment_status')
           .eq('company_id', company_id)
-          .eq('status', 'active')
-          .lte('start_date', lastDayOfMonth.toISOString().split('T')[0]);
+          .in('payment_status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
+          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0]);
 
-        // تصفية العقود التي لا تزال نشطة في الشهر الحالي
-        const activeInMonth = monthlyContracts?.filter(contract => {
-          // إذا لم يكن هناك تاريخ انتهاء، العقد نشط
-          if (!contract.end_date) return true;
-          // إذا كان تاريخ الانتهاء بعد أو في بداية الشهر، العقد نشط
-          return new Date(contract.end_date) >= firstDayOfMonth;
-        }) || [];
+        monthlyRevenue = currentMonthPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
 
-        monthlyRevenue = activeInMonth.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0);
+        // إذا لم توجد مدفوعات، نحاول من الفواتير المدفوعة
+        if (monthlyRevenue === 0) {
+          const { data: paidInvoices } = await supabase
+            .from('invoices')
+            .select('total_amount')
+            .eq('company_id', company_id)
+            .eq('payment_status', 'paid')
+            .gte('invoice_date', firstDayOfMonth.toISOString().split('T')[0])
+            .lte('invoice_date', lastDayOfMonth.toISOString().split('T')[0]);
+
+          monthlyRevenue = paidInvoices?.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0) || 0;
+        }
 
         // حساب إيرادات الشهر السابق للمقارنة
-        const { data: prevMonthContracts } = await supabase
-          .from('contracts')
-          .select('monthly_amount, status, start_date, end_date')
+        const { data: prevMonthPayments } = await supabase
+          .from('payments')
+          .select('amount, payment_status')
           .eq('company_id', company_id)
-          .eq('status', 'active')
-          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]);
+          .in('payment_status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
+          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0]);
 
-        const activeInPrevMonth = prevMonthContracts?.filter(contract => {
-          if (!contract.end_date) return true;
-          return new Date(contract.end_date) >= firstDayPrevMonth;
-        }) || [];
+        previousMonthRevenue = prevMonthPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
 
-        previousMonthRevenue = activeInPrevMonth.reduce((sum, contract) => sum + (contract.monthly_amount || 0), 0);
+        // إذا لم توجد مدفوعات في الشهر السابق، نحاول من الفواتير
+        if (previousMonthRevenue === 0) {
+          const { data: prevPaidInvoices } = await supabase
+            .from('invoices')
+            .select('total_amount')
+            .eq('company_id', company_id)
+            .eq('payment_status', 'paid')
+            .gte('invoice_date', firstDayPrevMonth.toISOString().split('T')[0])
+            .lte('invoice_date', lastDayPrevMonth.toISOString().split('T')[0]);
+
+          previousMonthRevenue = prevPaidInvoices?.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0) || 0;
+        }
       }
 
       // Property rental revenue (if properties module enabled)
-      // حساب إجمالي الإيجار الشهري لجميع عقود العقارات النشطة في الشهر الحالي
+      // ✅ تحسين: حساب الإيرادات الفعلية من مدفوعات العقارات
       if (isPropertiesEnabled) {
-        const { data: propertyContracts } = await supabase
-          .from('property_contracts')
-          .select('rental_amount, status, start_date, end_date')
+        const { data: propertyPayments } = await supabase
+          .from('property_payments')
+          .select('amount, status')
           .eq('company_id', company_id)
-          .eq('status', 'active')
-          .lte('start_date', lastDayOfMonth.toISOString().split('T')[0]);
+          .in('status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
+          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0]);
 
-        // تصفية عقود العقارات النشطة في الشهر الحالي
-        const activeInMonth = propertyContracts?.filter(contract => {
-          if (!contract.end_date) return true;
-          return new Date(contract.end_date) >= firstDayOfMonth;
-        }) || [];
-
-        propertyRevenue = activeInMonth.reduce((sum, contract) => sum + (contract.rental_amount || 0), 0);
+        propertyRevenue = propertyPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
         monthlyRevenue += propertyRevenue;
 
         // حساب إيرادات العقارات للشهر السابق
-        const { data: prevPropertyContracts } = await supabase
-          .from('property_contracts')
-          .select('rental_amount, status, start_date, end_date')
+        const { data: prevPropertyPayments } = await supabase
+          .from('property_payments')
+          .select('amount, status')
           .eq('company_id', company_id)
-          .eq('status', 'active')
-          .lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]);
+          .in('status', ['completed', 'paid', 'confirmed'])
+          .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
+          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0]);
 
-        const prevActiveInMonth = prevPropertyContracts?.filter(contract => {
-          if (!contract.end_date) return true;
-          return new Date(contract.end_date) >= firstDayPrevMonth;
-        }) || [];
-
-        const prevPropertyRevenue = prevActiveInMonth.reduce((sum, contract) => sum + (contract.rental_amount || 0), 0);
+        const prevPropertyRevenue = prevPropertyPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
         previousMonthRevenue += prevPropertyRevenue;
       }
 
