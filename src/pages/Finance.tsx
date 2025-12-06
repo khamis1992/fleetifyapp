@@ -227,16 +227,7 @@ const Finance = () => {
       {/* Redirects from old routes */}
       <Route path="invoices" element={<Navigate to="/finance/billing" replace />} />
       <Route path="payments" element={<Navigate to="/finance/billing" replace />} />
-      <Route
-        path="payments-dashboard"
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <PaymentsDashboard />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        }
-      />
+      <Route path="payments-dashboard" element={<Navigate to="/finance/billing" replace />} />
       <Route
         path="journal-entries" 
         element={
