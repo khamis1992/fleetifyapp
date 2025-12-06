@@ -12,11 +12,11 @@ import {
 // Import existing components
 import Overview from './Overview';
 import UnifiedPayments from './UnifiedPayments';
-import Invoices from './Invoices';
+import BillingCenter from './BillingCenter';
 import Deposits from './Deposits';
 import PurchaseOrders from './PurchaseOrders';
 import GeneralLedger from './GeneralLedger';
-import JournalEntries from './JournalEntries';
+import Ledger from './Ledger';
 import ChartOfAccounts from './ChartOfAccounts';
 import Treasury from './Treasury';
 import PaymentTracking from './PaymentTracking';
@@ -89,7 +89,7 @@ const UnifiedFinance: React.FC = () => {
             </TabsList>
 
             <TabsContent value="invoices">
-              <Invoices />
+              <BillingCenter />
             </TabsContent>
 
             <TabsContent value="payments">
@@ -120,7 +120,7 @@ const UnifiedFinance: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="journal-entries">
-              <JournalEntries />
+              <Ledger />
             </TabsContent>
 
             <TabsContent value="chart-of-accounts">
