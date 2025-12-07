@@ -78,6 +78,13 @@ const INVOICE_SELECT_FIELDS = `
   notes,
   created_at,
   updated_at,
+  customers:customer_id (
+    id,
+    first_name,
+    last_name,
+    company_name,
+    customer_type
+  ),
   contracts:contract_id (
     id,
     contract_number,

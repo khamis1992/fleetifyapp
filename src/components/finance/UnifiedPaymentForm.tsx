@@ -100,18 +100,6 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const { currency: companyCurrency } = useCompanyCurrency();
   const { data: customers } = useCustomers();
   const { data: vendors } = useVendors();
-  
-  // Watch customer_id to dynamically load contracts
-  const watchedCustomerId = form.watch('customer_id');
-  const watchedVendorId = form.watch('vendor_id');
-  
-  // Use watched values or props for contracts - only fetch if we have a valid UUID
-  const effectiveCustomerId = (watchedCustomerId && watchedCustomerId !== 'none' && watchedCustomerId !== '') 
-    ? watchedCustomerId : customerId;
-  const effectiveVendorId = (watchedVendorId && watchedVendorId !== 'none' && watchedVendorId !== '') 
-    ? watchedVendorId : vendorId;
-  
-  const { data: contracts } = useActiveContracts(effectiveCustomerId, effectiveVendorId);
 
   // Determine payment subtype based on context
   const getPaymentSubtype = (): 'receipt' | 'payment' => {
@@ -128,7 +116,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
 
   const paymentSubtype = getPaymentSubtype();
 
-  // Form setup - Note: 'type' must be 'receipt' | 'payment' | 'invoice_payment' (not 'customer_payment')
+  // Form setup - MUST be defined before any form.watch() calls
   const form = useForm({
     resolver: zodResolver(enhancedPaymentSchema),
     defaultValues: {
@@ -155,8 +143,19 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     },
   });
 
+  // Watch values - MUST be after form is defined
+  const watchedCustomerId = form.watch('customer_id');
+  const watchedVendorId = form.watch('vendor_id');
   const watchedValues = form.watch();
   const paymentMethod = form.watch('payment_method');
+  
+  // Use watched values or props for contracts - only fetch if we have a valid UUID
+  const effectiveCustomerId = (watchedCustomerId && watchedCustomerId !== 'none' && watchedCustomerId !== '') 
+    ? watchedCustomerId : customerId;
+  const effectiveVendorId = (watchedVendorId && watchedVendorId !== 'none' && watchedVendorId !== '') 
+    ? watchedVendorId : vendorId;
+  
+  const { data: contracts } = useActiveContracts(effectiveCustomerId, effectiveVendorId);
 
   // Filter accounts based on search query
   const filteredAccounts = useMemo(() => {
