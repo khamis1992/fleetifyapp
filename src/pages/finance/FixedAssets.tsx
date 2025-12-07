@@ -451,7 +451,7 @@ const FixedAssets = () => {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalValue.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold">{totalValue.toFixed(3)} QAR</div>
             <p className="text-xs text-muted-foreground">قيمة الشراء</p>
           </CardContent>
         </Card>
@@ -462,7 +462,7 @@ const FixedAssets = () => {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{totalDepreciation.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-orange-600">{totalDepreciation.toFixed(3)} QAR</div>
             <p className="text-xs text-muted-foreground">إهلاك تراكمي</p>
           </CardContent>
         </Card>
@@ -473,7 +473,7 @@ const FixedAssets = () => {
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalBookValue.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-green-600">{totalBookValue.toFixed(3)} QAR</div>
             <p className="text-xs text-muted-foreground">القيمة الحالية</p>
           </CardContent>
         </Card>
@@ -538,12 +538,12 @@ const FixedAssets = () => {
                   </TableCell>
                   <TableCell>{asset.category}</TableCell>
                   <TableCell>{new Date(asset.purchase_date).toLocaleDateString('en-GB')}</TableCell>
-                  <TableCell>{asset.purchase_cost.toFixed(3)} د.ك</TableCell>
+                  <TableCell>{asset.purchase_cost.toFixed(3)} QAR</TableCell>
                   <TableCell className="text-orange-600">
-                    {(asset.accumulated_depreciation || 0).toFixed(3)} د.ك
+                    {(asset.accumulated_depreciation || 0).toFixed(3)} QAR
                   </TableCell>
                   <TableCell className="text-green-600">
-                    {asset.book_value.toFixed(3)} د.ك
+                    {asset.book_value.toFixed(3)} QAR
                   </TableCell>
                   <TableCell>
                     <Badge variant={
@@ -676,11 +676,11 @@ const FixedAssets = () => {
               </div>
               <div>
                 <Label>تكلفة الشراء</Label>
-                <p className="text-sm font-medium">{selectedAsset.purchase_cost.toFixed(3)} د.ك</p>
+                <p className="text-sm font-medium">{selectedAsset.purchase_cost.toFixed(3)} QAR</p>
               </div>
               <div>
                 <Label>القيمة التخريدية</Label>
-                <p className="text-sm font-medium">{(selectedAsset.salvage_value || 0).toFixed(3)} د.ك</p>
+                <p className="text-sm font-medium">{(selectedAsset.salvage_value || 0).toFixed(3)} QAR</p>
               </div>
               <div>
                 <Label>العمر الإنتاجي</Label>
@@ -707,11 +707,11 @@ const FixedAssets = () => {
               </div>
               <div>
                 <Label>الإهلاك المتراكم</Label>
-                <p className="text-sm font-medium text-orange-600">{(selectedAsset.accumulated_depreciation || 0).toFixed(3)} د.ك</p>
+                <p className="text-sm font-medium text-orange-600">{(selectedAsset.accumulated_depreciation || 0).toFixed(3)} QAR</p>
               </div>
               <div>
                 <Label>القيمة الدفترية</Label>
-                <p className="text-sm font-medium text-green-600">{selectedAsset.book_value.toFixed(3)} د.ك</p>
+                <p className="text-sm font-medium text-green-600">{selectedAsset.book_value.toFixed(3)} QAR</p>
               </div>
               {selectedAsset.notes && (
                 <div className="col-span-2">
