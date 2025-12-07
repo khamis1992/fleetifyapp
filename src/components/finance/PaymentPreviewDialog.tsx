@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Receipt } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Receipt, Download, Printer, Loader2 } from "lucide-react";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
+import { generateReceiptPDF, downloadPDF } from "@/utils/receiptGenerator";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface PaymentData {
   id?: string;
@@ -134,6 +137,9 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
   open,
   onOpenChange
 }) => {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   // تحويل بيانات الدفعة إلى صيغة PaymentReceipt
   const receiptData = useMemo(() => {
     if (!payment) return null;
@@ -186,6 +192,54 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
     };
   }, [payment]);
 
+  // Download receipt as PDF
+  const handleDownload = async () => {
+    if (!receiptRef.current || !receiptData) return;
+    
+    setIsDownloading(true);
+    try {
+      const blob = await generateReceiptPDF(receiptRef.current, `سند-قبض-${receiptData.receiptNumber}.pdf`);
+      downloadPDF(blob, `سند-قبض-${receiptData.receiptNumber}.pdf`);
+      toast.success('تم تحميل سند القبض بنجاح');
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      toast.error('حدث خطأ أثناء تحميل السند');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Print receipt
+  const handlePrint = () => {
+    if (!receiptRef.current) return;
+    
+    const printContent = receiptRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>سند قبض - ${receiptData?.receiptNumber}</title>
+          <style>
+            @page { size: A4 landscape; margin: 10mm; }
+            body { font-family: Arial, Tahoma, sans-serif; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>${printContent}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  };
+
   if (!payment || !receiptData) return null;
 
   return (
@@ -201,7 +255,34 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '70vh' }}>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            طباعة
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="gap-2 bg-green-600 hover:bg-green-700"
+          >
+            {isDownloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            تحميل PDF
+          </Button>
+        </div>
+
+        <div ref={receiptRef} className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '60vh' }}>
           <PaymentReceipt
             receiptNumber={receiptData.receiptNumber}
             date={receiptData.date}

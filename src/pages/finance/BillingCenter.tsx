@@ -244,7 +244,7 @@ const BillingCenter = () => {
   };
 
   // Send payment voucher via WhatsApp
-  const handleSendPaymentVoucher = (payment: any) => {
+  const handleSendPaymentVoucher = async (payment: any) => {
     // Get customer phone
     let phone = payment.customers?.phone || '';
     
@@ -266,28 +266,41 @@ const BillingCenter = () => {
     const customerName = payment.customers?.company_name || 
       `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`.trim() || 'العميل';
 
-    // Create message
+    // Get payment method in Arabic
+    const paymentMethodAr = payment.payment_method === 'cash' ? 'نقدي' :
+      payment.payment_method === 'card' ? 'بطاقة' :
+      payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
+      payment.payment_method === 'cheque' ? 'شيك' : 
+      payment.payment_method === 'received' ? 'مستلم' : payment.payment_method;
+
+    // Create clean message without emojis
     const message = `مرحباً ${customerName}،
 
-تم استلام دفعتكم بنجاح ✅
+تم استلام دفعتكم بنجاح
 
-📄 رقم الإيصال: ${payment.payment_number || '-'}
-💰 المبلغ: ${formatCurrency(Number(payment.amount))}
-📅 التاريخ: ${formatDate(payment.payment_date)}
-💳 طريقة الدفع: ${payment.payment_method === 'cash' ? 'نقدي' :
-  payment.payment_method === 'card' ? 'بطاقة' :
-  payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
-  payment.payment_method === 'cheque' ? 'شيك' : payment.payment_method}
+رقم الإيصال: ${payment.payment_number || '-'}
+المبلغ: ${formatCurrency(Number(payment.amount))}
+التاريخ: ${formatDate(payment.payment_date)}
+طريقة الدفع: ${paymentMethodAr}
 
-شكراً لتعاملكم معنا 🙏
+شكراً لتعاملكم معنا
 
 شركة العراف لتأجير السيارات`;
 
-    // Open WhatsApp
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    
-    toast.success('تم فتح واتساب لإرسال الإيصال');
+    // First, open the preview dialog to show the receipt
+    setSelectedPayment(payment);
+    setIsPaymentPreviewOpen(true);
+
+    // Wait a bit for the dialog to render, then show instructions
+    setTimeout(() => {
+      toast.info('اضغط على زر الطباعة أو التحميل في نافذة الإيصال، ثم سيتم فتح واتساب');
+    }, 500);
+
+    // Open WhatsApp after a delay
+    setTimeout(() => {
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    }, 1000);
   };
 
   return (
