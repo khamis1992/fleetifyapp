@@ -250,6 +250,9 @@ const VehicleDetailsPage = () => {
       maintenance: 'status-maintenance',
       out_of_service: 'status-out-of-service',
       reserved: 'status-reserved',
+      accident: 'bg-red-100 text-red-800',
+      stolen: 'bg-slate-100 text-slate-800',
+      police_station: 'bg-amber-100 text-amber-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
