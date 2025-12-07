@@ -53,7 +53,8 @@ import {
   TrendingUp,
   TrendingDown,
   FileText,
-  Loader2
+  Loader2,
+  Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -240,6 +241,53 @@ const BillingCenter = () => {
     } catch {
       return date;
     }
+  };
+
+  // Send payment voucher via WhatsApp
+  const handleSendPaymentVoucher = (payment: any) => {
+    // Get customer phone
+    let phone = payment.customers?.phone || '';
+    
+    if (!phone) {
+      toast.error('لا يوجد رقم هاتف للعميل');
+      return;
+    }
+
+    // Clean and format phone number
+    phone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+    if (phone.startsWith('0')) {
+      phone = '974' + phone.substring(1);
+    } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
+      phone = '974' + phone;
+    }
+    phone = phone.replace('+', '');
+
+    // Get customer name
+    const customerName = payment.customers?.company_name || 
+      `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`.trim() || 'العميل';
+
+    // Create message
+    const message = `مرحباً ${customerName}،
+
+تم استلام دفعتكم بنجاح ✅
+
+📄 رقم الإيصال: ${payment.payment_number || '-'}
+💰 المبلغ: ${formatCurrency(Number(payment.amount))}
+📅 التاريخ: ${formatDate(payment.payment_date)}
+💳 طريقة الدفع: ${payment.payment_method === 'cash' ? 'نقدي' :
+  payment.payment_method === 'card' ? 'بطاقة' :
+  payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
+  payment.payment_method === 'cheque' ? 'شيك' : payment.payment_method}
+
+شكراً لتعاملكم معنا 🙏
+
+شركة العراف لتأجير السيارات`;
+
+    // Open WhatsApp
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast.success('تم فتح واتساب لإرسال الإيصال');
   };
 
   return (
@@ -509,8 +557,18 @@ const BillingCenter = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => { setSelectedPayment(payment); setIsPaymentPreviewOpen(true); }}
+                            title="معاينة"
                           >
                             <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-green-600"
+                            onClick={() => handleSendPaymentVoucher(payment)}
+                            title="إرسال عبر واتساب"
+                          >
+                            <Send className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>

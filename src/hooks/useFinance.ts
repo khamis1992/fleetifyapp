@@ -737,7 +737,8 @@ export const usePayments = (filters?: { method?: string; status?: string }) => {
               first_name,
               last_name,
               company_name,
-              customer_type
+              customer_type,
+              phone
             ),
             invoices:invoice_id (
               id,
