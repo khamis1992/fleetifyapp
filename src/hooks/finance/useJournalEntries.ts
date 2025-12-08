@@ -57,7 +57,7 @@ export const useJournalEntries = (filters?: JournalEntryFilters) => {
   const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: queryKeys.finance.journalEntries(filters),
+    queryKey: queryKeys.journalEntries.list(filters),
     queryFn: async () => {
       if (!companyId) throw new Error("No company access");
 
@@ -147,7 +147,7 @@ export const useCreateJournalEntry = () => {
       return journalEntry;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.journalEntries() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
       toast.success("تم إنشاء القيد بنجاح");
     },
     onError: (error) => {
@@ -175,7 +175,7 @@ export const usePostJournalEntry = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.journalEntries() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
       toast.success("تم ترحيل القيد بنجاح");
     },
     onError: (error) => {
