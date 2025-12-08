@@ -131,9 +131,11 @@ export const generateWeeklyReport = (data: WeeklyReportData): string => {
 └ إجمالي التكلفة: ${formatCurrency(data.maintenance.totalCost)}
 
 🏆 *أفضل المركبات أداءً:*
-${data.topVehicles.slice(0, 5).map((v, i) => 
-  `${i === data.topVehicles.slice(0, 5).length - 1 ? '└' : '├'} ${v.plateNumber}: ${formatCurrency(v.revenue)}`
-).join('\n')}
+${data.topVehicles.length > 0 && data.topVehicles[0].revenue > 0 
+  ? data.topVehicles.slice(0, 5).map((v, i) => 
+      `${i === data.topVehicles.slice(0, 5).length - 1 ? '└' : '├'} ${v.plateNumber} • ${formatCurrency(v.revenue)}`
+    ).join('\n')
+  : '└ لا توجد إيرادات مسجلة هذا الأسبوع'}
 
 ━━━━━━━━━━━━━━━━━━━━━
 ✨ أداء ${data.financial.comparisonWithLastWeek >= 0 ? 'ممتاز' : 'يحتاج تحسين'}!

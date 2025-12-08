@@ -241,14 +241,43 @@ class ReportScheduler {
       const pendingMaintenance = maintenance?.filter(m => m.status === 'pending') || [];
       const maintenanceCost = completedMaintenance.reduce((sum, m) => sum + (m.estimated_cost || 0), 0);
 
-      // جلب أفضل المركبات
-      const { data: topVehicles } = await supabase
-        .from('vehicles')
-        .select('plate_number, monthly_rate')
+      // جلب أفضل المركبات أداءً (بناءً على الإيرادات الفعلية)
+      // نجلب المدفوعات للأسبوع الحالي ونجمعها حسب المركبة
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select(`
+          amount,
+          contracts!inner(
+            vehicle_id,
+            vehicles!inner(
+              id,
+              plate_number
+            )
+          )
+        `)
         .eq('company_id', this.companyId)
-        .eq('status', 'rented')
-        .order('monthly_rate', { ascending: false })
-        .limit(5);
+        .gte('payment_date', weekStart.toISOString().split('T')[0])
+        .lte('payment_date', weekEnd.toISOString().split('T')[0]);
+
+      // تجميع الإيرادات حسب المركبة
+      const vehicleRevenueMap = new Map<string, { plateNumber: string; revenue: number }>();
+      
+      paymentsData?.forEach(payment => {
+        const vehicle = payment.contracts?.vehicles;
+        if (vehicle?.plate_number) {
+          const existing = vehicleRevenueMap.get(vehicle.id) || { 
+            plateNumber: vehicle.plate_number, 
+            revenue: 0 
+          };
+          existing.revenue += payment.amount || 0;
+          vehicleRevenueMap.set(vehicle.id, existing);
+        }
+      });
+
+      // ترتيب المركبات حسب الإيرادات
+      const topVehicles = Array.from(vehicleRevenueMap.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
 
       return {
         weekStart: weekStart.toISOString().split('T')[0],
@@ -275,10 +304,9 @@ class ReportScheduler {
           pending: pendingMaintenance.length,
           totalCost: maintenanceCost,
         },
-        topVehicles: topVehicles?.map(v => ({
-          plateNumber: v.plate_number,
-          revenue: v.monthly_rate || 0,
-        })) || [],
+        topVehicles: topVehicles.length > 0 
+          ? topVehicles 
+          : [{ plateNumber: 'لا توجد بيانات', revenue: 0 }],
       };
     } catch (error) {
       console.error('Error fetching weekly report data:', error);
