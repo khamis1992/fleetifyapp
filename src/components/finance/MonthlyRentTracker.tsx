@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+/**
+ * متابعة الإيجارات الشهرية - تصميم جديد
+ * متوافق مع الداشبورد الرئيسي
+ */
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -20,7 +23,6 @@ import {
   AlertCircle,
   TrendingUp,
   TrendingDown,
-  DollarSign,
   Users,
   Calendar,
   Phone,
@@ -29,11 +31,76 @@ import {
   Search,
   Download,
   RefreshCw,
+  CalendarDays,
+  Wallet,
+  DollarSign,
+  ArrowLeft,
+  Filter,
+  FileSpreadsheet,
+  Clock,
+  ChevronDown,
+  BarChart3,
 } from 'lucide-react';
 import { useMonthlyRentTracking, useRentPaymentSummary } from '@/hooks/useMonthlyRentTracking';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+
+// ===== Stat Card Component =====
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  change?: string;
+  delay?: number;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconBg,
+  iconColor = 'text-white',
+  trend = 'neutral',
+  change,
+  delay = 0,
+}) => (
+  <motion.div
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, delay }}
+  >
+    <div className="flex items-center justify-between mb-3">
+      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
+        <Icon className={cn("w-6 h-6", iconColor)} />
+      </div>
+      {change && (
+        <div className={cn(
+          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
+          trend === 'up' ? 'bg-green-100 text-green-600' :
+          trend === 'down' ? 'bg-red-100 text-red-600' :
+          'bg-gray-100 text-gray-600'
+        )}>
+          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
+          {trend === 'down' && <TrendingDown className="w-3 h-3" />}
+          {change}
+        </div>
+      )}
+    </div>
+    <p className="text-sm text-neutral-500 mb-1">{title}</p>
+    <p className="text-2xl font-bold text-neutral-900">{value}</p>
+    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
+  </motion.div>
+);
 
 export const MonthlyRentTracker: React.FC = () => {
+  const navigate = useNavigate();
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -45,29 +112,43 @@ export const MonthlyRentTracker: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
   // Filter data based on search and status
-  const filteredData = rentStatuses?.filter(item => {
-    const matchesSearch = searchTerm === '' || 
-      item.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.customer_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.vehicle_plate?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || item.payment_status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredData = useMemo(() => {
+    return rentStatuses?.filter(item => {
+      const matchesSearch = searchTerm === '' ||
+        item.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.customer_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.vehicle_plate?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = filterStatus === 'all' || item.payment_status === filterStatus;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [rentStatuses, searchTerm, filterStatus]);
 
   const getStatusBadge = (status: 'paid' | 'unpaid' | 'partial') => {
     const configs = {
-      paid: { label: 'مدفوع', variant: 'default' as const, icon: CheckCircle2, color: 'text-green-600' },
-      unpaid: { label: 'غير مدفوع', variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' },
-      partial: { label: 'دفع جزئي', variant: 'secondary' as const, icon: AlertCircle, color: 'text-orange-600' },
+      paid: { 
+        label: 'مدفوع', 
+        className: 'bg-green-100 text-green-700 border-green-200',
+        icon: CheckCircle2 
+      },
+      unpaid: { 
+        label: 'غير مدفوع', 
+        className: 'bg-red-100 text-red-700 border-red-200',
+        icon: XCircle 
+      },
+      partial: { 
+        label: 'دفع جزئي', 
+        className: 'bg-amber-100 text-amber-700 border-amber-200',
+        icon: AlertCircle 
+      },
     };
-    
+
     const config = configs[status];
     const Icon = config.icon;
-    
+
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
+      <Badge variant="outline" className={cn("flex items-center gap-1 border", config.className)}>
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -116,38 +197,87 @@ export const MonthlyRentTracker: React.FC = () => {
     link.click();
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground">متابعة الإيجارات الشهرية</h2>
-          <p className="text-muted-foreground">تتبع دفعات العملاء والإيجارات المستحقة</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث
-          </Button>
-          <Button onClick={exportToCSV} variant="outline" size="sm">
-            <Download className="h-4 w-4 ml-2" />
-            تصدير
-          </Button>
-        </div>
-      </div>
+  const selectedMonthName = months.find(m => m.value === selectedMonth)?.label || '';
 
-      {/* Date Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            اختر الشهر والسنة
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
+  return (
+    <div className="min-h-screen bg-[#f0efed]" dir="rtl">
+      {/* Hero Header */}
+      <motion.div
+        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <CalendarDays className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">متابعة الإيجارات الشهرية</h1>
+              <p className="text-white/80 text-sm mt-1">
+                {selectedMonthName} {selectedYear} • تتبع دفعات العملاء والإيجارات المستحقة
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => refetch()}
+              variant="secondary"
+              size="sm"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+            >
+              <RefreshCw className="h-4 w-4 ml-2" />
+              تحديث
+            </Button>
+            <Button
+              onClick={exportToCSV}
+              variant="secondary"
+              size="sm"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+            >
+              <Download className="h-4 w-4 ml-2" />
+              تصدير
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick Stats in Header */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+            <p className="text-white/70 text-sm">الإيجار المتوقع</p>
+            <p className="text-2xl font-bold mt-1">{formatCurrency(summary.totalRentExpected)}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+            <p className="text-white/70 text-sm">المحصّل</p>
+            <p className="text-2xl font-bold mt-1 text-green-200">{formatCurrency(summary.totalRentCollected)}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+            <p className="text-white/70 text-sm">المتبقي</p>
+            <p className="text-2xl font-bold mt-1 text-red-200">{formatCurrency(summary.totalRentOutstanding)}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+            <p className="text-white/70 text-sm">نسبة التحصيل</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-2xl font-bold">{summary.collectionRate}%</p>
+              <Progress value={summary.collectionRate} className="flex-1 h-2 bg-white/20" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Date Selection & Filters */}
+      <motion.div
+        className="bg-white rounded-2xl p-4 mb-6 shadow-sm"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Month & Year */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-coral-500" />
             <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[140px] h-11 rounded-xl border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -160,7 +290,7 @@ export const MonthlyRentTracker: React.FC = () => {
             </Select>
 
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[120px] h-11 rounded-xl border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -175,240 +305,235 @@ export const MonthlyRentTracker: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="h-8 w-px bg-gray-200 hidden md:block" />
+
+          {/* Search */}
+          <div className="flex-1 min-w-[250px] relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Input
+              placeholder="ابحث باسم العميل، الكود، أو رقم اللوحة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-10 h-11 rounded-xl border-gray-200 bg-gray-50"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+            <SelectTrigger className="w-[160px] h-11 rounded-xl border-gray-200">
+              <Filter className="w-4 h-4 ml-2 text-neutral-400" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الحالات</SelectItem>
+              <SelectItem value="paid">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  مدفوع
+                </span>
+              </SelectItem>
+              <SelectItem value="unpaid">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  غير مدفوع
+                </span>
+              </SelectItem>
+              <SelectItem value="partial">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  دفع جزئي
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">إجمالي العملاء</p>
-                <p className="text-3xl font-bold text-foreground">{summary.totalCustomers}</p>
-                <p className="text-xs text-muted-foreground mt-1">عميل نشط</p>
-              </div>
-              <Users className="h-10 w-10 text-primary opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">العملاء الذين دفعوا</p>
-                <p className="text-3xl font-bold text-green-600">{summary.paidCount}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {summary.totalCustomers > 0 
-                    ? `${Math.round((summary.paidCount / summary.totalCustomers) * 100)}%`
-                    : '0%'
-                  }
-                </p>
-              </div>
-              <CheckCircle2 className="h-10 w-10 text-green-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">العملاء الذين لم يدفعوا</p>
-                <p className="text-3xl font-bold text-red-600">{summary.unpaidCount}</p>
-                {summary.partialCount > 0 && (
-                  <p className="text-xs text-orange-600 mt-1">
-                    + {summary.partialCount} دفع جزئي
-                  </p>
-                )}
-              </div>
-              <XCircle className="h-10 w-10 text-red-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">نسبة التحصيل</p>
-                <p className="text-3xl font-bold text-blue-600">{summary.collectionRate}%</p>
-                <Progress value={summary.collectionRate} className="mt-2" />
-              </div>
-              <TrendingUp className="h-10 w-10 text-blue-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          title="إجمالي العملاء"
+          value={summary.totalCustomers}
+          subtitle="عميل نشط"
+          icon={Users}
+          iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+          delay={0.1}
+        />
+        <StatCard
+          title="العملاء الذين دفعوا"
+          value={summary.paidCount}
+          subtitle={summary.totalCustomers > 0 ? `${Math.round((summary.paidCount / summary.totalCustomers) * 100)}% من الإجمالي` : '0%'}
+          icon={CheckCircle2}
+          iconBg="bg-gradient-to-br from-green-500 to-emerald-600"
+          trend="up"
+          change={`${summary.paidCount}`}
+          delay={0.2}
+        />
+        <StatCard
+          title="العملاء الذين لم يدفعوا"
+          value={summary.unpaidCount}
+          subtitle={summary.partialCount > 0 ? `+ ${summary.partialCount} دفع جزئي` : undefined}
+          icon={XCircle}
+          iconBg="bg-gradient-to-br from-red-500 to-rose-600"
+          trend="down"
+          change={`${summary.unpaidCount}`}
+          delay={0.3}
+        />
+        <StatCard
+          title="نسبة التحصيل"
+          value={`${summary.collectionRate}%`}
+          subtitle="من الإيجار المتوقع"
+          icon={BarChart3}
+          iconBg="bg-gradient-to-br from-blue-500 to-indigo-600"
+          trend={summary.collectionRate >= 70 ? 'up' : 'down'}
+          change={summary.collectionRate >= 70 ? 'جيد' : 'يحتاج متابعة'}
+          delay={0.4}
+        />
       </div>
-
-      {/* Financial Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">الإيجار المتوقع</p>
-              <p className="text-2xl font-bold text-foreground mt-2">
-                {formatCurrency(summary.totalRentExpected)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">المبلغ المحصّل</p>
-              <p className="text-2xl font-bold text-green-600 mt-2">
-                {formatCurrency(summary.totalRentCollected)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">المبلغ المتبقي</p>
-              <p className="text-2xl font-bold text-red-600 mt-2">
-                {formatCurrency(summary.totalRentOutstanding)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="ابحث باسم العميل، الكود، أو رقم اللوحة..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="paid">مدفوع</SelectItem>
-                <SelectItem value="unpaid">غير مدفوع</SelectItem>
-                <SelectItem value="partial">دفع جزئي</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Data Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>تفاصيل الدفعات</CardTitle>
-          <CardDescription>
-            عرض {filteredData?.length || 0} من {rentStatuses?.length || 0} عميل
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary" />
-              <p className="text-muted-foreground mt-2">جاري التحميل...</p>
-            </div>
-          ) : filteredData && filteredData.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">كود العميل</TableHead>
-                    <TableHead className="text-right">اسم العميل</TableHead>
-                    <TableHead className="text-right">رقم اللوحة</TableHead>
-                    <TableHead className="text-right">الإيجار الشهري</TableHead>
-                    <TableHead className="text-right">المدفوع</TableHead>
-                    <TableHead className="text-right">المتبقي</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">آخر دفعة</TableHead>
-                    <TableHead className="text-right">معلومات التواصل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((item) => (
-                    <TableRow key={item.contract_id} className={
-                      item.payment_status === 'unpaid' ? 'bg-red-50/50' :
-                      item.payment_status === 'partial' ? 'bg-orange-50/50' :
-                      'bg-green-50/50'
-                    }>
-                      <TableCell className="font-medium">{item.customer_code}</TableCell>
+      <motion.div
+        className="bg-white rounded-2xl shadow-sm overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        {/* Table Header */}
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-neutral-900">تفاصيل الدفعات</h3>
+            <p className="text-sm text-neutral-500">
+              عرض {filteredData?.length || 0} من {rentStatuses?.length || 0} عميل
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {filterStatus !== 'all' && (
+              <Badge variant="outline" className="bg-coral-50 text-coral-600 border-coral-200">
+                {filterStatus === 'paid' ? 'مدفوع' : filterStatus === 'unpaid' ? 'غير مدفوع' : 'دفع جزئي'}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Table Content */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <RefreshCw className="h-10 w-10 animate-spin text-coral-500 mb-4" />
+            <p className="text-neutral-500">جاري تحميل البيانات...</p>
+          </div>
+        ) : filteredData && filteredData.length > 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50">
+                  <TableHead className="text-right font-semibold text-neutral-700">كود العميل</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">اسم العميل</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">رقم اللوحة</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">الإيجار الشهري</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">المدفوع</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">المتبقي</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">الحالة</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">آخر دفعة</TableHead>
+                  <TableHead className="text-right font-semibold text-neutral-700">التواصل</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <AnimatePresence>
+                  {filteredData.map((item, index) => (
+                    <motion.tr
+                      key={item.contract_id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ delay: index * 0.02 }}
+                      className={cn(
+                        "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
+                        item.payment_status === 'unpaid' && 'bg-red-50/30',
+                        item.payment_status === 'partial' && 'bg-amber-50/30',
+                        item.payment_status === 'paid' && 'bg-green-50/30'
+                      )}
+                    >
+                      <TableCell className="font-mono text-sm text-neutral-600">{item.customer_code}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{item.customer_name}</div>
+                          <div className="font-medium text-neutral-900">{item.customer_name}</div>
                           {item.days_overdue > 0 && (
-                            <div className="text-xs text-red-600">
+                            <div className="flex items-center gap-1 text-xs text-red-600 mt-0.5">
+                              <Clock className="w-3 h-3" />
                               متأخر {item.days_overdue} يوم
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Car className="h-4 w-4 text-muted-foreground" />
-                          {item.vehicle_plate || '-'}
+                        <div className="flex items-center gap-2 text-neutral-600">
+                          <Car className="h-4 w-4 text-neutral-400" />
+                          <span className="font-mono">{item.vehicle_plate || '-'}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-semibold text-neutral-900">
                         {formatCurrency(item.monthly_rent)}
                       </TableCell>
-                      <TableCell className="text-green-600 font-medium">
+                      <TableCell className="text-green-600 font-semibold">
                         {formatCurrency(item.amount_paid)}
                       </TableCell>
-                      <TableCell className={item.amount_due > 0 ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                      <TableCell className={cn(
+                        "font-semibold",
+                        item.amount_due > 0 ? 'text-red-600' : 'text-neutral-400'
+                      )}>
                         {formatCurrency(item.amount_due)}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(item.payment_status)}
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {item.last_payment_date 
+                      <TableCell className="text-sm text-neutral-600">
+                        {item.last_payment_date
                           ? new Date(item.last_payment_date).toLocaleDateString('ar-QA')
-                          : '-'
+                          : <span className="text-neutral-400">-</span>
                         }
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1 text-xs">
+                        <div className="flex flex-col gap-1">
                           {item.phone && (
-                            <div className="flex items-center gap-1 text-muted-foreground">
+                            <a
+                              href={`tel:${item.phone}`}
+                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-500 transition-colors"
+                            >
                               <Phone className="h-3 w-3" />
                               {item.phone}
-                            </div>
+                            </a>
                           )}
                           {item.email && (
-                            <div className="flex items-center gap-1 text-muted-foreground">
+                            <a
+                              href={`mailto:${item.email}`}
+                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-500 transition-colors"
+                            >
                               <Mail className="h-3 w-3" />
                               {item.email}
-                            </div>
+                            </a>
+                          )}
+                          {!item.phone && !item.email && (
+                            <span className="text-xs text-neutral-400">-</span>
                           )}
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </motion.tr>
                   ))}
-                </TableBody>
-              </Table>
+                </AnimatePresence>
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <FileSpreadsheet className="w-8 h-8 text-gray-400" />
             </div>
-          ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                لا توجد بيانات للشهر المحدد
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+            <p className="text-neutral-600 font-medium">لا توجد بيانات</p>
+            <p className="text-sm text-neutral-400 mt-1">لا توجد بيانات للشهر المحدد</p>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 };

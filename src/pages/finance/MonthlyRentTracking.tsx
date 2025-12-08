@@ -1,9 +1,13 @@
+/**
+ * صفحة متابعة الإيجارات الشهرية
+ * تصميم متوافق مع الداشبورد الرئيسي
+ */
 import React from 'react';
 import { MonthlyRentTracker } from '@/components/finance/MonthlyRentTracker';
 
 const MonthlyRentTracking = () => {
   return (
-    <div className="container mx-auto p-6">
+    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       <MonthlyRentTracker />
     </div>
   );

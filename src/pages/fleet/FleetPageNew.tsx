@@ -604,6 +604,24 @@ const FleetPageNew: React.FC = () => {
                     محجوزة
                   </span>
                 </SelectItem>
+                <SelectItem value="accident">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                    حادث
+                  </span>
+                </SelectItem>
+                <SelectItem value="stolen">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-700"></span>
+                    مسروقة
+                  </span>
+                </SelectItem>
+                <SelectItem value="police_station">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-600"></span>
+                    في المخفر
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
 
