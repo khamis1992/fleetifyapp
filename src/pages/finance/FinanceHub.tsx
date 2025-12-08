@@ -560,10 +560,10 @@ const FinanceHub: React.FC = () => {
             />
           </motion.div>
 
-          {/* ملخص الخزينة - بيانات حقيقية */}
-          <div className="col-span-12 lg:col-span-8">
+          {/* ملخص الخزينة - عرض كامل */}
+          <div className="col-span-12">
             <motion.div 
-              className="bg-white rounded-2xl p-5 shadow-sm h-full"
+              className="bg-white rounded-2xl p-5 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -585,11 +585,11 @@ const FinanceHub: React.FC = () => {
               </div>
               
               {treasuryLoading ? (
-                <div className="h-64 flex items-center justify-center">
+                <div className="h-32 flex items-center justify-center">
                   <div className="animate-spin w-8 h-8 border-2 border-coral-500 border-t-transparent rounded-full"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-green-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <ArrowDownLeft className="w-5 h-5 text-green-600" />
@@ -631,90 +631,69 @@ const FinanceHub: React.FC = () => {
                       treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "text-blue-600" : "text-orange-600"
                     )}>الفرق</p>
                   </div>
+                  
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-800">العملاء</span>
+                    </div>
+                    <p className="text-2xl font-bold text-purple-700">{stats?.totalCustomers || 0}</p>
+                    <p className="text-xs text-purple-600 mt-1">إجمالي العملاء</p>
+                  </div>
+                  
+                  <div className="bg-indigo-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-5 h-5 text-indigo-600" />
+                      <span className="text-sm font-medium text-indigo-800">العقود</span>
+                    </div>
+                    <p className="text-2xl font-bold text-indigo-700">{stats?.activeContracts || 0}</p>
+                    <p className="text-xs text-indigo-600 mt-1">العقود النشطة</p>
+                  </div>
                 </div>
               )}
-              
-              {/* إحصائيات إضافية */}
-              <div className="mt-4 pt-4 border-t border-neutral-100">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-neutral-400" />
-                    <span className="text-neutral-500">إجمالي العملاء</span>
-                  </div>
-                  <span className="font-bold text-neutral-900">{stats?.totalCustomers || 0}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-neutral-400" />
-                    <span className="text-neutral-500">العقود النشطة</span>
-                  </div>
-                  <span className="font-bold text-neutral-900">{stats?.activeContracts || 0}</span>
-                </div>
-              </div>
             </motion.div>
           </div>
 
-          {/* ملخص الفواتير - بيانات حقيقية */}
-          <div className="col-span-12 lg:col-span-4">
+          {/* All Modules Grid - عرض كامل */}
+          <div className="col-span-12">
             <motion.div 
-              className="bg-white rounded-2xl p-5 shadow-sm h-full"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl p-5 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-amber-600" />
-                </div>
-                <h3 className="font-bold text-neutral-900">حالة الفواتير</h3>
-              </div>
-              
-              {invoicesLoading ? (
-                <div className="h-48 flex items-center justify-center">
-                  <div className="animate-spin w-8 h-8 border-2 border-coral-500 border-t-transparent rounded-full"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-amber-600" />
-                        <span className="text-sm text-amber-800">معلقة</span>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-lg font-bold text-amber-700">{pendingInvoicesCount}</p>
-                        <p className="text-xs text-amber-600">{formatCurrency(pendingInvoicesTotal)}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-red-600" />
-                        <span className="text-sm text-red-800">متأخرة</span>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-lg font-bold text-red-700">{overdueInvoices.length}</p>
-                        <p className="text-xs text-red-600">
-                          {formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
-                        </p>
-                      </div>
-                    </div>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-coral-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <Package className="w-5 h-5 text-white" />
                   </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-4"
-                    onClick={() => navigate('/finance/billing')}
-                  >
-                    عرض جميع الفواتير
-                    <ChevronRight className="w-4 h-4 mr-1" />
-                  </Button>
-                </>
-              )}
+                  <div>
+                    <h3 className="font-bold text-neutral-900 text-lg">جميع الأقسام المالية</h3>
+                    <p className="text-xs text-neutral-500">اختر القسم للوصول السريع</p>
+                  </div>
+                </div>
+                <Badge className="bg-gradient-to-r from-coral-500 to-orange-500 text-white text-xs px-3 py-1">
+                  {modules.length} قسم
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <AnimatePresence>
+                  {modules.map((module, index) => (
+                    <motion.div
+                      key={module.path}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <ModuleCard {...module} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </motion.div>
           </div>
           
-          {/* ملخص أقساط المركبات - جديد ✨ */}
+          {/* ملخص أقساط المركبات */}
           <div className="col-span-12 lg:col-span-4">
             <motion.div 
               className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-5 shadow-lg h-full text-white relative overflow-hidden"
@@ -777,10 +756,10 @@ const FinanceHub: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Recent Activity - Enhanced */}
+          {/* النشاطات الأخيرة */}
           <div className="col-span-12 lg:col-span-4">
             <motion.div 
-              className="bg-white rounded-2xl p-4 shadow-sm"
+              className="bg-white rounded-2xl p-4 shadow-sm h-full"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
@@ -820,42 +799,63 @@ const FinanceHub: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* All Modules Grid - Enhanced */}
-          <div className="col-span-12 lg:col-span-8">
+          {/* حالة الفواتير */}
+          <div className="col-span-12 lg:col-span-4">
             <motion.div 
-              className="bg-white rounded-2xl p-5 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              className="bg-white rounded-2xl p-5 shadow-sm h-full"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
             >
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-coral-500 to-orange-500 rounded-xl flex items-center justify-center">
-                    <Package className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-neutral-900 text-lg">جميع الأقسام المالية</h3>
-                    <p className="text-xs text-neutral-500">اختر القسم للوصول السريع</p>
-                  </div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-amber-600" />
                 </div>
-                <Badge className="bg-gradient-to-r from-coral-500 to-orange-500 text-white text-xs px-3 py-1">
-                  {modules.length} قسم
-                </Badge>
+                <h3 className="font-bold text-neutral-900">حالة الفواتير</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <AnimatePresence>
-                  {modules.map((module, index) => (
-                    <motion.div
-                      key={module.path}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <ModuleCard {...module} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+              
+              {invoicesLoading ? (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-coral-500 border-t-transparent rounded-full"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm text-amber-800">معلقة</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-amber-700">{pendingInvoicesCount}</p>
+                        <p className="text-xs text-amber-600">{formatCurrency(pendingInvoicesTotal)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <span className="text-sm text-red-800">متأخرة</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-red-700">{overdueInvoices.length}</p>
+                        <p className="text-xs text-red-600">
+                          {formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => navigate('/finance/billing')}
+                  >
+                    عرض جميع الفواتير
+                    <ChevronRight className="w-4 h-4 mr-1" />
+                  </Button>
+                </>
+              )}
             </motion.div>
           </div>
 
