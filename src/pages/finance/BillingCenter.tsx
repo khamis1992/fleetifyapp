@@ -155,12 +155,48 @@ const BillingCenter = () => {
 
   // Statistics
   const stats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // حساب بداية ونهاية الشهر الحالي
+    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+    const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1);
+    const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+    
+    // إجمالي الفواتير
     const totalInvoices = invoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
     const paidInvoices = invoices.filter(inv => inv?.payment_status === 'paid')
       .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
     const pendingInvoices = invoices.filter(inv => inv?.payment_status === 'pending' || inv?.payment_status === 'partial')
       .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
     const totalPayments = payments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+
+    // مدفوعات الشهر الحالي
+    const currentMonthPayments = payments.filter(pmt => {
+      const paymentDate = new Date(pmt?.payment_date);
+      return paymentDate >= startOfCurrentMonth && paymentDate < startOfNextMonth;
+    });
+    const currentMonthTotal = currentMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+    
+    // مدفوعات الشهر السابق
+    const lastMonthPayments = payments.filter(pmt => {
+      const paymentDate = new Date(pmt?.payment_date);
+      return paymentDate >= startOfLastMonth && paymentDate < startOfCurrentMonth;
+    });
+    const lastMonthTotal = lastMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+    
+    // نسبة التغيير
+    const monthlyChange = lastMonthTotal > 0 
+      ? Math.round(((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
+      : currentMonthTotal > 0 ? 100 : 0;
+
+    // فواتير الشهر الحالي
+    const currentMonthInvoices = invoices.filter(inv => {
+      const invoiceDate = new Date(inv?.invoice_date);
+      return invoiceDate >= startOfCurrentMonth && invoiceDate < startOfNextMonth;
+    });
+    const currentMonthInvoicesTotal = currentMonthInvoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
 
     return {
       totalInvoices,
@@ -169,6 +205,13 @@ const BillingCenter = () => {
       totalPayments,
       invoiceCount: invoices.length,
       paymentCount: payments.length,
+      // إحصائيات الشهر الحالي
+      currentMonthPayments: currentMonthTotal,
+      currentMonthPaymentsCount: currentMonthPayments.length,
+      lastMonthPayments: lastMonthTotal,
+      monthlyChange,
+      currentMonthInvoices: currentMonthInvoicesTotal,
+      currentMonthInvoicesCount: currentMonthInvoices.length,
     };
   }, [invoices, payments]);
 
@@ -341,6 +384,47 @@ const BillingCenter = () => {
         </div>
       </motion.div>
 
+      {/* Monthly Summary - New Section */}
+      <motion.div 
+        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-lg font-semibold opacity-90 mb-1">ملخص الشهر الحالي</h2>
+            <p className="text-3xl font-bold">{formatCurrency(stats.currentMonthPayments)}</p>
+            <p className="text-sm opacity-80 mt-1">
+              {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
+            </p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-sm opacity-80">فواتير الشهر</p>
+              <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
+              <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
+            </div>
+            <div className="text-center px-4 py-2 bg-white/20 rounded-xl">
+              <p className="text-sm opacity-90">مقارنة بالشهر السابق</p>
+              <p className={cn(
+                "text-xl font-bold flex items-center justify-center gap-1",
+                stats.monthlyChange >= 0 ? "text-green-200" : "text-red-200"
+              )}>
+                {stats.monthlyChange >= 0 ? (
+                  <TrendingUp className="w-5 h-5" />
+                ) : (
+                  <TrendingDown className="w-5 h-5" />
+                )}
+                {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange}%
+              </p>
+              <p className="text-xs opacity-70">
+                الشهر السابق: {formatCurrency(stats.lastMonthPayments)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
@@ -355,8 +439,8 @@ const BillingCenter = () => {
           value={formatCurrency(stats.paidInvoices)}
           icon={CheckCircle}
           iconBg="bg-green-100 text-green-600"
-          trend="up"
-          change="+12%"
+          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
         />
         <StatCard
           title="المستحق"
@@ -365,11 +449,13 @@ const BillingCenter = () => {
           iconBg="bg-yellow-100 text-yellow-600"
         />
         <StatCard
-          title="المدفوعات"
-          value={formatCurrency(stats.totalPayments)}
-          subtitle={`${stats.paymentCount} دفعة`}
+          title="مدفوعات هذا الشهر"
+          value={formatCurrency(stats.currentMonthPayments)}
+          subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
           icon={CreditCard}
           iconBg="bg-purple-100 text-purple-600"
+          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
         />
       </div>
 
