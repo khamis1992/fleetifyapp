@@ -36,6 +36,7 @@ import {
   TrendingDown,
   FileText,
   CreditCard,
+  Calculator,
   BookOpen,
   Landmark,
   Building,
