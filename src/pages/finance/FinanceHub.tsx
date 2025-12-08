@@ -318,26 +318,31 @@ const FinanceHub: React.FC = () => {
     { id: 'entry', label: 'قيد جديد', icon: Calculator, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/new-entry' },
   ];
 
-  // All Finance Modules - Complete list from original design
+  // All Finance Modules - Consolidated 8 pages
   const modules = [
-    { title: 'الفواتير والمدفوعات', description: 'إدارة الفواتير والمقبوضات', icon: Receipt, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/billing' },
-    { title: 'دليل الحسابات', description: 'شجرة الحسابات المحاسبية', icon: BookOpen, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/chart-of-accounts' },
-    { title: 'دفتر الأستاذ', description: 'سجل الحركات المالية', icon: Calculator, color: 'text-amber-600', bgColor: 'bg-amber-100', path: '/finance/ledger' },
+    // 1️⃣ مركز الفواتير والمدفوعات (يشمل: الفواتير + المدفوعات + الودائع + الإيجارات)
+    { title: 'الفواتير والمدفوعات', description: 'الفواتير، المدفوعات، الودائع، والإيجارات', icon: Receipt, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/billing' },
+    
+    // 2️⃣ المحاسبة العامة (يشمل: دليل الحسابات + دفتر الأستاذ + القيود)
+    { title: 'المحاسبة العامة', description: 'دليل الحسابات، دفتر الأستاذ، والقيود', icon: BookOpen, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/accounting' },
+    
+    // 3️⃣ الخزينة والبنوك (بدون تغيير)
     { title: 'الخزينة والبنوك', description: 'إدارة النقدية والحسابات البنكية', icon: Landmark, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/treasury' },
-    { title: 'التقارير المالية', description: 'تقارير وتحليلات شاملة', icon: BarChart3, color: 'text-indigo-600', bgColor: 'bg-indigo-100', path: '/finance/reports' },
-    { title: 'التحليل المالي', description: 'تحليل الأداء والاتجاهات', icon: LineChart, color: 'text-emerald-600', bgColor: 'bg-emerald-100', path: '/finance/analysis' },
-    { title: 'سجل التدقيق', description: 'تتبع جميع التعديلات المحاسبية', icon: Activity, color: 'text-sky-600', bgColor: 'bg-sky-100', path: '/finance/audit-trail' },
-    { title: 'مراكز التكلفة', description: 'توزيع المصروفات والإيرادات', icon: Target, color: 'text-pink-600', bgColor: 'bg-pink-100', path: '/finance/cost-centers' },
+    
+    // 4️⃣ التقارير والتحليل (يشمل: التقارير + التحليل + النسب + الحاسبة)
+    { title: 'التقارير والتحليل', description: 'التقارير، التحليل، النسب المالية، والحاسبة', icon: BarChart3, color: 'text-indigo-600', bgColor: 'bg-indigo-100', path: '/finance/reports-analysis' },
+    
+    // 5️⃣ الموازنات ومراكز التكلفة
+    { title: 'الموازنات ومراكز التكلفة', description: 'التخطيط المالي وتوزيع التكاليف', icon: PiggyBank, color: 'text-orange-600', bgColor: 'bg-orange-100', path: '/finance/budgets-centers' },
+    
+    // 6️⃣ الموردون (بدون تغيير)
     { title: 'الموردون', description: 'إدارة حسابات الموردين', icon: Building, color: 'text-teal-600', bgColor: 'bg-teal-100', path: '/finance/vendors' },
-    { title: 'الموازنات', description: 'التخطيط والرقابة المالية', icon: PiggyBank, color: 'text-orange-600', bgColor: 'bg-orange-100', path: '/finance/budgets' },
+    
+    // 7️⃣ الأصول الثابتة (بدون تغيير)
     { title: 'الأصول الثابتة', description: 'إدارة وإهلاك الأصول', icon: Briefcase, color: 'text-slate-600', bgColor: 'bg-slate-100', path: '/finance/assets' },
-    { title: 'القيود اليومية', description: 'سجل القيود المحاسبية', icon: History, color: 'text-violet-600', bgColor: 'bg-violet-100', path: '/finance/ledger' },
-    { title: 'الودائع', description: 'إدارة الودائع والتأمينات', icon: Shield, color: 'text-cyan-600', bgColor: 'bg-cyan-100', path: '/finance/deposits' },
-    { title: 'الحاسبة المالية', description: 'حساب القروض والفوائد', icon: Calculator, color: 'text-lime-600', bgColor: 'bg-lime-100', path: '/finance/calculator' },
-    { title: 'متابعة الإيجارات', description: 'تتبع الإيجارات الشهرية', icon: Calendar, color: 'text-fuchsia-600', bgColor: 'bg-fuchsia-100', path: '/finance/monthly-rent-tracking' },
-    { title: 'النسب المالية', description: 'تحليل الأداء المالي', icon: Percent, color: 'text-rose-600', bgColor: 'bg-rose-100', path: '/finance/financial-ratios' },
-    { title: 'سجل المراجعة', description: 'تتبع التغييرات والعمليات', icon: Eye, color: 'text-gray-600', bgColor: 'bg-gray-100', path: '/finance/audit-trail' },
-    { title: 'الإعدادات', description: 'إعدادات النظام المالي', icon: Settings, color: 'text-neutral-600', bgColor: 'bg-neutral-100', path: '/finance/settings' },
+    
+    // 8️⃣ التدقيق والإعدادات
+    { title: 'التدقيق والإعدادات', description: 'سجل التدقيق وإعدادات النظام', icon: Settings, color: 'text-neutral-600', bgColor: 'bg-neutral-100', path: '/finance/audit-settings' },
   ];
 
   // التنبيهات الحقيقية بناءً على البيانات

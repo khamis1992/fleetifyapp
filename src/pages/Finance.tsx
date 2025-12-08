@@ -47,6 +47,12 @@ const UnifiedPayments = lazyWithRetry(() => import("./finance/UnifiedPayments"),
 const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
 const UnifiedFinance = lazyWithRetry(() => import("./finance/UnifiedFinance"), "UnifiedFinance");
 
+// ⭐ الصفحات المدمجة الجديدة
+const GeneralAccounting = lazyWithRetry(() => import("./finance/GeneralAccounting"), "GeneralAccounting");
+const ReportsAndAnalysis = lazyWithRetry(() => import("./finance/ReportsAndAnalysis"), "ReportsAndAnalysis");
+const BudgetsAndCostCenters = lazyWithRetry(() => import("./finance/BudgetsAndCostCenters"), "BudgetsAndCostCenters");
+const AuditAndSettings = lazyWithRetry(() => import("./finance/AuditAndSettings"), "AuditAndSettings");
+
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
 
@@ -63,6 +69,56 @@ const Finance = () => {
           <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <FinanceHub />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+
+      {/* ⭐ الصفحات المدمجة الجديدة */}
+      
+      {/* المحاسبة العامة - دليل الحسابات + دفتر الأستاذ + القيود */}
+      <Route 
+        path="accounting" 
+        element={
+          <ProtectedFinanceRoute permission="finance.accounts.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <GeneralAccounting />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+
+      {/* التقارير والتحليل - التقارير + التحليل + النسب المالية */}
+      <Route 
+        path="reports-analysis" 
+        element={
+          <ProtectedFinanceRoute permission="finance.reports.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <ReportsAndAnalysis />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+
+      {/* الموازنات ومراكز التكلفة */}
+      <Route 
+        path="budgets-centers" 
+        element={
+          <ProtectedFinanceRoute permission="finance.budgets.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <BudgetsAndCostCenters />
+            </Suspense>
+          </ProtectedFinanceRoute>
+        } 
+      />
+
+      {/* التدقيق والإعدادات */}
+      <Route 
+        path="audit-settings" 
+        element={
+          <ProtectedFinanceRoute permission="finance.view">
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <AuditAndSettings />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
@@ -218,6 +274,29 @@ const Finance = () => {
       <Route path="invoices" element={<Navigate to="/finance/billing" replace />} />
       <Route path="payments" element={<Navigate to="/finance/billing" replace />} />
       <Route path="payments-dashboard" element={<Navigate to="/finance/billing" replace />} />
+      
+      {/* ⭐ توجيهات الصفحات المدمجة الجديدة */}
+      {/* توجيهات المحاسبة العامة */}
+      <Route path="chart-of-accounts-redirect" element={<Navigate to="/finance/accounting?tab=chart" replace />} />
+      <Route path="general-ledger-redirect" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
+      <Route path="ledger-redirect" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
+      <Route path="journal-entries-redirect" element={<Navigate to="/finance/accounting?tab=entries" replace />} />
+      
+      {/* توجيهات الفوترة والمدفوعات */}
+      <Route path="deposits-redirect" element={<Navigate to="/finance/billing?tab=deposits" replace />} />
+      <Route path="monthly-rent-redirect" element={<Navigate to="/finance/billing?tab=rent" replace />} />
+      
+      {/* توجيهات التقارير والتحليل */}
+      <Route path="analysis-redirect" element={<Navigate to="/finance/reports-analysis?tab=analysis" replace />} />
+      <Route path="financial-ratios-redirect" element={<Navigate to="/finance/reports-analysis?tab=ratios" replace />} />
+      <Route path="calculator-redirect" element={<Navigate to="/finance/reports-analysis?tab=calculator" replace />} />
+      
+      {/* توجيهات الموازنات ومراكز التكلفة */}
+      <Route path="cost-centers-redirect" element={<Navigate to="/finance/budgets-centers?tab=cost-centers" replace />} />
+      
+      {/* توجيهات التدقيق والإعدادات */}
+      <Route path="audit-trail-redirect" element={<Navigate to="/finance/audit-settings?tab=audit" replace />} />
+      <Route path="settings-redirect" element={<Navigate to="/finance/audit-settings?tab=settings" replace />} />
       <Route
         path="journal-entries" 
         element={

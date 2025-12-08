@@ -1,10 +1,16 @@
 /**
  * مركز الفواتير والمدفوعات الموحد
  * تصميم بسيط ومتوافق مع الداشبورد
+ * يشمل: الفواتير + المدفوعات + الودائع + الإيجارات
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+
+// Lazy load additional tabs
+const Deposits = lazy(() => import("./Deposits"));
+const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
 import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -54,7 +60,9 @@ import {
   TrendingDown,
   FileText,
   Loader2,
-  Send
+  Send,
+  Wallet,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,9 +125,13 @@ const BillingCenter = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { formatCurrency } = useCurrencyFormatter();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // State
-  const [activeTab, setActiveTab] = useState("invoices");
+  // State - use URL params for tab
+  const activeTab = searchParams.get("tab") || "invoices";
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   
@@ -477,6 +489,20 @@ const BillingCenter = () => {
               <CreditCard className="w-4 h-4 ml-2" />
               المدفوعات
             </TabsTrigger>
+            <TabsTrigger 
+              value="deposits"
+              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <Wallet className="w-4 h-4 ml-2" />
+              الودائع
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rent"
+              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <CalendarDays className="w-4 h-4 ml-2" />
+              الإيجارات
+            </TabsTrigger>
           </TabsList>
 
           {/* Search & Filter */}
@@ -676,6 +702,32 @@ const BillingCenter = () => {
                 </TableBody>
               </Table>
             )}
+          </motion.div>
+        </TabsContent>
+
+        {/* Deposits Tab */}
+        <TabsContent value="deposits">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Deposits />
+            </Suspense>
+          </motion.div>
+        </TabsContent>
+
+        {/* Monthly Rent Tracking Tab */}
+        <TabsContent value="rent">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <MonthlyRentTracking />
+            </Suspense>
           </motion.div>
         </TabsContent>
       </Tabs>
