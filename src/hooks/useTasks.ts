@@ -254,13 +254,14 @@ export function useCreateTask() {
         throw new Error('لم يتم تحديد الشركة أو المستخدم');
       }
 
-      const { checklists, ...taskData } = input;
+      const { checklists, assigned_to, ...taskData } = input;
 
-      // Create the task
+      // Create the task (convert empty string to null for UUID fields)
       const { data: task, error: taskError } = await supabase
         .from('tasks')
         .insert({
           ...taskData,
+          assigned_to: assigned_to || null, // Empty string becomes null
           company_id: companyId,
           created_by: profileId, // Use profile.id instead of auth user.id
         })

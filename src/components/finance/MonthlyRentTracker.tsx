@@ -40,11 +40,13 @@ import {
   Clock,
   ChevronDown,
   BarChart3,
+  CreditCard,
 } from 'lucide-react';
-import { useMonthlyRentTracking, useRentPaymentSummary } from '@/hooks/useMonthlyRentTracking';
+import { useMonthlyRentTracking, useRentPaymentSummary, MonthlyRentStatus } from '@/hooks/useMonthlyRentTracking';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { QuickPaymentDialog } from './QuickPaymentDialog';
 
 // ===== Stat Card Component =====
 interface StatCardProps {
@@ -106,8 +108,23 @@ export const MonthlyRentTracker: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'unpaid' | 'partial'>('all');
+  
+  // Payment dialog state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<MonthlyRentStatus | null>(null);
 
   const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth);
+  
+  // Handle opening payment dialog
+  const handleOpenPaymentDialog = (item: MonthlyRentStatus) => {
+    setSelectedCustomer(item);
+    setPaymentDialogOpen(true);
+  };
+  
+  // Handle payment success
+  const handlePaymentSuccess = () => {
+    refetch();
+  };
   const summary = useRentPaymentSummary(selectedYear, selectedMonth);
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -427,7 +444,6 @@ export const MonthlyRentTracker: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50/50">
-                  <TableHead className="text-right font-semibold text-neutral-700">كود العميل</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">اسم العميل</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">رقم اللوحة</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">الإيجار الشهري</TableHead>
@@ -436,6 +452,7 @@ export const MonthlyRentTracker: React.FC = () => {
                   <TableHead className="text-right font-semibold text-neutral-700">الحالة</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">آخر دفعة</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">التواصل</TableHead>
+                  <TableHead className="text-center font-semibold text-neutral-700">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -454,7 +471,6 @@ export const MonthlyRentTracker: React.FC = () => {
                         item.payment_status === 'paid' && 'bg-green-50/30'
                       )}
                     >
-                      <TableCell className="font-mono text-sm text-neutral-600">{item.customer_code}</TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium text-neutral-900">{item.customer_name}</div>
@@ -518,6 +534,30 @@ export const MonthlyRentTracker: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          {item.payment_status !== 'paid' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenPaymentDialog(item);
+                              }}
+                            >
+                              <CreditCard className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">تسجيل دفعة</span>
+                            </Button>
+                          )}
+                          {item.payment_status === 'paid' && (
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              <CheckCircle2 className="h-3 w-3 ml-1" />
+                              مدفوع
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </motion.tr>
                   ))}
                 </AnimatePresence>
@@ -534,6 +574,18 @@ export const MonthlyRentTracker: React.FC = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Quick Payment Dialog */}
+      {selectedCustomer && (
+        <QuickPaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          customerId={selectedCustomer.customer_id}
+          customerName={selectedCustomer.customer_name}
+          customerPhone={selectedCustomer.phone}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 };
