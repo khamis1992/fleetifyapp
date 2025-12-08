@@ -164,6 +164,14 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
         return <Badge className="bg-amber-100 text-amber-700 border-amber-200">صيانة</Badge>;
       case 'out_of_service':
         return <Badge className="bg-red-100 text-red-700 border-red-200">خارج الخدمة</Badge>;
+      case 'reserved':
+        return <Badge className="bg-blue-100 text-blue-700 border-blue-200">محجوزة</Badge>;
+      case 'accident':
+        return <Badge className="bg-rose-100 text-rose-700 border-rose-200">حادث</Badge>;
+      case 'stolen':
+        return <Badge className="bg-slate-100 text-slate-700 border-slate-200">مسروقة</Badge>;
+      case 'police_station':
+        return <Badge className="bg-orange-100 text-orange-700 border-orange-200">في المخفر</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
     }
@@ -175,6 +183,10 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
       case 'rented': return 'bg-blue-500';
       case 'maintenance': return 'bg-amber-500';
       case 'out_of_service': return 'bg-red-500';
+      case 'reserved': return 'bg-blue-500';
+      case 'accident': return 'bg-rose-600';
+      case 'stolen': return 'bg-slate-700';
+      case 'police_station': return 'bg-orange-600';
       default: return 'bg-gray-500';
     }
   };

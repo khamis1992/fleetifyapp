@@ -116,6 +116,14 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         return { label: 'صيانة', bg: 'bg-amber-500', text: 'text-white' };
       case 'out_of_service':
         return { label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white' };
+      case 'reserved':
+        return { label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white' };
+      case 'accident':
+        return { label: 'حادث', bg: 'bg-rose-600', text: 'text-white' };
+      case 'stolen':
+        return { label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white' };
+      case 'police_station':
+        return { label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white' };
       default:
         return { label: status, bg: 'bg-neutral-500', text: 'text-white' };
     }

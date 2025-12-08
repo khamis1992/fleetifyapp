@@ -362,6 +362,10 @@ export default function Fleet() {
                   <option value="rented">مؤجرة</option>
                   <option value="maintenance">صيانة</option>
                   <option value="out_of_service">خارج الخدمة</option>
+                  <option value="reserved">محجوزة</option>
+                  <option value="accident">حادث</option>
+                  <option value="stolen">مسروقة</option>
+                  <option value="police_station">في المخفر</option>
                 </select>
                 <ChevronDown className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -405,7 +409,14 @@ export default function Fleet() {
                   <span className="text-sm text-muted-foreground">الفلاتر النشطة:</span>
                   {filters.status && (
                     <span className="px-2 py-1 text-xs font-semibold rounded bg-primary/10 text-primary border border-primary/20">
-                      {filters.status === 'available' ? 'متاحة' : filters.status === 'rented' ? 'مؤجرة' : filters.status === 'maintenance' ? 'صيانة' : 'خارج الخدمة'}
+                      {filters.status === 'available' ? 'متاحة' : 
+                       filters.status === 'rented' ? 'مؤجرة' : 
+                       filters.status === 'maintenance' ? 'صيانة' : 
+                       filters.status === 'out_of_service' ? 'خارج الخدمة' :
+                       filters.status === 'reserved' ? 'محجوزة' :
+                       filters.status === 'accident' ? 'حادث' :
+                       filters.status === 'stolen' ? 'مسروقة' :
+                       filters.status === 'police_station' ? 'في المخفر' : filters.status}
                     </span>
                   )}
                   {filters.type && (
@@ -481,9 +492,20 @@ export default function Fleet() {
                         vehicle.status === 'available' && "bg-success/10 text-success border-success/30",
                         vehicle.status === 'rented' && "bg-blue-50 text-blue-600 border-blue-200",
                         vehicle.status === 'maintenance' && "bg-warning/10 text-warning border-warning/30",
-                        vehicle.status === 'out_of_service' && "bg-destructive/10 text-destructive border-destructive/30"
+                        vehicle.status === 'out_of_service' && "bg-destructive/10 text-destructive border-destructive/30",
+                        vehicle.status === 'reserved' && "bg-blue-50 text-blue-600 border-blue-200",
+                        vehicle.status === 'accident' && "bg-rose-50 text-rose-600 border-rose-200",
+                        vehicle.status === 'stolen' && "bg-slate-50 text-slate-600 border-slate-200",
+                        vehicle.status === 'police_station' && "bg-orange-50 text-orange-600 border-orange-200"
                       )}>
-                        {vehicle.status === 'available' ? 'متاحة' : vehicle.status === 'rented' ? 'مؤجرة' : vehicle.status === 'maintenance' ? 'صيانة' : 'خارج الخدمة'}
+                        {vehicle.status === 'available' ? 'متاحة' : 
+                         vehicle.status === 'rented' ? 'مؤجرة' : 
+                         vehicle.status === 'maintenance' ? 'صيانة' : 
+                         vehicle.status === 'out_of_service' ? 'خارج الخدمة' :
+                         vehicle.status === 'reserved' ? 'محجوزة' :
+                         vehicle.status === 'accident' ? 'حادث' :
+                         vehicle.status === 'stolen' ? 'مسروقة' :
+                         vehicle.status === 'police_station' ? 'في المخفر' : vehicle.status}
                       </span>
                       <div className="flex gap-2">
                         <button 

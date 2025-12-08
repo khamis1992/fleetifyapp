@@ -82,6 +82,9 @@ const STATUS_OPTIONS = [
   { value: 'maintenance', label: 'صيانة', bg: 'bg-amber-500', text: 'text-white' },
   { value: 'out_of_service', label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white' },
   { value: 'reserved', label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white' },
+  { value: 'accident', label: 'حادث', bg: 'bg-rose-600', text: 'text-white' },
+  { value: 'stolen', label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white' },
+  { value: 'police_station', label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white' },
 ];
 
 // ===== Status Config =====
@@ -97,6 +100,12 @@ const getStatusConfig = (status: string) => {
       return { label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white', iconBg: 'bg-red-100', iconText: 'text-red-600' };
     case 'reserved':
       return { label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white', iconBg: 'bg-blue-100', iconText: 'text-blue-600' };
+    case 'accident':
+      return { label: 'حادث', bg: 'bg-rose-600', text: 'text-white', iconBg: 'bg-rose-100', iconText: 'text-rose-600' };
+    case 'stolen':
+      return { label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white', iconBg: 'bg-slate-100', iconText: 'text-slate-700' };
+    case 'police_station':
+      return { label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white', iconBg: 'bg-orange-100', iconText: 'text-orange-600' };
     default:
       return { label: status, bg: 'bg-neutral-500', text: 'text-white', iconBg: 'bg-neutral-100', iconText: 'text-neutral-600' };
   }
