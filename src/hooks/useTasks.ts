@@ -287,12 +287,16 @@ export function useCreateTask() {
       }
 
       // Log activity: Task Created
-      await supabase.from('task_activity_log').insert({
-        task_id: task.id,
-        user_id: profileId,
-        action: 'created',
-        description: `تم إنشاء المهمة "${task.title}"`,
-      }).catch(err => console.error('Error logging activity:', err));
+      try {
+        await supabase.from('task_activity_log').insert({
+          task_id: task.id,
+          user_id: profileId,
+          action: 'created',
+          description: `تم إنشاء المهمة "${task.title}"`,
+        });
+      } catch (err) {
+        console.error('Error logging activity:', err);
+      }
 
       // Create notification for assignee if assigned
       if (input.assigned_to && input.assigned_to !== profileId) {
@@ -352,14 +356,18 @@ export function useUpdateTask() {
           ? `تم تحديث: ${changes.join('، ')}`
           : 'تم تحديث المهمة';
 
-        await supabase.from('task_activity_log').insert({
-          task_id: id,
-          user_id: profileId,
-          action: 'updated',
-          description,
-          old_value: null,
-          new_value: taskData,
-        }).catch(err => console.error('Error logging activity:', err));
+        try {
+          await supabase.from('task_activity_log').insert({
+            task_id: id,
+            user_id: profileId,
+            action: 'updated',
+            description,
+            old_value: null,
+            new_value: taskData,
+          });
+        } catch (err) {
+          console.error('Error logging activity:', err);
+        }
       }
 
       // Handle assignee change notification
@@ -433,13 +441,17 @@ export function useUpdateTaskStatus() {
       // Log activity: Status Changed
       const profileId = user?.profile?.id;
       if (profileId) {
-        await supabase.from('task_activity_log').insert({
-          task_id: taskId,
-          user_id: profileId,
-          action: 'status_changed',
-          description: `تم تغيير الحالة إلى "${getStatusLabel(status)}"`,
-          new_value: { status },
-        }).catch(err => console.error('Error logging activity:', err));
+        try {
+          await supabase.from('task_activity_log').insert({
+            task_id: taskId,
+            user_id: profileId,
+            action: 'status_changed',
+            description: `تم تغيير الحالة إلى "${getStatusLabel(status)}"`,
+            new_value: { status },
+          });
+        } catch (err) {
+          console.error('Error logging activity:', err);
+        }
       }
 
       return data as Task;
@@ -501,12 +513,16 @@ export function useAddTaskComment() {
       if (error) throw error;
 
       // Log activity: Comment Added
-      await supabase.from('task_activity_log').insert({
-        task_id: taskId,
-        user_id: profileId,
-        action: 'comment_added',
-        description: 'تمت إضافة تعليق جديد',
-      }).catch(err => console.error('Error logging activity:', err));
+      try {
+        await supabase.from('task_activity_log').insert({
+          task_id: taskId,
+          user_id: profileId,
+          action: 'comment_added',
+          description: 'تمت إضافة تعليق جديد',
+        });
+      } catch (err) {
+        console.error('Error logging activity:', err);
+      }
 
       return data as TaskComment;
     },
