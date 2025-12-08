@@ -1,5 +1,5 @@
 /**
- * المركز المالي - التصميم الجديد
+ * المركز المالي - التصميم الجديد المحسّن
  * يغطي جميع خيارات الصفحة الحالية بتصميم Bento عصري
  * مع دعم الأدوار المختلفة والبحث الشامل
  * 
@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useFinanceRole } from '@/contexts/FinanceContext';
@@ -17,6 +17,7 @@ import { ActivityTimeline } from '@/components/finance/hub/ActivityTimeline';
 import { useRecentActivities } from '@/hooks/useRecentActivities';
 import { useTreasurySummary } from '@/hooks/useTreasury';
 import { useInvoices } from '@/hooks/finance/useInvoices';
+import { useVehicleInstallmentSummary } from '@/hooks/useVehicleInstallments';
 import {
   AreaChart,
   Area,
@@ -61,6 +62,12 @@ import {
   Shield,
   History,
   Briefcase,
+  Car,
+  RefreshCw,
+  DollarSign,
+  Clock,
+  Users,
+  Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,16 +137,18 @@ const StatCard: React.FC<StatCardProps> = ({
   </motion.div>
 );
 
-// Module Card Component
+// Module Card Component - Enhanced Design
 interface ModuleCardProps {
   title: string;
   description: string;
   icon: React.ElementType;
   color: string;
   bgColor: string;
+  gradient?: string;
   path: string;
   badge?: string;
   badgeColor?: string;
+  stats?: { label: string; value: string | number }[];
 }
 
 const ModuleCard: React.FC<ModuleCardProps> = ({
@@ -148,33 +157,78 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   icon: Icon,
   color,
   bgColor,
+  gradient,
   path,
   badge,
   badgeColor = 'bg-neutral-100 text-neutral-600',
+  stats,
 }) => {
   const navigate = useNavigate();
   
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
+      whileHover={{ scale: 1.03, y: -4 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => navigate(path)}
-      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+      className={cn(
+        "rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden",
+        gradient ? gradient : "bg-white"
+      )}
     >
-      <div className="flex items-start gap-3">
-        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', bgColor)}>
-          <Icon className={cn('w-5 h-5', color)} />
+      {/* Decorative background pattern */}
+      {gradient && (
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
+        </div>
+      )}
+      
+      <div className="relative flex items-start gap-3">
+        <div className={cn(
+          'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm',
+          gradient ? 'bg-white/90' : bgColor
+        )}>
+          <Icon className={cn('w-5 h-5', gradient ? color : color)} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-neutral-900 text-sm truncate">{title}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className={cn(
+              "font-bold text-sm truncate",
+              gradient ? "text-white" : "text-neutral-900"
+            )}>{title}</h3>
             {badge && (
-              <Badge className={cn('text-[9px]', badgeColor)}>{badge}</Badge>
+              <Badge className={cn('text-[9px]', gradient ? 'bg-white/20 text-white border-white/30' : badgeColor)}>
+                {badge}
+              </Badge>
             )}
           </div>
-          <p className="text-xs text-neutral-500 mt-0.5 line-clamp-1">{description}</p>
+          <p className={cn(
+            "text-xs mt-0.5 line-clamp-2",
+            gradient ? "text-white/80" : "text-neutral-500"
+          )}>{description}</p>
+          
+          {/* Stats mini display */}
+          {stats && stats.length > 0 && (
+            <div className="flex gap-3 mt-2">
+              {stats.map((stat, idx) => (
+                <div key={idx} className={cn(
+                  "text-[10px]",
+                  gradient ? "text-white/70" : "text-neutral-400"
+                )}>
+                  <span className={cn(
+                    "font-bold",
+                    gradient ? "text-white" : "text-neutral-700"
+                  )}>{stat.value}</span>
+                  {' '}{stat.label}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-coral-500 transition-colors flex-shrink-0" />
+        <ChevronRight className={cn(
+          "w-5 h-5 transition-all flex-shrink-0 group-hover:translate-x-1",
+          gradient ? "text-white/60 group-hover:text-white" : "text-neutral-300 group-hover:text-coral-500"
+        )} />
       </div>
     </motion.div>
   );
@@ -285,6 +339,7 @@ const FinanceHub: React.FC = () => {
   const { data: recentActivities, isLoading: activitiesLoading } = useRecentActivities();
   const { data: treasurySummary, isLoading: treasuryLoading } = useTreasurySummary();
   const { data: invoices, isLoading: invoicesLoading } = useInvoices({ status: 'pending' });
+  const { data: installmentSummary, isLoading: installmentsLoading } = useVehicleInstallmentSummary();
 
   // حساب الفواتير المعلقة والمتأخرة
   const pendingInvoicesCount = invoices?.length || 0;
@@ -318,31 +373,112 @@ const FinanceHub: React.FC = () => {
     { id: 'entry', label: 'قيد جديد', icon: Calculator, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/new-entry' },
   ];
 
-  // All Finance Modules - Consolidated 8 pages
+  // All Finance Modules - Consolidated 9 pages (including Vehicle Installments)
   const modules = [
     // 1️⃣ مركز الفواتير والمدفوعات (يشمل: الفواتير + المدفوعات + الودائع + الإيجارات)
-    { title: 'الفواتير والمدفوعات', description: 'الفواتير، المدفوعات، الودائع، والإيجارات', icon: Receipt, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/billing' },
+    { 
+      title: 'الفواتير والمدفوعات', 
+      description: 'الفواتير، المدفوعات، الودائع، والإيجارات', 
+      icon: Receipt, 
+      color: 'text-coral-600', 
+      bgColor: 'bg-coral-100', 
+      gradient: 'bg-gradient-to-br from-coral-500 to-orange-500',
+      path: '/finance/billing',
+      stats: pendingInvoicesCount > 0 ? [{ label: 'معلقة', value: pendingInvoicesCount }] : undefined
+    },
     
     // 2️⃣ المحاسبة العامة (يشمل: دليل الحسابات + دفتر الأستاذ + القيود)
-    { title: 'المحاسبة العامة', description: 'دليل الحسابات، دفتر الأستاذ، والقيود', icon: BookOpen, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/accounting' },
+    { 
+      title: 'المحاسبة العامة', 
+      description: 'دليل الحسابات، دفتر الأستاذ، والقيود', 
+      icon: BookOpen, 
+      color: 'text-purple-600', 
+      bgColor: 'bg-purple-100', 
+      gradient: 'bg-gradient-to-br from-purple-500 to-indigo-500',
+      path: '/finance/accounting' 
+    },
     
-    // 3️⃣ الخزينة والبنوك (بدون تغيير)
-    { title: 'الخزينة والبنوك', description: 'إدارة النقدية والحسابات البنكية', icon: Landmark, color: 'text-coral-600', bgColor: 'bg-coral-100', path: '/finance/treasury' },
+    // 3️⃣ الخزينة والبنوك
+    { 
+      title: 'الخزينة والبنوك', 
+      description: 'إدارة النقدية والحسابات البنكية', 
+      icon: Landmark, 
+      color: 'text-emerald-600', 
+      bgColor: 'bg-emerald-100', 
+      path: '/finance/treasury' 
+    },
     
     // 4️⃣ التقارير والتحليل (يشمل: التقارير + التحليل + النسب + الحاسبة)
-    { title: 'التقارير والتحليل', description: 'التقارير، التحليل، النسب المالية، والحاسبة', icon: BarChart3, color: 'text-indigo-600', bgColor: 'bg-indigo-100', path: '/finance/reports-analysis' },
+    { 
+      title: 'التقارير والتحليل', 
+      description: 'التقارير، التحليل، النسب المالية، والحاسبة', 
+      icon: BarChart3, 
+      color: 'text-indigo-600', 
+      bgColor: 'bg-indigo-100', 
+      gradient: 'bg-gradient-to-br from-indigo-500 to-blue-500',
+      path: '/finance/reports-analysis' 
+    },
     
     // 5️⃣ الموازنات ومراكز التكلفة
-    { title: 'الموازنات ومراكز التكلفة', description: 'التخطيط المالي وتوزيع التكاليف', icon: PiggyBank, color: 'text-orange-600', bgColor: 'bg-orange-100', path: '/finance/budgets-centers' },
+    { 
+      title: 'الموازنات ومراكز التكلفة', 
+      description: 'التخطيط المالي وتوزيع التكاليف', 
+      icon: PiggyBank, 
+      color: 'text-orange-600', 
+      bgColor: 'bg-orange-100', 
+      path: '/finance/budgets-centers' 
+    },
     
-    // 6️⃣ الموردون (بدون تغيير)
-    { title: 'الموردون', description: 'إدارة حسابات الموردين', icon: Building, color: 'text-teal-600', bgColor: 'bg-teal-100', path: '/finance/vendors' },
+    // 6️⃣ الموردون
+    { 
+      title: 'الموردون', 
+      description: 'إدارة حسابات الموردين', 
+      icon: Building, 
+      color: 'text-teal-600', 
+      bgColor: 'bg-teal-100', 
+      path: '/finance/vendors' 
+    },
     
-    // 7️⃣ الأصول الثابتة (بدون تغيير)
-    { title: 'الأصول الثابتة', description: 'إدارة وإهلاك الأصول', icon: Briefcase, color: 'text-slate-600', bgColor: 'bg-slate-100', path: '/finance/assets' },
+    // 7️⃣ أقساط المركبات - جديد ✨
+    { 
+      title: 'أقساط المركبات', 
+      description: 'إدارة اتفاقيات الأقساط مع التجار', 
+      icon: Car, 
+      color: 'text-sky-600', 
+      bgColor: 'bg-sky-100', 
+      gradient: 'bg-gradient-to-br from-sky-500 to-cyan-500',
+      path: '/fleet/vehicle-installments',
+      badge: installmentSummary?.overdue_count && installmentSummary.overdue_count > 0 
+        ? `${installmentSummary.overdue_count} متأخر` 
+        : undefined,
+      badgeColor: 'bg-red-100 text-red-600',
+      stats: installmentSummary?.active_agreements 
+        ? [
+            { label: 'نشط', value: installmentSummary.active_agreements },
+            { label: 'إجمالي', value: installmentSummary.total_agreements }
+          ] 
+        : undefined
+    },
     
-    // 8️⃣ التدقيق والإعدادات
-    { title: 'التدقيق والإعدادات', description: 'سجل التدقيق وإعدادات النظام', icon: Settings, color: 'text-neutral-600', bgColor: 'bg-neutral-100', path: '/finance/audit-settings' },
+    // 8️⃣ الأصول الثابتة
+    { 
+      title: 'الأصول الثابتة', 
+      description: 'إدارة وإهلاك الأصول', 
+      icon: Briefcase, 
+      color: 'text-slate-600', 
+      bgColor: 'bg-slate-100', 
+      path: '/finance/assets' 
+    },
+    
+    // 9️⃣ التدقيق والإعدادات
+    { 
+      title: 'التدقيق والإعدادات', 
+      description: 'سجل التدقيق وإعدادات النظام', 
+      icon: Settings, 
+      color: 'text-neutral-600', 
+      bgColor: 'bg-neutral-100', 
+      path: '/finance/audit-settings' 
+    },
   ];
 
   // التنبيهات الحقيقية بناءً على البيانات
@@ -371,6 +507,17 @@ const FinanceHub: React.FC = () => {
       });
     }
     
+    // تنبيه أقساط المركبات المتأخرة
+    if (installmentSummary?.overdue_count && installmentSummary.overdue_count > 0) {
+      alertsList.push({
+        type: 'danger',
+        title: 'أقساط متأخرة',
+        description: `${installmentSummary.overdue_count} قسط متأخر بإجمالي ${formatCurrency(installmentSummary.overdue_amount || 0)}`,
+        action: 'عرض',
+        onAction: () => navigate('/fleet/vehicle-installments')
+      });
+    }
+    
     // إذا لم توجد تنبيهات
     if (alertsList.length === 0) {
       alertsList.push({
@@ -381,7 +528,7 @@ const FinanceHub: React.FC = () => {
     }
     
     return alertsList;
-  }, [overdueInvoices.length, pendingInvoicesCount, pendingInvoicesTotal, formatCurrency, navigate]);
+  }, [overdueInvoices.length, pendingInvoicesCount, pendingInvoicesTotal, formatCurrency, navigate, installmentSummary]);
 
   // Get role badge text
   const getRoleBadge = () => {
@@ -395,35 +542,92 @@ const FinanceHub: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-[#f0efed]" dir="rtl">
       <div className="p-5 max-w-[1600px] mx-auto">
-        {/* Header */}
-        <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-coral-500 to-coral-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Banknote className="w-6 h-6 text-white" />
+        {/* Hero Header - Dashboard Style */}
+        <motion.div 
+          className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg relative overflow-hidden"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {/* Decorative circles */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
+          </div>
+          
+          <div className="relative flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <Banknote className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">المركز المالي</h1>
+                <p className="text-white/80 text-sm">مرحباً، إليك نظرة سريعة على حالتك المالية</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-neutral-900">المركز المالي</h1>
-              <p className="text-sm text-neutral-500">مرحباً، إليك نظرة سريعة على حالتك المالية</p>
+
+            <div className="flex items-center gap-3">
+              {/* Notifications */}
+              <Button variant="secondary" size="icon" className="relative bg-white/20 hover:bg-white/30 border-white/20">
+                <Bell className="w-4 h-4 text-white" />
+                {alerts.length > 0 && (
+                  <span className="absolute -top-1 -left-1 w-4 h-4 bg-white text-coral-500 rounded-full text-[10px] font-bold flex items-center justify-center">
+                    {alerts.length}
+                  </span>
+                )}
+              </Button>
+
+              {/* Refresh Button */}
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="w-4 h-4 ml-2" />
+                تحديث
+              </Button>
+
+              {/* Role Badge */}
+              <Badge className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
+                {getRoleBadge()}
+              </Badge>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Notifications */}
-            <Button variant="outline" size="icon" className="relative bg-white">
-              <Bell className="w-4 h-4 text-neutral-500" />
-              <span className="absolute -top-1 -left-1 w-4 h-4 bg-coral-500 rounded-full text-[10px] text-white flex items-center justify-center">
-                3
-              </span>
-            </Button>
-
-            {/* Role Badge */}
-            <Badge variant="outline" className="text-sm bg-white">
-              {getRoleBadge()}
-            </Badge>
+          
+          {/* Quick Summary in Header */}
+          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-white/80" />
+                <span className="text-white/80 text-xs">إجمالي الإيرادات</span>
+              </div>
+              <p className="text-xl font-bold">{statsLoading ? '...' : formatCurrency(stats?.monthlyRevenue || 0)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Wallet className="w-4 h-4 text-white/80" />
+                <span className="text-white/80 text-xs">رصيد الخزينة</span>
+              </div>
+              <p className="text-xl font-bold">{treasuryLoading ? '...' : formatCurrency(treasurySummary?.totalBalance || 0)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <FileText className="w-4 h-4 text-white/80" />
+                <span className="text-white/80 text-xs">الفواتير المعلقة</span>
+              </div>
+              <p className="text-xl font-bold">{invoicesLoading ? '...' : pendingInvoicesCount}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Car className="w-4 h-4 text-white/80" />
+                <span className="text-white/80 text-xs">أقساط نشطة</span>
+              </div>
+              <p className="text-xl font-bold">{installmentsLoading ? '...' : installmentSummary?.active_agreements || 0}</p>
+            </div>
           </div>
-        </header>
+        </motion.div>
 
         {/* Universal Search */}
         <motion.div
@@ -438,103 +642,161 @@ const FinanceHub: React.FC = () => {
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-12 gap-4">
           
-          {/* Quick Actions */}
+          {/* Quick Actions - Enhanced */}
           <div className="col-span-12 lg:col-span-6">
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <motion.div 
+              className="bg-white rounded-2xl p-4 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               <h3 className="font-bold text-neutral-900 text-sm mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
                 إجراءات سريعة
               </h3>
               <div className="grid grid-cols-4 gap-2">
-                {quickActions.map((action) => (
+                {quickActions.map((action, index) => (
                   <motion.button
                     key={action.id}
-                    whileHover={{ scale: 1.05 }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.08, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigate(action.path)}
-                    className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-neutral-50 transition-colors"
+                    className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-neutral-50 hover:shadow-md transition-all"
                   >
-                    <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', action.bgColor)}>
+                    <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shadow-sm', action.bgColor)}>
                       <action.icon className={cn('w-5 h-5', action.color)} />
                     </div>
                     <span className="text-xs font-medium text-neutral-700">{action.label}</span>
                   </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Alerts */}
+          {/* Alerts - Enhanced */}
           <div className="col-span-12 lg:col-span-6">
-            <div className="bg-white rounded-2xl p-4 shadow-sm h-full">
+            <motion.div 
+              className="bg-white rounded-2xl p-4 shadow-sm h-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
               <h3 className="font-bold text-neutral-900 text-sm mb-3 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500" />
+                <div className="w-6 h-6 bg-gradient-to-br from-red-400 to-rose-500 rounded-lg flex items-center justify-center">
+                  <Bell className="w-3.5 h-3.5 text-white" />
+                </div>
                 التنبيهات
-                <Badge className="bg-red-100 text-red-600 text-[10px]">{alerts.length}</Badge>
+                <Badge className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px]">
+                  {alerts.length}
+                </Badge>
               </h3>
               <div className="space-y-2">
-                {alerts.map((alert, idx) => (
-                  <AlertCard key={idx} {...alert} />
-                ))}
+                <AnimatePresence>
+                  {alerts.map((alert, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      <AlertCard {...alert} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Stats Row - بيانات حقيقية */}
-          <div className="col-span-6 lg:col-span-3">
+          <motion.div 
+            className="col-span-6 lg:col-span-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
             <StatCard
               title="إجمالي الإيرادات"
               value={statsLoading ? '...' : formatCurrency(stats?.monthlyRevenue || 0)}
               change={stats?.revenueChange || 0}
               trend={stats?.revenueChange && stats.revenueChange >= 0 ? 'up' : 'down'}
               icon={TrendingUp}
-              iconBg="bg-green-100 text-green-600"
+              iconBg="bg-gradient-to-br from-green-400 to-emerald-500 text-white"
               subtitle="هذا الشهر"
               onClick={() => navigate('/finance/reports')}
             />
-          </div>
-          <div className="col-span-6 lg:col-span-3">
+          </motion.div>
+          <motion.div 
+            className="col-span-6 lg:col-span-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
             <StatCard
               title="صافي التدفق"
               value={treasuryLoading ? '...' : formatCurrency(treasurySummary?.netFlow || 0)}
               change={treasurySummary?.netFlow && treasurySummary.netFlow > 0 ? Math.round((treasurySummary.netFlow / (treasurySummary.monthlyDeposits || 1)) * 100) : 0}
               trend={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? 'up' : 'down'}
               icon={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? TrendingUp : TrendingDown}
-              iconBg={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}
+              iconBg={treasurySummary?.netFlow && treasurySummary.netFlow >= 0 ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white" : "bg-gradient-to-br from-red-400 to-rose-500 text-white"}
               subtitle="هذا الشهر"
               onClick={() => navigate('/finance/treasury')}
             />
-          </div>
-          <div className="col-span-6 lg:col-span-3">
+          </motion.div>
+          <motion.div 
+            className="col-span-6 lg:col-span-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <StatCard
               title="الفواتير المعلقة"
               value={invoicesLoading ? '...' : String(pendingInvoicesCount)}
               icon={FileText}
-              iconBg="bg-amber-100 text-amber-600"
+              iconBg="bg-gradient-to-br from-amber-400 to-orange-500 text-white"
               subtitle={formatCurrency(pendingInvoicesTotal)}
               onClick={() => navigate('/finance/billing')}
             />
-          </div>
-          <div className="col-span-6 lg:col-span-3">
+          </motion.div>
+          <motion.div 
+            className="col-span-6 lg:col-span-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
             <StatCard
               title="رصيد الخزينة"
               value={treasuryLoading ? '...' : formatCurrency(treasurySummary?.totalBalance || 0)}
               icon={Wallet}
-              iconBg="bg-coral-100 text-coral-600"
+              iconBg="bg-gradient-to-br from-coral-400 to-orange-500 text-white"
               subtitle="محدث الآن"
               onClick={() => navigate('/finance/treasury')}
             />
-          </div>
+          </motion.div>
 
           {/* ملخص الخزينة - بيانات حقيقية */}
           <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
+            <motion.div 
+              className="bg-white rounded-2xl p-5 shadow-sm h-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-neutral-900">ملخص الخزينة</h3>
-                  <p className="text-xs text-neutral-400">الإيداعات والسحوبات لهذا الشهر</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                    <Landmark className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-neutral-900">ملخص الخزينة</h3>
+                    <p className="text-xs text-neutral-400">الإيداعات والسحوبات لهذا الشهر</p>
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/finance/treasury')}>
+                <Button variant="outline" size="sm" onClick={() => navigate('/finance/treasury')} className="hover:bg-emerald-50">
                   عرض التفاصيل
                   <ChevronRight className="w-4 h-4 mr-1" />
                 </Button>
@@ -593,21 +855,37 @@ const FinanceHub: React.FC = () => {
               {/* إحصائيات إضافية */}
               <div className="mt-4 pt-4 border-t border-neutral-100">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500">إجمالي العملاء</span>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-neutral-400" />
+                    <span className="text-neutral-500">إجمالي العملاء</span>
+                  </div>
                   <span className="font-bold text-neutral-900">{stats?.totalCustomers || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-neutral-500">العقود النشطة</span>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-neutral-400" />
+                    <span className="text-neutral-500">العقود النشطة</span>
+                  </div>
                   <span className="font-bold text-neutral-900">{stats?.activeContracts || 0}</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* ملخص الفواتير - بيانات حقيقية */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
-              <h3 className="font-bold text-neutral-900 mb-2">حالة الفواتير</h3>
+            <motion.div 
+              className="bg-white rounded-2xl p-5 shadow-sm h-full"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                </div>
+                <h3 className="font-bold text-neutral-900">حالة الفواتير</h3>
+              </div>
               
               {invoicesLoading ? (
                 <div className="h-48 flex items-center justify-center">
@@ -615,7 +893,7 @@ const FinanceHub: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
                       <div className="flex items-center gap-2">
                         <FileText className="w-5 h-5 text-amber-600" />
@@ -651,41 +929,152 @@ const FinanceHub: React.FC = () => {
                   </Button>
                 </>
               )}
-            </div>
+            </motion.div>
+          </div>
+          
+          {/* ملخص أقساط المركبات - جديد ✨ */}
+          <div className="col-span-12 lg:col-span-4">
+            <motion.div 
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-5 shadow-lg h-full text-white relative overflow-hidden"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              {/* Decorative */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+              
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Car className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">أقساط المركبات</h3>
+                    <p className="text-white/70 text-xs">إدارة الاتفاقيات</p>
+                  </div>
+                </div>
+                
+                {installmentsLoading ? (
+                  <div className="h-32 flex items-center justify-center">
+                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-white/10 rounded-xl p-3">
+                        <p className="text-white/70 text-xs mb-1">الاتفاقيات النشطة</p>
+                        <p className="text-2xl font-bold">{installmentSummary?.active_agreements || 0}</p>
+                      </div>
+                      <div className="bg-white/10 rounded-xl p-3">
+                        <p className="text-white/70 text-xs mb-1">المبلغ المستحق</p>
+                        <p className="text-lg font-bold">{formatCurrency(installmentSummary?.total_outstanding || 0)}</p>
+                      </div>
+                    </div>
+                    
+                    {installmentSummary?.overdue_count && installmentSummary.overdue_count > 0 && (
+                      <div className="bg-red-500/30 backdrop-blur-sm rounded-xl p-3 mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        <div>
+                          <p className="text-sm font-semibold">{installmentSummary.overdue_count} قسط متأخر</p>
+                          <p className="text-xs text-white/80">{formatCurrency(installmentSummary.overdue_amount || 0)}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Button 
+                      variant="secondary"
+                      className="w-full bg-white/20 hover:bg-white/30 text-white border-white/20"
+                      onClick={() => navigate('/fleet/vehicle-installments')}
+                    >
+                      إدارة الأقساط
+                      <ChevronRight className="w-4 h-4 mr-1" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </motion.div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity - Enhanced */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <motion.div 
+              className="bg-white rounded-2xl p-4 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-neutral-900 text-sm">النشاطات الأخيرة</h3>
-                <Button variant="ghost" size="sm" className="text-xs text-coral-600 h-7">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                    <History className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-bold text-neutral-900 text-sm">النشاطات الأخيرة</h3>
+                </div>
+                <Button variant="ghost" size="sm" className="text-xs text-coral-600 h-7 hover:text-coral-700">
                   عرض الكل
                 </Button>
               </div>
               <ScrollArea className="h-64">
                 <div className="space-y-2">
-                  {activities.map((item) => (
-                    <ActivityItemCard key={item.id} item={item} formatCurrency={formatCurrency} />
-                  ))}
+                  <AnimatePresence>
+                    {activities.length > 0 ? activities.map((item, index) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <ActivityItemCard item={item} formatCurrency={formatCurrency} />
+                      </motion.div>
+                    )) : (
+                      <div className="text-center py-8 text-neutral-400">
+                        <Clock className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">لا توجد نشاطات حديثة</p>
+                      </div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </ScrollArea>
-            </div>
+            </motion.div>
           </div>
 
-          {/* All Modules Grid */}
+          {/* All Modules Grid - Enhanced */}
           <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-neutral-900">جميع الأقسام المالية</h3>
-                <Badge className="bg-neutral-100 text-neutral-600 text-xs">{modules.length} قسم</Badge>
+            <motion.div 
+              className="bg-white rounded-2xl p-5 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-coral-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <Package className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-neutral-900 text-lg">جميع الأقسام المالية</h3>
+                    <p className="text-xs text-neutral-500">اختر القسم للوصول السريع</p>
+                  </div>
+                </div>
+                <Badge className="bg-gradient-to-r from-coral-500 to-orange-500 text-white text-xs px-3 py-1">
+                  {modules.length} قسم
+                </Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {modules.map((module) => (
-                  <ModuleCard key={module.path} {...module} />
-                ))}
+                <AnimatePresence>
+                  {modules.map((module, index) => (
+                    <motion.div
+                      key={module.path}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <ModuleCard {...module} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Activity Timeline - Full Width */}
