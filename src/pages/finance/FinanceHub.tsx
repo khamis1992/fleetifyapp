@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useFinanceRole } from '@/contexts/FinanceContext';
-import { UniversalSearch } from '@/components/finance/hub/UniversalSearch';
+// UniversalSearch removed
 import { ActivityTimeline } from '@/components/finance/hub/ActivityTimeline';
 import { useRecentActivities } from '@/hooks/useRecentActivities';
 import { useTreasurySummary } from '@/hooks/useTreasury';
@@ -36,35 +36,23 @@ import {
   TrendingDown,
   FileText,
   CreditCard,
-  Calculator,
   BookOpen,
   Landmark,
-  Target,
   Building,
   Settings,
   AlertCircle,
-  CheckCircle,
-  ArrowUpRight,
-  Bell,
   Wallet,
   PiggyBank,
   BarChart3,
   Receipt,
-  LineChart,
   ArrowDownLeft,
   ArrowUpLeft,
-  Calendar,
-  Eye,
   ChevronRight,
-  Sparkles,
-  Percent,
   Activity,
-  Shield,
   History,
   Briefcase,
   Car,
   RefreshCw,
-  DollarSign,
   Clock,
   Users,
   Package,
@@ -74,16 +62,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Quick Action Item
-interface QuickAction {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  color: string;
-  bgColor: string;
-  path: string;
-  badge?: string;
-}
 
 // Stat Card Component (Bento Style)
 interface StatCardProps {
@@ -234,55 +212,6 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   );
 };
 
-// Alert Card Component
-interface AlertCardProps {
-  type: 'warning' | 'info' | 'success' | 'danger';
-  title: string;
-  description: string;
-  action?: string;
-  onAction?: () => void;
-}
-
-const AlertCard: React.FC<AlertCardProps> = ({
-  type,
-  title,
-  description,
-  action,
-  onAction,
-}) => {
-  const colors = {
-    warning: { bg: 'bg-amber-50', border: 'border-amber-500', icon: 'text-amber-600' },
-    info: { bg: 'bg-blue-50', border: 'border-blue-500', icon: 'text-blue-600' },
-    success: { bg: 'bg-green-50', border: 'border-green-500', icon: 'text-green-600' },
-    danger: { bg: 'bg-red-50', border: 'border-red-500', icon: 'text-red-600' },
-  };
-  const icons = {
-    warning: AlertCircle,
-    info: AlertCircle,
-    success: CheckCircle,
-    danger: AlertCircle,
-  };
-  const IconComponent = icons[type];
-  const c = colors[type];
-
-  return (
-    <div className={cn('p-3 rounded-xl border-r-4', c.bg, c.border)}>
-      <div className="flex items-start gap-3">
-        <IconComponent className={cn('w-5 h-5 flex-shrink-0 mt-0.5', c.icon)} />
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-neutral-900">{title}</p>
-          <p className="text-xs text-neutral-600 mt-0.5">{description}</p>
-        </div>
-        {action && onAction && (
-          <Button size="sm" variant="ghost" onClick={onAction} className="flex-shrink-0 h-7 text-xs">
-            {action}
-            <ArrowUpRight className="w-3 h-3 mr-1" />
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Activity Item Component
 interface ActivityItem {
@@ -364,14 +293,6 @@ const FinanceHub: React.FC = () => {
       status: 'completed' as const
     }));
   }, [recentActivities]);
-
-  // Quick Actions
-  const quickActions: QuickAction[] = [
-    { id: 'receive', label: 'استلام دفعة', icon: ArrowDownLeft, color: 'text-green-600', bgColor: 'bg-green-100', path: '/finance/operations/receive-payment' },
-    { id: 'pay', label: 'صرف دفعة', icon: ArrowUpLeft, color: 'text-red-600', bgColor: 'bg-red-100', path: '/finance/billing' },
-    { id: 'invoice', label: 'إنشاء فاتورة', icon: FileText, color: 'text-blue-600', bgColor: 'bg-blue-100', path: '/finance/billing' },
-    { id: 'entry', label: 'قيد جديد', icon: Calculator, color: 'text-purple-600', bgColor: 'bg-purple-100', path: '/finance/new-entry' },
-  ];
 
   // All Finance Modules - Consolidated 9 pages (including Vehicle Installments)
   const modules = [
@@ -481,55 +402,6 @@ const FinanceHub: React.FC = () => {
     },
   ];
 
-  // التنبيهات الحقيقية بناءً على البيانات
-  const alerts = React.useMemo(() => {
-    const alertsList: Array<{ type: 'warning' | 'info' | 'success' | 'danger'; title: string; description: string; action?: string; onAction?: () => void }> = [];
-    
-    // تنبيه الفواتير المتأخرة
-    if (overdueInvoices.length > 0) {
-      alertsList.push({
-        type: 'warning',
-        title: 'فواتير متأخرة',
-        description: `${overdueInvoices.length} فاتورة تجاوزت تاريخ الاستحقاق`,
-        action: 'عرض',
-        onAction: () => navigate('/finance/billing')
-      });
-    }
-    
-    // تنبيه الفواتير المعلقة
-    if (pendingInvoicesCount > 5) {
-      alertsList.push({
-        type: 'info',
-        title: 'فواتير معلقة',
-        description: `لديك ${pendingInvoicesCount} فاتورة معلقة بإجمالي ${formatCurrency(pendingInvoicesTotal)}`,
-        action: 'عرض',
-        onAction: () => navigate('/finance/billing')
-      });
-    }
-    
-    // تنبيه أقساط المركبات المتأخرة
-    if (installmentSummary?.overdue_count && installmentSummary.overdue_count > 0) {
-      alertsList.push({
-        type: 'danger',
-        title: 'أقساط متأخرة',
-        description: `${installmentSummary.overdue_count} قسط متأخر بإجمالي ${formatCurrency(installmentSummary.overdue_amount || 0)}`,
-        action: 'عرض',
-        onAction: () => navigate('/fleet/vehicle-installments')
-      });
-    }
-    
-    // إذا لم توجد تنبيهات
-    if (alertsList.length === 0) {
-      alertsList.push({
-        type: 'success',
-        title: 'لا توجد تنبيهات',
-        description: 'جميع العمليات المالية تسير بشكل طبيعي'
-      });
-    }
-    
-    return alertsList;
-  }, [overdueInvoices.length, pendingInvoicesCount, pendingInvoicesTotal, formatCurrency, navigate, installmentSummary]);
-
   // Get role badge text
   const getRoleBadge = () => {
     switch (userRole) {
@@ -568,16 +440,6 @@ const FinanceHub: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Notifications */}
-              <Button variant="secondary" size="icon" className="relative bg-white/20 hover:bg-white/30 border-white/20">
-                <Bell className="w-4 h-4 text-white" />
-                {alerts.length > 0 && (
-                  <span className="absolute -top-1 -left-1 w-4 h-4 bg-white text-coral-500 rounded-full text-[10px] font-bold flex items-center justify-center">
-                    {alerts.length}
-                  </span>
-                )}
-              </Button>
-
               {/* Refresh Button */}
               <Button 
                 variant="secondary" 
@@ -629,89 +491,8 @@ const FinanceHub: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Universal Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-6"
-        >
-          <UniversalSearch />
-        </motion.div>
-
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-12 gap-4">
-          
-          {/* Quick Actions - Enhanced */}
-          <div className="col-span-12 lg:col-span-6">
-            <motion.div 
-              className="bg-white rounded-2xl p-4 shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h3 className="font-bold text-neutral-900 text-sm mb-3 flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
-                </div>
-                إجراءات سريعة
-              </h3>
-              <div className="grid grid-cols-4 gap-2">
-                {quickActions.map((action, index) => (
-                  <motion.button
-                    key={action.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.08, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate(action.path)}
-                    className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-neutral-50 hover:shadow-md transition-all"
-                  >
-                    <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shadow-sm', action.bgColor)}>
-                      <action.icon className={cn('w-5 h-5', action.color)} />
-                    </div>
-                    <span className="text-xs font-medium text-neutral-700">{action.label}</span>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Alerts - Enhanced */}
-          <div className="col-span-12 lg:col-span-6">
-            <motion.div 
-              className="bg-white rounded-2xl p-4 shadow-sm h-full"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-            >
-              <h3 className="font-bold text-neutral-900 text-sm mb-3 flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-red-400 to-rose-500 rounded-lg flex items-center justify-center">
-                  <Bell className="w-3.5 h-3.5 text-white" />
-                </div>
-                التنبيهات
-                <Badge className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px]">
-                  {alerts.length}
-                </Badge>
-              </h3>
-              <div className="space-y-2">
-                <AnimatePresence>
-                  {alerts.map((alert, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                    >
-                      <AlertCard {...alert} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          </div>
-
           {/* Stats Row - بيانات حقيقية */}
           <motion.div 
             className="col-span-6 lg:col-span-3"
