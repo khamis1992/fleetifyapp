@@ -182,11 +182,11 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * مكون مبسط لحماية صفحات المدراء (Super Admin + Company Admin)
+ * مكون مبسط لحماية صفحات المدراء (Super Admin + Company Admin + Manager)
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard roles={[UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]}>
+    <RoleGuard roles={[UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.MANAGER]}>
       {children}
     </RoleGuard>
   );

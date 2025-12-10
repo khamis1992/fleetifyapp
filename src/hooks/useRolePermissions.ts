@@ -53,7 +53,7 @@ export function useRolePermissions() {
     },
   });
   
-  // جلب دور المستخدم من قاعدة البيانات
+  // جلب أدوار المستخدم من قاعدة البيانات (يمكن أن يكون لديه عدة أدوار)
   const { data: userRole, isLoading: loadingRole } = useQuery({
     queryKey: ['user-role', user?.id],
     queryFn: async () => {
@@ -62,15 +62,36 @@ export function useRolePermissions() {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error fetching user role:', error);
         return null;
       }
       
-      return data?.role as UserRole || UserRole.EMPLOYEE;
+      if (!data || data.length === 0) {
+        return UserRole.EMPLOYEE;
+      }
+      
+      // ترتيب الأدوار حسب الأولوية (الأعلى صلاحية أولاً)
+      const rolePriority: Record<string, number> = {
+        'super_admin': 1,
+        'company_admin': 2,
+        'manager': 3,
+        'fleet_manager': 4,
+        'accountant': 5,
+        'sales_agent': 6,
+        'employee': 7,
+      };
+      
+      const roles = data.map(r => r.role);
+      const highestRole = roles.sort((a, b) => 
+        (rolePriority[a] || 99) - (rolePriority[b] || 99)
+      )[0];
+      
+      console.log('User roles:', roles, 'Highest role:', highestRole);
+      
+      return highestRole as UserRole || UserRole.EMPLOYEE;
     },
     enabled: !!user?.id,
   });
