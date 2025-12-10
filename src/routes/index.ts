@@ -1017,6 +1017,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/hr/user-management',
+    component: UserManagement,
+    lazy: true,
+    exact: true,
+    title: 'User & Permissions Management',
+    description: 'User and permissions management',
+    group: 'hr',
+    priority: 81,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/hr/attendance',
     component: Attendance,
     lazy: true,

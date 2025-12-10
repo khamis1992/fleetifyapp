@@ -883,11 +883,11 @@ const VehicleDetailsPageNew = () => {
                   <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl">
                     <div className="flex items-center gap-2">
                       <Settings className="w-4 h-4 text-neutral-500" />
-                      <span className="text-sm text-neutral-600">رقم الهيكل</span>
+                      <span className="text-sm text-neutral-600">رقم الهيكل (VIN)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-neutral-900">{vehicle.vin.substring(0, 8)}...</span>
-                      <button onClick={handleCopyVin} className="p-1 hover:bg-neutral-200 rounded transition-colors">
+                      <span className="font-mono text-xs text-neutral-900 select-all">{vehicle.vin}</span>
+                      <button onClick={handleCopyVin} className="p-1 hover:bg-neutral-200 rounded transition-colors" title="نسخ رقم الهيكل">
                         <Copy className="w-3.5 h-3.5 text-neutral-400" />
                       </button>
                     </div>

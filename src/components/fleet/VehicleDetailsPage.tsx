@@ -375,6 +375,11 @@ const VehicleDetailsPage = () => {
                     <p className="text-lg text-gray-600">
                       رقم اللوحة: <span className="font-mono font-semibold">{vehicle.plate_number}</span>
                     </p>
+                    {vehicle.vin && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        رقم الهيكل (VIN): <span className="font-mono font-medium text-gray-700">{vehicle.vin}</span>
+                      </p>
+                    )}
                   </div>
                   <Badge className={getStatusColor(vehicle.status)}>
                     {getStatusText(vehicle.status)}
