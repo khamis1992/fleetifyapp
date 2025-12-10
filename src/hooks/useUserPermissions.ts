@@ -137,6 +137,27 @@ export const useUpdateUserRoles = () => {
     }) => {
       console.log('Updating roles for user:', userId, 'New roles:', roles);
       
+      // Get current user info for granted_by and company_id
+      const currentUser = await supabase.auth.getUser();
+      if (!currentUser.data.user) throw new Error('Not authenticated');
+      
+      // Get company_id for the target user
+      const { data: targetProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        throw new Error('فشل في جلب بيانات المستخدم');
+      }
+      
+      const companyId = targetProfile?.company_id;
+      if (!companyId) {
+        throw new Error('المستخدم غير مرتبط بشركة');
+      }
+      
       // Delete existing roles for this user
       const { error: deleteError } = await supabase
         .from('user_roles')
@@ -152,7 +173,9 @@ export const useUpdateUserRoles = () => {
       if (roles.length > 0) {
         const rolesToInsert = roles.map(role => ({
           user_id: userId,
+          company_id: companyId,
           role,
+          granted_by: currentUser.data.user.id,
         }));
 
         console.log('Inserting roles:', rolesToInsert);

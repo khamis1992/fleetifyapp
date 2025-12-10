@@ -9,9 +9,14 @@ import {
   enhancedPaymentSchema,
   paymentJournalPreviewSchema 
 } from '@/schemas/payment.schema';
+import { 
+  createBankTransactionFromPayment, 
+  reverseBankTransactionForPayment 
+} from '@/utils/bankTransactionHelper';
 
 export interface PaymentOperationsOptions {
   autoCreateJournalEntry?: boolean;
+  autoUpdateBankBalance?: boolean;
   requireApproval?: boolean;
   enableNotifications?: boolean;
   validateBalance?: boolean;
@@ -32,6 +37,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   const {
     autoCreateJournalEntry = true,
+    autoUpdateBankBalance = true,
     requireApproval = false,
     enableNotifications = true,
     validateBalance = true
@@ -150,6 +156,30 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         if (autoCreateJournalEntry && insertedPayment.payment_status === 'completed') {
           await createJournalEntry(insertedPayment);
         }
+        
+        // إنشاء حركة بنكية تلقائياً
+        if (autoUpdateBankBalance && insertedPayment.payment_status === 'completed' && insertedPayment.bank_id) {
+          const bankResult = await createBankTransactionFromPayment({
+            id: insertedPayment.id,
+            company_id: insertedPayment.company_id,
+            amount: insertedPayment.amount,
+            payment_date: insertedPayment.payment_date,
+            payment_method: insertedPayment.payment_method,
+            payment_number: insertedPayment.payment_number,
+            reference_number: insertedPayment.reference_number,
+            check_number: insertedPayment.check_number,
+            transaction_type: insertedPayment.transaction_type,
+            bank_id: insertedPayment.bank_id,
+            notes: insertedPayment.notes
+          }, user?.id);
+          
+          if (!bankResult.success) {
+            console.warn('⚠️ Bank transaction creation failed:', bankResult.error);
+          } else {
+            console.log('✅ Bank transaction created for payment');
+          }
+        }
+        
         if (enableNotifications) {
           await sendPaymentNotifications(insertedPayment);
         }
@@ -164,6 +194,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
       
       const paymentType = payment.payment_type === 'receipt' ? 'إيصال القبض' : 'إيصال الصرف';
       toast.success(`تم إنشاء ${paymentType} بنجاح`);
@@ -340,6 +373,16 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       // Reverse journal entry if exists
       await reverseJournalEntry(paymentId);
+      
+      // عكس حركة البنك إذا وجدت
+      if (autoUpdateBankBalance) {
+        const reversalResult = await reverseBankTransactionForPayment(paymentId, user?.id);
+        if (!reversalResult.success) {
+          console.warn('⚠️ Bank transaction reversal failed:', reversalResult.error);
+        } else {
+          console.log('✅ Bank transaction reversed for cancelled payment');
+        }
+      }
 
       console.log('✅ [usePaymentOperations] Payment cancelled successfully:', cancelledPayment);
       return cancelledPayment;
@@ -347,6 +390,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     onSuccess: (payment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['payment', payment.id] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
       
       toast.success('تم إلغاء الدفعة بنجاح');
     },
