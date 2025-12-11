@@ -35,7 +35,18 @@ export function normalizeDigits(input: string): string {
 
 /**
  * تنسيق العملة
+ * @param amount المبلغ
+ * @param showDecimals إظهار الكسور العشرية (افتراضي: فقط إذا كان هناك كسور)
  */
-export function formatCurrency(amount: number): string {
-  return amount.toFixed(2) + ' ر.ق'
+export function formatCurrency(amount: number, showDecimals: boolean = false): string {
+  // التحقق من وجود كسور عشرية
+  const hasDecimals = amount % 1 !== 0;
+  
+  // تنسيق الرقم مع الفواصل العشرية
+  const formatted = amount.toLocaleString('en-US', {
+    minimumFractionDigits: (showDecimals || hasDecimals) ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+  
+  return formatted + ' ر.ق';
 }
