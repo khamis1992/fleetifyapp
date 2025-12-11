@@ -59,7 +59,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { useLegalCases, useLegalCaseStats, LegalCase } from '@/hooks/useLegalCases';
+import { useLegalCases, useLegalCaseStats, useUpdateLegalCase, LegalCase } from '@/hooks/useLegalCases';
+import { useLegalDocuments, useCreateLegalDocument, useDeleteLegalDocument, useDownloadLegalDocument } from '@/hooks/useLegalDocuments';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,6 +98,11 @@ import {
   Eye,
   Edit,
   Trash2,
+  Upload,
+  File,
+  Image,
+  X,
+  FileIcon,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
 import { format, addDays, differenceInDays } from 'date-fns';
@@ -253,6 +262,30 @@ export const LegalCasesTracking: React.FC = () => {
   const [showCaseDetails, setShowCaseDetails] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<LegalCase | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [caseToEdit, setCaseToEdit] = useState<LegalCase | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    case_title: '',
+    case_type: '',
+    case_status: '',
+    priority: '',
+    description: '',
+    case_value: 0,
+    court_name: '',
+  });
+
+  // Document upload states
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploadCaseId, setUploadCaseId] = useState<string>('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFormData, setUploadFormData] = useState({
+    document_title: '',
+    document_type: 'court_document',
+    description: '',
+    is_confidential: false,
+    is_original: true,
+    access_level: 'company',
+  });
 
   const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
   const { user } = useAuth();
@@ -278,6 +311,19 @@ export const LegalCasesTracking: React.FC = () => {
     },
   });
 
+  // Update case mutation
+  const updateCaseMutation = useUpdateLegalCase();
+
+  // Document mutations
+  const createDocumentMutation = useCreateLegalDocument();
+  const deleteDocumentMutation = useDeleteLegalDocument();
+  const downloadDocumentMutation = useDownloadLegalDocument();
+
+  // Fetch documents for selected case
+  const { data: caseDocuments, isLoading: isLoadingDocuments } = useLegalDocuments(
+    selectedCase ? { case_id: selectedCase.id } : undefined
+  );
+
   // Handlers for case actions
   const handleViewDetails = useCallback((legalCase: LegalCase) => {
     setSelectedCase(legalCase);
@@ -285,11 +331,120 @@ export const LegalCasesTracking: React.FC = () => {
   }, []);
 
   const handleEditCase = useCallback((legalCase: LegalCase) => {
-    // TODO: Implement full edit functionality
-    toast.info(`تعديل القضية ${legalCase.case_number}`, {
-      description: 'سيتم تفعيل هذه الميزة قريباً'
+    setCaseToEdit(legalCase);
+    setEditFormData({
+      case_title: legalCase.case_title || '',
+      case_type: legalCase.case_type || '',
+      case_status: legalCase.case_status || '',
+      priority: legalCase.priority || '',
+      description: legalCase.description || '',
+      case_value: legalCase.case_value || 0,
+      court_name: legalCase.court_name || '',
     });
+    setShowEditDialog(true);
   }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!caseToEdit) return;
+    
+    try {
+      await updateCaseMutation.mutateAsync({
+        id: caseToEdit.id,
+        data: {
+          case_title: editFormData.case_title,
+          case_type: editFormData.case_type,
+          case_status: editFormData.case_status,
+          priority: editFormData.priority,
+          description: editFormData.description,
+          case_value: editFormData.case_value,
+          court_name: editFormData.court_name,
+        },
+      });
+      toast.success('تم تحديث القضية بنجاح');
+      setShowEditDialog(false);
+      setCaseToEdit(null);
+    } catch (error: any) {
+      toast.error(`فشل في تحديث القضية: ${error.message}`);
+    }
+  }, [caseToEdit, editFormData, updateCaseMutation]);
+
+  // Document handlers
+  const handleOpenUploadDialog = useCallback((caseId: string) => {
+    setUploadCaseId(caseId);
+    setUploadFile(null);
+    setUploadFormData({
+      document_title: '',
+      document_type: 'court_document',
+      description: '',
+      is_confidential: false,
+      is_original: true,
+      access_level: 'company',
+    });
+    setShowUploadDialog(true);
+  }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      // Auto-fill title from filename if empty
+      if (!uploadFormData.document_title) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setUploadFormData(prev => ({ ...prev, document_title: nameWithoutExt }));
+      }
+    }
+  }, [uploadFormData.document_title]);
+
+  const handleUploadDocument = useCallback(async () => {
+    if (!uploadCaseId || !uploadFile) {
+      toast.error('يرجى اختيار ملف');
+      return;
+    }
+    if (!uploadFormData.document_title) {
+      toast.error('يرجى إدخال عنوان المستند');
+      return;
+    }
+
+    try {
+      await createDocumentMutation.mutateAsync({
+        case_id: uploadCaseId,
+        document_title: uploadFormData.document_title,
+        document_type: uploadFormData.document_type,
+        description: uploadFormData.description,
+        is_confidential: uploadFormData.is_confidential,
+        is_original: uploadFormData.is_original,
+        access_level: uploadFormData.access_level,
+        file: uploadFile,
+      });
+      setShowUploadDialog(false);
+    } catch (error: any) {
+      console.error('Upload error:', error);
+    }
+  }, [uploadCaseId, uploadFile, uploadFormData, createDocumentMutation]);
+
+  const handleDownloadDocument = useCallback((documentId: string) => {
+    downloadDocumentMutation.mutate(documentId);
+  }, [downloadDocumentMutation]);
+
+  const handleDeleteDocument = useCallback((documentId: string) => {
+    if (confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+      deleteDocumentMutation.mutate(documentId);
+    }
+  }, [deleteDocumentMutation]);
+
+  const getFileIcon = (fileType?: string) => {
+    if (!fileType) return <FileIcon className="w-5 h-5 text-gray-400" />;
+    if (fileType.startsWith('image/')) return <Image className="w-5 h-5 text-blue-500" />;
+    if (fileType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />;
+    return <File className="w-5 h-5 text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const handleDeleteCase = useCallback((legalCase: LegalCase) => {
     setCaseToDelete(legalCase);
@@ -1293,6 +1448,77 @@ export const LegalCasesTracking: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Documents Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Folder className="w-4 h-4" />
+                    المستندات والملفات
+                  </h4>
+                  <Button
+                    size="sm"
+                    onClick={() => handleOpenUploadDialog(selectedCase.id)}
+                    className="bg-[#E55B5B] hover:bg-[#d64545]"
+                  >
+                    <Upload className="w-4 h-4 ml-2" />
+                    رفع ملف
+                  </Button>
+                </div>
+
+                {isLoadingDocuments ? (
+                  <div className="flex justify-center py-4">
+                    <LoadingSpinner />
+                  </div>
+                ) : caseDocuments && caseDocuments.length > 0 ? (
+                  <div className="space-y-2">
+                    {caseDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {getFileIcon(doc.file_type)}
+                          <div>
+                            <p className="font-medium text-sm">{doc.document_title}</p>
+                            <p className="text-xs text-gray-500">
+                              {doc.document_type} • {formatFileSize(doc.file_size)}
+                              {doc.is_confidential && (
+                                <Badge variant="destructive" className="mr-2 text-xs">سري</Badge>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownloadDocument(doc.id)}
+                            disabled={downloadDocumentMutation.isPending}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            disabled={deleteDocumentMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <Folder className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                    <p>لا توجد مستندات مرفقة</p>
+                    <p className="text-sm">اضغط على "رفع ملف" لإضافة مستندات</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1314,6 +1540,272 @@ export const LegalCasesTracking: React.FC = () => {
             >
               <Edit className="w-4 h-4 ml-2" />
               تعديل القضية
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-[#E55B5B]" />
+              رفع مستند جديد
+            </DialogTitle>
+            <DialogDescription>
+              إضافة ملف أو مستند للقضية
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* File Upload */}
+            <div className="space-y-2">
+              <Label>الملف *</Label>
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-[#E55B5B] transition-colors">
+                {uploadFile ? (
+                  <div className="flex items-center justify-center gap-3">
+                    {getFileIcon(uploadFile.type)}
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{uploadFile.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(uploadFile.size)}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setUploadFile(null)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer block">
+                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">اضغط لاختيار ملف أو اسحب الملف هنا</p>
+                    <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, صور (حد أقصى 10 MB)</p>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Document Title */}
+            <div className="space-y-2">
+              <Label htmlFor="doc-title">عنوان المستند *</Label>
+              <Input
+                id="doc-title"
+                value={uploadFormData.document_title}
+                onChange={(e) => setUploadFormData(prev => ({ ...prev, document_title: e.target.value }))}
+                placeholder="عنوان المستند"
+              />
+            </div>
+
+            {/* Document Type */}
+            <div className="space-y-2">
+              <Label>نوع المستند</Label>
+              <Select
+                value={uploadFormData.document_type}
+                onValueChange={(value) => setUploadFormData(prev => ({ ...prev, document_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="court_document">مستند محكمة</SelectItem>
+                  <SelectItem value="contract">عقد</SelectItem>
+                  <SelectItem value="invoice">فاتورة</SelectItem>
+                  <SelectItem value="evidence">دليل</SelectItem>
+                  <SelectItem value="correspondence">مراسلة</SelectItem>
+                  <SelectItem value="legal_notice">إشعار قانوني</SelectItem>
+                  <SelectItem value="id_document">وثيقة هوية</SelectItem>
+                  <SelectItem value="other">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="doc-description">الوصف (اختياري)</Label>
+              <Textarea
+                id="doc-description"
+                value={uploadFormData.description}
+                onChange={(e) => setUploadFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="وصف المستند..."
+                rows={2}
+              />
+            </div>
+
+            {/* Options */}
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={uploadFormData.is_confidential}
+                  onChange={(e) => setUploadFormData(prev => ({ ...prev, is_confidential: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">مستند سري</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={uploadFormData.is_original}
+                  onChange={(e) => setUploadFormData(prev => ({ ...prev, is_original: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">نسخة أصلية</span>
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleUploadDocument}
+              disabled={createDocumentMutation.isPending || !uploadFile}
+              className="bg-[#E55B5B] hover:bg-[#d64545]"
+            >
+              {createDocumentMutation.isPending ? 'جاري الرفع...' : 'رفع المستند'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Case Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-[#E55B5B]" />
+              تعديل القضية: {caseToEdit?.case_number}
+            </DialogTitle>
+            <DialogDescription>
+              تعديل بيانات القضية
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">عنوان القضية</Label>
+                <Input
+                  id="edit-title"
+                  value={editFormData.case_title}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, case_title: e.target.value }))}
+                  placeholder="عنوان القضية"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">نوع القضية</Label>
+                <Select
+                  value={editFormData.case_type}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, case_type: value }))}
+                >
+                  <SelectTrigger id="edit-type">
+                    <SelectValue placeholder="اختر نوع القضية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="payment_collection">تحصيل مستحقات</SelectItem>
+                    <SelectItem value="contract_breach">خرق عقد</SelectItem>
+                    <SelectItem value="vehicle_damage">أضرار مركبة</SelectItem>
+                    <SelectItem value="accident_claim">مطالبة حادث</SelectItem>
+                    <SelectItem value="insurance_claim">مطالبة تأمين</SelectItem>
+                    <SelectItem value="other">أخرى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">الحالة</Label>
+                <Select
+                  value={editFormData.case_status}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, case_status: value }))}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue placeholder="اختر الحالة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">نشطة</SelectItem>
+                    <SelectItem value="pending">معلقة</SelectItem>
+                    <SelectItem value="on_hold">قيد الانتظار</SelectItem>
+                    <SelectItem value="closed">مغلقة</SelectItem>
+                    <SelectItem value="won">تم الكسب</SelectItem>
+                    <SelectItem value="lost">تم الخسارة</SelectItem>
+                    <SelectItem value="settled">تم التسوية</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-priority">الأولوية</Label>
+                <Select
+                  value={editFormData.priority}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, priority: value }))}
+                >
+                  <SelectTrigger id="edit-priority">
+                    <SelectValue placeholder="اختر الأولوية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">منخفضة</SelectItem>
+                    <SelectItem value="medium">متوسطة</SelectItem>
+                    <SelectItem value="high">عالية</SelectItem>
+                    <SelectItem value="urgent">عاجلة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-value">قيمة المطالبة (ر.ق)</Label>
+                <Input
+                  id="edit-value"
+                  type="number"
+                  value={editFormData.case_value}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, case_value: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-court">اسم المحكمة</Label>
+                <Input
+                  id="edit-court"
+                  value={editFormData.court_name}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, court_name: e.target.value }))}
+                  placeholder="اسم المحكمة"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">الوصف</Label>
+              <Textarea
+                id="edit-description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="وصف القضية..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSaveEdit}
+              disabled={updateCaseMutation.isPending}
+              className="bg-[#E55B5B] hover:bg-[#d14d4d]"
+            >
+              {updateCaseMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
             </Button>
           </DialogFooter>
         </DialogContent>
