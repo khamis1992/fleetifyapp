@@ -363,6 +363,7 @@ export default function Fleet() {
                   <option value="maintenance">صيانة</option>
                   <option value="out_of_service">خارج الخدمة</option>
                   <option value="reserved">محجوزة</option>
+                  <option value="reserved_employee">محجوزة لموظف</option>
                   <option value="accident">حادث</option>
                   <option value="stolen">مسروقة</option>
                   <option value="police_station">في المخفر</option>
@@ -414,6 +415,7 @@ export default function Fleet() {
                        filters.status === 'maintenance' ? 'صيانة' : 
                        filters.status === 'out_of_service' ? 'خارج الخدمة' :
                        filters.status === 'reserved' ? 'محجوزة' :
+                       filters.status === 'reserved_employee' ? 'محجوزة لموظف' :
                        filters.status === 'accident' ? 'حادث' :
                        filters.status === 'stolen' ? 'مسروقة' :
                        filters.status === 'police_station' ? 'في المخفر' : filters.status}
@@ -503,6 +505,7 @@ export default function Fleet() {
                          vehicle.status === 'maintenance' ? 'صيانة' : 
                          vehicle.status === 'out_of_service' ? 'خارج الخدمة' :
                          vehicle.status === 'reserved' ? 'محجوزة' :
+                         vehicle.status === 'reserved_employee' ? 'محجوزة لموظف' :
                          vehicle.status === 'accident' ? 'حادث' :
                          vehicle.status === 'stolen' ? 'مسروقة' :
                          vehicle.status === 'police_station' ? 'في المخفر' : vehicle.status}

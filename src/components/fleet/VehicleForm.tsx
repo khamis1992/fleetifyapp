@@ -1462,6 +1462,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               <SelectItem value="maintenance">قيد الصيانة</SelectItem>
                               <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
                               <SelectItem value="reserved">محجوزة</SelectItem>
+                              <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
                               <SelectItem value="accident">حادث</SelectItem>
                               <SelectItem value="stolen">مسروقة</SelectItem>
                               <SelectItem value="police_station">في المخفر</SelectItem>

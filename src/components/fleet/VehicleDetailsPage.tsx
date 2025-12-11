@@ -264,6 +264,7 @@ const VehicleDetailsPage = () => {
       maintenance: 'قيد الصيانة',
       out_of_service: 'خارج الخدمة',
       reserved: 'محجوزة',
+      reserved_employee: 'محجوزة لموظف',
       accident: 'حادث',
       stolen: 'مسروقة',
       police_station: 'في المخفر',

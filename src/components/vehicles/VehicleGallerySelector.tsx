@@ -55,7 +55,8 @@ const statusConfig = {
   available: { label: 'متاحة', color: 'bg-green-500', textColor: 'text-green-700' },
   rented: { label: 'مؤجرة', color: 'bg-red-500', textColor: 'text-red-700' },
   maintenance: { label: 'صيانة', color: 'bg-yellow-500', textColor: 'text-yellow-700' },
-  reserved: { label: 'محجوزة', color: 'bg-blue-500', textColor: 'text-blue-700' }
+  reserved: { label: 'محجوزة', color: 'bg-blue-500', textColor: 'text-blue-700' },
+  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-500', textColor: 'text-indigo-700' }
 };
 
 export function VehicleGallerySelector({
@@ -206,6 +207,7 @@ export function VehicleGallerySelector({
               <SelectItem value="rented">مؤجرة</SelectItem>
               <SelectItem value="maintenance">صيانة</SelectItem>
               <SelectItem value="reserved">محجوزة</SelectItem>
+              <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
             </SelectContent>
           </Select>
 

@@ -23,6 +23,7 @@ const statusOptions = [
   { value: 'maintenance', label: 'قيد الصيانة' },
   { value: 'out_of_service', label: 'خارج الخدمة' },
   { value: 'reserved', label: 'محجوزة' },
+  { value: 'reserved_employee', label: 'محجوزة لموظف' },
   { value: 'accident', label: 'حادث' },
   { value: 'stolen', label: 'مسروقة' },
   { value: 'police_station', label: 'في المخفر' }

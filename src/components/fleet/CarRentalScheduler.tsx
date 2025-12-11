@@ -112,6 +112,7 @@ const VEHICLE_STATUSES = [
   { id: 'available', label: 'متوفرة ✅' },
   { id: 'rented', label: 'مؤجرة' },
   { id: 'reserved', label: 'محجوزة' },
+  { id: 'reserved_employee', label: 'محجوزة لموظف 👤' },
   { id: 'maintenance', label: 'صيانة 🔧' },
 ];
 

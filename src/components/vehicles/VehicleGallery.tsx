@@ -76,6 +76,7 @@ const StatusBadge: React.FC<{ status: Vehicle['status'] }> = ({ status }) => {
     rented: { label: 'مؤجر', color: 'bg-red-100 text-red-800' },
     maintenance: { label: 'صيانة', color: 'bg-amber-100 text-amber-800' },
     reserved: { label: 'محجوز', color: 'bg-blue-100 text-blue-800' },
+    reserved_employee: { label: 'محجوز لموظف', color: 'bg-indigo-100 text-indigo-800' },
   };
 
   return (
@@ -307,6 +308,7 @@ export const VehicleGallery: React.FC<VehicleGalleryProps> = ({
               <SelectItem value="rented">مؤجر</SelectItem>
               <SelectItem value="maintenance">صيانة</SelectItem>
               <SelectItem value="reserved">محجوز</SelectItem>
+              <SelectItem value="reserved_employee">محجوز لموظف</SelectItem>
             </SelectContent>
           </Select>
         )}

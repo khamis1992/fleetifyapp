@@ -82,6 +82,7 @@ const STATUS_OPTIONS = [
   { value: 'maintenance', label: 'صيانة', bg: 'bg-amber-500', text: 'text-white' },
   { value: 'out_of_service', label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white' },
   { value: 'reserved', label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white' },
+  { value: 'reserved_employee', label: 'محجوزة لموظف', bg: 'bg-indigo-500', text: 'text-white' },
   { value: 'accident', label: 'حادث', bg: 'bg-rose-600', text: 'text-white' },
   { value: 'stolen', label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white' },
   { value: 'police_station', label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white' },

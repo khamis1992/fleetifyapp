@@ -291,6 +291,7 @@ export const statusLabels: Record<string, string> = {
   rented: 'مؤجر',
   maintenance: 'صيانة',
   reserved: 'محجوز',
+  reserved_employee: 'محجوزة لموظف',
   completed: 'مكتمل',
   draft: 'مسودة',
   approved: 'معتمد',

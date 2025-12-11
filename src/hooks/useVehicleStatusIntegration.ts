@@ -98,7 +98,8 @@ const getStatusLabel = (status: string): string => {
     rented: 'مؤجرة',
     maintenance: 'قيد الصيانة',
     out_of_service: 'خارج الخدمة',
-    reserved: 'محجوزة'
+    reserved: 'محجوزة',
+    reserved_employee: 'محجوزة لموظف'
   };
   return statusLabels[status] || status;
 };
