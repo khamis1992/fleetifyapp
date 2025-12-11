@@ -286,12 +286,32 @@ async function calculateDelinquentCustomersDynamically(
 
   // Step 2: Get all payments for these contracts
   const customerIds = contracts.map(c => c.customer_id).filter(Boolean);
+  const contractIds = contracts.map(c => c.id).filter(Boolean);
   
   if (customerIds.length === 0) return [];
 
   let payments: any[] = [];
   let violations: any[] = [];
   let legalCases: any[] = [];
+  let overdueInvoices: any[] = [];
+
+  // Get oldest unpaid invoice per contract to calculate days_overdue
+  try {
+    const { data: invoicesData, error: invoicesError } = await supabase
+      .from('invoices')
+      .select('contract_id, due_date, payment_status')
+      .eq('company_id', companyId)
+      .in('contract_id', contractIds)
+      .in('payment_status', ['pending', 'partially_paid', 'overdue', 'unpaid'])
+      .lt('due_date', new Date().toISOString().split('T')[0]) // Only past due dates
+      .order('due_date', { ascending: true }); // Oldest first
+    
+    if (!invoicesError && invoicesData) {
+      overdueInvoices = invoicesData;
+    }
+  } catch (error) {
+    console.warn('Error fetching overdue invoices:', error);
+  }
 
   // Get payments (handle errors gracefully)
   try {
@@ -371,8 +391,19 @@ async function calculateDelinquentCustomersDynamically(
       );
       const expectedPayments = Math.max(0, monthsSinceStart);
       
-      // Use days_overdue from contract if available, otherwise calculate
-      const daysOverdue = contract.days_overdue || 0;
+      // Calculate days_overdue from oldest unpaid invoice
+      const contractOverdueInvoices = overdueInvoices.filter(i => i.contract_id === contract.id);
+      let daysOverdue = 0;
+      
+      if (contractOverdueInvoices.length > 0) {
+        // Get the oldest unpaid invoice's due date
+        const oldestDueDate = new Date(contractOverdueInvoices[0].due_date);
+        const today = new Date();
+        daysOverdue = Math.floor((today.getTime() - oldestDueDate.getTime()) / (1000 * 60 * 60 * 24));
+      } else if (contract.days_overdue && contract.days_overdue > 0) {
+        // Fallback to contract's days_overdue if available
+        daysOverdue = contract.days_overdue;
+      }
 
       // Get actual payments for this customer
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
