@@ -171,7 +171,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
       case 'stolen':
         return <Badge className="bg-slate-100 text-slate-700 border-slate-200">مسروقة</Badge>;
       case 'police_station':
-        return <Badge className="bg-orange-100 text-orange-700 border-orange-200">في المخفر</Badge>;
+        return <Badge className="bg-orange-100 text-orange-700 border-orange-200">في مركز الشرطة</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
     }

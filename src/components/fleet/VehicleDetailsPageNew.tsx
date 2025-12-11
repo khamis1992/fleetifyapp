@@ -85,7 +85,7 @@ const STATUS_OPTIONS = [
   { value: 'reserved_employee', label: 'محجوزة لموظف', bg: 'bg-indigo-500', text: 'text-white' },
   { value: 'accident', label: 'حادث', bg: 'bg-rose-600', text: 'text-white' },
   { value: 'stolen', label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white' },
-  { value: 'police_station', label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white' },
+  { value: 'police_station', label: 'في مركز الشرطة', bg: 'bg-orange-600', text: 'text-white' },
 ];
 
 // ===== Status Config =====
@@ -106,7 +106,7 @@ const getStatusConfig = (status: string) => {
     case 'stolen':
       return { label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white', iconBg: 'bg-slate-100', iconText: 'text-slate-700' };
     case 'police_station':
-      return { label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white', iconBg: 'bg-orange-100', iconText: 'text-orange-600' };
+      return { label: 'في مركز الشرطة', bg: 'bg-orange-600', text: 'text-white', iconBg: 'bg-orange-100', iconText: 'text-orange-600' };
     default:
       return { label: status, bg: 'bg-neutral-500', text: 'text-white', iconBg: 'bg-neutral-100', iconText: 'text-neutral-600' };
   }

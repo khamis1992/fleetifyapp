@@ -123,7 +123,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       case 'stolen':
         return { label: 'مسروقة', bg: 'bg-slate-700', text: 'text-white' };
       case 'police_station':
-        return { label: 'في المخفر', bg: 'bg-orange-600', text: 'text-white' };
+        return { label: 'في مركز الشرطة', bg: 'bg-orange-600', text: 'text-white' };
       default:
         return { label: status, bg: 'bg-neutral-500', text: 'text-white' };
     }
@@ -619,7 +619,7 @@ const FleetPageNew: React.FC = () => {
                 <SelectItem value="police_station">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-orange-600"></span>
-                    في المخفر
+                    في مركز الشرطة
                   </span>
                 </SelectItem>
               </SelectContent>

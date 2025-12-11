@@ -33,7 +33,7 @@ const statusLabels = {
   reserved_employee: "محجوزة لموظف",
   accident: "حادث",
   stolen: "مسروقة",
-  police_station: "في المخفر"
+  police_station: "في مركز الشرطة"
 };
 
 export function VehicleListItem({ vehicle }: VehicleListItemProps) {

@@ -26,7 +26,7 @@ const statusOptions = [
   { value: 'reserved_employee', label: 'محجوزة لموظف' },
   { value: 'accident', label: 'حادث' },
   { value: 'stolen', label: 'مسروقة' },
-  { value: 'police_station', label: 'في المخفر' }
+  { value: 'police_station', label: 'في مركز الشرطة' }
 ];
 
 const fuelTypeOptions = [

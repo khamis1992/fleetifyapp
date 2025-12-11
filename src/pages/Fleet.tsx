@@ -366,7 +366,7 @@ export default function Fleet() {
                   <option value="reserved_employee">محجوزة لموظف</option>
                   <option value="accident">حادث</option>
                   <option value="stolen">مسروقة</option>
-                  <option value="police_station">في المخفر</option>
+                  <option value="police_station">في مركز الشرطة</option>
                 </select>
                 <ChevronDown className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -418,7 +418,7 @@ export default function Fleet() {
                        filters.status === 'reserved_employee' ? 'محجوزة لموظف' :
                        filters.status === 'accident' ? 'حادث' :
                        filters.status === 'stolen' ? 'مسروقة' :
-                       filters.status === 'police_station' ? 'في المخفر' : filters.status}
+                       filters.status === 'police_station' ? 'في مركز الشرطة' : filters.status}
                     </span>
                   )}
                   {filters.type && (
@@ -508,7 +508,7 @@ export default function Fleet() {
                          vehicle.status === 'reserved_employee' ? 'محجوزة لموظف' :
                          vehicle.status === 'accident' ? 'حادث' :
                          vehicle.status === 'stolen' ? 'مسروقة' :
-                         vehicle.status === 'police_station' ? 'في المخفر' : vehicle.status}
+                         vehicle.status === 'police_station' ? 'في مركز الشرطة' : vehicle.status}
                       </span>
                       <div className="flex gap-2">
                         <button 
