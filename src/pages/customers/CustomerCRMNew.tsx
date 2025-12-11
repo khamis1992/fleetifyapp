@@ -849,30 +849,33 @@ export default function CustomerCRMNew() {
           /* Header with Logo */
           .header {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             border-bottom: 2px solid #1f2937;
             padding-bottom: 16px;
             margin-bottom: 20px;
           }
+          .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 16px;
+          }
           .header-right {
             text-align: right;
-          }
-          .header-center {
-            text-align: center;
-            flex: 1;
           }
           .header-left {
             text-align: left;
           }
           .company-name-ar {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #1e3a8a;
             margin-bottom: 4px;
           }
           .company-name-en {
-            font-size: 12px;
+            font-size: 13px;
             color: #64748b;
           }
           .company-info {
@@ -881,30 +884,33 @@ export default function CustomerCRMNew() {
             margin-top: 4px;
           }
           .logo {
-            width: 80px;
+            width: 120px;
             height: auto;
+          }
+          .header-center {
+            text-align: center;
           }
           .title-box {
             display: inline-block;
-            padding: 10px 30px;
+            padding: 12px 40px;
             border: 2px solid #1e3a8a;
             border-radius: 8px;
             background-color: #eff6ff;
           }
           .title-ar {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #1e3a8a;
           }
           .title-en {
-            font-size: 11px;
+            font-size: 12px;
             color: #64748b;
             margin-top: 2px;
           }
           .report-date {
             font-size: 12px;
             color: #64748b;
-            margin-top: 8px;
+            margin-top: 10px;
           }
           /* Summary */
           .summary {
@@ -1042,11 +1048,18 @@ export default function CustomerCRMNew() {
         <div class="container">
           <!-- Header with Logo -->
           <div class="header">
-            <div class="header-right">
-              <div class="company-name-ar">شركة العراف لتأجير السيارات</div>
-              <div class="company-name-en">AL-ARAF CAR RENTAL</div>
-              <div class="company-info">سجل تجاري: 12345 | الدوحة، قطر</div>
+            <!-- Top: Logo + Company Info -->
+            <div class="header-top">
+              <div class="header-right">
+                <div class="company-name-ar">شركة العراف لتأجير السيارات</div>
+                <div class="company-name-en">AL-ARAF CAR RENTAL</div>
+                <div class="company-info">C.R: 12345 | Doha, Qatar</div>
+              </div>
+              <div class="header-left">
+                <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+              </div>
             </div>
+            <!-- Center: Title -->
             <div class="header-center">
               <div class="title-box">
                 <div class="title-ar">تقرير المتابعات المالية</div>
@@ -1054,20 +1067,17 @@ export default function CustomerCRMNew() {
               </div>
               <div class="report-date">تاريخ التقرير: ${today}</div>
             </div>
-            <div class="header-left">
-              <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
-            </div>
           </div>
 
           <!-- Summary -->
           <div class="summary">
             <div class="summary-item">
-              <div class="summary-value">${reportData.length}</div>
+              <div class="summary-value">${reportData.length.toLocaleString('en-US')}</div>
               <div class="summary-label">عدد العملاء المتأخرين</div>
             </div>
             <div class="summary-item">
-              <div class="summary-value">${totalOutstanding.toLocaleString('ar-QA')}</div>
-              <div class="summary-label">إجمالي المستحقات (ر.ق)</div>
+              <div class="summary-value">${totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div class="summary-label">إجمالي المستحقات (QAR)</div>
             </div>
           </div>
 
@@ -1091,14 +1101,14 @@ export default function CustomerCRMNew() {
               ${reportData.map((c, i) => `
                 <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
                   <td class="checkbox-col"><div class="checkbox"></div></td>
-                  <td style="text-align: center;">${i + 1}</td>
+                  <td style="text-align: center;">${(i + 1).toLocaleString('en-US')}</td>
                   <td>${c.customerCode}</td>
                   <td>${c.nameAr}</td>
                   <td class="phone-cell">${c.phone}</td>
                   <td>${c.contractNumber}</td>
-                  <td style="text-align: center;">${c.overdueCount}</td>
-                  <td class="amount">${c.totalRemaining.toLocaleString('ar-QA')}</td>
-                  <td>${c.lastContactDays}</td>
+                  <td style="text-align: center;">${c.overdueCount.toLocaleString('en-US')}</td>
+                  <td class="amount">${c.totalRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>${c.lastContactDays === 'لم يتم' ? 'لم يتم' : c.lastContactDays.replace(/\d+/, (match: string) => parseInt(match).toLocaleString('en-US'))}</td>
                   <td style="min-width: 80px;"></td>
                 </tr>
               `).join('')}
