@@ -502,6 +502,14 @@ export const LegalCasesTracking: React.FC = () => {
         // تحديد الحسابات بناءً على اتجاه الدفع
         const isPayment = closeFormData.payment_direction === 'pay';
         
+        // معرفات الحسابات
+        // حساب البنك: 11151 (البنك التجاري - حساب الجاري)
+        const bankAccountId = '5f0f1a61-e5dd-427b-b063-1a20e5f1582a';
+        // حساب المصروفات القانونية: 53101
+        const expenseAccountId = '30a2bcf0-aed7-4b64-92fc-a64c2ab19917';
+        // حساب إيرادات التعويضات: 44100
+        const revenueAccountId = 'b8c824ec-44cb-4470-862b-2335fa4ab6a8';
+        
         // إنشاء القيد المحاسبي
         const entryNumber = `JE-LEGAL-${Date.now()}`;
         const { data: journalEntry, error: journalError } = await supabase
@@ -514,7 +522,6 @@ export const LegalCasesTracking: React.FC = () => {
             total_debit: closeFormData.outcome_amount,
             total_credit: closeFormData.outcome_amount,
             status: 'posted',
-            entry_type: isPayment ? 'expense' : 'revenue',
             reference_type: 'legal_case',
             reference_id: caseToClose.id,
             created_by: user.id,
@@ -530,8 +537,58 @@ export const LegalCasesTracking: React.FC = () => {
 
         journalEntryId = journalEntry?.id || null;
 
-        // ملاحظة: يمكن إضافة سطور القيد هنا إذا تم تحديد الحسابات
+        // إضافة سطور القيد المحاسبي
         if (journalEntryId) {
+          const journalLines = isPayment ? [
+            // قيد مصروف: مدين المصروفات، دائن البنك
+            {
+              journal_entry_id: journalEntryId,
+              account_id: expenseAccountId,
+              line_description: `غرامة/تعويض - القضية ${caseToClose.case_number}`,
+              debit_amount: closeFormData.outcome_amount,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              journal_entry_id: journalEntryId,
+              account_id: bankAccountId,
+              line_description: `سداد غرامة - القضية ${caseToClose.case_number}`,
+              debit_amount: 0,
+              credit_amount: closeFormData.outcome_amount,
+              line_number: 2,
+            },
+          ] : [
+            // قيد إيراد: مدين البنك، دائن الإيرادات
+            {
+              journal_entry_id: journalEntryId,
+              account_id: bankAccountId,
+              line_description: `استلام تعويض - القضية ${caseToClose.case_number}`,
+              debit_amount: closeFormData.outcome_amount,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              journal_entry_id: journalEntryId,
+              account_id: revenueAccountId,
+              line_description: `تعويض قضائي - القضية ${caseToClose.case_number}`,
+              debit_amount: 0,
+              credit_amount: closeFormData.outcome_amount,
+              line_number: 2,
+            },
+          ];
+
+          const { error: linesError } = await supabase
+            .from('journal_entry_lines')
+            .insert(journalLines);
+
+          if (linesError) {
+            console.error('Error creating journal entry lines:', linesError);
+            // حذف القيد إذا فشل إنشاء السطور
+            await supabase.from('journal_entries').delete().eq('id', journalEntryId);
+            toast.error('فشل في إنشاء سطور القيد المحاسبي');
+            return;
+          }
+
           toast.success('تم إنشاء القيد المحاسبي بنجاح');
         }
       }
