@@ -167,10 +167,13 @@ export const useCreateLegalDocument = () => {
         ? existingVersions[0].version_number + 1 
         : 1;
 
+      // استخراج file من formData قبل الإرسال (لا يوجد عمود file في قاعدة البيانات)
+      const { file, ...documentData } = formData;
+
       const { data, error } = await supabase
         .from('legal_case_documents')
         .insert({
-          ...formData,
+          ...documentData,
           company_id: profile.company_id,
           file_name: fileName,
           file_path: filePath,
