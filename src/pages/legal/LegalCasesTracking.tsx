@@ -287,6 +287,22 @@ export const LegalCasesTracking: React.FC = () => {
     access_level: 'company',
   });
 
+  // Close case dialog states
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [caseToClose, setCaseToClose] = useState<LegalCase | null>(null);
+  const [closeFormData, setCloseFormData] = useState({
+    case_direction: 'filed_by_us' as 'filed_by_us' | 'filed_against_us',
+    outcome_type: 'won' as 'won' | 'lost' | 'settled' | 'dismissed',
+    outcome_amount: 0,
+    outcome_amount_type: 'compensation' as 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other',
+    payment_direction: 'receive' as 'receive' | 'pay',
+    outcome_date: new Date().toISOString().split('T')[0],
+    outcome_notes: '',
+    create_journal_entry: true,
+    debit_account_id: '',
+    credit_account_id: '',
+  });
+
   const { companyId, isLoading: isLoadingCompany } = useUnifiedCompanyAccess();
   const { user } = useAuth();
   
@@ -456,6 +472,119 @@ export const LegalCasesTracking: React.FC = () => {
       deleteCaseMutation.mutate(caseToDelete.id);
     }
   }, [caseToDelete, deleteCaseMutation]);
+
+  // Close case handlers
+  const handleOpenCloseDialog = useCallback((legalCase: LegalCase) => {
+    setCaseToClose(legalCase);
+    setCloseFormData({
+      case_direction: legalCase.case_direction || 'filed_by_us',
+      outcome_type: 'won',
+      outcome_amount: legalCase.case_value || 0,
+      outcome_amount_type: 'compensation',
+      payment_direction: legalCase.case_direction === 'filed_against_us' ? 'pay' : 'receive',
+      outcome_date: new Date().toISOString().split('T')[0],
+      outcome_notes: '',
+      create_journal_entry: true,
+      debit_account_id: '',
+      credit_account_id: '',
+    });
+    setShowCloseDialog(true);
+  }, []);
+
+  const handleCloseCase = useCallback(async () => {
+    if (!caseToClose || !companyId || !user?.id) return;
+
+    try {
+      let journalEntryId: string | null = null;
+
+      // إنشاء قيد محاسبي إذا طُلب ذلك والمبلغ أكبر من صفر
+      if (closeFormData.create_journal_entry && closeFormData.outcome_amount > 0) {
+        // تحديد الحسابات بناءً على اتجاه الدفع
+        const isPayment = closeFormData.payment_direction === 'pay';
+        
+        // إنشاء القيد المحاسبي
+        const entryNumber = `JE-LEGAL-${Date.now()}`;
+        const { data: journalEntry, error: journalError } = await supabase
+          .from('journal_entries')
+          .insert({
+            company_id: companyId,
+            entry_number: entryNumber,
+            entry_date: closeFormData.outcome_date,
+            description: `قيد ${isPayment ? 'مصروف' : 'إيراد'} نتيجة القضية ${caseToClose.case_number}`,
+            total_debit: closeFormData.outcome_amount,
+            total_credit: closeFormData.outcome_amount,
+            status: 'posted',
+            entry_type: isPayment ? 'expense' : 'revenue',
+            reference_type: 'legal_case',
+            reference_id: caseToClose.id,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
+
+        if (journalError) {
+          console.error('Error creating journal entry:', journalError);
+          toast.error('فشل في إنشاء القيد المحاسبي');
+          return;
+        }
+
+        journalEntryId = journalEntry?.id || null;
+
+        // ملاحظة: يمكن إضافة سطور القيد هنا إذا تم تحديد الحسابات
+        if (journalEntryId) {
+          toast.success('تم إنشاء القيد المحاسبي بنجاح');
+        }
+      }
+
+      // تحديث القضية
+      const { error: updateError } = await supabase
+        .from('legal_cases')
+        .update({
+          case_status: 'closed',
+          case_direction: closeFormData.case_direction,
+          outcome_type: closeFormData.outcome_type,
+          outcome_amount: closeFormData.outcome_amount,
+          outcome_amount_type: closeFormData.outcome_amount_type,
+          payment_direction: closeFormData.payment_direction,
+          outcome_date: closeFormData.outcome_date,
+          outcome_notes: closeFormData.outcome_notes,
+          outcome_journal_entry_id: journalEntryId,
+          outcome_payment_status: closeFormData.outcome_amount > 0 ? 'pending' : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', caseToClose.id);
+
+      if (updateError) {
+        console.error('Error updating case:', updateError);
+        toast.error('فشل في إغلاق القضية');
+        return;
+      }
+
+      // إنشاء سجل نشاط
+      await supabase.from('legal_case_activities').insert({
+        case_id: caseToClose.id,
+        company_id: companyId,
+        activity_type: 'case_closed',
+        activity_title: 'تم إغلاق القضية',
+        activity_description: `تم إغلاق القضية بنتيجة: ${
+          closeFormData.outcome_type === 'won' ? 'ربح' :
+          closeFormData.outcome_type === 'lost' ? 'خسارة' :
+          closeFormData.outcome_type === 'settled' ? 'تسوية' : 'رفض'
+        } - المبلغ: ${closeFormData.outcome_amount} ر.ق`,
+        created_by: user.id,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
+      
+      toast.success('تم إغلاق القضية بنجاح');
+      setShowCloseDialog(false);
+      setCaseToClose(null);
+    } catch (error: any) {
+      console.error('Error closing case:', error);
+      toast.error(`فشل في إغلاق القضية: ${error.message}`);
+    }
+  }, [caseToClose, closeFormData, companyId, user?.id, queryClient]);
 
   const { data: casesResponse, isLoading, error } = useLegalCases(
     {
@@ -965,6 +1094,13 @@ export const LegalCasesTracking: React.FC = () => {
                         >
                           <Edit size={14} />
                           تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="gap-2 cursor-pointer text-green-600"
+                          onClick={() => handleOpenCloseDialog(item as LegalCase)}
+                        >
+                          <CheckCircle2 size={14} />
+                          إغلاق القضية
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
@@ -1541,6 +1677,20 @@ export const LegalCasesTracking: React.FC = () => {
               <Edit className="w-4 h-4 ml-2" />
               تعديل القضية
             </Button>
+            {selectedCase?.case_status !== 'closed' && (
+              <Button
+                onClick={() => {
+                  if (selectedCase) {
+                    setShowCaseDetails(false);
+                    handleOpenCloseDialog(selectedCase);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle2 className="w-4 h-4 ml-2" />
+                إغلاق القضية
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1806,6 +1956,215 @@ export const LegalCasesTracking: React.FC = () => {
               className="bg-[#E55B5B] hover:bg-[#d14d4d]"
             >
               {updateCaseMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Case Dialog */}
+      <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              إغلاق القضية: {caseToClose?.case_number}
+            </DialogTitle>
+            <DialogDescription>
+              تسجيل نتيجة القضية وإنشاء القيد المحاسبي
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* اتجاه القضية */}
+            <div className="space-y-2">
+              <Label>اتجاه القضية</Label>
+              <Select
+                value={closeFormData.case_direction}
+                onValueChange={(value: 'filed_by_us' | 'filed_against_us') => {
+                  setCloseFormData(prev => ({ 
+                    ...prev, 
+                    case_direction: value,
+                    payment_direction: value === 'filed_against_us' ? 'pay' : 'receive'
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="filed_by_us">قضية رفعناها نحن</SelectItem>
+                  <SelectItem value="filed_against_us">قضية مرفوعة ضدنا</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* نتيجة القضية */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>نتيجة القضية</Label>
+                <Select
+                  value={closeFormData.outcome_type}
+                  onValueChange={(value: 'won' | 'lost' | 'settled' | 'dismissed') => 
+                    setCloseFormData(prev => ({ ...prev, outcome_type: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="won">ربح ✅</SelectItem>
+                    <SelectItem value="lost">خسارة ❌</SelectItem>
+                    <SelectItem value="settled">تسوية 🤝</SelectItem>
+                    <SelectItem value="dismissed">رفض 🚫</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>تاريخ الحكم</Label>
+                <Input
+                  type="date"
+                  value={closeFormData.outcome_date}
+                  onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_date: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* المبلغ المحكوم به */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>المبلغ المحكوم به (ر.ق)</Label>
+                <Input
+                  type="number"
+                  value={closeFormData.outcome_amount}
+                  onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_amount: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>نوع المبلغ</Label>
+                <Select
+                  value={closeFormData.outcome_amount_type}
+                  onValueChange={(value: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other') => 
+                    setCloseFormData(prev => ({ ...prev, outcome_amount_type: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="compensation">تعويض</SelectItem>
+                    <SelectItem value="fine">غرامة</SelectItem>
+                    <SelectItem value="settlement">تسوية</SelectItem>
+                    <SelectItem value="court_fees">رسوم قضائية</SelectItem>
+                    <SelectItem value="other">أخرى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* اتجاه الدفع */}
+            <div className="space-y-2">
+              <Label>اتجاه الدفع</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payment_direction"
+                    checked={closeFormData.payment_direction === 'receive'}
+                    onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'receive' }))}
+                    className="text-green-600"
+                  />
+                  <span className="text-sm flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                    نستلم (إيراد)
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payment_direction"
+                    checked={closeFormData.payment_direction === 'pay'}
+                    onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'pay' }))}
+                    className="text-red-600"
+                  />
+                  <span className="text-sm flex items-center gap-1">
+                    <DollarSign className="w-4 h-4 text-red-600" />
+                    ندفع (مصروف)
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* ملاحظات */}
+            <div className="space-y-2">
+              <Label>ملاحظات النتيجة</Label>
+              <Textarea
+                value={closeFormData.outcome_notes}
+                onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_notes: e.target.value }))}
+                placeholder="أي ملاحظات إضافية حول نتيجة القضية..."
+                rows={2}
+              />
+            </div>
+
+            {/* إنشاء قيد محاسبي */}
+            {closeFormData.outcome_amount > 0 && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={closeFormData.create_journal_entry}
+                    onChange={(e) => setCloseFormData(prev => ({ ...prev, create_journal_entry: e.target.checked }))}
+                    className="rounded border-blue-300"
+                  />
+                  <span className="font-medium text-blue-800">إنشاء قيد محاسبي تلقائياً</span>
+                </label>
+                {closeFormData.create_journal_entry && (
+                  <div className="mt-3 text-sm text-blue-700">
+                    <p className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      سيتم إنشاء قيد {closeFormData.payment_direction === 'pay' ? 'مصروف' : 'إيراد'} بمبلغ {formatCurrency(closeFormData.outcome_amount)}
+                    </p>
+                    <p className="mt-1 text-xs text-blue-600">
+                      {closeFormData.payment_direction === 'pay' 
+                        ? '📍 مدين: مصروفات غرامات وتعويضات | دائن: النقدية/الدائنون'
+                        : '📍 مدين: النقدية/المدينون | دائن: إيرادات تعويضات'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ملخص */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold mb-2">ملخص الإغلاق:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <p>القضية: <strong>{caseToClose?.case_number}</strong></p>
+                <p>النتيجة: <strong>{
+                  closeFormData.outcome_type === 'won' ? 'ربح ✅' :
+                  closeFormData.outcome_type === 'lost' ? 'خسارة ❌' :
+                  closeFormData.outcome_type === 'settled' ? 'تسوية 🤝' : 'رفض 🚫'
+                }</strong></p>
+                <p>المبلغ: <strong className={closeFormData.payment_direction === 'pay' ? 'text-red-600' : 'text-green-600'}>
+                  {closeFormData.payment_direction === 'pay' ? '-' : '+'}{formatCurrency(closeFormData.outcome_amount)}
+                </strong></p>
+                <p>الاتجاه: <strong>{closeFormData.payment_direction === 'pay' ? 'ندفع' : 'نستلم'}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCloseDialog(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleCloseCase}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle2 className="w-4 h-4 ml-2" />
+              إغلاق القضية
             </Button>
           </DialogFooter>
         </DialogContent>

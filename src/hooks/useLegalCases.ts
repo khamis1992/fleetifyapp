@@ -40,6 +40,16 @@ export interface LegalCase {
   police_report_number?: string;
   complaint_number?: string;  // رقم البلاغ
   judge_name?: string;  // القاضي المسؤول
+  // حقول اتجاه القضية والنتيجة
+  case_direction?: 'filed_by_us' | 'filed_against_us';
+  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | null;
+  outcome_amount?: number;
+  outcome_amount_type?: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other' | null;
+  payment_direction?: 'receive' | 'pay' | null;
+  outcome_date?: string;
+  outcome_journal_entry_id?: string;
+  outcome_notes?: string;
+  outcome_payment_status?: 'pending' | 'partial' | 'paid' | 'received' | null;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -76,6 +86,14 @@ export interface LegalCaseFormData {
   police_report_number?: string;
   complaint_number?: string;  // رقم البلاغ
   judge_name?: string;  // القاضي المسؤول
+  // حقول اتجاه القضية والنتيجة
+  case_direction?: 'filed_by_us' | 'filed_against_us';
+  outcome_type?: 'won' | 'lost' | 'settled' | 'dismissed' | 'pending' | null;
+  outcome_amount?: number;
+  outcome_amount_type?: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other' | null;
+  payment_direction?: 'receive' | 'pay' | null;
+  outcome_date?: string;
+  outcome_notes?: string;
 }
 
 interface UseLegalCasesFilters {
