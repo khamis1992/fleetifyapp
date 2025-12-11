@@ -988,59 +988,63 @@ export default function CustomerCRMNew() {
           }
           /* Notes Section */
           .notes-section {
-            margin-top: 24px;
-            padding: 16px;
+            margin-top: 16px;
+            padding: 12px;
             border: 1px dashed #9ca3af;
-            border-radius: 8px;
-            min-height: 80px;
+            border-radius: 6px;
+            min-height: 50px;
           }
           .notes-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #374151;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
           }
           /* Footer */
           .footer {
-            margin-top: 24px;
+            margin-top: 16px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding-top: 16px;
+            padding-top: 12px;
             border-top: 1px solid #e5e7eb;
           }
           .footer-item {
             text-align: center;
           }
           .footer-label {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
           }
           .footer-line {
-            width: 120px;
+            width: 100px;
             border-top: 1px solid #9ca3af;
             margin: 0 auto;
           }
           .footer-text {
-            font-size: 10px;
+            font-size: 9px;
             color: #9ca3af;
-            margin-top: 4px;
+            margin-top: 3px;
           }
           .stamp-area {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border: 1px dashed #9ca3af;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 9px;
             color: #9ca3af;
           }
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none; }
+            .container { border: none; }
+            .notes-section { page-break-inside: avoid; }
+            .footer { page-break-inside: avoid; page-break-before: avoid; }
+            tr { page-break-inside: avoid; }
           }
         </style>
       </head>
@@ -1115,25 +1119,28 @@ export default function CustomerCRMNew() {
             </tbody>
           </table>
 
-          <!-- Notes Section -->
-          <div class="notes-section">
-            <div class="notes-title">📝 ملاحظات عامة:</div>
-          </div>
+          <!-- Notes & Footer Section (keep together) -->
+          <div style="page-break-inside: avoid;">
+            <!-- Notes Section -->
+            <div class="notes-section">
+              <div class="notes-title">📝 ملاحظات عامة:</div>
+            </div>
 
-          <!-- Footer -->
-          <div class="footer">
-            <div class="footer-item">
-              <div class="footer-label">المدير المسؤول</div>
-              <div class="footer-line"></div>
-              <div class="footer-text">الاسم والتوقيع</div>
-            </div>
-            <div class="footer-item">
-              <div class="stamp-area">الختم</div>
-            </div>
-            <div class="footer-item">
-              <div class="footer-label">موظف التحصيل</div>
-              <div class="footer-line"></div>
-              <div class="footer-text">الاسم والتوقيع</div>
+            <!-- Footer -->
+            <div class="footer">
+              <div class="footer-item">
+                <div class="footer-label">المدير المسؤول</div>
+                <div class="footer-line"></div>
+                <div class="footer-text">الاسم والتوقيع</div>
+              </div>
+              <div class="footer-item">
+                <div class="stamp-area">الختم</div>
+              </div>
+              <div class="footer-item">
+                <div class="footer-label">موظف التحصيل</div>
+                <div class="footer-line"></div>
+                <div class="footer-text">الاسم والتوقيع</div>
+              </div>
             </div>
           </div>
         </div>
