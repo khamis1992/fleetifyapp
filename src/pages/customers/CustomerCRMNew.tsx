@@ -833,169 +833,299 @@ export default function CustomerCRMNew() {
         <meta charset="UTF-8">
         <title>تقرير العملاء المتأخرين - ${today}</title>
         <style>
+          @page { size: A4; margin: 15mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            color: #333;
+            font-family: Arial, Tahoma, sans-serif;
             background: #fff;
+            color: #1f2937;
           }
+          .container {
+            max-width: 100%;
+            border: 3px double #1f2937;
+            border-radius: 8px;
+            padding: 24px;
+          }
+          /* Header with Logo */
           .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #1f2937;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+          }
+          .header-right {
+            text-align: right;
+          }
+          .header-center {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #F15555;
+            flex: 1;
           }
-          .header h1 {
-            font-size: 24px;
-            color: #F15555;
-            margin-bottom: 10px;
+          .header-left {
+            text-align: left;
           }
-          .header .date {
-            font-size: 14px;
-            color: #666;
+          .company-name-ar {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 4px;
           }
+          .company-name-en {
+            font-size: 12px;
+            color: #64748b;
+          }
+          .company-info {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 4px;
+          }
+          .logo {
+            width: 80px;
+            height: auto;
+          }
+          .title-box {
+            display: inline-block;
+            padding: 10px 30px;
+            border: 2px solid #1e3a8a;
+            border-radius: 8px;
+            background-color: #eff6ff;
+          }
+          .title-ar {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+          }
+          .title-en {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+          }
+          .report-date {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 8px;
+          }
+          /* Summary */
           .summary {
             display: flex;
-            justify-content: space-around;
-            margin-bottom: 30px;
-            padding: 15px;
-            background: #f9f9f9;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+            padding: 16px;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
             border-radius: 8px;
+            border: 1px solid #fecaca;
           }
           .summary-item {
             text-align: center;
           }
-          .summary-item .value {
-            font-size: 28px;
+          .summary-value {
+            font-size: 32px;
             font-weight: bold;
-            color: #F15555;
+            color: #dc2626;
           }
-          .summary-item .label {
+          .summary-label {
             font-size: 12px;
-            color: #666;
-            margin-top: 5px;
+            color: #991b1b;
+            margin-top: 4px;
           }
+          /* Table */
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-          }
-          th, td {
-            border: 1px solid #ddd;
-            padding: 10px 8px;
-            text-align: right;
-            font-size: 12px;
+            margin-top: 16px;
+            font-size: 11px;
           }
           th {
-            background: #F15555;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
             color: white;
+            padding: 10px 6px;
             font-weight: bold;
+            text-align: right;
+            border: 1px solid #1e3a8a;
+          }
+          td {
+            padding: 8px 6px;
+            border: 1px solid #e5e7eb;
+            text-align: right;
           }
           tr:nth-child(even) {
-            background: #f9f9f9;
+            background: #f9fafb;
           }
           tr:hover {
-            background: #fff3f3;
+            background: #fef2f2;
           }
           .amount {
             font-weight: bold;
-            color: #d32f2f;
+            color: #dc2626;
+            font-size: 12px;
           }
           .contact-needed {
-            background: #fff3cd;
+            background: #fef3c7 !important;
           }
           .checkbox-col {
-            width: 30px;
+            width: 25px;
             text-align: center;
           }
           .checkbox {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #999;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #6b7280;
+            border-radius: 2px;
             display: inline-block;
           }
+          .phone-cell {
+            direction: ltr;
+            text-align: left;
+            font-family: monospace;
+          }
+          /* Notes Section */
+          .notes-section {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px dashed #9ca3af;
+            border-radius: 8px;
+            min-height: 80px;
+          }
+          .notes-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 8px;
+          }
+          /* Footer */
           .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 11px;
-            color: #666;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+          }
+          .footer-item {
             text-align: center;
           }
-          .notes-section {
-            margin-top: 30px;
-            padding: 15px;
-            border: 1px dashed #ccc;
-            min-height: 100px;
+          .footer-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 30px;
           }
-          .notes-section h3 {
-            font-size: 14px;
-            margin-bottom: 10px;
-            color: #666;
+          .footer-line {
+            width: 120px;
+            border-top: 1px solid #9ca3af;
+            margin: 0 auto;
+          }
+          .footer-text {
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 4px;
+          }
+          .stamp-area {
+            width: 80px;
+            height: 80px;
+            border: 1px dashed #9ca3af;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #9ca3af;
           }
           @media print {
-            body { padding: 10px; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none; }
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>📋 تقرير متابعة العملاء المتأخرين</h1>
-          <div class="date">تاريخ التقرير: ${today}</div>
-        </div>
-
-        <div class="summary">
-          <div class="summary-item">
-            <div class="value">${reportData.length}</div>
-            <div class="label">عدد العملاء المتأخرين</div>
+        <div class="container">
+          <!-- Header with Logo -->
+          <div class="header">
+            <div class="header-right">
+              <div class="company-name-ar">شركة العراف لتأجير السيارات</div>
+              <div class="company-name-en">AL-ARAF CAR RENTAL</div>
+              <div class="company-info">سجل تجاري: 12345 | الدوحة، قطر</div>
+            </div>
+            <div class="header-center">
+              <div class="title-box">
+                <div class="title-ar">تقرير المتابعات المالية</div>
+                <div class="title-en">OVERDUE PAYMENTS REPORT</div>
+              </div>
+              <div class="report-date">تاريخ التقرير: ${today}</div>
+            </div>
+            <div class="header-left">
+              <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+            </div>
           </div>
-          <div class="summary-item">
-            <div class="value">${totalOutstanding.toLocaleString('ar-QA')}</div>
-            <div class="label">إجمالي المستحقات (ر.ق)</div>
-          </div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th class="checkbox-col">✓</th>
-              <th>#</th>
-              <th>كود العميل</th>
-              <th>اسم العميل</th>
-              <th>الهاتف</th>
-              <th>رقم العقد</th>
-              <th>فواتير متأخرة</th>
-              <th>المستحق (ر.ق)</th>
-              <th>آخر تواصل</th>
-              <th>ملاحظات</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${reportData.map((c, i) => `
-              <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
-                <td class="checkbox-col"><div class="checkbox"></div></td>
-                <td>${i + 1}</td>
-                <td>${c.customerCode}</td>
-                <td>${c.nameAr}</td>
-                <td style="direction: ltr; text-align: left;">${c.phone}</td>
-                <td>${c.contractNumber}</td>
-                <td style="text-align: center;">${c.overdueCount}</td>
-                <td class="amount">${c.totalRemaining.toLocaleString('ar-QA')}</td>
-                <td>${c.lastContactDays}</td>
-                <td style="min-width: 100px;"></td>
+          <!-- Summary -->
+          <div class="summary">
+            <div class="summary-item">
+              <div class="summary-value">${reportData.length}</div>
+              <div class="summary-label">عدد العملاء المتأخرين</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalOutstanding.toLocaleString('ar-QA')}</div>
+              <div class="summary-label">إجمالي المستحقات (ر.ق)</div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-col">✓</th>
+                <th>#</th>
+                <th>كود العميل</th>
+                <th>اسم العميل</th>
+                <th>الهاتف</th>
+                <th>رقم العقد</th>
+                <th>فواتير</th>
+                <th>المستحق (ر.ق)</th>
+                <th>آخر تواصل</th>
+                <th>ملاحظات</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${reportData.map((c, i) => `
+                <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
+                  <td class="checkbox-col"><div class="checkbox"></div></td>
+                  <td style="text-align: center;">${i + 1}</td>
+                  <td>${c.customerCode}</td>
+                  <td>${c.nameAr}</td>
+                  <td class="phone-cell">${c.phone}</td>
+                  <td>${c.contractNumber}</td>
+                  <td style="text-align: center;">${c.overdueCount}</td>
+                  <td class="amount">${c.totalRemaining.toLocaleString('ar-QA')}</td>
+                  <td>${c.lastContactDays}</td>
+                  <td style="min-width: 80px;"></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
 
-        <div class="notes-section">
-          <h3>📝 ملاحظات عامة:</h3>
-        </div>
+          <!-- Notes Section -->
+          <div class="notes-section">
+            <div class="notes-title">📝 ملاحظات عامة:</div>
+          </div>
 
-        <div class="footer">
-          تم إنشاء هذا التقرير بواسطة نظام Fleetify - ${today}
+          <!-- Footer -->
+          <div class="footer">
+            <div class="footer-item">
+              <div class="footer-label">المدير المسؤول</div>
+              <div class="footer-line"></div>
+              <div class="footer-text">الاسم والتوقيع</div>
+            </div>
+            <div class="footer-item">
+              <div class="stamp-area">الختم</div>
+            </div>
+            <div class="footer-item">
+              <div class="footer-label">موظف التحصيل</div>
+              <div class="footer-line"></div>
+              <div class="footer-text">الاسم والتوقيع</div>
+            </div>
+          </div>
         </div>
 
         <script>
@@ -1270,3 +1400,4 @@ export default function CustomerCRMNew() {
     </div>
   );
 }
+
