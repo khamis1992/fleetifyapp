@@ -86,6 +86,9 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
   const companyFilter = useCompanyFilter();
   const useCached = filters?.useCachedData !== false; // Default to true
 
+  // Check if company is still loading
+  const isCompanyLoading = !companyFilter?.company_id || companyFilter.company_id === '__loading__';
+
   return useQuery({
     queryKey: ['delinquent-customers', companyFilter, filters, useCached],
     queryFn: async (): Promise<DelinquentCustomer[]> => {
@@ -94,7 +97,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       // Get company_id from companyFilter or profile
       let companyId: string | undefined;
       
-      if (companyFilter?.company_id) {
+      if (companyFilter?.company_id && companyFilter.company_id !== '__loading__') {
         companyId = companyFilter.company_id;
       } else {
         // Fallback: Get user's profile to access company_id
@@ -108,7 +111,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
         companyId = profile.company_id;
       }
 
-      if (!companyId) throw new Error('Company not found');
+      if (!companyId || companyId === '__loading__') throw new Error('Company not found');
 
       // Try to fetch from cached table first if enabled
       if (useCached) {
@@ -219,7 +222,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       // Fallback: Dynamic calculation (original logic)
       return calculateDelinquentCustomersDynamically(companyId, filters);
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !isCompanyLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes - data is updated daily by cron
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
