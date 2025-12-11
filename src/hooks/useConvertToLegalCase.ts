@@ -21,13 +21,21 @@ export const useConvertToLegalCase = () => {
       const { delinquentCustomer, additionalNotes, attachments } = data;
 
       // Get user's company
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('user_id', user.id)
         .single();
 
-      if (!profile?.company_id) throw new Error('Company not found');
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw new Error('فشل في جلب بيانات المستخدم');
+      }
+
+      if (!profile?.company_id) {
+        console.error('No company_id in profile for user:', user.id);
+        throw new Error('لم يتم تحديد الشركة للمستخدم');
+      }
 
       // Generate case number (will be done by RPC function or sequence)
       const caseNumberPrefix = 'LC';

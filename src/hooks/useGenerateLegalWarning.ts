@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DelinquentCustomer } from "./useDelinquentCustomers";
 
 // Currency configurations for different countries
@@ -67,13 +66,21 @@ export const useGenerateLegalWarning = () => {
       } = params;
 
       // Get user's company
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('company_id, full_name')
+        .select('company_id, first_name, last_name')
         .eq('user_id', user.id)
         .single();
 
-      if (!profile?.company_id) throw new Error('Company not found');
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw new Error('فشل في جلب بيانات المستخدم');
+      }
+
+      if (!profile?.company_id) {
+        console.error('No company_id in profile:', profile);
+        throw new Error('لم يتم تحديد الشركة للمستخدم');
+      }
 
       // Get company information including currency
       const { data: company } = await supabase
