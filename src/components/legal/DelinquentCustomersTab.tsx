@@ -62,6 +62,7 @@ import { useRefreshDelinquentCustomers } from '@/hooks/useDelinquentCustomers';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
 import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
 import LegalWarningDialog from './LegalWarningDialog';
+import { CreateLegalCaseDialog } from './CreateLegalCaseDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -189,6 +190,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [createCaseDialogOpen, setCreateCaseDialogOpen] = useState(false);
   const [currentWarning, setCurrentWarning] = useState<GeneratedWarning | null>(null);
   const [currentCustomer, setCurrentCustomer] = useState<DelinquentCustomer | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -270,14 +272,11 @@ export const DelinquentCustomersTab: React.FC = () => {
     navigate(`/customers/${customer.customer_id}`);
   }, [navigate]);
 
-  // Handle create case
-  const handleCreateCase = useCallback(async (customer: DelinquentCustomer) => {
-    try {
-      await convertToCase.mutateAsync({ delinquentCustomer: customer });
-    } catch (error) {
-      console.error('Error creating case:', error);
-    }
-  }, [convertToCase]);
+  // Handle create case - opens dialog
+  const handleCreateCase = useCallback((customer: DelinquentCustomer) => {
+    setCurrentCustomer(customer);
+    setCreateCaseDialogOpen(true);
+  }, []);
 
   // Handle send warning
   const handleSendWarning = useCallback(async (customer: DelinquentCustomer) => {
@@ -544,22 +543,22 @@ export const DelinquentCustomersTab: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
             <Users className="w-7 h-7 text-white" />
-          </div>
-          <div>
+              </div>
+              <div>
             <h1 className="text-2xl font-bold text-neutral-900">العملاء المتأخرون عن الدفع</h1>
             <p className="text-sm text-neutral-500">
               تتبع ومتابعة العملاء المتأخرين • آخر تحديث: {format(new Date(), 'dd MMM yyyy', { locale: ar })}
             </p>
-          </div>
-        </div>
+              </div>
+            </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => refreshDelinquentCustomers.mutate()}
-            disabled={refreshDelinquentCustomers.isPending}
-            className="gap-2"
-          >
+            <Button
+              variant="outline"
+              onClick={() => refreshDelinquentCustomers.mutate()}
+              disabled={refreshDelinquentCustomers.isPending}
+              className="gap-2"
+            >
             <RefreshCw className={cn("h-4 w-4", refreshDelinquentCustomers.isPending && "animate-spin")} />
             تحديث
           </Button>
@@ -578,8 +577,8 @@ export const DelinquentCustomersTab: React.FC = () => {
           >
             <Download className="h-4 w-4" />
             تصدير
-          </Button>
-        </div>
+            </Button>
+          </div>
       </div>
 
       {/* Stat Cards */}
@@ -670,46 +669,46 @@ export const DelinquentCustomersTab: React.FC = () => {
 
       {/* Search & Filters */}
       <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <Input
+                  <Input
               placeholder="بحث... (الاسم، رقم العميل، العقد، المركبة)"
-              value={searchTerm}
+                    value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="pr-12 h-12 rounded-xl border-neutral-200"
-            />
-          </div>
+                  />
+              </div>
 
           {/* Period Filter */}
           <Select value={overduePeriodFilter} onValueChange={(v) => { setOverduePeriodFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
               <Clock className="w-4 h-4 ml-2 text-neutral-400" />
-              <SelectValue placeholder="فترة التأخير" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع الفترات</SelectItem>
-              <SelectItem value="<30">أقل من 30 يوم</SelectItem>
-              <SelectItem value="30-60">30-60 يوم</SelectItem>
-              <SelectItem value="60-90">60-90 يوم</SelectItem>
-              <SelectItem value=">90">أكثر من 90 يوم</SelectItem>
-            </SelectContent>
-          </Select>
+                  <SelectValue placeholder="فترة التأخير" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الفترات</SelectItem>
+                  <SelectItem value="<30">أقل من 30 يوم</SelectItem>
+                  <SelectItem value="30-60">30-60 يوم</SelectItem>
+                  <SelectItem value="60-90">60-90 يوم</SelectItem>
+                  <SelectItem value=">90">أكثر من 90 يوم</SelectItem>
+                </SelectContent>
+              </Select>
 
-          {/* Violations Filter */}
+              {/* Violations Filter */}
           <Select value={violationsFilter} onValueChange={(v) => { setViolationsFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
               <AlertCircle className="w-4 h-4 ml-2 text-neutral-400" />
-              <SelectValue placeholder="المخالفات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="yes">يوجد مخالفات</SelectItem>
-              <SelectItem value="no">لا يوجد مخالفات</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+                  <SelectValue placeholder="المخالفات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="yes">يوجد مخالفات</SelectItem>
+                  <SelectItem value="no">لا يوجد مخالفات</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
         {/* Bulk Actions */}
         {selectedCustomers.length > 0 && (
@@ -722,18 +721,18 @@ export const DelinquentCustomersTab: React.FC = () => {
             <Badge variant="secondary" className="text-sm">
               تم تحديد {selectedCustomers.length} عميل
             </Badge>
-            <Button
-              size="sm"
-              onClick={handleBulkCreateCases}
+              <Button
+                size="sm"
+                onClick={handleBulkCreateCases}
               disabled={convertToCase.isPending}
               className="gap-2 bg-coral-500 hover:bg-coral-600"
-            >
-              <FileText className="h-4 w-4" />
+              >
+                <FileText className="h-4 w-4" />
               إنشاء قضايا
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
               onClick={() => { setSelectedCustomers([]); setSelectedIds(new Set()); }}
             >
               إلغاء التحديد
@@ -901,16 +900,16 @@ export const DelinquentCustomersTab: React.FC = () => {
                     <span className="text-sm px-3">
                       {currentPage} / {totalPages}
                     </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
+              <Button
+                variant="outline"
+                size="sm"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                    >
+              >
                       <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+              </Button>
+            </div>
+          </div>
               )}
             </>
           )}
@@ -926,6 +925,17 @@ export const DelinquentCustomersTab: React.FC = () => {
         isGenerating={generateWarning.isPending}
         onSendEmail={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
         onSendSMS={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
+      />
+
+      {/* Create Legal Case Dialog */}
+      <CreateLegalCaseDialog
+        open={createCaseDialogOpen}
+        onOpenChange={setCreateCaseDialogOpen}
+        customer={currentCustomer}
+        onSuccess={() => {
+          setCreateCaseDialogOpen(false);
+          setCurrentCustomer(null);
+        }}
       />
     </div>
   );

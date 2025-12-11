@@ -3,10 +3,14 @@
  * Handles all calculations for delinquent customers risk assessment
  */
 
-// Constants
-export const DAILY_PENALTY_RATE = 0.001; // 0.1% per day
-export const MAX_PENALTY_RATE = 0.20; // Maximum 20% of overdue amount
-export const GRACE_PERIOD_DAYS = 5; // No penalty for first 5 days
+// Constants - Updated as per Al-Araf company policy
+export const DAILY_PENALTY_AMOUNT = 120; // 120 QAR per day
+export const MAX_PENALTY_PER_MONTH = 3000; // Maximum 3000 QAR per month
+export const GRACE_PERIOD_DAYS = 0; // No grace period - penalty starts from day 1
+
+// Legacy constants (kept for reference)
+export const DAILY_PENALTY_RATE = 0.001; // 0.1% per day (legacy)
+export const MAX_PENALTY_RATE = 0.20; // Maximum 20% of overdue amount (legacy)
 
 // Risk Score Weights
 export const RISK_WEIGHTS = {
@@ -36,6 +40,11 @@ export type RecommendedAction = {
 
 /**
  * Calculate late payment penalty
+ * New formula: 120 QAR per day, max 3000 QAR per month
+ * 
+ * @param overdueAmount - Not used in new calculation but kept for backward compatibility
+ * @param daysOverdue - Number of days overdue
+ * @returns Penalty amount in QAR
  */
 export function calculatePenalty(overdueAmount: number, daysOverdue: number): number {
   if (daysOverdue <= GRACE_PERIOD_DAYS) {
@@ -43,10 +52,46 @@ export function calculatePenalty(overdueAmount: number, daysOverdue: number): nu
   }
 
   const penaltyDays = daysOverdue - GRACE_PERIOD_DAYS;
-  const calculatedPenalty = overdueAmount * DAILY_PENALTY_RATE * penaltyDays;
-  const maxPenalty = overdueAmount * MAX_PENALTY_RATE;
+  
+  // Calculate raw penalty: 120 QAR per day
+  const rawPenalty = penaltyDays * DAILY_PENALTY_AMOUNT;
+  
+  // Calculate number of months (rounded up)
+  const monthsOverdue = Math.ceil(penaltyDays / 30);
+  
+  // Maximum penalty allowed: 3000 QAR per month
+  const maxPenalty = monthsOverdue * MAX_PENALTY_PER_MONTH;
+  
+  // Return the lesser of raw penalty or max penalty
+  return Math.min(rawPenalty, maxPenalty);
+}
 
-  return Math.min(calculatedPenalty, maxPenalty);
+/**
+ * Calculate penalty breakdown for display
+ */
+export function calculatePenaltyBreakdown(daysOverdue: number): {
+  days: number;
+  dailyRate: number;
+  rawPenalty: number;
+  monthsOverdue: number;
+  maxPenaltyPerMonth: number;
+  maxPenalty: number;
+  finalPenalty: number;
+} {
+  const days = Math.max(0, daysOverdue - GRACE_PERIOD_DAYS);
+  const rawPenalty = days * DAILY_PENALTY_AMOUNT;
+  const monthsOverdue = Math.ceil(days / 30);
+  const maxPenalty = monthsOverdue * MAX_PENALTY_PER_MONTH;
+  
+  return {
+    days,
+    dailyRate: DAILY_PENALTY_AMOUNT,
+    rawPenalty,
+    monthsOverdue,
+    maxPenaltyPerMonth: MAX_PENALTY_PER_MONTH,
+    maxPenalty,
+    finalPenalty: Math.min(rawPenalty, maxPenalty),
+  };
 }
 
 /**

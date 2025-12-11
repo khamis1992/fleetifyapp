@@ -22,6 +22,7 @@ export interface DelinquentCustomer {
   email: string | null;
   credit_limit: number;
   is_blacklisted: boolean;
+  id_number: string | null; // National ID or Passport number
 
   // Contract Info
   contract_id: string;
@@ -175,6 +176,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
               email: row.email,
               credit_limit: row.credit_limit || 0,
               is_blacklisted: row.is_blacklisted || false,
+              id_number: row.id_number || null,
               contract_id: row.contract_id,
               contract_number: row.contract_number,
               contract_start_date: row.contract_start_date,
@@ -255,7 +257,9 @@ async function calculateDelinquentCustomersDynamically(
         phone,
         email,
         credit_limit,
-        is_blacklisted
+        is_blacklisted,
+        national_id,
+        passport_number
       ),
       vehicles(
         id,
@@ -425,6 +429,7 @@ async function calculateDelinquentCustomersDynamically(
         email: customer.email,
         credit_limit: customer.credit_limit || 0,
         is_blacklisted: customer.is_blacklisted || false,
+        id_number: customer.national_id || customer.passport_number || null,
 
         contract_id: contract.id,
         contract_number: contract.contract_number || '',
