@@ -7,6 +7,11 @@ export interface FleetStatus {
   rented: number;
   maintenance: number;
   outOfService: number;
+  reserved: number;
+  reservedEmployee: number;
+  accident: number;
+  stolen: number;
+  policeStation: number;
   total: number;
 }
 
@@ -22,6 +27,11 @@ export const useFleetStatus = () => {
           rented: 0,
           maintenance: 0,
           outOfService: 0,
+          reserved: 0,
+          reservedEmployee: 0,
+          accident: 0,
+          stolen: 0,
+          policeStation: 0,
           total: 0
         };
       }
@@ -39,6 +49,11 @@ export const useFleetStatus = () => {
           rented: 0,
           maintenance: 0,
           outOfService: 0,
+          reserved: 0,
+          reservedEmployee: 0,
+          accident: 0,
+          stolen: 0,
+          policeStation: 0,
           total: 0
         };
       }
@@ -70,6 +85,11 @@ export const useFleetStatus = () => {
 
       const maintenance = statusCounts.maintenance || 0;
       const outOfService = statusCounts.out_of_service || 0;
+      const reserved = statusCounts.reserved || 0;
+      const reservedEmployee = statusCounts.reserved_employee || 0;
+      const accident = statusCounts.accident || 0;
+      const stolen = statusCounts.stolen || 0;
+      const policeStation = statusCounts.police_station || 0;
       const total = vehicles.length;
 
       // Calculate rented vehicles: use active contracts as source of truth
@@ -78,14 +98,20 @@ export const useFleetStatus = () => {
       const rentedFromStatus = statusCounts.rented || 0;
       const rented = contractsError ? rentedFromStatus : rentedFromContracts;
 
-      // Calculate available: total - rented - maintenance - outOfService
-      const available = Math.max(0, total - rented - maintenance - outOfService);
+      // Calculate available: total - all other statuses
+      const unavailable = rented + maintenance + outOfService + reserved + reservedEmployee + accident + stolen + policeStation;
+      const available = Math.max(0, total - unavailable);
 
       return {
         available,
         rented,
         maintenance,
         outOfService,
+        reserved,
+        reservedEmployee,
+        accident,
+        stolen,
+        policeStation,
         total
       };
     },

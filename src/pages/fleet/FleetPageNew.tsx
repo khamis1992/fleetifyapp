@@ -535,6 +535,124 @@ const FleetPageNew: React.FC = () => {
           />
         </div>
 
+        {/* Secondary Status Bar - Other Statuses */}
+        <div className="bg-white rounded-2xl p-3 mb-6 border border-neutral-200 shadow-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-neutral-500 ml-2">حالات أخرى:</span>
+            
+            {/* Reserved */}
+            <button
+              onClick={() => handleStatCardClick('reserved')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filters.status === 'reserved'
+                  ? "bg-purple-500 text-white shadow-md"
+                  : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
+              محجوزة
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs",
+                filters.status === 'reserved' ? "bg-white/20" : "bg-purple-100"
+              )}>
+                {fleetStatus?.reserved || 0}
+              </span>
+            </button>
+
+            {/* Reserved Employee */}
+            <button
+              onClick={() => handleStatCardClick('reserved_employee')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filters.status === 'reserved_employee'
+                  ? "bg-indigo-500 text-white shadow-md"
+                  : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
+              محجوزة لموظف
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs",
+                filters.status === 'reserved_employee' ? "bg-white/20" : "bg-indigo-100"
+              )}>
+                {fleetStatus?.reservedEmployee || 0}
+              </span>
+            </button>
+
+            {/* Accident */}
+            <button
+              onClick={() => handleStatCardClick('accident')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filters.status === 'accident'
+                  ? "bg-rose-500 text-white shadow-md"
+                  : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
+              حادث
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs",
+                filters.status === 'accident' ? "bg-white/20" : "bg-rose-100"
+              )}>
+                {fleetStatus?.accident || 0}
+              </span>
+            </button>
+
+            {/* Stolen */}
+            <button
+              onClick={() => handleStatCardClick('stolen')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filters.status === 'stolen'
+                  ? "bg-slate-700 text-white shadow-md"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
+              مسروقة
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs",
+                filters.status === 'stolen' ? "bg-white/20" : "bg-slate-200"
+              )}>
+                {fleetStatus?.stolen || 0}
+              </span>
+            </button>
+
+            {/* Police Station */}
+            <button
+              onClick={() => handleStatCardClick('police_station')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filters.status === 'police_station'
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
+              مركز الشرطة
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs",
+                filters.status === 'police_station' ? "bg-white/20" : "bg-orange-100"
+              )}>
+                {fleetStatus?.policeStation || 0}
+              </span>
+            </button>
+
+            {/* Clear Filter */}
+            {filters.status && (
+              <button
+                onClick={() => handleStatCardClick(filters.status!)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-all mr-auto"
+              >
+                <X className="w-3 h-3" />
+                إلغاء الفلتر
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Search & Filters Bar */}
         <div className="bg-white rounded-2xl p-4 mb-6 border border-neutral-200 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4">
