@@ -118,6 +118,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         return { label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white' };
       case 'reserved':
         return { label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white' };
+      case 'reserved_employee':
+        return { label: 'محجوزة لموظف', bg: 'bg-indigo-500', text: 'text-white' };
       case 'accident':
         return { label: 'حادث', bg: 'bg-rose-600', text: 'text-white' };
       case 'stolen':
@@ -602,6 +604,12 @@ const FleetPageNew: React.FC = () => {
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                     محجوزة
+                  </span>
+                </SelectItem>
+                <SelectItem value="reserved_employee">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    محجوزة لموظف
                   </span>
                 </SelectItem>
                 <SelectItem value="accident">

@@ -101,6 +101,8 @@ const getStatusConfig = (status: string) => {
       return { label: 'خارج الخدمة', bg: 'bg-red-500', text: 'text-white', iconBg: 'bg-red-100', iconText: 'text-red-600' };
     case 'reserved':
       return { label: 'محجوزة', bg: 'bg-blue-500', text: 'text-white', iconBg: 'bg-blue-100', iconText: 'text-blue-600' };
+    case 'reserved_employee':
+      return { label: 'محجوزة لموظف', bg: 'bg-indigo-500', text: 'text-white', iconBg: 'bg-indigo-100', iconText: 'text-indigo-600' };
     case 'accident':
       return { label: 'حادث', bg: 'bg-rose-600', text: 'text-white', iconBg: 'bg-rose-100', iconText: 'text-rose-600' };
     case 'stolen':
