@@ -35,6 +35,7 @@ import {
   Hash,
   Users,
   FileText,
+  Printer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -783,6 +784,230 @@ export default function CustomerCRMNew() {
     }
   };
 
+  // طباعة تقرير العملاء المتأخرين
+  const handlePrintLateReport = useCallback(() => {
+    // جمع بيانات العملاء المتأخرين
+    const lateCustomers = customers.filter(c => getPaymentStatus(c.id) === 'late');
+    
+    // حساب إجمالي المستحقات لكل عميل
+    const reportData = lateCustomers.map(customer => {
+      const customerInvoices = invoices.filter(inv => inv.customer_id === customer.id);
+      const contract = getCustomerContract(customer.id);
+      const lastContact = getLastContactDays(customer.id);
+      
+      const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+      const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+      const totalRemaining = totalAmount - totalPaid;
+      
+      const overdueInvoices = customerInvoices.filter(inv => {
+        if (inv.payment_status === 'paid') return false;
+        if (!inv.due_date) return false;
+        return new Date(inv.due_date) < new Date();
+      });
+      
+      return {
+        customerCode: customer.customer_code || '-',
+        nameAr: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معرف',
+        phone: customer.phone || '-',
+        contractNumber: contract?.contract_number || '-',
+        overdueCount: overdueInvoices.length,
+        totalRemaining,
+        lastContactDays: lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
+      };
+    }).sort((a, b) => b.totalRemaining - a.totalRemaining);
+
+    // إنشاء نافذة الطباعة
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ title: 'خطأ', description: 'تعذر فتح نافذة الطباعة', variant: 'destructive' });
+      return;
+    }
+
+    const totalOutstanding = reportData.reduce((sum, c) => sum + c.totalRemaining, 0);
+    const today = format(new Date(), 'dd/MM/yyyy');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>تقرير العملاء المتأخرين - ${today}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            color: #333;
+            background: #fff;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #F15555;
+          }
+          .header h1 {
+            font-size: 24px;
+            color: #F15555;
+            margin-bottom: 10px;
+          }
+          .header .date {
+            font-size: 14px;
+            color: #666;
+          }
+          .summary {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+          }
+          .summary-item {
+            text-align: center;
+          }
+          .summary-item .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #F15555;
+          }
+          .summary-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            text-align: right;
+            font-size: 12px;
+          }
+          th {
+            background: #F15555;
+            color: white;
+            font-weight: bold;
+          }
+          tr:nth-child(even) {
+            background: #f9f9f9;
+          }
+          tr:hover {
+            background: #fff3f3;
+          }
+          .amount {
+            font-weight: bold;
+            color: #d32f2f;
+          }
+          .contact-needed {
+            background: #fff3cd;
+          }
+          .checkbox-col {
+            width: 30px;
+            text-align: center;
+          }
+          .checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #999;
+            display: inline-block;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+          }
+          .notes-section {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            min-height: 100px;
+          }
+          .notes-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #666;
+          }
+          @media print {
+            body { padding: 10px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📋 تقرير متابعة العملاء المتأخرين</h1>
+          <div class="date">تاريخ التقرير: ${today}</div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-item">
+            <div class="value">${reportData.length}</div>
+            <div class="label">عدد العملاء المتأخرين</div>
+          </div>
+          <div class="summary-item">
+            <div class="value">${totalOutstanding.toLocaleString('ar-QA')}</div>
+            <div class="label">إجمالي المستحقات (ر.ق)</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">✓</th>
+              <th>#</th>
+              <th>كود العميل</th>
+              <th>اسم العميل</th>
+              <th>الهاتف</th>
+              <th>رقم العقد</th>
+              <th>فواتير متأخرة</th>
+              <th>المستحق (ر.ق)</th>
+              <th>آخر تواصل</th>
+              <th>ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reportData.map((c, i) => `
+              <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
+                <td class="checkbox-col"><div class="checkbox"></div></td>
+                <td>${i + 1}</td>
+                <td>${c.customerCode}</td>
+                <td>${c.nameAr}</td>
+                <td style="direction: ltr; text-align: left;">${c.phone}</td>
+                <td>${c.contractNumber}</td>
+                <td style="text-align: center;">${c.overdueCount}</td>
+                <td class="amount">${c.totalRemaining.toLocaleString('ar-QA')}</td>
+                <td>${c.lastContactDays}</td>
+                <td style="min-width: 100px;"></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="notes-section">
+          <h3>📝 ملاحظات عامة:</h3>
+        </div>
+
+        <div class="footer">
+          تم إنشاء هذا التقرير بواسطة نظام Fleetify - ${today}
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+  }, [customers, invoices, getPaymentStatus, getCustomerContract, getLastContactDays, toast]);
+
   // --- Render ---
   if (isLoading) {
     return (
@@ -829,6 +1054,14 @@ export default function CustomerCRMNew() {
             title="تحديث البيانات"
           >
             <RefreshCw size={18} />
+          </button>
+          <button
+            onClick={handlePrintLateReport}
+            className="p-2.5 bg-[#F15555] text-white rounded-lg hover:bg-[#d64545] transition hover:shadow-md flex items-center gap-2"
+            title="طباعة تقرير المتأخرين"
+          >
+            <Printer size={18} />
+            <span className="hidden md:inline text-sm font-medium">طباعة التقرير</span>
           </button>
         </div>
       </div>
