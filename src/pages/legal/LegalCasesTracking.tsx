@@ -432,9 +432,21 @@ export const LegalCasesTracking: React.FC = () => {
         access_level: uploadFormData.access_level,
         file: uploadFile,
       });
+      
+      // إعادة تعيين الحالة بعد النجاح
       setShowUploadDialog(false);
+      setUploadFile(null);
+      setUploadFormData({
+        document_title: '',
+        document_type: 'contract',
+        description: '',
+        is_confidential: false,
+        is_original: true,
+        access_level: 'private',
+      });
     } catch (error: any) {
       console.error('Upload error:', error);
+      toast.error('فشل في رفع الملف: ' + (error.message || 'خطأ غير معروف'));
     }
   }, [uploadCaseId, uploadFile, uploadFormData, createDocumentMutation]);
 
@@ -1753,7 +1765,21 @@ export const LegalCasesTracking: React.FC = () => {
       </Dialog>
 
       {/* Upload Document Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+      <Dialog open={showUploadDialog} onOpenChange={(open) => {
+        setShowUploadDialog(open);
+        if (!open) {
+          // إعادة تعيين الحالة عند إغلاق الحوار
+          setUploadFile(null);
+          setUploadFormData({
+            document_title: '',
+            document_type: 'contract',
+            description: '',
+            is_confidential: false,
+            is_original: true,
+            access_level: 'private',
+          });
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
