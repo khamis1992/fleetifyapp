@@ -331,13 +331,17 @@ export const DelinquentCustomersTab: React.FC = () => {
     }
 
     // Create CSV content
-    const headers = ['رقم العميل', 'اسم العميل', 'رقم العقد', 'المبلغ المتأخر', 'أيام التأخير', 'مستوى المخاطر', 'الهاتف'];
+    const headers = ['رقم العميل', 'اسم العميل', 'رقم العقد', 'لوحة المركبة', 'الإيجار المتأخر', 'غرامة التأخير', 'المخالفات', 'إجمالي المستحق', 'أيام التأخير', 'مستوى المخاطر', 'الهاتف'];
     const rows = customers.map(c => [
       c.customer_code || '',
       c.customer_name || '',
       c.contract_number || '',
-      c.total_overdue_amount?.toString() || '0',
-      c.days_overdue?.toString() || '0',
+      c.vehicle_plate || '',
+      (c.overdue_amount || 0).toString(),
+      (c.late_penalty || 0).toString(),
+      (c.violations_amount || 0).toString(),
+      (c.total_debt || 0).toString(),
+      (c.days_overdue || 0).toString(),
       c.risk_level || '',
       c.phone || '',
     ]);
@@ -372,7 +376,10 @@ export const DelinquentCustomersTab: React.FC = () => {
     }
 
     const today = format(new Date(), 'dd/MM/yyyy', { locale: ar });
-    const totalAmount = customers.reduce((sum, c) => sum + (c.total_overdue_amount || 0), 0);
+    const totalDebt = customers.reduce((sum, c) => sum + (c.total_debt || 0), 0);
+    const totalOverdue = customers.reduce((sum, c) => sum + (c.overdue_amount || 0), 0);
+    const totalPenalties = customers.reduce((sum, c) => sum + (c.late_penalty || 0), 0);
+    const totalViolations = customers.reduce((sum, c) => sum + (c.violations_amount || 0), 0);
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -424,11 +431,23 @@ export const DelinquentCustomersTab: React.FC = () => {
         <div class="summary">
           <div class="summary-item">
             <div class="summary-value">${customers.length.toLocaleString('en-US')}</div>
-            <div class="summary-label">عدد العملاء المتأخرين</div>
+            <div class="summary-label">عدد العملاء</div>
           </div>
           <div class="summary-item">
-            <div class="summary-value">${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} QAR</div>
-            <div class="summary-label">إجمالي المبالغ المتأخرة</div>
+            <div class="summary-value">${totalOverdue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div class="summary-label">الإيجارات المتأخرة</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${totalPenalties.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div class="summary-label">غرامات التأخير</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${totalViolations.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div class="summary-label">المخالفات المرورية</div>
+          </div>
+          <div class="summary-item" style="border-right: 2px solid #E55B5B; padding-right: 20px;">
+            <div class="summary-value">${totalDebt.toLocaleString('en-US', { minimumFractionDigits: 2 })} QAR</div>
+            <div class="summary-label">الإجمالي المستحق</div>
           </div>
         </div>
 
@@ -437,27 +456,37 @@ export const DelinquentCustomersTab: React.FC = () => {
             <tr>
               <th>#</th>
               <th>اسم العميل</th>
-              <th>رقم العقد</th>
-              <th>المبلغ المتأخر</th>
-              <th>أيام التأخير</th>
+              <th>العقد / المركبة</th>
+              <th>الإيجار</th>
+              <th>الغرامة</th>
+              <th>المخالفات</th>
+              <th>الإجمالي</th>
+              <th>أيام</th>
               <th>المخاطر</th>
-              <th>الهاتف</th>
             </tr>
           </thead>
           <tbody>
             ${customers.map((c, i) => `
               <tr>
                 <td>${(i + 1).toLocaleString('en-US')}</td>
-                <td>${c.customer_name || '-'}</td>
-                <td>${c.contract_number || '-'}</td>
-                <td class="amount">${(c.total_overdue_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td>
+                  <div>${c.customer_name || '-'}</div>
+                  <div style="font-size: 10px; color: #666;">${c.phone || ''}</div>
+                </td>
+                <td>
+                  <div>${c.contract_number || '-'}</div>
+                  <div style="font-size: 10px; color: #666;">🚗 ${c.vehicle_plate || '-'}</div>
+                </td>
+                <td class="amount">${(c.overdue_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td style="color: #EA580C;">${(c.late_penalty || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td style="color: #DC2626;">${(c.violations_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}${c.violations_count > 0 ? ` (${c.violations_count})` : ''}</td>
+                <td class="amount" style="font-size: 13px;">${(c.total_debt || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td>${(c.days_overdue || 0).toLocaleString('en-US')}</td>
                 <td><span class="risk-${c.risk_level?.toLowerCase() || 'low'}">${
                   c.risk_level === 'CRITICAL' ? 'حرج' :
                   c.risk_level === 'HIGH' ? 'عالي' :
                   c.risk_level === 'MEDIUM' ? 'متوسط' : 'منخفض'
                 }</span></td>
-                <td style="direction: ltr; text-align: left;">${c.phone || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -748,8 +777,8 @@ export const DelinquentCustomersTab: React.FC = () => {
                       </TableHead>
                       <TableHead>العميل</TableHead>
                       <TableHead>العقد / المركبة</TableHead>
-                      <TableHead>المبلغ المتأخر</TableHead>
-                      <TableHead>أيام التأخير</TableHead>
+                      <TableHead>المستحقات</TableHead>
+                      <TableHead>التأخير</TableHead>
                       <TableHead>المخاطر</TableHead>
                       <TableHead className="text-center">الإجراءات</TableHead>
                     </TableRow>
@@ -782,13 +811,24 @@ export const DelinquentCustomersTab: React.FC = () => {
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-medium text-neutral-700">{customer.contract_number || '-'}</span>
-                              <span className="text-xs text-neutral-500">{customer.vehicle_info || '-'}</span>
+                              <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-bold text-red-600">
-                              {formatCurrency(customer.total_overdue_amount || 0)}
-                            </span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-bold text-red-600">
+                                {formatCurrency(customer.total_debt || 0)}
+                              </span>
+                              <div className="text-[10px] text-neutral-500 space-y-0.5">
+                                <div>الإيجار: {formatCurrency(customer.overdue_amount || 0)}</div>
+                                {(customer.late_penalty || 0) > 0 && (
+                                  <div className="text-orange-600">+ غرامة: {formatCurrency(customer.late_penalty)}</div>
+                                )}
+                                {(customer.violations_amount || 0) > 0 && (
+                                  <div className="text-rose-600">+ مخالفات ({customer.violations_count}): {formatCurrency(customer.violations_amount)}</div>
+                                )}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={customer.days_overdue > 90 ? 'destructive' : customer.days_overdue > 30 ? 'default' : 'secondary'}>
