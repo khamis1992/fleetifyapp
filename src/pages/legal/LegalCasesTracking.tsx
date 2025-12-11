@@ -1963,52 +1963,48 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Close Case Dialog */}
       <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               إغلاق القضية: {caseToClose?.case_number}
             </DialogTitle>
-            <DialogDescription>
-              تسجيل نتيجة القضية وإنشاء القيد المحاسبي
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* اتجاه القضية */}
-            <div className="space-y-2">
-              <Label>اتجاه القضية</Label>
-              <Select
-                value={closeFormData.case_direction}
-                onValueChange={(value: 'filed_by_us' | 'filed_against_us') => {
-                  setCloseFormData(prev => ({ 
-                    ...prev, 
-                    case_direction: value,
-                    payment_direction: value === 'filed_against_us' ? 'pay' : 'receive'
-                  }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="filed_by_us">قضية رفعناها نحن</SelectItem>
-                  <SelectItem value="filed_against_us">قضية مرفوعة ضدنا</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-3">
+            {/* الصف الأول: اتجاه القضية والنتيجة */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">اتجاه القضية</Label>
+                <Select
+                  value={closeFormData.case_direction}
+                  onValueChange={(value: 'filed_by_us' | 'filed_against_us') => {
+                    setCloseFormData(prev => ({ 
+                      ...prev, 
+                      case_direction: value,
+                      payment_direction: value === 'filed_against_us' ? 'pay' : 'receive'
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="filed_by_us">رفعناها نحن</SelectItem>
+                    <SelectItem value="filed_against_us">مرفوعة ضدنا</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* نتيجة القضية */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>نتيجة القضية</Label>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">النتيجة</Label>
                 <Select
                   value={closeFormData.outcome_type}
                   onValueChange={(value: 'won' | 'lost' | 'settled' | 'dismissed') => 
                     setCloseFormData(prev => ({ ...prev, outcome_type: value }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -2019,38 +2015,43 @@ export const LegalCasesTracking: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label>تاريخ الحكم</Label>
-                <Input
-                  type="date"
-                  value={closeFormData.outcome_date}
-                  onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_date: e.target.value }))}
-                />
-              </div>
             </div>
 
-            {/* المبلغ المحكوم به */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>المبلغ المحكوم به (ر.ق)</Label>
+            {/* الصف الثاني: المبلغ والتاريخ */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">المبلغ (ر.ق)</Label>
                 <Input
                   type="number"
+                  className="h-9"
                   value={closeFormData.outcome_amount}
                   onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_amount: parseFloat(e.target.value) || 0 }))}
                   placeholder="0"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>نوع المبلغ</Label>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">تاريخ الحكم</Label>
+                <Input
+                  type="date"
+                  className="h-9"
+                  value={closeFormData.outcome_date}
+                  onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_date: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* الصف الثالث: نوع المبلغ واتجاه الدفع */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">نوع المبلغ</Label>
                 <Select
                   value={closeFormData.outcome_amount_type}
                   onValueChange={(value: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other') => 
                     setCloseFormData(prev => ({ ...prev, outcome_amount_type: value }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -2062,108 +2063,89 @@ export const LegalCasesTracking: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {/* اتجاه الدفع */}
-            <div className="space-y-2">
-              <Label>اتجاه الدفع</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment_direction"
-                    checked={closeFormData.payment_direction === 'receive'}
-                    onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'receive' }))}
-                    className="text-green-600"
-                  />
-                  <span className="text-sm flex items-center gap-1">
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                    نستلم (إيراد)
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment_direction"
-                    checked={closeFormData.payment_direction === 'pay'}
-                    onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'pay' }))}
-                    className="text-red-600"
-                  />
-                  <span className="text-sm flex items-center gap-1">
-                    <DollarSign className="w-4 h-4 text-red-600" />
-                    ندفع (مصروف)
-                  </span>
-                </label>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">اتجاه الدفع</Label>
+                <div className="flex gap-3 h-9 items-center">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment_direction"
+                      checked={closeFormData.payment_direction === 'receive'}
+                      onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'receive' }))}
+                      className="w-3.5 h-3.5"
+                    />
+                    <span className="text-xs text-green-600 font-medium">نستلم</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment_direction"
+                      checked={closeFormData.payment_direction === 'pay'}
+                      onChange={() => setCloseFormData(prev => ({ ...prev, payment_direction: 'pay' }))}
+                      className="w-3.5 h-3.5"
+                    />
+                    <span className="text-xs text-red-600 font-medium">ندفع</span>
+                  </label>
+                </div>
               </div>
             </div>
 
-            {/* ملاحظات */}
-            <div className="space-y-2">
-              <Label>ملاحظات النتيجة</Label>
-              <Textarea
+            {/* ملاحظات - اختياري */}
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-500">ملاحظات (اختياري)</Label>
+              <Input
                 value={closeFormData.outcome_notes}
                 onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_notes: e.target.value }))}
-                placeholder="أي ملاحظات إضافية حول نتيجة القضية..."
-                rows={2}
+                placeholder="ملاحظات إضافية..."
+                className="h-9"
               />
             </div>
 
-            {/* إنشاء قيد محاسبي */}
+            {/* إنشاء قيد محاسبي + ملخص */}
             {closeFormData.outcome_amount > 0 && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={closeFormData.create_journal_entry}
                     onChange={(e) => setCloseFormData(prev => ({ ...prev, create_journal_entry: e.target.checked }))}
-                    className="rounded border-blue-300"
+                    className="rounded border-blue-300 w-4 h-4"
                   />
-                  <span className="font-medium text-blue-800">إنشاء قيد محاسبي تلقائياً</span>
+                  <span className="text-sm font-medium text-blue-800">إنشاء قيد محاسبي تلقائياً</span>
                 </label>
                 {closeFormData.create_journal_entry && (
-                  <div className="mt-3 text-sm text-blue-700">
-                    <p className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      سيتم إنشاء قيد {closeFormData.payment_direction === 'pay' ? 'مصروف' : 'إيراد'} بمبلغ {formatCurrency(closeFormData.outcome_amount)}
-                    </p>
-                    <p className="mt-1 text-xs text-blue-600">
-                      {closeFormData.payment_direction === 'pay' 
-                        ? '📍 مدين: مصروفات غرامات وتعويضات | دائن: النقدية/الدائنون'
-                        : '📍 مدين: النقدية/المدينون | دائن: إيرادات تعويضات'
-                      }
-                    </p>
-                  </div>
+                  <p className="text-xs text-blue-600 flex items-center gap-1">
+                    <FileText className="w-3.5 h-3.5" />
+                    قيد {closeFormData.payment_direction === 'pay' ? 'مصروف' : 'إيراد'}: {formatCurrency(closeFormData.outcome_amount)}
+                  </p>
                 )}
               </div>
             )}
 
-            {/* ملخص */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold mb-2">ملخص الإغلاق:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <p>القضية: <strong>{caseToClose?.case_number}</strong></p>
-                <p>النتيجة: <strong>{
-                  closeFormData.outcome_type === 'won' ? 'ربح ✅' :
-                  closeFormData.outcome_type === 'lost' ? 'خسارة ❌' :
-                  closeFormData.outcome_type === 'settled' ? 'تسوية 🤝' : 'رفض 🚫'
-                }</strong></p>
-                <p>المبلغ: <strong className={closeFormData.payment_direction === 'pay' ? 'text-red-600' : 'text-green-600'}>
-                  {closeFormData.payment_direction === 'pay' ? '-' : '+'}{formatCurrency(closeFormData.outcome_amount)}
-                </strong></p>
-                <p>الاتجاه: <strong>{closeFormData.payment_direction === 'pay' ? 'ندفع' : 'نستلم'}</strong></p>
-              </div>
+            {/* ملخص مضغوط */}
+            <div className="p-3 bg-gray-100 rounded-lg flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="text-gray-600">
+                {closeFormData.outcome_type === 'won' ? '✅ ربح' :
+                 closeFormData.outcome_type === 'lost' ? '❌ خسارة' :
+                 closeFormData.outcome_type === 'settled' ? '🤝 تسوية' : '🚫 رفض'}
+              </span>
+              <span className={`font-bold ${closeFormData.payment_direction === 'pay' ? 'text-red-600' : 'text-green-600'}`}>
+                {closeFormData.payment_direction === 'pay' ? '-' : '+'}{formatCurrency(closeFormData.outcome_amount)}
+              </span>
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowCloseDialog(false)}>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowCloseDialog(false)}>
               إلغاء
             </Button>
             <Button 
+              size="sm"
               onClick={handleCloseCase}
               className="bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle2 className="w-4 h-4 ml-2" />
+              <CheckCircle2 className="w-4 h-4 ml-1" />
               إغلاق القضية
             </Button>
           </DialogFooter>
