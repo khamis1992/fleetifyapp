@@ -296,18 +296,31 @@ async function calculateDelinquentCustomersDynamically(
   let overdueInvoices: any[] = [];
 
   // Get oldest unpaid invoice per contract to calculate days_overdue
+  // We need to check for invoices that are past due and not fully paid
   try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // First, get all invoices for these contracts that are past due
     const { data: invoicesData, error: invoicesError } = await supabase
       .from('invoices')
-      .select('contract_id, due_date, payment_status')
+      .select('contract_id, due_date, payment_status, total_amount, paid_amount')
       .eq('company_id', companyId)
       .in('contract_id', contractIds)
-      .in('payment_status', ['pending', 'partially_paid', 'overdue', 'unpaid'])
-      .lt('due_date', new Date().toISOString().split('T')[0]) // Only past due dates
+      .lt('due_date', todayStr) // Only past due dates
       .order('due_date', { ascending: true }); // Oldest first
     
     if (!invoicesError && invoicesData) {
-      overdueInvoices = invoicesData;
+      // Filter to only include invoices that are actually unpaid or partially paid
+      overdueInvoices = invoicesData.filter(inv => {
+        const totalAmount = Number(inv.total_amount) || 0;
+        const paidAmount = Number(inv.paid_amount) || 0;
+        const hasRemainingBalance = paidAmount < totalAmount;
+        
+        // Consider overdue if payment_status indicates unpaid OR there's remaining balance
+        const isUnpaidStatus = ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid'].includes(inv.payment_status);
+        
+        return isUnpaidStatus || hasRemainingBalance;
+      });
     }
   } catch (error) {
     console.warn('Error fetching overdue invoices:', error);
