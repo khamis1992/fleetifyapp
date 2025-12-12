@@ -208,37 +208,24 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 أنشئ الإنذار كاملاً الآن:
 `.trim();
 
-      // Call OpenAI API to generate the warning
-      // Get API key from Supabase company settings
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .select('settings')
-        .eq('id', profile.company_id)
-        .single();
+      // Z.AI GLM-4.6 API Configuration (same as AI Chat Assistant)
+      const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+      const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
+      const MODEL = 'glm-4.6';
 
-      if (companyError) {
-        throw new Error('فشل في جلب إعدادات الشركة: ' + companyError.message);
-      }
-
-      const apiKey = companyData?.settings?.openai_api_key;
-      
-      if (!apiKey) {
-        throw new Error('يرجى تكوين مفتاح OpenAI API في إعدادات الشركة أولاً');
-      }
-
-      // Call OpenAI API
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Call Z.AI GLM-4.6 API
+      const aiResponse = await fetch(ZAI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${ZAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: 'gpt-4-turbo-preview',
+          model: MODEL,
           messages: [
             {
               role: 'system',
-              content: 'أنت مستشار قانوني متخصص في القانون الكويتي وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية.'
+              content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية.'
             },
             {
               role: 'user',
@@ -247,27 +234,25 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
           ],
           temperature: 0.3, // Low temperature for consistent, formal output
           max_tokens: 2000,
-          top_p: 0.9,
-          frequency_penalty: 0.2,
-          presence_penalty: 0.1
+          top_p: 0.9
         })
       });
 
-      if (!openaiResponse.ok) {
-        const errorData = await openaiResponse.json();
-        throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
+      if (!aiResponse.ok) {
+        const errorData = await aiResponse.json().catch(() => ({}));
+        throw new Error(`GLM-4.6 API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
       }
 
-      const openaiData = await openaiResponse.json();
-      const generatedContent = openaiData.choices[0]?.message?.content;
+      const aiData = await aiResponse.json();
+      const generatedContent = aiData.choices[0]?.message?.content;
 
       if (!generatedContent) {
-        throw new Error('لم يتم إنشاء محتوى من Legal AI');
+        throw new Error('لم يتم إنشاء محتوى من GLM-4.6 AI');
       }
 
-      // Calculate costs
-      const tokensUsed = openaiData.usage?.total_tokens || 0;
-      const estimatedCost = (tokensUsed / 1000) * 0.01; // Approximate cost
+      // Calculate usage (Z.AI provides similar usage stats)
+      const tokensUsed = aiData.usage?.total_tokens || 0;
+      const estimatedCost = 0; // Z.AI pricing is different, set to 0 for now
 
       // Save to legal_documents table
       const { data: document, error: docError } = await supabase
@@ -301,7 +286,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             ai_generation: {
               tokens_used: tokensUsed,
               estimated_cost: estimatedCost,
-              model: 'gpt-4-turbo-preview',
+              model: 'glm-4.6',
               generated_at: new Date().toISOString()
             }
           }
