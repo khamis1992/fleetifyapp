@@ -208,10 +208,10 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 أنشئ الإنذار كاملاً الآن:
 `.trim();
 
-      // Z.AI GLM-4 API Configuration
-      const ZAI_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+      // Z.AI GLM-4.6 API Configuration (same as AIChatAssistant)
+      const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
       const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-      const MODEL = 'glm-4'; // Use standard GLM-4 model
+      const MODEL = 'glm-4.6';
 
       // Call Z.AI GLM API
       const aiResponse = await fetch(ZAI_API_URL, {
@@ -245,7 +245,9 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       }
 
       const aiData = await aiResponse.json();
-      const generatedContent = aiData.choices?.[0]?.message?.content;
+      // GLM-4.6 may return content in 'content' or 'reasoning_content'
+      const messageData = aiData.choices?.[0]?.message;
+      const generatedContent = messageData?.content || messageData?.reasoning_content;
 
       if (!generatedContent) {
         console.error('AI Response:', JSON.stringify(aiData));
@@ -288,7 +290,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             ai_generation: {
               tokens_used: tokensUsed,
               estimated_cost: estimatedCost,
-              model: 'glm-4',
+              model: 'glm-4.6',
               generated_at: new Date().toISOString()
             }
           }
