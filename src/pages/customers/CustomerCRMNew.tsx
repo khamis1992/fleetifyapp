@@ -538,21 +538,49 @@ export default function CustomerCRMNew() {
   // Handle auto-call from URL parameter (e.g., /customers/crm?call=CUSTOMER_ID)
   useEffect(() => {
     const callCustomerId = searchParams.get('call');
-    if (callCustomerId && customers.length > 0 && !autoCallHandled) {
-      const customerToCall = customers.find(c => c.id === callCustomerId);
+    if (callCustomerId && !autoCallHandled && companyId) {
+      setAutoCallHandled(true);
+      
+      // First try to find in loaded customers
+      let customerToCall = customers.find(c => c.id === callCustomerId);
+      
       if (customerToCall) {
         setCallingCustomer(customerToCall);
         setCallDialogOpen(true);
-        setAutoCallHandled(true);
-        // Clear the URL parameter
         setSearchParams({});
         toast({
           title: '📞 بدء الاتصال',
           description: `جاري الاتصال بـ ${customerToCall.first_name_ar || customerToCall.first_name || ''} ${customerToCall.last_name_ar || customerToCall.last_name || ''}`,
         });
+      } else {
+        // If not found in list, fetch directly from database
+        supabase
+          .from('customers')
+          .select('id, customer_code, first_name, last_name, first_name_ar, last_name_ar, phone, email, company_id, is_active, created_at')
+          .eq('id', callCustomerId)
+          .eq('company_id', companyId)
+          .single()
+          .then(({ data, error }) => {
+            if (data && !error) {
+              setCallingCustomer(data as Customer);
+              setCallDialogOpen(true);
+              setSearchParams({});
+              toast({
+                title: '📞 بدء الاتصال',
+                description: `جاري الاتصال بـ ${data.first_name_ar || data.first_name || ''} ${data.last_name_ar || data.last_name || ''}`,
+              });
+            } else {
+              toast({
+                title: '⚠️ خطأ',
+                description: 'لم يتم العثور على العميل',
+                variant: 'destructive',
+              });
+              setSearchParams({});
+            }
+          });
       }
     }
-  }, [customers, searchParams, autoCallHandled, setSearchParams, toast]);
+  }, [searchParams, autoCallHandled, companyId, customers, setSearchParams, toast]);
 
   // Keyboard shortcut for search
   useEffect(() => {
