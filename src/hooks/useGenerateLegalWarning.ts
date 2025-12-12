@@ -224,11 +224,11 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       console.log('[DEBUG H3] About to call Z.AI API', {apiUrl:ZAI_API_URL,model:MODEL});
       // #endregion
 
-      // Call Z.AI GLM API with streaming (required for glm-4.6 to get actual content)
+      // Call Z.AI GLM API with NON-streaming mode (more reliable)
       let aiResponse;
       try {
         // #region agent log
-        console.log('[DEBUG H3a] Starting fetch to Z.AI...');
+        console.log('[DEBUG H3a] Starting fetch to Z.AI (non-streaming)...');
         // #endregion
         aiResponse = await fetch(ZAI_API_URL, {
           method: 'POST',
@@ -251,7 +251,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             temperature: 0.3,
             max_tokens: 3000,
             top_p: 0.9,
-            stream: true // Enable streaming to get actual content from glm-4.6
+            stream: false // Disable streaming for reliability
           })
         });
         // #region agent log
@@ -273,55 +273,22 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
         throw new Error(`GLM API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
       }
 
-      // Read streaming response (glm-4.6 returns content via streaming)
-      const reader = aiResponse.body?.getReader();
-      const decoder = new TextDecoder('utf-8');
+      // Read non-streaming response
       let generatedContent = '';
-
-      // #region agent log
-      console.log('[DEBUG H4a] Starting to read streaming response', {hasReader:!!reader});
-      // #endregion
-
-      if (reader) {
-        try {
-          let chunkCount = 0;
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              // #region agent log
-              console.log('[DEBUG H4b] Streaming done', {totalChunks:chunkCount,contentLength:generatedContent.length});
-              // #endregion
-              break;
-            }
-            chunkCount++;
-
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (trimmedLine.startsWith('data:')) {
-                const jsonStr = trimmedLine.slice(5).trim();
-                if (jsonStr === '[DONE]') continue;
-                
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const delta = parsed.choices?.[0]?.delta?.content;
-                  if (delta) {
-                    generatedContent += delta;
-                  }
-                } catch {
-                  // Skip invalid JSON
-                }
-              }
-            }
-          }
-        } catch (streamError) {
-          // #region agent log
-          console.error('[DEBUG H4c] Streaming read FAILED', {error:String(streamError),message:(streamError as Error)?.message});
-          // #endregion
-          throw new Error(`فشل قراءة استجابة الذكاء الاصطناعي: ${(streamError as Error)?.message}`);
-        }
+      try {
+        // #region agent log
+        console.log('[DEBUG H4a] Reading JSON response...');
+        // #endregion
+        const responseData = await aiResponse.json();
+        // #region agent log
+        console.log('[DEBUG H4b] JSON parsed', {hasChoices:!!responseData.choices,choicesLength:responseData.choices?.length});
+        // #endregion
+        generatedContent = responseData.choices?.[0]?.message?.content || '';
+      } catch (parseError) {
+        // #region agent log
+        console.error('[DEBUG H4c] JSON parse FAILED', {error:String(parseError),message:(parseError as Error)?.message});
+        // #endregion
+        throw new Error(`فشل قراءة استجابة الذكاء الاصطناعي: ${(parseError as Error)?.message}`);
       }
 
       // #region agent log
