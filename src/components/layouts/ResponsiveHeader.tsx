@@ -73,7 +73,7 @@ export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
 
         {/* Logo */}
         <LazyImage 
-          src="/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+          src="/assets/alaraf-logo.png" 
           alt="Fleetify Logo" 
           className={`w-auto ${isMobile ? 'h-10' : 'h-10 md:h-12'}`}
         />

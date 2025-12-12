@@ -283,7 +283,7 @@ export const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
       <SidebarHeader className="border-b border-border/50 p-4">
         <div className="flex items-center gap-3">
           <LazyImage 
-            src="/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+            src="/assets/alaraf-logo.png" 
             alt="Fleetify Logo" 
             className="h-10 w-auto"
           />

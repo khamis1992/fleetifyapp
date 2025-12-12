@@ -133,7 +133,7 @@ export const AuthForm: FC = () => {
             <div className="relative z-10 flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl shadow-accent overflow-hidden">
               {/* Base logo */}
               <LazyImage 
-                src="/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+                src="/assets/alaraf-logo.png" 
                 alt="Fleetify Logo" 
                 className="h-24 w-auto filter brightness-0 invert relative z-10"
               />

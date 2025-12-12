@@ -432,7 +432,7 @@ export const DelinquentCustomersTab: React.FC = () => {
             <div class="title-text">تقرير العملاء المتأخرين</div>
             <div style="font-size: 11px; color: #666; margin-top: 4px;">${today}</div>
           </div>
-          <img src="/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+          <img src="/assets/alaraf-logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
         </div>
 
         <div class="summary">

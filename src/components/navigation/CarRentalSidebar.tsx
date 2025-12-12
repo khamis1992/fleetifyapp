@@ -187,7 +187,7 @@ export function CarRentalSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
           <LazyImage 
-            src="/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png" 
+            src="/assets/alaraf-logo.png" 
             alt="Fleetify Logo" 
             className="h-16 w-auto filter brightness-0 invert"
           />
