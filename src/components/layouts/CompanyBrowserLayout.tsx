@@ -116,7 +116,7 @@ export const CompanyBrowserLayout: React.FC = () => {
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               <LazyImage 
-                src="/assets/alaraf-logo.png" 
+                src="/receipts/logo.png" 
                 alt="Fleetify Logo" 
                 className="h-12 w-auto"
               />

@@ -1110,7 +1110,7 @@ export default function CustomerCRMNew() {
                 <div class="company-info">C.R: 12345 | Doha, Qatar</div>
               </div>
               <div class="header-left">
-                <img src="/assets/alaraf-logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+                <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
               </div>
             </div>
             <!-- Center: Title -->

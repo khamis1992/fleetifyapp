@@ -132,7 +132,7 @@ export function DynamicSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
           <img 
-            src="/assets/alaraf-logo.png" 
+            src="/receipts/logo.png" 
             alt="Company Logo" 
             className="h-16 w-auto filter brightness-0 invert"
           />

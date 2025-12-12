@@ -123,7 +123,7 @@ export function MobileSidebar() {
       <div className="border-b border-border p-6">
         <div className="flex flex-col items-center text-center space-y-2">
           <LazyImage 
-            src="/assets/alaraf-logo.png" 
+            src="/receipts/logo.png" 
             alt="Fleetify Logo" 
             className="h-16 w-auto"
           />

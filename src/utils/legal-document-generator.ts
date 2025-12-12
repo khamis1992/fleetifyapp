@@ -455,7 +455,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         </div>
       </div>
       <div class="logo-container">
-        <img src="/assets/alaraf-logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+        <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
       </div>
     </div>
 

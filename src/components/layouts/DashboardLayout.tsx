@@ -60,7 +60,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               <LazyImage 
-                src="/assets/alaraf-logo.png" 
+                src="/receipts/logo.png" 
                 alt="Fleetify Logo" 
                 className="h-12 w-auto"
               />
