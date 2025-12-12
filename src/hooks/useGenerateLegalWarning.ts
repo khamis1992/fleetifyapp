@@ -208,10 +208,10 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 أنشئ الإنذار كاملاً الآن:
 `.trim();
 
-      // Z.AI GLM-4-Flash API Configuration (non-reasoning model for direct output)
+      // Z.AI GLM-4 API Configuration
       const ZAI_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
       const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-      const MODEL = 'glm-4-flash'; // Use flash model instead of 4.6 to avoid reasoning output
+      const MODEL = 'glm-4'; // Use standard GLM-4 model
 
       // Call Z.AI GLM API
       const aiResponse = await fetch(ZAI_API_URL, {
@@ -288,7 +288,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             ai_generation: {
               tokens_used: tokensUsed,
               estimated_cost: estimatedCost,
-              model: 'glm-4-flash',
+              model: 'glm-4',
               generated_at: new Date().toISOString()
             }
           }
