@@ -116,7 +116,7 @@ export const useGenerateLegalWarning = () => {
 
       // Build AI prompt for generating the legal warning with company currency
       const aiPrompt = `
-أنت مستشار قانوني متخصص في القانون. أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
+أنت مستشار قانوني متخصص في القانون القطري وقوانين تأجير السيارات. أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
 
 معلومات الشركة:
 - اسم الشركة: ${company?.name_ar || 'شركة فليتفاي'}
@@ -164,7 +164,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 1. **رأس الوثيقة:**
    - نوع الوثيقة: "${urgencyText}"
    - رقم الوثيقة: ${documentNumber}
-   - التاريخ: ${new Date().toLocaleDateString('ar-KW')}
+   - التاريخ: ${new Date().toLocaleDateString('ar-QA')}
 
 2. **مقدمة رسمية:**
    - مخاطبة العميل بشكل رسمي ومحترم
@@ -186,7 +186,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
    - تحميل العميل المصاريف القانونية (10% من المبلغ)
    - تحميل العميل رسوم المحكمة (1% من المبلغ)
    - المطالبة بالتعويضات المناسبة
-   ${includeBlacklistThreat ? '- إضافة العميل إلى القائمة السوداء لشركات التأجير في الكويت' : ''}
+   ${includeBlacklistThreat ? '- إضافة العميل إلى القائمة السوداء لشركات التأجير في قطر' : ''}
    - الإبلاغ عن المديونية للجهات الائتمانية
 
 6. **دعوة للحوار:**
@@ -201,7 +201,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 **مهم جداً:**
 - استخدم لغة قانونية رسمية ومهنية
 - كن حازماً لكن محترماً
-- أشر إلى المواد القانونية ذات الصلة في القانون الكويتي
+- أشر إلى المواد القانونية ذات الصلة في القانون المدني القطري
 - استخدم تنسيق واضح ومنظم
 - تأكد من أن الوثيقة قابلة للطباعة والاستخدام مباشرة
 
@@ -267,7 +267,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
           document_type: 'legal_warning',
           document_title: `${urgencyText} - ${delinquentCustomer.customer_name}`,
           content: generatedContent,
-          country_law: 'kuwait',
+          country_law: 'qatar',
           status: 'draft',
           created_by: user.id,
           metadata: {
@@ -308,11 +308,10 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
           query: `إنشاء ${urgencyText} للعميل ${delinquentCustomer.customer_name}`,
           response: `تم إنشاء الإنذار القانوني بنجاح. رقم الوثيقة: ${documentNumber}`,
           query_type: 'document_generation',
-          country: 'kuwait',
+          country: 'qatar',
           tokens_used: tokensUsed,
-          response_time: 0, // Will be calculated if needed
-          cost: estimatedCost,
-          created_by: user.id
+          response_time_ms: 0,
+          cost_usd: estimatedCost
         });
 
       return {
