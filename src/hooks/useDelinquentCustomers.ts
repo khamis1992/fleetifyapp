@@ -420,6 +420,14 @@ async function calculateDelinquentCustomersDynamically(
         // Fallback to contract's days_overdue if available
         daysOverdue = contract.days_overdue;
       }
+      
+      // If daysOverdue is much less than expected based on months_unpaid, use months-based calculation
+      // This handles cases where old invoices are missing from the system
+      const expectedDaysFromMonths = monthsUnpaid * 30;
+      if (monthsUnpaid > 1 && daysOverdue < expectedDaysFromMonths * 0.5) {
+        // Days overdue seems too low compared to months unpaid, use a more realistic estimate
+        daysOverdue = Math.max(daysOverdue, expectedDaysFromMonths);
+      }
 
       // Get actual payments for this customer
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
