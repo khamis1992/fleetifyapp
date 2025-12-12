@@ -187,6 +187,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
   const [overduePeriodFilter, setOverduePeriodFilter] = useState<string>('all');
   const [violationsFilter, setViolationsFilter] = useState<string>('all');
+  const [contractStatusFilter, setContractStatusFilter] = useState<string>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
@@ -210,7 +211,14 @@ export const DelinquentCustomersTab: React.FC = () => {
     hasViolations: violationsFilter !== 'all' ? violationsFilter === 'yes' : undefined,
   }), [searchTerm, riskLevelFilter, overduePeriodFilter, violationsFilter]);
 
-  const { data: customers, isLoading: customersLoading, error } = useDelinquentCustomers(filters);
+  const { data: rawCustomers, isLoading: customersLoading, error } = useDelinquentCustomers(filters);
+
+  // Apply contract status filter locally
+  const customers = useMemo(() => {
+    if (!rawCustomers) return [];
+    if (contractStatusFilter === 'all') return rawCustomers;
+    return rawCustomers.filter(c => c.contract_status === contractStatusFilter);
+  }, [rawCustomers, contractStatusFilter]);
 
   // Pagination
   const paginatedCustomers = useMemo(() => {
@@ -519,10 +527,11 @@ export const DelinquentCustomersTab: React.FC = () => {
     setRiskLevelFilter('all');
     setOverduePeriodFilter('all');
     setViolationsFilter('all');
+    setContractStatusFilter('all');
     setCurrentPage(1);
   }, []);
 
-  const activeFiltersCount = [searchTerm, riskLevelFilter !== 'all', overduePeriodFilter !== 'all', violationsFilter !== 'all'].filter(Boolean).length;
+  const activeFiltersCount = [searchTerm, riskLevelFilter !== 'all', overduePeriodFilter !== 'all', violationsFilter !== 'all', contractStatusFilter !== 'all'].filter(Boolean).length;
 
   // Loading state
   if (statsLoading) {
@@ -708,6 +717,20 @@ export const DelinquentCustomersTab: React.FC = () => {
                   <SelectItem value="no">لا يوجد مخالفات</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Contract Status Filter */}
+          <Select value={contractStatusFilter} onValueChange={(v) => { setContractStatusFilter(v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
+              <FileText className="w-4 h-4 ml-2 text-neutral-400" />
+                  <SelectValue placeholder="حالة العقد" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="cancelled">ملغي</SelectItem>
+                  <SelectItem value="closed">مغلق</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
         {/* Bulk Actions */}
@@ -790,7 +813,11 @@ export const DelinquentCustomersTab: React.FC = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
-                          className="hover:bg-neutral-50 border-b border-neutral-100"
+                          className={cn(
+                            "hover:bg-neutral-50 border-b border-neutral-100",
+                            customer.contract_status === 'cancelled' && "bg-red-50/50 hover:bg-red-100/50",
+                            customer.contract_status === 'closed' && "bg-gray-50/50 hover:bg-gray-100/50"
+                          )}
                         >
                           <TableCell>
                             <Checkbox
@@ -809,7 +836,15 @@ export const DelinquentCustomersTab: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="font-medium text-neutral-700">{customer.contract_number || '-'}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-neutral-700">{customer.contract_number || '-'}</span>
+                                {customer.contract_status === 'cancelled' && (
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">ملغي</Badge>
+                                )}
+                                {customer.contract_status === 'closed' && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-200">مغلق</Badge>
+                                )}
+                              </div>
                               <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
                             </div>
                           </TableCell>

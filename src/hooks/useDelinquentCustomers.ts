@@ -28,6 +28,7 @@ export interface DelinquentCustomer {
   contract_id: string;
   contract_number: string;
   contract_start_date: string;
+  contract_status: 'active' | 'cancelled' | 'closed' | 'pending' | string;
   monthly_rent: number;
   vehicle_id: string | null;
   vehicle_plate: string | null;
@@ -243,6 +244,7 @@ async function calculateDelinquentCustomersDynamically(
       id,
       contract_number,
       start_date,
+      status,
       monthly_amount,
       balance_due,
       days_overdue,
@@ -270,7 +272,7 @@ async function calculateDelinquentCustomersDynamically(
       )
     `)
     .eq('company_id', companyId)
-    .eq('status', 'active')
+    .in('status', ['active', 'cancelled', 'closed'])  // Include cancelled contracts with debt
     .gt('balance_due', 0)  // Only get contracts with outstanding balance
     .order('balance_due', { ascending: false });
 
@@ -489,6 +491,7 @@ async function calculateDelinquentCustomersDynamically(
         contract_id: contract.id,
         contract_number: contract.contract_number || '',
         contract_start_date: contract.start_date,
+        contract_status: contract.status || 'active',
         monthly_rent: monthlyAmount,  // Using monthly_amount
         vehicle_id: contract.vehicle_id,
         vehicle_plate: vehiclePlate,
