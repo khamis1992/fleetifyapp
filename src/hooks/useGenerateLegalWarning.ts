@@ -213,7 +213,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
       const MODEL = 'glm-4.6';
 
-      // Call Z.AI GLM API
+      // Call Z.AI GLM API with streaming (required for glm-4.6 to get actual content)
       const aiResponse = await fetch(ZAI_API_URL, {
         method: 'POST',
         headers: {
@@ -234,7 +234,8 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
           ],
           temperature: 0.3,
           max_tokens: 3000,
-          top_p: 0.9
+          top_p: 0.9,
+          stream: true // Enable streaming to get actual content from glm-4.6
         })
       });
 
@@ -244,18 +245,46 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
         throw new Error(`GLM API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
       }
 
-      const aiData = await aiResponse.json();
-      // GLM-4.6 may return content in 'content' or 'reasoning_content'
-      const messageData = aiData.choices?.[0]?.message;
-      const generatedContent = messageData?.content || messageData?.reasoning_content;
+      // Read streaming response (glm-4.6 returns content via streaming)
+      const reader = aiResponse.body?.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let generatedContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('data:')) {
+              const jsonStr = trimmedLine.slice(5).trim();
+              if (jsonStr === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                if (delta) {
+                  generatedContent += delta;
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
 
       if (!generatedContent) {
-        console.error('AI Response:', JSON.stringify(aiData));
+        console.error('AI Response: No content received from streaming');
         throw new Error('لم يتم إنشاء محتوى من GLM AI');
       }
 
-      // Calculate usage (Z.AI provides similar usage stats)
-      const tokensUsed = aiData.usage?.total_tokens || 0;
+      // Estimate tokens from content length (streaming doesn't provide usage stats)
+      const tokensUsed = Math.ceil(generatedContent.length / 4);
       const estimatedCost = 0; // Z.AI pricing is different, set to 0 for now
 
       // Save to legal_documents table
