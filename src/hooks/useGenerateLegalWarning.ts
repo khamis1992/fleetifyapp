@@ -169,7 +169,7 @@ ${company.name_ar}
  * إنذار نهائي (واتساب – ما قبل الدعوى)
  */
 function generateFinalWarningTemplate(data: WarningData): string {
-  const { documentNumber, date, deadlineDate, customer, company, currency, currencyName, deadlineDays } = data;
+  const { documentNumber, date, customer, company, currency, currencyName } = data;
 
   return `
 ${company.name_ar}
@@ -179,23 +179,23 @@ ${company.name_ar}
 رقم: ${documentNumber}
 التاريخ: ${date}
 
-إلى: ${customer.customer_name}
-رقم العميل: ${customer.customer_code}
+السيد / ${customer.customer_name}
 
 نحيطكم علمًا بأن هذا هو الإنذار الأخير بخصوص المستحقات المتراكمة على عقد الإيجار رقم (${customer.contract_number})
 والمركبة (${customer.vehicle_plate || "—"}).
 
 المبالغ المستحقة:
-- إيجارات متأخرة: ${customer.overdue_amount.toLocaleString()} ${currency}
-- غرامات تأخير: ${customer.late_penalty.toLocaleString()} ${currency}
-- مخالفات مرورية: ${customer.violations_amount.toLocaleString()} ${currency}
+
+إيجارات متأخرة: ${customer.overdue_amount.toLocaleString()} ${currency}
+
+غرامات تأخير: ${customer.late_penalty.toLocaleString()} ${currency}
+
+مخالفات مرورية: ${customer.violations_amount.toLocaleString()} ${currency}
 
 الإجمالي النهائي: ${customer.total_debt.toLocaleString()} ${currencyName}
-مدة التأخير: ${customer.days_overdue} يوم
 
 المهلة النهائية للسداد:
-${deadlineDate}
-(${deadlineDays}) أيام فقط
+خلال 24 ساعة فقط من تاريخ هذا الإنذار
 
 في حال عدم السداد خلال المهلة أعلاه، سيتم مباشرة رفع الدعوى القضائية دون إشعار آخر، والمطالبة بكامل المبالغ والمصاريف والتعويضات وفق القوانين السارية في دولة قطر.
 
@@ -203,10 +203,6 @@ ${deadlineDate}
 
 للتواصل الفوري:
 ${company.phone}
-${company.email}
-
-${company.name_ar}
-الإدارة القانونية
 `.trim();
 }
 
