@@ -4,21 +4,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { DelinquentCustomer } from "./useDelinquentCustomers";
 
-// Currency configurations
+/* =========================
+   Currency configuration
+========================= */
 const CURRENCY_NAMES: Record<string, string> = {
-  'KWD': 'دينار كويتي',
-  'QAR': 'ريال قطري',
-  'SAR': 'ريال سعودي',
-  'AED': 'درهم إماراتي',
-  'OMR': 'ريال عماني',
-  'BHD': 'دينار بحريني',
-  'USD': 'دولار أمريكي',
-  'EUR': 'يورو',
+  KWD: "دينار كويتي",
+  QAR: "ريال قطري",
+  SAR: "ريال سعودي",
+  AED: "درهم إماراتي",
+  OMR: "ريال عماني",
+  BHD: "دينار بحريني",
+  USD: "دولار أمريكي",
+  EUR: "يورو",
 };
 
+/* =========================
+   Types
+========================= */
 export interface GenerateWarningParams {
   delinquentCustomer: DelinquentCustomer;
-  warningType?: 'initial' | 'formal' | 'final';
+  warningType?: "initial" | "formal" | "final";
   deadlineDays?: number;
   includeBlacklistThreat?: boolean;
   additionalNotes?: string;
@@ -56,476 +61,284 @@ interface WarningData {
   additionalNotes?: string;
 }
 
+/* =========================
+   WhatsApp-friendly templates
+   (Qatari legal tone)
+========================= */
+
 /**
- * قالب الإنذار الأولي (تنبيه)
+ * تنبيه ودي (واتساب)
  */
 function generateInitialWarningTemplate(data: WarningData): string {
   const { documentNumber, date, deadlineDate, customer, company, currency, currencyName, deadlineDays } = data;
-  
-  return `
-══════════════════════════════════════════════════════════════════
-                         تنبيه أولي بالسداد
-══════════════════════════════════════════════════════════════════
 
-رقم الوثيقة: ${documentNumber}
+  return `
+${company.name_ar}
+سجل تجاري: ${company.commercial_register}
+
+تنبيه ودي – سداد مستحقات
+رقم: ${documentNumber}
 التاريخ: ${date}
 
-من: ${company.name_ar}
-     ${company.address}
-     هاتف: ${company.phone}
-     بريد: ${company.email}
-
-إلى السيد/السيدة: ${customer.customer_name}
+السيد/السيدة: ${customer.customer_name}
 رقم العميل: ${customer.customer_code}
-${customer.phone ? `هاتف: ${customer.phone}` : ''}
+${customer.phone ? `هاتف: ${customer.phone}` : ""}
 
-══════════════════════════════════════════════════════════════════
-                         الموضوع: تنبيه ودي بسداد المستحقات
-══════════════════════════════════════════════════════════════════
+نود إفادتكم بوجود مستحقات مالية متأخرة على عقد الإيجار رقم (${customer.contract_number})
+الخاصة بالمركبة (${customer.vehicle_plate || "—"}).
 
-تحية طيبة وبعد،
+تفاصيل المبالغ:
+- إيجارات متأخرة: ${customer.overdue_amount.toLocaleString()} ${currency}
+- غرامات تأخير: ${customer.late_penalty.toLocaleString()} ${currency}
+- مخالفات مرورية: ${customer.violations_amount.toLocaleString()} ${currency}
 
-نود تذكيركم بوجود مستحقات مالية متأخرة تتعلق بعقد الإيجار رقم (${customer.contract_number}) 
-للمركبة ذات اللوحة (${customer.vehicle_plate || 'غير محدد'}).
+الإجمالي المستحق: ${customer.total_debt.toLocaleString()} ${currencyName}
 
-┌─────────────────────────────────────────────────────────────────┐
-│                      تفاصيل المستحقات                          │
-├─────────────────────────────────────────────────────────────────┤
-│  الإيجارات المتأخرة:          ${customer.overdue_amount.toLocaleString()} ${currency}
-│  غرامات التأخير:              ${customer.late_penalty.toLocaleString()} ${currency}
-│  المخالفات المرورية:          ${customer.violations_amount.toLocaleString()} ${currency} (${customer.violations_count} مخالفة)
-├─────────────────────────────────────────────────────────────────┤
-│  الإجمالي المستحق:            ${customer.total_debt.toLocaleString()} ${currencyName}
-│  أيام التأخير:                ${customer.days_overdue} يوم
-└─────────────────────────────────────────────────────────────────┘
+يرجى السداد خلال (${deadlineDays}) أيام، بحد أقصى:
+${deadlineDate}
 
-نأمل منكم التكرم بسداد المبلغ المستحق خلال (${deadlineDays}) أيام من تاريخ هذا التنبيه،
-أي في موعد أقصاه: ${deadlineDate}
+هذا التنبيه ودي، ونأمل التسوية دون أي إجراءات قانونية.
 
-للاستفسار أو ترتيب جدول سداد، يرجى التواصل معنا على:
-- هاتف: ${company.phone}
-- بريد إلكتروني: ${company.email}
-
-نقدر تعاونكم المستمر ونتطلع لاستمرار العلاقة الطيبة معكم.
-
-مع خالص التحية والتقدير،
+للتواصل:
+${company.phone}
+${company.email}
 
 ${company.name_ar}
 إدارة التحصيل
-
-══════════════════════════════════════════════════════════════════
 `.trim();
 }
 
 /**
- * قالب الإنذار الرسمي
+ * إنذار رسمي (واتساب)
  */
 function generateFormalWarningTemplate(data: WarningData): string {
-  const { documentNumber, date, deadlineDate, customer, company, currency, currencyName, deadlineDays, includeBlacklistThreat } = data;
-  
-  return `
-══════════════════════════════════════════════════════════════════
-                      إنذار رسمي بالسداد
-══════════════════════════════════════════════════════════════════
+  const {
+    documentNumber,
+    date,
+    deadlineDate,
+    customer,
+    company,
+    currency,
+    currencyName,
+    deadlineDays,
+    includeBlacklistThreat,
+  } = data;
 
+  return `
+${company.name_ar}
+سجل تجاري: ${company.commercial_register}
+
+إنذار رسمي بسداد مستحقات
 رقم الإنذار: ${documentNumber}
 التاريخ: ${date}
-الحالة: عاجل
 
-══════════════════════════════════════════════════════════════════
-
-من: ${company.name_ar}
-     السجل التجاري: ${company.commercial_register}
-     ${company.address}
-     هاتف: ${company.phone} | بريد: ${company.email}
-
-إلى السيد/السيدة: ${customer.customer_name}
+إلى: ${customer.customer_name}
 رقم العميل: ${customer.customer_code}
-${customer.phone ? `هاتف: ${customer.phone}` : ''}
-${customer.email ? `بريد: ${customer.email}` : ''}
+${customer.phone ? `هاتف: ${customer.phone}` : ""}
 
-══════════════════════════════════════════════════════════════════
-         الموضوع: إنذار رسمي بسداد المستحقات المتأخرة
-══════════════════════════════════════════════════════════════════
+بالإشارة إلى عقد الإيجار رقم (${customer.contract_number})
+والمركبة (${customer.vehicle_plate || "—"})،
 
-السيد/السيدة ${customer.customer_name} المحترم/ة،
+نحيطكم علمًا بوجود ذمم مالية مستحقة وفق الآتي:
 
-السلام عليكم ورحمة الله وبركاته،
+- إيجارات متأخرة: ${customer.overdue_amount.toLocaleString()} ${currency}
+- غرامات تأخير: ${customer.late_penalty.toLocaleString()} ${currency}
+- مخالفات مرورية: ${customer.violations_amount.toLocaleString()} ${currency}
 
-بالإشارة إلى عقد الإيجار المبرم بيننا والمرقم (${customer.contract_number}) 
-والخاص بالمركبة ذات اللوحة رقم (${customer.vehicle_plate || 'غير محدد'})،
+الإجمالي المستحق: ${customer.total_debt.toLocaleString()} ${currencyName}
+مدة التأخير: ${customer.days_overdue} يوم
 
-نفيدكم بأنه قد تراكمت عليكم مستحقات مالية متأخرة السداد وفقاً للتفصيل التالي:
+نمهلكم (${deadlineDays}) أيام للسداد، بحد أقصى:
+${deadlineDate}
 
-┌─────────────────────────────────────────────────────────────────┐
-│                    بيان المستحقات المالية                       │
-├────────────────────────────────┬────────────────────────────────┤
-│  البند                         │  المبلغ                        │
-├────────────────────────────────┼────────────────────────────────┤
-│  الإيجارات الشهرية المتأخرة    │  ${customer.overdue_amount.toLocaleString()} ${currency}              │
-│  غرامات التأخير (0.1% يومياً)  │  ${customer.late_penalty.toLocaleString()} ${currency}              │
-│  المخالفات المرورية            │  ${customer.violations_amount.toLocaleString()} ${currency} (${customer.violations_count} مخالفة)    │
-├────────────────────────────────┼────────────────────────────────┤
-│  الإجمالي المستحق              │  ${customer.total_debt.toLocaleString()} ${currencyName}         │
-└────────────────────────────────┴────────────────────────────────┘
+في حال عدم السداد خلال المهلة، سيترتب علينا اتخاذ الإجراءات القانونية المنصوص عليها وفق القوانين المعمول بها في دولة قطر، بما في ذلك المطالبة القضائية بكامل المبالغ والمصاريف.
+${includeBlacklistThreat ? "كما قد يتم إيقاف التعامل وإدراج الاسم ضمن أنظمة المخاطر لدى شركات التأجير." : ""}
 
-   ⚠️  مدة التأخير: ${customer.days_overdue} يوم
-   ⚠️  درجة المخاطر: ${customer.risk_score}/100
+هذا الإنذار يُعد إخطارًا رسميًا صالحًا للاحتجاج به.
 
-══════════════════════════════════════════════════════════════════
-                         المهلة النهائية
-══════════════════════════════════════════════════════════════════
+للتواصل العاجل:
+${company.phone}
+${company.email}
 
-نمهلكم مدة (${deadlineDays}) أيام من تاريخ هذا الإنذار لسداد كامل المبلغ المستحق،
-وذلك في موعد أقصاه:
-
-                    ★★★ ${deadlineDate} ★★★
-
-══════════════════════════════════════════════════════════════════
-                الإجراءات في حال عدم السداد
-══════════════════════════════════════════════════════════════════
-
-في حال عدم السداد خلال المهلة المحددة، سنضطر لاتخاذ الإجراءات التالية:
-
-1. رفع دعوى قضائية لتحصيل المستحقات أمام المحاكم المختصة
-2. تحميلكم كافة المصاريف القانونية والقضائية
-3. المطالبة بالتعويضات المناسبة عن الأضرار
-${includeBlacklistThreat ? '4. إضافة اسمكم إلى القائمة السوداء لشركات التأجير في الدولة' : ''}
-${includeBlacklistThreat ? '5. إبلاغ الجهات الائتمانية المختصة' : ''}
-
-══════════════════════════════════════════════════════════════════
-                      دعوة للتواصل
-══════════════════════════════════════════════════════════════════
-
-نحرص على حل هذا الأمر ودياً، ونرحب بتواصلكم معنا لترتيب جدول سداد مناسب.
-
-للتواصل:
-- هاتف: ${company.phone}
-- بريد إلكتروني: ${company.email}
-- العنوان: ${company.address}
-
-هذا الإنذار يعتبر حجة قانونية أمام الجهات المختصة.
-
-مع التحية،
-
-_______________________
 ${company.name_ar}
-إدارة الشؤون القانونية والتحصيل
-التاريخ: ${date}
-
-══════════════════════════════════════════════════════════════════
+الإدارة القانونية
 `.trim();
 }
 
 /**
- * قالب الإنذار النهائي (ما قبل القضية)
+ * إنذار نهائي (واتساب – ما قبل الدعوى)
  */
 function generateFinalWarningTemplate(data: WarningData): string {
   const { documentNumber, date, deadlineDate, customer, company, currency, currencyName, deadlineDays } = data;
-  
+
   return `
-██████████████████████████████████████████████████████████████████
-█                                                                █
-█                    ⚠️  إنذار نهائي  ⚠️                        █
-█                    قبل اتخاذ الإجراءات القانونية               █
-█                                                                █
-██████████████████████████████████████████████████████████████████
+${company.name_ar}
+سجل تجاري: ${company.commercial_register}
 
-رقم الإنذار: ${documentNumber}
+⚠️ إنذار نهائي قبل اتخاذ الإجراءات القانونية ⚠️
+رقم: ${documentNumber}
 التاريخ: ${date}
-الحالة: ⚠️ عاجل جداً - نهائي ⚠️
 
-══════════════════════════════════════════════════════════════════
-
-من: ${company.name_ar}
-     السجل التجاري: ${company.commercial_register}
-     ${company.address}
-     هاتف: ${company.phone} | بريد: ${company.email}
-
-إلى السيد/السيدة: ${customer.customer_name}
+إلى: ${customer.customer_name}
 رقم العميل: ${customer.customer_code}
-${customer.phone ? `هاتف: ${customer.phone}` : ''}
 
-══════════════════════════════════════════════════════════════════
-   ⛔ الموضوع: إنذار نهائي قبل رفع الدعوى القضائية ⛔
-══════════════════════════════════════════════════════════════════
+نحيطكم علمًا بأن هذا هو الإنذار الأخير بخصوص المستحقات المتراكمة على عقد الإيجار رقم (${customer.contract_number})
+والمركبة (${customer.vehicle_plate || "—"}).
 
-السيد/السيدة ${customer.customer_name}،
+المبالغ المستحقة:
+- إيجارات متأخرة: ${customer.overdue_amount.toLocaleString()} ${currency}
+- غرامات تأخير: ${customer.late_penalty.toLocaleString()} ${currency}
+- مخالفات مرورية: ${customer.violations_amount.toLocaleString()} ${currency}
 
-بالإشارة إلى الإنذارات السابقة المرسلة إليكم بخصوص المستحقات المتأخرة،
-والتي لم يتم الاستجابة لها حتى تاريخه،
+الإجمالي النهائي: ${customer.total_debt.toLocaleString()} ${currencyName}
+مدة التأخير: ${customer.days_overdue} يوم
 
-نفيدكم بأن هذا هو الإنذار الأخير قبل اتخاذ الإجراءات القانونية.
+المهلة النهائية للسداد:
+${deadlineDate}
+(${deadlineDays}) أيام فقط
 
-══════════════════════════════════════════════════════════════════
-                    ⚠️ المستحقات المتراكمة ⚠️
-══════════════════════════════════════════════════════════════════
+في حال عدم السداد خلال المهلة أعلاه، سيتم مباشرة رفع الدعوى القضائية دون إشعار آخر، والمطالبة بكامل المبالغ والمصاريف والتعويضات وفق القوانين السارية في دولة قطر.
 
-┌─────────────────────────────────────────────────────────────────┐
-│  رقم العقد: ${customer.contract_number}
-│  لوحة المركبة: ${customer.vehicle_plate || 'غير محدد'}
-│  
-│  ═══════════════════════════════════════════════════════════════
-│  
-│  الإيجارات المتأخرة:          ${customer.overdue_amount.toLocaleString()} ${currency}
-│  غرامات التأخير المتراكمة:    ${customer.late_penalty.toLocaleString()} ${currency}
-│  المخالفات المرورية:          ${customer.violations_amount.toLocaleString()} ${currency}
-│  
-│  ═══════════════════════════════════════════════════════════════
-│  
-│  ⚠️ الإجمالي المستحق:         ${customer.total_debt.toLocaleString()} ${currencyName}
-│  ⚠️ مدة التأخير:              ${customer.days_overdue} يوم
-│  ⚠️ درجة المخاطر:             ${customer.risk_score}/100 (حرج)
-│  
-└─────────────────────────────────────────────────────────────────┘
+هذا الإخطار حجة قانونية مكتملة الأثر.
 
-██████████████████████████████████████████████████████████████████
-█                     ⏰ المهلة الأخيرة ⏰                        █
-██████████████████████████████████████████████████████████████████
-
-                نمهلكم (${deadlineDays}) أيام فقط
-
-              الموعد النهائي: ${deadlineDate}
-
-██████████████████████████████████████████████████████████████████
-
-══════════════════════════════════════════════════════════════════
-            ⛔ الإجراءات التي سيتم اتخاذها فوراً ⛔
-══════════════════════════════════════════════════════════════════
-
-في حال عدم السداد بحلول الموعد المحدد أعلاه، سيتم:
-
-1. ✗ رفع دعوى قضائية فورية أمام المحاكم المختصة
-2. ✗ المطالبة بكامل المستحقات + المصاريف القانونية (10% من المبلغ)
-3. ✗ المطالبة برسوم المحكمة والتنفيذ
-4. ✗ إضافة اسمكم للقائمة السوداء في جميع شركات التأجير
-5. ✗ إبلاغ مؤسسات الائتمان والتصنيف الائتماني
-6. ✗ اتخاذ كافة الإجراءات القانونية المتاحة
-
-══════════════════════════════════════════════════════════════════
-                      الفرصة الأخيرة
-══════════════════════════════════════════════════════════════════
-
-هذه فرصتكم الأخيرة لتسوية هذا الأمر ودياً.
 للتواصل الفوري:
+${company.phone}
+${company.email}
 
-📞 هاتف: ${company.phone}
-📧 بريد: ${company.email}
-📍 العنوان: ${company.address}
-
-══════════════════════════════════════════════════════════════════
-
-هذا الإنذار يعد حجة قانونية رسمية ويحق لنا استخدامه
-أمام جميع الجهات القضائية والرسمية.
-
-صدر بتاريخ: ${date}
-
-_______________________
 ${company.name_ar}
 الإدارة القانونية
-
-██████████████████████████████████████████████████████████████████
 `.trim();
 }
 
-/**
- * توليد الإنذار من القالب المناسب
- */
+/* =========================
+   Template selector
+========================= */
 function generateWarningFromTemplate(
-  warningLevel: 'initial' | 'formal' | 'final',
+  warningLevel: "initial" | "formal" | "final",
   data: WarningData
 ): string {
   switch (warningLevel) {
-    case 'initial':
+    case "initial":
       return generateInitialWarningTemplate(data);
-    case 'final':
+    case "final":
       return generateFinalWarningTemplate(data);
-    case 'formal':
+    case "formal":
     default:
       return generateFormalWarningTemplate(data);
   }
 }
 
-/**
- * Hook for generating legal warnings using templates (fast & reliable)
- */
+/* =========================
+   Main hook
+========================= */
 export const useGenerateLegalWarning = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: GenerateWarningParams): Promise<GeneratedWarning> => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id) throw new Error("User not authenticated");
 
       const {
         delinquentCustomer,
-        warningType = 'formal',
+        warningType = "formal",
         deadlineDays = 7,
         includeBlacklistThreat = true,
-        additionalNotes
+        additionalNotes,
       } = params;
 
-      // Get user's company
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", user.id)
         .single();
 
-      if (profileError || !profile?.company_id) {
-        throw new Error('فشل في جلب بيانات المستخدم');
-      }
+      if (!profile?.company_id) throw new Error("Company not found");
 
-      // Get company information
       const { data: company } = await supabase
-        .from('companies')
-        .select('name_ar, name, phone, email, address, commercial_register, currency')
-        .eq('id', profile.company_id)
+        .from("companies")
+        .select("name_ar, phone, email, address, commercial_register, currency")
+        .eq("id", profile.company_id)
         .single();
-      
-      const companyCurrency = (company?.currency || 'QAR').toUpperCase();
-      const currencyName = CURRENCY_NAMES[companyCurrency] || 'ريال قطري';
 
-      // Generate document number
-      const timestamp = Date.now().toString().slice(-6);
-      const documentNumber = `WRN-${new Date().getFullYear()}-${timestamp}`;
+      const companyCurrency = (company?.currency || "QAR").toUpperCase();
+      const currencyName = CURRENCY_NAMES[companyCurrency] || "ريال قطري";
 
-      // Calculate dates
+      const documentNumber = `WRN-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
       const today = new Date();
       const deadline = new Date(today);
       deadline.setDate(deadline.getDate() + deadlineDays);
 
-      const dateFormatter = new Intl.DateTimeFormat('ar-QA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long'
+      const formatter = new Intl.DateTimeFormat("ar-QA", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
 
-      // Determine warning level based on risk score
-      let warningLevel: 'initial' | 'formal' | 'final' = warningType;
-      if (delinquentCustomer.risk_score >= 85 || delinquentCustomer.days_overdue > 120) {
-        warningLevel = 'final';
-      } else if (delinquentCustomer.risk_score >= 70 || delinquentCustomer.days_overdue > 90) {
-        warningLevel = 'formal';
+      let warningLevel: "initial" | "formal" | "final" = warningType;
+      if (delinquentCustomer.days_overdue > 120 || delinquentCustomer.risk_score >= 85) {
+        warningLevel = "final";
+      } else if (delinquentCustomer.days_overdue > 60 || delinquentCustomer.risk_score >= 70) {
+        warningLevel = "formal";
       }
 
-      // Prepare template data
-      const templateData: WarningData = {
+      const content = generateWarningFromTemplate(warningLevel, {
         documentNumber,
-        date: dateFormatter.format(today),
-        deadlineDate: dateFormatter.format(deadline),
+        date: formatter.format(today),
+        deadlineDate: formatter.format(deadline),
         customer: delinquentCustomer,
         company: {
-          name_ar: company?.name_ar || 'شركة العراف لتأجير السيارات',
-          phone: company?.phone || '',
-          email: company?.email || '',
-          address: company?.address || '',
-          commercial_register: company?.commercial_register || '',
-          currency: companyCurrency
+          name_ar: company?.name_ar || "",
+          phone: company?.phone || "",
+          email: company?.email || "",
+          address: company?.address || "",
+          commercial_register: company?.commercial_register || "",
+          currency: companyCurrency,
         },
         currency: companyCurrency,
         currencyName,
         deadlineDays,
         includeBlacklistThreat,
-        additionalNotes
-      };
+        additionalNotes,
+      });
 
-      // Generate content from template (instant!)
-      const generatedContent = generateWarningFromTemplate(warningLevel, templateData);
-
-      // Get urgency text for title
-      const urgencyTexts = {
-        initial: 'تنبيه أولي',
-        formal: 'إنذار رسمي',
-        final: 'إنذار نهائي'
-      };
-
-      // Save to legal_documents table
-      const { data: document, error: docError } = await supabase
-        .from('legal_documents')
+      const { data: document } = await supabase
+        .from("legal_documents")
         .insert({
           company_id: profile.company_id,
           customer_id: delinquentCustomer.customer_id,
           document_number: documentNumber,
-          document_type: 'legal_warning',
-          document_title: `${urgencyTexts[warningLevel]} - ${delinquentCustomer.customer_name}`,
-          content: generatedContent,
-          country_law: 'qatar',
-          status: 'draft',
+          document_type: "legal_warning",
+          document_title: `${warningLevel} warning - ${delinquentCustomer.customer_name}`,
+          content,
+          country_law: "qatar",
+          status: "draft",
           created_by: user.id,
-          metadata: {
-            template_type: warningLevel,
-            delinquent_data: {
-              overdue_amount: delinquentCustomer.overdue_amount,
-              late_penalty: delinquentCustomer.late_penalty,
-              violations_amount: delinquentCustomer.violations_amount,
-              total_debt: delinquentCustomer.total_debt,
-              days_overdue: delinquentCustomer.days_overdue,
-              risk_score: delinquentCustomer.risk_score
-            },
-            warning_params: {
-              warning_type: warningType,
-              warning_level: warningLevel,
-              deadline_days: deadlineDays,
-              include_blacklist_threat: includeBlacklistThreat
-            },
-            generation_method: 'template',
-            generated_at: new Date().toISOString()
-          }
         })
         .select()
         .single();
 
-      if (docError) {
-        console.error('Document save error:', docError);
-        throw new Error('فشل في حفظ الوثيقة');
-      }
-
       return {
         id: document.id,
         document_number: documentNumber,
-        content: generatedContent,
+        content,
         customer_id: delinquentCustomer.customer_id,
         customer_name: delinquentCustomer.customer_name,
-        warning_type: warningLevel.toUpperCase(),
-        created_at: document.created_at
+        warning_type: warningLevel,
+        created_at: document.created_at,
       };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
-      
-      toast.success('تم إنشاء الإنذار القانوني بنجاح ⚡', {
-        description: `رقم الوثيقة: ${data.document_number}`,
-        duration: 3000,
+      queryClient.invalidateQueries({ queryKey: ["legal-documents"] });
+      toast.success("تم إنشاء الإنذار بنجاح", {
+        description: data.document_number,
       });
     },
-    onError: (error) => {
-      console.error('Error generating legal warning:', error);
-      toast.error('حدث خطأ أثناء إنشاء الإنذار', {
-        description: error.message || 'يرجى المحاولة مرة أخرى',
+    onError: (error: any) => {
+      toast.error("فشل إنشاء الإنذار", {
+        description: error.message,
       });
-    },
-  });
-};
-
-/**
- * Hook for bulk warning generation
- */
-export const useBulkGenerateLegalWarnings = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: { warnings: GeneratedWarning[] }) => {
-      return params.warnings;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['legal-documents'] });
-      toast.success(`تم إنشاء ${data.length} إنذار بنجاح ⚡`);
-    },
-    onError: (error: Error) => {
-      console.error('Error in bulk warning generation:', error);
-      toast.error('حدث خطأ أثناء العملية الجماعية');
     },
   });
 };

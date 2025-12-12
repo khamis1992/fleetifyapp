@@ -137,11 +137,11 @@ export const LegalWarningDialog: React.FC<LegalWarningDialogProps> = ({
               </div>
               <div>
                 <DialogTitle className="text-xl">
-                  {isGenerating ? 'جاري إنشاء الإنذار القانوني...' : 'إنذار قانوني'}
+                  {isGenerating ? 'جاري تجهيز الإنذار...' : 'إنذار قانوني'}
                 </DialogTitle>
                 <DialogDescription>
                   {isGenerating 
-                    ? 'الذكاء الاصطناعي يقوم بصياغة الإنذار القانوني الآن...'
+                    ? 'يتم تعبئة بيانات العميل في القالب القانوني...'
                     : warning 
                       ? `رقم الوثيقة: ${warning.document_number}`
                       : 'معاينة الإنذار القانوني'
@@ -162,12 +162,9 @@ export const LegalWarningDialog: React.FC<LegalWarningDialogProps> = ({
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <div className="text-center">
-              <p className="text-lg font-medium">جاري إنشاء الإنذار القانوني...</p>
+              <p className="text-lg font-medium">جاري تجهيز الإنذار...</p>
               <p className="text-sm text-muted-foreground mt-2">
-                المستشار القانوني الذكي يقوم بصياغة وثيقة رسمية ومهنية
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                قد يستغرق هذا من 5-15 ثانية
+                يتم تعبئة البيانات في القالب القانوني
               </p>
             </div>
           </div>
@@ -196,7 +193,7 @@ export const LegalWarningDialog: React.FC<LegalWarningDialogProps> = ({
               <div className="flex items-center justify-between mt-4 p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-success" />
-                  <span>تم إنشاء الإنذار بواسطة الذكاء الاصطناعي القانوني</span>
+                  <span>تم إنشاء الإنذار من القالب القانوني ⚡</span>
                 </div>
                 <Button
                   variant="outline"
