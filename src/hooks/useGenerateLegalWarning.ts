@@ -73,9 +73,6 @@ function generateInitialWarningTemplate(data: WarningData): string {
   const { documentNumber, date, deadlineDate, customer, company, currency, currencyName, deadlineDays } = data;
 
   return `
-${company.name_ar}
-سجل تجاري: ${company.commercial_register}
-
 تنبيه ودي – سداد مستحقات
 رقم: ${documentNumber}
 التاريخ: ${date}
@@ -125,9 +122,6 @@ function generateFormalWarningTemplate(data: WarningData): string {
   } = data;
 
   return `
-${company.name_ar}
-سجل تجاري: ${company.commercial_register}
-
 إنذار رسمي بسداد مستحقات
 رقم الإنذار: ${documentNumber}
 التاريخ: ${date}
@@ -172,9 +166,6 @@ function generateFinalWarningTemplate(data: WarningData): string {
   const { documentNumber, date, customer, company, currency, currencyName } = data;
 
   return `
-${company.name_ar}
-سجل تجاري: ${company.commercial_register}
-
 ⚠️ إنذار نهائي قبل اتخاذ الإجراءات القانونية ⚠️
 رقم: ${documentNumber}
 التاريخ: ${date}
