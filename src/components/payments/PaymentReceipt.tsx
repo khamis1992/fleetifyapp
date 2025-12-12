@@ -68,7 +68,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
   useEffect(() => {
     async function loadImages() {
       const [logo, stamp, signature] = await Promise.all([
-        imageToBase64('/receipts/logo.png'),
+        imageToBase64('/uploads/b8725fdf-dfaa-462a-b7fe-e9c9a86d17c2.png'),
         imageToBase64('/receipts/stamp.png'),
         imageToBase64('/receipts/signature.png'),
       ]);
