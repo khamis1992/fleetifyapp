@@ -280,31 +280,19 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   // Handle send warning
   const handleSendWarning = useCallback(async (customer: DelinquentCustomer) => {
-    // #region agent log
-    console.log('[DEBUG H1] handleSendWarning called', {customerId:customer.customer_id,customerName:customer.customer_name,riskScore:customer.risk_score});
-    // #endregion
     setCurrentCustomer(customer);
     setWarningDialogOpen(true);
     setCurrentWarning(null);
 
     try {
-      // #region agent log
-      console.log('[DEBUG H1] About to call generateWarning.mutateAsync', {customer:customer.customer_name});
-      // #endregion
       const warning = await generateWarning.mutateAsync({
         delinquentCustomer: customer,
         warningType: 'formal',
         deadlineDays: 7,
         includeBlacklistThreat: customer.risk_score >= 70,
       });
-      // #region agent log
-      console.log('[DEBUG H1] generateWarning succeeded', {warningId:warning.id,docNumber:warning.document_number});
-      // #endregion
       setCurrentWarning(warning);
     } catch (error) {
-      // #region agent log
-      console.error('[DEBUG H1] generateWarning failed', {error:String(error),errorMessage:(error as Error)?.message});
-      // #endregion
       console.error('Error generating warning:', error);
       setWarningDialogOpen(false);
     }

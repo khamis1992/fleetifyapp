@@ -27,6 +27,11 @@ const CURRENCY_LOCALES: Record<string, string> = {
   'EUR': 'de-DE',
 };
 
+// Z.AI API Configuration - Same as AIChatAssistant
+const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
+const MODEL = 'glm-4.6';
+
 export interface GenerateWarningParams {
   delinquentCustomer: DelinquentCustomer;
   warningType?: 'initial' | 'formal' | 'final';
@@ -46,8 +51,86 @@ export interface GeneratedWarning {
 }
 
 /**
+ * Helper function to call Z.AI API with streaming (same as AIChatAssistant)
+ */
+async function callZAIWithStreaming(
+  systemPrompt: string,
+  userPrompt: string,
+  signal?: AbortSignal
+): Promise<string> {
+  const requestBody = {
+    model: MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature: 0.3,
+    stream: true,
+    max_tokens: 3000,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept-Language': 'en-US,en',
+    'Authorization': `Bearer ${ZAI_API_KEY}`,
+  };
+
+  console.log('🤖 [LegalWarning] Starting Z.AI API call...');
+
+  const response = await fetch(ZAI_API_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(requestBody),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ [LegalWarning] API Error:', response.status, errorText);
+    throw new Error(`API Error: ${response.status} - ${errorText}`);
+  }
+
+  console.log('✅ [LegalWarning] API responded, reading stream...');
+
+  // Handle streaming response - same as AIChatAssistant
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let accumulatedContent = '';
+
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('data:')) {
+          const jsonStr = trimmedLine.slice(5).trim();
+          if (jsonStr === '[DONE]') continue;
+          
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              accumulatedContent += delta;
+            }
+          } catch {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  }
+
+  console.log('✅ [LegalWarning] Stream complete, content length:', accumulatedContent.length);
+  return accumulatedContent;
+}
+
+/**
  * Hook for generating AI-powered legal warnings for delinquent customers
- * Integrates with the Advanced Smart Legal Advisor v2.0.0
  */
 export const useGenerateLegalWarning = () => {
   const { user } = useAuth();
@@ -55,9 +138,6 @@ export const useGenerateLegalWarning = () => {
 
   return useMutation({
     mutationFn: async (params: GenerateWarningParams): Promise<GeneratedWarning> => {
-      // #region agent log
-      console.log('[DEBUG H2] mutationFn started', {userId:user?.id,hasUser:!!user});
-      // #endregion
       if (!user?.id) throw new Error('User not authenticated');
 
       const {
@@ -74,10 +154,6 @@ export const useGenerateLegalWarning = () => {
         .select('company_id, first_name, last_name')
         .eq('user_id', user.id)
         .single();
-
-      // #region agent log
-      console.log('[DEBUG H2] Profile fetched', {hasProfile:!!profile,companyId:profile?.company_id,profileError:profileError?.message});
-      // #endregion
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
@@ -96,10 +172,10 @@ export const useGenerateLegalWarning = () => {
         .eq('id', profile.company_id)
         .single();
       
-      // Get company currency with fallback to KWD
-      const companyCurrency = (company?.currency || 'KWD').toUpperCase();
-      const currencyName = CURRENCY_NAMES[companyCurrency] || CURRENCY_NAMES['KWD'];
-      const currencyLocale = CURRENCY_LOCALES[companyCurrency] || CURRENCY_LOCALES['KWD'];
+      // Get company currency with fallback to QAR
+      const companyCurrency = (company?.currency || 'QAR').toUpperCase();
+      const currencyName = CURRENCY_NAMES[companyCurrency] || CURRENCY_NAMES['QAR'];
+      const currencyLocale = CURRENCY_LOCALES[companyCurrency] || CURRENCY_LOCALES['QAR'];
 
       // Generate document number
       const docNumberPrefix = 'WRN';
@@ -121,12 +197,15 @@ export const useGenerateLegalWarning = () => {
         urgencyText = 'تنبيه أولي';
       }
 
-      // Build AI prompt for generating the legal warning with company currency
+      // System prompt for legal advisor
+      const systemPrompt = 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية. أنشئ الإنذار القانوني مباشرة بدون شرح أو تعليقات إضافية.';
+
+      // Build AI prompt
       const aiPrompt = `
-أنت مستشار قانوني متخصص في القانون القطري وقوانين تأجير السيارات. أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
+أنشئ إنذاراً قانونياً رسمياً ومهنياً باللغة العربية للعميل التالي:
 
 معلومات الشركة:
-- اسم الشركة: ${company?.name_ar || 'شركة فليتفاي'}
+- اسم الشركة: ${company?.name_ar || 'شركة العراف لتأجير السيارات'}
 - السجل التجاري: ${company?.commercial_register || ''}
 - الهاتف: ${company?.phone || ''}
 - البريد: ${company?.email || ''}
@@ -139,170 +218,60 @@ export const useGenerateLegalWarning = () => {
 - رقم العقد: ${delinquentCustomer.contract_number}
 - رقم المركبة: ${delinquentCustomer.vehicle_plate || 'غير محدد'}
 - الهاتف: ${delinquentCustomer.phone || 'غير محدد'}
-- البريد: ${delinquentCustomer.email || 'غير محدد'}
 
 تفاصيل المديونية:
-- عدد الأشهر المتأخرة: ${delinquentCustomer.months_unpaid} شهر
-- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
-- غرامات التأخير (0.1% يومياً): ${delinquentCustomer.late_penalty.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
-- مخالفات مرورية غير مسددة: ${delinquentCustomer.violations_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar}) (${delinquentCustomer.violations_count} مخالفة)
-- **الإجمالي الكلي المستحق: ${delinquentCustomer.total_debt.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})**
+- إجمالي الإيجارات المستحقة: ${delinquentCustomer.overdue_amount.toLocaleString(currencyLocale)} ${companyCurrency}
+- غرامات التأخير: ${delinquentCustomer.late_penalty.toLocaleString(currencyLocale)} ${companyCurrency}
+- مخالفات مرورية: ${delinquentCustomer.violations_amount.toLocaleString(currencyLocale)} ${companyCurrency}
+- **الإجمالي المستحق: ${delinquentCustomer.total_debt.toLocaleString(currencyLocale)} ${companyCurrency}**
 
 معلومات التأخير:
 - عدد الأيام المتأخرة: ${delinquentCustomer.days_overdue} يوم
-- درجة المخاطر: ${delinquentCustomer.risk_score}/100 (${delinquentCustomer.risk_level})
-- تاريخ آخر دفعة: ${delinquentCustomer.last_payment_date ? new Date(delinquentCustomer.last_payment_date).toLocaleDateString('ar') : 'لا يوجد'}
-- مبلغ آخر دفعة: ${delinquentCustomer.last_payment_amount.toLocaleString(currencyLocale)} ${companyCurrency} (${currencyName.ar})
+- درجة المخاطر: ${delinquentCustomer.risk_score}/100
 
-السجل القانوني:
-- قضايا قانونية سابقة: ${delinquentCustomer.has_previous_legal_cases ? `نعم (${delinquentCustomer.previous_legal_cases_count} قضية)` : 'لا'}
-- مدرج في القائمة السوداء: ${delinquentCustomer.is_blacklisted ? 'نعم' : 'لا'}
-
-مواصفات الإنذار المطلوب:
+مواصفات الإنذار:
 - نوع الإنذار: ${urgencyText}
-- مستوى الإنذار: ${warningLevel}
-- المهلة النهائية للسداد: ${deadlineDays} أيام من تاريخ استلام الإنذار
-- تضمين تهديد بالإضافة للقائمة السوداء: ${includeBlacklistThreat ? 'نعم' : 'لا'}
-${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
+- رقم الوثيقة: ${documentNumber}
+- التاريخ: ${new Date().toLocaleDateString('ar-QA')}
+- المهلة النهائية: ${deadlineDays} أيام
+${includeBlacklistThreat ? '- تضمين تهديد بالقائمة السوداء: نعم' : ''}
+${additionalNotes ? `- ملاحظات: ${additionalNotes}` : ''}
 
-المطلوب:
 أنشئ إنذاراً قانونياً رسمياً يتضمن:
+1. رأس الوثيقة مع رقم الإنذار والتاريخ
+2. مخاطبة رسمية للعميل
+3. تفاصيل المديونية بجدول واضح
+4. المهلة النهائية للسداد
+5. الإجراءات القانونية في حال عدم السداد
+6. دعوة للتواصل لترتيب السداد
+7. ختام رسمي مع التوقيع
 
-1. **رأس الوثيقة:**
-   - نوع الوثيقة: "${urgencyText}"
-   - رقم الوثيقة: ${documentNumber}
-   - التاريخ: ${new Date().toLocaleDateString('ar-QA')}
-
-2. **مقدمة رسمية:**
-   - مخاطبة العميل بشكل رسمي ومحترم
-   - الإشارة إلى عقد الإيجار ورقمه وتاريخه
-
-3. **تفاصيل المديونية:**
-   - جدول واضح بالمبالغ المستحقة
-   - تفصيل الإيجارات الشهرية المتأخرة
-   - غرامات التأخير وطريقة حسابها
-   - المخالفات المرورية
-   - الإجمالي النهائي
-
-4. **المهلة النهائية:**
-   - تحديد مهلة ${deadlineDays} أيام للسداد الكامل
-   - تحديد تاريخ انتهاء المهلة بوضوح
-
-5. **الإجراءات القانونية المحتملة:**
-   - رفع دعوى قضائية لتحصيل المستحقات
-   - تحميل العميل المصاريف القانونية (10% من المبلغ)
-   - تحميل العميل رسوم المحكمة (1% من المبلغ)
-   - المطالبة بالتعويضات المناسبة
-   ${includeBlacklistThreat ? '- إضافة العميل إلى القائمة السوداء لشركات التأجير في قطر' : ''}
-   - الإبلاغ عن المديونية للجهات الائتمانية
-
-6. **دعوة للحوار:**
-   - إمكانية التواصل لترتيب جدول سداد
-   - أرقام الاتصال للتواصل
-
-7. **الختام:**
-   - توقيع رسمي
-   - ختم الشركة
-   - اسم المسؤول
-
-**مهم جداً:**
-- استخدم لغة قانونية رسمية ومهنية
-- كن حازماً لكن محترماً
-- أشر إلى المواد القانونية ذات الصلة في القانون المدني القطري
-- استخدم تنسيق واضح ومنظم
-- تأكد من أن الوثيقة قابلة للطباعة والاستخدام مباشرة
-
-أنشئ الإنذار كاملاً الآن:
+استخدم لغة قانونية رسمية ومهنية.
 `.trim();
 
-      // Z.AI GLM-4.6 API Configuration (same as AIChatAssistant)
-      const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
-      const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-      const MODEL = 'glm-4.6';
+      // Create AbortController with timeout (60 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-      // #region agent log
-      console.log('[DEBUG H3] About to call Z.AI API', {apiUrl:ZAI_API_URL,model:MODEL});
-      // #endregion
-
-      // Call Z.AI GLM API with NON-streaming mode (more reliable)
-      let aiResponse;
+      let generatedContent: string;
       try {
-        // #region agent log
-        console.log('[DEBUG H3a] Starting fetch to Z.AI (non-streaming)...');
-        // #endregion
-        aiResponse = await fetch(ZAI_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${ZAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: [
-              {
-                role: 'system',
-                content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية. أنشئ الإنذار القانوني مباشرة بدون شرح أو تعليقات إضافية.'
-              },
-              {
-                role: 'user',
-                content: aiPrompt
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: 3000,
-            top_p: 0.9,
-            stream: false // Disable streaming for reliability
-          })
-        });
-        // #region agent log
-        console.log('[DEBUG H3b] Fetch completed', {status:aiResponse.status,ok:aiResponse.ok,statusText:aiResponse.statusText});
-        // #endregion
-      } catch (fetchError) {
-        // #region agent log
-        console.error('[DEBUG H3c] Fetch FAILED with exception', {error:String(fetchError),message:(fetchError as Error)?.message});
-        // #endregion
-        throw new Error(`فشل الاتصال بخدمة الذكاء الاصطناعي: ${(fetchError as Error)?.message}`);
+        generatedContent = await callZAIWithStreaming(systemPrompt, aiPrompt, controller.signal);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if ((err as Error).name === 'AbortError') {
+          throw new Error('انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.');
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      if (!aiResponse.ok) {
-        const errorData = await aiResponse.json().catch(() => ({}));
-        // #region agent log
-        console.error('[DEBUG H3] Z.AI API returned error', {status:aiResponse.status,statusText:aiResponse.statusText,errorData:errorData});
-        // #endregion
-        console.error('GLM API Error Response:', errorData);
-        throw new Error(`GLM API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
-      }
-
-      // Read non-streaming response
-      let generatedContent = '';
-      try {
-        // #region agent log
-        console.log('[DEBUG H4a] Reading JSON response...');
-        // #endregion
-        const responseData = await aiResponse.json();
-        // #region agent log
-        console.log('[DEBUG H4b] JSON parsed', {hasChoices:!!responseData.choices,choicesLength:responseData.choices?.length});
-        // #endregion
-        generatedContent = responseData.choices?.[0]?.message?.content || '';
-      } catch (parseError) {
-        // #region agent log
-        console.error('[DEBUG H4c] JSON parse FAILED', {error:String(parseError),message:(parseError as Error)?.message});
-        // #endregion
-        throw new Error(`فشل قراءة استجابة الذكاء الاصطناعي: ${(parseError as Error)?.message}`);
-      }
-
-      // #region agent log
-      console.log('[DEBUG H4] Streaming completed', {contentLength:generatedContent.length,hasContent:!!generatedContent});
-      // #endregion
 
       if (!generatedContent) {
-        console.error('AI Response: No content received from streaming');
-        throw new Error('لم يتم إنشاء محتوى من GLM AI');
+        throw new Error('لم يتم إنشاء محتوى من الذكاء الاصطناعي');
       }
 
-      // Estimate tokens from content length (streaming doesn't provide usage stats)
+      // Estimate tokens from content length
       const tokensUsed = Math.ceil(generatedContent.length / 4);
-      const estimatedCost = 0; // Z.AI pricing is different, set to 0 for now
 
       // Save to legal_documents table
       const { data: document, error: docError } = await supabase
@@ -335,7 +304,6 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             },
             ai_generation: {
               tokens_used: tokensUsed,
-              estimated_cost: estimatedCost,
               model: 'glm-4.6',
               generated_at: new Date().toISOString()
             }
@@ -344,11 +312,10 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
         .select()
         .single();
 
-      // #region agent log
-      console.log('[DEBUG H5] legal_documents insert result', {docId:document?.id,docNumber:document?.document_number,docError:docError?.message});
-      // #endregion
-
-      if (docError) throw docError;
+      if (docError) {
+        console.error('Document save error:', docError);
+        throw new Error('فشل في حفظ الوثيقة');
+      }
 
       // Log consultation to legal_consultations table
       await supabase
@@ -362,7 +329,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
           country: 'qatar',
           tokens_used: tokensUsed,
           response_time_ms: 0,
-          cost_usd: estimatedCost
+          cost_usd: 0
         });
 
       return {
@@ -395,19 +362,12 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 
 /**
  * Hook for bulk warning generation (multiple customers at once)
- * Note: This hook returns the mutation, which should be called sequentially
- * for each customer to avoid violating React's Rules of Hooks
  */
 export const useBulkGenerateLegalWarnings = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      warnings: GeneratedWarning[];
-    }) => {
-      // This is just for invalidating queries after bulk operations
-      // The actual generation should be done by calling useGenerateLegalWarning
-      // multiple times in the component
+    mutationFn: async (params: { warnings: GeneratedWarning[] }) => {
       return params.warnings;
     },
     onSuccess: (data) => {
