@@ -639,7 +639,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           <div class="stamp-area">الختم</div>
         </div>
         <div class="signature-box">
-          <div class="signature-line">التوقيع المعتمد</div>
+          <div class="signature-line"></div>
         </div>
       </div>
     </div>
