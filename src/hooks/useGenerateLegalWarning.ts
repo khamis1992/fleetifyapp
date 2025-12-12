@@ -56,7 +56,7 @@ export const useGenerateLegalWarning = () => {
   return useMutation({
     mutationFn: async (params: GenerateWarningParams): Promise<GeneratedWarning> => {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:entry',message:'mutationFn started',data:{userId:user?.id,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+      console.log('[DEBUG H2] mutationFn started', {userId:user?.id,hasUser:!!user});
       // #endregion
       if (!user?.id) throw new Error('User not authenticated');
 
@@ -76,7 +76,7 @@ export const useGenerateLegalWarning = () => {
         .single();
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:afterProfile',message:'Profile fetched',data:{hasProfile:!!profile,companyId:profile?.company_id,profileError:profileError?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+      console.log('[DEBUG H2] Profile fetched', {hasProfile:!!profile,companyId:profile?.company_id,profileError:profileError?.message});
       // #endregion
 
       if (profileError) {
@@ -221,7 +221,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       const MODEL = 'glm-4.6';
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:beforeAICall',message:'About to call Z.AI API',data:{apiUrl:ZAI_API_URL,model:MODEL},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+      console.log('[DEBUG H3] About to call Z.AI API', {apiUrl:ZAI_API_URL,model:MODEL});
       // #endregion
 
       // Call Z.AI GLM API with streaming (required for glm-4.6 to get actual content)
@@ -253,7 +253,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       if (!aiResponse.ok) {
         const errorData = await aiResponse.json().catch(() => ({}));
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:aiError',message:'Z.AI API returned error',data:{status:aiResponse.status,statusText:aiResponse.statusText,errorData:errorData},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+        console.error('[DEBUG H3] Z.AI API returned error', {status:aiResponse.status,statusText:aiResponse.statusText,errorData:errorData});
         // #endregion
         console.error('GLM API Error Response:', errorData);
         throw new Error(`GLM API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
@@ -293,7 +293,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       }
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:afterStreaming',message:'Streaming completed',data:{contentLength:generatedContent.length,hasContent:!!generatedContent},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+      console.log('[DEBUG H4] Streaming completed', {contentLength:generatedContent.length,hasContent:!!generatedContent});
       // #endregion
 
       if (!generatedContent) {
@@ -346,7 +346,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
         .single();
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useGenerateLegalWarning.ts:mutationFn:afterDocInsert',message:'legal_documents insert result',data:{docId:document?.id,docNumber:document?.document_number,docError:docError?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
+      console.log('[DEBUG H5] legal_documents insert result', {docId:document?.id,docNumber:document?.document_number,docError:docError?.message});
       // #endregion
 
       if (docError) throw docError;

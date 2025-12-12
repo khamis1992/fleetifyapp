@@ -281,7 +281,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   // Handle send warning
   const handleSendWarning = useCallback(async (customer: DelinquentCustomer) => {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DelinquentCustomersTab.tsx:handleSendWarning:entry',message:'handleSendWarning called',data:{customerId:customer.customer_id,customerName:customer.customer_name,riskScore:customer.risk_score},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+    console.log('[DEBUG H1] handleSendWarning called', {customerId:customer.customer_id,customerName:customer.customer_name,riskScore:customer.risk_score});
     // #endregion
     setCurrentCustomer(customer);
     setWarningDialogOpen(true);
@@ -289,7 +289,7 @@ export const DelinquentCustomersTab: React.FC = () => {
 
     try {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DelinquentCustomersTab.tsx:handleSendWarning:beforeMutate',message:'About to call generateWarning.mutateAsync',data:{customer:customer.customer_name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+      console.log('[DEBUG H1] About to call generateWarning.mutateAsync', {customer:customer.customer_name});
       // #endregion
       const warning = await generateWarning.mutateAsync({
         delinquentCustomer: customer,
@@ -298,12 +298,12 @@ export const DelinquentCustomersTab: React.FC = () => {
         includeBlacklistThreat: customer.risk_score >= 70,
       });
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DelinquentCustomersTab.tsx:handleSendWarning:success',message:'generateWarning succeeded',data:{warningId:warning.id,docNumber:warning.document_number},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+      console.log('[DEBUG H1] generateWarning succeeded', {warningId:warning.id,docNumber:warning.document_number});
       // #endregion
       setCurrentWarning(warning);
     } catch (error) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/6f525f97-7491-46a6-ab39-f32361187eeb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DelinquentCustomersTab.tsx:handleSendWarning:error',message:'generateWarning failed',data:{error:String(error),errorMessage:(error as Error)?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+      console.error('[DEBUG H1] generateWarning failed', {error:String(error),errorMessage:(error as Error)?.message});
       // #endregion
       console.error('Error generating warning:', error);
       setWarningDialogOpen(false);
