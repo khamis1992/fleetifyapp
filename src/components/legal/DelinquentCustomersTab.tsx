@@ -627,6 +627,39 @@ export const DelinquentCustomersTab: React.FC = () => {
         />
       </div>
 
+      {/* Cancelled Contracts Warning */}
+      {customers && customers.filter(c => c.contract_status === 'cancelled').length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-l from-red-100 via-red-50 to-white rounded-2xl p-4 border border-red-200 shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
+                <X className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-red-700 text-lg">
+                  {customers.filter(c => c.contract_status === 'cancelled').length} عقد ملغي يحتاج متابعة
+                </h3>
+                <p className="text-sm text-red-600">
+                  هذه العقود ملغية ولكن لا تزال هناك مستحقات مالية على العملاء - يجب استرداد المركبات ومتابعة التحصيل
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              onClick={() => { setContractStatusFilter('cancelled'); setCurrentPage(1); }}
+            >
+              <Filter className="w-4 h-4 ml-2" />
+              عرض الملغية فقط
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Risk Level Status Bar */}
       <div className="bg-white rounded-2xl p-3 border border-neutral-200 shadow-sm">
         <div className="flex items-center gap-2 flex-wrap">
@@ -663,6 +696,37 @@ export const DelinquentCustomersTab: React.FC = () => {
               </span>
             </button>
           ))}
+
+          {/* Contract Status Quick Filters */}
+          <div className="flex items-center gap-1 mr-4 pr-4 border-r border-neutral-200">
+            <span className="text-sm text-neutral-400 ml-2">العقد:</span>
+            {[
+              { id: 'active', label: 'نشط', count: customers?.filter(c => c.contract_status === 'active').length || 0, color: 'green' },
+              { id: 'cancelled', label: 'ملغي', count: customers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red' },
+              { id: 'closed', label: 'مغلق', count: customers?.filter(c => c.contract_status === 'closed').length || 0, color: 'gray' },
+            ].filter(f => f.count > 0).map(({ id, label, count, color }) => (
+              <button
+                key={id}
+                onClick={() => { 
+                  setContractStatusFilter(contractStatusFilter === id ? 'all' : id); 
+                  setCurrentPage(1); 
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
+                  contractStatusFilter === id
+                    ? id === 'cancelled' ? 'bg-red-500 text-white' : id === 'closed' ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'
+                    : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' 
+                    : id === 'closed' ? 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                    : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                )}
+              >
+                {id === 'cancelled' && <X className="w-3 h-3" />}
+                {id === 'closed' && <CheckCircle className="w-3 h-3" />}
+                {label}
+                <span className="bg-white/20 px-1 rounded text-[10px]">{count}</span>
+              </button>
+            ))}
+          </div>
 
           {activeFiltersCount > 0 && (
             <button
@@ -814,9 +878,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
                           className={cn(
-                            "hover:bg-neutral-50 border-b border-neutral-100",
-                            customer.contract_status === 'cancelled' && "bg-red-50/50 hover:bg-red-100/50",
-                            customer.contract_status === 'closed' && "bg-gray-50/50 hover:bg-gray-100/50"
+                            "hover:bg-neutral-50 border-b border-neutral-100 relative",
+                            customer.contract_status === 'cancelled' && "bg-gradient-to-l from-red-50 via-red-50/80 to-transparent border-r-4 border-r-red-500",
+                            customer.contract_status === 'closed' && "bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent border-r-4 border-r-gray-400"
                           )}
                         >
                           <TableCell>
@@ -839,13 +903,25 @@ export const DelinquentCustomersTab: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-neutral-700">{customer.contract_number || '-'}</span>
                                 {customer.contract_status === 'cancelled' && (
-                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">ملغي</Badge>
+                                  <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white animate-pulse gap-1">
+                                    <X className="w-3 h-3" />
+                                    ملغي
+                                  </Badge>
                                 )}
                                 {customer.contract_status === 'closed' && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-200">مغلق</Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-gray-500 text-white gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    مغلق
+                                  </Badge>
+                                )}
+                                {customer.contract_status === 'active' && (
+                                  <Badge className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700">نشط</Badge>
                                 )}
                               </div>
                               <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
+                              {customer.contract_status === 'cancelled' && (
+                                <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ يجب استرداد المركبة</span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
