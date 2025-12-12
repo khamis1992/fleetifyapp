@@ -866,7 +866,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                                     إرسال إنذار
                                   </DropdownMenuItem>
                                   {customer.phone && (
-                                    <DropdownMenuItem onClick={() => window.open(`tel:${customer.phone}`)}>
+                                    <DropdownMenuItem onClick={() => navigate(`/customers/crm?call=${customer.customer_id}`)}>
                                       <Phone className="w-4 h-4 ml-2" />
                                       اتصال: {customer.phone}
                                     </DropdownMenuItem>

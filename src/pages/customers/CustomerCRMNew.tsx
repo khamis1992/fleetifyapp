@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/components/ui/use-toast';
@@ -450,6 +451,7 @@ export default function CustomerCRMNew() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // UI State
   const [searchTerm, setSearchTerm] = useState('');
@@ -463,6 +465,7 @@ export default function CustomerCRMNew() {
   // Call Dialog State
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callingCustomer, setCallingCustomer] = useState<Customer | null>(null);
+  const [autoCallHandled, setAutoCallHandled] = useState(false);
 
   // Fetch customers
   const { data: customers = [], isLoading, refetch } = useQuery({
@@ -531,6 +534,25 @@ export default function CustomerCRMNew() {
     },
     enabled: !!companyId,
   });
+
+  // Handle auto-call from URL parameter (e.g., /customers/crm?call=CUSTOMER_ID)
+  useEffect(() => {
+    const callCustomerId = searchParams.get('call');
+    if (callCustomerId && customers.length > 0 && !autoCallHandled) {
+      const customerToCall = customers.find(c => c.id === callCustomerId);
+      if (customerToCall) {
+        setCallingCustomer(customerToCall);
+        setCallDialogOpen(true);
+        setAutoCallHandled(true);
+        // Clear the URL parameter
+        setSearchParams({});
+        toast({
+          title: '📞 بدء الاتصال',
+          description: `جاري الاتصال بـ ${customerToCall.first_name_ar || customerToCall.first_name || ''} ${customerToCall.last_name_ar || customerToCall.last_name || ''}`,
+        });
+      }
+    }
+  }, [customers, searchParams, autoCallHandled, setSearchParams, toast]);
 
   // Keyboard shortcut for search
   useEffect(() => {
