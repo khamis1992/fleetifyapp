@@ -244,9 +244,12 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       }
 
       const aiData = await aiResponse.json();
-      const generatedContent = aiData.choices[0]?.message?.content;
+      // GLM-4.6 may return content in 'reasoning_content' field for reasoning models
+      const messageData = aiData.choices[0]?.message;
+      const generatedContent = messageData?.content || messageData?.reasoning_content;
 
       if (!generatedContent) {
+        console.error('AI Response:', JSON.stringify(aiData));
         throw new Error('لم يتم إنشاء محتوى من GLM-4.6 AI');
       }
 
