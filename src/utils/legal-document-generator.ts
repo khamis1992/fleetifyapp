@@ -477,8 +477,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="party">
         <div class="party-label">ضــد:</div>
         <div class="party-content">
-          <strong>السيد / ${customer.customer_name}</strong><br>
-          ${customer.id_number ? `حامل البطاقة الشخصية رقم: ${customer.id_number}` : `رقم العميل: ${customer.customer_code}`}
+          <strong>السيد / ${customer.customer_name}</strong>
+          ${customer.id_number ? `<br>حامل البطاقة الشخصية رقم: ${customer.id_number}` : ''}
           ${customer.phone ? `<br>رقم الهاتف: ${customer.phone}` : ''}
         </div>
       </div>
@@ -503,8 +503,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           وسداد جميع الالتزامات المترتبة على استخدامها.
         </p>
         <p>
-          إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة 
-          <strong>(${customer.months_unpaid})</strong> شهر، بإجمالي <strong>(${customer.days_overdue})</strong> يوم تأخير،
+          إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات المستحقة لمدة 
+          <strong>(${customer.days_overdue})</strong> يوماً،
           ${customer.violations_count > 0 ? `وسُجلت على المركبة <strong>(${customer.violations_count})</strong> مخالفة مرورية بقيمة إجمالية <strong>(${customer.violations_amount.toLocaleString('en-US')})</strong> ريال قطري ناتجة عن استخدامه الشخصي،` : ''}
           ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
         </p>
@@ -550,10 +550,6 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           </tr>
         </tbody>
       </table>
-      <div class="total-box">
-        الإجمالي: <strong>${totalClaim.toLocaleString('en-US')}</strong> ريال قطري
-        (فقط ${totalClaim.toLocaleString('ar-QA')} ريال قطري لا غير)
-      </div>
     </div>
 
     ${customer.violations_count > 0 ? `
