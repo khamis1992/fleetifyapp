@@ -249,12 +249,12 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       margin-top: 5px;
     }
     .logo-container {
-      width: 100px;
+      width: 150px;
       text-align: left;
     }
     .logo {
-      max-width: 90px;
-      max-height: 90px;
+      max-width: 140px;
+      max-height: 140px;
     }
     
     /* Document Title */
