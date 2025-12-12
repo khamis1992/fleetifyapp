@@ -225,30 +225,44 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       // #endregion
 
       // Call Z.AI GLM API with streaming (required for glm-4.6 to get actual content)
-      const aiResponse = await fetch(ZAI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ZAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية. أنشئ الإنذار القانوني مباشرة بدون شرح أو تعليقات إضافية.'
-            },
-            {
-              role: 'user',
-              content: aiPrompt
-            }
-          ],
-          temperature: 0.3,
-          max_tokens: 3000,
-          top_p: 0.9,
-          stream: true // Enable streaming to get actual content from glm-4.6
-        })
-      });
+      let aiResponse;
+      try {
+        // #region agent log
+        console.log('[DEBUG H3a] Starting fetch to Z.AI...');
+        // #endregion
+        aiResponse = await fetch(ZAI_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ZAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: [
+              {
+                role: 'system',
+                content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية. أنشئ الإنذار القانوني مباشرة بدون شرح أو تعليقات إضافية.'
+              },
+              {
+                role: 'user',
+                content: aiPrompt
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 3000,
+            top_p: 0.9,
+            stream: true // Enable streaming to get actual content from glm-4.6
+          })
+        });
+        // #region agent log
+        console.log('[DEBUG H3b] Fetch completed', {status:aiResponse.status,ok:aiResponse.ok,statusText:aiResponse.statusText});
+        // #endregion
+      } catch (fetchError) {
+        // #region agent log
+        console.error('[DEBUG H3c] Fetch FAILED with exception', {error:String(fetchError),message:(fetchError as Error)?.message});
+        // #endregion
+        throw new Error(`فشل الاتصال بخدمة الذكاء الاصطناعي: ${(fetchError as Error)?.message}`);
+      }
 
       if (!aiResponse.ok) {
         const errorData = await aiResponse.json().catch(() => ({}));
@@ -264,31 +278,49 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
       const decoder = new TextDecoder('utf-8');
       let generatedContent = '';
 
+      // #region agent log
+      console.log('[DEBUG H4a] Starting to read streaming response', {hasReader:!!reader});
+      // #endregion
+
       if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          let chunkCount = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              // #region agent log
+              console.log('[DEBUG H4b] Streaming done', {totalChunks:chunkCount,contentLength:generatedContent.length});
+              // #endregion
+              break;
+            }
+            chunkCount++;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
 
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (trimmedLine.startsWith('data:')) {
-              const jsonStr = trimmedLine.slice(5).trim();
-              if (jsonStr === '[DONE]') continue;
-              
-              try {
-                const parsed = JSON.parse(jsonStr);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
-                  generatedContent += delta;
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith('data:')) {
+                const jsonStr = trimmedLine.slice(5).trim();
+                if (jsonStr === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(jsonStr);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) {
+                    generatedContent += delta;
+                  }
+                } catch {
+                  // Skip invalid JSON
                 }
-              } catch {
-                // Skip invalid JSON
               }
             }
           }
+        } catch (streamError) {
+          // #region agent log
+          console.error('[DEBUG H4c] Streaming read FAILED', {error:String(streamError),message:(streamError as Error)?.message});
+          // #endregion
+          throw new Error(`فشل قراءة استجابة الذكاء الاصطناعي: ${(streamError as Error)?.message}`);
         }
       }
 
