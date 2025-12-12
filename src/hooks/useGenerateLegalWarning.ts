@@ -208,24 +208,28 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
 أنشئ الإنذار كاملاً الآن:
 `.trim();
 
-      // Z.AI GLM-4.6 API Configuration (same as AI Chat Assistant)
-      const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
-      const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-      const MODEL = 'glm-4.6';
+      // OpenAI API Configuration - more stable for document generation
+      const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+      const MODEL = 'gpt-4-turbo-preview';
 
-      // Call Z.AI GLM-4.6 API
-      const aiResponse = await fetch(ZAI_API_URL, {
+      if (!OPENAI_API_KEY) {
+        throw new Error('يرجى تكوين مفتاح OpenAI API في متغيرات البيئة (VITE_OPENAI_API_KEY)');
+      }
+
+      // Call OpenAI API
+      const aiResponse = await fetch(OPENAI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ZAI_API_KEY}`
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({
           model: MODEL,
           messages: [
             {
               role: 'system',
-              content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية.'
+              content: 'أنت مستشار قانوني متخصص في القانون القطري وقوانين التأجير والليموزين في دول الخليج. تتمتع بخبرة 20 عاماً في صياغة الوثائق القانونية والإنذارات الرسمية. أنشئ الإنذار القانوني مباشرة بدون شرح أو تعليقات.'
             },
             {
               role: 'user',
@@ -233,24 +237,22 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             }
           ],
           temperature: 0.3, // Low temperature for consistent, formal output
-          max_tokens: 2000,
+          max_tokens: 3000,
           top_p: 0.9
         })
       });
 
       if (!aiResponse.ok) {
         const errorData = await aiResponse.json().catch(() => ({}));
-        throw new Error(`GLM-4.6 API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
+        throw new Error(`OpenAI API Error: ${errorData.error?.message || aiResponse.statusText || 'Unknown error'}`);
       }
 
       const aiData = await aiResponse.json();
-      // GLM-4.6 may return content in 'reasoning_content' field for reasoning models
-      const messageData = aiData.choices[0]?.message;
-      const generatedContent = messageData?.content || messageData?.reasoning_content;
+      const generatedContent = aiData.choices[0]?.message?.content;
 
       if (!generatedContent) {
         console.error('AI Response:', JSON.stringify(aiData));
-        throw new Error('لم يتم إنشاء محتوى من GLM-4.6 AI');
+        throw new Error('لم يتم إنشاء محتوى من OpenAI');
       }
 
       // Calculate usage (Z.AI provides similar usage stats)
@@ -289,7 +291,7 @@ ${additionalNotes ? `- ملاحظات إضافية: ${additionalNotes}` : ''}
             ai_generation: {
               tokens_used: tokensUsed,
               estimated_cost: estimatedCost,
-              model: 'glm-4.6',
+              model: 'gpt-4-turbo-preview',
               generated_at: new Date().toISOString()
             }
           }
