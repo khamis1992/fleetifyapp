@@ -126,14 +126,16 @@ const CHART_COLORS = {
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   let style = "bg-gray-100 text-gray-600";
   const s = status || '';
-  if (s.includes("حكم") || s.includes("تنفيذ") || s === "closed" || s === "won") {
+  if (s.includes("حكم") || s.includes("تنفيذ") || s === "closed" || s === "won" || s === "settled") {
     style = "bg-green-100 text-green-700";
-  } else if (s.includes("جاري") || s.includes("جلسة") || s.includes("شرطة") || s === "active") {
+  } else if (s.includes("جاري") || s.includes("جلسة") || s.includes("شرطة") || s === "active" || s === "in_progress") {
     style = "bg-blue-100 text-blue-700";
-  } else if (s.includes("خبير") || s.includes("تحقيق") || s === "on_hold" || s === "suspended") {
+  } else if (s.includes("خبير") || s.includes("تحقيق") || s === "on_hold" || s === "suspended" || s === "pending") {
     style = "bg-yellow-100 text-yellow-700";
   } else if (s === "urgent" || s === "high") {
     style = "bg-red-100 text-red-700";
+  } else if (s === "new") {
+    style = "bg-cyan-100 text-cyan-700";
   }
   
   const getStatusLabel = (s: string) => {
@@ -142,9 +144,13 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
       closed: 'مغلقة',
       suspended: 'معلقة',
       on_hold: 'قيد الانتظار',
+      pending: 'قيد الانتظار',
       won: 'تم الكسب',
       lost: 'تم الخسارة',
       settled: 'تم التسوية',
+      in_progress: 'قيد التنفيذ',
+      new: 'جديدة',
+      urgent: 'عاجلة',
     };
     return labels[s] || s;
   };
@@ -840,8 +846,36 @@ export const LegalCasesTracking: React.FC = () => {
       theft: 'سرقة',
       traffic_violation: 'مخالفة مرورية',
       payment_default: 'تخلف عن سداد',
+      payment_collection: 'تحصيل مستحقات',
+      contract_breach: 'خرق عقد',
+      vehicle_damage: 'أضرار مركبة',
+      accident_claim: 'مطالبة حادث',
+      insurance_claim: 'مطالبة تأمين',
+      other: 'أخرى',
     };
     return labels[type] || type;
+  };
+
+  const getTypeColor = (type: string): string => {
+    const colors: Record<string, string> = {
+      civil: 'bg-blue-100 text-blue-700 border-blue-200',
+      criminal: 'bg-red-100 text-red-700 border-red-200',
+      commercial: 'bg-purple-100 text-purple-700 border-purple-200',
+      labor: 'bg-orange-100 text-orange-700 border-orange-200',
+      administrative: 'bg-slate-100 text-slate-700 border-slate-200',
+      rental_dispute: 'bg-amber-100 text-amber-700 border-amber-200',
+      accident: 'bg-rose-100 text-rose-700 border-rose-200',
+      theft: 'bg-red-200 text-red-800 border-red-300',
+      traffic_violation: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      payment_default: 'bg-red-100 text-red-700 border-red-200',
+      payment_collection: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      contract_breach: 'bg-pink-100 text-pink-700 border-pink-200',
+      vehicle_damage: 'bg-orange-100 text-orange-700 border-orange-200',
+      accident_claim: 'bg-rose-100 text-rose-700 border-rose-200',
+      insurance_claim: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      other: 'bg-gray-100 text-gray-700 border-gray-200',
+    };
+    return colors[type] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   if (isLoadingCompany) {
@@ -1118,7 +1152,7 @@ export const LegalCasesTracking: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4">
-                    <span className="text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs border border-gray-100">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${getTypeColor(item.case_type)}`}>
                       {getTypeLabel(item.case_type)}
                     </span>
                   </TableCell>
