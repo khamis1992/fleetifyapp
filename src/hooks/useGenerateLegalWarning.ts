@@ -85,7 +85,7 @@ export const useGenerateLegalWarning = () => {
       // Get company information including currency
       const { data: company } = await supabase
         .from('companies')
-        .select('name_ar, name_en, phone, email, address, commercial_registration, currency')
+        .select('name_ar, name, phone, email, address, commercial_register, currency')
         .eq('id', profile.company_id)
         .single();
       
@@ -120,7 +120,7 @@ export const useGenerateLegalWarning = () => {
 
 معلومات الشركة:
 - اسم الشركة: ${company?.name_ar || 'شركة فليتفاي'}
-- السجل التجاري: ${company?.commercial_registration || ''}
+- السجل التجاري: ${company?.commercial_register || ''}
 - الهاتف: ${company?.phone || ''}
 - البريد: ${company?.email || ''}
 - العنوان: ${company?.address || ''}
