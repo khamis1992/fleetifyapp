@@ -178,6 +178,7 @@ _______________________________
 
 /**
  * Generate HTML version of the legal complaint for printing
+ * Professional formal legal document style
  */
 export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, additionalNotes } = data;
@@ -197,36 +198,114 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   <meta charset="UTF-8">
   <title>مذكرة شارحة - ${customer.customer_name}</title>
   <style>
-    @page { size: A4; margin: 20mm; }
+    @page { 
+      size: A4; 
+      margin: 25mm 20mm; 
+    }
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: 'Arial', 'Tahoma', sans-serif;
+      font-family: 'Times New Roman', 'Traditional Arabic', 'Arial', serif;
       font-size: 14px;
-      line-height: 1.8;
-      color: #333;
+      line-height: 2;
+      color: #000;
       background: #fff;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
     .container {
-      max-width: 210mm;
+      max-width: 170mm;
       margin: 0 auto;
+      padding: 0;
     }
-    .header {
+    
+    /* Header with Logo */
+    .letterhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #000;
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+    }
+    .company-info {
+      text-align: right;
+      flex: 1;
+    }
+    .company-name {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .company-name-en {
+      font-size: 12px;
+      color: #333;
+      font-style: italic;
+    }
+    .company-details {
+      font-size: 11px;
+      color: #333;
+      margin-top: 5px;
+    }
+    .logo-container {
+      width: 100px;
+      text-align: left;
+    }
+    .logo {
+      max-width: 90px;
+      max-height: 90px;
+    }
+    
+    /* Document Title */
+    .document-title {
       text-align: center;
-      border-bottom: 3px solid #1e3a8a;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
+      margin: 30px 0;
+      padding: 15px 0;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
     }
-    .title {
+    .document-title h1 {
       font-size: 22px;
       font-weight: bold;
-      color: #1e3a8a;
-      margin-bottom: 10px;
+      margin: 0 0 5px 0;
+      letter-spacing: 2px;
     }
-    .date {
-      color: #666;
+    .document-date {
       font-size: 12px;
+      color: #333;
     }
+    
+    /* Parties Section */
+    .parties {
+      margin-bottom: 25px;
+    }
+    .party {
+      margin-bottom: 20px;
+      padding: 12px 15px;
+      border: 1px solid #000;
+    }
+    .party-label {
+      font-weight: bold;
+      font-size: 14px;
+      text-decoration: underline;
+      margin-bottom: 8px;
+    }
+    .party-content {
+      padding-right: 20px;
+    }
+    
+    /* Subject */
+    .subject {
+      text-align: center;
+      margin: 25px 0;
+      padding: 12px;
+      border: 2px solid #000;
+      font-weight: bold;
+      font-size: 15px;
+    }
+    
+    /* Sections */
     .section {
       margin-bottom: 25px;
       page-break-inside: avoid;
@@ -234,236 +313,271 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     .section-title {
       font-size: 16px;
       font-weight: bold;
-      color: #1e3a8a;
-      border-bottom: 2px solid #1e3a8a;
-      padding-bottom: 5px;
-      margin-bottom: 15px;
+      text-decoration: underline;
+      margin-bottom: 12px;
     }
-    .party-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
+    .section-content {
+      text-align: justify;
+      text-justify: inter-word;
     }
-    .party-label {
-      font-weight: bold;
-      color: #1e3a8a;
-      margin-bottom: 8px;
-    }
-    .subject-box {
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 25px;
-    }
+    
+    /* Claims Table */
     .claims-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin: 20px 0;
     }
     .claims-table th {
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-      color: white;
-      padding: 12px;
-      text-align: right;
-      border: 1px solid #1e3a8a;
+      background: #000;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #000;
+      font-weight: bold;
     }
     .claims-table td {
       padding: 10px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #000;
       text-align: right;
     }
-    .claims-table tr:nth-child(even) {
-      background: #f8fafc;
+    .claims-table td.center {
+      text-align: center;
+    }
+    .claims-table td.amount {
+      text-align: left;
+      font-weight: bold;
+      direction: ltr;
     }
     .claims-table .total-row {
-      background: #fef3c7 !important;
+      background: #f0f0f0;
       font-weight: bold;
     }
-    .amount {
+    .claims-table .total-row td {
+      border-top: 2px solid #000;
+    }
+    
+    /* Total Box */
+    .total-box {
+      text-align: center;
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #000;
       font-weight: bold;
-      color: #dc2626;
-      font-size: 16px;
+      font-size: 14px;
     }
-    .total-amount {
-      font-size: 18px;
-      color: #1e3a8a;
-    }
-    .legal-basis {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 8px;
-      padding: 15px;
-    }
+    
+    /* Legal Articles */
     .legal-article {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       padding-right: 20px;
-      position: relative;
+      text-indent: -15px;
     }
     .legal-article::before {
       content: "•";
-      position: absolute;
-      right: 0;
-      color: #16a34a;
+      margin-left: 10px;
       font-weight: bold;
     }
+    
+    /* Requests List */
     .requests-list {
-      counter-reset: request-counter;
+      counter-reset: request;
     }
     .request-item {
-      counter-increment: request-counter;
-      margin-bottom: 12px;
-      padding-right: 30px;
+      margin-bottom: 10px;
+      padding-right: 25px;
       position: relative;
     }
     .request-item::before {
-      content: counter(request-counter) ".";
+      content: counter(request) ".";
+      counter-increment: request;
       position: absolute;
       right: 0;
       font-weight: bold;
-      color: #1e3a8a;
+    }
+    
+    /* Signature Area */
+    .signature-section {
+      margin-top: 50px;
+      page-break-inside: avoid;
+    }
+    .closing {
+      text-align: center;
+      margin-bottom: 30px;
     }
     .signature-area {
-      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .signature-box {
       text-align: center;
+      width: 45%;
     }
     .signature-line {
-      width: 250px;
-      border-top: 1px solid #333;
-      margin: 40px auto 10px;
+      border-top: 1px solid #000;
+      margin-top: 50px;
+      padding-top: 5px;
     }
-    .violations-box {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 15px 0;
+    .stamp-area {
+      width: 80px;
+      height: 80px;
+      border: 1px dashed #666;
+      border-radius: 50%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #666;
     }
-    .violations-title {
-      color: #dc2626;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
+    
+    /* Print styles */
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .section { page-break-inside: avoid; }
+      .signature-section { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <div class="title">مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية</div>
-      <div class="date">التاريخ: ${today}</div>
+    
+    <!-- Letterhead -->
+    <div class="letterhead">
+      <div class="company-info">
+        <div class="company-name">${companyInfo.name_ar}</div>
+        <div class="company-name-en">${companyInfo.name_en || 'AL-ARAF CAR RENTAL'}</div>
+        <div class="company-details">
+          ${companyInfo.address}<br>
+          السجل التجاري: ${companyInfo.cr_number}
+        </div>
+      </div>
+      <div class="logo-container">
+        <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+      </div>
     </div>
 
-    <div class="section">
-      <div class="party-box">
+    <!-- Document Title -->
+    <div class="document-title">
+      <h1>مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية</h1>
+      <div class="document-date">التاريخ: ${today}</div>
+    </div>
+
+    <!-- Parties -->
+    <div class="parties">
+      <div class="party">
         <div class="party-label">مقدمة من:</div>
-        <strong>${companyInfo.name_ar} – ذ.م.م</strong><br>
-        المقر: ${companyInfo.address}<br>
-        رقم السجل التجاري: ${companyInfo.cr_number}
+        <div class="party-content">
+          <strong>${companyInfo.name_ar} – ذ.م.م</strong><br>
+          المقر: ${companyInfo.address}<br>
+          رقم السجل التجاري: ${companyInfo.cr_number}
+        </div>
       </div>
 
-      <div class="party-box">
+      <div class="party">
         <div class="party-label">ضــد:</div>
-        <strong>السيد / ${customer.customer_name}</strong><br>
-        ${customer.id_number ? `حامل البطاقة الشخصية رقم: ${customer.id_number}` : `رقم العميل: ${customer.customer_code}`}<br>
-        ${customer.phone ? `رقم الهاتف: ${customer.phone}` : ''}
-        ${customer.email ? `<br>البريد الإلكتروني: ${customer.email}` : ''}
+        <div class="party-content">
+          <strong>السيد / ${customer.customer_name}</strong><br>
+          ${customer.id_number ? `حامل البطاقة الشخصية رقم: ${customer.id_number}` : `رقم العميل: ${customer.customer_code}`}
+          ${customer.phone ? `<br>رقم الهاتف: ${customer.phone}` : ''}
+        </div>
       </div>
     </div>
 
-    <div class="subject-box">
+    <!-- Subject -->
+    <div class="subject">
       الموضوع: مطالبة مالية ${customer.violations_count > 0 ? 'وتحويل الغرامات المرورية إلى الرقم الشخصي للمستأجر' : ''}
     </div>
 
+    <!-- Section 1: Facts -->
     <div class="section">
       <div class="section-title">أولاً: الوقائع</div>
-      <p>
-        أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractInfo.start_date}</strong> مع المدعى عليه، 
-        التزم بموجبه بدفع الإيجار الشهري البالغ <strong>(${contractInfo.monthly_rent.toLocaleString('en-US')})</strong> ريال قطري 
-        والمحافظة على المركبة رقم <strong>(${vehicleInfo.plate})</strong>
-        ${vehicleInfo.make ? ` من نوع <strong>${vehicleInfo.make}</strong>` : ''}
-        ${vehicleInfo.model ? ` <strong>${vehicleInfo.model}</strong>` : ''}
-        ${vehicleInfo.year ? ` موديل <strong>${vehicleInfo.year}</strong>` : ''}
-        وسداد جميع الالتزامات المترتبة على استخدامها.
-      </p>
-      <p>
-        إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة 
-        <strong>(${customer.months_unpaid})</strong> شهر، بإجمالي <strong>(${customer.days_overdue})</strong> يوم تأخير،
-        ${customer.violations_count > 0 ? `وسُجلت على المركبة <strong>(${customer.violations_count})</strong> مخالفة مرورية بقيمة إجمالية <strong>(${customer.violations_amount.toLocaleString('en-US')})</strong> ريال قطري ناتجة عن استخدامه الشخصي،` : ''}
-        ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
-      </p>
-      ${customer.violations_count > 0 ? `
-      <p>
-        ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، 
-        وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها.
-      </p>
-      ` : ''}
+      <div class="section-content">
+        <p>
+          أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractInfo.start_date}</strong> مع المدعى عليه، 
+          التزم بموجبه بدفع الإيجار الشهري البالغ <strong>(${contractInfo.monthly_rent.toLocaleString('en-US')})</strong> ريال قطري 
+          والمحافظة على المركبة رقم <strong>(${vehicleInfo.plate})</strong>
+          ${vehicleInfo.make ? ` من نوع <strong>${vehicleInfo.make}</strong>` : ''}
+          ${vehicleInfo.model ? ` <strong>${vehicleInfo.model}</strong>` : ''}
+          ${vehicleInfo.year ? ` موديل <strong>${vehicleInfo.year}</strong>` : ''}
+          وسداد جميع الالتزامات المترتبة على استخدامها.
+        </p>
+        <p>
+          إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة 
+          <strong>(${customer.months_unpaid})</strong> شهر، بإجمالي <strong>(${customer.days_overdue})</strong> يوم تأخير،
+          ${customer.violations_count > 0 ? `وسُجلت على المركبة <strong>(${customer.violations_count})</strong> مخالفة مرورية بقيمة إجمالية <strong>(${customer.violations_amount.toLocaleString('en-US')})</strong> ريال قطري ناتجة عن استخدامه الشخصي،` : ''}
+          ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
+        </p>
+        ${customer.violations_count > 0 ? `
+        <p>
+          ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، 
+          وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها.
+        </p>
+        ` : ''}
+      </div>
     </div>
 
+    <!-- Section 2: Financial Claims -->
     <div class="section">
       <div class="section-title">ثانياً: المطالبات المالية المباشرة</div>
       <table class="claims-table">
         <thead>
           <tr>
-            <th style="width: 60px;">البند</th>
+            <th style="width: 50px;">البند</th>
             <th>البيان</th>
-            <th style="width: 150px;">المبلغ (ر.ق)</th>
+            <th style="width: 130px;">المبلغ (ريال قطري)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style="text-align: center;">1</td>
+            <td class="center">1</td>
             <td>غرامات تأخير في سداد الإيجار الشهري</td>
             <td class="amount">${latePenalty.toLocaleString('en-US')}</td>
           </tr>
           <tr>
-            <td style="text-align: center;">2</td>
+            <td class="center">2</td>
             <td>إيجار متأخر غير مسدد</td>
             <td class="amount">${overdueRent.toLocaleString('en-US')}</td>
           </tr>
           <tr>
-            <td style="text-align: center;">3</td>
+            <td class="center">3</td>
             <td>تعويض عن الأضرار المادية والمعنوية التي لحقت بالشركة جراء الإخلال بالعقد</td>
             <td class="amount">${damagesAmount.toLocaleString('en-US')}</td>
           </tr>
           <tr class="total-row">
             <td colspan="2" style="text-align: left; font-weight: bold;">الإجمالي</td>
-            <td class="total-amount">${totalClaim.toLocaleString('en-US')}</td>
+            <td class="amount" style="font-size: 15px;">${totalClaim.toLocaleString('en-US')}</td>
           </tr>
         </tbody>
       </table>
-      <p style="text-align: center; font-weight: bold; font-size: 16px; color: #1e3a8a;">
+      <div class="total-box">
+        الإجمالي: <strong>${totalClaim.toLocaleString('en-US')}</strong> ريال قطري
         (فقط ${totalClaim.toLocaleString('ar-QA')} ريال قطري لا غير)
-      </p>
+      </div>
     </div>
 
     ${customer.violations_count > 0 ? `
+    <!-- Section 3: Traffic Violations -->
     <div class="section">
       <div class="section-title">ثالثاً: الطلب المتعلق بالمخالفات المرورية</div>
-      <div class="violations-box">
-        <div class="violations-title">⚠️ المخالفات المرورية</div>
-        <p>عدد المخالفات: <strong>${customer.violations_count}</strong> مخالفة</p>
-        <p>قيمة المخالفات: <strong>${customer.violations_amount.toLocaleString('en-US')}</strong> ريال قطري</p>
+      <div class="section-content">
+        <p>
+          تلتمس الشركة من عدالتكم الموقرة عدم إدخال قيمة المخالفات المرورية ضمن المطالبة المالية، 
+          والاكتفاء بإصدار أمر بتحويلها إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong> 
+          لدى الإدارة العامة للمرور، وذلك لتجنب تحميل الشركة ما لا يلزمها به القانون، إذ أن المخالفات ناتجة عن تصرفات المستأجر لا عن مالك المركبة.
+        </p>
+        <p>
+          <strong>عدد المخالفات:</strong> ${customer.violations_count} مخالفة<br>
+          <strong>قيمة المخالفات:</strong> ${customer.violations_amount.toLocaleString('en-US')} ريال قطري
+        </p>
       </div>
-      <p>
-        تلتمس الشركة من عدالتكم الموقرة عدم إدخال قيمة المخالفات المرورية ضمن المطالبة المالية، 
-        والاكتفاء بإصدار أمر بتحويلها إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong> 
-        لدى الإدارة العامة للمرور.
-      </p>
     </div>
     ` : ''}
 
+    <!-- Section: Legal Basis -->
     <div class="section">
-      <div class="section-title">رابعاً: الأساس القانوني</div>
-      <div class="legal-basis">
+      <div class="section-title">${customer.violations_count > 0 ? 'رابعاً' : 'ثالثاً'}: الأساس القانوني</div>
+      <div class="section-content">
         <p>تستند هذه الدعوى إلى أحكام القانون المدني القطري، ولا سيما المواد:</p>
         <div class="legal-article">
           <strong>المادة (171):</strong> العقد شريعة المتعاقدين، ولا يجوز نقضه أو تعديله إلا باتفاق الطرفين أو للأسباب التي يقرها القانون.
@@ -477,40 +591,61 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         <div class="legal-article">
           <strong>المادة (267):</strong> يقدر التعويض بقدر الضرر المباشر المتوقع عادة وقت التعاقد.
         </div>
+        <p>
+          وبناءً عليه، فإن المطالبات المالية الواردة أعلاه هي عن التزامات تعاقدية مباشرة، 
+          في حين أن الغرامات المرورية ينبغي أن تُحوّل إداريًا إلى المستأجر.
+        </p>
       </div>
     </div>
 
+    <!-- Section: Requests -->
     <div class="section">
-      <div class="section-title">خامساً: الطلبات</div>
-      <p>تلتمس الشركة من عدالتكم الموقرة ما يلي:</p>
-      <div class="requests-list">
-        <div class="request-item">
-          إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره <strong>(${totalClaim.toLocaleString('en-US')} ريال قطري)</strong>.
-        </div>
-        ${customer.violations_count > 0 ? `
-        <div class="request-item">
-          إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>.
-        </div>
-        ` : ''}
-        <div class="request-item">
-          تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
+      <div class="section-title">${customer.violations_count > 0 ? 'خامساً' : 'رابعاً'}: الطلبات</div>
+      <div class="section-content">
+        <p>تلتمس الشركة من عدالتكم الموقرة ما يلي:</p>
+        <div class="requests-list">
+          <div class="request-item">
+            إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره <strong>(${totalClaim.toLocaleString('en-US')} ريال قطري)</strong>.
+          </div>
+          ${customer.violations_count > 0 ? `
+          <div class="request-item">
+            إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>.
+          </div>
+          ` : ''}
+          <div class="request-item">
+            تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
+          </div>
         </div>
       </div>
     </div>
 
     ${additionalNotes ? `
+    <!-- Additional Notes -->
     <div class="section">
       <div class="section-title">ملاحظات إضافية</div>
-      <p>${additionalNotes}</p>
+      <div class="section-content">
+        <p>${additionalNotes}</p>
+      </div>
     </div>
     ` : ''}
 
-    <div class="signature-area">
-      <p>وتفضلوا بقبول فائق الاحترام والتقدير،</p>
-      <p><strong>عن ${companyInfo.name_ar} – ذ.م.م</strong></p>
-      <div class="signature-line"></div>
-      <p>التوقيع والختم</p>
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="closing">
+        <p>وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+        <p><strong>عن ${companyInfo.name_ar} – ذ.م.م</strong></p>
+      </div>
+      
+      <div class="signature-area">
+        <div class="signature-box">
+          <div class="stamp-area">الختم</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line">التوقيع المعتمد</div>
+        </div>
+      </div>
     </div>
+
   </div>
   <script>
     window.onload = function() { window.print(); }
