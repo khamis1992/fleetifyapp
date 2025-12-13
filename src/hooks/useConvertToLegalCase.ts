@@ -235,12 +235,12 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
         const notifications = managers.map(m => ({
           company_id: profile.company_id,
           user_id: m.userId,
-          type: 'legal_case_created',
+          notification_type: 'legal_case_created',
           title: `🔔 قضية قانونية جديدة: ${caseNumber}`,
           message: `تم تحويل العميل "${delinquentCustomer.customer_name}" للشؤون القانونية.\n\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم\nدرجة المخاطر: ${delinquentCustomer.risk_score}\n\nالإجراء المطلوب: ${roleLabels[m.role] || m.role}`,
           is_read: false,
-          priority: 'high',
-          action_url: `/legal/cases?view=cases&case=${caseNumber}`,
+          related_type: 'legal_case',
+          related_id: legalCase.id,
         }));
 
         if (notifications.length > 0) {
@@ -500,6 +500,68 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
 
       await supabase.from('legal_case_activities').insert(activities);
 
+      // ===== 6. إنشاء متابعة مجدولة تلقائياً =====
+      try {
+        // جدولة اتصال خلال 24 ساعة
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const scheduledDate = tomorrow.toISOString().split('T')[0];
+        
+        await supabase.from('scheduled_followups').insert({
+          company_id: profile.company_id,
+          customer_id: delinquentCustomer.customer_id,
+          contract_id: delinquentCustomer.contract_id,
+          legal_case_id: legalCase.id,
+          followup_type: 'call',
+          scheduled_date: scheduledDate,
+          scheduled_time: '10:00:00',
+          status: 'pending',
+          priority: 'urgent',
+          title: `📞 اتصال تحصيل عاجل - ${delinquentCustomer.customer_name}`,
+          description: `متابعة تحصيل للعميل المحول للشؤون القانونية.\n\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم\nرقم القضية: ${caseNumber}\n\nالهدف: محاولة التسوية الودية قبل اتخاذ إجراءات قانونية`,
+          source: 'legal_case',
+          source_reference: caseNumber,
+          created_by: user.id,
+        });
+
+        // جدولة متابعة ثانية بعد 3 أيام
+        const threeDaysLater = new Date();
+        threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+        const secondScheduledDate = threeDaysLater.toISOString().split('T')[0];
+        
+        await supabase.from('scheduled_followups').insert({
+          company_id: profile.company_id,
+          customer_id: delinquentCustomer.customer_id,
+          contract_id: delinquentCustomer.contract_id,
+          legal_case_id: legalCase.id,
+          followup_type: 'call',
+          scheduled_date: secondScheduledDate,
+          scheduled_time: '11:00:00',
+          status: 'pending',
+          priority: 'high',
+          title: `📞 متابعة تحصيل - ${delinquentCustomer.customer_name}`,
+          description: `متابعة ثانية للتحصيل.\nفي حال عدم الرد أو التسوية، سيتم تصعيد الإجراءات القانونية.`,
+          source: 'legal_case',
+          source_reference: caseNumber,
+          created_by: user.id,
+        });
+
+        // إضافة نشاط إنشاء المتابعة
+        await supabase.from('legal_case_activities').insert({
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          activity_type: 'followup_scheduled',
+          activity_title: '📅 جدولة متابعات تلقائية',
+          activity_description: `تم جدولة اتصالين تلقائياً:\n1. ${scheduledDate} الساعة 10:00 صباحاً (عاجل)\n2. ${secondScheduledDate} الساعة 11:00 صباحاً (متابعة)`,
+          created_by: user.id,
+        });
+
+        console.log('✅ تم إنشاء المتابعات المجدولة بنجاح');
+      } catch (followupError) {
+        console.error('⚠️ خطأ في إنشاء المتابعات:', followupError);
+        // لا نوقف العملية - القضية تم إنشاؤها بنجاح
+      }
+
       return legalCase;
     },
     onSuccess: (data) => {
@@ -515,9 +577,12 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
       queryClient.invalidateQueries({ queryKey: ['vehicle-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-followups'] });
+      queryClient.invalidateQueries({ queryKey: ['upcoming-followups'] });
+      queryClient.invalidateQueries({ queryKey: ['followup-stats'] });
       
       toast.success('✅ تم إنشاء القضية القانونية بنجاح', {
-        description: `رقم القضية: ${data.case_number}\nتم تحديث حالة العقد والمركبة وإضافة العميل للقائمة السوداء`,
+        description: `رقم القضية: ${data.case_number}\nتم تحديث حالة العقد والمركبة وإضافة العميل للقائمة السوداء\n📅 تم جدولة متابعتين تلقائياً`,
         duration: 7000,
       });
     },

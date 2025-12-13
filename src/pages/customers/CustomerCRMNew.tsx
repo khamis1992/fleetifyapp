@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { CallDialog } from '@/components/customers/CallDialog';
+import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
 
 // --- الثوابت ---
 const ITEMS_PER_PAGE = 15;
@@ -1274,6 +1275,9 @@ export default function CustomerCRMNew() {
           <StatCard title="عقود نشطة" value={stats.activeContracts} icon={<CheckCircle size={20} />} color="blue" />
           <StatCard title="عقد قريب الانتهاء" value={stats.expiring} icon={<Clock size={20} />} color="yellow" />
         </div>
+
+        {/* Scheduled Follow-ups Panel */}
+        <ScheduledFollowupsPanel />
 
         {/* Filters & Content Wrapper */}
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
