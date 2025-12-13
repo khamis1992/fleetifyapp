@@ -60,6 +60,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useLegalCases, useLegalCaseStats, useUpdateLegalCase, LegalCase } from '@/hooks/useLegalCases';
+import { useLegalCollectionReport, useLegalCollectionStats } from '@/hooks/useLegalCollectionReport';
 import { useLegalDocuments, useCreateLegalDocument, useDeleteLegalDocument, useDownloadLegalDocument } from '@/hooks/useLegalDocuments';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -1452,6 +1453,259 @@ export const LegalCasesTracking: React.FC = () => {
     );
   };
 
+  // --- Legal Collection View ---
+  const LegalCollectionView = () => {
+    const { data: reportData, isLoading: reportLoading } = useLegalCollectionReport();
+    const { data: collectionStats } = useLegalCollectionStats();
+
+    if (reportLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner size="lg" />
+        </div>
+      );
+    }
+
+    const { items = [], summary } = reportData || {};
+
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('ar-QA', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount) + ' ر.ق';
+    };
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-red-200">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-600">إجمالي الذمم القانونية</p>
+                  <p className="text-2xl font-bold text-red-700 mt-1">
+                    {formatCurrency(summary?.total_original_debt || 0)}
+                  </p>
+                  <p className="text-xs text-red-500 mt-1">{summary?.total_cases || 0} قضية</p>
+                </div>
+                <div className="p-3 bg-red-100 rounded-xl">
+                  <Scale className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">المخصصات</p>
+                  <p className="text-2xl font-bold text-orange-700 mt-1">
+                    {formatCurrency(summary?.total_provision || 0)}
+                  </p>
+                  <p className="text-xs text-orange-500 mt-1">ديون مشكوك فيها</p>
+                </div>
+                <div className="p-3 bg-orange-100 rounded-xl">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">المبالغ المحصلة</p>
+                  <p className="text-2xl font-bold text-green-700 mt-1">
+                    {formatCurrency(summary?.total_collected || 0)}
+                  </p>
+                  <p className="text-xs text-green-500 mt-1">
+                    نسبة التحصيل: {(summary?.collection_rate || 0).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">صافي المستحق</p>
+                  <p className="text-2xl font-bold text-blue-700 mt-1">
+                    {formatCurrency(summary?.total_remaining || 0)}
+                  </p>
+                  <p className="text-xs text-blue-500 mt-1">بعد خصم المخصص</p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Legal Costs Summary */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Gavel className="w-5 h-5 text-[#E55B5B]" />
+              التكاليف القانونية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">أتعاب المحاماة</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(items.reduce((sum, i) => sum + i.legal_fees, 0))}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">رسوم المحاكم</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(items.reduce((sum, i) => sum + i.court_fees, 0))}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">إجمالي التكاليف</p>
+                <p className="text-xl font-bold text-[#E55B5B] mt-1">
+                  {formatCurrency(summary?.total_legal_costs || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cases Table */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#E55B5B]" />
+                تفاصيل الذمم تحت التحصيل القانوني
+              </CardTitle>
+              <Badge variant="secondary" className="text-sm">
+                {items.length} عقد
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CheckCircle2 className="w-12 h-12 text-green-400 mb-4" />
+                <p className="text-lg font-medium text-gray-700">لا توجد ذمم تحت التحصيل القانوني</p>
+                <p className="text-sm text-gray-500 mt-1">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">رقم القضية</TableHead>
+                      <TableHead className="text-right">المبلغ الأصلي</TableHead>
+                      <TableHead className="text-right">المخصص</TableHead>
+                      <TableHead className="text-right">المحصل</TableHead>
+                      <TableHead className="text-right">المتبقي</TableHead>
+                      <TableHead className="text-right">أيام</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={item.contract_id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-gray-900">{item.customer_name}</p>
+                            <p className="text-xs text-gray-500">{item.contract_number}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm text-blue-600">{item.case_number}</span>
+                        </TableCell>
+                        <TableCell className="font-bold text-red-600">
+                          {formatCurrency(item.original_debt)}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <span className="text-orange-600">{formatCurrency(item.provision_amount)}</span>
+                            <span className="text-xs text-gray-400 mr-1">
+                              ({Math.round(item.provision_rate * 100)}%)
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-green-600">
+                          {formatCurrency(item.collected_amount)}
+                        </TableCell>
+                        <TableCell className="font-bold">
+                          {formatCurrency(item.remaining_amount)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.days_in_legal > 180 ? 'destructive' : item.days_in_legal > 90 ? 'default' : 'secondary'}>
+                            {item.days_in_legal} يوم
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={item.case_status} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Provision Rate Legend */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">نسب المخصصات حسب فترة التأخير</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div>
+                  <p className="text-sm font-medium text-green-700">0-180 يوم</p>
+                  <p className="text-xs text-green-600">25% مخصص</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div>
+                  <p className="text-sm font-medium text-yellow-700">181-270 يوم</p>
+                  <p className="text-xs text-yellow-600">50% مخصص</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <div>
+                  <p className="text-sm font-medium text-orange-700">271-365 يوم</p>
+                  <p className="text-xs text-orange-600">75% مخصص</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div>
+                  <p className="text-sm font-medium text-red-700">أكثر من سنة</p>
+                  <p className="text-xs text-red-600">100% مخصص</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   // --- Settings View ---
   const SettingsView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -1507,6 +1761,8 @@ export const LegalCasesTracking: React.FC = () => {
         return <CalendarView />;
       case 'finance':
         return <FinanceView />;
+      case 'collection':
+        return <LegalCollectionView />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -1564,6 +1820,7 @@ export const LegalCasesTracking: React.FC = () => {
           <TabButton id="cases" label="سجل القضايا" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="calendar" label="الجلسات والمواعيد" icon={CalendarDays} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="finance" label="العملاء المتأخرون" icon={TrendingUp} activeTab={activeTab} onClick={setActiveTab} />
+          <TabButton id="collection" label="التحصيل القانوني" icon={DollarSign} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="settings" label="الإعدادات" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
         </div>
       </div>
