@@ -174,6 +174,8 @@ const ReceivePaymentWorkflow: React.FC = () => {
       const paymentNumber = `PAY-${Date.now().toString(36).toUpperCase()}`;
 
       // 2. إنشاء الدفعة
+      // payment_method = 'received' (استلام) أو 'made' (دفع)
+      // payment_type = نوع الدفع (cash, bank_transfer, check, etc.)
       const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
         .insert({
@@ -182,8 +184,8 @@ const ReceivePaymentWorkflow: React.FC = () => {
           customer_id: data.customerId,
           payment_number: paymentNumber,
           amount: data.amount,
-          payment_type: data.paymentMethod, // حقل إلزامي
-          payment_method: data.paymentMethod,
+          payment_type: data.paymentMethod, // نوع الدفع (نقدي، تحويل، إلخ)
+          payment_method: 'received', // اتجاه الدفعة: استلام من العميل
           payment_date: data.paymentDate,
           payment_status: 'completed',
           reference_number: data.referenceNumber || null,
