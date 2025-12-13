@@ -182,6 +182,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
           customer_id: data.customerId,
           payment_number: paymentNumber,
           amount: data.amount,
+          payment_type: data.paymentMethod, // حقل إلزامي
           payment_method: data.paymentMethod,
           payment_date: data.paymentDate,
           payment_status: 'completed',
