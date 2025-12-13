@@ -20,13 +20,7 @@ import {
   Plus,
   ChevronDown,
   RefreshCw,
-  AlertCircle,
   Clock,
-  UserCheck,
-  PhoneMissed,
-  PhoneIncoming,
-  Calendar,
-  CheckCircle,
   MoreHorizontal,
   X,
   Save,
@@ -34,21 +28,15 @@ import {
   ArrowRight,
   Filter,
   Hash,
-  Users,
-  FileText,
   Printer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { CallDialog } from '@/components/customers/CallDialog';
 import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
+import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
+import { CRMSmartDashboard } from '@/components/customers/CRMSmartDashboard';
 
 // --- الثوابت ---
 const ITEMS_PER_PAGE = 15;
@@ -59,8 +47,6 @@ const BRAND_BORDER = "border-[#F15555]";
 const BRAND_RING = "focus:ring-[#F15555]";
 
 // --- الأنواع ---
-type InteractionType = 'phone' | 'message' | 'meeting' | 'general';
-
 interface Customer {
   id: string;
   customer_code: string;
@@ -127,88 +113,27 @@ const StatusBadge = ({ status, type }: { status: string; type: 'payment' | 'cont
   return null;
 };
 
-const InteractionIcon = ({ type }: { type: InteractionType }) => {
-  const styles: Record<InteractionType, string> = {
-    phone: 'bg-blue-50 text-blue-600',
-    message: 'bg-emerald-50 text-emerald-600',
-    meeting: 'bg-purple-50 text-purple-600',
-    general: 'bg-gray-100 text-gray-600',
-  };
-
-  const Icons: Record<InteractionType, React.ElementType> = {
-    phone: Phone,
-    message: MessageCircle,
-    meeting: UserCheck,
-    general: MoreHorizontal,
-  };
-
-  const Icon = Icons[type];
-
-  return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${styles[type]} shadow-sm`}>
-      <Icon size={14} />
-    </div>
-  );
-};
-
-function StatCard({ title, value, icon, color, isUrgent }: {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  color: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'yellow';
-  isUrgent?: boolean;
-}) {
-  const colorStyles = {
-    blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
-    green: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
-    red: { bg: 'bg-[#FEF2F2]', text: 'text-[#F15555]', border: 'border-red-100' },
-    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
-    yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-100' },
-  };
-
-  const style = colorStyles[color];
-
-  return (
-    <div className={`bg-white p-5 rounded-xl border shadow-sm flex flex-col items-start gap-4 transition-all hover:shadow-md ${isUrgent ? 'ring-1 ring-red-100' : ''}`}>
-      <div className="flex justify-between w-full">
-        <div className={`p-2.5 rounded-lg ${style.bg} ${style.text}`}>
-          {icon}
-        </div>
-        {isUrgent && <span className="flex h-2 w-2 rounded-full bg-[#F15555]"></span>}
-      </div>
-      <div>
-        <span className="text-2xl font-black text-gray-800 tracking-tight">{value}</span>
-        <span className="text-xs text-gray-500 font-medium block mt-1">{title}</span>
-      </div>
-    </div>
-  );
-}
-
 function CustomerRow({
   customer,
   contract,
   lastContact,
   paymentStatus,
-  isExpanded,
   onToggle,
   onCall,
   onNote,
   onWhatsApp,
-  interactions,
-  onQuickUpdate,
 }: {
   customer: Customer;
   contract?: Contract;
   lastContact: number | null;
   paymentStatus: string;
-  isExpanded: boolean;
+  isExpanded?: boolean;
   onToggle: () => void;
   onCall: () => void;
   onNote: () => void;
   onWhatsApp: () => void;
-  interactions: FollowUp[];
-  onQuickUpdate: (id: string, action: 'complete' | 'postpone') => void;
+  interactions?: FollowUp[];
+  onQuickUpdate?: (id: string, action: 'complete' | 'postpone') => void;
 }) {
   // Get customer names - prioritize Arabic, then English, then code
   const getNameAr = () => {
@@ -252,7 +177,7 @@ function CustomerRow({
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`group transition-all duration-200 ${isExpanded ? 'bg-red-50/20' : 'bg-white hover:bg-gray-50'}`}
+      className="group transition-all duration-200 bg-white hover:bg-gray-50"
     >
       <div className="px-6 py-4 flex flex-col md:flex-row items-center gap-4 cursor-pointer" onClick={onToggle}>
 
@@ -314,134 +239,15 @@ function CustomerRow({
           <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition shadow-sm" title="ملاحظة">
             <Plus size={18} />
           </button>
-          <div className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${isExpanded ? `bg-red-50 ${BRAND_COLOR} rotate-180` : 'text-gray-400 hover:bg-gray-100'}`}>
-            <ChevronDown size={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* Expanded Content Section */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-red-100 bg-red-50/10"
+          <button 
+            onClick={onToggle} 
+            className={`p-2.5 ${BRAND_BG} text-white rounded-lg hover:opacity-90 transition shadow-sm`} 
+            title="عرض التفاصيل"
           >
-            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
-
-              {/* Timeline Column */}
-              <div className="md:col-span-8">
-                <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-6">
-                  <Clock size={14} /> سجل النشاطات والمتابعات
-                </h4>
-
-                <div className="space-y-0 relative pl-4 md:pl-0">
-                  {/* Vertical Line */}
-                  <div className="absolute top-2 bottom-6 right-[19px] w-0.5 bg-gray-200 hidden md:block"></div>
-
-                  {interactions.length === 0 ? (
-                    <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl bg-white/50">
-                      <p className="text-sm text-gray-400">لا يوجد سجل متابعات لهذا العميل حتى الآن.</p>
-                      <button onClick={(e) => { e.stopPropagation(); onCall(); }} className={`mt-2 ${BRAND_COLOR} text-xs font-bold hover:underline`}>ابدأ أول اتصال</button>
-                    </div>
-                  ) : (
-                    interactions.map((interaction) => (
-                      <div key={interaction.id} className="group relative flex gap-6 pb-8 last:pb-0">
-                        {/* Icon */}
-                        <div className="hidden md:block relative z-10 bg-white p-1 rounded-full">
-                          <InteractionIcon type={interaction.note_type} />
-                        </div>
-
-                        {/* Content Card */}
-                        <div className="flex-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md group-hover:border-red-100 transition-all">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-gray-800">
-                                {interaction.note_type === 'phone' ? '📞 مكالمة صادرة' : interaction.note_type === 'general' ? '📝 ملاحظة داخلية' : '💬 رسالة واتساب'}
-                              </span>
-                              {interaction.is_important && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-orange-50 text-orange-700 border-orange-100">
-                                  يحتاج متابعة
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[11px] text-gray-400 font-mono dir-ltr">
-                              {format(new Date(interaction.created_at), 'dd/MM/yyyy - HH:mm')}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">{interaction.content}</p>
-
-                          {interaction.is_important && (
-                            <div className="flex gap-2 mt-3">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-green-600 hover:bg-green-100"
-                                onClick={(e) => { e.stopPropagation(); onQuickUpdate(interaction.id, 'complete'); }}
-                              >
-                                <CheckCircle className="w-3.5 h-3.5 ml-1" />
-                                تم
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-blue-600 hover:bg-blue-100"
-                                onClick={(e) => { e.stopPropagation(); onQuickUpdate(interaction.id, 'postpone'); }}
-                              >
-                                <Clock className="w-3.5 h-3.5 ml-1" />
-                                تأجيل
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Actions Sidebar */}
-              <div className="md:col-span-4 flex flex-col gap-4">
-                <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm h-full">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">بيانات العقد</h4>
-                  {contract ? (
-                    <div className="flex items-center gap-3 mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
-                      <div className="bg-white p-2 rounded text-purple-600 shadow-sm">
-                        <Calendar size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-purple-600 font-bold uppercase">تاريخ انتهاء العقد</p>
-                        <p className="text-sm font-bold text-gray-800 font-mono">
-                          {format(new Date(contract.end_date), 'dd/MM/yyyy')}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-500">
-                      لا يوجد عقد نشط
-                    </div>
-                  )}
-
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">تحديث سريع</h4>
-                  <div className="space-y-2">
-                    <button className="w-full py-2.5 px-3 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 flex items-center justify-center gap-2 transition group">
-                      <CheckCircle size={16} className="text-gray-400 group-hover:text-emerald-600" />
-                      تمت المتابعة بنجاح
-                    </button>
-                    <button className="w-full py-2.5 px-3 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200 flex items-center justify-center gap-2 transition group">
-                      <Clock size={16} className="text-gray-400 group-hover:text-yellow-600" />
-                      تأجيل الموعد ليومين
+            <ChevronDown size={18} className="transform -rotate-90" />
                     </button>
                   </div>
-                </div>
-              </div>
-
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -467,6 +273,10 @@ export default function CustomerCRMNew() {
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [callingCustomer, setCallingCustomer] = useState<Customer | null>(null);
   const [autoCallHandled, setAutoCallHandled] = useState(false);
+
+  // Side Panel State
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
 
   // Fetch customers
   const { data: customers = [], isLoading, refetch } = useQuery({
@@ -771,6 +581,12 @@ export default function CustomerCRMNew() {
   const handleCall = (customer: Customer) => {
     setCallingCustomer(customer);
     setCallDialogOpen(true);
+  };
+
+  // فتح لوحة تفاصيل العميل الجانبية
+  const handleOpenCustomerPanel = (customerId: string) => {
+    setSelectedCustomerForPanel(customerId);
+    setSidePanelOpen(true);
   };
 
   const handleSaveCall = async (notes: string, status: 'answered' | 'no_answer' | 'busy') => {
@@ -1266,15 +1082,24 @@ export default function CustomerCRMNew() {
 
       <div className="p-6 max-w-[1600px] mx-auto space-y-8">
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard title="الاتصالات هذا الشهر" value={stats.callsThisMonth} icon={<Phone size={20} />} color="green" />
-          <StatCard title="مكالمات اليوم" value={stats.callsToday} icon={<PhoneIncoming size={20} />} color="blue" />
-          <StatCard title="متأخر بالدفع" value={stats.late} icon={<AlertCircle size={20} />} color="red" isUrgent />
-          <StatCard title="يحتاج اتصال" value={stats.needsContact} icon={<PhoneMissed size={20} />} color="orange" />
-          <StatCard title="عقود نشطة" value={stats.activeContracts} icon={<CheckCircle size={20} />} color="blue" />
-          <StatCard title="عقد قريب الانتهاء" value={stats.expiring} icon={<Clock size={20} />} color="yellow" />
-        </div>
+        {/* Smart Dashboard */}
+        <CRMSmartDashboard
+          stats={{
+            totalCustomers: stats.total,
+            activeCustomers: customers.filter(c => c.is_active).length,
+            latePayments: stats.late,
+            needsContact: stats.needsContact,
+            expiringContracts: stats.expiring,
+            callsToday: stats.callsToday,
+            callsThisMonth: stats.callsThisMonth,
+            newCustomers: stats.newCustomers,
+            activeContracts: stats.activeContracts,
+          }}
+          onStatClick={(statType) => {
+            setActiveFilter(statType === 'calls' || statType === 'calls_today' ? 'all' : statType);
+            setCurrentPage(1);
+          }}
+        />
 
         {/* Scheduled Follow-ups Panel */}
         <ScheduledFollowupsPanel />
@@ -1327,7 +1152,7 @@ export default function CustomerCRMNew() {
                   lastContact={getLastContactDays(customer.id)}
                   paymentStatus={getPaymentStatus(customer.id)}
                   isExpanded={expandedId === customer.id}
-                  onToggle={() => setExpandedId(expandedId === customer.id ? null : customer.id)}
+                  onToggle={() => handleOpenCustomerPanel(customer.id)}
                   onCall={() => handleCall(customer)}
                   onNote={() => openDialog('note', customer.id)}
                   onWhatsApp={() => handleWhatsApp(customer.phone)}
@@ -1467,6 +1292,22 @@ export default function CustomerCRMNew() {
           onSaveCall={handleSaveCall}
         />
       )}
+
+      {/* Customer Side Panel */}
+      <CustomerSidePanel
+        customerId={selectedCustomerForPanel}
+        isOpen={sidePanelOpen}
+        onClose={() => {
+          setSidePanelOpen(false);
+          setSelectedCustomerForPanel(null);
+        }}
+        onCall={(phone) => {
+          const customer = customers.find(c => c.phone === phone);
+          if (customer) handleCall(customer);
+        }}
+        onWhatsApp={handleWhatsApp}
+        onAddNote={(customerId) => openDialog('note', customerId)}
+      />
 
     </div>
   );
