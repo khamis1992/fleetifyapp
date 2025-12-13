@@ -120,8 +120,21 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
 
       if (caseError) throw caseError;
 
-      // Update customer status to "under litigation" if we have such a field
-      // This would require adding a field to customers table
+      // Update contract status to "under_legal_procedure"
+      if (delinquentCustomer.contract_id) {
+        const { error: contractUpdateError } = await supabase
+          .from('contracts')
+          .update({ 
+            status: 'under_legal_procedure',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', delinquentCustomer.contract_id);
+
+        if (contractUpdateError) {
+          console.error('Error updating contract status:', contractUpdateError);
+          // Don't throw - the legal case was created successfully
+        }
+      }
       
       // Create activity log for the legal case
       await supabase
