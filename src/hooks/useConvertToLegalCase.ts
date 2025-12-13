@@ -135,6 +135,114 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           // Don't throw - the legal case was created successfully
         }
       }
+
+      // ===== إنشاء القيد المحاسبي لنقل الذمم للتحصيل القانوني =====
+      try {
+        // حساب نسبة المخصص بناءً على أيام التأخير
+        let provisionRate = 0.25; // 25% افتراضي
+        if (delinquentCustomer.days_overdue > 365) {
+          provisionRate = 1.0; // 100%
+        } else if (delinquentCustomer.days_overdue > 270) {
+          provisionRate = 0.75; // 75%
+        } else if (delinquentCustomer.days_overdue > 180) {
+          provisionRate = 0.50; // 50%
+        }
+        
+        const provisionAmount = delinquentCustomer.total_debt * provisionRate;
+        const today = new Date().toISOString().split('T')[0];
+        const journalNumber = `JV-LEGAL-${Date.now().toString().slice(-8)}`;
+
+        // 1. إنشاء قيد نقل الذمم للتحصيل القانوني
+        const { data: transferEntry, error: transferError } = await supabase
+          .from('journal_entries')
+          .insert({
+            company_id: profile.company_id,
+            journal_number: journalNumber,
+            entry_date: today,
+            description: `نقل ذمم للتحصيل القانوني - ${delinquentCustomer.customer_name} - عقد ${delinquentCustomer.contract_number}`,
+            total_debit: delinquentCustomer.total_debt,
+            total_credit: delinquentCustomer.total_debt,
+            status: 'posted',
+            source: 'legal',
+            reference_type: 'legal_case',
+            reference_id: legalCase.id,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
+
+        if (!transferError && transferEntry) {
+          // سطور القيد: من ذمم التحصيل القانوني إلى ذمم العملاء
+          await supabase.from('journal_entry_lines').insert([
+            {
+              entry_id: transferEntry.id,
+              company_id: profile.company_id,
+              account_code: '1203', // ذمم تحت التحصيل القانوني
+              line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
+              debit_amount: delinquentCustomer.total_debt,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              entry_id: transferEntry.id,
+              company_id: profile.company_id,
+              account_code: '1200', // ذمم العملاء
+              line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
+              debit_amount: 0,
+              credit_amount: delinquentCustomer.total_debt,
+              line_number: 2,
+            },
+          ]);
+        }
+
+        // 2. إنشاء قيد المخصص
+        const provisionJournalNumber = `JV-PROV-${Date.now().toString().slice(-8)}`;
+        const { data: provisionEntry, error: provisionError } = await supabase
+          .from('journal_entries')
+          .insert({
+            company_id: profile.company_id,
+            journal_number: provisionJournalNumber,
+            entry_date: today,
+            description: `مخصص ديون مشكوك فيها (${Math.round(provisionRate * 100)}%) - ${delinquentCustomer.customer_name}`,
+            total_debit: provisionAmount,
+            total_credit: provisionAmount,
+            status: 'posted',
+            source: 'legal',
+            reference_type: 'legal_case',
+            reference_id: legalCase.id,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
+
+        if (!provisionError && provisionEntry) {
+          await supabase.from('journal_entry_lines').insert([
+            {
+              entry_id: provisionEntry.id,
+              company_id: profile.company_id,
+              account_code: '5401', // مصروف الديون المشكوك فيها
+              line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
+              debit_amount: provisionAmount,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              entry_id: provisionEntry.id,
+              company_id: profile.company_id,
+              account_code: '1204', // مخصص الديون المشكوك فيها
+              line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
+              debit_amount: 0,
+              credit_amount: provisionAmount,
+              line_number: 2,
+            },
+          ]);
+        }
+
+        console.log('✅ تم إنشاء القيود المحاسبية بنجاح');
+      } catch (journalError) {
+        console.error('⚠️ خطأ في إنشاء القيود المحاسبية:', journalError);
+        // لا نوقف العملية - القضية تم إنشاؤها بنجاح
+      }
       
       // Create activity log for the legal case
       await supabase
