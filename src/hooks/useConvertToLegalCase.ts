@@ -10,6 +10,17 @@ export interface ConvertToCaseData {
   attachments?: string[];
 }
 
+// Helper function to get managers to notify
+async function getManagersToNotify(companyId: string): Promise<{ userId: string; role: string }[]> {
+  const { data: managers } = await supabase
+    .from('user_roles')
+    .select('user_id, role')
+    .eq('company_id', companyId)
+    .in('role', ['company_admin', 'manager', 'accountant', 'fleet_manager']);
+  
+  return managers?.map(m => ({ userId: m.user_id, role: m.role })) || [];
+}
+
 export const useConvertToLegalCase = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -136,6 +147,110 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
         }
       }
 
+      // ===== 1. تحديث حالة المركبة وإضافة تنبيه الاسترداد =====
+      if (delinquentCustomer.vehicle_id) {
+        try {
+          // تحديث حالة المركبة إلى "out_of_service" مع ملاحظة الاسترداد
+          await supabase
+            .from('vehicles')
+            .update({
+              status: 'out_of_service',
+              notes: `🚨 مطلوب استرداد - قضية قانونية: ${caseNumber}\nالعميل: ${delinquentCustomer.customer_name}\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', delinquentCustomer.vehicle_id);
+
+          // إنشاء تنبيه استرداد المركبة
+          await supabase.from('vehicle_alerts').insert({
+            company_id: profile.company_id,
+            vehicle_id: delinquentCustomer.vehicle_id,
+            alert_type: 'recovery_required',
+            alert_title: `🚨 مطلوب استرداد المركبة - ${delinquentCustomer.vehicle_plate}`,
+            alert_message: `المركبة ${delinquentCustomer.vehicle_plate} مطلوب استردادها بشكل عاجل.\nالعميل: ${delinquentCustomer.customer_name}\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم\nرقم القضية: ${caseNumber}`,
+            priority: 'urgent',
+            auto_generated: true,
+            due_date: new Date().toISOString(),
+          });
+          
+          console.log('✅ تم تحديث حالة المركبة وإنشاء تنبيه الاسترداد');
+        } catch (vehicleError) {
+          console.error('⚠️ خطأ في تحديث المركبة:', vehicleError);
+        }
+      }
+
+      // ===== 2. وضع العميل في القائمة السوداء =====
+      try {
+        await supabase
+          .from('customers')
+          .update({
+            is_blacklisted: true,
+            blacklist_reason: `تحويل للشؤون القانونية بتاريخ ${new Date().toLocaleDateString('ar-QA')}\nرقم القضية: ${caseNumber}\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', delinquentCustomer.customer_id);
+        
+        console.log('✅ تم وضع العميل في القائمة السوداء');
+      } catch (blacklistError) {
+        console.error('⚠️ خطأ في إضافة العميل للقائمة السوداء:', blacklistError);
+      }
+
+      // ===== 3. ربط الفواتير غير المدفوعة بالقضية =====
+      try {
+        // جلب جميع الفواتير غير المدفوعة للعقد
+        const { data: unpaidInvoices } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, total_amount, balance_due')
+          .eq('contract_id', delinquentCustomer.contract_id)
+          .in('payment_status', ['unpaid', 'partial']);
+
+        if (unpaidInvoices && unpaidInvoices.length > 0) {
+          // إنشاء مستند يربط الفواتير بالقضية
+          await supabase.from('legal_case_documents').insert({
+            case_id: legalCase.id,
+            company_id: profile.company_id,
+            document_type: 'invoice_statement',
+            document_title: `كشف فواتير العميل ${delinquentCustomer.customer_name}`,
+            document_title_ar: `كشف فواتير العميل ${delinquentCustomer.customer_name}`,
+            description: `عدد الفواتير: ${unpaidInvoices.length}\nإجمالي المستحق: ${unpaidInvoices.reduce((sum, inv) => sum + (inv.balance_due || 0), 0).toLocaleString()} QAR\n\nأرقام الفواتير:\n${unpaidInvoices.map(inv => `- ${inv.invoice_number}: ${inv.balance_due?.toLocaleString()} QAR`).join('\n')}`,
+            created_by: user.id,
+          });
+          
+          console.log(`✅ تم ربط ${unpaidInvoices.length} فاتورة بالقضية`);
+        }
+      } catch (invoiceError) {
+        console.error('⚠️ خطأ في ربط الفواتير:', invoiceError);
+      }
+
+      // ===== 4. إرسال إشعارات للمديرين المعنيين =====
+      try {
+        const managers = await getManagersToNotify(profile.company_id);
+        
+        const roleLabels: Record<string, string> = {
+          company_admin: 'مدير الشركة',
+          manager: 'مدير',
+          accountant: 'محاسب',
+          fleet_manager: 'مدير الأسطول',
+        };
+
+        const notifications = managers.map(m => ({
+          company_id: profile.company_id,
+          user_id: m.userId,
+          type: 'legal_case_created',
+          title: `🔔 قضية قانونية جديدة: ${caseNumber}`,
+          message: `تم تحويل العميل "${delinquentCustomer.customer_name}" للشؤون القانونية.\n\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم\nدرجة المخاطر: ${delinquentCustomer.risk_score}\n\nالإجراء المطلوب: ${roleLabels[m.role] || m.role}`,
+          is_read: false,
+          priority: 'high',
+          action_url: `/legal/cases?view=cases&case=${caseNumber}`,
+        }));
+
+        if (notifications.length > 0) {
+          await supabase.from('user_notifications').insert(notifications);
+          console.log(`✅ تم إرسال ${notifications.length} إشعار للمديرين`);
+        }
+      } catch (notificationError) {
+        console.error('⚠️ خطأ في إرسال الإشعارات:', notificationError);
+      }
+
       // ===== إنشاء القيد المحاسبي لنقل الذمم للتحصيل القانوني =====
       try {
         // حساب نسبة المخصص بناءً على أيام التأخير
@@ -243,29 +358,167 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
         console.error('⚠️ خطأ في إنشاء القيود المحاسبية:', journalError);
         // لا نوقف العملية - القضية تم إنشاؤها بنجاح
       }
+
+      // ===== 5. إنشاء ملف قانوني إلكتروني شامل =====
+      try {
+        // إنشاء مستند ملخص القضية
+        await supabase.from('legal_case_documents').insert({
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          document_type: 'case_summary',
+          document_title: `ملف القضية الشامل - ${caseNumber}`,
+          document_title_ar: `ملف القضية الشامل - ${caseNumber}`,
+          description: autoDescription,
+          is_original: true,
+          access_level: 'internal',
+          created_by: user.id,
+        });
+
+        // إنشاء مستند بيانات العميل
+        await supabase.from('legal_case_documents').insert({
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          document_type: 'customer_profile',
+          document_title: `بيانات العميل - ${delinquentCustomer.customer_name}`,
+          document_title_ar: `بيانات العميل - ${delinquentCustomer.customer_name}`,
+          description: `
+الاسم: ${delinquentCustomer.customer_name}
+رمز العميل: ${delinquentCustomer.customer_code}
+رقم الهوية/الجواز: ${delinquentCustomer.id_number || 'غير متوفر'}
+الهاتف: ${delinquentCustomer.phone || 'غير متوفر'}
+البريد: ${delinquentCustomer.email || 'غير متوفر'}
+نوع العميل: ${delinquentCustomer.customer_type === 'individual' ? 'فرد' : 'شركة'}
+الحد الائتماني: ${delinquentCustomer.credit_limit?.toLocaleString()} QAR
+في القائمة السوداء: نعم (تم إضافته تلقائياً)
+          `.trim(),
+          is_original: true,
+          access_level: 'confidential',
+          created_by: user.id,
+        });
+
+        // إنشاء مستند بيانات العقد والمركبة
+        await supabase.from('legal_case_documents').insert({
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          document_type: 'contract_details',
+          document_title: `تفاصيل العقد - ${delinquentCustomer.contract_number}`,
+          document_title_ar: `تفاصيل العقد - ${delinquentCustomer.contract_number}`,
+          description: `
+رقم العقد: ${delinquentCustomer.contract_number}
+تاريخ البداية: ${new Date(delinquentCustomer.contract_start_date).toLocaleDateString('ar-QA')}
+الإيجار الشهري: ${delinquentCustomer.monthly_rent?.toLocaleString()} QAR
+حالة العقد: تحت الإجراء القانوني
+
+المركبة:
+- رقم اللوحة: ${delinquentCustomer.vehicle_plate || 'غير محدد'}
+- معرف المركبة: ${delinquentCustomer.vehicle_id || 'غير متوفر'}
+
+تفاصيل المديونية:
+- أشهر غير مدفوعة: ${delinquentCustomer.months_unpaid} شهر
+- المبلغ المتأخر: ${delinquentCustomer.overdue_amount?.toLocaleString()} QAR
+- غرامات التأخير: ${delinquentCustomer.late_penalty?.toLocaleString()} QAR
+- مخالفات مرورية: ${delinquentCustomer.violations_amount?.toLocaleString()} QAR (${delinquentCustomer.violations_count} مخالفة)
+- إجمالي المديونية: ${delinquentCustomer.total_debt?.toLocaleString()} QAR
+          `.trim(),
+          is_original: true,
+          access_level: 'internal',
+          created_by: user.id,
+        });
+
+        console.log('✅ تم إنشاء الملف القانوني الإلكتروني');
+      } catch (legalFileError) {
+        console.error('⚠️ خطأ في إنشاء الملف القانوني:', legalFileError);
+      }
       
-      // Create activity log for the legal case
-      await supabase
-        .from('legal_case_activities')
-        .insert({
+      // Create comprehensive activity logs for the legal case
+      const activities = [
+        {
           case_id: legalCase.id,
           company_id: profile.company_id,
           activity_type: 'case_created',
-          activity_title: 'تم إنشاء القضية من نظام العملاء المتأخرين',
-          activity_description: `تم إنشاء القضية تلقائياً للعميل: ${delinquentCustomer.customer_name}\nالمبلغ الإجمالي: ${delinquentCustomer.total_debt.toLocaleString('ar-KW')} د.ك`,
+          activity_title: '📋 تم إنشاء القضية القانونية',
+          activity_description: `تم إنشاء القضية تلقائياً للعميل: ${delinquentCustomer.customer_name}\nالمبلغ الإجمالي: ${delinquentCustomer.total_debt.toLocaleString('ar-QA')} QAR`,
+          created_by: user.id,
+        },
+        {
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          activity_type: 'contract_updated',
+          activity_title: '📝 تحديث حالة العقد',
+          activity_description: `تم تحويل حالة العقد ${delinquentCustomer.contract_number} إلى "تحت الإجراء القانوني"`,
+          created_by: user.id,
+        },
+        {
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          activity_type: 'customer_blacklisted',
+          activity_title: '⚠️ إضافة العميل للقائمة السوداء',
+          activity_description: `تم إضافة العميل ${delinquentCustomer.customer_name} للقائمة السوداء تلقائياً`,
+          created_by: user.id,
+        },
+        {
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          activity_type: 'accounting_entries_created',
+          activity_title: '💰 إنشاء القيود المحاسبية',
+          activity_description: `تم إنشاء قيود نقل الذمم للتحصيل القانوني وتكوين المخصصات`,
+          created_by: user.id,
+        },
+      ];
+
+      // Add vehicle recovery activity if vehicle exists
+      if (delinquentCustomer.vehicle_id) {
+        activities.push({
+          case_id: legalCase.id,
+          company_id: profile.company_id,
+          activity_type: 'vehicle_recovery_alert',
+          activity_title: '🚗 تنبيه استرداد المركبة',
+          activity_description: `تم إنشاء تنبيه لاسترداد المركبة ${delinquentCustomer.vehicle_plate}`,
           created_by: user.id,
         });
+      }
+
+      // Add legal file creation activity
+      activities.push({
+        case_id: legalCase.id,
+        company_id: profile.company_id,
+        activity_type: 'legal_file_created',
+        activity_title: '📁 إنشاء الملف القانوني',
+        activity_description: `تم إنشاء ملف قانوني إلكتروني شامل يتضمن بيانات العميل والعقد والفواتير`,
+        created_by: user.id,
+      });
+
+      // Add notification sent activity
+      activities.push({
+        case_id: legalCase.id,
+        company_id: profile.company_id,
+        activity_type: 'notifications_sent',
+        activity_title: '🔔 إرسال الإشعارات',
+        activity_description: `تم إرسال إشعارات للمديرين المعنيين (القانوني، المالي، التشغيل)`,
+        created_by: user.id,
+      });
+
+      await supabase.from('legal_case_activities').insert(activities);
 
       return legalCase;
     },
     onSuccess: (data) => {
+      // Invalidate all related caches
       queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-collection-report'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-collection-stats'] });
       queryClient.invalidateQueries({ queryKey: ['delinquency-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       
-      toast.success('تم إنشاء القضية القانونية بنجاح', {
-        description: `رقم القضية: ${data.case_number}`,
-        duration: 5000,
+      toast.success('✅ تم إنشاء القضية القانونية بنجاح', {
+        description: `رقم القضية: ${data.case_number}\nتم تحديث حالة العقد والمركبة وإضافة العميل للقائمة السوداء`,
+        duration: 7000,
       });
     },
     onError: (error) => {
