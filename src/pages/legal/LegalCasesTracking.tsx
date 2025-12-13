@@ -1469,11 +1469,14 @@ export const LegalCasesTracking: React.FC = () => {
     const { items = [], summary } = reportData || {};
 
     const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('ar-QA', {
+      // Format with English numerals and remove .00
+      const formatted = new Intl.NumberFormat('en-US', {
         style: 'decimal',
-        minimumFractionDigits: 2,
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-      }).format(amount) + ' ر.ق';
+      }).format(amount);
+      // Remove trailing .00
+      return formatted.replace(/\.00$/, '') + ' ر.ق';
     };
 
     return (

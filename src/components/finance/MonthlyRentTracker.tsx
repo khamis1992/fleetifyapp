@@ -42,7 +42,7 @@ import {
   BarChart3,
   CreditCard,
 } from 'lucide-react';
-import { useMonthlyRentTracking, useRentPaymentSummary, MonthlyRentStatus } from '@/hooks/useMonthlyRentTracking';
+import { useMonthlyRentTracking, useRentPaymentSummary, usePaymentDateComparison, MonthlyRentStatus, DateFilterType } from '@/hooks/useMonthlyRentTracking';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -109,11 +109,17 @@ export const MonthlyRentTracker: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'unpaid' | 'partial'>('all');
   
+  // Date filter state: 'payment_date' = تاريخ الدفع الفعلي, 'created_at' = تاريخ التسجيل (المدخول الفعلي)
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('created_at');
+  
   // Payment dialog state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<MonthlyRentStatus | null>(null);
 
-  const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth);
+  const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth, dateFilter);
+  
+  // مقارنة بين المدخول الفعلي والدفعات التاريخية
+  const { data: comparison } = usePaymentDateComparison(selectedYear, selectedMonth);
   
   // Handle opening payment dialog
   const handleOpenPaymentDialog = (item: MonthlyRentStatus) => {
@@ -125,7 +131,7 @@ export const MonthlyRentTracker: React.FC = () => {
   const handlePaymentSuccess = () => {
     refetch();
   };
-  const summary = useRentPaymentSummary(selectedYear, selectedMonth);
+  const summary = useRentPaymentSummary(selectedYear, selectedMonth, dateFilter);
   const { formatCurrency } = useCurrencyFormatter();
 
   // Filter data based on search and status
@@ -258,6 +264,62 @@ export const MonthlyRentTracker: React.FC = () => {
           </div>
         </div>
 
+        {/* Date Filter Toggle - للتبديل بين تاريخ الدفع وتاريخ التسجيل */}
+        <div className="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-white/80">عرض حسب:</span>
+              <div className="flex bg-white/10 rounded-lg p-1">
+                <button
+                  onClick={() => setDateFilter('created_at')}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                    dateFilter === 'created_at'
+                      ? "bg-white text-coral-600 shadow-sm"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  <Clock className="w-4 h-4 inline-block ml-1" />
+                  المدخول الفعلي
+                </button>
+                <button
+                  onClick={() => setDateFilter('payment_date')}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                    dateFilter === 'payment_date'
+                      ? "bg-white text-coral-600 shadow-sm"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  <Calendar className="w-4 h-4 inline-block ml-1" />
+                  تاريخ الدفع
+                </button>
+              </div>
+            </div>
+            
+            {/* إظهار الفرق إذا وُجد */}
+            {comparison?.hasRetroactive && (
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4 text-yellow-300" />
+                <span className="text-white/90">
+                  {dateFilter === 'created_at' 
+                    ? `دفعات قديمة بقيمة ${formatCurrency(comparison.retroactivePayments)} غير مشمولة`
+                    : `يشمل ${formatCurrency(comparison.retroactivePayments)} من دفعات مسجلة لاحقاً`
+                  }
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* شرح مختصر */}
+          <p className="text-xs text-white/60 mt-2">
+            {dateFilter === 'created_at' 
+              ? "💡 المدخول الفعلي: المبالغ التي تم تسجيلها في النظام خلال هذا الشهر (بغض النظر عن تاريخ الدفع الفعلي)"
+              : "💡 تاريخ الدفع: المبالغ حسب تاريخ الدفع الفعلي (قد تشمل دفعات قديمة تم تسجيلها لاحقاً)"
+            }
+          </p>
+        </div>
+
         {/* Quick Stats in Header */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -265,7 +327,9 @@ export const MonthlyRentTracker: React.FC = () => {
             <p className="text-2xl font-bold mt-1">{formatCurrency(summary.totalRentExpected)}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">المحصّل</p>
+            <p className="text-white/70 text-sm">
+              {dateFilter === 'created_at' ? 'المدخول الفعلي' : 'المحصّل'}
+            </p>
             <p className="text-2xl font-bold mt-1 text-green-200">{formatCurrency(summary.totalRentCollected)}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -280,6 +344,38 @@ export const MonthlyRentTracker: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Comparison Stats - إذا كان هناك فرق بين المدخول الفعلي والدفعات التاريخية */}
+        {comparison && (comparison.actualIncome !== comparison.historicalPayments) && (
+          <div className="mt-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 className="w-5 h-5 text-yellow-300" />
+              <span className="font-semibold">مقارنة المدفوعات</span>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xs text-white/60 mb-1">المدخول الفعلي للشهر</p>
+                <p className="text-lg font-bold text-green-200">{formatCurrency(comparison.actualIncome)}</p>
+                <p className="text-xs text-white/50">(حسب تاريخ التسجيل)</p>
+              </div>
+              <div>
+                <p className="text-xs text-white/60 mb-1">دفعات الشهر التاريخية</p>
+                <p className="text-lg font-bold text-blue-200">{formatCurrency(comparison.historicalPayments)}</p>
+                <p className="text-xs text-white/50">(حسب تاريخ الدفع)</p>
+              </div>
+              <div>
+                <p className="text-xs text-white/60 mb-1">الفرق</p>
+                <p className={cn(
+                  "text-lg font-bold",
+                  comparison.retroactivePayments > 0 ? "text-yellow-300" : "text-white"
+                )}>
+                  {formatCurrency(comparison.retroactivePayments)}
+                </p>
+                <p className="text-xs text-white/50">(دفعات قديمة مسجلة لاحقاً)</p>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Date Selection & Filters */}

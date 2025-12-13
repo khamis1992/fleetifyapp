@@ -19,9 +19,12 @@ export interface MonthlyRentStatus {
   days_overdue: number;
 }
 
-export const useMonthlyRentTracking = (year: number, month: number) => {
+// نوع الفلترة: حسب تاريخ الدفع الفعلي أو تاريخ التسجيل
+export type DateFilterType = 'payment_date' | 'created_at';
+
+export const useMonthlyRentTracking = (year: number, month: number, dateFilter: DateFilterType = 'payment_date') => {
   return useQuery({
-    queryKey: ['monthly-rent-tracking', year, month],
+    queryKey: ['monthly-rent-tracking', year, month, dateFilter],
     queryFn: async (): Promise<MonthlyRentStatus[]> => {
       // Get current user's company
       const { data: { user } } = await supabase.auth.getUser();
@@ -74,13 +77,17 @@ export const useMonthlyRentTracking = (year: number, month: number) => {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get all payments for the target month
+      // Get all payments for the target month based on selected date filter
+      // dateFilter = 'payment_date' -> تاريخ الدفع الفعلي
+      // dateFilter = 'created_at' -> تاريخ التسجيل في النظام (المدخول الفعلي)
+      const dateColumn = dateFilter === 'created_at' ? 'created_at' : 'payment_date';
+      
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
-        .select('customer_id, amount, payment_date, payment_status')
+        .select('customer_id, amount, payment_date, payment_status, created_at')
         .eq('company_id', profile.company_id)
-        .gte('payment_date', startDate.toISOString())
-        .lte('payment_date', endDate.toISOString())
+        .gte(dateColumn, startDate.toISOString())
+        .lte(dateColumn, endDate.toISOString())
         .in('payment_status', ['completed', 'paid', 'approved']);
 
       if (paymentsError) throw paymentsError;
@@ -159,8 +166,8 @@ export const useMonthlyRentTracking = (year: number, month: number) => {
   });
 };
 
-export const useRentPaymentSummary = (year: number, month: number) => {
-  const { data: rentStatuses, isLoading } = useMonthlyRentTracking(year, month);
+export const useRentPaymentSummary = (year: number, month: number, dateFilter: DateFilterType = 'payment_date') => {
+  const { data: rentStatuses, isLoading } = useMonthlyRentTracking(year, month, dateFilter);
 
   if (isLoading || !rentStatuses) {
     return {
@@ -197,4 +204,57 @@ export const useRentPaymentSummary = (year: number, month: number) => {
     totalRentOutstanding,
     collectionRate: Math.round(collectionRate * 10) / 10,
   };
+};
+
+// Hook لحساب الفرق بين المدخول الفعلي والدفعات التاريخية
+export const usePaymentDateComparison = (year: number, month: number) => {
+  return useQuery({
+    queryKey: ['payment-date-comparison', year, month],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      // المدفوعات حسب تاريخ التسجيل (المدخول الفعلي للشهر)
+      const { data: byCreatedAt } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('company_id', profile.company_id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+        .in('payment_status', ['completed', 'paid', 'approved']);
+
+      // المدفوعات حسب تاريخ الدفع الفعلي
+      const { data: byPaymentDate } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('company_id', profile.company_id)
+        .gte('payment_date', startDate.toISOString())
+        .lte('payment_date', endDate.toISOString())
+        .in('payment_status', ['completed', 'paid', 'approved']);
+
+      const actualIncome = byCreatedAt?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+      const historicalPayments = byPaymentDate?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+      const retroactivePayments = Math.abs(historicalPayments - actualIncome);
+
+      return {
+        actualIncome, // المدخول الفعلي (المسجل هذا الشهر)
+        historicalPayments, // الدفعات التاريخية (حسب تاريخ الدفع)
+        retroactivePayments, // الدفعات القديمة المسجلة حديثاً
+        hasRetroactive: retroactivePayments > 0,
+      };
+    },
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
+  });
 };
