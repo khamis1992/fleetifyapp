@@ -113,6 +113,8 @@ const ContractDetailsPage = () => {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isStatusManagementOpen, setIsStatusManagementOpen] = useState(false);
   const [isConvertToLegalOpen, setIsConvertToLegalOpen] = useState(false);
+  const [isTerminateDialogOpen, setIsTerminateDialogOpen] = useState(false);
+  const [isTerminating, setIsTerminating] = useState(false);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -354,12 +356,61 @@ const ContractDetailsPage = () => {
   }, [handleInvoicePreview]);
 
   const handleTerminate = useCallback(() => {
-    toast({
-      title: 'إنهاء العقد',
-      description: 'هل أنت متأكد من إنهاء هذا العقد؟',
-      variant: 'destructive',
-    });
-  }, [toast]);
+    setIsTerminateDialogOpen(true);
+  }, []);
+
+  // تنفيذ إنهاء العقد
+  const executeTerminateContract = useCallback(async () => {
+    if (!contract?.id || !companyId) return;
+
+    setIsTerminating(true);
+    try {
+      // 1. تحديث حالة العقد إلى "ملغي"
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
+
+      if (contractError) throw contractError;
+
+      // 2. تحديث حالة المركبة إلى "متاحة"
+      if (contract.vehicle_id) {
+        const { error: vehicleError } = await supabase
+          .from('vehicles')
+          .update({ status: 'available' })
+          .eq('id', contract.vehicle_id);
+
+        if (vehicleError) {
+          console.warn('خطأ في تحديث حالة المركبة:', vehicleError);
+        }
+      }
+
+      // 3. تحديث البيانات
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+
+      toast({
+        title: 'تم إنهاء العقد',
+        description: `تم إنهاء العقد #${contract.contract_number} بنجاح`,
+      });
+
+      setIsTerminateDialogOpen(false);
+    } catch (error: any) {
+      console.error('خطأ في إنهاء العقد:', error);
+      toast({
+        title: 'خطأ في إنهاء العقد',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTerminating(false);
+    }
+  }, [contract, companyId, queryClient, toast]);
 
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
@@ -1131,6 +1182,53 @@ const ContractDetailsPage = () => {
           }}
         />
       )}
+
+      {/* Dialog إنهاء العقد */}
+      <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="h-5 w-5" />
+              تأكيد إنهاء العقد
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>هل أنت متأكد من إنهاء هذا العقد؟</p>
+              {contract && (
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200 space-y-2">
+                  <p><strong>رقم العقد:</strong> {contract.contract_number}</p>
+                  <p><strong>العميل:</strong> {customerName}</p>
+                  <p><strong>المركبة:</strong> {vehicleName}</p>
+                  {contractStats && contractStats.balanceDue > 0 && (
+                    <p className="text-red-700 font-semibold">
+                      ⚠️ المبلغ المتبقي: {formatCurrency(contractStats.balanceDue)}
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <strong>ملاحظة:</strong> سيتم تحويل حالة العقد إلى "ملغي" وإرجاع المركبة لحالة "متاحة".
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isTerminating}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeTerminateContract}
+              disabled={isTerminating}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isTerminating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الإنهاء...
+                </>
+              ) : (
+                'تأكيد الإنهاء'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* مساعد الموظف لإعادة المركبة */}
       <FloatingAssistant 
