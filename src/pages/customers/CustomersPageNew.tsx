@@ -85,6 +85,8 @@ import {
   CustomerCSVUpload,
   CustomerSplitView,
 } from '@/components/customers';
+import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
+import { CustomersSmartDashboard } from '@/components/customers/CustomersSmartDashboard';
 import { exportTableToCSV } from '@/utils/exports/csvExport';
 
 // ===== بطاقة العميل =====
@@ -298,6 +300,13 @@ const CustomersPageNew: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
+  
+  // Side Panel State
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
+  
+  // Smart Filter State
+  const [smartFilter, setSmartFilter] = useState<string>('all');
 
   // Filters
   const filters: CustomerFilters = {
@@ -360,8 +369,35 @@ const CustomersPageNew: React.FC = () => {
 
   // Handlers
   const handleViewCustomer = useCallback((customer: Customer) => {
-    navigate(`/customers/${customer.id}`);
-  }, [navigate]);
+    // فتح Side Panel بدلاً من الانتقال لصفحة أخرى
+    setSelectedCustomerForPanel(customer.id);
+    setSidePanelOpen(true);
+  }, []);
+
+  const handleViewCustomerDetails = useCallback((customerId: string) => {
+    setSelectedCustomerForPanel(customerId);
+    setSidePanelOpen(true);
+  }, []);
+
+  const handleSmartFilterChange = useCallback((filter: string) => {
+    setSmartFilter(filter);
+    // تحويل الفلتر الذكي إلى فلاتر الصفحة
+    switch (filter) {
+      case 'individual':
+        setCustomerType('individual');
+        break;
+      case 'corporate':
+        setCustomerType('corporate');
+        break;
+      case 'all':
+        setCustomerType('all');
+        break;
+      default:
+        // الفلاتر الأخرى تحتاج معالجة خاصة
+        break;
+    }
+    setCurrentPage(1);
+  }, []);
 
   const handleEditCustomer = useCallback((customer: Customer) => {
     setSelectedCustomer(customer);
@@ -484,32 +520,11 @@ const CustomersPageNew: React.FC = () => {
           </div>
         </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="إجمالي العملاء"
-            value={totalCustomersInDB.toLocaleString()}
-            icon={Users}
-            color="coral"
-            subtitle={`${individualCount} فرد | ${corporateCount} شركة`}
-          />
-          <StatCard
-            title="العملاء الأفراد"
-            value={individualCount}
-            icon={UserCheck}
-            color="blue"
-          />
-          <StatCard
-            title="الشركات"
-            value={corporateCount}
-            icon={Building2}
-            color="green"
-          />
-          <StatCard
-            title="القائمة السوداء"
-            value={blacklistedCount}
-            icon={UserX}
-            color="amber"
+        {/* Smart Dashboard */}
+        <div className="mb-6">
+          <CustomersSmartDashboard
+            onFilterChange={handleSmartFilterChange}
+            onCustomerClick={handleViewCustomerDetails}
           />
         </div>
 
@@ -728,6 +743,23 @@ const CustomersPageNew: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Customer Side Panel */}
+      <CustomerSidePanel
+        customerId={selectedCustomerForPanel}
+        isOpen={sidePanelOpen}
+        onClose={() => {
+          setSidePanelOpen(false);
+          setSelectedCustomerForPanel(null);
+        }}
+        onCall={(phone) => {
+          if (phone) window.open(`tel:${phone}`, '_self');
+        }}
+        onAddNote={(customerId) => {
+          // فتح صفحة CRM مع العميل المحدد
+          navigate(`/customers/crm?call=${customerId}`);
+        }}
+      />
     </div>
   );
 };

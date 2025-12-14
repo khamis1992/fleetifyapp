@@ -1,6 +1,7 @@
 /**
  * لوحة تحكم ذكية لإدارة علاقات العملاء
  * تعرض إحصائيات متقدمة وتنبيهات ذكية
+ * متوافق مع تصميم Bento Dashboard
  */
 
 import { useMemo } from 'react';
@@ -15,17 +16,57 @@ import {
   Calendar,
   Banknote,
   Target,
-  CheckCircle,
-  XCircle,
-  FileText,
   Scale,
   Car,
   Bell,
   Zap,
-  ArrowUpRight,
-  ArrowDownRight,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ألوان متوافقة مع Bento Dashboard
+const COLORS = {
+  coral: {
+    bg: 'bg-coral-100',
+    text: 'text-coral-600',
+    fill: 'bg-coral-500',
+  },
+  green: {
+    bg: 'bg-green-100',
+    text: 'text-green-600',
+    fill: 'bg-green-500',
+  },
+  blue: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-600',
+    fill: 'bg-blue-500',
+  },
+  amber: {
+    bg: 'bg-amber-100',
+    text: 'text-amber-600',
+    fill: 'bg-amber-500',
+  },
+  purple: {
+    bg: 'bg-purple-100',
+    text: 'text-purple-600',
+    fill: 'bg-purple-500',
+  },
+  orange: {
+    bg: 'bg-orange-100',
+    text: 'text-orange-600',
+    fill: 'bg-orange-500',
+  },
+  cyan: {
+    bg: 'bg-cyan-100',
+    text: 'text-cyan-600',
+    fill: 'bg-cyan-500',
+  },
+  rose: {
+    bg: 'bg-rose-100',
+    text: 'text-rose-600',
+    fill: 'bg-rose-500',
+  },
+};
 
 interface DashboardStats {
   totalCustomers: number;
@@ -60,7 +101,7 @@ interface CRMSmartDashboardProps {
   onStatClick?: (statType: string) => void;
 }
 
-// مكون بطاقة إحصائية محسّنة
+// مكون بطاقة إحصائية محسّنة - متوافق مع Bento Dashboard
 function SmartStatCard({
   title,
   value,
@@ -71,141 +112,158 @@ function SmartStatCard({
   isUrgent,
   onClick,
   subValue,
+  progressValue,
+  progressLabel,
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
   trend?: 'up' | 'down' | 'stable';
   trendValue?: string;
-  color: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'yellow' | 'cyan' | 'pink';
+  color: 'blue' | 'green' | 'coral' | 'orange' | 'purple' | 'amber' | 'cyan' | 'rose';
   isUrgent?: boolean;
   onClick?: () => void;
   subValue?: string;
+  progressValue?: number;
+  progressLabel?: string;
 }) {
-  const colorStyles = {
-    blue: {
-      bg: 'bg-gradient-to-br from-blue-50 to-blue-100/50',
-      icon: 'bg-blue-500 text-white',
-      text: 'text-blue-600',
-      ring: 'ring-blue-200',
-    },
-    green: {
-      bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
-      icon: 'bg-emerald-500 text-white',
-      text: 'text-emerald-600',
-      ring: 'ring-emerald-200',
-    },
-    red: {
-      bg: 'bg-gradient-to-br from-red-50 to-red-100/50',
-      icon: 'bg-[#F15555] text-white',
-      text: 'text-[#F15555]',
-      ring: 'ring-red-200',
-    },
-    orange: {
-      bg: 'bg-gradient-to-br from-orange-50 to-orange-100/50',
-      icon: 'bg-orange-500 text-white',
-      text: 'text-orange-600',
-      ring: 'ring-orange-200',
-    },
-    purple: {
-      bg: 'bg-gradient-to-br from-purple-50 to-purple-100/50',
-      icon: 'bg-purple-500 text-white',
-      text: 'text-purple-600',
-      ring: 'ring-purple-200',
-    },
-    yellow: {
-      bg: 'bg-gradient-to-br from-yellow-50 to-yellow-100/50',
-      icon: 'bg-yellow-500 text-white',
-      text: 'text-yellow-600',
-      ring: 'ring-yellow-200',
-    },
-    cyan: {
-      bg: 'bg-gradient-to-br from-cyan-50 to-cyan-100/50',
-      icon: 'bg-cyan-500 text-white',
-      text: 'text-cyan-600',
-      ring: 'ring-cyan-200',
-    },
-    pink: {
-      bg: 'bg-gradient-to-br from-pink-50 to-pink-100/50',
-      icon: 'bg-pink-500 text-white',
-      text: 'text-pink-600',
-      ring: 'ring-pink-200',
-    },
+  const colorMap: Record<string, { bg: string; text: string; fill: string }> = {
+    blue: COLORS.blue,
+    green: COLORS.green,
+    coral: COLORS.coral,
+    orange: COLORS.orange,
+    purple: COLORS.purple,
+    amber: COLORS.amber,
+    cyan: COLORS.cyan,
+    rose: COLORS.rose,
   };
 
-  const style = colorStyles[color];
+  const colorStyle = colorMap[color] || COLORS.coral;
 
   return (
     <motion.div
+      className={cn(
+        "bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-all h-full flex flex-col group cursor-pointer relative",
+        isUrgent && "ring-2 ring-coral-200"
+      )}
+      onClick={onClick}
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={cn(
-        'relative p-5 rounded-2xl border transition-all cursor-pointer',
-        style.bg,
-        isUrgent ? `ring-2 ${style.ring} shadow-lg` : 'shadow-sm hover:shadow-md'
-      )}
+      transition={{ duration: 0.4 }}
     >
       {/* Urgent indicator */}
       {isUrgent && (
-        <span className="absolute top-3 left-3 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+        <span className="absolute top-3 left-3 flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-coral-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-coral-500" />
         </span>
       )}
 
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn('p-3 rounded-xl shadow-sm', style.icon)}>
-          <Icon className="w-5 h-5" />
+      <div className="flex items-center justify-between mb-3">
+        <motion.div 
+          className={cn('w-9 h-9 rounded-lg flex items-center justify-center', colorStyle.bg, colorStyle.text)}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Icon className="w-4 h-4" />
+        </motion.div>
+        <div className="flex items-center gap-2">
+          {trend && trendValue && (
+            <motion.span 
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                trend === 'up' ? 'bg-green-100 text-green-600' : 
+                trend === 'down' ? 'bg-red-100 text-red-600' : 
+                'bg-neutral-100 text-neutral-600'
+              )}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", delay: 0.2 }}
+            >
+              {trend === 'up' ? <TrendingUp className="w-2.5 h-2.5" /> : 
+               trend === 'down' ? <TrendingDown className="w-2.5 h-2.5" /> : null}
+              {trendValue}
+            </motion.span>
+          )}
+          <motion.div
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            initial={{ x: -5 }}
+            animate={{ x: 0 }}
+          >
+            <ExternalLink className="w-3 h-3 text-neutral-400" />
+          </motion.div>
         </div>
-        {trend && (
-          <div className={cn(
-            'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
-            trend === 'up' ? 'bg-emerald-100 text-emerald-700' :
-            trend === 'down' ? 'bg-red-100 text-red-700' :
-            'bg-gray-100 text-gray-600'
-          )}>
-            {trend === 'up' && <ArrowUpRight className="w-3 h-3" />}
-            {trend === 'down' && <ArrowDownRight className="w-3 h-3" />}
-            {trendValue}
-          </div>
-        )}
       </div>
 
-      <div>
-        <span className={cn('text-3xl font-black tracking-tight', style.text)}>
+      <p className="text-[11px] text-neutral-500 font-medium mb-1">{title}</p>
+      <motion.div 
+        className="flex items-baseline gap-1"
+        key={String(value)}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <span className="text-[1.75rem] font-bold text-neutral-900 leading-none">
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {subValue && (
-          <span className="text-sm text-gray-500 mr-2">{subValue}</span>
+          <span className="text-xs text-neutral-500">{subValue}</span>
         )}
-        <p className="text-sm text-gray-600 font-medium mt-1">{title}</p>
-      </div>
+      </motion.div>
+
+      {/* Progress bar */}
+      {progressValue !== undefined && (
+        <div className="mt-auto pt-3">
+          {progressLabel && (
+            <div className="flex items-center justify-between text-[10px] text-neutral-500 mb-1">
+              <span>{progressLabel}</span>
+              <span className={cn('font-semibold', colorStyle.text)}>{progressValue}%</span>
+            </div>
+          )}
+          <div className="h-[5px] bg-neutral-100 rounded-full overflow-hidden">
+            <motion.div 
+              className={cn('h-full rounded-full', colorStyle.fill)} 
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(progressValue, 100)}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Hover hint */}
+      <motion.div 
+        className="mt-2 text-center opacity-0 group-hover:opacity-100 transition-opacity"
+        initial={{ y: 5 }}
+        animate={{ y: 0 }}
+      >
+        <span className="text-[8px] text-coral-500 font-medium">انقر للتفاصيل ←</span>
+      </motion.div>
     </motion.div>
   );
 }
 
-// مكون التنبيهات الذكية
+// مكون التنبيهات الذكية - متوافق مع Bento Dashboard
 function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   if (alerts.length === 0) return null;
 
   const getAlertStyles = (type: Alert['type']) => {
     switch (type) {
       case 'urgent':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-coral-50 border-coral-200';
       case 'warning':
-        return 'bg-amber-50 border-amber-200 text-amber-800';
+        return 'bg-amber-50 border-amber-200';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 border-blue-200';
     }
   };
 
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
       case 'urgent':
-        return <AlertTriangle className="w-4 h-4 text-red-500" />;
+        return <AlertTriangle className="w-4 h-4 text-coral-500" />;
       case 'warning':
         return <Bell className="w-4 h-4 text-amber-500" />;
       case 'info':
@@ -214,19 +272,25 @@ function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border shadow-sm p-4 mb-6">
-      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-        <Bell className="w-4 h-4 text-[#F15555]" />
+    <motion.div 
+      className="bg-white rounded-[1.25rem] shadow-sm p-5"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <h3 className="text-[11px] text-neutral-500 font-medium mb-3 flex items-center gap-2">
+        <Bell className="w-3.5 h-3.5 text-coral-500" />
         تنبيهات ذكية
       </h3>
       <div className="space-y-2">
-        {alerts.slice(0, 3).map((alert) => (
+        {alerts.slice(0, 3).map((alert, index) => (
           <motion.div
             key={alert.id}
             initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            animate={{ opacity: 1, x: 0, transition: { delay: index * 0.1 } }}
+            whileHover={{ x: 4 }}
             className={cn(
-              'flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition hover:shadow-sm',
+              'flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all hover:shadow-sm group',
               getAlertStyles(alert.type)
             )}
             onClick={alert.onClick}
@@ -235,67 +299,97 @@ function AlertsPanel({ alerts }: { alerts: Alert[] }) {
               {getAlertIcon(alert.type)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">{alert.title}</p>
-              <p className="text-xs opacity-80 mt-0.5">{alert.description}</p>
+              <p className="text-sm font-semibold text-neutral-800">{alert.title}</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">{alert.description}</p>
             </div>
             {alert.action && (
-              <span className="text-xs font-medium bg-white/50 px-2 py-1 rounded-full flex-shrink-0">
+              <motion.span 
+                className="text-[10px] font-semibold bg-white px-2.5 py-1 rounded-full flex-shrink-0 text-coral-600 shadow-sm"
+                whileHover={{ scale: 1.05 }}
+              >
                 {alert.action}
-              </span>
+              </motion.span>
             )}
           </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-// مكون الملخص السريع
+// مكون الملخص السريع - متوافق مع Bento Dashboard
 function QuickSummary({ stats }: { stats: DashboardStats }) {
   const summaryItems = useMemo(() => [
     {
       label: 'إجمالي العملاء',
       value: stats.totalCustomers,
       icon: Users,
+      color: COLORS.blue,
     },
     {
       label: 'عقود نشطة',
       value: stats.activeContracts,
       icon: Car,
+      color: COLORS.green,
     },
     {
       label: 'عملاء نشطين',
       value: stats.activeCustomers,
-      icon: CheckCircle,
+      icon: Target,
+      color: COLORS.cyan,
     },
     {
       label: 'عملاء جدد',
       value: stats.newCustomers,
       icon: TrendingUp,
+      color: COLORS.purple,
     },
   ], [stats]);
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white mb-6">
+    <motion.div 
+      className="bg-white rounded-[1.25rem] p-5 shadow-sm"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Target className="w-4 h-4" />
+        <h3 className="text-[11px] text-neutral-500 font-medium flex items-center gap-2">
+          <Target className="w-3.5 h-3.5 text-coral-500" />
           ملخص سريع
         </h3>
-        <span className="text-xs text-white/60">تحديث مباشر</span>
+        <span className="text-[10px] text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">تحديث مباشر</span>
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {summaryItems.map((item, index) => (
-          <div key={index} className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <item.icon className="w-5 h-5 text-white/40" />
-            </div>
-            <p className="text-2xl font-bold">{item.value.toLocaleString()}</p>
-            <p className="text-xs text-white/60 mt-1">{item.label}</p>
-          </div>
+          <motion.div 
+            key={index} 
+            className="text-center p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+            whileHover={{ y: -2 }}
+          >
+            <motion.div 
+              className={cn('w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2', item.color.bg, item.color.text)}
+              whileHover={{ rotate: 10, scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <item.icon className="w-5 h-5" />
+            </motion.div>
+            <motion.p 
+              className="text-xl font-bold text-neutral-900"
+              key={item.value}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {item.value.toLocaleString()}
+            </motion.p>
+            <p className="text-[10px] text-neutral-500 mt-1">{item.label}</p>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -359,7 +453,7 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
       {/* Alerts */}
       {autoAlerts.length > 0 && <AlertsPanel alerts={autoAlerts} />}
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Bento Style */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <SmartStatCard
           title="اتصالات الشهر"
@@ -367,7 +461,9 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
           icon={Phone}
           color="green"
           trend={stats.callsThisMonth > 50 ? 'up' : 'stable'}
-          trendValue={stats.callsThisMonth > 50 ? 'نشط' : '-'}
+          trendValue={stats.callsThisMonth > 50 ? 'نشط' : undefined}
+          progressValue={Math.min((stats.callsThisMonth / 100) * 100, 100)}
+          progressLabel="الهدف الشهري"
           onClick={() => onStatClick?.('calls')}
         />
         <SmartStatCard
@@ -381,7 +477,7 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
           title="متأخر بالدفع"
           value={stats.latePayments}
           icon={AlertTriangle}
-          color="red"
+          color="coral"
           isUrgent={stats.latePayments > 0}
           onClick={() => onStatClick?.('late')}
         />
@@ -403,7 +499,7 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
           title="قريب الانتهاء"
           value={stats.expiringContracts}
           icon={Calendar}
-          color="yellow"
+          color="amber"
           isUrgent={stats.expiringContracts > 3}
           onClick={() => onStatClick?.('expiring')}
         />
@@ -418,7 +514,7 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
               value={stats.totalOutstanding.toLocaleString()}
               subValue="ر.ق"
               icon={Banknote}
-              color="red"
+              color="coral"
               onClick={() => onStatClick?.('outstanding')}
             />
           )}
@@ -445,7 +541,7 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
               title="قضايا نشطة"
               value={stats.activeLegalCases}
               icon={Scale}
-              color="pink"
+              color="rose"
               onClick={() => onStatClick?.('legal')}
             />
           )}

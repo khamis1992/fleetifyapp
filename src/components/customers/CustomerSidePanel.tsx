@@ -54,38 +54,38 @@ interface CustomerSidePanelProps {
   onAddNote?: (customerId: string) => void;
 }
 
-// مكون عرض نقاط صحة العميل
+// مكون عرض نقاط صحة العميل - متوافق مع Bento Dashboard
 function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
   const getScoreColor = (value: number) => {
-    if (value >= 70) return 'text-emerald-600';
+    if (value >= 70) return 'text-green-600';
     if (value >= 40) return 'text-amber-600';
-    return 'text-red-600';
+    return 'text-coral-600';
   };
 
   const getScoreBg = (value: number) => {
-    if (value >= 70) return 'bg-emerald-500';
+    if (value >= 70) return 'bg-green-500';
     if (value >= 40) return 'bg-amber-500';
-    return 'bg-red-500';
+    return 'bg-coral-500';
   };
 
   const getTrendIcon = () => {
     switch (score.trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-emerald-500" />;
-      case 'down': return <TrendingDown className="w-4 h-4 text-red-500" />;
-      default: return <Minus className="w-4 h-4 text-gray-400" />;
+      case 'up': return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case 'down': return <TrendingDown className="w-4 h-4 text-coral-500" />;
+      default: return <Minus className="w-4 h-4 text-neutral-400" />;
     }
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white">
+    <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/10 rounded-lg">
-            <Heart className="w-5 h-5" />
+          <div className="p-2 bg-coral-100 rounded-lg">
+            <Heart className="w-5 h-5 text-coral-600" />
           </div>
-          <span className="font-semibold">صحة العميل</span>
+          <span className="font-semibold text-neutral-900">صحة العميل</span>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full text-xs">
+        <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded-full text-xs text-neutral-600">
           {getTrendIcon()}
           <span>{score.trend === 'up' ? 'تحسن' : score.trend === 'down' ? 'تراجع' : 'مستقر'}</span>
         </div>
@@ -100,7 +100,7 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
               cy="40"
               r="36"
               fill="none"
-              stroke="rgba(255,255,255,0.1)"
+              stroke="#f0f0f0"
               strokeWidth="8"
             />
             <circle
@@ -108,39 +108,39 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
               cy="40"
               r="36"
               fill="none"
-              stroke={score.overall >= 70 ? '#10b981' : score.overall >= 40 ? '#f59e0b' : '#ef4444'}
+              stroke={score.overall >= 70 ? '#22c55e' : score.overall >= 40 ? '#f59e0b' : '#E85A4F'}
               strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${(score.overall / 100) * 226} 226`}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl font-bold">{score.overall}</span>
+            <span className="text-2xl font-bold text-neutral-900">{score.overall}</span>
           </div>
         </div>
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">مالي</span>
+            <span className="text-neutral-500">مالي</span>
             <div className="flex items-center gap-2">
-              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                 <div className={`h-full ${getScoreBg(score.financial)} rounded-full`} style={{ width: `${score.financial}%` }} />
               </div>
               <span className={getScoreColor(score.financial)}>{score.financial}</span>
             </div>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">تفاعل</span>
+            <span className="text-neutral-500">تفاعل</span>
             <div className="flex items-center gap-2">
-              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                 <div className={`h-full ${getScoreBg(score.engagement)} rounded-full`} style={{ width: `${score.engagement}%` }} />
               </div>
               <span className={getScoreColor(score.engagement)}>{score.engagement}</span>
             </div>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">مخاطر</span>
+            <span className="text-neutral-500">مخاطر</span>
             <div className="flex items-center gap-2">
-              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                 <div className={`h-full ${getScoreBg(score.risk)} rounded-full`} style={{ width: `${score.risk}%` }} />
               </div>
               <span className={getScoreColor(score.risk)}>{score.risk}</span>
@@ -152,15 +152,15 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
       {/* العوامل */}
       <div className="grid grid-cols-2 gap-3 text-xs">
         {score.factors.positive.length > 0 && (
-          <div className="bg-emerald-500/10 rounded-lg p-2.5">
-            <div className="flex items-center gap-1 text-emerald-400 font-medium mb-1.5">
+          <div className="bg-green-50 rounded-xl p-2.5 border border-green-100">
+            <div className="flex items-center gap-1 text-green-600 font-medium mb-1.5">
               <Sparkles className="w-3 h-3" />
               نقاط قوة
             </div>
-            <ul className="space-y-1 text-white/70">
+            <ul className="space-y-1 text-neutral-600">
               {score.factors.positive.slice(0, 3).map((f, i) => (
                 <li key={i} className="flex items-start gap-1">
-                  <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
                   <span className="line-clamp-1">{f}</span>
                 </li>
               ))}
@@ -168,15 +168,15 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
           </div>
         )}
         {score.factors.negative.length > 0 && (
-          <div className="bg-red-500/10 rounded-lg p-2.5">
-            <div className="flex items-center gap-1 text-red-400 font-medium mb-1.5">
+          <div className="bg-coral-50 rounded-xl p-2.5 border border-coral-100">
+            <div className="flex items-center gap-1 text-coral-600 font-medium mb-1.5">
               <AlertTriangle className="w-3 h-3" />
               تحتاج تحسين
             </div>
-            <ul className="space-y-1 text-white/70">
+            <ul className="space-y-1 text-neutral-600">
               {score.factors.negative.slice(0, 3).map((f, i) => (
                 <li key={i} className="flex items-start gap-1">
-                  <AlertCircle className="w-3 h-3 text-red-400 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="w-3 h-3 text-coral-500 mt-0.5 flex-shrink-0" />
                   <span className="line-clamp-1">{f}</span>
                 </li>
               ))}
@@ -227,7 +227,7 @@ function InfoCard({ icon: Icon, label, value, copyable }: {
   );
 }
 
-// مكون بطاقة إحصائية
+// مكون بطاقة إحصائية - متوافق مع Bento Dashboard
 function StatCard({ label, value, subValue, type }: {
   label: string;
   value: string | number;
@@ -235,16 +235,16 @@ function StatCard({ label, value, subValue, type }: {
   type: 'success' | 'warning' | 'danger' | 'info';
 }) {
   const styles = {
-    success: 'bg-emerald-50 border-emerald-100 text-emerald-700',
+    success: 'bg-green-50 border-green-100 text-green-700',
     warning: 'bg-amber-50 border-amber-100 text-amber-700',
-    danger: 'bg-red-50 border-red-100 text-red-700',
+    danger: 'bg-coral-50 border-coral-100 text-coral-700',
     info: 'bg-blue-50 border-blue-100 text-blue-700',
   };
 
   return (
     <div className={cn('p-3 rounded-xl border', styles[type])}>
-      <p className="text-xs opacity-70 mb-1">{label}</p>
-      <p className="text-lg font-bold">{value}</p>
+      <p className="text-[11px] font-medium opacity-70 mb-1">{label}</p>
+      <p className="text-xl font-bold">{value}</p>
       {subValue && <p className="text-[10px] mt-0.5 opacity-60">{subValue}</p>}
     </div>
   );
@@ -504,33 +504,35 @@ export function CustomerSidePanel({
                   {/* المالي */}
                   <TabsContent value="financial" className="mt-4 space-y-4">
                     {/* Financial Summary */}
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5 text-white">
+                    <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
                       <div className="flex items-center gap-2 mb-4">
-                        <Banknote className="w-5 h-5" />
-                        <span className="font-semibold">الملخص المالي</span>
+                        <div className="p-2 bg-coral-100 rounded-lg">
+                          <Banknote className="w-4 h-4 text-coral-600" />
+                        </div>
+                        <span className="font-semibold text-neutral-900">الملخص المالي</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-blue-100 text-xs mb-1">إجمالي الفواتير</p>
-                          <p className="text-2xl font-bold">
+                        <div className="p-3 bg-neutral-50 rounded-xl">
+                          <p className="text-[11px] text-neutral-500 mb-1">إجمالي الفواتير</p>
+                          <p className="text-xl font-bold text-neutral-900">
                             {(customer.financial?.total_invoiced || 0).toLocaleString()}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-blue-100 text-xs mb-1">إجمالي المدفوع</p>
-                          <p className="text-2xl font-bold text-emerald-300">
+                        <div className="p-3 bg-green-50 rounded-xl">
+                          <p className="text-[11px] text-green-600 mb-1">إجمالي المدفوع</p>
+                          <p className="text-xl font-bold text-green-700">
                             {(customer.financial?.total_paid || 0).toLocaleString()}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-blue-100 text-xs mb-1">المتبقي</p>
-                          <p className="text-2xl font-bold text-amber-300">
+                        <div className="p-3 bg-coral-50 rounded-xl">
+                          <p className="text-[11px] text-coral-600 mb-1">المتبقي</p>
+                          <p className="text-xl font-bold text-coral-700">
                             {(customer.financial?.total_outstanding || 0).toLocaleString()}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-blue-100 text-xs mb-1">متوسط أيام السداد</p>
-                          <p className="text-2xl font-bold">
+                        <div className="p-3 bg-blue-50 rounded-xl">
+                          <p className="text-[11px] text-blue-600 mb-1">متوسط أيام السداد</p>
+                          <p className="text-xl font-bold text-blue-700">
                             {customer.financial?.average_days_to_pay || 0} يوم
                           </p>
                         </div>
