@@ -996,32 +996,46 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
       if (onSubmit) {
         await onSubmit(formData as ContractFormData);
       } else {
+        // Generate contract number
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const contractNumber = `C-${timestamp}-${random}`;
+        
         const { error } = await supabase.from('contracts').insert({
           company_id: companyId,
           customer_id: formData.customer_id,
           vehicle_id: formData.vehicle_id || null,
           contract_type: formData.contract_type,
+          contract_number: contractNumber,
+          contract_date: formData.start_date,
           start_date: formData.start_date,
           end_date: formData.end_date,
-          rental_days: formData.rental_days,
-          contract_amount: formData.contract_amount,
-          deposit_amount: formData.deposit_amount || 0,
-          notes: formData.notes,
-          late_fines_enabled: formData.late_fines_enabled,
-          late_fine_rate: formData.late_fine_rate,
-          late_fine_grace_period: formData.late_fine_grace_period,
+          monthly_amount: formData.monthly_amount || 0,
+          contract_amount: formData.contract_amount || 0,
+          description: formData.notes || null,
           status: 'active',
           created_by: user?.id,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Contract insert error:', error);
+          throw error;
+        }
+        
+        // Update vehicle status if vehicle is selected
+        if (formData.vehicle_id) {
+          await supabase
+            .from('vehicles')
+            .update({ status: 'rented' })
+            .eq('id', formData.vehicle_id);
+        }
       }
 
       toast.success('تم إنشاء العقد بنجاح!');
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating contract:', error);
-      toast.error('فشل في إنشاء العقد');
+      toast.error(error?.message || 'فشل في إنشاء العقد');
     } finally {
       setIsSubmitting(false);
     }

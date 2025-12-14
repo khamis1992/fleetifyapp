@@ -18,22 +18,14 @@ import {
   Eye, 
   Edit, 
   Trash2, 
-  X, 
   Car, 
   Wrench, 
-  FileText, 
-  User,
-  ClipboardList,
-  Clock,
-  CheckCircle,
-  TrendingUp,
   AlertTriangle,
   ShieldCheck,
   RotateCcw
 } from "lucide-react"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles"
-import { useSmartAlerts } from "@/hooks/useSmartAlerts"
 import { useVehicleStatusUpdate, useCompleteMaintenanceStatus, useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useDeleteVehicleMaintenance, useUpdateVehicleMaintenance } from "@/hooks/useVehicles"
@@ -43,20 +35,22 @@ import { PageHelp } from "@/components/help";
 import { MaintenancePageHelpContent } from "@/components/help/content";
 import { FloatingAssistant } from "@/components/employee-assistant";
 
+// Import new components
+import { MaintenanceSmartDashboard } from "@/components/fleet/MaintenanceSmartDashboard"
+import { MaintenanceAlertsPanel } from "@/components/fleet/MaintenanceAlertsPanel"
+import { MaintenanceSidePanel } from "@/components/fleet/MaintenanceSidePanel"
+
 // Lazy load heavy components
-const SmartAlertsPanel = lazy(() => 
-  import("@/components/dashboard/SmartAlertsPanel").then(m => ({ default: m.SmartAlertsPanel }))
-);
 const MaintenanceForm = lazy(() => 
   import("@/components/fleet/MaintenanceForm").then(m => ({ default: m.MaintenanceForm }))
 );
 
 // Status mapping for the new design
 const statusColors = {
-  pending: "status-active",
-  in_progress: "status-pending", 
-  completed: "status-completed",
-  cancelled: "status-cancelled"
+  pending: "bg-green-100 text-green-700 border-green-200",
+  in_progress: "bg-amber-100 text-amber-700 border-amber-200", 
+  completed: "bg-neutral-100 text-neutral-700 border-neutral-200",
+  cancelled: "bg-coral-100 text-coral-700 border-coral-200"
 }
 
 const statusLabels = {
@@ -68,16 +62,16 @@ const statusLabels = {
 
 const statusDotColors = {
   pending: "bg-green-500",
-  in_progress: "bg-orange-500",
-  completed: "bg-gray-500",
-  cancelled: "bg-gray-400"
+  in_progress: "bg-amber-500",
+  completed: "bg-neutral-500",
+  cancelled: "bg-coral-500"
 }
 
 const priorityColors = {
-  low: "priority-low",
-  medium: "priority-medium",
-  high: "priority-high",
-  urgent: "priority-high"
+  low: "bg-blue-100 text-blue-700",
+  medium: "bg-amber-100 text-amber-700",
+  high: "bg-coral-100 text-coral-700",
+  urgent: "bg-red-100 text-red-700"
 }
 
 const priorityLabels = {
@@ -103,9 +97,9 @@ const maintenanceTypeLabels = {
 }
 
 const maintenanceTypeColors = {
-  routine: "text-red-600",
+  routine: "text-blue-600",
   repair: "text-purple-600",
-  emergency: "text-red-600",
+  emergency: "text-coral-600",
   preventive: "text-green-600"
 }
 
@@ -115,9 +109,11 @@ export default function Maintenance() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined)
   const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null)
   const [sidePanelOpen, setSidePanelOpen] = useState(false)
+  const [selectedMaintenanceId, setSelectedMaintenanceId] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   
@@ -145,11 +141,6 @@ export default function Maintenance() {
     enabled: true
   })
   
-  const { data: smartAlerts, isLoading: alertsLoading } = useSmartAlerts({
-    priority: true,
-    limit: 5
-  })
-  
   const { formatCurrency } = useCurrencyFormatter()
   const completeMaintenanceStatus = useCompleteMaintenanceStatus()
   const vehicleStatusUpdate = useVehicleStatusUpdate()
@@ -157,40 +148,7 @@ export default function Maintenance() {
   const deleteMaintenance = useDeleteVehicleMaintenance()
   const updateMaintenance = useUpdateVehicleMaintenance()
 
-  // Calculate statistics
-  const statistics = useMemo(() => {
-    if (!maintenanceRecords || maintenanceRecords.length === 0) {
-      console.log('🔍 [Maintenance Stats] No records found:', maintenanceRecords)
-      return { total: 0, pending: 0, inProgress: 0, completed: 0, cancelled: 0 }
-    }
-    
-    const stats = {
-      total: maintenanceRecords.length,
-      pending: maintenanceRecords.filter(m => m.status === 'pending').length,
-      inProgress: maintenanceRecords.filter(m => m.status === 'in_progress').length,
-      completed: maintenanceRecords.filter(m => m.status === 'completed').length,
-      cancelled: maintenanceRecords.filter(m => m.status === 'cancelled').length
-    }
-    
-    console.log('📊 [Maintenance Stats] Calculated:', stats)
-    console.log('📋 [Maintenance Records] Sample:', maintenanceRecords.slice(0, 3).map(r => ({ 
-      id: r.id, 
-      status: r.status, 
-      maintenance_number: r.maintenance_number 
-    })))
-    console.log('🚗 [Maintenance Vehicles] Count:', maintenanceVehicles?.length || 0)
-    if (maintenanceVehicles && maintenanceVehicles.length > 0) {
-      console.log('🚗 [Maintenance Vehicles] Sample:', maintenanceVehicles.slice(0, 3).map(v => ({
-        id: v.id,
-        plate_number: v.plate_number,
-        status: v.status
-      })))
-    }
-    
-    return stats
-  }, [maintenanceRecords, maintenanceVehicles])
-
-  // Filter records and combine with vehicles in maintenance - FIXED
+  // Filter records and combine with vehicles in maintenance
   const filteredRecords = useMemo(() => {
     const records: any[] = []
     
@@ -209,15 +167,15 @@ export default function Maintenance() {
         
         const matchesStatus = statusFilter === "all" || record.status === statusFilter
         const matchesType = typeFilter === "all" || record.maintenance_type === typeFilter
+        const matchesPriority = priorityFilter === "all" || record.priority === priorityFilter
         
-        return matchesSearch && matchesStatus && matchesType
+        return matchesSearch && matchesStatus && matchesType && matchesPriority
       }))
     }
     
     // Add vehicles in maintenance status ONLY if they don't have a maintenance record
-    if (maintenanceVehicles) {
+    if (maintenanceVehicles && statusFilter !== "completed" && statusFilter !== "cancelled") {
       maintenanceVehicles.forEach(vehicle => {
-        // Skip if this vehicle already has a maintenance record
         if (vehiclesWithMaintenance.has(vehicle.id)) {
           return
         }
@@ -226,7 +184,6 @@ export default function Maintenance() {
           vehicle.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase())
         
-        // Only show if matches search or if status filter is "all" or matches "in_progress"
         if (matchesSearch && (statusFilter === "all" || statusFilter === "in_progress")) {
           records.push({
             id: `vehicle-${vehicle.id}`,
@@ -242,7 +199,7 @@ export default function Maintenance() {
             },
             scheduled_date: vehicle.last_maintenance_date,
             description: 'مركبة في حالة صيانة',
-            isVehicleInMaintenance: true, // Flag to identify this is a vehicle in maintenance status
+            isVehicleInMaintenance: true,
             vehicle: vehicle
           })
         }
@@ -250,7 +207,7 @@ export default function Maintenance() {
     }
     
     return records
-  }, [maintenanceRecords, maintenanceVehicles, searchQuery, statusFilter, typeFilter])
+  }, [maintenanceRecords, maintenanceVehicles, searchQuery, statusFilter, typeFilter, priorityFilter])
 
   // Pagination
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage)
@@ -260,37 +217,47 @@ export default function Maintenance() {
   )
 
   const openSidePanel = (maintenance: any) => {
-    // If it's a vehicle in maintenance status, find its maintenance record first
     if (maintenance.isVehicleInMaintenance && maintenance.vehicle_id) {
-      // Try to find existing maintenance record for this vehicle
       const existingRecord = maintenanceRecords?.find(
         r => r.vehicle_id === maintenance.vehicle_id && r.status === 'in_progress'
       )
       
       if (existingRecord) {
-        // If found, show the actual record
-        setSelectedMaintenance(existingRecord)
+        setSelectedMaintenanceId(existingRecord.id)
         setSidePanelOpen(true)
       } else {
-        // If not found, open form to create new maintenance record
         setSelectedVehicleId(maintenance.vehicle_id)
         setShowMaintenanceForm(true)
       }
       return
     }
-    setSelectedMaintenance(maintenance)
+    setSelectedMaintenanceId(maintenance.id)
     setSidePanelOpen(true)
   }
 
   const closeSidePanel = () => {
     setSidePanelOpen(false)
-    setTimeout(() => setSelectedMaintenance(null), 300)
+    setTimeout(() => setSelectedMaintenanceId(undefined), 300)
   }
 
   const handleResetFilters = () => {
     setSearchQuery("")
     setStatusFilter("all")
     setTypeFilter("all")
+    setPriorityFilter("all")
+    setCurrentPage(1)
+  }
+
+  const handleFilterChange = (filter: string) => {
+    if (filter === 'pending' || filter === 'in_progress' || filter === 'completed' || filter === 'cancelled') {
+      setStatusFilter(filter)
+    } else if (filter === 'urgent') {
+      setPriorityFilter('urgent')
+    } else if (filter === 'overdue' || filter === 'scheduled') {
+      setStatusFilter('pending')
+    } else {
+      setStatusFilter("all")
+    }
     setCurrentPage(1)
   }
 
@@ -309,7 +276,6 @@ export default function Maintenance() {
   }
 
   const handleStatusChange = async (maintenanceId: string, vehicleId: string, currentStatus: string) => {
-    // Validate status transition
     if (currentStatus === 'completed') {
       alert('هذا الطلب مكتمل بالفعل')
       return
@@ -321,14 +287,12 @@ export default function Maintenance() {
     }
 
     try {
-      // If status is pending, first move to in_progress
       if (currentStatus === 'pending') {
         await updateMaintenance.mutateAsync({
           id: maintenanceId,
           status: 'in_progress'
         })
         
-        // Also update vehicle status if not already in maintenance
         const { data: vehicle } = await supabase
           .from('vehicles')
           .select('status')
@@ -342,7 +306,6 @@ export default function Maintenance() {
           })
         }
       } else if (currentStatus === 'in_progress') {
-        // Complete maintenance
         await completeMaintenanceStatus.mutateAsync({ vehicleId, maintenanceId })
       }
       
@@ -350,6 +313,12 @@ export default function Maintenance() {
     } catch (error) {
       console.error('Failed to change status:', error)
     }
+  }
+
+  const handleEdit = (maintenance: any) => {
+    setSelectedMaintenance(maintenance)
+    setShowMaintenanceForm(true)
+    closeSidePanel()
   }
 
   // Keyboard events
@@ -361,9 +330,6 @@ export default function Maintenance() {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [])
 
-  // Note: Removed body scroll lock to fix mobile scrolling issues
-  // The side panel now uses proper overlay instead of blocking scroll
-
   if (maintenanceLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -373,152 +339,55 @@ export default function Maintenance() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Smart Alerts Panel */}
-        {smartAlerts && smartAlerts.length > 0 && (
-          <div className="mb-8">
-            <Suspense fallback={<LoadingSpinner size="sm" />}>
-              <SmartAlertsPanel 
-                alerts={smartAlerts} 
-                loading={alertsLoading}
-              />
-            </Suspense>
-          </div>
-        )}
-
+    <div className="min-h-screen bg-neutral-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
-        <div className="mb-8 animate-slide-up">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">إدارة الصيانة</h1>
-              <p className="text-gray-600">إدارة ومتابعة طلبات الصيانة للأسطول</p>
-            </div>
-            <Button
-              onClick={() => setShowMaintenanceForm(true)}
-              className="btn-hover bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 justify-center shadow-md"
-            >
-              <Plus className="w-5 h-5" />
-              <span>طلب صيانة جديد</span>
-            </Button>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-1">إدارة الصيانة</h1>
+            <p className="text-neutral-500 text-sm">إدارة ومتابعة طلبات الصيانة للأسطول</p>
           </div>
+          <Button
+            onClick={() => setShowMaintenanceForm(true)}
+            className="bg-coral-500 hover:bg-coral-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 justify-center shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            <span>طلب صيانة جديد</span>
+          </Button>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
-          {/* Total */}
-          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-2">إجمالي الطلبات</p>
-                <h3 className="text-3xl font-bold text-gray-900">{statistics.total}</h3>
-              </div>
-              <div className="bg-red-100 p-4 rounded-xl">
-                <ClipboardList className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-gray-500">إجمالي طلبات الصيانة</span>
-            </div>
-          </div>
+        {/* Smart Dashboard */}
+        <MaintenanceSmartDashboard onFilterChange={handleFilterChange} />
 
-          {/* Vehicles in Maintenance */}
-          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-2">المركبات في الصيانة</p>
-                <h3 className="text-3xl font-bold text-purple-600">{maintenanceVehicles?.length || 0}</h3>
-              </div>
-              <div className="bg-purple-100 p-4 rounded-xl">
-                <Car className="w-8 h-8 text-purple-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-purple-600 font-semibold">
-                {maintenanceVehicles?.length || 0} مركبة
-              </span>
-              <span className="text-gray-500">قيد الصيانة</span>
-            </div>
-          </div>
-
-          {/* Pending */}
-          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-2">معلقة</p>
-                <h3 className="text-3xl font-bold text-yellow-600">{statistics.pending}</h3>
-              </div>
-              <div className="bg-yellow-100 p-4 rounded-xl">
-                <Clock className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-yellow-600 font-semibold">
-                {statistics.total > 0 ? Math.round((statistics.pending / statistics.total) * 100) : 0}%
-              </span>
-              <span className="text-gray-500">من الإجمالي</span>
-            </div>
-          </div>
-
-          {/* In Progress */}
-          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-2">قيد المعالجة</p>
-                <h3 className="text-3xl font-bold text-orange-600">{statistics.inProgress}</h3>
-              </div>
-              <div className="bg-orange-100 p-4 rounded-xl">
-                <Wrench className="w-8 h-8 text-orange-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-orange-600 font-semibold">
-                {statistics.total > 0 ? Math.round((statistics.inProgress / statistics.total) * 100) : 0}%
-              </span>
-              <span className="text-gray-500">من الإجمالي</span>
-            </div>
-          </div>
-
-          {/* Completed */}
-          <div className="stats-card bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-2">مكتملة</p>
-                <h3 className="text-3xl font-bold text-green-600">{statistics.completed}</h3>
-              </div>
-              <div className="bg-green-100 p-4 rounded-xl">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="text-green-600 font-semibold">
-                {statistics.total > 0 ? Math.round((statistics.completed / statistics.total) * 100) : 0}%
-              </span>
-              <span className="text-gray-500">معدل الإنجاز</span>
-            </div>
-          </div>
-        </div>
+        {/* Alerts Panel */}
+        <MaintenanceAlertsPanel 
+          onMaintenanceClick={(id) => {
+            setSelectedMaintenanceId(id)
+            setSidePanelOpen(true)
+          }}
+          maxItems={4}
+        />
 
         {/* Filters Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 mb-8 animate-slide-up">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             {/* Search */}
             <div className="lg:col-span-2">
               <div className="relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <Input
                   type="text"
-                  placeholder="البحث برقم الطلب، المركبة، أو النوع..."
+                  placeholder="البحث برقم الطلب، المركبة..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-focus w-full pr-12 pl-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                  className="w-full pr-11 pl-4 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:border-coral-500 text-sm"
                 />
               </div>
             </div>
 
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white">
+              <SelectTrigger className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:border-coral-500 bg-white text-sm">
                 <SelectValue placeholder="كل الحالات" />
               </SelectTrigger>
               <SelectContent>
@@ -532,7 +401,7 @@ export default function Maintenance() {
 
             {/* Type Filter */}
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white">
+              <SelectTrigger className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:border-coral-500 bg-white text-sm">
                 <SelectValue placeholder="كل الأنواع" />
               </SelectTrigger>
               <SelectContent>
@@ -544,138 +413,145 @@ export default function Maintenance() {
               </SelectContent>
             </Select>
 
+            {/* Priority Filter */}
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:border-coral-500 bg-white text-sm">
+                <SelectValue placeholder="كل الأولويات" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الأولويات</SelectItem>
+                <SelectItem value="low">منخفضة</SelectItem>
+                <SelectItem value="medium">متوسطة</SelectItem>
+                <SelectItem value="high">عالية</SelectItem>
+                <SelectItem value="urgent">عاجلة</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Reset Button */}
             <Button
               variant="outline"
               onClick={handleResetFilters}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2 text-sm"
             >
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="w-4 h-4" />
               <span>إعادة تعيين</span>
             </Button>
           </div>
         </div>
 
         {/* Table Section */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-[1.25rem] shadow-sm border border-neutral-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">رقم الطلب</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">نوع الصيانة</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">المركبة</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">التاريخ</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الأولوية</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">التكلفة</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">الإجراءات</th>
+                <tr className="bg-neutral-50 border-b border-neutral-200">
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">رقم الطلب</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">نوع الصيانة</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">المركبة</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">التاريخ</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">الحالة</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">الأولوية</th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold text-neutral-600">التكلفة</th>
+                  <th className="px-5 py-4 text-center text-xs font-semibold text-neutral-600">الإجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {paginatedRecords.length > 0 ? (
                   paginatedRecords.map((maintenance, index) => {
                     const TypeIcon = maintenanceTypeIcons[maintenance.maintenance_type as keyof typeof maintenanceTypeIcons] || Wrench
-                    const typeColor = maintenanceTypeColors[maintenance.maintenance_type as keyof typeof maintenanceTypeColors] || "text-gray-600"
+                    const typeColor = maintenanceTypeColors[maintenance.maintenance_type as keyof typeof maintenanceTypeColors] || "text-neutral-600"
                     
                     return (
                       <tr
                         key={maintenance.id}
                         onClick={() => openSidePanel(maintenance)}
-                        className="table-row row-hover cursor-pointer"
-                        style={{ animationDelay: `${index * 50}ms` }}
+                        className="hover:bg-neutral-50 cursor-pointer transition-colors"
                       >
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           {maintenance.isVehicleInMaintenance ? (
-                            <span className="font-mono font-semibold text-purple-600">
+                            <span className="font-mono font-semibold text-purple-600 text-sm">
                               {maintenance.vehicle?.plate_number || maintenance.vehicles?.plate_number}
                             </span>
                           ) : (
-                            <span className="font-mono font-semibold text-red-600">
-                              #{maintenance.maintenance_number || maintenance.id?.slice(0, 3).toUpperCase()}
+                            <span className="font-mono font-semibold text-coral-600 text-sm">
+                              #{maintenance.maintenance_number || maintenance.id?.slice(0, 6)}
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             {maintenance.isVehicleInMaintenance ? (
                               <>
                                 <Car className="w-4 h-4 text-purple-600" />
-                                <span className="text-purple-600 font-semibold">مركبة في الصيانة</span>
-                                <Badge className="bg-purple-100 text-purple-700 text-xs">صيانة</Badge>
+                                <span className="text-purple-600 font-medium text-sm">مركبة في الصيانة</span>
                               </>
                             ) : (
                               <>
                                 <TypeIcon className={cn("w-4 h-4", typeColor)} />
-                                <span>{maintenanceTypeLabels[maintenance.maintenance_type as keyof typeof maintenanceTypeLabels] || maintenance.maintenance_type}</span>
+                                <span className="text-sm">{maintenanceTypeLabels[maintenance.maintenance_type as keyof typeof maintenanceTypeLabels] || maintenance.maintenance_type}</span>
                               </>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            <Car className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">{maintenance.vehicles?.plate_number || maintenance.vehicle?.plate_number || 'غير محدد'}</span>
-                            {maintenance.vehicle && (
-                              <span className="text-xs text-gray-500">
-                                ({maintenance.vehicle.make} {maintenance.vehicle.model})
-                              </span>
-                            )}
+                            <Car className="w-4 h-4 text-neutral-400" />
+                            <span className="font-medium text-sm">{maintenance.vehicles?.plate_number || maintenance.vehicle?.plate_number || 'غير محدد'}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">
+                        <td className="px-5 py-4 text-neutral-600 text-sm">
                           {maintenance.isVehicleInMaintenance 
                             ? (maintenance.vehicle?.last_maintenance_date
                                 ? new Date(maintenance.vehicle.last_maintenance_date).toLocaleDateString('en-US')
-                                : 'غير محدد')
+                                : '-')
                             : (maintenance.scheduled_date 
                                 ? new Date(maintenance.scheduled_date).toLocaleDateString('en-US')
-                                : 'غير محدد')}
+                                : '-')}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           <Badge className={cn(
-                            "badge px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1",
+                            "px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1.5 border",
                             statusColors[maintenance.status as keyof typeof statusColors]
                           )}>
                             <span className={cn(
-                              "w-2 h-2 rounded-full",
+                              "w-1.5 h-1.5 rounded-full",
                               statusDotColors[maintenance.status as keyof typeof statusDotColors]
                             )} />
                             {statusLabels[maintenance.status as keyof typeof statusLabels]}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           <Badge className={cn(
-                            "badge px-3 py-1 rounded-full text-sm font-medium",
+                            "px-2.5 py-1 rounded-full text-xs font-medium",
                             priorityColors[maintenance.priority as keyof typeof priorityColors]
                           )}>
                             {priorityLabels[maintenance.priority as keyof typeof priorityLabels]}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-gray-900">
+                        <td className="px-5 py-4">
+                          <span className="font-semibold text-neutral-900 text-sm">
                             {maintenance.isVehicleInMaintenance 
                               ? '-' 
                               : formatCurrency(maintenance.actual_cost || maintenance.estimated_cost || 0)}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 openSidePanel(maintenance)
                               }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 hover:bg-coral-50 rounded-lg transition-colors"
                               title="عرض"
                             >
-                              <Eye className="w-4 h-4 text-red-600" />
+                              <Eye className="w-4 h-4 text-coral-600" />
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setSelectedMaintenance(maintenance) // Set the maintenance record
-                                setShowMaintenanceForm(true) // Open form in edit mode
+                                setSelectedMaintenance(maintenance)
+                                setShowMaintenanceForm(true)
                               }}
                               className="p-2 hover:bg-green-50 rounded-lg transition-colors"
                               title="تعديل"
@@ -687,10 +563,10 @@ export default function Maintenance() {
                                 e.stopPropagation()
                                 handleDelete(maintenance.id, maintenance.vehicle_id)
                               }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 hover:bg-coral-50 rounded-lg transition-colors"
                               title="حذف"
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-coral-600" />
                             </button>
                           </div>
                         </td>
@@ -699,13 +575,13 @@ export default function Maintenance() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-5 py-12 text-center">
                       <div className="flex flex-col items-center gap-4">
-                        <Wrench className="w-12 h-12 text-gray-400" />
-                        <p className="text-gray-500">لا توجد طلبات صيانة</p>
+                        <Wrench className="w-12 h-12 text-neutral-300" />
+                        <p className="text-neutral-500">لا توجد طلبات صيانة</p>
                         <Button
                           onClick={() => setShowMaintenanceForm(true)}
-                          className="bg-red-600 hover:bg-red-700 text-white"
+                          className="bg-coral-500 hover:bg-coral-600 text-white"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           إضافة طلب صيانة
@@ -720,10 +596,10 @@ export default function Maintenance() {
 
           {/* Pagination */}
           {filteredRecords.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                عرض <span className="font-semibold">{((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredRecords.length)}</span> من{' '}
-                <span className="font-semibold">{filteredRecords.length}</span> طلب
+            <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between">
+              <div className="text-sm text-neutral-500">
+                عرض <span className="font-semibold text-neutral-700">{((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredRecords.length)}</span> من{' '}
+                <span className="font-semibold text-neutral-700">{filteredRecords.length}</span> طلب
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -731,7 +607,7 @@ export default function Maintenance() {
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2"
+                  className="px-3 py-2 text-sm rounded-lg"
                 >
                   السابق
                 </Button>
@@ -744,8 +620,8 @@ export default function Maintenance() {
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
                       className={cn(
-                        "px-4 py-2",
-                        currentPage === pageNum && "bg-red-600 text-white hover:bg-red-700"
+                        "px-3 py-2 text-sm rounded-lg",
+                        currentPage === pageNum && "bg-coral-500 text-white hover:bg-coral-600"
                       )}
                     >
                       {pageNum}
@@ -754,12 +630,12 @@ export default function Maintenance() {
                 })}
                 {totalPages > 5 && (
                   <>
-                    <span className="px-2">...</span>
+                    <span className="px-2 text-neutral-400">...</span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(totalPages)}
-                      className="px-4 py-2"
+                      className="px-3 py-2 text-sm rounded-lg"
                     >
                       {totalPages}
                     </Button>
@@ -770,7 +646,7 @@ export default function Maintenance() {
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2"
+                  className="px-3 py-2 text-sm rounded-lg"
                 >
                   التالي
                 </Button>
@@ -780,236 +656,33 @@ export default function Maintenance() {
         </div>
       </div>
 
-      {/* Side Panel Overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black transition-opacity duration-300 z-40",
-          sidePanelOpen ? "opacity-50 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        onClick={closeSidePanel}
-      />
-
       {/* Side Panel */}
-      {sidePanelOpen && selectedMaintenance && (
-        <div
-          className={cn(
-            "fixed top-0 right-0 h-full w-full md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto",
-            "transition-transform duration-300 ease-in-out"
-          )}
-        >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                تفاصيل طلب الصيانة{' '}
-                <span className="text-red-600">
-                  #{selectedMaintenance.maintenance_number || selectedMaintenance.id?.slice(0, 3).toUpperCase()}
-                </span>
-              </h2>
-              <button
-                onClick={closeSidePanel}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Status Badge */}
-            <div className="mb-6">
-              <Badge className={cn(
-                "badge px-4 py-2 rounded-full text-sm font-medium inline-flex items-center gap-2",
-                statusColors[selectedMaintenance.status as keyof typeof statusColors]
-              )}>
-                <span className={cn(
-                  "w-2 h-2 rounded-full",
-                  statusDotColors[selectedMaintenance.status as keyof typeof statusDotColors]
-                )} />
-                {statusLabels[selectedMaintenance.status as keyof typeof statusLabels]}
-              </Badge>
-            </div>
-
-            {/* Vehicle Information */}
-            <div className="bg-gray-50 rounded-xl p-5 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-red-100 p-3 rounded-lg">
-                  <Car className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">معلومات المركبة</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">رقم اللوحة</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.vehicles?.plate_number || 'غير محدد'}
-                  </span>
-                </div>
-                {selectedMaintenance.vehicles?.vehicle_type && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">النوع</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedMaintenance.vehicles.vehicle_type}
-                    </span>
-                  </div>
-                )}
-                {selectedMaintenance.vehicles?.year && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">الموديل</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedMaintenance.vehicles.year}
-                    </span>
-                  </div>
-                )}
-                {(selectedMaintenance.vehicles?.make || selectedMaintenance.vehicles?.model) && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">الماركة</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedMaintenance.vehicles?.make || ''} {selectedMaintenance.vehicles?.model || ''}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Maintenance Details */}
-            <div className="bg-gray-50 rounded-xl p-5 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-orange-100 p-3 rounded-lg">
-                  <Wrench className="w-6 h-6 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">تفاصيل الصيانة</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">النوع</span>
-                  <span className="font-semibold text-gray-900">
-                    {maintenanceTypeLabels[selectedMaintenance.maintenance_type as keyof typeof maintenanceTypeLabels] || selectedMaintenance.maintenance_type}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">الأولوية</span>
-                  <Badge className={cn(
-                    "badge px-3 py-1 rounded-full text-sm font-medium",
-                    priorityColors[selectedMaintenance.priority as keyof typeof priorityColors]
-                  )}>
-                    {priorityLabels[selectedMaintenance.priority as keyof typeof priorityLabels]}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">تاريخ البدء</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.scheduled_date 
-                      ? new Date(selectedMaintenance.scheduled_date).toLocaleDateString('en-US')
-                      : 'غير محدد'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">التاريخ المتوقع للإنتهاء</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedMaintenance.completion_date 
-                      ? new Date(selectedMaintenance.completion_date).toLocaleDateString('en-US')
-                      : 'غير محدد'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">التكلفة المقدرة</span>
-                  <span className="font-bold text-red-600 text-lg">
-                    {formatCurrency(selectedMaintenance.actual_cost || selectedMaintenance.estimated_cost || 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Description */}
-            {selectedMaintenance.description && (
-              <div className="bg-gray-50 rounded-xl p-5 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-purple-100 p-3 rounded-lg">
-                    <FileText className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">الوصف</h3>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {selectedMaintenance.description}
-                </p>
-              </div>
-            )}
-
-            {/* Technician */}
-            {selectedMaintenance.technician_name && (
-              <div className="bg-gray-50 rounded-xl p-5 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-green-100 p-3 rounded-lg">
-                    <User className="w-6 h-6 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">الفني المسؤول</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {selectedMaintenance.technician_name?.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{selectedMaintenance.technician_name}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button
-                onClick={() => {
-                  setSelectedMaintenance(selectedMaintenance) // Keep the maintenance data
-                  setShowMaintenanceForm(true)
-                  closeSidePanel()
-                }}
-                className="btn-hover flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md"
-              >
-                <Edit className="w-5 h-5" />
-                <span>تعديل</span>
-              </Button>
-              <Button
-                onClick={() => handleStatusChange(
-                  selectedMaintenance.id, 
-                  selectedMaintenance.vehicle_id,
-                  selectedMaintenance.status
-                )}
-                className="btn-hover flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>
-                  {selectedMaintenance.status === 'pending' ? 'بدء الصيانة' : 
-                   selectedMaintenance.status === 'in_progress' ? 'إكمال الصيانة' : 
-                   'تغيير الحالة'}
-                </span>
-              </Button>
-              <Button
-                onClick={() => handleDelete(selectedMaintenance.id, selectedMaintenance.vehicle_id)}
-                variant="outline"
-                className="btn-hover bg-red-50 hover:bg-red-100 text-red-600 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MaintenanceSidePanel
+        maintenanceId={selectedMaintenanceId}
+        isOpen={sidePanelOpen}
+        onClose={closeSidePanel}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onStatusChange={handleStatusChange}
+      />
 
       {/* Maintenance Form */}
       <Suspense fallback={<div>Loading...</div>}>
         <MaintenanceForm 
-          maintenance={selectedMaintenance} // Pass maintenance record for editing
+          maintenance={selectedMaintenance}
           vehicleId={selectedVehicleId}
           open={showMaintenanceForm}
           onOpenChange={(open) => {
             setShowMaintenanceForm(open);
             if (!open) {
               setSelectedVehicleId(undefined);
-              setSelectedMaintenance(null); // Clear selected maintenance when closing
+              setSelectedMaintenance(null);
             }
           }}
         />
       </Suspense>
-    <PageHelp content={<MaintenancePageHelpContent />} />
+      
+      <PageHelp content={<MaintenancePageHelpContent />} />
 
       {/* مساعد الموظف للصيانة */}
       <FloatingAssistant 
@@ -1026,4 +699,3 @@ export default function Maintenance() {
     </div>
   )
 }
-
