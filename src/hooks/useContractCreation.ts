@@ -236,129 +236,80 @@ export const useContractCreation = () => {
 
         updateStepStatus('creation', 'processing')
 
-        // استخدام الدالة المحسنة الجديدة للسرعة القصوى
-        console.log('🚀 [CONTRACT_CREATION] استخدام الدالة المحسنة لتسريع الإنشاء...')
-        const { data: result, error: createError } = await supabase.rpc('create_contract_with_journal_entry_enhanced', {
-          p_company_id: companyId,
-          p_customer_id: inputContractData.customer_id,
-          p_vehicle_id: inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id,
-          p_contract_type: inputContractData.contract_type || 'rental',
-          p_start_date: inputContractData.start_date,
-          p_end_date: inputContractData.end_date,
-          p_contract_amount: contractAmount,
-          p_monthly_amount: Number(inputContractData.monthly_amount || contractAmount) || contractAmount,
-          p_description: inputContractData.description || null,
-          p_terms: inputContractData.terms || null,
-          p_cost_center_id: inputContractData.cost_center_id || null,
-          p_created_by: inputContractData.created_by || user?.id
-        })
+        // استخدام الإدخال المباشر في جدول العقود
+        console.log('🚀 [CONTRACT_CREATION] استخدام الإدخال المباشر في جدول العقود...')
+        
+        // Generate contract number
+        const timestamp = Date.now().toString(36).toUpperCase()
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+        const contractNumber = `CON-${new Date().getFullYear().toString().slice(-2)}-${timestamp.slice(-4)}${random.slice(0, 2)}`
+        
+        const monthlyAmount = Number(inputContractData.monthly_amount || contractAmount) || contractAmount
+        const vehicleId = inputContractData.vehicle_id === 'none' ? null : inputContractData.vehicle_id
+        
+        const { data: insertedContract, error: createError } = await supabase
+          .from('contracts')
+          .insert({
+            company_id: companyId,
+            customer_id: inputContractData.customer_id,
+            vehicle_id: vehicleId || null,
+            contract_type: inputContractData.contract_type || 'rental',
+            contract_number: contractNumber,
+            contract_date: inputContractData.start_date,
+            start_date: inputContractData.start_date,
+            end_date: inputContractData.end_date,
+            monthly_amount: monthlyAmount,
+            contract_amount: contractAmount,
+            description: inputContractData.description || null,
+            terms: inputContractData.terms || null,
+            cost_center_id: inputContractData.cost_center_id || null,
+            status: 'active',
+            created_by: inputContractData.created_by || user?.id,
+          })
+          .select()
+          .single()
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
           console.error('❌ [CONTRACT_CREATION] خطأ في قاعدة البيانات:', createError)
           
-          // إجراء تشخيص سريع لفهم المشكلة
-          console.log('❓ [CONTRACT_CREATION] محاولة تشخيص المشكلة...')
-          console.log('❓ [CONTRACT_CREATION] بيانات العقد المرسلة:', inputContractData)
-          
           let errorMessage = `خطأ في قاعدة البيانات: ${createError.message}`
-          let failedStep = 'creation'
           
-          // معالجة أخطاء المحاسبة المحددة
-          if (createError.message?.includes('account') || createError.message?.includes('mapping')) {
-            errorMessage = 'فشل في إنشاء القيد المحاسبي: ربط الحسابات غير مكتمل'
-            failedStep = 'verification'
-            updateStepStatus('validation', 'completed')
-            updateStepStatus('accounts', 'failed', 'ربط الحسابات غير مكتمل')
-            updateStepStatus('creation', 'failed', errorMessage)
-          } else if (createError.message?.includes('receivable') || createError.message?.includes('revenue')) {
-            errorMessage = 'فشل في إنشاء القيد المحاسبي: حسابات الإيرادات أو الذمم المدينة غير موجودة'
-            failedStep = 'verification'
-            updateStepStatus('validation', 'completed')
-            updateStepStatus('accounts', 'failed', 'حسابات المحاسبة مفقودة')
-            updateStepStatus('creation', 'failed', errorMessage)
-          } else {
-            updateStepStatus('validation', 'failed', errorMessage)
-            updateStepStatus('accounts', 'failed', errorMessage)
-            updateStepStatus('creation', 'failed', errorMessage)
-          }
-          
+          updateStepStatus('validation', 'completed')
+          updateStepStatus('accounts', 'completed')
+          updateStepStatus('creation', 'failed', errorMessage)
           updateStepStatus('activation', 'failed', errorMessage)
           updateStepStatus('verification', 'failed', errorMessage)
           updateStepStatus('finalization', 'failed', errorMessage)
           
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          await logContractStep(null, 'direct_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
         // معالجة عدم وجود استجابة
-        if (!result) {
+        if (!insertedContract) {
           const errorMessage = 'لم يتم تلقي استجابة من الخادم'
           console.error('❌ [CONTRACT_CREATION] لم يتم تلقي استجابة')
           
           updateStepStatus('creation', 'failed', errorMessage)
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
+          await logContractStep(null, 'direct_creation', 'failed', 1, errorMessage)
           throw new Error(errorMessage)
         }
 
-        // معالجة تنسيق الاستجابة غير المتوقع
-        if (typeof result !== 'object') {
-          const errorMessage = `تنسيق استجابة غير متوقع: متوقع كائن، حصلت على ${typeof result}`
-          console.error('❌ [CONTRACT_CREATION] نوع استجابة غير متوقع:', typeof result)
-          
-          updateStepStatus('creation', 'failed', errorMessage)
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(errorMessage)
-        }
-
-        const typedResult = result as unknown as ContractCreationResult
-
-        // التحقق من بنية الاستجابة
-        if (!typedResult.hasOwnProperty('success')) {
-          const errorMessage = 'تنسيق استجابة غير صحيح: خاصية النجاح مفقودة'
-          console.error('❌ [CONTRACT_CREATION] تنسيق استجابة غير صحيح - خاصية النجاح مفقودة:', result)
-          
-          updateStepStatus('creation', 'failed', errorMessage)
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(errorMessage)
-        }
-
-        // معالجة فشل إنشاء العقد
-        if (typedResult.success !== true) {
-          const errorMessage = typedResult.error || 'فشل في إنشاء العقد لسبب غير معروف'
-          const errors = typedResult.errors || [errorMessage]
-          
-          console.error('❌ [CONTRACT_CREATION] فشل في إنشاء العقد:', {
-            result,
-            errorMessage,
-            errors
-          })
-          
-          // استخدام رسالة الخطأ كما هي
-          const userMessage = errorMessage
-          
-          updateStepStatus('creation', 'failed', userMessage)
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(userMessage)
-        }
-
-        // التحقق من وجود معرف العقد عند النجاح
-        if (!typedResult.contract_id) {
-          const errorMessage = 'تم إنشاء العقد ولكن معرف العقد مفقود'
-          console.error('❌ [CONTRACT_CREATION] استجابة النجاح تفتقر لمعرف العقد:', result)
-          
-          updateStepStatus('creation', 'failed', errorMessage)
-          await logContractStep(null, 'enhanced_creation', 'failed', 1, errorMessage)
-          throw new Error(errorMessage)
-        }
-
-        console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', typedResult)
+        console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', insertedContract)
         
-        // عرض معلومات الأداء إذا كانت متوفرة
-        if (typedResult.execution_time_seconds) {
-          console.log(`⚡ [CONTRACT_CREATION] وقت التنفيذ الإجمالي: ${typedResult.execution_time_seconds} ثانية`)
-          if (typedResult.performance_breakdown) {
-            console.log('📊 [CONTRACT_CREATION] تفاصيل الأداء:', typedResult.performance_breakdown)
+        // تحديث حالة المركبة إذا تم اختيارها
+        if (vehicleId) {
+          console.log('🚗 [CONTRACT_CREATION] تحديث حالة المركبة إلى مؤجرة...')
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .update({ status: 'rented' })
+            .eq('id', vehicleId)
+          
+          if (vehicleError) {
+            console.warn('⚠️ [CONTRACT_CREATION] فشل في تحديث حالة المركبة:', vehicleError)
+          } else {
+            console.log('✅ [CONTRACT_CREATION] تم تحديث حالة المركبة بنجاح')
           }
         }
 
@@ -367,10 +318,10 @@ export const useContractCreation = () => {
         updateStepStatus('accounts', 'completed')
         updateStepStatus('creation', 'completed')
 
-        const contractId = typedResult.contract_id
-        const journalEntryId = typedResult.journal_entry_id
-        const warnings = typedResult.warnings || []
-        const requiresManualEntry = typedResult.requires_manual_entry || false
+        const contractId = insertedContract.id
+        const journalEntryId = null // No journal entry with direct insert
+        const warnings: string[] = []
+        const requiresManualEntry = contractAmount > 0 // Manual entry needed if amount > 0
 
         // Link vehicle condition report to contract if exists
         if (inputContractData.vehicle_condition_report_id && contractId) {
