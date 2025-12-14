@@ -121,12 +121,12 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
         
         .header-left {
           text-align: left;
-          width: 120px;
+          width: 160px;
         }
         
         .company-logo {
-          max-width: 100px;
-          max-height: 100px;
+          max-width: 150px;
+          max-height: 150px;
         }
         
         .company-name {
@@ -319,8 +319,21 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
         .stamp-box {
           width: 120px;
           height: 120px;
-          border: 2px dashed #666;
           margin: 1rem auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .stamp-box img {
+          max-width: 110px;
+          max-height: 110px;
+        }
+        
+        .stamp-placeholder {
+          width: 120px;
+          height: 120px;
+          border: 2px dashed #666;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -537,7 +550,9 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
               <strong>الاسم:</strong> خميس هاشم الجابر<br />
               <strong>الصفة:</strong> المدير العام المفوض بالتوقيع
             </div>
-            <div className="stamp-box">ختم الشركة</div>
+            <div className="stamp-box">
+              <img src="/receipts/stamp.png" alt="ختم الشركة" />
+            </div>
           </div>
 
           {/* Second Party */}
@@ -550,7 +565,7 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
             <div style={{ marginTop: '1rem', fontSize: '12pt' }}>
               <strong>التاريخ:</strong> {todayGregorian}
             </div>
-            <div className="stamp-box">البصمة</div>
+            <div className="stamp-placeholder">البصمة</div>
           </div>
         </div>
       </div>

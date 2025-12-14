@@ -112,8 +112,8 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
           }
           .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.5rem 0 2rem 0; border-bottom: 3px double #000; margin-bottom: 2rem; }
           .header-right { text-align: right; flex: 1; }
-          .header-left { text-align: left; width: 120px; }
-          .company-logo { max-width: 100px; max-height: 100px; }
+          .header-left { text-align: left; width: 160px; }
+          .company-logo { max-width: 150px; max-height: 150px; }
           .company-name { font-size: 18pt; font-weight: 700; margin-bottom: 0.5rem; }
           .company-name-en { font-size: 11pt; font-style: italic; color: #333; margin-bottom: 0.5rem; }
           .company-details { font-size: 11pt; line-height: 1.6; margin-top: 0.5rem; }
@@ -146,7 +146,9 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
           .signature-box { text-align: center; min-height: 180px; }
           .signature-title { font-weight: 700; font-size: 14pt; margin-bottom: 3rem; text-decoration: underline; }
           .signature-line { border-top: 1px solid #000; margin: 0 auto; width: 80%; padding-top: 0.5rem; }
-          .stamp-box { width: 120px; height: 120px; border: 2px dashed #666; margin: 1rem auto; display: flex; align-items: center; justify-content: center; font-size: 10pt; color: #666; }
+          .stamp-box { width: 120px; height: 120px; margin: 1rem auto; display: flex; align-items: center; justify-content: center; }
+          .stamp-box img { max-width: 110px; max-height: 110px; }
+          .stamp-placeholder { width: 120px; height: 120px; border: 2px dashed #666; display: flex; align-items: center; justify-content: center; font-size: 10pt; color: #666; }
           .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #000; text-align: center; font-size: 10pt; line-height: 1.6; }
           .page-break { page-break-after: always; }
           .avoid-break { page-break-inside: avoid; }
@@ -780,7 +782,9 @@ const Signatures = ({ customerName, todayGregorian }: any) => (
           <strong>الاسم:</strong> خميس هاشم الجابر<br />
           <strong>الصفة:</strong> المدير العام المفوض بالتوقيع
         </div>
-        <div className="stamp-box">ختم الشركة</div>
+        <div className="stamp-box">
+          <img src="/receipts/stamp.png" alt="ختم الشركة" />
+        </div>
       </div>
 
       <div className="signature-box">
@@ -792,7 +796,7 @@ const Signatures = ({ customerName, todayGregorian }: any) => (
         <div style={{ marginTop: '1rem', fontSize: '12pt' }}>
           <strong>التاريخ:</strong> {todayGregorian}
         </div>
-        <div className="stamp-box">البصمة</div>
+        <div className="stamp-placeholder">البصمة</div>
       </div>
     </div>
   </div>
