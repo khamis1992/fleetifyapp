@@ -110,11 +110,42 @@ export const useVehicleDetails = (vehicleId: string | null) => {
         .select('*')
         .eq('id', vehicleId)
         .eq('company_id', companyId)
-        .single();
+        .maybeSingle();
 
-      if (vehicleError) throw vehicleError;
+      // إذا لم يتم العثور على المركبة، نعيد بيانات فارغة
+      if (vehicleError) {
+        console.error('Error fetching vehicle:', vehicleError);
+        throw vehicleError;
+      }
 
-      // جلب العقود
+      if (!vehicleData) {
+        // المركبة غير موجودة - نعيد بيانات فارغة بدلاً من رمي خطأ
+        return {
+          vehicle: null,
+          activeContract: null,
+          contractHistory: [],
+          maintenanceHistory: [],
+          penalties: [],
+          stats: {
+            totalContracts: 0,
+            totalRevenue: 0,
+            totalMaintenanceCost: 0,
+            totalPenalties: 0,
+            pendingPenaltiesAmount: 0,
+          },
+          alerts: {
+            insuranceExpiry: null,
+            registrationExpiry: null,
+            nextServiceDue: null,
+            isInsuranceExpired: false,
+            isRegistrationExpired: false,
+            isServiceOverdue: false,
+          },
+          vehicleHealthScore: 0,
+        };
+      }
+
+      // جلب العقود (left join مع customers)
       const { data: contracts, error: contractsError } = await supabase
         .from('contracts')
         .select(`
@@ -124,13 +155,13 @@ export const useVehicleDetails = (vehicleId: string | null) => {
           end_date,
           monthly_amount,
           status,
-          customers!inner(full_name)
+          customers(full_name)
         `)
         .eq('vehicle_id', vehicleId)
         .eq('company_id', companyId)
         .order('start_date', { ascending: false });
 
-      if (contractsError) throw contractsError;
+      // لا نرمي خطأ للعقود - قد لا تكون موجودة
 
       const contractHistory: VehicleContract[] = contracts?.map(c => ({
         id: c.id,

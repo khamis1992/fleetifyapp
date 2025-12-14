@@ -162,7 +162,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
   const { data, isLoading } = useVehicleDetails(vehicleId);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
       maximumFractionDigits: 0,
@@ -332,7 +332,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                           <h3 className="text-sm font-semibold text-neutral-700 mb-3">معلومات المركبة</h3>
                           <div className="grid grid-cols-2 gap-3">
                             <InfoCard icon={Car} label="رقم اللوحة" value={data.vehicle.plate_number} />
-                            <InfoCard icon={Gauge} label="الكيلومترات" value={`${data.vehicle.current_mileage.toLocaleString()} كم`} />
+                            <InfoCard icon={Gauge} label="الكيلومترات" value={`${data.vehicle.current_mileage.toLocaleString('en-US')} كم`} />
                             <InfoCard icon={Fuel} label="مستوى الوقود" value={`${data.vehicle.fuel_level}%`} />
                             <InfoCard icon={MapPin} label="الموقع" value={data.vehicle.location || 'غير محدد'} />
                           </div>

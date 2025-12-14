@@ -486,7 +486,7 @@ const VehicleDetailsPage = () => {
                 <span className="text-xs text-gray-500">العداد</span>
               </div>
               <div className="text-2xl font-bold text-blue-600 mb-1">
-                {vehicle.current_mileage?.toLocaleString('ar-SA') || 0}
+                {vehicle.current_mileage?.toLocaleString('en-US') || 0}
               </div>
               <div className="text-sm text-gray-600">كم</div>
             </CardContent>
@@ -712,7 +712,7 @@ const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
             vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'
           }
         />
-        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('ar-SA')} كم` : undefined} />
+        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
       </CardContent>
     </Card>
 
@@ -1020,7 +1020,7 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
                   </p>
                   <p className="text-sm text-gray-600 mb-2">
                     التكلفة: {formatCurrency(record.actual_cost || record.estimated_cost || 0)} 
-                    {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('ar-SA')} كم`}
+                    {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('en-US')} كم`}
                   </p>
                   {record.description && (
                     <p className="text-sm text-gray-500">{record.description}</p>

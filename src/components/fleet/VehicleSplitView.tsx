@@ -376,7 +376,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                       <CardContent className="p-4 text-center">
                         <Gauge className="w-5 h-5 text-coral-500 mx-auto mb-1" />
                         <p className="text-lg font-bold text-neutral-900">
-                          {selectedVehicle.current_mileage?.toLocaleString('ar-SA') || 0}
+                          {selectedVehicle.current_mileage?.toLocaleString('en-US') || 0}
                         </p>
                         <p className="text-xs text-neutral-500">كم</p>
                       </CardContent>
@@ -403,7 +403,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                       <CardContent className="p-4 text-center">
                         <TrendingUp className="w-5 h-5 text-amber-500 mx-auto mb-1" />
                         <p className="text-lg font-bold text-neutral-900">
-                          {revenue?.total?.toLocaleString('ar-SA') || 0}
+                          {revenue?.total?.toLocaleString('en-US') || 0}
                         </p>
                         <p className="text-xs text-neutral-500">إجمالي الإيرادات</p>
                       </CardContent>

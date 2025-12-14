@@ -525,7 +525,7 @@ const VehicleDetailsPageNew = () => {
                 {/* Quick Stats */}
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <StatBadge icon={Star} value="4.8" label="" />
-                  <StatBadge icon={Gauge} value={vehicle.current_mileage?.toLocaleString('ar-SA') || '0'} label="كم" />
+                  <StatBadge icon={Gauge} value={vehicle.current_mileage?.toLocaleString('en-US') || '0'} label="كم" />
                   <StatBadge icon={FileText} value={vehicleStats?.totalTrips || 0} label="رحلة" />
                 </div>
               </div>
@@ -702,7 +702,7 @@ const VehicleDetailsPageNew = () => {
                           vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'
                         } />
                         <InfoRow label="سعة الخزان" value={vehicle.fuel_capacity ? `${vehicle.fuel_capacity} لتر` : undefined} />
-                        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('ar-SA')} كم` : undefined} />
+                        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
                       </div>
                     </div>
                   </TabsContent>
@@ -999,7 +999,7 @@ const VehicleDetailsPageNew = () => {
                 <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-blue-100 flex items-center justify-center">
                   <Gauge className="w-5 h-5 text-blue-600" />
                 </div>
-                <p className="text-2xl font-black text-neutral-900">{(vehicle.current_mileage || 0).toLocaleString('ar-SA')}</p>
+                <p className="text-2xl font-black text-neutral-900">{(vehicle.current_mileage || 0).toLocaleString('en-US')}</p>
                 <p className="text-xs text-neutral-500">كم</p>
               </motion.div>
             </div>

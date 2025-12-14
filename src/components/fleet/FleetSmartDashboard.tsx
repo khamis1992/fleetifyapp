@@ -358,7 +358,7 @@ export const FleetSmartDashboard: React.FC<FleetSmartDashboardProps> = ({
   if (!stats) return null;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
       maximumFractionDigits: 0,
