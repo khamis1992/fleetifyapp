@@ -14,12 +14,12 @@ export const CURRENCY_CONFIGS: Record<string, CurrencyConfig> = {
   QAR: { 
     fractionDigits: 2, 
     symbol: 'ر.ق',
-    locale: 'ar-QA'
+    locale: 'en-US'
   },
   SAR: { 
     fractionDigits: 2, 
     symbol: 'ر.س',
-    locale: 'ar-SA'
+    locale: 'en-US'
   },
   AED: { 
     fractionDigits: 2, 

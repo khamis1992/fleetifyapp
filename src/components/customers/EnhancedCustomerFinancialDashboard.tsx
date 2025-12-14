@@ -187,7 +187,7 @@ export const EnhancedCustomerFinancialDashboard: React.FC<EnhancedCustomerFinanc
             تحذير: يوجد مبلغ متأخر {formatCurrency(financialSummary?.overdueAmount || 0)} منذ {financialSummary?.daysOverdue || 0} يوم
             {financialSummary?.lastPaymentDate && (
               <span className="block mt-1 text-xs">
-                آخر دفعة: {new Date(financialSummary.lastPaymentDate).toLocaleDateString('ar-QA')} - 
+                آخر دفعة: {new Date(financialSummary.lastPaymentDate).toLocaleDateString('en-US')} - 
                 {formatCurrency(financialSummary.lastPaymentAmount)}
               </span>
             )}

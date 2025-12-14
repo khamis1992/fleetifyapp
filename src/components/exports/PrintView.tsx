@@ -248,7 +248,7 @@ export const PrintView: React.FC<PrintViewProps> = ({
         <div className="company-name">{companyName}</div>
         <h1>{title}</h1>
         <div className="print-date">
-          تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA', {
+          تاريخ الطباعة: {new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

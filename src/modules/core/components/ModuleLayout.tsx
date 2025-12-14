@@ -127,7 +127,7 @@ export function ModuleLayout({ moduleName, children, fallback, showDiagnostics =
                   <p><strong>معرف المستخدم:</strong> {user?.id || 'غير محدد'}</p>
                   <p><strong>حالة التحميل:</strong> {isLoading ? 'جاري التحميل' : 'مكتمل'}</p>
                   <p><strong>الوصول:</strong> {hasAccess ? 'متاح' : 'غير متاح'}</p>
-                  <p><strong>التوقيت:</strong> {new Date().toLocaleString('ar-SA')}</p>
+                  <p><strong>التوقيت:</strong> {new Date().toLocaleString('en-US')}</p>
                 </div>
               </details>
             )}

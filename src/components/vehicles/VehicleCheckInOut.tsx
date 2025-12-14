@@ -205,7 +205,7 @@ export function VehicleCheckInOut({
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            تم استلام المركبة في {new Date(previousCheckIn.inspection_date).toLocaleDateString('ar-SA')} مع
+            تم استلام المركبة في {new Date(previousCheckIn.inspection_date).toLocaleDateString('en-US')} مع
             مستوى وقود {previousCheckIn.fuel_level}% وقراءة عداد {previousCheckIn.odometer_reading?.toLocaleString()} كم
           </AlertDescription>
         </Alert>

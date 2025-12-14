@@ -173,7 +173,7 @@ export const PricingSuggestions: React.FC<PricingSuggestionsProps> = ({
       label: 'آخر سعر للعميل',
       price: pricing.customerHistory.lastPrice,
       icon: History,
-      tooltip: `آخر عقد: ${new Date(pricing.customerHistory.lastDate).toLocaleDateString('ar-QA')}`,
+      tooltip: `آخر عقد: ${new Date(pricing.customerHistory.lastDate).toLocaleDateString('en-US')}`,
     });
   }
 

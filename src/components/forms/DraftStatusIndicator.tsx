@@ -184,7 +184,7 @@ export const DraftStatusIndicator: React.FC<DraftStatusIndicatorProps> = ({
                 هل أنت متأكد من حذف المسودة المحفوظة؟ لن تتمكن من استعادة هذه البيانات.
                 {draftTimestamp && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    آخر حفظ: {draftTimestamp.toLocaleString('ar-SA')}
+                    آخر حفظ: {draftTimestamp.toLocaleString('en-US')}
                   </div>
                 )}
               </AlertDialogDescription>

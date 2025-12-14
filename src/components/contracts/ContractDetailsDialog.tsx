@@ -965,7 +965,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    تاريخ الاستلام: {new Date(checkInInspection.inspection_date).toLocaleString('ar-SA')}
+                    تاريخ الاستلام: {new Date(checkInInspection.inspection_date).toLocaleString('en-US')}
                   </p>
                 </CardContent>
               </Card>
@@ -1060,7 +1060,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    تاريخ التسليم: {new Date(checkOutInspection.inspection_date).toLocaleString('ar-SA')}
+                    تاريخ التسليم: {new Date(checkOutInspection.inspection_date).toLocaleString('en-US')}
                   </p>
                 </CardContent>
               </Card>

@@ -585,7 +585,7 @@ export default function FinancialSystemAnalysis() {
                   )}
 
                   <div className="text-xs text-muted-foreground text-center pt-4">
-                    آخر تحليل: {new Date(aiAnalysis.timestamp).toLocaleString('ar-SA')}
+                    آخر تحليل: {new Date(aiAnalysis.timestamp).toLocaleString('en-US')}
                   </div>
                 </div>
               ) : (

@@ -340,11 +340,11 @@ const Article3 = ({ contract }: any) => (
     <div className="article-content">
       <div className="sub-article">
         <span className="sub-number">3-1</span> 
-        <strong>قيمة الإيجار الشهري:</strong> {contract.monthly_amount?.toLocaleString('ar-QA')} ريال قطري فقط لا غير.
+        <strong>قيمة الإيجار الشهري:</strong> {contract.monthly_amount?.toLocaleString('en-US')} ريال قطري فقط لا غير.
       </div>
       <div className="sub-article">
         <span className="sub-number">3-2</span> 
-        <strong>إجمالي قيمة العقد:</strong> {contract.contract_amount?.toLocaleString('ar-QA')} ريال قطري
+        <strong>إجمالي قيمة العقد:</strong> {contract.contract_amount?.toLocaleString('en-US')} ريال قطري
         <span className="legal-ref"> (تُحسب بضرب مدة العقد بالشهور × قيمة الإيجار الشهري)</span>
       </div>
       <div className="sub-article">

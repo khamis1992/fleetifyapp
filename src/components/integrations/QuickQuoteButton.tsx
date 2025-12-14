@@ -254,12 +254,12 @@ export const QuickQuoteButton: React.FC<QuickQuoteButtonProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">السعر المتوقع:</span>
                   <span className="text-lg font-bold text-primary">
-                    {(quantity * selectedItem.unit_price).toLocaleString('ar-SA')} ر.ق
+                    {(quantity * selectedItem.unit_price).toLocaleString('en-US')} ر.ق
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1 text-xs text-muted-foreground">
                   <span>سعر الوحدة:</span>
-                  <span>{selectedItem.unit_price.toLocaleString('ar-SA')} ر.ق</span>
+                  <span>{selectedItem.unit_price.toLocaleString('en-US')} ر.ق</span>
                 </div>
               </div>
             )}

@@ -43,7 +43,7 @@ function numberToArabicWords(num: number): string {
   if (num === 0) return 'صفر';
   
   // Simplified version - just format the number
-  const formatted = num.toLocaleString('ar-QA');
+  const formatted = num.toLocaleString('en-US');
   return `${formatted} ريال قطري`;
 }
 

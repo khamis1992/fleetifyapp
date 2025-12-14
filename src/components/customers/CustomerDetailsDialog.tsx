@@ -622,7 +622,7 @@ export function CustomerDetailsDialog({
                       <p className="text-sm mb-2">{note.content}</p>
                        <div className="text-xs text-muted-foreground">
                          بواسطة: مستخدم النظام - 
-                         {new Date(note.created_at).toLocaleDateString('ar-SA')} {new Date(note.created_at).toLocaleTimeString('ar-SA')}
+                         {new Date(note.created_at).toLocaleDateString('en-US')} {new Date(note.created_at).toLocaleTimeString('en-US')}
                        </div>
                     </CardContent>
                   </Card>

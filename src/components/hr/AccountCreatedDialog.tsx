@@ -87,7 +87,7 @@ useEffect(() => {
 
   const formatExpiryDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ar-SA', {
+    return date.toLocaleDateString('en-US', {
       calendar: 'gregory',
       year: 'numeric',
       month: 'long',

@@ -49,7 +49,7 @@ export function VehicleListItem({ vehicle }: VehicleListItemProps) {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'غير محدد';
-    return new Date(dateString).toLocaleDateString('ar-SA');
+    return new Date(dateString).toLocaleDateString('en-US');
   };
 
   const isMaintenanceDue = () => {

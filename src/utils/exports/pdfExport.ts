@@ -108,7 +108,7 @@ export function addBrandedHeader(
 
   // Date (top right)
   pdf.setFontSize(10);
-  const dateStr = new Date().toLocaleDateString('ar-SA', {
+  const dateStr = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -149,7 +149,7 @@ export function addBrandedFooter(
   }
 
   // Generated timestamp
-  const timestamp = new Date().toLocaleString('ar-SA');
+  const timestamp = new Date().toLocaleString('en-US');
   pdf.text(`تم الإنشاء: ${timestamp}`, pageWidth - MARGIN, pageHeight - 10, { align: 'right' });
 
   // Reset text color

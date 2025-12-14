@@ -746,7 +746,7 @@ export default function Treasury() {
                             {transaction.transaction_number}
                           </TableCell>
                           <TableCell className="text-neutral-600">
-                            {new Date(transaction.transaction_date).toLocaleDateString('ar-QA')}
+                            {new Date(transaction.transaction_date).toLocaleDateString('en-US')}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">

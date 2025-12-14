@@ -43,7 +43,7 @@ const getTrendEmoji = (value: number): string => {
  * قالب التقرير اليومي
  */
 export const generateDailyReport = (data: DailyReportData): string => {
-  const date = new Date(data.date).toLocaleDateString('ar-QA', {
+  const date = new Date(data.date).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -87,11 +87,11 @@ ${data.alerts.maintenanceNeeded > 0 ? `├ صيانة مطلوبة: ${data.alert
  * قالب التقرير الأسبوعي
  */
 export const generateWeeklyReport = (data: WeeklyReportData): string => {
-  const weekStart = new Date(data.weekStart).toLocaleDateString('ar-QA', {
+  const weekStart = new Date(data.weekStart).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',
   });
-  const weekEnd = new Date(data.weekEnd).toLocaleDateString('ar-QA', {
+  const weekEnd = new Date(data.weekEnd).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -211,7 +211,7 @@ export const generateAlert = (
 👤 العميل: ${data.customerName}
 💵 المبلغ: ${formatCurrency(data.amount)}
 📝 الطريقة: ${data.paymentMethod}
-📅 التاريخ: ${new Date().toLocaleDateString('ar-QA')}
+📅 التاريخ: ${new Date().toLocaleDateString('en-US')}
 
 ━━━━━━━━━━━━━━━━━━━
 ✅ تم استلام الدفعة
@@ -273,7 +273,7 @@ export const generateAlert = (
 🚗 المركبة: ${data.vehiclePlate}
 📋 العقد: ${data.contractNumber}
 👤 العميل: ${data.customerName}
-📅 تاريخ الإعادة: ${new Date().toLocaleDateString('ar-QA')}
+📅 تاريخ الإعادة: ${new Date().toLocaleDateString('en-US')}
 📍 الكيلومترات: ${formatNumber(data.mileage)} كم
 
 ━━━━━━━━━━━━━━━━━━━
@@ -287,7 +287,7 @@ export const generateAlert = (
 💰 المبلغ: ${formatCurrency(data.amount)}
 👤 العميل: ${data.customerName}
 📋 المرجع: ${data.reference}
-📅 التاريخ: ${new Date().toLocaleDateString('ar-QA')}
+📅 التاريخ: ${new Date().toLocaleDateString('en-US')}
 
 ━━━━━━━━━━━━━━━━━━━
 ⭐ معاملة مهمة

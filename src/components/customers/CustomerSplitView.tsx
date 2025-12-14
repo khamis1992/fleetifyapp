@@ -341,7 +341,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
                         <p className="text-2xl font-bold text-green-600">
-                          {paymentsSummary?.completed?.toLocaleString('ar-SA') || 0}
+                          {paymentsSummary?.completed?.toLocaleString('en-US') || 0}
                         </p>
                         <p className="text-xs text-neutral-500 mt-1">المدفوع</p>
                       </CardContent>
@@ -349,7 +349,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
                         <p className="text-2xl font-bold text-amber-600">
-                          {paymentsSummary?.pending?.toLocaleString('ar-SA') || 0}
+                          {paymentsSummary?.pending?.toLocaleString('en-US') || 0}
                         </p>
                         <p className="text-xs text-neutral-500 mt-1">المتبقي</p>
                       </CardContent>

@@ -301,7 +301,7 @@ const CaseDetailsPage: React.FC<CaseDetailsPageProps> = ({
                               )}
                               <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(event.date).toLocaleDateString('ar-SA', {
+                                {new Date(event.date).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric',
@@ -471,7 +471,7 @@ const CaseDetailsPage: React.FC<CaseDetailsPageProps> = ({
               <div>
                 <p className="text-sm text-muted-foreground">التكلفة الإجمالية</p>
                 <p className="text-2xl font-bold text-primary">
-                  {caseData.total_cost.toLocaleString('ar-SA')} ر.س
+                  {caseData.total_cost.toLocaleString('en-US')} ر.س
                 </p>
               </div>
             </CardContent>
@@ -488,7 +488,7 @@ const CaseDetailsPage: React.FC<CaseDetailsPageProps> = ({
               </CardHeader>
               <CardContent>
                 <p className="text-lg font-semibold">
-                  {new Date(caseData.next_hearing_date).toLocaleDateString('ar-SA', {
+                  {new Date(caseData.next_hearing_date).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',

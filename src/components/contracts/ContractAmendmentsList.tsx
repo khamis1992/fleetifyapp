@@ -182,7 +182,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
                     <CardDescription className="flex items-center gap-2">
                       <span>{getAmendmentTypeLabel(amendment.amendment_type)}</span>
                       <span>•</span>
-                      <span>{new Date(amendment.created_at).toLocaleDateString('ar-SA')}</span>
+                      <span>{new Date(amendment.created_at).toLocaleDateString('en-US')}</span>
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
@@ -278,7 +278,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
                     <Alert>
                       <CheckCircle className="h-4 w-4" />
                       <AlertDescription>
-                        تم تطبيق التعديل في {new Date(amendment.applied_at).toLocaleDateString('ar-SA')}
+                        تم تطبيق التعديل في {new Date(amendment.applied_at).toLocaleDateString('en-US')}
                       </AlertDescription>
                     </Alert>
                   )}

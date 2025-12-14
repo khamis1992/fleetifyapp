@@ -65,9 +65,9 @@ export const exportToCSV = (cases: LegalCase[], filename?: string) => {
     caseTypeLabels[c.case_type] || c.case_type,
     priorityLabels[c.priority],
     statusLabels[c.status],
-    c.total_cost.toLocaleString('ar-SA'),
+    c.total_cost.toLocaleString('en-US'),
     c.next_hearing_date || '-',
-    new Date(c.created_at).toLocaleDateString('ar-SA'),
+    new Date(c.created_at).toLocaleDateString('en-US'),
     c.description || '-',
   ]);
 
@@ -116,7 +116,7 @@ export const exportToExcel = async (cases: LegalCase[], filename?: string) => {
       'الحالة': statusLabels[c.status],
       'التكلفة': c.total_cost,
       'الموعد القادم': c.next_hearing_date || '-',
-      'تاريخ الإنشاء': new Date(c.created_at).toLocaleDateString('ar-SA'),
+      'تاريخ الإنشاء': new Date(c.created_at).toLocaleDateString('en-US'),
       'الوصف': c.description || '-',
     }));
 
@@ -181,7 +181,7 @@ export const exportToPDF = async (cases: LegalCase[], filename?: string) => {
     // Subtitle
     doc.setFontSize(10);
     doc.text(
-      `تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}`,
+      `تاريخ التقرير: ${new Date().toLocaleDateString('en-US')}`,
       148,
       22,
       { align: 'center' }
@@ -201,7 +201,7 @@ export const exportToPDF = async (cases: LegalCase[], filename?: string) => {
       caseTypeLabels[c.case_type] || c.case_type,
       priorityLabels[c.priority],
       statusLabels[c.status],
-      c.total_cost.toLocaleString('ar-SA'),
+      c.total_cost.toLocaleString('en-US'),
       c.next_hearing_date || '-',
     ]);
 
@@ -306,7 +306,7 @@ export const printCases = (cases: LegalCase[]) => {
     <body>
       <h1>تقرير القضايا القانونية</h1>
       <div class="meta">
-        <p>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p>تاريخ التقرير: ${new Date().toLocaleDateString('en-US')}</p>
         <p>عدد القضايا: ${cases.length}</p>
       </div>
       <table>
@@ -333,7 +333,7 @@ export const printCases = (cases: LegalCase[]) => {
               <td>${caseTypeLabels[c.case_type] || c.case_type}</td>
               <td>${priorityLabels[c.priority]}</td>
               <td>${statusLabels[c.status]}</td>
-              <td>${c.total_cost.toLocaleString('ar-SA')} ر.س</td>
+              <td>${c.total_cost.toLocaleString('en-US')} ر.س</td>
               <td>${c.next_hearing_date || '-'}</td>
             </tr>
           `

@@ -253,7 +253,7 @@ export const VendorPerformanceIndicator: React.FC<VendorPerformanceIndicatorProp
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">آخر طلب</span>
               <span className="font-medium">
-                {new Date(metrics.last_order_date).toLocaleDateString('ar-SA')}
+                {new Date(metrics.last_order_date).toLocaleDateString('en-US')}
               </span>
             </div>
           )}

@@ -24,7 +24,7 @@ const SalesAnalytics = () => {
   const isLoading = opportunitiesLoading || leadsLoading || quotesLoading || ordersLoading;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
     }).format(amount);

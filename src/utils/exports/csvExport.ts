@@ -55,7 +55,7 @@ function escapeCSVValue(
 
   // Handle dates
   if (value instanceof Date) {
-    stringValue = value.toLocaleString('ar-SA');
+    stringValue = value.toLocaleString('en-US');
   }
 
   // Check if value needs quoting
@@ -114,7 +114,7 @@ function arrayToCSV(
       if (value instanceof Date && opts.dateFormat === 'iso') {
         value = value.toISOString();
       } else if (value instanceof Date) {
-        value = value.toLocaleString('ar-SA');
+        value = value.toLocaleString('en-US');
       }
 
       return escapeCSVValue(value, opts.delimiter, opts.quoteStrings);
@@ -269,7 +269,7 @@ export async function exportLargeDatasetToCSV(
           if (value instanceof Date && opts.dateFormat === 'iso') {
             value = value.toISOString();
           } else if (value instanceof Date) {
-            value = value.toLocaleString('ar-SA');
+            value = value.toLocaleString('en-US');
           }
 
           return escapeCSVValue(value, opts.delimiter, opts.quoteStrings);

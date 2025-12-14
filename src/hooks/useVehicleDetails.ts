@@ -155,23 +155,32 @@ export const useVehicleDetails = (vehicleId: string | null) => {
           end_date,
           monthly_amount,
           status,
-          customers(full_name)
+          customers(first_name, last_name)
         `)
         .eq('vehicle_id', vehicleId)
         .eq('company_id', companyId)
         .order('start_date', { ascending: false });
 
       // لا نرمي خطأ للعقود - قد لا تكون موجودة
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError);
+      }
 
-      const contractHistory: VehicleContract[] = contracts?.map(c => ({
-        id: c.id,
-        contract_number: c.contract_number || '',
-        customer_name: (c.customers as any)?.full_name || 'غير محدد',
-        start_date: c.start_date,
-        end_date: c.end_date,
-        monthly_amount: Number(c.monthly_amount) || 0,
-        status: c.status || 'unknown',
-      })) || [];
+      const contractHistory: VehicleContract[] = contracts?.map(c => {
+        const customer = c.customers as any;
+        const customerName = customer 
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير محدد'
+          : 'غير محدد';
+        return {
+          id: c.id,
+          contract_number: c.contract_number || '',
+          customer_name: customerName,
+          start_date: c.start_date,
+          end_date: c.end_date,
+          monthly_amount: Number(c.monthly_amount) || 0,
+          status: c.status || 'unknown',
+        };
+      }) || [];
 
       const activeContract = contractHistory.find(c => c.status === 'active') || null;
 

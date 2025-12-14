@@ -184,7 +184,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           .from('customers')
           .update({
             is_blacklisted: true,
-            blacklist_reason: `تحويل للشؤون القانونية بتاريخ ${new Date().toLocaleDateString('ar-QA')}\nرقم القضية: ${caseNumber}\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم`,
+            blacklist_reason: `تحويل للشؤون القانونية بتاريخ ${new Date().toLocaleDateString('en-US')}\nرقم القضية: ${caseNumber}\nالمبلغ المستحق: ${delinquentCustomer.total_debt.toLocaleString()} QAR\nأيام التأخير: ${delinquentCustomer.days_overdue} يوم`,
             updated_at: new Date().toISOString(),
           })
           .eq('id', delinquentCustomer.customer_id);
@@ -405,7 +405,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           document_title_ar: `تفاصيل العقد - ${delinquentCustomer.contract_number}`,
           description: `
 رقم العقد: ${delinquentCustomer.contract_number}
-تاريخ البداية: ${new Date(delinquentCustomer.contract_start_date).toLocaleDateString('ar-QA')}
+تاريخ البداية: ${new Date(delinquentCustomer.contract_start_date).toLocaleDateString('en-US')}
 الإيجار الشهري: ${delinquentCustomer.monthly_rent?.toLocaleString()} QAR
 حالة العقد: تحت الإجراء القانوني
 
@@ -437,7 +437,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           company_id: profile.company_id,
           activity_type: 'case_created',
           activity_title: '📋 تم إنشاء القضية القانونية',
-          activity_description: `تم إنشاء القضية تلقائياً للعميل: ${delinquentCustomer.customer_name}\nالمبلغ الإجمالي: ${delinquentCustomer.total_debt.toLocaleString('ar-QA')} QAR`,
+          activity_description: `تم إنشاء القضية تلقائياً للعميل: ${delinquentCustomer.customer_name}\nالمبلغ الإجمالي: ${delinquentCustomer.total_debt.toLocaleString('en-US')} QAR`,
           created_by: user.id,
         },
         {

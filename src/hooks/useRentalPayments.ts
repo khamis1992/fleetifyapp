@@ -622,7 +622,7 @@ export const useCreateRentalReceipt = () => {
       
       toast.success(
         data.fine > 0
-          ? `تم إضافة الإيصال بنجاح. غرامة تأخير: ${data.fine.toLocaleString('ar-QA')} ريال`
+          ? `تم إضافة الإيصال بنجاح. غرامة تأخير: ${data.fine.toLocaleString('en-US')} ريال`
           : 'تم إضافة الإيصال بنجاح'
       );
     },

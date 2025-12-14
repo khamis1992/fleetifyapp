@@ -396,10 +396,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
                       <td className="border border-gray-300 p-2">{item.description}</td>
                       <td className="border border-gray-300 p-2 text-center">{item.quantity || 1}</td>
                       <td className="border border-gray-300 p-2 text-center">
-                        {(item.unitPrice || item.total || 0).toLocaleString('ar-QA')}
+                        {(item.unitPrice || item.total || 0).toLocaleString('en-US')}
                       </td>
                       <td className="border border-gray-300 p-2 text-center font-bold">
-                        {(item.total || 0).toLocaleString('ar-QA')}
+                        {(item.total || 0).toLocaleString('en-US')}
                       </td>
                     </tr>
                   ))}
@@ -414,21 +414,21 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               {data.breakdown.rentAmount !== undefined && (
                 <div className="flex justify-between items-center p-2 border-b">
                   <span className="text-gray-700">الإيجار الشهري | Monthly Rent</span>
-                  <span className="font-bold">{data.breakdown.rentAmount.toLocaleString('ar-QA')} {currency}</span>
+                  <span className="font-bold">{data.breakdown.rentAmount.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
               {data.breakdown.fineAmount !== undefined && data.breakdown.fineAmount > 0 && (
                 <div className="flex justify-between items-center p-2 border-b bg-red-50">
                   <span className="text-red-700">غرامة التأخير | Late Fine</span>
                   <span className="font-bold text-red-700">
-                    {data.breakdown.fineAmount.toLocaleString('ar-QA')} {currency}
+                    {data.breakdown.fineAmount.toLocaleString('en-US')} {currency}
                   </span>
                 </div>
               )}
               {data.breakdown.otherCharges !== undefined && data.breakdown.otherCharges > 0 && (
                 <div className="flex justify-between items-center p-2 border-b">
                   <span className="text-gray-700">رسوم أخرى | Other Charges</span>
-                  <span className="font-bold">{data.breakdown.otherCharges.toLocaleString('ar-QA')} {currency}</span>
+                  <span className="font-bold">{data.breakdown.otherCharges.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
             </div>
@@ -454,7 +454,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-3xl font-extrabold text-[#004d40]">
-                  {(data.amount || 0).toLocaleString('ar-QA')}
+                  {(data.amount || 0).toLocaleString('en-US')}
                 </span>
                 <Badge className="text-xl font-bold bg-[#004d40] text-white px-3 py-1">
                   {currency}

@@ -243,7 +243,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {level.last_movement_at
-                              ? new Date(level.last_movement_at).toLocaleDateString('ar-SA')
+                              ? new Date(level.last_movement_at).toLocaleDateString('en-US')
                               : '-'
                             }
                           </TableCell>
@@ -290,7 +290,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           <TableCell className="text-xs">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {new Date(movement.movement_date).toLocaleDateString('ar-SA')}
+                              {new Date(movement.movement_date).toLocaleDateString('en-US')}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -365,7 +365,7 @@ export const ItemDetailsDialog = ({ item, open, onOpenChange }: ItemDetailsDialo
                           <TableCell className="font-medium">{po.purchase_order?.po_number || '-'}</TableCell>
                           <TableCell className="text-xs">
                             {po.purchase_order?.order_date
-                              ? new Date(po.purchase_order.order_date).toLocaleDateString('ar-SA')
+                              ? new Date(po.purchase_order.order_date).toLocaleDateString('en-US')
                               : '-'}
                           </TableCell>
                           <TableCell>{po.purchase_order?.vendor?.vendor_name || '-'}</TableCell>

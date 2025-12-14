@@ -734,8 +734,8 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
                   <div className="flex-1">
                     <div className="font-medium">{rent.invoice_number}</div>
                     <div className="text-sm text-muted-foreground">
-                      تاريخ الفاتورة: {new Date(rent.invoice_date).toLocaleDateString('ar-QA')} | 
-                      تاريخ الاستحقاق: {new Date(rent.due_date).toLocaleDateString('ar-QA')}
+                      تاريخ الفاتورة: {new Date(rent.invoice_date).toLocaleDateString('en-US')} | 
+                      تاريخ الاستحقاق: {new Date(rent.due_date).toLocaleDateString('en-US')}
                     </div>
                   </div>
                   <Badge variant="destructive">{formatCurrency(rent.total_amount)}</Badge>
@@ -768,7 +768,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
                     <div className="font-medium">غرامة تأخير</div>
                     <div className="text-sm text-muted-foreground">
                       عدد أيام التأخير: {fee.days_overdue} يوم | 
-                      التاريخ: {new Date(fee.created_at).toLocaleDateString('ar-QA')}
+                      التاريخ: {new Date(fee.created_at).toLocaleDateString('en-US')}
                     </div>
                   </div>
                   <Badge variant="destructive">{formatCurrency(fee.fee_amount)}</Badge>
@@ -801,7 +801,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
                     <div className="font-medium">{violation.violation_number}</div>
                     <div className="text-sm text-muted-foreground">
                       {violation.violation_type} | 
-                      التاريخ: {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('ar-QA') : '-'}
+                      التاريخ: {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('en-US') : '-'}
                     </div>
                   </div>
                   <Badge variant="destructive">{formatCurrency(violation.total_amount)}</Badge>
@@ -1462,7 +1462,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                         <div>
                           <div className="font-medium">{invoice.invoice_number}</div>
                           <div className="text-sm text-muted-foreground">
-                            {new Date(invoice.invoice_date).toLocaleDateString('ar-QA')}
+                            {new Date(invoice.invoice_date).toLocaleDateString('en-US')}
                           </div>
                         </div>
                         <div className="text-right">
@@ -1493,7 +1493,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                             {violation.violation_type}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('ar-QA') : '-'}
+                            {violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('en-US') : '-'}
                           </div>
                         </div>
                         <div className="font-bold text-destructive">{formatCurrency(violation.total_amount)}</div>
@@ -1516,7 +1516,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                         <div>
                           <div className="font-medium">{contract.contract_number}</div>
                           <div className="text-sm text-muted-foreground">
-                            {new Date(contract.start_date).toLocaleDateString('ar-QA')} - {contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : 'مفتوح'}
+                            {new Date(contract.start_date).toLocaleDateString('en-US')} - {contract.end_date ? new Date(contract.end_date).toLocaleDateString('en-US') : 'مفتوح'}
                           </div>
                         </div>
                         <div className="font-bold text-primary">{formatCurrency(contract.monthly_rate)}/شهر</div>

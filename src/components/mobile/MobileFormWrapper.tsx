@@ -202,7 +202,7 @@ export const MobileFormWrapper: React.FC<MobileFormWrapperProps> = ({
       {/* Last Saved Timestamp */}
       {config.autoSave && lastSaved && (
         <div className="px-6 pb-4 text-xs text-muted-foreground text-center">
-          آخر حفظ: {lastSaved.toLocaleTimeString('ar-SA')}
+          آخر حفظ: {lastSaved.toLocaleTimeString('en-US')}
         </div>
       )}
     </div>

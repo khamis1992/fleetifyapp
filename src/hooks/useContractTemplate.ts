@@ -162,7 +162,7 @@ function formatDate(dateString: string): string {
     day: 'numeric' 
   };
   
-  return date.toLocaleDateString('ar-QA', options);
+  return date.toLocaleDateString('en-US', options);
 }
 
 /**

@@ -426,7 +426,7 @@ const CustomerDetailsPage = () => {
       stats,
       contracts: formattedContracts,
       payments: formattedPayments,
-      createdAt: new Date().toLocaleDateString('ar-SA'),
+      createdAt: new Date().toLocaleDateString('en-US'),
     };
     
     console.log('Report data:', reportData);
@@ -782,7 +782,7 @@ const CustomerDetailsPage = () => {
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: '#fef3c7' }}>
               <Wallet className="w-6 h-6 text-orange-600" />
             </div>
-            <div className="text-3xl font-extrabold text-orange-600 mb-2">{stats.outstandingAmount.toLocaleString('ar-SA')}</div>
+            <div className="text-3xl font-extrabold text-orange-600 mb-2">{stats.outstandingAmount.toLocaleString('en-US')}</div>
             <div className="text-sm text-gray-600 font-medium mb-3">المبلغ المستحق (ر.س)</div>
             <div className="text-xs text-gray-500">
               يستحق خلال <span className="font-semibold text-orange-600">30 يوم</span>
@@ -806,7 +806,7 @@ const CustomerDetailsPage = () => {
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: '#ede9fe' }}>
               <CreditCard className="w-6 h-6 text-purple-600" />
             </div>
-            <div className="text-3xl font-extrabold text-purple-600 mb-2">{stats.totalPayments.toLocaleString('ar-SA')}</div>
+            <div className="text-3xl font-extrabold text-purple-600 mb-2">{stats.totalPayments.toLocaleString('en-US')}</div>
             <div className="text-sm text-gray-600 font-medium mb-3">إجمالي المدفوعات (ر.س)</div>
             <div className="text-xs text-gray-500">
               <span className="text-green-600 font-semibold">{payments.length}</span> دفعة مكتملة
@@ -1029,7 +1029,7 @@ const CustomerDetailsPage = () => {
                               index % 3 === 1 ? "text-purple-600" :
                               "text-orange-600"
                             )}>
-                              {contract.monthlyAmount.toLocaleString('ar-SA')} ر.س
+                              {contract.monthlyAmount.toLocaleString('en-US')} ر.س
                             </div>
                           </div>
                           <div>
@@ -1147,7 +1147,7 @@ const CustomerDetailsPage = () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-700 font-mono">#{payment.contractNumber.substring(0, 8)}</td>
                           <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                            {payment.amount.toLocaleString('ar-SA')} ر.س
+                            {payment.amount.toLocaleString('en-US')} ر.س
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             <div className="flex items-center gap-2">
@@ -1672,7 +1672,7 @@ const CustomerDetailsPage = () => {
                 <div>
                   <div className="text-sm text-gray-500 mb-1">المبلغ</div>
                   <div className="text-lg font-bold text-green-600">
-                    {selectedPayment.amount.toLocaleString('ar-SA')} ر.س
+                    {selectedPayment.amount.toLocaleString('en-US')} ر.س
                   </div>
                 </div>
                 <div>

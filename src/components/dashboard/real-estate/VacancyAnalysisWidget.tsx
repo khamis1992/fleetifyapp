@@ -42,7 +42,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
     month.setMonth(month.getMonth() - (5 - i));
     const variation = Math.random() * 5 + vacancyRate - 2.5; // ±2.5% variation
     return {
-      month: month.toLocaleDateString('ar-SA', { month: 'short' }),
+      month: month.toLocaleDateString('en-US', { month: 'short' }),
       rate: Math.max(0, Math.min(100, variation))
     };
   });

@@ -70,7 +70,7 @@ export const ForecastingSection: React.FC = () => {
         weekDays.push({
           date: date.getDate(),
           fullDate: date,
-          dayName: date.toLocaleDateString('ar-SA', { weekday: 'long' }),
+          dayName: date.toLocaleDateString('en-US', { weekday: 'long' }),
           isToday,
           occupancyRate,
           contractsCount: contractsForDay.length
@@ -378,7 +378,7 @@ export const ForecastingSection: React.FC = () => {
             <span className="text-sm font-semibold text-gray-900">ملخص الأسبوع</span>
             <span className="text-xs text-gray-500">
               {calendarData?.[0]?.fullDate && calendarData?.[6]?.fullDate 
-                ? `${calendarData[0].fullDate.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })} - ${calendarData[6].fullDate.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}`
+                ? `${calendarData[0].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${calendarData[6].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                 : 'جاري التحميل...'
               }
             </span>

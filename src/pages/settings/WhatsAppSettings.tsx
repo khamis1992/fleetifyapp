@@ -924,7 +924,7 @@ const WhatsAppSettings: React.FC = () => {
                                 {log.message_type}
                               </p>
                               <p className="text-xs text-neutral-500">
-                                {new Date(log.created_at).toLocaleString('ar-QA')}
+                                {new Date(log.created_at).toLocaleString('en-US')}
                               </p>
                             </div>
                           </div>

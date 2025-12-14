@@ -488,12 +488,12 @@ export function PaymentPreviewDialog({
                          <div className="space-y-1">
                            {item.data.payment_date && (
                              <div className="text-sm font-medium">
-                               {new Date(item.data.payment_date).toLocaleDateString('ar-SA')}
+                               {new Date(item.data.payment_date).toLocaleDateString('en-US')}
                              </div>
                            )}
                            {item.data.original_due_date && (
                              <div className="text-xs text-muted-foreground">
-                               استحقاق: {new Date(item.data.original_due_date).toLocaleDateString('ar-SA')}
+                               استحقاق: {new Date(item.data.original_due_date).toLocaleDateString('en-US')}
                              </div>
                            )}
                            {!item.data.payment_date && !item.data.original_due_date && '-'}

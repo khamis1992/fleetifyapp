@@ -207,7 +207,7 @@ export function formatFieldValue(value: string, type: string): string {
     case 'amount':
     case 'price':
       // Format currency
-      return new Intl.NumberFormat('ar-SA', {
+      return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'SAR',
       }).format(parseFloat(value));

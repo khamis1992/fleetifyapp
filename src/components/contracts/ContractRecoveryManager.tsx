@@ -117,7 +117,7 @@ export const ContractRecoveryManager = () => {
                   <TableCell>{contract.customer_name}</TableCell>
                   <TableCell>{formatCurrency(contract.contract_amount)}</TableCell>
                   <TableCell>
-                    {new Date(contract.contract_date).toLocaleDateString('ar-SA')}
+                    {new Date(contract.contract_date).toLocaleDateString('en-US')}
                   </TableCell>
                   <TableCell>
                     <Badge 

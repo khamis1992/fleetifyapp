@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-export function useCurrencyFormatter(currency: string = 'SAR', locale: string = 'ar-SA') {
+export function useCurrencyFormatter(currency: string = 'SAR', locale: string = 'en-US') {
   const formatter = useMemo(() => {
     return new Intl.NumberFormat(locale, {
       style: 'currency',

@@ -713,7 +713,7 @@ const FinancialCalculator: React.FC = () => {
                           {calc.type === 'roi' && 'عائد الاستثمار'}
                         </Badge>
                         <span className="arabic-body-sm text-muted-foreground">
-                          {calc.timestamp.toLocaleString('ar-SA')}
+                          {calc.timestamp.toLocaleString('en-US')}
                         </span>
                       </div>
                        <div className="arabic-body font-semibold text-primary">

@@ -74,7 +74,7 @@ export function useSendTaskWhatsAppNotification() {
             `📋 *تم إسناد مهمة جديدة إليك*\n\n` +
             `📌 العنوان: ${taskTitle}\n` +
             (taskDescription ? `📝 الوصف: ${taskDescription}\n` : '') +
-            (dueDate ? `⏰ تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-QA')}\n` : '') +
+            (dueDate ? `⏰ تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('en-US')}\n` : '') +
             `🎯 الأولوية: ${getPriorityLabel(priority)}\n\n` +
             `يرجى متابعة المهمة في نظام إدارة المهام.\n\n` +
             `مع تحياتنا 🚗\nفريق العمل`;
@@ -82,7 +82,7 @@ export function useSendTaskWhatsAppNotification() {
 
         case 'due_reminder':
           message = `تذكير: مهمتك "${taskTitle}" قريبة من موعد التسليم!\n` +
-            `📅 تاريخ الاستحقاق: ${dueDate ? new Date(dueDate).toLocaleDateString('ar-QA') : 'غير محدد'}\n` +
+            `📅 تاريخ الاستحقاق: ${dueDate ? new Date(dueDate).toLocaleDateString('en-US') : 'غير محدد'}\n` +
             `يرجى إكمالها في الوقت المحدد.`;
           break;
 
@@ -192,7 +192,7 @@ export function useSendBulkTaskReminders() {
 
         try {
           const message = `⏰ تذكير: المهمة "${task.title}" مستحقة قريباً!\n` +
-            `📅 تاريخ الاستحقاق: ${new Date(task.due_date!).toLocaleDateString('ar-QA')}\n` +
+            `📅 تاريخ الاستحقاق: ${new Date(task.due_date!).toLocaleDateString('en-US')}\n` +
             `🎯 الأولوية: ${getPriorityLabel(task.priority)}\n\n` +
             `يرجى إكمالها في الوقت المحدد.`;
 

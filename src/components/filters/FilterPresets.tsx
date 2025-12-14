@@ -426,7 +426,7 @@ export const FilterPresets: React.FC<FilterPresetsProps> = ({
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          تم الإنشاء: {preset.createdAt.toLocaleDateString('ar-SA')}
+                          تم الإنشاء: {preset.createdAt.toLocaleDateString('en-US')}
                         </p>
                       </div>
                       <DropdownMenu>

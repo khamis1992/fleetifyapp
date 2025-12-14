@@ -809,7 +809,7 @@ const PaymentRegistration = () => {
                   <DollarSign className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold font-mono">{statistics.totalAmount.toLocaleString('ar-SA')}</div>
+                  <div className="text-lg font-bold font-mono">{statistics.totalAmount.toLocaleString('en-US')}</div>
                   <div className="text-xs text-muted-foreground">إجمالي المبالغ</div>
                 </div>
               </div>
@@ -823,7 +823,7 @@ const PaymentRegistration = () => {
                   <AlertCircle className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold font-mono">{statistics.totalLateFees.toLocaleString('ar-SA')}</div>
+                  <div className="text-lg font-bold font-mono">{statistics.totalLateFees.toLocaleString('en-US')}</div>
                   <div className="text-xs text-muted-foreground">غرامات</div>
                 </div>
               </div>
@@ -1040,12 +1040,12 @@ const PaymentRegistration = () => {
                           <span className="text-sm text-muted-foreground">القسط المستحق</span>
                           <div className="text-left">
                             <div className="font-mono font-bold text-success">
-                              {contract.monthlyPayment.toLocaleString('ar-SA')} ر.س
+                              {contract.monthlyPayment.toLocaleString('en-US')} ر.س
                             </div>
                             {contract.daysOverdue > 0 && (
                               <div className="text-xs text-destructive flex items-center gap-1 mt-1">
                                 <AlertCircle className="w-3 h-3" />
-                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('ar-SA')} ر.س
+                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('en-US')} ر.س
                               </div>
                             )}
                           </div>
@@ -1066,7 +1066,7 @@ const PaymentRegistration = () => {
                           />
                           {contract.remainingAmount !== 0 && (
                             <div className="text-xs mt-1 text-muted-foreground">
-                              متبقي: {contract.remainingAmount.toLocaleString('ar-SA')} ر.س
+                              متبقي: {contract.remainingAmount.toLocaleString('en-US')} ر.س
                             </div>
                           )}
                         </div>
@@ -1324,12 +1324,12 @@ const PaymentRegistration = () => {
                         <td className="p-4">
                           <div className="space-y-1">
                             <div className="font-mono font-semibold text-success">
-                              {contract.monthlyPayment.toLocaleString('ar-SA')} ر.ق
+                              {contract.monthlyPayment.toLocaleString('en-US')} ر.ق
                             </div>
                             {contract.daysOverdue > 0 && (
                               <div className="text-xs text-destructive flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" />
-                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('ar-SA')} ر.ق
+                                غرامة {contract.daysOverdue} يوم: {contract.lateFeeAmount.toLocaleString('en-US')} ر.ق
                               </div>
                             )}
                           </div>
@@ -1347,7 +1347,7 @@ const PaymentRegistration = () => {
                           />
                           {contract.remainingAmount !== 0 && (
                             <div className="text-xs mt-1 text-muted-foreground">
-                              متبقي: {contract.remainingAmount.toLocaleString('ar-SA')} ر.ق
+                              متبقي: {contract.remainingAmount.toLocaleString('en-US')} ر.ق
                             </div>
                           )}
                         </td>
@@ -1522,7 +1522,7 @@ const PaymentRegistration = () => {
                     <div className="flex-1">
                       <div className="text-xs text-warning font-semibold mb-1">المبلغ المستخرج</div>
                       <div className="font-semibold font-mono">
-                        {aiModalData.analysis.amount.toLocaleString('ar-SA')} ر.ق
+                        {aiModalData.analysis.amount.toLocaleString('en-US')} ر.ق
                       </div>
                     </div>
                   </div>
@@ -1541,7 +1541,7 @@ const PaymentRegistration = () => {
                       <div className="flex-1">
                         <div className="text-xs text-warning font-semibold mb-1">غرامة تأخير</div>
                         <div className="font-semibold font-mono">
-                          {aiModalData.analysis.lateFee.toLocaleString('ar-SA')} ر.ق
+                          {aiModalData.analysis.lateFee.toLocaleString('en-US')} ر.ق
                         </div>
                       </div>
                     </div>
@@ -1589,7 +1589,7 @@ const PaymentRegistration = () => {
                         <div key={contract.contractId} className="flex justify-between items-center text-sm p-2 bg-background rounded">
                           <span className="font-semibold">{contract.customerName}</span>
                           <span className="text-muted-foreground">{contract.vehicleNumber}</span>
-                          <span className="font-mono">{contract.monthlyPayment.toLocaleString('ar-SA')} ر.س</span>
+                          <span className="font-mono">{contract.monthlyPayment.toLocaleString('en-US')} ر.س</span>
                         </div>
                       ))
                     }
@@ -1600,7 +1600,7 @@ const PaymentRegistration = () => {
                       {paginatedContracts
                         .filter(c => selectedContracts.has(c.contractId))
                         .reduce((sum, c) => sum + c.monthlyPayment, 0)
-                        .toLocaleString('ar-SA')} ر.س
+                        .toLocaleString('en-US')} ر.س
                     </span>
                   </div>
                 </div>

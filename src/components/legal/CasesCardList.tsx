@@ -129,7 +129,7 @@ const CasesCardList: React.FC<CasesCardListProps> = ({
     if (diffDays === 0) return 'اليوم';
     if (diffDays === 1) return 'غداً';
     if (diffDays <= 7) return `خلال ${diffDays} أيام`;
-    return new Date(date).toLocaleDateString('ar-SA');
+    return new Date(date).toLocaleDateString('en-US');
   };
 
   return (
@@ -215,7 +215,7 @@ const CasesCardList: React.FC<CasesCardListProps> = ({
               <div className="flex items-center gap-2 text-sm">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">
-                  {legalCase.total_cost.toLocaleString('ar-SA')} ر.س
+                  {legalCase.total_cost.toLocaleString('en-US')} ر.س
                 </span>
               </div>
 

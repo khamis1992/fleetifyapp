@@ -208,7 +208,7 @@ const SalesQuotes = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
     }).format(amount);
@@ -503,12 +503,12 @@ const SalesQuotes = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {quote.valid_until
-                            ? new Date(quote.valid_until).toLocaleDateString('ar-QA')
+                            ? new Date(quote.valid_until).toLocaleDateString('en-US')
                             : '-'
                           }
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(quote.created_at).toLocaleDateString('ar-QA')}
+                          {new Date(quote.created_at).toLocaleDateString('en-US')}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -705,7 +705,7 @@ const SalesQuotes = () => {
                   <Label className="text-muted-foreground">صالح حتى</Label>
                   <p className="font-medium">
                     {selectedQuote.valid_until
-                      ? new Date(selectedQuote.valid_until).toLocaleDateString('ar-QA')
+                      ? new Date(selectedQuote.valid_until).toLocaleDateString('en-US')
                       : '-'
                     }
                   </p>
@@ -713,7 +713,7 @@ const SalesQuotes = () => {
                 <div>
                   <Label className="text-muted-foreground">تاريخ الإنشاء</Label>
                   <p className="font-medium">
-                    {new Date(selectedQuote.created_at).toLocaleDateString('ar-QA')}
+                    {new Date(selectedQuote.created_at).toLocaleDateString('en-US')}
                   </p>
                 </div>
               </div>

@@ -184,7 +184,7 @@ export const MaintenanceFinancialPanel: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {vehicle.last_maintenance_date 
-                            ? new Date(vehicle.last_maintenance_date).toLocaleDateString('ar-SA')
+                            ? new Date(vehicle.last_maintenance_date).toLocaleDateString('en-US')
                             : "لا يوجد"
                           }
                         </TableCell>

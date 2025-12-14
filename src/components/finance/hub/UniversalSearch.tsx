@@ -276,7 +276,7 @@ export const UniversalSearch: React.FC = () => {
                     )}
                     {result.date && (
                       <span className="text-xs text-muted-foreground">
-                        {new Date(result.date).toLocaleDateString('ar-QA')}
+                        {new Date(result.date).toLocaleDateString('en-US')}
                       </span>
                     )}
                   </div>

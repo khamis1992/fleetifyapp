@@ -333,7 +333,7 @@ const SalesLeads = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(lead.created_at).toLocaleDateString('ar-QA')}
+                          {new Date(lead.created_at).toLocaleDateString('en-US')}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

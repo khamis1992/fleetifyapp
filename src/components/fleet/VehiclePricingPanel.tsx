@@ -222,7 +222,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                           شهري: {formatCurrency(p.monthly_rate)}
                         </span>
                         <span className="text-muted-foreground">
-                          {new Date(p.effective_from).toLocaleDateString('ar-SA')}
+                          {new Date(p.effective_from).toLocaleDateString('en-US')}
                         </span>
                       </div>
                     ))}

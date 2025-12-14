@@ -145,7 +145,7 @@ export const generateDamageReportContent = (options: ExportOptions, data: Report
           <strong>المفتش:</strong> ${(conditionReport.profiles as any)?.full_name || 'غير محدد'}
         </div>
         <div class="detail-item">
-          <strong>تاريخ الفحص:</strong> ${new Date(conditionReport.inspection_date as string).toLocaleDateString('ar-SA')}
+          <strong>تاريخ الفحص:</strong> ${new Date(conditionReport.inspection_date as string).toLocaleDateString('en-US')}
         </div>
         <div class="detail-item">
           <strong>نوع الفحص:</strong> ${conditionReport.inspection_type === 'pre_dispatch' ? 'قبل الإرسال' : 'بعد الإرسال'}
@@ -353,7 +353,7 @@ export const getTableCells = (
         <td>${(item.full_name as string) || 'غير محدد'}</td>
         <td>${(item.department as string) || 'غير محدد'}</td>
         <td>${(item.position as string) || 'غير محدد'}</td>
-        <td>${item.created_at ? new Date(item.created_at as string).toLocaleDateString('ar-SA') : 'غير محدد'}</td>
+        <td>${item.created_at ? new Date(item.created_at as string).toLocaleDateString('en-US') : 'غير محدد'}</td>
       `;
     case 'fleet':
       return `
@@ -374,12 +374,12 @@ export const getTableCells = (
         <td>${item.case_number || 'غير محدد'}</td>
         <td>${item.case_title || 'غير محدد'}</td>
         <td>${item.case_status || 'غير محدد'}</td>
-        <td>${new Date(item.created_at as string).toLocaleDateString('ar-SA')}</td>
+        <td>${new Date(item.created_at as string).toLocaleDateString('en-US')}</td>
       `;
     case 'finance':
       return `
         <td>${item.invoice_number || item.id || 'غير محدد'}</td>
-        <td>${new Date(item.created_at as string).toLocaleDateString('ar-SA')}</td>
+        <td>${new Date(item.created_at as string).toLocaleDateString('en-US')}</td>
         <td>${formatCurrency((item.total_amount as number) || (item.amount as number) || 0)}</td>
         <td>${item.status || 'غير محدد'}</td>
       `;

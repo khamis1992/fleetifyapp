@@ -17,7 +17,7 @@ export const formatDateInGregorian = (date: Date | string | null | undefined): s
   }
 
   // تنسيق التاريخ بالميلادي باللغة العربية
-  let formatted = dateObj.toLocaleDateString('ar-SA', {
+  let formatted = dateObj.toLocaleDateString('en-US', {
     calendar: 'gregory', // التقويم الميلادي
     year: 'numeric',
     month: 'long',
@@ -80,7 +80,7 @@ export const formatDateForContract = (date: Date | string | null | undefined): s
   }
 
   // تنسيق مفصل بالعربية مع التقويم الميلادي
-  let formatted = dateObj.toLocaleDateString('ar-SA', {
+  let formatted = dateObj.toLocaleDateString('en-US', {
     calendar: 'gregory',
     weekday: 'long',
     year: 'numeric',

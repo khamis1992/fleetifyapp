@@ -149,7 +149,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
       const utilization = vehicles.length > 0 ? Math.round((activeCount / vehicles.length) * 100) : 0;
 
       data.push({
-        date: date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         utilization,
       });
     }

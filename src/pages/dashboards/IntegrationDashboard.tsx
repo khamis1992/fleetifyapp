@@ -246,7 +246,7 @@ const IntegrationDashboard: React.FC = () => {
                           </p>
                           {item.next_expected_delivery && (
                             <p className="text-xs text-muted-foreground">
-                              التسليم: {new Date(item.next_expected_delivery).toLocaleDateString('ar-SA')}
+                              التسليم: {new Date(item.next_expected_delivery).toLocaleDateString('en-US')}
                             </p>
                           )}
                         </div>
@@ -465,7 +465,7 @@ const IntegrationDashboard: React.FC = () => {
                         <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                           <span>{vendor.total_orders} طلب</span>
                           <span>•</span>
-                          <span>{vendor.total_purchase_value.toLocaleString('ar-SA')} ر.ق</span>
+                          <span>{vendor.total_purchase_value.toLocaleString('en-US')} ر.ق</span>
                         </div>
                       </div>
                       <div className="text-left">
@@ -574,12 +574,12 @@ const IntegrationDashboard: React.FC = () => {
                       <div>
                         <p className="font-medium">طلب #{order.order_number}</p>
                         <p className="text-sm text-muted-foreground">
-                          تاريخ التسليم: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('ar-SA') : 'غير محدد'}
+                          تاريخ التسليم: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('en-US') : 'غير محدد'}
                         </p>
                       </div>
                       <div className="text-left">
                         <p className="text-lg font-bold text-yellow-700">
-                          {order.order_total.toLocaleString('ar-SA')} ر.ق
+                          {order.order_total.toLocaleString('en-US')} ر.ق
                         </p>
                         <Badge variant="outline" className="text-xs border-yellow-400">
                           متأخر

@@ -183,7 +183,7 @@ async function fetchRealEstateStats(
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - i));
       return {
-        month: date.toLocaleDateString('ar-SA', { month: 'short' }),
+        month: date.toLocaleDateString('en-US', { month: 'short' }),
         revenue: monthlyRevenue * (0.8 + Math.random() * 0.4) // Mock variation
       };
     });
@@ -192,7 +192,7 @@ async function fetchRealEstateStats(
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - i));
       return {
-        month: date.toLocaleDateString('ar-SA', { month: 'short' }),
+        month: date.toLocaleDateString('en-US', { month: 'short' }),
         occupancy: occupancyRate * (0.9 + Math.random() * 0.2) // Mock variation
       };
     });

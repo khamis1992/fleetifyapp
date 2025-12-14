@@ -58,7 +58,7 @@ export const autoCreateTriggersTranslations = {
   summary: {
     title: 'ملخص الإعداد',
     overdueInvoice: (days: number) => `✓ إنشاء قضية عند تأخر الفاتورة ${days}+ يوم`,
-    overdueAmount: (amount: number) => `✓ إنشاء قضية عند تجاوز المبلغ المتأخر ${amount.toLocaleString('ar-SA')} ر.س`,
+    overdueAmount: (amount: number) => `✓ إنشاء قضية عند تجاوز المبلغ المتأخر ${amount.toLocaleString('en-US')} ر.س`,
     brokenPromises: (count: number) => `✓ إنشاء قضية عند كسر ${count}+ وعود`,
     noTriggers: 'لا توجد محفزات مفعلة - الإنشاء التلقائي معطل',
   },

@@ -451,7 +451,7 @@ const Inventory = () => {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {level.last_movement_at
-                            ? new Date(level.last_movement_at).toLocaleDateString('ar-SA')
+                            ? new Date(level.last_movement_at).toLocaleDateString('en-US')
                             : '-'
                           }
                         </TableCell>

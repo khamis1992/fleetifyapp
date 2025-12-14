@@ -117,8 +117,8 @@ export default function ReportView() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>تاريخ التقرير: {new Date().toLocaleDateString('ar-SA')}</span>
-                <span>الوقت: {new Date().toLocaleTimeString('ar-SA')}</span>
+                <span>تاريخ التقرير: {new Date().toLocaleDateString('en-US')}</span>
+                <span>الوقت: {new Date().toLocaleTimeString('en-US')}</span>
               </div>
               
               {/* Report filters summary */}

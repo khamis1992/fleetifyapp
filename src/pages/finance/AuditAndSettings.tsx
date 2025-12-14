@@ -93,7 +93,7 @@ const AuditAndSettings = () => {
   };
 
   // Get current date for display
-  const currentDate = new Date().toLocaleDateString('ar-QA', {
+  const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

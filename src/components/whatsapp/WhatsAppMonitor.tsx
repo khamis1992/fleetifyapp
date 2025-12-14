@@ -312,7 +312,7 @@ export const WhatsAppMonitor: React.FC = () => {
                 <span className="text-sm text-gray-600">آخر تحديث:</span>
                 <span className="text-xs text-gray-500">
                   {stats?.last_updated 
-                    ? new Date(stats.last_updated).toLocaleTimeString('ar-QA')
+                    ? new Date(stats.last_updated).toLocaleTimeString('en-US')
                     : 'غير متوفر'}
                 </span>
               </div>
@@ -471,7 +471,7 @@ const RecentReminders: React.FC = () => {
                       {getStatusBadge(reminder.status)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(reminder.created_at).toLocaleDateString('ar-QA', {
+                      {new Date(reminder.created_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',

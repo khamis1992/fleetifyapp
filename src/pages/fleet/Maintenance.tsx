@@ -626,10 +626,10 @@ export default function Maintenance() {
                         <td className="px-6 py-4 text-gray-600">
                           {maintenance.isVehicleInMaintenance 
                             ? (maintenance.vehicle?.last_maintenance_date
-                                ? new Date(maintenance.vehicle.last_maintenance_date).toLocaleDateString('ar-SA')
+                                ? new Date(maintenance.vehicle.last_maintenance_date).toLocaleDateString('en-US')
                                 : 'غير محدد')
                             : (maintenance.scheduled_date 
-                                ? new Date(maintenance.scheduled_date).toLocaleDateString('ar-SA')
+                                ? new Date(maintenance.scheduled_date).toLocaleDateString('en-US')
                                 : 'غير محدد')}
                         </td>
                         <td className="px-6 py-4">
@@ -898,7 +898,7 @@ export default function Maintenance() {
                   <span className="text-gray-600">تاريخ البدء</span>
                   <span className="font-semibold text-gray-900">
                     {selectedMaintenance.scheduled_date 
-                      ? new Date(selectedMaintenance.scheduled_date).toLocaleDateString('ar-SA')
+                      ? new Date(selectedMaintenance.scheduled_date).toLocaleDateString('en-US')
                       : 'غير محدد'}
                   </span>
                 </div>
@@ -906,7 +906,7 @@ export default function Maintenance() {
                   <span className="text-gray-600">التاريخ المتوقع للإنتهاء</span>
                   <span className="font-semibold text-gray-900">
                     {selectedMaintenance.completion_date 
-                      ? new Date(selectedMaintenance.completion_date).toLocaleDateString('ar-SA')
+                      ? new Date(selectedMaintenance.completion_date).toLocaleDateString('en-US')
                       : 'غير محدد'}
                   </span>
                 </div>

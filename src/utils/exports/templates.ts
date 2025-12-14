@@ -165,7 +165,7 @@ export function createStandardHeader(
 
   // Date
   pdf.setFontSize(10);
-  const dateStr = new Date().toLocaleDateString('ar-SA', {
+  const dateStr = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -219,7 +219,7 @@ export function createBrandedHeader(
 
   // Date (top right)
   pdf.setFontSize(10);
-  const dateStr = new Date().toLocaleDateString('ar-SA');
+  const dateStr = new Date().toLocaleDateString('en-US');
   pdf.text(dateStr, pageWidth - 15, 15, { align: 'right' });
 
   // Reset
@@ -253,7 +253,7 @@ export function createMinimalHeader(
   // Date
   pdf.setFontSize(9);
   pdf.setFont(theme.fonts.primary, 'normal');
-  const dateStr = new Date().toLocaleDateString('ar-SA');
+  const dateStr = new Date().toLocaleDateString('en-US');
   pdf.text(dateStr, pageWidth - 15, 12, { align: 'right' });
 }
 
@@ -289,7 +289,7 @@ export function createStandardFooter(
   }
 
   // Timestamp
-  const timestamp = new Date().toLocaleString('ar-SA');
+  const timestamp = new Date().toLocaleString('en-US');
   pdf.text(`تم الإنشاء: ${timestamp}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
 
   // Reset

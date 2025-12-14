@@ -187,7 +187,7 @@ const Reports = () => {
         <StatCard
           title="آخر تحديث"
           value="اليوم"
-          subtitle={new Date().toLocaleDateString('ar-QA')}
+          subtitle={new Date().toLocaleDateString('en-US')}
           icon={Calendar}
           iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
           delay={0.15}

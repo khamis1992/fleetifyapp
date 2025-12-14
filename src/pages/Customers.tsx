@@ -440,10 +440,10 @@ const Customers = () => {
         city: customer.city || '',
         country: customer.country || '',
         date_of_birth: customer.date_of_birth 
-          ? new Date(customer.date_of_birth).toLocaleDateString('ar-SA')
+          ? new Date(customer.date_of_birth).toLocaleDateString('en-US')
           : '',
         license_expiry: customer.license_expiry
-          ? new Date(customer.license_expiry).toLocaleDateString('ar-SA')
+          ? new Date(customer.license_expiry).toLocaleDateString('en-US')
           : '',
         credit_limit: customer.credit_limit || 0,
         emergency_contact_name: customer.emergency_contact_name || '',
@@ -1080,7 +1080,7 @@ const Customers = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">إجمالي العملاء</p>
-                <h3 className="text-4xl font-bold mb-2">{totalCustomers.toLocaleString('ar-SA')}</h3>
+                <h3 className="text-4xl font-bold mb-2">{totalCustomers.toLocaleString('en-US')}</h3>
                 <p className="text-sm text-green-600 flex items-center gap-1 mt-2">
                   <TrendingUp className="w-4 h-4" />
                   <span>أفراد: {individualCustomers} | شركات: {corporateCustomers}</span>
@@ -1098,7 +1098,7 @@ const Customers = () => {
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">العملاء النشطون</p>
                 <h3 className="text-4xl font-bold mb-2 text-green-600">
-                  {totalCustomers > 0 ? (totalCustomers - blacklistedCustomers).toLocaleString('ar-SA') : 0}
+                  {totalCustomers > 0 ? (totalCustomers - blacklistedCustomers).toLocaleString('en-US') : 0}
                 </h3>
                 <p className="text-sm text-green-600 flex items-center gap-1 mt-2">
                   <CheckCircle className="w-4 h-4" />
@@ -1120,7 +1120,7 @@ const Customers = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-muted-foreground text-sm mb-1">العملاء المعلقون</p>
-                <h3 className="text-4xl font-bold mb-2 text-amber-600">{blacklistedCustomers.toLocaleString('ar-SA')}</h3>
+                <h3 className="text-4xl font-bold mb-2 text-amber-600">{blacklistedCustomers.toLocaleString('en-US')}</h3>
                 <p className="text-sm text-amber-600 flex items-center gap-1 mt-2">
                   <AlertCircle className="w-4 h-4" />
                   <span>يحتاج متابعة</span>
@@ -1311,7 +1311,7 @@ const Customers = () => {
                 <div className="p-6 border-t border-border bg-muted/30">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="text-sm text-muted-foreground">
-                      عرض <span className="font-semibold">{Math.min(pageSize, customers.length)}</span> من <span className="font-semibold">{totalCustomersInDB.toLocaleString('ar-SA')}</span> عميل
+                      عرض <span className="font-semibold">{Math.min(pageSize, customers.length)}</span> من <span className="font-semibold">{totalCustomersInDB.toLocaleString('en-US')}</span> عميل
                     </div>
                     
                     <div className="flex items-center gap-2">

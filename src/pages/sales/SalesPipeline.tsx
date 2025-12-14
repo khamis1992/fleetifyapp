@@ -49,7 +49,7 @@ const SalesPipeline = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
     }).format(amount);
@@ -226,7 +226,7 @@ const SalesPipeline = () => {
                         </div>
                         {opportunity.expected_close_date && (
                           <div className="text-xs text-muted-foreground">
-                            الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('ar-QA')}
+                            الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('en-US')}
                           </div>
                         )}
                       </CardContent>

@@ -1,14 +1,14 @@
 import React from 'react';
 
 export function SimpleReportFooter() {
-  const currentDate = new Date().toLocaleDateString('ar-SA', {
+  const currentDate = new Date().toLocaleDateString('en-US', {
     day: '2-digit',
     month: '2-digit', 
     year: 'numeric',
     calendar: 'gregory'
   });
   
-  const currentTime = new Date().toLocaleTimeString('ar-SA', {
+  const currentTime = new Date().toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true

@@ -317,12 +317,12 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
           
           <div className="financial-row">
             <span className="financial-label">قيمة العقد الإجمالية</span>
-            <span className="financial-value">{financialStats.totalAmount.toLocaleString('ar-QA', { minimumFractionDigits: 2 })} ر.ق</span>
+            <span className="financial-value">{financialStats.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.ق</span>
           </div>
           
           <div className="financial-row">
             <span className="financial-label">المبلغ الشهري</span>
-            <span className="financial-value">{financialStats.monthlyAmount.toLocaleString('ar-QA', { minimumFractionDigits: 2 })} ر.ق</span>
+            <span className="financial-value">{financialStats.monthlyAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.ق</span>
           </div>
           
           <div className="financial-row">
@@ -334,7 +334,7 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
           
           <div className="financial-row">
             <span className="financial-label">المبلغ المدفوع</span>
-            <span className="financial-value" style={{ color: '#059669' }}>{financialStats.totalPaid.toLocaleString('ar-QA', { minimumFractionDigits: 2 })} ر.ق</span>
+            <span className="financial-value" style={{ color: '#059669' }}>{financialStats.totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.ق</span>
           </div>
           
           <div className="financial-row">
@@ -346,7 +346,7 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
           
           <div className="financial-row total">
             <span className="financial-label">المبلغ المتبقي</span>
-            <span className="financial-value">{financialStats.balanceDue.toLocaleString('ar-QA', { minimumFractionDigits: 2 })} ر.ق</span>
+            <span className="financial-value">{financialStats.balanceDue.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.ق</span>
           </div>
           
           <div className="financial-row">
@@ -397,7 +397,7 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
                       <td className="table-number">{payment.number}</td>
                       <td>{format(payment.dueDate, 'dd MMMM yyyy', { locale: ar })}</td>
                       <td className="table-amount">
-                        {payment.amount.toLocaleString('ar-QA', { minimumFractionDigits: 2 })} ر.ق
+                        {payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.ق
                       </td>
                       <td>
                         <span className={`badge badge-${payment.status === 'paid' ? 'paid' : payment.status === 'pending' ? 'pending' : 'unpaid'}`}>

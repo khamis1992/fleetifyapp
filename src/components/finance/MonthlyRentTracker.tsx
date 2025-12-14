@@ -205,7 +205,7 @@ export const MonthlyRentTracker: React.FC = () => {
       item.amount_paid.toFixed(3),
       item.amount_due.toFixed(3),
       item.payment_status === 'paid' ? 'مدفوع' : item.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع',
-      item.last_payment_date ? new Date(item.last_payment_date).toLocaleDateString('ar-QA') : '-',
+      item.last_payment_date ? new Date(item.last_payment_date).toLocaleDateString('en-US') : '-',
     ]);
 
     const csvContent = [
@@ -601,7 +601,7 @@ export const MonthlyRentTracker: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-sm text-neutral-600">
                         {item.last_payment_date
-                          ? new Date(item.last_payment_date).toLocaleDateString('ar-QA')
+                          ? new Date(item.last_payment_date).toLocaleDateString('en-US')
                           : <span className="text-neutral-400">-</span>
                         }
                       </TableCell>

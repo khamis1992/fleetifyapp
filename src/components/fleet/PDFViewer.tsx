@@ -135,7 +135,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, isOpen, onClose }) =
             </div>
             <div>
               <span className="font-medium text-gray-600">آخر تعديل:</span>
-              <p>{new Date(file.lastModified).toLocaleDateString('ar-SA')}</p>
+              <p>{new Date(file.lastModified).toLocaleDateString('en-US')}</p>
             </div>
           </div>
         </div>

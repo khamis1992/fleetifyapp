@@ -179,7 +179,7 @@ const InteractiveVehicleInspectionForm: React.FC<InteractiveVehicleInspectionFor
 
   const fillCurrentDateTime = () => {
     const now = new Date();
-    const currentDateTime = now.toLocaleString('ar-SA');
+    const currentDateTime = now.toLocaleString('en-US');
     // This would typically set date/time fields if they existed
     toast({
       title: "تم تعبئة التاريخ والوقت",

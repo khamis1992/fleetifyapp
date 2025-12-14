@@ -91,7 +91,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
     month.setMonth(month.getMonth() - (5 - i));
     const variation = Math.random() * 10 - 5; // ±5% variation
     return {
-      month: month.toLocaleDateString('ar-SA', { month: 'short' }),
+      month: month.toLocaleDateString('en-US', { month: 'short' }),
       score: Math.min(100, Math.max(0, satisfactionScore + variation))
     };
   });

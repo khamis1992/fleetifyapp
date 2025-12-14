@@ -322,7 +322,7 @@ const MessageBubble: React.FC<{
           'text-[10px] mt-1 opacity-70',
           isUser ? 'text-left' : 'text-right'
         )}>
-          {message.timestamp.toLocaleTimeString('ar-SA', { 
+          {message.timestamp.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit' 
           })}

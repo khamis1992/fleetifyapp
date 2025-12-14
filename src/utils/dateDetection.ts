@@ -365,7 +365,7 @@ export const fixDatesInData = (
           // تحويل جميع التواريخ إلى تنسيق التاريخ فقط (YYYY-MM-DD)
           fixedRow[column] = parsedDate.toISOString().split('T')[0];
           if (index < 3) { // عرض أول 3 تحويلات فقط
-            console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleDateString('ar-SA')} (${format.label}) → ${fixedRow[column]}`);
+            console.log(`📅 تم تحويل ${column}: ${originalValue} → ${parsedDate.toLocaleDateString('en-US')} (${format.label}) → ${fixedRow[column]}`);
           }
         } else {
           if (index < 3) {

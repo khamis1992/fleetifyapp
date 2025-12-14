@@ -292,7 +292,7 @@ const LegalCasesTrackingV2Final: React.FC<LegalCasesTrackingV2FinalProps> = ({ c
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {(stats?.totalValue || 0).toLocaleString('ar-SA')} ر.س
+                      {(stats?.totalValue || 0).toLocaleString('en-US')} ر.س
                     </div>
                   </CardContent>
                 </Card>

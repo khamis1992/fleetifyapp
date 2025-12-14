@@ -116,7 +116,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
     }
 
     automaticNotes += `📊 إجمالي الأضرار: ${allDamages.length}\n`;
-    automaticNotes += `📅 تاريخ الإرجاع: ${new Date().toLocaleDateString('ar-SA')}\n`;
+    automaticNotes += `📅 تاريخ الإرجاع: ${new Date().toLocaleDateString('en-US')}\n`;
     automaticNotes += '\n⚠️ يُرجى مراجعة هذه الأضرار وتقدير التكلفة قبل إغلاق العقد.';
 
     return automaticNotes;

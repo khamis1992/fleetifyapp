@@ -288,7 +288,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `بلاغ_${caseData?.customer_name || 'قضية'}_${new Date().toLocaleDateString('ar-QA')}.txt`;
+    link.download = `بلاغ_${caseData?.customer_name || 'قضية'}_${new Date().toLocaleDateString('en-US')}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

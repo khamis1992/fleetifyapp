@@ -303,9 +303,9 @@ export function DocumentOperationMonitor({
                   )}
 
                   <div className="text-sm text-muted-foreground">
-                    <div>تاريخ البدء: {new Date(log.created_at).toLocaleString('ar-SA')}</div>
+                    <div>تاريخ البدء: {new Date(log.created_at).toLocaleString('en-US')}</div>
                     {log.completed_at && (
-                      <div>تاريخ الإنتهاء: {new Date(log.completed_at).toLocaleString('ar-SA')}</div>
+                      <div>تاريخ الإنتهاء: {new Date(log.completed_at).toLocaleString('en-US')}</div>
                     )}
                     {log.retry_count > 0 && (
                       <div>عدد المحاولات: {log.retry_count}</div>

@@ -197,7 +197,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
   }, [payments, debouncedSearchTerm]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-QA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
       minimumFractionDigits: 2
@@ -394,9 +394,9 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{new Date(payment.payment_date).toLocaleDateString('ar-SA')}</div>
+                          <div>{new Date(payment.payment_date).toLocaleDateString('en-US')}</div>
                           <div className="text-muted-foreground text-xs">
-                            {new Date(payment.created_at).toLocaleTimeString('ar-SA', {
+                            {new Date(payment.created_at).toLocaleTimeString('en-US', {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}

@@ -95,7 +95,7 @@ const { toast } = useToast();
           <!-- Footer -->
           <footer class="border-t pt-4 mt-8 text-sm text-gray-500 text-center">
             تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات بتاريخ 
-            <span class="font-semibold">${new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'islamic-umalqura' })} - ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+            <span class="font-semibold">${new Date().toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'islamic-umalqura' })} - ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
           </footer>
         </div>
       `;
@@ -392,7 +392,7 @@ const { toast } = useToast();
             <div class="footer-content">
                 <div class="print-info">
                     <span>تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات</span>
-                    <span>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</span>
+                    <span>تاريخ الطباعة: ${new Date().toLocaleString('en-US')}</span>
                 </div>
                 <div class="page-numbers">
                     <span>صفحة <span class="page-current">1</span> من <span class="page-total">1</span></span>
@@ -526,7 +526,7 @@ const { toast } = useToast();
             <strong>المفتش:</strong> ${conditionReport.profiles?.full_name || 'غير محدد'}
           </div>
           <div class="detail-item">
-            <strong>تاريخ الفحص:</strong> ${new Date(conditionReport.inspection_date).toLocaleDateString('ar-SA')}
+            <strong>تاريخ الفحص:</strong> ${new Date(conditionReport.inspection_date).toLocaleDateString('en-US')}
           </div>
           <div class="detail-item">
             <strong>نوع الفحص:</strong> ${conditionReport.inspection_type === 'pre_dispatch' ? 'قبل الإرسال' : 'بعد الإرسال'}
@@ -712,7 +712,7 @@ const { toast } = useToast();
           <td>${(item.full_name as string) || 'غير محدد'}</td>
           <td>${(item.department as string) || 'غير محدد'}</td>
           <td>${(item.position as string) || 'غير محدد'}</td>
-          <td>${item.created_at ? new Date(item.created_at as string).toLocaleDateString('ar-SA') : 'غير محدد'}</td>
+          <td>${item.created_at ? new Date(item.created_at as string).toLocaleDateString('en-US') : 'غير محدد'}</td>
         `;
       case 'fleet':
         return `
@@ -733,12 +733,12 @@ const { toast } = useToast();
           <td>${item.case_number || 'غير محدد'}</td>
           <td>${item.case_title || 'غير محدد'}</td>
           <td>${item.case_status || 'غير محدد'}</td>
-          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${new Date(item.created_at).toLocaleDateString('en-US')}</td>
         `;
       case 'finance':
         return `
           <td>${item.invoice_number || item.id || 'غير محدد'}</td>
-          <td>${new Date(item.created_at).toLocaleDateString('ar-SA')}</td>
+          <td>${new Date(item.created_at).toLocaleDateString('en-US')}</td>
           <td>${formatCurrency(item.total_amount || item.amount || 0)}</td>
           <td>${item.status || 'غير محدد'}</td>
         `;

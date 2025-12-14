@@ -307,7 +307,7 @@ class WhatsAppService {
 تم الإرسال بنجاح! 🎉
 
 ━━━━━━━━━━━━━━━━━━━
-🕐 الوقت: ${new Date().toLocaleString('ar-QA')}
+🕐 الوقت: ${new Date().toLocaleString('en-US')}
 ━━━━━━━━━━━━━━━━━━━
     `.trim();
     

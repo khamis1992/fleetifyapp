@@ -395,7 +395,7 @@ export default function PermissionAnalytics() {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                آخر مراجعة أمنية: {securityMetrics && new Date(securityMetrics.last_permission_audit).toLocaleDateString('ar-SA')}
+                آخر مراجعة أمنية: {securityMetrics && new Date(securityMetrics.last_permission_audit).toLocaleDateString('en-US')}
               </div>
             </div>
           </CardContent>

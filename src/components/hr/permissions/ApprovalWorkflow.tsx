@@ -322,7 +322,7 @@ export default function ApprovalWorkflow() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>{new Date(request.created_at).toLocaleDateString('ar-SA')}</span>
+                        <span>{new Date(request.created_at).toLocaleDateString('en-US')}</span>
                       </div>
                     </div>
 
@@ -339,7 +339,7 @@ export default function ApprovalWorkflow() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>بواسطة: {request.requester?.first_name} {request.requester?.last_name}</span>
                       <span>•</span>
-                      <span>ينتهي في: {new Date(request.expires_at).toLocaleDateString('ar-SA')}</span>
+                      <span>ينتهي في: {new Date(request.expires_at).toLocaleDateString('en-US')}</span>
                     </div>
                   </div>
 

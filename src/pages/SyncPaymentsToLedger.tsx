@@ -23,7 +23,7 @@ const SyncPaymentsToLedger: React.FC = () => {
   const { toast } = useToast();
 
   const addLog = (message: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString('ar-SA')}] ${message}`]);
+    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US')}] ${message}`]);
   };
 
   const createJournalEntryForPayment = async (companyId: string, payment: any) => {

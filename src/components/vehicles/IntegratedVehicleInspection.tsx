@@ -369,7 +369,7 @@ export function IntegratedVehicleInspection({
               <div className="space-y-1">
                 <p>
                   <strong>تاريخ الاستلام:</strong>{' '}
-                  {new Date(previousCheckIn.inspection_date).toLocaleDateString('ar-SA')}
+                  {new Date(previousCheckIn.inspection_date).toLocaleDateString('en-US')}
                 </p>
                 <p>
                   <strong>مستوى الوقود:</strong> {previousCheckIn.fuel_level}%

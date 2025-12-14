@@ -164,10 +164,10 @@ export function DocumentSavingProgress({
               {(step.started_at || step.completed_at) && (
                 <div className="pr-6 flex gap-4 text-xs text-muted-foreground">
                   {step.started_at && (
-                    <span>بدأ: {new Date(step.started_at).toLocaleTimeString('ar-SA')}</span>
+                    <span>بدأ: {new Date(step.started_at).toLocaleTimeString('en-US')}</span>
                   )}
                   {step.completed_at && (
-                    <span>انتهى: {new Date(step.completed_at).toLocaleTimeString('ar-SA')}</span>
+                    <span>انتهى: {new Date(step.completed_at).toLocaleTimeString('en-US')}</span>
                   )}
                 </div>
               )}

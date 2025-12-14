@@ -214,7 +214,7 @@ export function AutoSaveFormWrapper<T = any>({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">آخر حفظ:</span>
                   <span className="font-medium">
-                    {draftTimestamp?.toLocaleString('ar-SA', {
+                    {draftTimestamp?.toLocaleString('en-US', {
                       dateStyle: 'medium',
                       timeStyle: 'short',
                     })}

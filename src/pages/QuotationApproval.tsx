@@ -289,7 +289,7 @@ export default function QuotationApproval() {
                 صالح حتى
               </Label>
               <p className="text-lg font-semibold">
-                {new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+                {new Date(quotation.valid_until).toLocaleDateString('en-US')}
               </p>
             </div>
 
@@ -364,7 +364,7 @@ export default function QuotationApproval() {
                 {quotation.approved_by_client ? 'تم قبول العرض' : 'تم رفض العرض'}
               </h2>
               <p className="text-muted-foreground">
-                تم معالجة عرض السعر بتاريخ {quotation.approved_at ? new Date(quotation.approved_at).toLocaleDateString('ar-SA') : 'غير محدد'}
+                تم معالجة عرض السعر بتاريخ {quotation.approved_at ? new Date(quotation.approved_at).toLocaleDateString('en-US') : 'غير محدد'}
               </p>
               {quotation.client_comments && (
                 <div className="mt-4 bg-gray-50 p-3 rounded-lg">
@@ -383,7 +383,7 @@ export default function QuotationApproval() {
               <Clock className="mx-auto h-12 w-12 text-gray-500 mb-4" />
               <h2 className="text-xl font-semibold mb-2 text-gray-600">انتهت صلاحية العرض</h2>
               <p className="text-muted-foreground">
-                انتهت صلاحية هذا العرض في {new Date(quotation.valid_until).toLocaleDateString('ar-SA')}
+                انتهت صلاحية هذا العرض في {new Date(quotation.valid_until).toLocaleDateString('en-US')}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 يرجى التواصل مع الشركة للحصول على عرض جديد

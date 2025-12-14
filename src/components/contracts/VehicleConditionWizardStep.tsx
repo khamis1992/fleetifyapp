@@ -101,7 +101,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
     }
 
     automaticNotes += `📊 إجمالي الأضرار: ${damages.length}\n`;
-    automaticNotes += `📅 تاريخ الفحص: ${new Date().toLocaleDateString('ar-SA')}\n`;
+    automaticNotes += `📅 تاريخ الفحص: ${new Date().toLocaleDateString('en-US')}\n`;
     automaticNotes += '\n⚠️ يُرجى مراجعة هذه الأضرار والتأكد من توثيقها قبل بداية العقد.';
 
     return automaticNotes;

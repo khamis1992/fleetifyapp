@@ -285,7 +285,7 @@ export default function TrafficViolationsRedesigned() {
       {/* Print Header (Only visible when printing) */}
       <div className="hidden print:block p-8 border-b border-gray-200 text-center mb-6">
         <h1 className="text-2xl font-bold mb-2">تقرير المخالفات المرورية</h1>
-        <p className="text-gray-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('ar-SA')}</p>
+        <p className="text-gray-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('en-US')}</p>
       </div>
 
       <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">

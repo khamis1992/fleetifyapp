@@ -159,7 +159,7 @@ export const exportAnalyticsSummaryToPDF = async (
         <h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">تقرير تحليلات الصفحة المقصودة</h1>
         <h2 style="color: #666; font-size: 18px; margin-bottom: 5px;">${companyName}</h2>
         <p style="color: #999; font-size: 14px;">
-          ${dateRange.from.toLocaleDateString('ar-SA')} - ${dateRange.to.toLocaleDateString('ar-SA')}
+          ${dateRange.from.toLocaleDateString('en-US')} - ${dateRange.to.toLocaleDateString('en-US')}
         </p>
       </div>
 
@@ -258,7 +258,7 @@ export const exportAnalyticsSummaryToPDF = async (
       </div>
 
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
-        <p>تم إنشاء هذا التقرير بواسطة FleetifyApp - ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p>تم إنشاء هذا التقرير بواسطة FleetifyApp - ${new Date().toLocaleDateString('en-US')}</p>
       </div>
     `;
 

@@ -45,7 +45,7 @@ const DashboardActivitySection: React.FC = React.memo(() => {
       status: 'info' as const,
       metadata: {
         'نوع العملية': activity.description || 'غير محدد',
-        'الوقت': new Date(activity.created_at || new Date()).toLocaleString('ar-SA')
+        'الوقت': new Date(activity.created_at || new Date()).toLocaleString('en-US')
       }
     }));
   }, [recentActivities]);

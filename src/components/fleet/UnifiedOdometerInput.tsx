@@ -104,7 +104,7 @@ export const UnifiedOdometerInput: React.FC<UnifiedOdometerInputProps> = ({
                     {currentOdometer.current_reading.toLocaleString()} كم
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    آخر تحديث: {new Date(currentOdometer.last_update).toLocaleDateString('ar-SA')}
+                    آخر تحديث: {new Date(currentOdometer.last_update).toLocaleDateString('en-US')}
                   </p>
                 </div>
               </div>

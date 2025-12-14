@@ -309,7 +309,7 @@ export const IntegrationHealthMonitor: React.FC = () => {
                   {getStatusBadge(check.status)}
                   {check.recordCount !== undefined && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      آخر فحص: {check.lastChecked.toLocaleTimeString('ar-SA')}
+                      آخر فحص: {check.lastChecked.toLocaleTimeString('en-US')}
                     </p>
                   )}
                 </div>

@@ -228,7 +228,7 @@ export function usePricingSuggestions({
 
       if (basePriceSource === 'customer_history' && customerHistory) {
         breakdown.push({
-          label: `آخر سعر مع العميل (${new Date(customerHistory.lastDate).toLocaleDateString('ar-QA')})`,
+          label: `آخر سعر مع العميل (${new Date(customerHistory.lastDate).toLocaleDateString('en-US')})`,
           value: Math.round(customerHistory.lastPrice),
           type: 'base',
         });

@@ -371,7 +371,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                             : 'عادي'}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(notification.created_at).toLocaleDateString('ar-SA', {
+                          {new Date(notification.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',

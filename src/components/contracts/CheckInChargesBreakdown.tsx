@@ -321,13 +321,13 @@ export const CheckInChargesBreakdown: React.FC<CheckInChargesBreakdownProps> = (
                     <div>
                       <span className="text-muted-foreground">المتوقع:</span>
                       <span className="font-medium ml-2">
-                        {lateReturnCharge.expectedReturnDate.toLocaleDateString('ar-SA')}
+                        {lateReturnCharge.expectedReturnDate.toLocaleDateString('en-US')}
                       </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">الفعلي:</span>
                       <span className="font-medium ml-2">
-                        {lateReturnCharge.actualReturnDate.toLocaleDateString('ar-SA')}
+                        {lateReturnCharge.actualReturnDate.toLocaleDateString('en-US')}
                       </span>
                     </div>
                   </div>

@@ -112,7 +112,7 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
     // Add historical data with SMA
     dailySalesArray.forEach((d, i) => {
       forecastData.push({
-        date: d.date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }),
+        date: d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         actual: d.revenue,
         forecast: sma7[i],
         lowerBound: sma7[i] - stdDev,
@@ -154,7 +154,7 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
       const upperBound = forecast + 1.96 * stdDev;
 
       forecastData.push({
-        date: forecastDate.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }),
+        date: forecastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         forecast,
         lowerBound,
         upperBound

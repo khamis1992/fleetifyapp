@@ -355,7 +355,7 @@ export const useContractDocumentSaving = () => {
       
       // Get company name from settings/data
       const companyName = contractData.company_name || 'الشركة'
-      const createdDate = contractData.created_date || new Date().toLocaleDateString('ar-SA')
+      const createdDate = contractData.created_date || new Date().toLocaleDateString('en-US')
       const unsignedPdfData: UnsignedContractPdfData = {
         contract_number: contractData.contract_number,
         contract_type: contractData.contract_type,
@@ -367,7 +367,7 @@ export const useContractDocumentSaving = () => {
         monthly_amount: contractData.monthly_amount,
         terms: contractData.terms,
         company_name: 'الشركة',
-        created_date: new Date().toLocaleDateString('ar-SA'),
+        created_date: new Date().toLocaleDateString('en-US'),
         is_draft: true,
         draft_watermark: true
       }
@@ -440,7 +440,7 @@ export const useContractDocumentSaving = () => {
         customer_signature: contractData.customer_signature,
         company_signature: contractData.company_signature,
         company_name: 'الشركة',
-        created_date: new Date().toLocaleDateString('ar-SA')
+        created_date: new Date().toLocaleDateString('en-US')
       }
 
       updateStep('signed-contract', { status: 'processing', progress: 50 })
