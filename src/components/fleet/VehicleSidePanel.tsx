@@ -45,8 +45,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const HealthScoreDisplay: React.FC<{ score: number }> = ({ score }) => {
   const getScoreColor = (s: number) => {
     if (s >= 80) return { text: 'text-green-600', bg: 'bg-green-500', label: 'ممتاز' };
-    if (s >= 60) return { text: 'text-amber-600', bg: 'bg-amber-500', label: 'جيد' };
-    if (s >= 40) return { text: 'text-orange-600', bg: 'bg-orange-500', label: 'متوسط' };
+    if (s >= 60) return { text: 'text-blue-600', bg: 'bg-blue-500', label: 'جيد' };
+    if (s >= 40) return { text: 'text-amber-600', bg: 'bg-amber-500', label: 'متوسط' };
     return { text: 'text-red-600', bg: 'bg-red-500', label: 'يحتاج تحسين' };
   };
 
