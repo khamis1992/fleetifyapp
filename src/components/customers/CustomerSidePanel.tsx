@@ -437,6 +437,31 @@ export function CustomerSidePanel({
                       <InfoCard icon={MapPin} label="المدينة" value={customer.basic?.city} />
                     </div>
 
+                    {/* Identity Documents */}
+                    <div className="bg-white rounded-xl border p-4">
+                      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4" />
+                        بيانات الهوية
+                      </h3>
+                      <InfoCard icon={CreditCard} label="الرقم الشخصي (QID)" value={customer.basic?.national_id} copyable />
+                      {customer.basic?.national_id_expiry && (
+                        <InfoCard 
+                          icon={Calendar} 
+                          label="انتهاء الهوية" 
+                          value={new Date(customer.basic.national_id_expiry).toLocaleDateString('en-US')} 
+                        />
+                      )}
+                      <InfoCard icon={FileText} label="رقم رخصة القيادة" value={customer.basic?.license_number} copyable />
+                      {customer.basic?.license_expiry && (
+                        <InfoCard 
+                          icon={Calendar} 
+                          label="انتهاء الرخصة" 
+                          value={new Date(customer.basic.license_expiry).toLocaleDateString('en-US')} 
+                        />
+                      )}
+                      <InfoCard icon={FileText} label="رقم الجواز" value={customer.basic?.passport_number} copyable />
+                    </div>
+
                     {/* Documents Status */}
                     <div className="bg-white rounded-xl border p-4">
                       <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">

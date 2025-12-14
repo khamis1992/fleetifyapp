@@ -232,6 +232,8 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
+    const today = new Date().toLocaleDateString('en-US');
+    
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -240,41 +242,347 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
           <meta charset="UTF-8">
           <title>مذكرة شارحة - بلاغ</title>
           <style>
+            @page { 
+              size: A4; 
+              margin: 20mm; 
+            }
+            * {
+              box-sizing: border-box;
+            }
             body {
-              font-family: 'Traditional Arabic', 'Arial', sans-serif;
-              font-size: 16px;
-              line-height: 2;
-              padding: 40px;
+              font-family: 'Traditional Arabic', 'Times New Roman', Arial, sans-serif;
+              font-size: 14px;
+              line-height: 1.8;
+              padding: 20px;
               direction: rtl;
               text-align: right;
+              color: #000;
+              background: #fff;
+              margin: 0;
             }
-            h1, h2, h3 {
-              text-align: center;
-              margin-bottom: 20px;
+            .container {
+              max-width: 170mm;
+              margin: 0 auto;
+              border: 2px solid #004d40;
+              border-radius: 8px;
+              padding: 20px;
             }
+            /* Header with Logo */
             .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #000;
-              padding-bottom: 20px;
-            }
-            .section {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 3px double #004d40;
+              padding-bottom: 15px;
               margin-bottom: 20px;
             }
-            .signature {
-              margin-top: 50px;
+            .company-info {
+              text-align: right;
+              flex: 1;
+            }
+            .company-name-ar {
+              font-size: 22px;
+              font-weight: bold;
+              color: #004d40;
+              margin-bottom: 4px;
+            }
+            .company-name-en {
+              font-size: 12px;
+              color: #666;
+              font-style: italic;
+            }
+            .company-details {
+              font-size: 10px;
+              color: #666;
+              margin-top: 5px;
+            }
+            .logo-container {
+              width: 120px;
               text-align: left;
             }
+            .logo {
+              max-width: 100px;
+              max-height: 100px;
+            }
+            /* Document Title */
+            .document-title {
+              text-align: center;
+              margin: 20px 0;
+              padding: 12px 0;
+              background: linear-gradient(135deg, #004d40 0%, #00695c 100%);
+              border-radius: 6px;
+            }
+            .document-title h1 {
+              font-size: 20px;
+              font-weight: bold;
+              margin: 0;
+              color: #fff;
+              letter-spacing: 2px;
+            }
+            .document-date {
+              font-size: 11px;
+              color: rgba(255,255,255,0.9);
+              margin-top: 5px;
+            }
+            /* Bismillah */
+            .bismillah {
+              text-align: center;
+              font-size: 18px;
+              font-weight: bold;
+              margin: 15px 0;
+              color: #004d40;
+            }
+            /* Defendant Info */
+            .defendant-info {
+              margin: 20px 0;
+              padding: 15px;
+              border: 2px solid #004d40;
+              border-radius: 8px;
+              background: linear-gradient(135deg, rgba(0, 77, 64, 0.03) 0%, rgba(0, 77, 64, 0.08) 100%);
+            }
+            .defendant-title {
+              font-size: 14px;
+              font-weight: bold;
+              color: #004d40;
+              text-align: center;
+              margin-bottom: 12px;
+              padding-bottom: 8px;
+              border-bottom: 1px solid rgba(0, 77, 64, 0.2);
+            }
+            .defendant-grid {
+              display: flex;
+              justify-content: space-around;
+              gap: 20px;
+            }
+            .defendant-field {
+              text-align: center;
+            }
+            .field-label {
+              font-size: 11px;
+              color: #666;
+              display: block;
+              margin-bottom: 4px;
+            }
+            .field-value {
+              font-size: 14px;
+              font-weight: bold;
+              color: #000;
+            }
+            .qid-number {
+              font-family: 'Courier New', monospace;
+              font-size: 16px;
+              color: #004d40;
+              background: rgba(0, 77, 64, 0.1);
+              padding: 4px 12px;
+              border-radius: 4px;
+              display: inline-block;
+              letter-spacing: 1px;
+            }
+            /* Content */
+            .content {
+              white-space: pre-wrap;
+              font-family: inherit;
+              text-align: justify;
+              line-height: 2;
+              margin-bottom: 30px;
+            }
+            /* Signatures Section */
+            .signatures-section {
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 1px dashed #ccc;
+              page-break-inside: avoid;
+            }
+            .signatures-title {
+              text-align: center;
+              font-size: 14px;
+              font-weight: bold;
+              color: #004d40;
+              margin-bottom: 20px;
+            }
+            .signatures-grid {
+              display: flex;
+              justify-content: space-between;
+              gap: 20px;
+            }
+            .signature-box {
+              flex: 1;
+              text-align: center;
+              padding: 15px;
+              border: 1px solid #e0e0e0;
+              border-radius: 8px;
+              background: #fafafa;
+            }
+            .signature-label {
+              font-size: 11px;
+              color: #666;
+              margin-bottom: 30px;
+            }
+            .signature-label-en {
+              font-size: 9px;
+              color: #999;
+              display: block;
+            }
+            .signature-line {
+              border-top: 1px solid #333;
+              margin-top: 40px;
+              padding-top: 8px;
+              font-size: 10px;
+              color: #333;
+            }
+            /* Stamp Area */
+            .stamp-section {
+              display: flex;
+              justify-content: center;
+              margin-top: 30px;
+            }
+            .stamp-box {
+              text-align: center;
+              padding: 15px;
+            }
+            .stamp-area {
+              width: 90px;
+              height: 90px;
+              border: 2px dashed #004d40;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto;
+              background: rgba(0, 77, 64, 0.03);
+            }
+            .stamp-text {
+              font-size: 10px;
+              color: #004d40;
+              text-align: center;
+            }
+            .stamp-label {
+              font-size: 10px;
+              color: #666;
+              margin-top: 8px;
+            }
+            /* Footer */
+            .footer {
+              margin-top: 20px;
+              padding-top: 15px;
+              border-top: 2px solid #004d40;
+              text-align: center;
+              font-size: 9px;
+              color: #666;
+            }
+            .footer-contacts {
+              display: flex;
+              justify-content: center;
+              gap: 30px;
+              margin-top: 5px;
+            }
             @media print {
-              body { padding: 20px; }
+              body { 
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .container { 
+                border: none;
+                padding: 0;
+              }
+              .signatures-section { page-break-inside: avoid; }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h2>بسم الله الرحمن الرحيم</h2>
+          <div class="container">
+            <!-- Header with Logo -->
+            <div class="header">
+              <div class="company-info">
+                <div class="company-name-ar">${companyInfo?.name_ar || 'شركة العراف لتأجير السيارات'}</div>
+                <div class="company-name-en">AL-ARAF CAR RENTAL L.L.C</div>
+                <div class="company-details">
+                  ${companyInfo?.address || 'قطر - الدوحة'}<br>
+                  السجل التجاري: ${companyInfo?.commercial_registration || ''}
+                </div>
+              </div>
+              <div class="logo-container">
+                <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+              </div>
+            </div>
+
+            <!-- Document Title -->
+            <div class="document-title">
+              <h1>مذكرة شارحة</h1>
+              <div class="document-date">التاريخ: ${today}</div>
+            </div>
+
+            <!-- Bismillah -->
+            <div class="bismillah">بسم الله الرحمن الرحيم</div>
+
+            <!-- Defendant Info Box -->
+            <div class="defendant-info">
+              <div class="defendant-title">بيانات المدعى عليه</div>
+              <div class="defendant-grid">
+                <div class="defendant-field">
+                  <span class="field-label">الاسم:</span>
+                  <span class="field-value">${variables.defendant_name || '[غير محدد]'}</span>
+                </div>
+                <div class="defendant-field">
+                  <span class="field-label">الرقم الشخصي (QID):</span>
+                  <span class="field-value qid-number">${variables.defendant_qid || '[غير محدد]'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">${generatedDocument}</div>
+
+            <!-- Signatures Section -->
+            <div class="signatures-section">
+              <div class="signatures-title">التوقيعات</div>
+              <div class="signatures-grid">
+                <div class="signature-box">
+                  <div class="signature-label">
+                    توقيع مقدم الطلب
+                    <span class="signature-label-en">Applicant's Signature</span>
+                  </div>
+                  <div class="signature-line">الاسم: خميس هاشم الجابر</div>
+                  <div style="font-size: 9px; color: #666; margin-top: 3px;">المدير العام</div>
+                </div>
+                <div class="signature-box">
+                  <div class="signature-label">
+                    توقيع المحاسب
+                    <span class="signature-label-en">Accountant's Signature</span>
+                  </div>
+                  <div class="signature-line">الاسم: ________________</div>
+                </div>
+                <div class="signature-box">
+                  <div class="signature-label">
+                    توقيع المستشار القانوني
+                    <span class="signature-label-en">Legal Advisor's Signature</span>
+                  </div>
+                  <div class="signature-line">الاسم: ________________</div>
+                </div>
+              </div>
+
+              <!-- Stamp Area -->
+              <div class="stamp-section">
+                <div class="stamp-box">
+                  <div class="stamp-area">
+                    <div class="stamp-text">ختم<br>الشركة</div>
+                  </div>
+                  <div class="stamp-label">Company Stamp</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <div>شركة العراف لتأجير السيارات ذ.م.م - AL-ARAF CAR RENTAL L.L.C</div>
+              <div class="footer-contacts">
+                <span>📞 +974 XXXX XXXX</span>
+                <span>📧 info@alaraf.qa</span>
+                <span>🌐 www.alaraf.online</span>
+              </div>
+            </div>
           </div>
-          <pre style="white-space: pre-wrap; font-family: inherit;">${generatedDocument}</pre>
         </body>
         </html>
       `);
