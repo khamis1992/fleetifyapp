@@ -87,6 +87,9 @@ import { VehicleForm } from '@/components/fleet/VehicleForm';
 import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagement';
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
 import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
+import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
+import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
+import { VehicleSidePanel } from '@/components/fleet/VehicleSidePanel';
 
 // ===== Vehicle Card Component =====
 interface VehicleCardProps {
@@ -336,6 +339,8 @@ const FleetPageNew: React.FC = () => {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
   // Hooks
   const deleteVehicle = useDeleteVehicle();
@@ -402,6 +407,23 @@ const FleetPageNew: React.FC = () => {
     setEditingVehicle(vehicleData as Vehicle);
     setShowVehicleForm(true);
     toast.success('تم نسخ المركبة');
+  };
+
+  // فتح لوحة تفاصيل المركبة
+  const handleViewVehicle = (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId);
+    setSidePanelOpen(true);
+  };
+
+  // إغلاق لوحة التفاصيل
+  const handleCloseSidePanel = () => {
+    setSidePanelOpen(false);
+    setSelectedVehicleId(null);
+  };
+
+  // تصفية حسب الحالة من Smart Dashboard
+  const handleDashboardFilterByStatus = (status: string) => {
+    handleStatCardClick(status);
   };
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '' && v !== false).length;
@@ -499,41 +521,17 @@ const FleetPageNew: React.FC = () => {
           </div>
         </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="المركبات المتاحة"
-            value={fleetStatus?.available || 0}
-            icon={CheckCircle}
-            color="green"
-            onClick={() => handleStatCardClick('available')}
-            isActive={filters.status === 'available'}
-          />
-          <StatCard
-            title="المركبات المؤجرة"
-            value={fleetStatus?.rented || 0}
-            icon={TrendingUp}
-            color="coral"
-            onClick={() => handleStatCardClick('rented')}
-            isActive={filters.status === 'rented'}
-          />
-          <StatCard
-            title="قيد الصيانة"
-            value={fleetStatus?.maintenance || 0}
-            icon={Wrench}
-            color="amber"
-            onClick={() => handleStatCardClick('maintenance')}
-            isActive={filters.status === 'maintenance'}
-          />
-          <StatCard
-            title="خارج الخدمة"
-            value={fleetStatus?.outOfService || 0}
-            icon={AlertTriangle}
-            color="red"
-            onClick={() => handleStatCardClick('out_of_service')}
-            isActive={filters.status === 'out_of_service'}
-          />
-        </div>
+        {/* Smart Dashboard - بدلاً من البطاقات القديمة */}
+        <FleetSmartDashboard
+          onFilterByStatus={handleDashboardFilterByStatus}
+          activeStatus={filters.status}
+        />
+
+        {/* Alerts Panel - تنبيهات التأمين والفحص */}
+        <VehicleAlertPanel
+          onViewVehicle={handleViewVehicle}
+          maxAlerts={5}
+        />
 
         {/* Secondary Status Bar - Other Statuses */}
         <div className="bg-white rounded-2xl p-3 mb-6 border border-neutral-200 shadow-sm">
@@ -792,7 +790,7 @@ const FleetPageNew: React.FC = () => {
                   key={vehicle.id}
                   vehicle={vehicle}
                   index={index}
-                  onView={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
+                  onView={() => handleViewVehicle(vehicle.id)}
                   onEdit={() => handleEditVehicle(vehicle)}
                   onDelete={() => setVehicleToDelete(vehicle)}
                   onCopy={() => handleCopyVehicle(vehicle)}
@@ -938,6 +936,18 @@ const FleetPageNew: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Vehicle Side Panel */}
+      <VehicleSidePanel
+        vehicleId={selectedVehicleId}
+        isOpen={sidePanelOpen}
+        onClose={handleCloseSidePanel}
+        onEdit={(id) => {
+          handleCloseSidePanel();
+          const vehicle = vehiclesData?.data?.find(v => v.id === id);
+          if (vehicle) handleEditVehicle(vehicle);
+        }}
+      />
 
     </div>
   );
