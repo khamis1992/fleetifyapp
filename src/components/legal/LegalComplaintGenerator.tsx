@@ -390,7 +390,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
             .signatures-section {
               margin-top: 40px;
               padding-top: 20px;
-              border-top: 1px dashed #ccc;
+              border-top: 2px solid #004d40;
               page-break-inside: avoid;
             }
             .signatures-title {
@@ -400,66 +400,68 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
               color: #004d40;
               margin-bottom: 20px;
             }
-            .signatures-grid {
+            .signature-stamp-grid {
               display: flex;
-              justify-content: space-between;
-              gap: 20px;
+              justify-content: space-around;
+              align-items: flex-end;
+              gap: 40px;
+              margin: 30px 0;
             }
             .signature-box {
-              flex: 1;
               text-align: center;
-              padding: 15px;
-              border: 1px solid #e0e0e0;
-              border-radius: 8px;
-              background: #fafafa;
             }
-            .signature-label {
-              font-size: 11px;
-              color: #666;
-              margin-bottom: 30px;
-            }
-            .signature-label-en {
-              font-size: 9px;
-              color: #999;
-              display: block;
+            .signature-image {
+              max-width: 150px;
+              max-height: 80px;
+              margin-bottom: 10px;
             }
             .signature-line {
               border-top: 1px solid #333;
-              margin-top: 40px;
-              padding-top: 8px;
-              font-size: 10px;
+              width: 180px;
+              margin: 0 auto 10px;
+            }
+            .signature-info {
+              font-size: 11px;
               color: #333;
+              line-height: 1.6;
+            }
+            .signature-info span {
+              font-size: 10px;
+              color: #666;
             }
             /* Stamp Area */
-            .stamp-section {
-              display: flex;
-              justify-content: center;
-              margin-top: 30px;
-            }
             .stamp-box {
               text-align: center;
-              padding: 15px;
             }
-            .stamp-area {
-              width: 90px;
-              height: 90px;
+            .stamp-image {
+              max-width: 120px;
+              max-height: 120px;
+            }
+            .stamp-fallback {
+              width: 100px;
+              height: 100px;
               border: 2px dashed #004d40;
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
-              margin: 0 auto;
               background: rgba(0, 77, 64, 0.03);
             }
             .stamp-text {
-              font-size: 10px;
+              font-size: 11px;
               color: #004d40;
               text-align: center;
+              font-weight: bold;
             }
-            .stamp-label {
-              font-size: 10px;
-              color: #666;
-              margin-top: 8px;
+            /* Closing Text */
+            .closing-text {
+              text-align: center;
+              margin-top: 30px;
+              font-size: 14px;
+              line-height: 2;
+            }
+            .closing-text p {
+              margin: 5px 0;
             }
             /* Footer */
             .footer {
@@ -534,42 +536,33 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
             <!-- Content -->
             <div class="content">${generatedDocument}</div>
 
-            <!-- Signatures Section -->
+            <!-- Signature and Stamp Section -->
             <div class="signatures-section">
-              <div class="signatures-title">التوقيعات</div>
-              <div class="signatures-grid">
+              <div class="signatures-title">التوقيع والختم</div>
+              <div class="signature-stamp-grid">
+                <!-- Signature -->
                 <div class="signature-box">
-                  <div class="signature-label">
-                    توقيع مقدم الطلب
-                    <span class="signature-label-en">Applicant's Signature</span>
+                  <img src="/receipts/signature.png" alt="التوقيع" class="signature-image" onerror="this.style.display='none'" />
+                  <div class="signature-line"></div>
+                  <div class="signature-info">
+                    <strong>خميس هاشم الجابر</strong><br>
+                    <span>المدير العام المفوض بالتوقيع</span>
                   </div>
-                  <div class="signature-line">الاسم: خميس هاشم الجابر</div>
-                  <div style="font-size: 9px; color: #666; margin-top: 3px;">المدير العام</div>
                 </div>
-                <div class="signature-box">
-                  <div class="signature-label">
-                    توقيع المحاسب
-                    <span class="signature-label-en">Accountant's Signature</span>
+                
+                <!-- Stamp -->
+                <div class="stamp-box">
+                  <img src="/receipts/stamp.png" alt="ختم الشركة" class="stamp-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+                  <div class="stamp-fallback" style="display: none;">
+                    <div class="stamp-text">ختم<br>الشركة</div>
                   </div>
-                  <div class="signature-line">الاسم: ________________</div>
-                </div>
-                <div class="signature-box">
-                  <div class="signature-label">
-                    توقيع المستشار القانوني
-                    <span class="signature-label-en">Legal Advisor's Signature</span>
-                  </div>
-                  <div class="signature-line">الاسم: ________________</div>
                 </div>
               </div>
 
-              <!-- Stamp Area -->
-              <div class="stamp-section">
-                <div class="stamp-box">
-                  <div class="stamp-area">
-                    <div class="stamp-text">ختم<br>الشركة</div>
-                  </div>
-                  <div class="stamp-label">Company Stamp</div>
-                </div>
+              <!-- Company Info -->
+              <div class="closing-text">
+                <p>وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+                <p><strong>عن شركة العراف لتأجير السيارات – ذ.م.م</strong></p>
               </div>
             </div>
 

@@ -110,8 +110,12 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
             .page-break { page-break-after: always; }
             .avoid-break { page-break-inside: avoid; }
           }
-          .header { text-align: center; padding: 1.5rem 0 2rem 0; border-bottom: 2px solid #000; margin-bottom: 2rem; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.5rem 0 2rem 0; border-bottom: 3px double #000; margin-bottom: 2rem; }
+          .header-right { text-align: right; flex: 1; }
+          .header-left { text-align: left; width: 120px; }
+          .company-logo { max-width: 100px; max-height: 100px; }
           .company-name { font-size: 18pt; font-weight: 700; margin-bottom: 0.5rem; }
+          .company-name-en { font-size: 11pt; font-style: italic; color: #333; margin-bottom: 0.5rem; }
           .company-details { font-size: 11pt; line-height: 1.6; margin-top: 0.5rem; }
           h1 { font-size: 22pt; font-weight: 700; text-align: center; margin: 2.5rem 0 1.5rem 0; text-decoration: underline; }
           .contract-ref { text-align: center; font-family: 'Courier New', monospace; font-size: 12pt; margin: 1.5rem 0; line-height: 1.8; }
@@ -153,10 +157,16 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
 
         {/* Header */}
         <div className="header">
-          <div className="company-name">شركة العراف لتأجير السيارات ذ.م.م</div>
-          <div className="company-details">
-            السجل التجاري: 179973 • دولة قطر<br />
-            المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2
+          <div className="header-right">
+            <div className="company-name">شركة العراف لتأجير السيارات ذ.م.م</div>
+            <div className="company-name-en">AL-ARAF CAR RENTAL L.L.C</div>
+            <div className="company-details">
+              السجل التجاري: 179973 • دولة قطر<br />
+              المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2
+            </div>
+          </div>
+          <div className="header-left">
+            <img src="/receipts/logo.png" alt="شعار الشركة" className="company-logo" />
           </div>
         </div>
 
@@ -542,8 +552,8 @@ const Article9 = () => (
       </div>
       <div className="sub-article">
         <div className="sub-number">9-5</div>
-        <strong>تجديد استمرارية المركبة:</strong><br />
-        يلتزم الطرف الثاني بتجديد استمرارية المركبة (تجديد الترخيص) طوال فترة سريان هذا العقد.
+        <strong>تجديد استمارة المركبة:</strong><br />
+        يلتزم الطرف الثاني بتجديد استمارة المركبة (تجديد الترخيص) طوال فترة سريان هذا العقد.
       </div>
     </div>
   </div>

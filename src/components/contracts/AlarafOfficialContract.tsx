@@ -106,15 +106,39 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
         }
         
         .header {
-          text-align: center;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
           padding: 1.5rem 0 2rem 0;
-          border-bottom: 2px solid #000;
+          border-bottom: 3px double #000;
           margin-bottom: 2rem;
+        }
+        
+        .header-right {
+          text-align: right;
+          flex: 1;
+        }
+        
+        .header-left {
+          text-align: left;
+          width: 120px;
+        }
+        
+        .company-logo {
+          max-width: 100px;
+          max-height: 100px;
         }
         
         .company-name {
           font-size: 18pt;
           font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        
+        .company-name-en {
+          font-size: 11pt;
+          font-style: italic;
+          color: #333;
           margin-bottom: 0.5rem;
         }
         
@@ -333,10 +357,16 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
 
       {/* Header */}
       <div className="header">
-        <div className="company-name">شركة العراف لتأجير السيارات ذ.م.م</div>
-        <div className="company-details">
-          السجل التجاري: 179973 • دولة قطر<br />
-          المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2
+        <div className="header-right">
+          <div className="company-name">شركة العراف لتأجير السيارات ذ.م.م</div>
+          <div className="company-name-en">AL-ARAF CAR RENTAL L.L.C</div>
+          <div className="company-details">
+            السجل التجاري: 179973 • دولة قطر<br />
+            المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2
+          </div>
+        </div>
+        <div className="header-left">
+          <img src="/receipts/logo.png" alt="شعار الشركة" className="company-logo" />
         </div>
       </div>
 

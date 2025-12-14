@@ -171,16 +171,14 @@ const Step1CustomerVehicle: React.FC<{
   isLoadingCustomers: boolean;
   isLoadingVehicles: boolean;
   onCustomerCreated?: (customer: Customer) => void;
-}> = ({ formData, onUpdate, customers, vehicles, isLoadingCustomers, isLoadingVehicles, onCustomerCreated }) => {
+  customerSearch: string;
+  onCustomerSearchChange: (search: string) => void;
+}> = ({ formData, onUpdate, customers, vehicles, isLoadingCustomers, isLoadingVehicles, onCustomerCreated, customerSearch, onCustomerSearchChange }) => {
   const [showQuickCustomer, setShowQuickCustomer] = useState(false);
-  const [customerSearch, setCustomerSearch] = useState('');
   const [vehicleSearch, setVehicleSearch] = useState('');
 
-  const filteredCustomers = customers.filter(c => 
-    c.full_name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    c.phone?.includes(customerSearch) ||
-    c.national_id?.includes(customerSearch)
-  );
+  // Customers are filtered on server side, just use them directly
+  const filteredCustomers = customers;
 
   const availableVehicles = vehicles.filter(v => 
     v.status === 'available' &&
@@ -220,7 +218,7 @@ const Step1CustomerVehicle: React.FC<{
               <Input
                 placeholder="ابحث بالاسم أو رقم الهاتف..."
                 value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
+                onChange={(e) => onCustomerSearchChange(e.target.value)}
                 className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-coral-400 focus:ring-coral-400/20"
               />
             </div>
@@ -909,6 +907,8 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [customersRefreshKey, setCustomersRefreshKey] = useState(0);
+  const [customerSearch, setCustomerSearch] = useState('');
 
   const [formData, setFormData] = useState<Partial<ContractFormData>>({
     customer_id: preselectedCustomerId || '',
@@ -924,19 +924,35 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   const totalSteps = 3;
   const stepTitles = ['العميل والمركبة', 'التفاصيل والتسعير', 'المراجعة والإرسال'];
 
-  // Load customers
+  // Load customers with server-side search support
   useEffect(() => {
     if (!companyId) return;
     
     const fetchCustomers = async () => {
       setIsLoadingCustomers(true);
-      const { data, error } = await supabase
+      
+      // Build query
+      let query = supabase
         .from('customers')
         .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
         .eq('company_id', companyId)
-        .eq('is_active', true)
-        .order('first_name_ar', { nullsFirst: false })
-        .limit(200);
+        .eq('is_active', true);
+      
+      // If there's a search term, search on server side
+      if (customerSearch && customerSearch.length >= 2) {
+        query = query.or(
+          `first_name.ilike.%${customerSearch}%,` +
+          `last_name.ilike.%${customerSearch}%,` +
+          `first_name_ar.ilike.%${customerSearch}%,` +
+          `last_name_ar.ilike.%${customerSearch}%,` +
+          `phone.ilike.%${customerSearch}%,` +
+          `national_id.ilike.%${customerSearch}%`
+        );
+      }
+      
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (!error && data) {
         const customersWithFullName = data.map(c => ({
@@ -952,8 +968,10 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
       setIsLoadingCustomers(false);
     };
 
-    fetchCustomers();
-  }, [companyId]);
+    // Debounce search to avoid too many requests
+    const debounceTimer = setTimeout(fetchCustomers, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [companyId, customerSearch, customersRefreshKey]);
 
   // Load vehicles
   useEffect(() => {
@@ -1069,9 +1087,15 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             vehicles={vehicles}
             isLoadingCustomers={isLoadingCustomers}
             isLoadingVehicles={isLoadingVehicles}
+            customerSearch={customerSearch}
+            onCustomerSearchChange={setCustomerSearch}
             onCustomerCreated={(newCustomer) => {
-              // Add new customer to the list
+              // Add new customer to the list and trigger refresh
               setCustomers(prev => [newCustomer, ...prev]);
+              // Clear search to show the new customer
+              setCustomerSearch('');
+              // Also trigger a refresh to ensure the customer is properly loaded from DB
+              setCustomersRefreshKey(prev => prev + 1);
             }}
           />
         );

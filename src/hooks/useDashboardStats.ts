@@ -56,22 +56,26 @@ export const useDashboardStats = () => {
         };
       }
 
-      // 🚀 TRY BACKEND API FIRST (with Redis caching)
-      const isBackendUp = await checkBackendAvailability();
-      if (isBackendUp) {
-        try {
-          const response = await apiClient.get<DashboardStats>('/api/dashboard/stats');
-          if (response.success && response.data) {
-            console.log(`[useDashboardStats] ⚡ Data from backend API ${response.cached ? '(CACHED - instant)' : '(fresh)'}`);
-            return response.data;
+      // 🚀 TRY BACKEND API FIRST (with Redis caching) - only if explicitly enabled
+      const useBackendApi = import.meta.env.VITE_USE_BACKEND_API === 'true';
+      if (useBackendApi) {
+        const isBackendUp = await checkBackendAvailability();
+        if (isBackendUp) {
+          try {
+            const response = await apiClient.get<DashboardStats>('/api/dashboard/stats');
+            if (response.success && response.data) {
+              console.log(`[useDashboardStats] ⚡ Data from backend API ${response.cached ? '(CACHED - instant)' : '(fresh)'}`);
+              return response.data;
+            }
+          } catch (error) {
+            // Silently fallback to Supabase - no need to warn for expected behavior
+            console.debug('[useDashboardStats] Backend API unavailable, using Supabase');
           }
-        } catch (error) {
-          console.warn('[useDashboardStats] Backend API failed, falling back to Supabase:', error);
         }
       }
 
-      // 📊 FALLBACK: Direct Supabase queries (original logic)
-      console.log('[useDashboardStats] Using Supabase direct queries');
+      // 📊 Direct Supabase queries
+      // console.debug('[useDashboardStats] Using Supabase direct queries');
 
       // جلب company_id من جدول profiles
       let company_id: string;
