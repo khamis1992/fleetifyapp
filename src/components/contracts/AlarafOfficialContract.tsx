@@ -317,17 +317,13 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
         }
         
         .stamp-box {
-          width: 120px;
-          height: 120px;
           margin: 1rem auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          text-align: center;
         }
         
         .stamp-box img {
-          max-width: 110px;
-          max-height: 110px;
+          width: 140px;
+          height: auto;
         }
         
         .stamp-placeholder {

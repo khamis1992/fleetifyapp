@@ -146,8 +146,8 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
           .signature-box { text-align: center; min-height: 180px; }
           .signature-title { font-weight: 700; font-size: 14pt; margin-bottom: 3rem; text-decoration: underline; }
           .signature-line { border-top: 1px solid #000; margin: 0 auto; width: 80%; padding-top: 0.5rem; }
-          .stamp-box { width: 120px; height: 120px; margin: 1rem auto; display: flex; align-items: center; justify-content: center; }
-          .stamp-box img { max-width: 110px; max-height: 110px; }
+          .stamp-box { margin: 1rem auto; text-align: center; }
+          .stamp-box img { width: 140px; height: auto; }
           .stamp-placeholder { width: 120px; height: 120px; border: 2px dashed #666; display: flex; align-items: center; justify-content: center; font-size: 10pt; color: #666; }
           .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #000; text-align: center; font-size: 10pt; line-height: 1.6; }
           .page-break { page-break-after: always; }

@@ -432,26 +432,18 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
             /* Stamp Area */
             .stamp-box {
               text-align: center;
+              padding: 10px;
             }
             .stamp-image {
-              max-width: 120px;
-              max-height: 120px;
+              width: 140px;
+              height: auto;
+              display: block;
+              margin: 0 auto;
             }
-            .stamp-fallback {
-              width: 100px;
-              height: 100px;
-              border: 2px dashed #004d40;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: rgba(0, 77, 64, 0.03);
-            }
-            .stamp-text {
-              font-size: 11px;
-              color: #004d40;
-              text-align: center;
-              font-weight: bold;
+            .stamp-label {
+              font-size: 10px;
+              color: #666;
+              margin-top: 8px;
             }
             /* Closing Text */
             .closing-text {
@@ -505,7 +497,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
                 </div>
               </div>
               <div class="logo-container">
-                <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+                <img src="${window.location.origin}/receipts/logo.png" alt="Logo" class="logo" />
               </div>
             </div>
 
@@ -542,7 +534,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
               <div class="signature-stamp-grid">
                 <!-- Signature -->
                 <div class="signature-box">
-                  <img src="/receipts/signature.png" alt="التوقيع" class="signature-image" onerror="this.style.display='none'" />
+                  <img src="${window.location.origin}/receipts/signature.png" alt="التوقيع" class="signature-image" />
                   <div class="signature-line"></div>
                   <div class="signature-info">
                     <strong>خميس هاشم الجابر</strong><br>
@@ -552,10 +544,8 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
                 
                 <!-- Stamp -->
                 <div class="stamp-box">
-                  <img src="/receipts/stamp.png" alt="ختم الشركة" class="stamp-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
-                  <div class="stamp-fallback" style="display: none;">
-                    <div class="stamp-text">ختم<br>الشركة</div>
-                  </div>
+                  <img src="${window.location.origin}/receipts/stamp.png" alt="ختم الشركة" class="stamp-image" />
+                  <div class="stamp-label">ختم الشركة</div>
                 </div>
               </div>
 
@@ -580,7 +570,45 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      
+      // Wait for images to load before printing
+      const images = printWindow.document.querySelectorAll('img');
+      let loadedCount = 0;
+      const totalImages = images.length;
+      
+      if (totalImages === 0) {
+        printWindow.print();
+      } else {
+        images.forEach((img) => {
+          if (img.complete) {
+            loadedCount++;
+            if (loadedCount === totalImages) {
+              setTimeout(() => printWindow.print(), 300);
+            }
+          } else {
+            img.onload = () => {
+              loadedCount++;
+              if (loadedCount === totalImages) {
+                setTimeout(() => printWindow.print(), 300);
+              }
+            };
+            img.onerror = () => {
+              loadedCount++;
+              console.warn('Failed to load image:', img.src);
+              if (loadedCount === totalImages) {
+                setTimeout(() => printWindow.print(), 300);
+              }
+            };
+          }
+        });
+        
+        // Fallback: print after 2 seconds if images haven't loaded
+        setTimeout(() => {
+          if (loadedCount < totalImages) {
+            printWindow.print();
+          }
+        }, 2000);
+      }
     }
   };
 
