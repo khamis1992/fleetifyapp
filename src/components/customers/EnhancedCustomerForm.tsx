@@ -960,7 +960,15 @@ const QuickCustomerDialogContent: React.FC<{
   const [duplicateCheck, setDuplicateCheck] = React.useState<{
     checking: boolean;
     exists: boolean;
-    existingCustomer?: { id: string; first_name_ar: string; last_name_ar: string };
+    existingCustomer?: { 
+      id: string; 
+      first_name: string | null;
+      last_name: string | null;
+      first_name_ar: string | null; 
+      last_name_ar: string | null;
+      phone: string | null;
+      national_id: string | null;
+    };
   }>({ checking: false, exists: false });
 
   const quickSchema = z.object({
@@ -987,7 +995,7 @@ const QuickCustomerDialogContent: React.FC<{
 
       const { data } = await supabase
         .from('customers')
-        .select('id, first_name_ar, last_name_ar')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
         .eq('company_id', user.profile.company_id)
         .eq('national_id', nationalId)
         .maybeSingle();
@@ -1010,9 +1018,16 @@ const QuickCustomerDialogContent: React.FC<{
     }
 
     if (duplicateCheck.exists && duplicateCheck.existingCustomer) {
+      const ec = duplicateCheck.existingCustomer;
       onSuccess({
-        id: duplicateCheck.existingCustomer.id,
-        full_name: `${duplicateCheck.existingCustomer.first_name_ar} ${duplicateCheck.existingCustomer.last_name_ar}`,
+        id: ec.id,
+        first_name: ec.first_name,
+        last_name: ec.last_name,
+        first_name_ar: ec.first_name_ar,
+        last_name_ar: ec.last_name_ar,
+        phone: ec.phone,
+        national_id: ec.national_id,
+        full_name: `${ec.first_name_ar || ec.first_name || ''} ${ec.last_name_ar || ec.last_name || ''}`.trim(),
       });
       form.reset();
       return;
@@ -1038,7 +1053,7 @@ const QuickCustomerDialogContent: React.FC<{
           customer_type: 'individual',
           is_active: true,
         })
-        .select('id, first_name_ar, last_name_ar')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
         .single();
 
       if (error) throw error;
@@ -1046,9 +1061,16 @@ const QuickCustomerDialogContent: React.FC<{
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('تم إضافة العميل بنجاح');
       
+      // Return full customer object for proper display in contract wizard
       onSuccess({
         id: newCustomer.id,
-        full_name: `${newCustomer.first_name_ar} ${newCustomer.last_name_ar}`,
+        first_name: newCustomer.first_name,
+        last_name: newCustomer.last_name,
+        first_name_ar: newCustomer.first_name_ar,
+        last_name_ar: newCustomer.last_name_ar,
+        phone: newCustomer.phone,
+        national_id: newCustomer.national_id,
+        full_name: `${newCustomer.first_name_ar} ${newCustomer.last_name_ar}`.trim(),
       });
       form.reset();
     } catch (error: any) {
@@ -1127,15 +1149,22 @@ const QuickCustomerDialogContent: React.FC<{
             <Alert className="border-amber-200 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
-                العميل موجود: {duplicateCheck.existingCustomer.first_name_ar} {duplicateCheck.existingCustomer.last_name_ar}
+                العميل موجود: {duplicateCheck.existingCustomer.first_name_ar || duplicateCheck.existingCustomer.first_name} {duplicateCheck.existingCustomer.last_name_ar || duplicateCheck.existingCustomer.last_name}
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    const ec = duplicateCheck.existingCustomer!;
                     onSuccess({
-                      id: duplicateCheck.existingCustomer!.id,
-                      full_name: `${duplicateCheck.existingCustomer!.first_name_ar} ${duplicateCheck.existingCustomer!.last_name_ar}`,
+                      id: ec.id,
+                      first_name: ec.first_name,
+                      last_name: ec.last_name,
+                      first_name_ar: ec.first_name_ar,
+                      last_name_ar: ec.last_name_ar,
+                      phone: ec.phone,
+                      national_id: ec.national_id,
+                      full_name: `${ec.first_name_ar || ec.first_name || ''} ${ec.last_name_ar || ec.last_name || ''}`.trim(),
                     });
                     form.reset();
                   }}
