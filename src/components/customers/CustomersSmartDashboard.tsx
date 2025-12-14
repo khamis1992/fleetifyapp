@@ -168,9 +168,9 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
     (stats?.expiringLicenses || 0) + (stats?.expiringNationalIds || 0);
 
   return (
-    <div className="space-y-6">
-      {/* الصف الأول: الإحصائيات الرئيسية */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="space-y-5">
+      {/* الصف الرئيسي: 4 بطاقات فقط - الأهم */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="إجمالي العملاء"
           value={stats?.totalCustomers || 0}
@@ -178,27 +178,6 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
           color="coral"
           subtitle={`${stats?.activeCustomers || 0} نشط`}
           onClick={() => onFilterChange?.('all')}
-        />
-        <StatCard
-          title="عملاء أفراد"
-          value={stats?.individualCount || 0}
-          icon={UserCheck}
-          color="blue"
-          onClick={() => onFilterChange?.('individual')}
-        />
-        <StatCard
-          title="عملاء شركات"
-          value={stats?.corporateCount || 0}
-          icon={Building2}
-          color="purple"
-          onClick={() => onFilterChange?.('corporate')}
-        />
-        <StatCard
-          title="عملاء VIP"
-          value={stats?.vipCount || 0}
-          icon={Star}
-          color="amber"
-          onClick={() => onFilterChange?.('vip')}
         />
         <StatCard
           title="عقود نشطة"
@@ -210,62 +189,83 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
           onClick={() => onFilterChange?.('with_contracts')}
         />
         <StatCard
-          title="جدد هذا الأسبوع"
-          value={stats?.newCustomersThisWeek || 0}
-          icon={TrendingUp}
-          color="cyan"
-          trend={stats?.newCustomersThisWeek && stats.newCustomersThisWeek > 0 ? 'up' : undefined}
-          trendValue={stats?.newCustomersThisWeek && stats.newCustomersThisWeek > 0 ? 'جديد' : undefined}
-          onClick={() => onFilterChange?.('new')}
+          title="مستحقات متأخرة"
+          value={stats?.customersWithOverdue || 0}
+          icon={AlertTriangle}
+          color="amber"
+          subtitle="يحتاج متابعة"
+          onClick={() => onFilterChange?.('overdue')}
+        />
+        <StatCard
+          title="إجمالي المستحق"
+          value={`${((stats?.totalOutstanding || 0) / 1000).toFixed(1)}K`}
+          icon={Banknote}
+          color="blue"
+          subtitle="ر.ق"
+          onClick={() => onFilterChange?.('pending')}
         />
       </div>
 
-      {/* الصف الثاني: المالي والتنبيهات */}
+      {/* الصف الثاني: ملخص سريع + تنبيهات */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* بطاقات مالية */}
-        <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="مستحقات متأخرة"
-            value={stats?.customersWithOverdue || 0}
-            icon={AlertTriangle}
-            color="coral"
-            subtitle="عميل متأخر"
-            onClick={() => onFilterChange?.('overdue')}
-          />
-          <StatCard
-            title="إجمالي المستحق"
-            value={`${((stats?.totalOutstanding || 0) / 1000).toFixed(1)}K`}
-            icon={Banknote}
-            color="amber"
-            subtitle="ر.ق"
-            onClick={() => onFilterChange?.('pending')}
-          />
-          <StatCard
-            title="بدون عقود"
-            value={stats?.customersWithoutContracts || 0}
-            icon={UserX}
-            color="purple"
-            subtitle="فرصة بيع"
-            onClick={() => onFilterChange?.('no_contracts')}
-          />
-          <StatCard
-            title="تفاعلات اليوم"
-            value={stats?.interactionsToday || 0}
-            icon={Phone}
-            color="green"
-            subtitle={`${stats?.interactionsThisWeek || 0} هذا الأسبوع`}
-            onClick={() => navigate('/customers/crm')}
-          />
+        {/* ملخص سريع - بطاقة مجمعة */}
+        <div className="lg:col-span-2 bg-white rounded-[1.25rem] p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-coral-500" />
+            ملخص سريع
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-xl cursor-pointer hover:bg-blue-100 transition" onClick={() => onFilterChange?.('individual')}>
+              <UserCheck className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+              <p className="text-lg font-bold text-neutral-800">{stats?.individualCount || 0}</p>
+              <p className="text-[10px] text-neutral-500">أفراد</p>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-xl cursor-pointer hover:bg-purple-100 transition" onClick={() => onFilterChange?.('corporate')}>
+              <Building2 className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+              <p className="text-lg font-bold text-neutral-800">{stats?.corporateCount || 0}</p>
+              <p className="text-[10px] text-neutral-500">شركات</p>
+            </div>
+            <div className="text-center p-3 bg-amber-50 rounded-xl cursor-pointer hover:bg-amber-100 transition" onClick={() => onFilterChange?.('vip')}>
+              <Star className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+              <p className="text-lg font-bold text-neutral-800">{stats?.vipCount || 0}</p>
+              <p className="text-[10px] text-neutral-500">VIP</p>
+            </div>
+            <div className="text-center p-3 bg-cyan-50 rounded-xl cursor-pointer hover:bg-cyan-100 transition" onClick={() => onFilterChange?.('new')}>
+              <TrendingUp className="w-5 h-5 text-cyan-600 mx-auto mb-1" />
+              <p className="text-lg font-bold text-neutral-800">{stats?.newCustomersThisWeek || 0}</p>
+              <p className="text-[10px] text-neutral-500">جدد الأسبوع</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 cursor-pointer hover:text-coral-600" onClick={() => onFilterChange?.('no_contracts')}>
+                <UserX className="w-4 h-4 text-purple-500" />
+                <span className="text-xs text-neutral-600"><strong>{stats?.customersWithoutContracts || 0}</strong> بدون عقود</span>
+              </div>
+              <div className="flex items-center gap-2 cursor-pointer hover:text-coral-600" onClick={() => navigate('/customers/crm')}>
+                <Phone className="w-4 h-4 text-green-500" />
+                <span className="text-xs text-neutral-600"><strong>{stats?.interactionsToday || 0}</strong> تفاعل اليوم</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* تنبيهات الوثائق */}
-        {documentsAlertCount > 0 && (
+        {documentsAlertCount > 0 ? (
           <div className="lg:col-span-1">
             <DocumentAlertsPanel
               onCustomerClick={onCustomerClick}
-              maxItems={4}
+              maxItems={3}
               compact
             />
+          </div>
+        ) : (
+          <div className="lg:col-span-1 bg-white rounded-[1.25rem] p-5 shadow-sm flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3">
+              <FileText className="w-6 h-6 text-green-600" />
+            </div>
+            <p className="text-sm font-medium text-neutral-700">جميع الوثائق سارية</p>
+            <p className="text-xs text-neutral-400 mt-1">لا توجد تنبيهات حالياً</p>
           </div>
         )}
       </div>

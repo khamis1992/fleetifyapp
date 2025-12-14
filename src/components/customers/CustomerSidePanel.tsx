@@ -503,41 +503,51 @@ export function CustomerSidePanel({
 
                   {/* المالي */}
                   <TabsContent value="financial" className="mt-4 space-y-4">
-                    {/* Financial Summary */}
-                    <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="p-2 bg-coral-100 rounded-lg">
-                          <Banknote className="w-4 h-4 text-coral-600" />
+                    {/* Financial Summary - محسوب مباشرة من الفواتير */}
+                    {(() => {
+                      // حساب البيانات المالية من الفواتير مباشرة
+                      const totalInvoiced = customer.invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+                      const totalPaid = customer.invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+                      const totalOutstanding = totalInvoiced - totalPaid;
+                      const avgDays = customer.financial?.average_days_to_pay || 0;
+
+                      return (
+                        <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-coral-100 rounded-lg">
+                              <Banknote className="w-4 h-4 text-coral-600" />
+                            </div>
+                            <span className="font-semibold text-neutral-900">الملخص المالي</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-3 bg-neutral-50 rounded-xl">
+                              <p className="text-[11px] text-neutral-500 mb-1">إجمالي الفواتير</p>
+                              <p className="text-xl font-bold text-neutral-900">
+                                {totalInvoiced.toLocaleString('en-US')}
+                              </p>
+                            </div>
+                            <div className="p-3 bg-green-50 rounded-xl">
+                              <p className="text-[11px] text-green-600 mb-1">إجمالي المدفوع</p>
+                              <p className="text-xl font-bold text-green-700">
+                                {totalPaid.toLocaleString('en-US')}
+                              </p>
+                            </div>
+                            <div className="p-3 bg-coral-50 rounded-xl">
+                              <p className="text-[11px] text-coral-600 mb-1">المتبقي</p>
+                              <p className="text-xl font-bold text-coral-700">
+                                {totalOutstanding.toLocaleString('en-US')}
+                              </p>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-xl">
+                              <p className="text-[11px] text-blue-600 mb-1">متوسط أيام السداد</p>
+                              <p className="text-xl font-bold text-blue-700">
+                                {avgDays} يوم
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <span className="font-semibold text-neutral-900">الملخص المالي</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 bg-neutral-50 rounded-xl">
-                          <p className="text-[11px] text-neutral-500 mb-1">إجمالي الفواتير</p>
-                          <p className="text-xl font-bold text-neutral-900">
-                            {(customer.financial?.total_invoiced || 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-green-50 rounded-xl">
-                          <p className="text-[11px] text-green-600 mb-1">إجمالي المدفوع</p>
-                          <p className="text-xl font-bold text-green-700">
-                            {(customer.financial?.total_paid || 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-coral-50 rounded-xl">
-                          <p className="text-[11px] text-coral-600 mb-1">المتبقي</p>
-                          <p className="text-xl font-bold text-coral-700">
-                            {(customer.financial?.total_outstanding || 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-blue-50 rounded-xl">
-                          <p className="text-[11px] text-blue-600 mb-1">متوسط أيام السداد</p>
-                          <p className="text-xl font-bold text-blue-700">
-                            {customer.financial?.average_days_to_pay || 0} يوم
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     {/* Payment Behavior */}
                     {customer.behavior && (
