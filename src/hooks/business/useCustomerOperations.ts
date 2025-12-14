@@ -62,7 +62,11 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         customer_type: validatedData.customer_type,
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,
+        // Also set Arabic names from English if not provided
+        first_name_ar: validatedData.first_name_ar || validatedData.first_name,
+        last_name_ar: validatedData.last_name_ar || validatedData.last_name,
         company_name: validatedData.company_name,
+        company_name_ar: validatedData.company_name_ar || validatedData.company_name,
         phone: validatedData.phone,
         email: validatedData.email,
         national_id: validatedData.national_id,
@@ -73,6 +77,8 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         company_id: companyId,
         created_by: user?.id,
         customer_code: validatedData.customer_code || await generateCustomerCode(),
+        // IMPORTANT: Set is_active to true for new customers
+        is_active: true,
         // Convert dates to ISO strings for database
         date_of_birth: validatedData.date_of_birth ? validatedData.date_of_birth.toISOString().split('T')[0] : undefined,
         license_expiry: validatedData.license_expiry ? validatedData.license_expiry.toISOString().split('T')[0] : undefined,

@@ -170,7 +170,8 @@ const Step1CustomerVehicle: React.FC<{
   vehicles: Vehicle[];
   isLoadingCustomers: boolean;
   isLoadingVehicles: boolean;
-}> = ({ formData, onUpdate, customers, vehicles, isLoadingCustomers, isLoadingVehicles }) => {
+  onCustomerCreated?: (customer: Customer) => void;
+}> = ({ formData, onUpdate, customers, vehicles, isLoadingCustomers, isLoadingVehicles, onCustomerCreated }) => {
   const [showQuickCustomer, setShowQuickCustomer] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -425,6 +426,22 @@ const Step1CustomerVehicle: React.FC<{
         variant="quick"
         context="contract"
         onSuccess={(customer) => {
+          // Add the new customer to the list and select it
+          const newCustomer: Customer = {
+            id: customer.id,
+            first_name: customer.first_name,
+            last_name: customer.last_name,
+            first_name_ar: customer.first_name_ar,
+            last_name_ar: customer.last_name_ar,
+            phone: customer.phone,
+            national_id: customer.national_id,
+            full_name: customer.first_name_ar && customer.last_name_ar
+              ? `${customer.first_name_ar} ${customer.last_name_ar}`.trim()
+              : customer.first_name && customer.last_name
+                ? `${customer.first_name} ${customer.last_name}`.trim()
+                : customer.first_name_ar || customer.first_name || 'عميل جديد'
+          };
+          onCustomerCreated?.(newCustomer);
           onUpdate({ customer_id: customer.id });
         }}
       />
@@ -1052,6 +1069,10 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             vehicles={vehicles}
             isLoadingCustomers={isLoadingCustomers}
             isLoadingVehicles={isLoadingVehicles}
+            onCustomerCreated={(newCustomer) => {
+              // Add new customer to the list
+              setCustomers(prev => [newCustomer, ...prev]);
+            }}
           />
         );
       case 1:
