@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ export function CustomerDetailsDialog({
   onCreateContract,
   onCreateInvoice 
 }: CustomerDetailsDialogProps) {
+  const navigate = useNavigate();
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [isEditingAccounts, setIsEditingAccounts] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -504,7 +506,14 @@ export function CustomerDetailsDialog({
                 {customer.contracts && Array.isArray(customer.contracts) && customer.contracts.length > 0 ? (
                   <div className="space-y-2">
                     {(customer.contracts as any[]).map((contract: any) => (
-                      <div key={contract.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div 
+                        key={contract.id} 
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate(`/contracts/${contract.contract_number}`);
+                        }}
+                        className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:shadow-md hover:border-coral-400 transition-all"
+                      >
                         <div>
                           <div className="font-semibold">عقد #{contract.contract_number}</div>
                           <div className="text-sm text-muted-foreground">

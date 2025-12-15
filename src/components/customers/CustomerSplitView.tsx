@@ -433,7 +433,8 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                           {contracts.map((contract: any) => (
                             <div
                               key={contract.id}
-                              className="flex items-center justify-between p-3 bg-white rounded-xl border border-neutral-100"
+                              onClick={() => navigate(`/contracts/${contract.contract_number}`)}
+                              className="flex items-center justify-between p-3 bg-white rounded-xl border border-neutral-100 cursor-pointer hover:shadow-md hover:border-coral-400 transition-all"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">

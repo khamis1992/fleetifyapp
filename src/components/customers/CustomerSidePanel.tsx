@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -267,6 +268,7 @@ export function CustomerSidePanel({
   onDelete,
   onNewContract,
 }: CustomerSidePanelProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const { data: customer, isLoading, error } = useCustomerDetails(customerId);
 
@@ -762,8 +764,9 @@ export function CustomerSidePanel({
                         return (
                           <div
                             key={contract.id}
+                            onClick={() => navigate(`/contracts/${contract.contract_number}`)}
                             className={cn(
-                              'rounded-xl border p-4 transition',
+                              'rounded-xl border p-4 transition cursor-pointer hover:shadow-md hover:scale-[1.02] hover:border-coral-400',
                               isActive ? 'bg-white border-blue-200' : 'bg-gray-50 border-gray-200'
                             )}
                           >
