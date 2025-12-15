@@ -140,12 +140,12 @@ export const useContracts = (customerId?: string, vehicleId?: string, overrideCo
         return acc
       }, {} as Record<string, number>)
 
-      // Map contracts with their payment totals
+      // ✅ الـ trigger يحسب total_paid تلقائياً من الدفعات
+      // لا حاجة لإضافة linked_payments_amount - total_paid يحتوي على المجموع الصحيح
       const contractsWithPayments = data.map(contract => ({
         ...contract,
-        linked_payments_amount: paymentsByContract[contract.id] || 0,
-        total_paid: (contract.total_paid || 0) + (paymentsByContract[contract.id] || 0),
-        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
+        linked_payments_amount: paymentsByContract[contract.id] || 0, // للعرض فقط
+        // total_paid و balance_due محسوبة من الـ trigger - لا تعدل هنا
       }))
 
       Sentry.addBreadcrumb({ category: 'contracts', message: 'Contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });
@@ -246,12 +246,11 @@ export const useActiveContracts = (customerId?: string, vendorId?: string, overr
         return acc
       }, {} as Record<string, number>)
 
-      // Map contracts with their payment totals
+      // ✅ الـ trigger يحسب total_paid تلقائياً من الدفعات
       const contractsWithPayments = data.map(contract => ({
         ...contract,
-        linked_payments_amount: paymentsByContract[contract.id] || 0,
-        total_paid: (contract.total_paid || 0) + (paymentsByContract[contract.id] || 0),
-        balance_due: contract.contract_amount - ((contract.total_paid || 0) + (paymentsByContract[contract.id] || 0))
+        linked_payments_amount: paymentsByContract[contract.id] || 0, // للعرض فقط
+        // total_paid و balance_due محسوبة من الـ trigger - لا تعدل هنا
       }))
 
       Sentry.addBreadcrumb({ category: 'contracts', message: 'Active contracts fetched successfully', level: 'info', data: { count: contractsWithPayments.length } });

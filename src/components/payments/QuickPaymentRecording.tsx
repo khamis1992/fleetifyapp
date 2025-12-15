@@ -353,34 +353,14 @@ export function QuickPaymentRecording() {
         if (remainingAmount <= 0) break;
       }
 
-      // Update all affected contracts
+      // ✅ تحديث last_payment_date فقط - الـ trigger يحسب total_paid تلقائياً
       for (const contractId of contractIds) {
-        const { data: contract, error: contractFetchError } = await supabase
+        await supabase
           .from('contracts')
-          .select('total_paid, balance_due, contract_amount')
-          .eq('id', contractId)
-          .single();
-
-        if (!contractFetchError && contract) {
-          // Calculate amount applied to this contract's invoices
-          const contractInvoices = selectedInvoices.filter(inv => inv.contract_id === contractId);
-          const contractPaymentAmount = contractInvoices.reduce((sum, inv) => {
-            return sum + Math.min(inv.balance_due ?? inv.total_amount, amount / selectedInvoices.length);
-          }, 0);
-
-          const newTotalPaid = (contract.total_paid || 0) + contractPaymentAmount;
-          const newContractBalance = Math.max(0, (contract.contract_amount || 0) - newTotalPaid);
-
-          await supabase
-            .from('contracts')
-            .update({
-              total_paid: newTotalPaid,
-              balance_due: newContractBalance,
-              last_payment_date: paymentDate,
-              payment_status: newContractBalance <= 0 ? 'paid' : newTotalPaid > 0 ? 'partial' : 'unpaid',
-            })
-            .eq('id', contractId);
-        }
+          .update({
+            last_payment_date: paymentDate,
+          })
+          .eq('id', contractId);
       }
 
       // استخراج رقم المركبة من أول فاتورة

@@ -197,19 +197,14 @@ const ReceivePaymentWorkflow: React.FC = () => {
 
       if (paymentError) throw paymentError;
 
-      // 3. تحديث إجمالي المدفوع في العقد
-      const newTotalPaid = (selectedContract?.total_paid || 0) + data.amount;
-      const { error: contractError } = await supabase
+      // ✅ الـ trigger يحسب total_paid تلقائياً من الدفعات
+      // لا حاجة لتحديث total_paid يدوياً - فقط تحديث last_payment_date
+      await supabase
         .from('contracts')
         .update({ 
-          total_paid: newTotalPaid,
-          balance_due: (selectedContract?.contract_amount || 0) - newTotalPaid
+          last_payment_date: data.paymentDate
         })
         .eq('id', data.contractId);
-
-      if (contractError) {
-        console.warn('Error updating contract total_paid:', contractError);
-      }
 
       return paymentData;
     },

@@ -1833,18 +1833,9 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
         if (invoiceError) throw invoiceError;
       }
 
-      // 3. تحديث المبلغ المدفوع في العقد
-      if (contract.id) {
-        const newTotalPaid = Math.max(0, (contract.total_paid || 0) - payment.amount);
-        const { error: contractError } = await supabase
-          .from('contracts')
-          .update({ total_paid: newTotalPaid })
-          .eq('id', contract.id);
+      // ✅ الـ trigger يحسب total_paid تلقائياً عند تغيير حالة الدفعة
 
-        if (contractError) throw contractError;
-      }
-
-      // 4. تحديث البيانات
+      // 3. تحديث البيانات
       queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
       queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
