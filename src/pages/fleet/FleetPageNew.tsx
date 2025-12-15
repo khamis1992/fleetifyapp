@@ -947,6 +947,19 @@ const FleetPageNew: React.FC = () => {
           const vehicle = vehiclesData?.data?.find(v => v.id === id);
           if (vehicle) handleEditVehicle(vehicle);
         }}
+        onDelete={(id) => {
+          handleCloseSidePanel();
+          const vehicle = vehiclesData?.data?.find(v => v.id === id);
+          if (vehicle) setVehicleToDelete(vehicle);
+        }}
+        onNewContract={(id) => {
+          handleCloseSidePanel();
+          navigate(`/contracts/new?vehicle=${id}`);
+        }}
+        onNewMaintenance={(id) => {
+          handleCloseSidePanel();
+          navigate(`/fleet/maintenance?vehicle=${id}`);
+        }}
       />
 
     </div>

@@ -36,6 +36,7 @@ import {
   CheckCircle,
   XCircle,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,9 @@ interface VehicleSidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (vehicleId: string) => void;
+  onDelete?: (vehicleId: string) => void;
+  onNewContract?: (vehicleId: string) => void;
+  onNewMaintenance?: (vehicleId: string) => void;
 }
 
 export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
@@ -156,10 +160,35 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
   isOpen,
   onClose,
   onEdit,
+  onDelete,
+  onNewContract,
+  onNewMaintenance,
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const { data, isLoading } = useVehicleDetails(vehicleId);
+
+  // Handle create contract
+  const handleCreateContract = () => {
+    if (vehicleId) {
+      if (onNewContract) {
+        onNewContract(vehicleId);
+      } else {
+        navigate(`/contracts/new?vehicle=${vehicleId}`);
+      }
+    }
+  };
+
+  // Handle add maintenance
+  const handleAddMaintenance = () => {
+    if (vehicleId) {
+      if (onNewMaintenance) {
+        onNewMaintenance(vehicleId);
+      } else {
+        navigate(`/fleet/maintenance?vehicle=${vehicleId}`);
+      }
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -220,6 +249,17 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                       <X className="w-5 h-5" />
                     </Button>
                     <div className="flex items-center gap-2">
+                      {onDelete && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-white hover:bg-red-500/30"
+                          onClick={() => onDelete(data.vehicle!.id)}
+                        >
+                          <Trash2 className="w-4 h-4 ml-1" />
+                          حذف
+                        </Button>
+                      )}
                       {onEdit && (
                         <Button
                           variant="ghost"
@@ -422,7 +462,10 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                           <div className="bg-neutral-50 rounded-[1.25rem] p-6 text-center">
                             <Car className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                             <p className="text-neutral-500">لا يوجد عقد نشط</p>
-                            <Button className="mt-3 bg-coral-500 hover:bg-coral-600">
+                            <Button 
+                              className="mt-3 bg-coral-500 hover:bg-coral-600"
+                              onClick={handleCreateContract}
+                            >
                               <Plus className="w-4 h-4 ml-1" />
                               إنشاء عقد
                             </Button>
@@ -473,7 +516,11 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                         <div className="bg-white rounded-[1.25rem] p-4 shadow-sm border border-neutral-100">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-semibold text-neutral-700">سجل الصيانة</h3>
-                            <Button size="sm" className="bg-coral-500 hover:bg-coral-600">
+                            <Button 
+                              size="sm" 
+                              className="bg-coral-500 hover:bg-coral-600"
+                              onClick={handleAddMaintenance}
+                            >
                               <Plus className="w-4 h-4 ml-1" />
                               إضافة
                             </Button>
