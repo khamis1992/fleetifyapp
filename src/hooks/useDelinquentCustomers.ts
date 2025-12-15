@@ -393,23 +393,28 @@ async function calculateDelinquentCustomersDynamically(
       // Validate contract data
       if (!contract.start_date) continue;
 
-      // استخدام الفواتير المتأخرة فعلياً بدلاً من balance_due من العقد
-      // balance_due في العقد يحتوي على إجمالي المبلغ المتبقي (بما في ذلك المستقبلي)
+      // حساب المبلغ المتأخر فعلياً
+      // المشكلة: بعض الدفعات غير مربوطة بالفواتير، لذلك نستخدم total_paid من العقد
       const monthlyAmount = parseFloat(contract.monthly_amount as any) || 0;
+      const totalPaidFromContract = parseFloat(contract.total_paid as any) || 0;
       
-      // حساب المبلغ المتأخر فعلياً من الفواتير المستحقة
+      // حساب الفواتير المتأخرة (تاريخ الاستحقاق قبل اليوم)
       const contractOverdueInvoicesForAmount = overdueInvoices.filter(i => i.contract_id === contract.id);
-      const overdueAmount = contractOverdueInvoicesForAmount.reduce((sum, inv) => {
-        const totalAmount = Number(inv.total_amount) || 0;
-        const paidAmount = Number(inv.paid_amount) || 0;
-        return sum + (totalAmount - paidAmount);
+      
+      // إجمالي مبلغ الفواتير المتأخرة
+      const totalOverdueInvoicesAmount = contractOverdueInvoicesForAmount.reduce((sum, inv) => {
+        return sum + (Number(inv.total_amount) || 0);
       }, 0);
       
-      // Skip if no overdue amount (no overdue invoices)
+      // المبلغ المتأخر الفعلي = إجمالي الفواتير المتأخرة - المدفوع من العقد
+      // ملاحظة: نستخدم total_paid من العقد لأن بعض الدفعات غير مربوطة بالفواتير
+      const overdueAmount = Math.max(0, totalOverdueInvoicesAmount - totalPaidFromContract);
+      
+      // Skip if no overdue amount (all overdue invoices are covered by payments)
       if (overdueAmount <= 0) continue;
 
-      // Calculate months unpaid from actual overdue invoices count
-      const monthsUnpaid = contractOverdueInvoicesForAmount.length;
+      // Calculate months unpaid based on remaining overdue amount
+      const monthsUnpaid = monthlyAmount > 0 ? Math.ceil(overdueAmount / monthlyAmount) : contractOverdueInvoicesForAmount.length;
       
       // Calculate expected payments since start
       const contractStartDate = new Date(contract.start_date);
@@ -418,26 +423,23 @@ async function calculateDelinquentCustomersDynamically(
       );
       const expectedPayments = Math.max(0, monthsSinceStart);
       
-      // Calculate days_overdue from oldest unpaid invoice
-      const contractOverdueInvoices = overdueInvoices.filter(i => i.contract_id === contract.id);
+      // Calculate days_overdue from oldest unpaid invoice (accounting for payments)
+      // نحسب كم فاتورة متأخرة مغطاة بالدفعات
+      const paidInvoicesCount = monthlyAmount > 0 ? Math.floor(totalPaidFromContract / monthlyAmount) : 0;
+      
+      // الفواتير المتأخرة غير المغطاة بالدفعات (نتخطى الأقدم التي تم دفعها)
+      const unpaidOverdueInvoices = contractOverdueInvoicesForAmount.slice(paidInvoicesCount);
+      
       let daysOverdue = 0;
       
-      if (contractOverdueInvoices.length > 0) {
-        // Get the oldest unpaid invoice's due date
-        const oldestDueDate = new Date(contractOverdueInvoices[0].due_date);
+      if (unpaidOverdueInvoices.length > 0) {
+        // Get the oldest truly unpaid invoice's due date
+        const oldestDueDate = new Date(unpaidOverdueInvoices[0].due_date);
         const today = new Date();
         daysOverdue = Math.floor((today.getTime() - oldestDueDate.getTime()) / (1000 * 60 * 60 * 24));
       } else if (contract.days_overdue && contract.days_overdue > 0) {
         // Fallback to contract's days_overdue if available
         daysOverdue = contract.days_overdue;
-      }
-      
-      // If daysOverdue is much less than expected based on months_unpaid, use months-based calculation
-      // This handles cases where old invoices are missing from the system
-      const expectedDaysFromMonths = monthsUnpaid * 30;
-      if (monthsUnpaid > 1 && daysOverdue < expectedDaysFromMonths * 0.5) {
-        // Days overdue seems too low compared to months unpaid, use a more realistic estimate
-        daysOverdue = Math.max(daysOverdue, expectedDaysFromMonths);
       }
 
       // Get actual payments for this customer
