@@ -61,44 +61,22 @@ export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?
       
       const searchText = searchTerm || search;
       if (searchText) {
-        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
+        // تقسيم عبارة البحث إلى كلمات
         const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
         
-        if (searchWords.length === 1) {
-          // كلمة واحدة: بحث عادي
-          countQuery = countQuery.or(
-            `first_name.ilike.%${searchText}%,` +
-            `last_name.ilike.%${searchText}%,` +
-            `first_name_ar.ilike.%${searchText}%,` +
-            `last_name_ar.ilike.%${searchText}%,` +
-            `company_name.ilike.%${searchText}%,` +
-            `phone.ilike.%${searchText}%,` +
-            `email.ilike.%${searchText}%,` +
-            `customer_code.ilike.%${searchText}%`
-          );
-        } else {
-          // كلمات متعددة: بحث في كل كلمة على حدة
-          const orConditions = [
-            `first_name.ilike.%${searchText}%`,
-            `last_name.ilike.%${searchText}%`,
-            `first_name_ar.ilike.%${searchText}%`,
-            `last_name_ar.ilike.%${searchText}%`,
-            `company_name.ilike.%${searchText}%`,
-            `phone.ilike.%${searchText}%`,
-            `email.ilike.%${searchText}%`,
-            `customer_code.ilike.%${searchText}%`
-          ];
-          
-          // نضيف البحث في كل كلمة على حدة
-          searchWords.forEach((word: string) => {
-            orConditions.push(`first_name.ilike.%${word}%`);
-            orConditions.push(`last_name.ilike.%${word}%`);
-            orConditions.push(`first_name_ar.ilike.%${word}%`);
-            orConditions.push(`last_name_ar.ilike.%${word}%`);
-          });
-          
-          countQuery = countQuery.or(orConditions.join(','));
-        }
+        // استخدام الكلمة الأخيرة (الأكثر تحديداً) للبحث في DB
+        const primarySearchWord = searchWords[searchWords.length - 1];
+        
+        countQuery = countQuery.or(
+          `first_name.ilike.%${primarySearchWord}%,` +
+          `last_name.ilike.%${primarySearchWord}%,` +
+          `first_name_ar.ilike.%${primarySearchWord}%,` +
+          `last_name_ar.ilike.%${primarySearchWord}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
       }
 
       if (customer_code?.trim()) {
@@ -225,44 +203,22 @@ export const useCustomers = (filters?: CustomerFilters) => {
       
       const searchText = searchTerm || search;
       if (searchText) {
-        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
+        // تقسيم عبارة البحث إلى كلمات
         const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
         
-        if (searchWords.length === 1) {
-          // كلمة واحدة: بحث عادي
-          countQuery = countQuery.or(
-            `first_name.ilike.%${searchText}%,` +
-            `last_name.ilike.%${searchText}%,` +
-            `first_name_ar.ilike.%${searchText}%,` +
-            `last_name_ar.ilike.%${searchText}%,` +
-            `company_name.ilike.%${searchText}%,` +
-            `phone.ilike.%${searchText}%,` +
-            `email.ilike.%${searchText}%,` +
-            `customer_code.ilike.%${searchText}%`
-          );
-        } else {
-          // كلمات متعددة: بحث في كل كلمة على حدة
-          const orConditions = [
-            `first_name.ilike.%${searchText}%`,
-            `last_name.ilike.%${searchText}%`,
-            `first_name_ar.ilike.%${searchText}%`,
-            `last_name_ar.ilike.%${searchText}%`,
-            `company_name.ilike.%${searchText}%`,
-            `phone.ilike.%${searchText}%`,
-            `email.ilike.%${searchText}%`,
-            `customer_code.ilike.%${searchText}%`
-          ];
-          
-          // نضيف البحث في كل كلمة على حدة
-          searchWords.forEach((word: string) => {
-            orConditions.push(`first_name.ilike.%${word}%`);
-            orConditions.push(`last_name.ilike.%${word}%`);
-            orConditions.push(`first_name_ar.ilike.%${word}%`);
-            orConditions.push(`last_name_ar.ilike.%${word}%`);
-          });
-          
-          countQuery = countQuery.or(orConditions.join(','));
-        }
+        // استخدام الكلمة الأخيرة (الأكثر تحديداً) للبحث في DB
+        const primarySearchWord = searchWords[searchWords.length - 1];
+        
+        countQuery = countQuery.or(
+          `first_name.ilike.%${primarySearchWord}%,` +
+          `last_name.ilike.%${primarySearchWord}%,` +
+          `first_name_ar.ilike.%${primarySearchWord}%,` +
+          `last_name_ar.ilike.%${primarySearchWord}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
       }
 
       if (customer_code?.trim()) {
@@ -299,45 +255,23 @@ export const useCustomers = (filters?: CustomerFilters) => {
         query = query.eq('is_blacklisted', is_blacklisted);
       }
       
-      if (searchText) {
-        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
-        const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
+      // تقسيم عبارة البحث إلى كلمات
+      const searchWords = searchText ? searchText.trim().split(/\s+/).filter((w: string) => w.length > 0) : [];
+      
+      if (searchText && searchWords.length > 0) {
+        // استخدام الكلمة الأخيرة (الأكثر تحديداً) للبحث في DB
+        const primarySearchWord = searchWords[searchWords.length - 1];
         
-        if (searchWords.length === 1) {
-          // كلمة واحدة: بحث عادي
-          query = query.or(
-            `first_name.ilike.%${searchText}%,` +
-            `last_name.ilike.%${searchText}%,` +
-            `first_name_ar.ilike.%${searchText}%,` +
-            `last_name_ar.ilike.%${searchText}%,` +
-            `company_name.ilike.%${searchText}%,` +
-            `phone.ilike.%${searchText}%,` +
-            `email.ilike.%${searchText}%,` +
-            `customer_code.ilike.%${searchText}%`
-          );
-        } else {
-          // كلمات متعددة: بحث في كل كلمة على حدة
-          const orConditions = [
-            `first_name.ilike.%${searchText}%`,
-            `last_name.ilike.%${searchText}%`,
-            `first_name_ar.ilike.%${searchText}%`,
-            `last_name_ar.ilike.%${searchText}%`,
-            `company_name.ilike.%${searchText}%`,
-            `phone.ilike.%${searchText}%`,
-            `email.ilike.%${searchText}%`,
-            `customer_code.ilike.%${searchText}%`
-          ];
-          
-          // نضيف البحث في كل كلمة على حدة
-          searchWords.forEach((word: string) => {
-            orConditions.push(`first_name.ilike.%${word}%`);
-            orConditions.push(`last_name.ilike.%${word}%`);
-            orConditions.push(`first_name_ar.ilike.%${word}%`);
-            orConditions.push(`last_name_ar.ilike.%${word}%`);
-          });
-          
-          query = query.or(orConditions.join(','));
-        }
+        query = query.or(
+          `first_name.ilike.%${primarySearchWord}%,` +
+          `last_name.ilike.%${primarySearchWord}%,` +
+          `first_name_ar.ilike.%${primarySearchWord}%,` +
+          `last_name_ar.ilike.%${primarySearchWord}%,` +
+          `company_name.ilike.%${searchText}%,` +
+          `phone.ilike.%${searchText}%,` +
+          `email.ilike.%${searchText}%,` +
+          `customer_code.ilike.%${searchText}%`
+        );
       }
 
       if (customer_code?.trim()) {
@@ -359,20 +293,27 @@ export const useCustomers = (filters?: CustomerFilters) => {
         throw error;
       }
       
-      // Reduced logging for performance - uncomment for debugging
-      // console.log('✅ [useCustomers] Successfully fetched customers:', {
-      //   count: data?.length || 0,
-      //   total: count || 0,
-      //   page,
-      //   pageSize,
-      //   companyId,
-      //   isSystemLevel,
-      //   customers: data?.map(c => ({ id: c.id, name: c.customer_type === 'individual' ? `${c.first_name} ${c.last_name}` : c.company_name })) || []
-      // });
+      // تصفية النتائج للتأكد من أن جميع كلمات البحث موجودة
+      let filteredData = data || [];
+      if (searchWords.length > 1) {
+        filteredData = filteredData.filter(customer => {
+          // بناء الاسم الكامل للمقارنة
+          const fullName = [
+            customer.first_name || '',
+            customer.last_name || '',
+            customer.first_name_ar || '',
+            customer.last_name_ar || '',
+            customer.company_name || ''
+          ].join(' ').toLowerCase();
+          
+          // التحقق من أن جميع كلمات البحث موجودة
+          return searchWords.every(word => fullName.includes(word.toLowerCase()));
+        });
+      }
       
       return {
-        data: data || [],
-        total: count || 0
+        data: filteredData,
+        total: searchWords.length > 1 ? filteredData.length : (count || 0)
       };
     },
     // Enable query for system level users or users with company ID
