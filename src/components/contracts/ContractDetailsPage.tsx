@@ -191,7 +191,7 @@ const ContractDetailsPage = () => {
     enabled: !!contract?.id,
   });
 
-  // جلب المدفوعات المرتبطة بالعقد
+  // جلب المدفوعات المرتبطة بالعقد مع الفواتير المرتبطة
   const { data: contractPayments = [] } = useQuery({
     queryKey: ['contract-payments', contract?.id, companyId],
     queryFn: async () => {
@@ -206,6 +206,12 @@ const ContractDetailsPage = () => {
             last_name,
             company_name,
             customer_type
+          ),
+          invoices (
+            id,
+            invoice_number,
+            due_date,
+            total_amount
           )
         `)
         .eq('contract_id', contract.id)
@@ -2014,17 +2020,50 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                       className="text-blue-600"
                       onClick={() => {
                         // البحث عن الدفعة الفعلية المرتبطة بهذه الفترة
-                        const actualPayment = payments.find(p => {
-                          const paymentDate = new Date(p.payment_date);
-                          return paymentDate.getMonth() === payment.dueDate.getMonth() &&
-                                 paymentDate.getFullYear() === payment.dueDate.getFullYear();
+                        // البحث بعدة طرق:
+                        // 1. البحث عن دفعة مرتبطة بفاتورة لها نفس تاريخ الاستحقاق
+                        // 2. البحث عن دفعة في نفس الشهر والسنة
+                        // 3. البحث عن دفعة بنفس المبلغ تقريباً
+                        const dueDateStr = format(payment.dueDate, 'yyyy-MM-dd');
+                        const dueMonth = payment.dueDate.getMonth();
+                        const dueYear = payment.dueDate.getFullYear();
+                        
+                        let actualPayment = payments.find(p => {
+                          // البحث عن دفعة مرتبطة بفاتورة لها نفس تاريخ الاستحقاق
+                          if (p.invoice_id) {
+                            const invoice = (p as any).invoices;
+                            if (invoice && invoice.due_date) {
+                              const invoiceDueDate = new Date(invoice.due_date);
+                              return invoiceDueDate.toISOString().split('T')[0] === dueDateStr;
+                            }
+                          }
+                          return false;
                         });
+                        
+                        // إذا لم نجد، البحث عن دفعة في نفس الشهر والسنة
+                        if (!actualPayment) {
+                          actualPayment = payments.find(p => {
+                            const paymentDate = new Date(p.payment_date);
+                            return paymentDate.getMonth() === dueMonth &&
+                                   paymentDate.getFullYear() === dueYear;
+                          });
+                        }
+                        
+                        // إذا لم نجد، البحث عن دفعة بنفس المبلغ تقريباً (مع هامش 1%)
+                        if (!actualPayment) {
+                          actualPayment = payments.find(p => {
+                            const amountDiff = Math.abs((p.amount || 0) - payment.amount);
+                            return amountDiff < (payment.amount * 0.01);
+                          });
+                        }
+                        
                         if (actualPayment) {
                           handlePaymentView(actualPayment);
                         } else {
                           toast({
-                            title: 'الدفعة المدفوعة',
-                            description: `تم دفع مبلغ ${formatCurrency(payment.amount)} في ${format(payment.dueDate, 'dd/MM/yyyy')}`,
+                            title: 'معلومة الدفعة',
+                            description: `تم دفع مبلغ ${formatCurrency(payment.amount)} المستحق في ${format(payment.dueDate, 'dd/MM/yyyy')}. لم يتم العثور على تفاصيل الدفعة الفعلية.`,
+                            variant: 'default',
                           });
                         }
                       }}

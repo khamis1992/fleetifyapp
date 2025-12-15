@@ -238,6 +238,8 @@ async function calculateDelinquentCustomersDynamically(
 ): Promise<DelinquentCustomer[]> {
   // Step 1: Get all active contracts with customer and vehicle info
   // Using actual column names from contracts table
+  // جلب جميع العقود النشطة والملغاة والمغلقة
+  // سنفلتر لاحقاً بناءً على الفواتير المتأخرة فعلياً
   let contractsQuery = supabase
     .from('contracts')
     .select(`
@@ -273,7 +275,6 @@ async function calculateDelinquentCustomersDynamically(
     `)
     .eq('company_id', companyId)
     .in('status', ['active', 'cancelled', 'closed'])  // Include cancelled contracts with debt
-    .gt('balance_due', 0)  // Only get contracts with outstanding balance
     .order('balance_due', { ascending: false });
 
   const { data: contracts, error: contractsError } = await contractsQuery;
@@ -392,15 +393,23 @@ async function calculateDelinquentCustomersDynamically(
       // Validate contract data
       if (!contract.start_date) continue;
 
-      // Use balance_due directly from contract (already filtered for > 0)
-      const overdueAmount = parseFloat(contract.balance_due as any) || 0;
+      // استخدام الفواتير المتأخرة فعلياً بدلاً من balance_due من العقد
+      // balance_due في العقد يحتوي على إجمالي المبلغ المتبقي (بما في ذلك المستقبلي)
       const monthlyAmount = parseFloat(contract.monthly_amount as any) || 0;
       
-      // Skip if no overdue amount (safety check)
+      // حساب المبلغ المتأخر فعلياً من الفواتير المستحقة
+      const contractOverdueInvoicesForAmount = overdueInvoices.filter(i => i.contract_id === contract.id);
+      const overdueAmount = contractOverdueInvoicesForAmount.reduce((sum, inv) => {
+        const totalAmount = Number(inv.total_amount) || 0;
+        const paidAmount = Number(inv.paid_amount) || 0;
+        return sum + (totalAmount - paidAmount);
+      }, 0);
+      
+      // Skip if no overdue amount (no overdue invoices)
       if (overdueAmount <= 0) continue;
 
-      // Calculate months unpaid from balance and monthly amount
-      const monthsUnpaid = monthlyAmount > 0 ? Math.ceil(overdueAmount / monthlyAmount) : 1;
+      // Calculate months unpaid from actual overdue invoices count
+      const monthsUnpaid = contractOverdueInvoicesForAmount.length;
       
       // Calculate expected payments since start
       const contractStartDate = new Date(contract.start_date);

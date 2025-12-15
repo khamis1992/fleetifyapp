@@ -109,7 +109,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
         .from('payments')
         .select(`
           id,
-          payment_amount,
+          amount,
           payment_date,
           payment_method,
           status,
@@ -166,7 +166,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
         phone: payment.customers.phone,
         invoice_number: payment.invoices.invoice_number,
         contract_number: payment.contracts.contract_number,
-        payment_amount: payment.payment_amount,
+        payment_amount: payment.amount,
         payment_date: payment.payment_date,
         payment_method: payment.payment_method,
         status: payment.status as any,

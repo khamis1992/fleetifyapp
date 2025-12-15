@@ -52,7 +52,7 @@ export function PaymentStatsCards() {
       // Today's payments
       const { data: todayPaymentsData } = await supabase
         .from('payments')
-        .select('payment_amount')
+        .select('amount')
         .eq('company_id', companyId)
         .eq('payment_date', today)
         .eq('status', 'completed');
@@ -60,7 +60,7 @@ export function PaymentStatsCards() {
       // Month's payments
       const { data: monthPaymentsData } = await supabase
         .from('payments')
-        .select('payment_amount')
+        .select('amount')
         .eq('company_id', companyId)
         .gte('payment_date', startOfMonthStr)
         .eq('status', 'completed');
@@ -80,8 +80,8 @@ export function PaymentStatsCards() {
         .in('status', ['sent', 'unpaid', 'pending', 'overdue']);
 
       setStats({
-        todayPayments: todayPaymentsData?.reduce((sum, p) => sum + p.payment_amount, 0) || 0,
-        monthPayments: monthPaymentsData?.reduce((sum, p) => sum + p.payment_amount, 0) || 0,
+        todayPayments: todayPaymentsData?.reduce((sum, p) => sum + p.amount, 0) || 0,
+        monthPayments: monthPaymentsData?.reduce((sum, p) => sum + p.amount, 0) || 0,
         totalCustomers: new Set(customersData?.map(c => c.customer_id)).size || 0,
         pendingInvoices: pendingInvoicesData?.length || 0
       });
