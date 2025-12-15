@@ -469,14 +469,90 @@ export const useContractCreation = () => {
           // This is part of the improved error handling - contract creation succeeds even if document saving fails
         }
 
+        // ✅ إنشاء الفواتير تلقائياً للعقد الجديد
+        let invoicesCreated = 0
+        try {
+          console.log('📋 [CONTRACT_CREATION] إنشاء الفواتير تلقائياً للعقد...')
+          
+          const { data: invoiceResult, error: invoiceError } = await supabase
+            .rpc('generate_invoices_from_payment_schedule', {
+              p_contract_id: contractId
+            })
+          
+          if (invoiceError) {
+            console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء الفواتير عبر RPC:', invoiceError)
+            // محاولة بديلة - إنشاء يدوي
+            try {
+              // حساب عدد الأشهر
+              const startDate = new Date(inputContractData.start_date)
+              const endDate = new Date(inputContractData.end_date)
+              const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                                 (endDate.getMonth() - startDate.getMonth()) + 1
+              const numberOfInvoices = Math.min(monthsDiff, Math.ceil(contractAmount / monthlyAmount))
+              
+              for (let i = 0; i < numberOfInvoices; i++) {
+                // حساب تاريخ الاستحقاق - أول يوم من الشهر التالي
+                const dueDate = new Date(startDate)
+                dueDate.setMonth(startDate.getMonth() + i + 1)
+                dueDate.setDate(1)
+                
+                const invoiceNumber = `INV-${insertedContract.contract_number}-${String(i + 1).padStart(3, '0')}`
+                
+                // التحقق من عدم وجود الفاتورة
+                const { data: existing } = await supabase
+                  .from('invoices')
+                  .select('id')
+                  .eq('invoice_number', invoiceNumber)
+                  .eq('company_id', companyId)
+                  .maybeSingle()
+                
+                if (!existing) {
+                  const invoiceDate = new Date(dueDate)
+                  invoiceDate.setDate(invoiceDate.getDate() - 5)
+                  
+                  const { error: insertError } = await supabase.from('invoices').insert({
+                    company_id: companyId,
+                    customer_id: inputContractData.customer_id,
+                    contract_id: contractId,
+                    invoice_number: invoiceNumber,
+                    invoice_date: invoiceDate.toISOString().split('T')[0],
+                    due_date: dueDate.toISOString().split('T')[0],
+                    total_amount: monthlyAmount,
+                    subtotal: monthlyAmount,
+                    payment_status: 'unpaid',
+                    status: 'draft',
+                    invoice_type: 'rental',
+                    description: `فاتورة إيجار شهرية - الشهر ${i + 1} من ${numberOfInvoices}`,
+                  })
+                  
+                  if (!insertError) {
+                    invoicesCreated++
+                  }
+                }
+              }
+              console.log(`✅ [CONTRACT_CREATION] تم إنشاء ${invoicesCreated} فاتورة يدوياً`)
+            } catch (manualError) {
+              console.error('❌ [CONTRACT_CREATION] فشل في إنشاء الفواتير يدوياً:', manualError)
+            }
+          } else {
+            invoicesCreated = invoiceResult || 0
+            console.log(`✅ [CONTRACT_CREATION] تم إنشاء ${invoicesCreated} فاتورة عبر RPC`)
+          }
+        } catch (invoiceGenError) {
+          console.error('❌ [CONTRACT_CREATION] خطأ في إنشاء الفواتير (non-fatal):', invoiceGenError)
+          // لا نفشل عملية إنشاء العقد بسبب فشل إنشاء الفواتير
+        }
+
         // معالجة حالة القيد المحاسبي - تجربة مستخدم مُحسّنة
+        const invoiceMessage = invoicesCreated > 0 ? ` + ${invoicesCreated} فاتورة` : ''
+        
         if (journalEntryId) {
           // ✅ نجاح كامل
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
           
-          toast.success('تم إنشاء العقد والقيد المحاسبي بنجاح ✓')
+          toast.success(`تم إنشاء العقد والقيد المحاسبي${invoiceMessage} بنجاح ✓`)
         } else if (requiresManualEntry) {
           // ⚠️ العقد تم إنشاؤه - القيد يحتاج مراجعة
           console.log('⚠️ [CONTRACT_CREATION] Contract created, journal entry needs setup')
@@ -487,7 +563,7 @@ export const useContractCreation = () => {
           updateStepStatus('finalization', 'completed')
           
           // رسالة نجاح مع تنبيه بسيط
-          toast.success('تم إنشاء العقد بنجاح ✓', {
+          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`, {
             description: 'القيد المحاسبي يمكن إضافته لاحقاً',
             duration: 4000
           })
@@ -497,14 +573,14 @@ export const useContractCreation = () => {
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
           
-          toast.success('تم إنشاء العقد بنجاح ✓')
+          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`)
         } else {
           // نجاح (مبلغ صفر)
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
           
-          toast.success('تم إنشاء العقد بنجاح ✓')
+          toast.success(`تم إنشاء العقد${invoiceMessage} بنجاح ✓`)
         }
 
         // تحديث الحالة - العقد ناجح دائماً

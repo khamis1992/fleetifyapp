@@ -264,6 +264,59 @@ export function QuickPaymentDialog({
         'other': 'cash'
       };
 
+      // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
+      if (selectedInvoices.length === 0) {
+        // البحث عن عقد نشط للعميل
+        const { data: activeContracts, error: contractError } = await supabase
+          .from('contracts')
+          .select('id, contract_number, monthly_amount')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (contractError || !activeContracts || activeContracts.length === 0) {
+          throw new Error('لا يوجد عقد نشط للعميل. يرجى إنشاء فاتورة أولاً.');
+        }
+
+        const activeContract = activeContracts[0];
+        
+        // إنشاء فاتورة تلقائياً للدفعة
+        const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
+        const invoiceNumber = await generateInvoiceNumber(companyId);
+        
+        const paymentDate = new Date().toISOString().split('T')[0];
+        
+        const { data: newInvoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert({
+            company_id: companyId,
+            customer_id: customerId,
+            contract_id: activeContract.id,
+            invoice_number: invoiceNumber,
+            invoice_date: paymentDate,
+            due_date: paymentDate,
+            total_amount: amount,
+            balance_due: 0,
+            payment_status: 'paid',
+            status: 'draft',
+            invoice_type: 'rental',
+            description: `فاتورة تلقائية للدفعة - عقد ${activeContract.contract_number}`,
+            notes: 'تم إنشاء هذه الفاتورة تلقائياً عند تسجيل دفعة بدون فاتورة',
+          })
+          .select()
+          .single();
+
+        if (invoiceError) {
+          throw new Error(`فشل في إنشاء الفاتورة: ${invoiceError.message}`);
+        }
+
+        // إضافة الفاتورة الجديدة إلى القائمة المحددة
+        selectedInvoices.push(newInvoice as any);
+        console.log('✅ تم إنشاء فاتورة تلقائياً:', invoiceNumber);
+      }
+
       const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
       const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
       const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
