@@ -61,14 +61,44 @@ export const useCustomerCount = (filters?: CustomerFilters, options?: { enabled?
       
       const searchText = searchTerm || search;
       if (searchText) {
-        countQuery = countQuery.or(
-          `first_name.ilike.%${searchText}%,` +
-          `last_name.ilike.%${searchText}%,` +
-          `company_name.ilike.%${searchText}%,` +
-          `phone.ilike.%${searchText}%,` +
-          `email.ilike.%${searchText}%,` +
-          `customer_code.ilike.%${searchText}%`
-        );
+        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
+        const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
+        
+        if (searchWords.length === 1) {
+          // كلمة واحدة: بحث عادي
+          countQuery = countQuery.or(
+            `first_name.ilike.%${searchText}%,` +
+            `last_name.ilike.%${searchText}%,` +
+            `first_name_ar.ilike.%${searchText}%,` +
+            `last_name_ar.ilike.%${searchText}%,` +
+            `company_name.ilike.%${searchText}%,` +
+            `phone.ilike.%${searchText}%,` +
+            `email.ilike.%${searchText}%,` +
+            `customer_code.ilike.%${searchText}%`
+          );
+        } else {
+          // كلمات متعددة: بحث في كل كلمة على حدة
+          const orConditions = [
+            `first_name.ilike.%${searchText}%`,
+            `last_name.ilike.%${searchText}%`,
+            `first_name_ar.ilike.%${searchText}%`,
+            `last_name_ar.ilike.%${searchText}%`,
+            `company_name.ilike.%${searchText}%`,
+            `phone.ilike.%${searchText}%`,
+            `email.ilike.%${searchText}%`,
+            `customer_code.ilike.%${searchText}%`
+          ];
+          
+          // نضيف البحث في كل كلمة على حدة
+          searchWords.forEach((word: string) => {
+            orConditions.push(`first_name.ilike.%${word}%`);
+            orConditions.push(`last_name.ilike.%${word}%`);
+            orConditions.push(`first_name_ar.ilike.%${word}%`);
+            orConditions.push(`last_name_ar.ilike.%${word}%`);
+          });
+          
+          countQuery = countQuery.or(orConditions.join(','));
+        }
       }
 
       if (customer_code?.trim()) {
@@ -195,14 +225,44 @@ export const useCustomers = (filters?: CustomerFilters) => {
       
       const searchText = searchTerm || search;
       if (searchText) {
-        countQuery = countQuery.or(
-          `first_name.ilike.%${searchText}%,` +
-          `last_name.ilike.%${searchText}%,` +
-          `company_name.ilike.%${searchText}%,` +
-          `phone.ilike.%${searchText}%,` +
-          `email.ilike.%${searchText}%,` +
-          `customer_code.ilike.%${searchText}%`
-        );
+        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
+        const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
+        
+        if (searchWords.length === 1) {
+          // كلمة واحدة: بحث عادي
+          countQuery = countQuery.or(
+            `first_name.ilike.%${searchText}%,` +
+            `last_name.ilike.%${searchText}%,` +
+            `first_name_ar.ilike.%${searchText}%,` +
+            `last_name_ar.ilike.%${searchText}%,` +
+            `company_name.ilike.%${searchText}%,` +
+            `phone.ilike.%${searchText}%,` +
+            `email.ilike.%${searchText}%,` +
+            `customer_code.ilike.%${searchText}%`
+          );
+        } else {
+          // كلمات متعددة: بحث في كل كلمة على حدة
+          const orConditions = [
+            `first_name.ilike.%${searchText}%`,
+            `last_name.ilike.%${searchText}%`,
+            `first_name_ar.ilike.%${searchText}%`,
+            `last_name_ar.ilike.%${searchText}%`,
+            `company_name.ilike.%${searchText}%`,
+            `phone.ilike.%${searchText}%`,
+            `email.ilike.%${searchText}%`,
+            `customer_code.ilike.%${searchText}%`
+          ];
+          
+          // نضيف البحث في كل كلمة على حدة
+          searchWords.forEach((word: string) => {
+            orConditions.push(`first_name.ilike.%${word}%`);
+            orConditions.push(`last_name.ilike.%${word}%`);
+            orConditions.push(`first_name_ar.ilike.%${word}%`);
+            orConditions.push(`last_name_ar.ilike.%${word}%`);
+          });
+          
+          countQuery = countQuery.or(orConditions.join(','));
+        }
       }
 
       if (customer_code?.trim()) {
@@ -240,14 +300,44 @@ export const useCustomers = (filters?: CustomerFilters) => {
       }
       
       if (searchText) {
-        query = query.or(
-          `first_name.ilike.%${searchText}%,` +
-          `last_name.ilike.%${searchText}%,` +
-          `company_name.ilike.%${searchText}%,` +
-          `phone.ilike.%${searchText}%,` +
-          `email.ilike.%${searchText}%,` +
-          `customer_code.ilike.%${searchText}%`
-        );
+        // تقسيم عبارة البحث إلى كلمات للبحث الأفضل
+        const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
+        
+        if (searchWords.length === 1) {
+          // كلمة واحدة: بحث عادي
+          query = query.or(
+            `first_name.ilike.%${searchText}%,` +
+            `last_name.ilike.%${searchText}%,` +
+            `first_name_ar.ilike.%${searchText}%,` +
+            `last_name_ar.ilike.%${searchText}%,` +
+            `company_name.ilike.%${searchText}%,` +
+            `phone.ilike.%${searchText}%,` +
+            `email.ilike.%${searchText}%,` +
+            `customer_code.ilike.%${searchText}%`
+          );
+        } else {
+          // كلمات متعددة: بحث في كل كلمة على حدة
+          const orConditions = [
+            `first_name.ilike.%${searchText}%`,
+            `last_name.ilike.%${searchText}%`,
+            `first_name_ar.ilike.%${searchText}%`,
+            `last_name_ar.ilike.%${searchText}%`,
+            `company_name.ilike.%${searchText}%`,
+            `phone.ilike.%${searchText}%`,
+            `email.ilike.%${searchText}%`,
+            `customer_code.ilike.%${searchText}%`
+          ];
+          
+          // نضيف البحث في كل كلمة على حدة
+          searchWords.forEach((word: string) => {
+            orConditions.push(`first_name.ilike.%${word}%`);
+            orConditions.push(`last_name.ilike.%${word}%`);
+            orConditions.push(`first_name_ar.ilike.%${word}%`);
+            orConditions.push(`last_name_ar.ilike.%${word}%`);
+          });
+          
+          query = query.or(orConditions.join(','));
+        }
       }
 
       if (customer_code?.trim()) {
