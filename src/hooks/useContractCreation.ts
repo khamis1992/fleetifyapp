@@ -319,9 +319,34 @@ export const useContractCreation = () => {
         updateStepStatus('creation', 'completed')
 
         const contractId = insertedContract.id
-        const journalEntryId = null // No journal entry with direct insert
+        let journalEntryId: string | null = null
         const warnings: string[] = []
-        const requiresManualEntry = contractAmount > 0 // Manual entry needed if amount > 0
+        let requiresManualEntry = false
+
+        // محاولة إنشاء القيد المحاسبي تلقائياً (فقط إذا كان المبلغ > 0)
+        if (contractAmount > 0 && companyId) {
+          updateStepStatus('activation', 'processing')
+          console.log('📝 [CONTRACT_CREATION] محاولة إنشاء القيد المحاسبي تلقائياً...')
+          
+          try {
+            const { createContractJournalEntryManual } = await import('@/utils/contractJournalEntry')
+            const journalResult = await createContractJournalEntryManual(contractId, companyId)
+            
+            if (journalResult.success && journalResult.journal_entry_id) {
+              journalEntryId = journalResult.journal_entry_id
+              console.log('✅ [CONTRACT_CREATION] تم إنشاء القيد المحاسبي بنجاح:', journalEntryId)
+            } else {
+              console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء القيد:', journalResult.error)
+              requiresManualEntry = true
+              if (journalResult.error) {
+                warnings.push(journalResult.error)
+              }
+            }
+          } catch (journalError: unknown) {
+            console.error('❌ [CONTRACT_CREATION] خطأ في إنشاء القيد المحاسبي:', journalError)
+            requiresManualEntry = true
+          }
+        }
 
         // Link vehicle condition report to contract if exists
         if (inputContractData.vehicle_condition_report_id && contractId) {
@@ -444,54 +469,51 @@ export const useContractCreation = () => {
           // This is part of the improved error handling - contract creation succeeds even if document saving fails
         }
 
-        // معالجة حالة القيد المحاسبي
+        // معالجة حالة القيد المحاسبي - تجربة مستخدم مُحسّنة
         if (journalEntryId) {
-          // تم إنشاء القيد المحاسبي بنجاح
+          // ✅ نجاح كامل
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
           
-          toast.success('تم إنشاء العقد والقيد المحاسبي بنجاح')
+          toast.success('تم إنشاء العقد والقيد المحاسبي بنجاح ✓')
         } else if (requiresManualEntry) {
-          // فشل في إنشاء القيد المحاسبي - يحتاج تدخل يدوي
-          console.log('⚠️ [CONTRACT_CREATION] Contract created but journal entry requires manual creation')
+          // ⚠️ العقد تم إنشاؤه - القيد يحتاج مراجعة
+          console.log('⚠️ [CONTRACT_CREATION] Contract created, journal entry needs setup')
           
-          updateStepStatus('activation', 'warning', 'فشل في إنشاء القيد المحاسبي بعد عدة محاولات')
-          updateStepStatus('verification', 'failed', 'يتطلب إنشاء قيد محاسبي يدوي - الرجاء إعداد ربط الحسابات في إعدادات الشركة')
-          updateStepStatus('finalization', 'warning', 'تم إنشاء العقد ولكن يتطلب قيد محاسبي يدوي')
+          // رسائل مختصرة وواضحة
+          updateStepStatus('activation', 'completed', undefined, ['تم إنشاء العقد بنجاح'])
+          updateStepStatus('verification', 'warning', 'القيد المحاسبي يحتاج إعداد')
+          updateStepStatus('finalization', 'completed')
           
-          // Show more specific error message
-          toast.error('يتطلب إعداد ربط الحسابات لإنشاء القيود المحاسبية تلقائياً', {
-            description: 'يرجى الذهاب إلى إعدادات الشركة وإعداد ربط الحسابات لحسابات الذمم والإيرادات',
-            duration: 10000
+          // رسالة نجاح مع تنبيه بسيط
+          toast.success('تم إنشاء العقد بنجاح ✓', {
+            description: 'القيد المحاسبي يمكن إضافته لاحقاً',
+            duration: 4000
           })
         } else if (warnings.length > 0) {
-          // تحذيرات في إنشاء القيد المحاسبي
-          updateStepStatus('activation', 'warning', warnings.join(', '), warnings)
-          updateStepStatus('verification', 'warning', 'سيتم التحقق تلقائياً')
-          updateStepStatus('finalization', 'completed')
-          
-          toast.success('تم إنشاء العقد بنجاح مع بعض التحذيرات', {
-            description: warnings.join(', '),
-            duration: 6000
-          })
-        } else {
-          // تم إنشاء العقد بدون قيد محاسبي (مبلغ صفر مثلاً)
+          // تحذيرات بسيطة
           updateStepStatus('activation', 'completed')
           updateStepStatus('verification', 'completed')
           updateStepStatus('finalization', 'completed')
           
-          toast.success('تم إنشاء العقد بنجاح')
+          toast.success('تم إنشاء العقد بنجاح ✓')
+        } else {
+          // نجاح (مبلغ صفر)
+          updateStepStatus('activation', 'completed')
+          updateStepStatus('verification', 'completed')
+          updateStepStatus('finalization', 'completed')
+          
+          toast.success('تم إنشاء العقد بنجاح ✓')
         }
 
-        const hasWarnings = warnings.length > 0 || requiresManualEntry
-        
+        // تحديث الحالة - العقد ناجح دائماً
         setCreationState(prev => ({ 
           ...prev, 
           contractId, 
           isProcessing: false,
-          hasWarnings,
-          healthStatus: requiresManualEntry ? 'error' : (hasWarnings ? 'warning' : 'good')
+          hasWarnings: requiresManualEntry,
+          healthStatus: journalEntryId ? 'good' : (requiresManualEntry ? 'warning' : 'good')
         }))
 
         await logContractStep(contractId, 'enhanced_creation', 'completed', 1, null, Date.now() - startTime)

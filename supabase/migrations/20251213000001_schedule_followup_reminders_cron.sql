@@ -31,3 +31,4 @@ SELECT cron.schedule(
 -- To check job execution history:
 -- SELECT * FROM cron.job_run_details WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'send-followup-reminders-daily') ORDER BY start_time DESC LIMIT 10;
 
+
