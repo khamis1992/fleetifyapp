@@ -759,6 +759,20 @@ const CustomersPageNew: React.FC = () => {
           // فتح صفحة CRM مع العميل المحدد
           navigate(`/customers/crm?call=${customerId}`);
         }}
+        onEdit={(customerId) => {
+          setSidePanelOpen(false);
+          const customer = customers.find(c => c.id === customerId);
+          if (customer) handleEditCustomer(customer);
+        }}
+        onDelete={(customerId) => {
+          setSidePanelOpen(false);
+          const customer = customers.find(c => c.id === customerId);
+          if (customer) handleDeleteCustomer(customer);
+        }}
+        onNewContract={(customerId) => {
+          setSidePanelOpen(false);
+          navigate(`/contracts/new?customer=${customerId}`);
+        }}
       />
     </div>
   );

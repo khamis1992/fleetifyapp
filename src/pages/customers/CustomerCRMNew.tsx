@@ -1307,6 +1307,10 @@ export default function CustomerCRMNew() {
         }}
         onWhatsApp={handleWhatsApp}
         onAddNote={(customerId) => openDialog('note', customerId)}
+        onNewContract={(customerId) => {
+          setSidePanelOpen(false);
+          window.location.href = `/contracts/new?customer=${customerId}`;
+        }}
       />
 
     </div>

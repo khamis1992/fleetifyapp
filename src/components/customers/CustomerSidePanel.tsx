@@ -37,6 +37,9 @@ import {
   Target,
   Star,
   Sparkles,
+  Edit3,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +55,9 @@ interface CustomerSidePanelProps {
   onCall?: (phone: string) => void;
   onWhatsApp?: (phone: string) => void;
   onAddNote?: (customerId: string) => void;
+  onEdit?: (customerId: string) => void;
+  onDelete?: (customerId: string) => void;
+  onNewContract?: (customerId: string) => void;
 }
 
 // مكون عرض نقاط صحة العميل - متوافق مع Bento Dashboard
@@ -257,6 +263,9 @@ export function CustomerSidePanel({
   onCall,
   onWhatsApp,
   onAddNote,
+  onEdit,
+  onDelete,
+  onNewContract,
 }: CustomerSidePanelProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const { data: customer, isLoading, error } = useCustomerDetails(customerId);
@@ -307,6 +316,28 @@ export function CustomerSidePanel({
                   <X className="w-5 h-5" />
                 </button>
                 <div className="flex items-center gap-2">
+                  {onDelete && customer?.basic && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDelete(customer.basic!.id)}
+                      className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      حذف
+                    </Button>
+                  )}
+                  {onEdit && customer?.basic && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEdit(customer.basic!.id)}
+                      className="gap-1.5"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      تعديل
+                    </Button>
+                  )}
                   {customer?.basic?.phone && (
                     <>
                       <Button
@@ -711,6 +742,15 @@ export function CustomerSidePanel({
                       <div className="text-center py-12 text-gray-500">
                         <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
                         <p>لا توجد عقود لهذا العميل</p>
+                        {onNewContract && (
+                          <Button
+                            className="mt-3 bg-coral-500 hover:bg-coral-600"
+                            onClick={() => onNewContract(customer.basic!.id)}
+                          >
+                            <Plus className="w-4 h-4 ml-1" />
+                            إنشاء عقد جديد
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       customer.contracts.map(contract => {
