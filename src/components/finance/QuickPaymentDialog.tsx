@@ -267,44 +267,58 @@ export function QuickPaymentDialog({
       const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
       const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
       const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
-      const firstContractId = selectedInvoices[0].contract_id;
 
-      const paymentInsertData = {
-        company_id: companyId,
-        customer_id: customerId,
-        contract_id: firstContractId || null,
-        invoice_id: selectedInvoices[0].id,
-        amount: amount,
-        payment_date: paymentDate,
-        payment_method: 'received' as const,
-        payment_number: paymentNumber,
-        payment_type: paymentTypeMap[paymentMethod] || 'cash',
-        payment_status: 'completed' as const,
-        transaction_type: 'receipt' as const,
-        currency: 'QAR',
-        notes: selectedInvoices.length > 1 
-          ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة: ${invoiceNumbers}`
-          : `دفعة لفاتورة ${invoiceNumbers}`,
-      };
-      
-      const { data: payment, error: paymentError } = await supabase
-        .from('payments')
-        .insert(paymentInsertData)
-        .select()
-        .single();
+      console.log('Processing payment for invoices:', invoiceNumbers);
 
-      if (paymentError) {
-        if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
-          throw new Error('⚠️ هذه الدفعة مسجلة بالفعل!');
-        }
-        throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message}`);
-      }
-
-      // Update invoices
+      // ✅ إنشاء دفعة منفصلة لكل فاتورة (الحل الصحيح)
       let remainingAmount = amount;
-      for (const invoice of selectedInvoices) {
+      let firstPaymentId: string | null = null;
+      let paymentsCreated = 0;
+
+      for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
+        const invoice = selectedInvoices[i];
         const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
         const amountToApply = Math.min(remainingAmount, invoiceBalance);
+        
+        if (amountToApply <= 0) continue;
+
+        const paymentInsertData = {
+          company_id: companyId,
+          customer_id: customerId,
+          contract_id: invoice.contract_id || null,
+          invoice_id: invoice.id,
+          amount: amountToApply,
+          payment_date: paymentDate,
+          payment_method: 'received' as const,
+          payment_number: `${paymentNumber}-${i + 1}`,
+          payment_type: paymentTypeMap[paymentMethod] || 'cash',
+          payment_status: 'completed' as const,
+          transaction_type: 'receipt' as const,
+          currency: 'QAR',
+          notes: `دفعة لفاتورة ${invoice.invoice_number}`,
+        };
+        
+        console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
+        
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .insert(paymentInsertData)
+          .select()
+          .single();
+
+        if (paymentError) {
+          console.error('Payment insert error:', paymentError);
+          if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
+            console.warn(`تخطي الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
+            continue;
+          }
+          throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message}`);
+        }
+        
+        if (!firstPaymentId) firstPaymentId = payment.id;
+        paymentsCreated++;
+
+        // تحديث الفاتورة
         const newBalance = Math.max(0, invoiceBalance - amountToApply);
         const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
         
@@ -318,8 +332,13 @@ export function QuickPaymentDialog({
           .eq('id', invoice.id);
 
         remainingAmount -= amountToApply;
-        if (remainingAmount <= 0) break;
       }
+
+      if (paymentsCreated === 0) {
+        throw new Error('لم يتم تسجيل أي دفعة. قد تكون جميع الدفعات مسجلة بالفعل.');
+      }
+
+      console.log(`Successfully created ${paymentsCreated} payment(s)`);
 
       // ✅ تحديث last_payment_date فقط - الـ trigger يحسب total_paid تلقائياً
       for (const contractId of contractIds) {
@@ -330,6 +349,9 @@ export function QuickPaymentDialog({
           })
           .eq('id', contractId);
       }
+      
+      // للتوافق مع الكود التالي
+      const payment = { id: firstPaymentId };
 
       const vehicleNumber = selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
 
