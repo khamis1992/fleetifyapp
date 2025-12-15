@@ -55,6 +55,7 @@ import {
   CheckCircle,
   Clock,
   Zap,
+  CreditCard,
 } from 'lucide-react';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
@@ -278,6 +279,17 @@ export const DelinquentCustomersTab: React.FC = () => {
   // Handle view details - Navigate to customer page
   const handleViewDetails = useCallback((customer: DelinquentCustomer) => {
     navigate(`/customers/${customer.customer_id}`);
+  }, [navigate]);
+
+  // Handle record payment - Navigate to quick payment page with customer selected
+  const handleRecordPayment = useCallback((customer: DelinquentCustomer) => {
+    // Navigate to quick payment page with customer info as query params
+    const params = new URLSearchParams({
+      customerId: customer.customer_id,
+      customerName: customer.customer_name || '',
+      phone: customer.phone || '',
+    });
+    navigate(`/finance/payments/quick?${params.toString()}`);
   }, [navigate]);
 
   // Handle create case - opens dialog
@@ -956,6 +968,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                               <Button variant="ghost" size="icon" onClick={() => handleSendWarning(customer)} title="إرسال إنذار">
                                 <AlertTriangle className="w-4 h-4 text-orange-500" />
                               </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleRecordPayment(customer)} title="تسجيل دفعة">
+                                <CreditCard className="w-4 h-4 text-green-600" />
+                              </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
@@ -966,6 +981,10 @@ export const DelinquentCustomersTab: React.FC = () => {
                                   <DropdownMenuItem onClick={() => handleViewDetails(customer)}>
                                     <Eye className="w-4 h-4 ml-2" />
                                     عرض تفاصيل العميل
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleRecordPayment(customer)}>
+                                    <CreditCard className="w-4 h-4 ml-2" />
+                                    تسجيل دفعة
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleCreateCase(customer)}>
                                     <FileText className="w-4 h-4 ml-2" />

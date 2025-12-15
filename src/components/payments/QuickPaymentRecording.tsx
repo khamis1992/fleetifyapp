@@ -1,4 +1,5 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
 import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,34 @@ export function QuickPaymentRecording() {
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for customer data in URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const customerId = params.get('customerId');
+    const customerName = params.get('customerName');
+    const phone = params.get('phone');
+
+    if (customerId && customerName) {
+      // Auto-select the customer from URL
+      const customerFromUrl: Customer = {
+        id: customerId,
+        first_name: customerName.split(' ')[0] || customerName,
+        last_name: customerName.split(' ').slice(1).join(' ') || '',
+        phone: phone || '',
+        customer_type: 'individual',
+        company_id: companyId || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      setSelectedCustomer(customerFromUrl);
+      // Trigger invoice fetching
+      selectCustomer(customerFromUrl);
+    }
+  }, [location.search, companyId]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
   const [paymentAmount, setPaymentAmount] = useState('');
