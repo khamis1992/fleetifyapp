@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -1902,39 +1903,8 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       });
     }
   }, [contract, toast]);
-  
-  // حساب جدول الدفعات المستحق
-  const paymentSchedule = useMemo(() => {
-    if (!contract.start_date || !contract.monthly_amount) return [];
 
-    const monthlyAmount = contract.monthly_amount;
-    const totalAmount = contract.contract_amount || 0;
-    const numberOfPayments = Math.ceil(totalAmount / monthlyAmount);
-    const schedule = [];
-
-    // بدء من اليوم الأول من الشهر التالي لتاريخ بداية العقد
-    const startDate = new Date(contract.start_date);
-    const firstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
-
-    for (let i = 0; i < numberOfPayments; i++) {
-      const dueDate = new Date(firstMonth);
-      dueDate.setMonth(firstMonth.getMonth() + i);
-
-      schedule.push({
-        number: i + 1,
-        dueDate,
-        amount: monthlyAmount,
-        status: i < Math.floor((contract.total_paid || 0) / monthlyAmount) ? 'paid' : i === Math.floor((contract.total_paid || 0) / monthlyAmount) ? 'pending' : 'upcoming',
-      });
-    }
-
-    return schedule;
-  }, [contract]);
-
-  const totalPaid = contract.total_paid || 0;
-  const totalAmount = contract.contract_amount || 0;
-  const balanceDue = totalAmount - totalPaid;
-
+  // ترجمة طريقة الدفع
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
       cash: 'نقداً',
@@ -1942,7 +1912,9 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       check: 'شيك',
       credit_card: 'بطاقة ائتمان',
       debit_card: 'بطاقة مدين',
-      online: 'دفع إلكتروني'
+      online: 'دفع إلكتروني',
+      received: 'نقداً', // إصلاح: received = استلام نقدي
+      made: 'دفع'
     };
     return labels[method] || method;
   };
@@ -1967,234 +1939,213 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const totalPaid = contract.total_paid || 0;
+  const totalAmount = contract.contract_amount || 0;
+  const balanceDue = totalAmount - totalPaid;
+  const paidPaymentsCount = payments.filter(p => p.payment_status === 'completed').length;
+
+  // إنشاء جدول دفعات موحد يجمع بين المجدول والفعلي
+  const unifiedPaymentSchedule = useMemo(() => {
+    if (!contract.start_date || !contract.monthly_amount) return [];
+
+    const monthlyAmount = contract.monthly_amount;
+    const numberOfPayments = Math.ceil(totalAmount / monthlyAmount);
+    const schedule = [];
+
+    // بدء من اليوم الأول من الشهر التالي لتاريخ بداية العقد
+    const startDate = new Date(contract.start_date);
+    const firstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+
+    // ترتيب الدفعات الفعلية حسب تاريخ الدفع
+    const sortedPayments = [...payments]
+      .filter(p => p.payment_status === 'completed')
+      .sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
+
+    for (let i = 0; i < numberOfPayments; i++) {
+      const dueDate = new Date(firstMonth);
+      dueDate.setMonth(firstMonth.getMonth() + i);
+
+      // البحث عن الدفعة الفعلية المرتبطة بهذه الدفعة المجدولة
+      const actualPayment = sortedPayments[i] || null;
+      const isPaid = i < sortedPayments.length;
+      const isPending = i === sortedPayments.length;
+
+      schedule.push({
+        number: i + 1,
+        dueDate,
+        amount: monthlyAmount,
+        status: isPaid ? 'paid' : isPending ? 'pending' : 'upcoming',
+        actualPayment: actualPayment,
+        paymentDate: actualPayment?.payment_date || null,
+        paymentMethod: actualPayment?.payment_type || actualPayment?.payment_method || null,
+        paymentNumber: actualPayment?.payment_number || null,
+      });
+    }
+
+    return schedule;
+  }, [contract, payments, totalAmount]);
+
   return (
-    <div className="space-y-8">
-      {/* جدول الدفعات المستحقة */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">جدول الدفعات المستحقة</h3>
-
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b-2 border-gray-200">
-            <tr>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">#</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">تاريخ الاستحقاق</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">المبلغ</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الحالة</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paymentSchedule.map((payment) => (
-              <tr
-                key={payment.number}
-                className={cn(
-                  'hover:bg-gray-50',
-                  payment.status === 'pending' && 'bg-yellow-50'
-                )}
-              >
-                <td className="px-4 py-4 font-mono text-sm">{payment.number}</td>
-                <td className="px-4 py-4 text-sm">
-                  {format(payment.dueDate, 'yyyy-MM-dd')}
-                </td>
-                <td className="px-4 py-4 text-sm font-semibold">
-                  {formatCurrency(payment.amount)}
-                </td>
-                <td className="px-4 py-4">
-                  <Badge
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium',
-                      payment.status === 'paid' && 'payment-paid',
-                      payment.status === 'pending' && 'payment-partial',
-                      payment.status === 'upcoming' && 'bg-gray-100 text-gray-600'
-                    )}
-                  >
-                    {payment.status === 'paid' ? 'مدفوع' : payment.status === 'pending' ? 'معلق' : 'قادم'}
-                  </Badge>
-                </td>
-                <td className="px-4 py-4">
-                  {payment.status === 'paid' ? (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className="text-blue-600"
-                      onClick={() => {
-                        // البحث عن الدفعة الفعلية المرتبطة بهذه الفترة
-                        // البحث بعدة طرق:
-                        // 1. البحث عن دفعة مرتبطة بفاتورة لها نفس تاريخ الاستحقاق
-                        // 2. البحث عن دفعة في نفس الشهر والسنة
-                        // 3. البحث عن دفعة بنفس المبلغ تقريباً
-                        const dueDateStr = format(payment.dueDate, 'yyyy-MM-dd');
-                        const dueMonth = payment.dueDate.getMonth();
-                        const dueYear = payment.dueDate.getFullYear();
-                        
-                        let actualPayment = payments.find(p => {
-                          // البحث عن دفعة مرتبطة بفاتورة لها نفس تاريخ الاستحقاق
-                          if (p.invoice_id) {
-                            const invoice = (p as any).invoices;
-                            if (invoice && invoice.due_date) {
-                              const invoiceDueDate = new Date(invoice.due_date);
-                              return invoiceDueDate.toISOString().split('T')[0] === dueDateStr;
-                            }
-                          }
-                          return false;
-                        });
-                        
-                        // إذا لم نجد، البحث عن دفعة في نفس الشهر والسنة
-                        if (!actualPayment) {
-                          actualPayment = payments.find(p => {
-                            const paymentDate = new Date(p.payment_date);
-                            return paymentDate.getMonth() === dueMonth &&
-                                   paymentDate.getFullYear() === dueYear;
-                          });
-                        }
-                        
-                        // إذا لم نجد، البحث عن دفعة بنفس المبلغ تقريباً (مع هامش 1%)
-                        if (!actualPayment) {
-                          actualPayment = payments.find(p => {
-                            const amountDiff = Math.abs((p.amount || 0) - payment.amount);
-                            return amountDiff < (payment.amount * 0.01);
-                          });
-                        }
-                        
-                        if (actualPayment) {
-                          handlePaymentView(actualPayment);
-                        } else {
-                          toast({
-                            title: 'معلومة الدفعة',
-                            description: `تم دفع مبلغ ${formatCurrency(payment.amount)} المستحق في ${format(payment.dueDate, 'dd/MM/yyyy')}. لم يتم العثور على تفاصيل الدفعة الفعلية.`,
-                            variant: 'default',
-                          });
-                        }
-                      }}
-                    >
-                      عرض
-                    </Button>
-                  ) : payment.status === 'pending' ? (
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      className="bg-green-600 hover:bg-green-700 text-white font-medium"
-                      onClick={() => {
-                        // الانتقال لصفحة تسجيل الدفعة مع بيانات العقد
-                        navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
-                      }}
-                    >
-                      <CreditCard className="h-4 w-4 ml-1" />
-                      دفع
-                    </Button>
-                  ) : (
-                    <span className="text-gray-400 text-sm">---</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* الملخص المالي */}
-      <Card className="mt-6 bg-red-50 border-red-200">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-sm text-gray-600">إجمالي المبلغ</div>
-              <div className="text-2xl font-bold text-gray-900">
+    <div className="space-y-6">
+      {/* الملخص المالي الموحد */}
+      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200 shadow-sm">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">إجمالي القيمة</div>
+              <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(totalAmount)}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-600">المدفوع</div>
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">المدفوع</div>
+              <div className="text-xl font-bold text-green-600">
                 {formatCurrency(totalPaid)}
               </div>
+              <div className="text-xs text-green-600 mt-1">
+                {paidPaymentsCount} دفعة
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-600">المتبقي</div>
-              <div className="text-2xl font-bold text-orange-600">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">المتبقي</div>
+              <div className="text-xl font-bold text-orange-600">
                 {formatCurrency(balanceDue)}
               </div>
+              <div className="text-xs text-orange-600 mt-1">
+                {unifiedPaymentSchedule.length - paidPaymentsCount} دفعة
+              </div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">نسبة الإنجاز</div>
+              <div className="text-xl font-bold text-blue-600">
+                {totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0}%
+              </div>
+              <Progress 
+                value={totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0} 
+                className="h-2 mt-2"
+              />
             </div>
           </div>
         </CardContent>
       </Card>
-      </div>
 
-      {/* جدول المدفوعات الفعلية */}
+      {/* جدول الدفعات الموحد */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">المدفوعات الفعلية</h3>
-        {payments.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">لا توجد مدفوعات مسجلة لهذا العقد</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">رقم الدفع</TableHead>
-                  <TableHead className="text-right">تاريخ الدفع</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">طريقة الدفع</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">المرجع</TableHead>
-                  <TableHead className="text-right">الملاحظات</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((payment: any) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">{payment.payment_number}</TableCell>
-                    <TableCell>
-                      {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
-                    </TableCell>
-                    <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getPaymentMethodLabel(payment.payment_method)}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">جدول الدفعات</h3>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-green-500"></span>
+              مدفوع ({paidPaymentsCount})
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+              معلق (1)
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-gray-300"></span>
+              قادم ({Math.max(0, unifiedPaymentSchedule.length - paidPaymentsCount - 1)})
+            </span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">تاريخ الاستحقاق</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">تاريخ الدفع</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">المبلغ</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">طريقة الدفع</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">الحالة</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {unifiedPaymentSchedule.map((payment) => (
+                <tr
+                  key={payment.number}
+                  className={cn(
+                    'hover:bg-gray-50 transition-colors',
+                    payment.status === 'paid' && 'bg-green-50/30',
+                    payment.status === 'pending' && 'bg-yellow-50/50',
+                    payment.status === 'upcoming' && 'bg-gray-50/30'
+                  )}
+                >
+                  <td className="px-4 py-3">
+                    <span className={cn(
+                      'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium',
+                      payment.status === 'paid' && 'bg-green-100 text-green-700',
+                      payment.status === 'pending' && 'bg-yellow-100 text-yellow-700',
+                      payment.status === 'upcoming' && 'bg-gray-100 text-gray-600'
+                    )}>
+                      {payment.number}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {format(payment.dueDate, 'dd/MM/yyyy')}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {payment.paymentDate ? (
+                      <span className="text-green-600 font-medium">
+                        {format(new Date(payment.paymentDate), 'dd/MM/yyyy')}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                    {formatCurrency(payment.amount)}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {payment.paymentMethod ? (
+                      <Badge variant="outline" className="font-normal">
+                        {getPaymentMethodLabel(payment.paymentMethod)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getPaymentStatusColor(payment.payment_status)}>
-                        {getPaymentStatusLabel(payment.payment_status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {payment.reference_number || '-'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {payment.notes || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePaymentView(payment)}
-                          className="flex items-center gap-1"
-                        >
-                          <Eye className="h-4 w-4" />
-                          عرض
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePaymentPrint(payment)}
-                          className="flex items-center gap-1"
-                        >
-                          <Printer className="h-4 w-4" />
-                          طباعة
-                        </Button>
-                        {payment.payment_status === 'completed' && (
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      className={cn(
+                        'px-2.5 py-0.5 rounded-full text-xs font-medium',
+                        payment.status === 'paid' && 'bg-green-100 text-green-700 border-green-200',
+                        payment.status === 'pending' && 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                        payment.status === 'upcoming' && 'bg-gray-100 text-gray-500 border-gray-200'
+                      )}
+                    >
+                      {payment.status === 'paid' ? '✓ مدفوع' : payment.status === 'pending' ? '⏳ معلق' : 'قادم'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {payment.status === 'paid' && payment.actualPayment ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePaymentView(payment.actualPayment)}
+                            className="flex items-center gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            عرض
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePaymentPrint(payment.actualPayment)}
+                            className="flex items-center gap-1"
+                          >
+                            <Printer className="h-4 w-4" />
+                            طباعة
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setPaymentToCancel(payment);
+                              setPaymentToCancel(payment.actualPayment);
                               setIsCancelDialogOpen(true);
                             }}
                             className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -2202,37 +2153,28 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                             <XCircle className="h-4 w-4" />
                             إلغاء
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* ملخص المدفوعات الفعلية */}
-        {payments.length > 0 && (
-          <Card className="mt-6 bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-sm text-gray-600">عدد المدفوعات</div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {payments.length}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600">إجمالي المدفوعات</div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                        </>
+                      ) : payment.status === 'pending' ? (
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                          onClick={() => {
+                            navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
+                          }}
+                        >
+                          <CreditCard className="h-4 w-4 ml-1" />
+                          دفع الآن
+                        </Button>
+                      ) : (
+                        <span className="text-gray-300 text-sm">—</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Payment Preview Dialog */}
