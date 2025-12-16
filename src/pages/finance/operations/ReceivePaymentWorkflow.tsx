@@ -173,19 +173,38 @@ const ReceivePaymentWorkflow: React.FC = () => {
       // 1. إنشاء رقم دفعة فريد
       const paymentNumber = `PAY-${Date.now().toString(36).toUpperCase()}`;
 
-      // 2. إنشاء الدفعة
-      // payment_method = 'received' (استلام) أو 'made' (دفع)
-      // payment_type = نوع الدفع (cash, bank_transfer, check, etc.)
+      // 2. البحث عن الفاتورة المناسبة (أول فاتورة غير مدفوعة للعقد)
+      let targetInvoiceId: string | null = null;
+      let remainingAmount = data.amount;
+      
+      const { data: unpaidInvoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id, total_amount, paid_amount, balance_due, payment_status')
+        .eq('contract_id', data.contractId)
+        .in('payment_status', ['unpaid', 'partial'])
+        .order('due_date', { ascending: true });
+      
+      if (invoicesError) {
+        console.error('Error fetching invoices:', invoicesError);
+      }
+      
+      // 3. ربط الدفعة بالفاتورة الأولى غير المدفوعة
+      if (unpaidInvoices && unpaidInvoices.length > 0) {
+        targetInvoiceId = unpaidInvoices[0].id;
+      }
+
+      // 4. إنشاء الدفعة مع ربطها بالفاتورة
       const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
         .insert({
           company_id: companyId,
           contract_id: data.contractId,
           customer_id: data.customerId,
+          invoice_id: targetInvoiceId, // ✅ ربط الدفعة بالفاتورة
           payment_number: paymentNumber,
           amount: data.amount,
-          payment_type: data.paymentMethod, // نوع الدفع (نقدي، تحويل، إلخ)
-          payment_method: 'received', // اتجاه الدفعة: استلام من العميل
+          payment_type: data.paymentMethod,
+          payment_method: 'received',
           payment_date: data.paymentDate,
           payment_status: 'completed',
           reference_number: data.referenceNumber || null,
@@ -197,8 +216,34 @@ const ReceivePaymentWorkflow: React.FC = () => {
 
       if (paymentError) throw paymentError;
 
-      // ✅ الـ trigger يحسب total_paid تلقائياً من الدفعات
-      // لا حاجة لتحديث total_paid يدوياً - فقط تحديث last_payment_date
+      // 5. تحديث حالة الفواتير (توزيع المبلغ على الفواتير)
+      if (unpaidInvoices && unpaidInvoices.length > 0) {
+        for (const invoice of unpaidInvoices) {
+          if (remainingAmount <= 0) break;
+          
+          const invoiceBalance = invoice.total_amount - (invoice.paid_amount || 0);
+          const amountToApply = Math.min(remainingAmount, invoiceBalance);
+          
+          if (amountToApply > 0) {
+            const newPaidAmount = (invoice.paid_amount || 0) + amountToApply;
+            const newBalance = invoice.total_amount - newPaidAmount;
+            const newStatus = newBalance <= 0 ? 'paid' : 'partial';
+            
+            await supabase
+              .from('invoices')
+              .update({
+                paid_amount: newPaidAmount,
+                balance_due: newBalance,
+                payment_status: newStatus,
+              })
+              .eq('id', invoice.id);
+            
+            remainingAmount -= amountToApply;
+          }
+        }
+      }
+
+      // 6. تحديث تاريخ آخر دفعة في العقد
       await supabase
         .from('contracts')
         .update({ 
