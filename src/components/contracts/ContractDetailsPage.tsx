@@ -2196,7 +2196,11 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
               <PaymentReceipt
                 receiptNumber={selectedPayment.payment_number || generateReceiptNumber()}
                 date={formatReceiptDate(selectedPayment.payment_date)}
-                customerName={contract.customer_name || 'عميل'}
+                customerName={
+                  contract.customer 
+                    ? `${contract.customer.first_name_ar || contract.customer.first_name || ''} ${contract.customer.last_name_ar || contract.customer.last_name || ''}`.trim()
+                    : 'عميل'
+                }
                 amountInWords={numberToArabicWords(selectedPayment.amount || 0)}
                 amount={selectedPayment.amount || 0}
                 description={`إيجار شهر ${format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar })} - عقد رقم ${contract.contract_number}`}
