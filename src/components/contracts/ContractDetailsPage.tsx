@@ -2120,41 +2120,44 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       {payment.status === 'paid' && payment.actualPayment ? (
                         <>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handlePaymentView(payment.actualPayment)}
+                            className="flex items-center gap-1"
                           >
                             <Eye className="h-4 w-4" />
+                            عرض
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handlePaymentPrint(payment.actualPayment)}
+                            className="flex items-center gap-1"
                           >
                             <Printer className="h-4 w-4" />
+                            طباعة
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
                               setPaymentToCancel(payment.actualPayment);
                               setIsCancelDialogOpen(true);
                             }}
+                            className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <XCircle className="h-4 w-4" />
+                            إلغاء
                           </Button>
                         </>
                       ) : payment.status === 'pending' ? (
                         <Button 
                           size="sm" 
-                          className="h-8 bg-green-600 hover:bg-green-700 text-white font-medium"
+                          className="bg-green-600 hover:bg-green-700 text-white font-medium"
                           onClick={() => {
                             navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
                           }}
