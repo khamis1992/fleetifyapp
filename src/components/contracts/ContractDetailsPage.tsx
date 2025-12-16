@@ -77,6 +77,8 @@ import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
 import { ConvertToLegalDialog } from './ConvertToLegalDialog';
 import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
+import { UnifiedPrintableDocument } from '@/components/finance';
+import { convertReceiptToPrintable, printDocument } from '@/utils/printHelper';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
@@ -1868,40 +1870,29 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
 
   // Handle payment print
   const handlePaymentPrint = useCallback((payment: any) => {
-    try {
-      const { printDocument, convertReceiptToPrintable } = require('@/utils/printHelper');
-      
-      // Convert payment to receipt format
-      const receiptData = {
-        id: payment.id,
-        customer_name: contract.customer_name || 'عميل',
-        customer_phone: contract.customer_phone,
-        vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
-        month: format(new Date(payment.payment_date), 'MMMM yyyy', { locale: ar }),
-        payment_date: payment.payment_date,
-        rent_amount: payment.amount,
-        fine: 0,
-        total_paid: payment.amount,
-        payment_method: payment.payment_method,
-        reference_number: payment.reference_number,
-        notes: payment.notes
-      };
-      
-      const printableData = convertReceiptToPrintable(receiptData);
-      printDocument(printableData);
-      
-      toast({
-        title: 'تم فتح نافذة الطباعة',
-        description: `إيصال الدفع #${payment.payment_number}`,
-      });
-    } catch (error) {
-      console.error('Print error:', error);
-      toast({
-        title: 'خطأ في الطباعة',
-        description: 'حدث خطأ أثناء طباعة الإيصال',
-        variant: 'destructive'
-      });
-    }
+    // Convert payment to receipt format
+    const receiptData = {
+      id: payment.id,
+      customer_name: contract.customer_name || 'عميل',
+      customer_phone: contract.customer_phone,
+      vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
+      month: format(new Date(payment.payment_date), 'MMMM yyyy', { locale: ar }),
+      payment_date: payment.payment_date,
+      rent_amount: payment.amount,
+      fine: 0,
+      total_paid: payment.amount,
+      payment_method: payment.payment_method,
+      reference_number: payment.reference_number,
+      notes: payment.notes
+    };
+    
+    const printableData = convertReceiptToPrintable(receiptData);
+    printDocument(printableData);
+    
+    toast({
+      title: 'تم فتح نافذة الطباعة',
+      description: `إيصال الدفع #${payment.payment_number}`,
+    });
   }, [contract, toast]);
 
   // ترجمة طريقة الدفع
@@ -2120,44 +2111,41 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {payment.status === 'paid' && payment.actualPayment ? (
                         <>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                             onClick={() => handlePaymentView(payment.actualPayment)}
-                            className="flex items-center gap-1"
                           >
                             <Eye className="h-4 w-4" />
-                            عرض
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100"
                             onClick={() => handlePaymentPrint(payment.actualPayment)}
-                            className="flex items-center gap-1"
                           >
                             <Printer className="h-4 w-4" />
-                            طباعة
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
                             onClick={() => {
                               setPaymentToCancel(payment.actualPayment);
                               setIsCancelDialogOpen(true);
                             }}
-                            className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <XCircle className="h-4 w-4" />
-                            إلغاء
                           </Button>
                         </>
                       ) : payment.status === 'pending' ? (
                         <Button 
                           size="sm" 
-                          className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                          className="h-8 bg-green-600 hover:bg-green-700 text-white font-medium"
                           onClick={() => {
                             navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
                           }}
@@ -2192,65 +2180,24 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
             </DialogHeader>
             <div className="p-4">
               {(() => {
-                try {
-                  const { UnifiedPrintableDocument } = require('@/components/finance');
-                  const { convertReceiptToPrintable } = require('@/utils/printHelper');
-                  
-                  const receiptData = {
-                    id: selectedPayment.id,
-                    customer_name: contract.customer_name || 'عميل',
-                    customer_phone: contract.customer_phone,
-                    vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
-                    month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
-                    payment_date: selectedPayment.payment_date,
-                    rent_amount: selectedPayment.amount,
-                    fine: 0,
-                    total_paid: selectedPayment.amount,
-                    payment_method: selectedPayment.payment_method,
-                    reference_number: selectedPayment.reference_number,
-                    notes: selectedPayment.notes
-                  };
-                  
-                  const printableData = convertReceiptToPrintable(receiptData);
-                  
-                  return <UnifiedPrintableDocument data={printableData} />;
-                } catch (error) {
-                  console.error('Error loading receipt:', error);
-                  return (
-                    <div className="p-6 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">رقم الدفعة</p>
-                          <p className="font-semibold">{selectedPayment.payment_number}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">المبلغ</p>
-                          <p className="font-semibold text-green-600">{formatCurrency(selectedPayment.amount)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">تاريخ الدفع</p>
-                          <p className="font-semibold">{format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy')}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">طريقة الدفع</p>
-                          <p className="font-semibold">{getPaymentMethodLabel(selectedPayment.payment_method)}</p>
-                        </div>
-                        {selectedPayment.reference_number && (
-                          <div>
-                            <p className="text-sm text-gray-500">رقم المرجع</p>
-                            <p className="font-semibold">{selectedPayment.reference_number}</p>
-                          </div>
-                        )}
-                        {selectedPayment.notes && (
-                          <div className="col-span-2">
-                            <p className="text-sm text-gray-500">ملاحظات</p>
-                            <p className="font-semibold">{selectedPayment.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
+                const receiptData = {
+                  id: selectedPayment.id,
+                  customer_name: contract.customer_name || 'عميل',
+                  customer_phone: contract.customer_phone,
+                  vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
+                  month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
+                  payment_date: selectedPayment.payment_date,
+                  rent_amount: selectedPayment.amount,
+                  fine: 0,
+                  total_paid: selectedPayment.amount,
+                  payment_method: selectedPayment.payment_method,
+                  reference_number: selectedPayment.reference_number,
+                  notes: selectedPayment.notes
+                };
+                
+                const printableData = convertReceiptToPrintable(receiptData);
+                
+                return <UnifiedPrintableDocument data={printableData} />;
               })()}
             </div>
           </DialogContent>
