@@ -224,8 +224,10 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       return calculateDelinquentCustomersDynamically(companyId, filters);
     },
     enabled: !!user?.id && !isCompanyLoading,
-    staleTime: 1000 * 60 * 5, // 5 minutes - data is updated daily by cron
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 1, // 1 minute - تحديث أسرع للبيانات الحية
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true, // تحديث عند العودة للنافذة
+    refetchOnMount: true, // تحديث عند تحميل المكون
   });
 };
 
@@ -304,7 +306,9 @@ async function calculateDelinquentCustomersDynamically(
   // Get oldest unpaid invoice per contract to calculate days_overdue
   // We need to check for invoices that are past due and not fully paid
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    // استخدام التاريخ المحلي بدلاً من UTC لتجنب مشاكل المنطقة الزمنية
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
     // First, get all invoices for these contracts that are past due
     const { data: invoicesData, error: invoicesError } = await supabase

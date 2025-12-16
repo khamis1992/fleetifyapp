@@ -1,6 +1,4 @@
-// Legal AI System - Unified Export File
-export { EnhancedLegalAIInterface_v2 } from './EnhancedLegalAIInterface_v2';
-export { APIKeySettings } from './APIKeySettings';
+// Legal System - Unified Export File
 export { LegalDocumentGenerator } from './LegalDocumentGenerator';
 export { RiskAnalyzer } from './RiskAnalyzer';
 export { default as LegalCaseCreationWizard } from './LegalCaseCreationWizard';
@@ -21,11 +19,3 @@ export { default as SettlementCompliance } from './SettlementCompliance';
 export type { TimelineEntry } from './CaseTimeline';
 export type { TimelineEntryFormData } from './TimelineEntryDialog';
 export type { NoticeVariables } from './NoticeTemplateManager';
-
-// Types
-export type {
-  LegalAIInterfaceProps,
-  LegalDocument,
-  RiskAnalysis,
-  RiskFactors
-} from './EnhancedLegalAIInterface_v2';

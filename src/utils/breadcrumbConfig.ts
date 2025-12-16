@@ -57,7 +57,6 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 
   // Legal
   '/legal': { label: 'الشؤون القانونية' },
-  '/legal/advisor': { label: 'المستشار القانوني', parent: '/legal' },
   '/legal/cases': { label: 'تتبع القضايا', parent: '/legal' },
 
   // Other

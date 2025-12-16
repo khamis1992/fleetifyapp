@@ -1963,6 +1963,9 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       .filter(p => p.payment_status === 'completed')
       .sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة بالتاريخ فقط
+
     for (let i = 0; i < numberOfPayments; i++) {
       const dueDate = new Date(firstMonth);
       dueDate.setMonth(firstMonth.getMonth() + i);
@@ -1970,13 +1973,30 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       // البحث عن الدفعة الفعلية المرتبطة بهذه الدفعة المجدولة
       const actualPayment = sortedPayments[i] || null;
       const isPaid = i < sortedPayments.length;
-      const isPending = i === sortedPayments.length;
+      
+      // تحديد الحالة بناءً على التاريخ
+      let status: 'paid' | 'overdue' | 'pending' | 'upcoming';
+      if (isPaid) {
+        status = 'paid';
+      } else {
+        // مقارنة تاريخ الاستحقاق مع اليوم
+        const dueDateOnly = new Date(dueDate);
+        dueDateOnly.setHours(0, 0, 0, 0);
+        
+        if (dueDateOnly < today) {
+          status = 'overdue'; // متأخر - تاريخ الاستحقاق مضى
+        } else if (dueDateOnly.getTime() === today.getTime()) {
+          status = 'pending'; // معلق - تاريخ الاستحقاق اليوم
+        } else {
+          status = 'upcoming'; // قادم - تاريخ الاستحقاق في المستقبل
+        }
+      }
 
       schedule.push({
         number: i + 1,
         dueDate,
         amount: monthlyAmount,
-        status: isPaid ? 'paid' : isPending ? 'pending' : 'upcoming',
+        status,
         actualPayment: actualPayment,
         paymentDate: actualPayment?.payment_date || null,
         paymentMethod: actualPayment?.payment_type || actualPayment?.payment_method || null,
@@ -2038,15 +2058,19 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
           <div className="flex items-center gap-3 text-sm">
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-green-500"></span>
-              مدفوع ({paidPaymentsCount})
+              مدفوع ({unifiedPaymentSchedule.filter(p => p.status === 'paid').length})
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              متأخر ({unifiedPaymentSchedule.filter(p => p.status === 'overdue').length})
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-              معلق (1)
+              معلق ({unifiedPaymentSchedule.filter(p => p.status === 'pending').length})
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-gray-300"></span>
-              قادم ({Math.max(0, unifiedPaymentSchedule.length - paidPaymentsCount - 1)})
+              قادم ({unifiedPaymentSchedule.filter(p => p.status === 'upcoming').length})
             </span>
           </div>
         </div>
@@ -2071,14 +2095,16 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                   className={cn(
                     'hover:bg-gray-50 transition-colors',
                     payment.status === 'paid' && 'bg-green-50/30',
+                    payment.status === 'overdue' && 'bg-red-50/50',
                     payment.status === 'pending' && 'bg-yellow-50/50',
                     payment.status === 'upcoming' && 'bg-gray-50/30'
                   )}
                 >
                   <td className="px-4 py-3">
-                    <span className={cn(
+                    <span                     className={cn(
                       'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium',
                       payment.status === 'paid' && 'bg-green-100 text-green-700',
+                      payment.status === 'overdue' && 'bg-red-100 text-red-700',
                       payment.status === 'pending' && 'bg-yellow-100 text-yellow-700',
                       payment.status === 'upcoming' && 'bg-gray-100 text-gray-600'
                     )}>
@@ -2114,11 +2140,12 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                       className={cn(
                         'px-2.5 py-0.5 rounded-full text-xs font-medium',
                         payment.status === 'paid' && 'bg-green-100 text-green-700 border-green-200',
+                        payment.status === 'overdue' && 'bg-red-100 text-red-700 border-red-200',
                         payment.status === 'pending' && 'bg-yellow-100 text-yellow-700 border-yellow-200',
                         payment.status === 'upcoming' && 'bg-gray-100 text-gray-500 border-gray-200'
                       )}
                     >
-                      {payment.status === 'paid' ? '✓ مدفوع' : payment.status === 'pending' ? '⏳ معلق' : 'قادم'}
+                      {payment.status === 'paid' ? '✓ مدفوع' : payment.status === 'overdue' ? '⚠ متأخر' : payment.status === 'pending' ? '⏳ معلق' : 'قادم'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
@@ -2156,16 +2183,19 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                             إلغاء
                           </Button>
                         </>
-                      ) : payment.status === 'pending' ? (
+                      ) : payment.status === 'overdue' || payment.status === 'pending' ? (
                         <Button 
                           size="sm" 
-                          className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                          className={cn(
+                            "text-white font-medium",
+                            payment.status === 'overdue' ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                          )}
                           onClick={() => {
                             navigate(`/finance/operations/receive-payment?contract=${contract.contract_number}&amount=${payment.amount}`);
                           }}
                         >
                           <CreditCard className="h-4 w-4 ml-1" />
-                          دفع الآن
+                          {payment.status === 'overdue' ? 'سداد المتأخر' : 'دفع الآن'}
                         </Button>
                       ) : (
                         <span className="text-gray-300 text-sm">—</span>

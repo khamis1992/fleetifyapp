@@ -259,7 +259,7 @@ function generateDocumentContent(customer: any, type: string, country: string): 
 التاريخ: ${today}
 
 ---
-تم الإنشاء بواسطة المستشار القانوني الذكي
+تم الإنشاء بواسطة النظام القانوني
     `.trim(),
 
     legal_warning_saudi: `
@@ -282,7 +282,7 @@ function generateDocumentContent(customer: any, type: string, country: string): 
 التاريخ: ${today}
 
 ---
-تم الإنشاء بواسطة المستشار القانوني الذكي
+تم الإنشاء بواسطة النظام القانوني
     `.trim(),
 
     payment_claim_kuwait: `
@@ -304,7 +304,7 @@ function generateDocumentContent(customer: any, type: string, country: string): 
 التاريخ: ${today}
 
 ---
-تم الإنشاء بواسطة المستشار القانوني الذكي
+تم الإنشاء بواسطة النظام القانوني
     `.trim()
   };
 

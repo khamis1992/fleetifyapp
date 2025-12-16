@@ -180,7 +180,6 @@ const getMenuGroups = (variant: SidebarVariant): MenuGroup[] => {
     icon: Scale,
     items: [
       { name: 'القضايا', href: '/legal/cases', icon: Scale },
-      { name: 'المستشار القانوني', href: '/legal/advisor', icon: Shield },
     ],
   });
 

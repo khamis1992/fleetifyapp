@@ -178,11 +178,6 @@ const BREADCRUMB_ROUTES: Record<string, BreadcrumbItem[]> = {
   ],
 
   // Legal
-  '/legal/advisor': [
-    { label: 'لوحة التحكم', path: '/dashboard' },
-    { label: 'الشؤون القانونية', path: '/legal/cases' },
-    { label: 'المستشار القانوني', path: '/legal/advisor', isActive: true },
-  ],
   '/legal/cases': [
     { label: 'لوحة التحكم', path: '/dashboard' },
     { label: 'الشؤون القانونية', path: '/legal/cases', isActive: true },

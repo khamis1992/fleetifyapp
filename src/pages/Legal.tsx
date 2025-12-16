@@ -1,4 +1,8 @@
-// Redirect to new LegalAdvisor page
-import LegalAdvisor from './LegalAdvisor';
-export { LegalAdvisor as Legal };
-export default LegalAdvisor;
+// Redirect to Legal Cases page
+import { Navigate } from 'react-router-dom';
+
+const Legal = () => {
+  return <Navigate to="/legal/cases" replace />;
+};
+
+export default Legal;

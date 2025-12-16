@@ -383,14 +383,6 @@ export function CarRentalSidebar() {
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton asChild>
-                          <NavLink to="/legal/advisor" className={getNavClassName}>
-                            <Settings className="h-4 w-4" />
-                            {(!collapsed || isMobile) && <span>المستشار القانوني</span>}
-                          </NavLink>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild>
                           <NavLink to="/legal/cases" className={getNavClassName}>
                             <FileText className="h-4 w-4" />
                             {(!collapsed || isMobile) && <span>تتبع القضايا</span>}

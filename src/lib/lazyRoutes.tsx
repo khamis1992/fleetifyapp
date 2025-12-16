@@ -86,12 +86,6 @@ export const LazyLandingManagement = lazy(() => import('@/pages/super-admin/Land
 
 // ==================== Unified Components (Heavy) ====================
 
-export const LazyEnhancedLegalAIInterface = lazy(() => 
-  import('@/components/legal/EnhancedLegalAIInterface_v2').then(module => ({ 
-    default: module.EnhancedLegalAIInterface_v2 
-  }))
-);
-
 export const LazyUnifiedPaymentForm = lazy(() => 
   import('@/components/finance/UnifiedPaymentForm').then(module => ({ 
     default: module.UnifiedPaymentForm 

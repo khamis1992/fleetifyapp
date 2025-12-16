@@ -351,12 +351,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     icon: Shield,
     submenu: [
       {
-        id: 'legal-advisor',
-        name: 'المستشار القانوني',
-        href: '/legal/advisor',
-        icon: UserCog,
-      },
-      {
         id: 'legal-cases',
         name: 'تتبع القضايا',
         href: '/legal/cases',

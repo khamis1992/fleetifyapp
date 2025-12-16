@@ -104,7 +104,6 @@ const navigation: NavItem[] = [
     label: 'الشؤون القانونية',
     icon: Shield,
     children: [
-      { id: 'legal-advisor', label: 'المستشار القانوني', href: '/legal/advisor' },
       { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases' },
     ],
   },
