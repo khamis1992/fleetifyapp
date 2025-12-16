@@ -64,6 +64,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PaymentReceipt } from '@/components/payments/PaymentReceipt';
+import { numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
@@ -2177,81 +2179,54 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
         </div>
       </div>
 
-      {/* Payment Preview Dialog */}
+      {/* Payment Preview Dialog - سند القبض */}
       {selectedPayment && (
         <Dialog open={isPaymentPreviewOpen} onOpenChange={setIsPaymentPreviewOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                تفاصيل الدفعة #{selectedPayment.payment_number}
+                سند قبض #{selectedPayment.payment_number}
               </DialogTitle>
               <DialogDescription>
-                معاينة تفاصيل الدفعة قبل الطباعة
+                معاينة سند القبض
               </DialogDescription>
             </DialogHeader>
             <div className="p-4">
-              {(() => {
-                try {
-                  const { UnifiedPrintableDocument } = require('@/components/finance');
-                  const { convertReceiptToPrintable } = require('@/utils/printHelper');
-                  
-                  const receiptData = {
-                    id: selectedPayment.id,
-                    customer_name: contract.customer_name || 'عميل',
-                    customer_phone: contract.customer_phone,
-                    vehicle_number: contract.vehicle_number || contract.vehicle?.plate_number || '',
-                    month: format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar }),
-                    payment_date: selectedPayment.payment_date,
-                    rent_amount: selectedPayment.amount,
-                    fine: 0,
-                    total_paid: selectedPayment.amount,
-                    payment_method: selectedPayment.payment_method,
-                    reference_number: selectedPayment.reference_number,
-                    notes: selectedPayment.notes
-                  };
-                  
-                  const printableData = convertReceiptToPrintable(receiptData);
-                  
-                  return <UnifiedPrintableDocument data={printableData} />;
-                } catch (error) {
-                  console.error('Error loading receipt:', error);
-                  return (
-                    <div className="p-6 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">رقم الدفعة</p>
-                          <p className="font-semibold">{selectedPayment.payment_number}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">المبلغ</p>
-                          <p className="font-semibold text-green-600">{formatCurrency(selectedPayment.amount)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">تاريخ الدفع</p>
-                          <p className="font-semibold">{format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy')}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">طريقة الدفع</p>
-                          <p className="font-semibold">{getPaymentMethodLabel(selectedPayment.payment_method)}</p>
-                        </div>
-                        {selectedPayment.reference_number && (
-                          <div>
-                            <p className="text-sm text-gray-500">رقم المرجع</p>
-                            <p className="font-semibold">{selectedPayment.reference_number}</p>
-                          </div>
-                        )}
-                        {selectedPayment.notes && (
-                          <div className="col-span-2">
-                            <p className="text-sm text-gray-500">ملاحظات</p>
-                            <p className="font-semibold">{selectedPayment.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
+              <PaymentReceipt
+                receiptNumber={selectedPayment.payment_number || generateReceiptNumber()}
+                date={formatReceiptDate(selectedPayment.payment_date)}
+                customerName={contract.customer_name || 'عميل'}
+                amountInWords={numberToArabicWords(selectedPayment.amount || 0)}
+                amount={selectedPayment.amount || 0}
+                description={`إيجار شهر ${format(new Date(selectedPayment.payment_date), 'MMMM yyyy', { locale: ar })} - عقد رقم ${contract.contract_number}`}
+                paymentMethod={
+                  selectedPayment.payment_type === 'cash' || selectedPayment.payment_method === 'cash' ? 'cash' :
+                  selectedPayment.payment_type === 'check' || selectedPayment.payment_method === 'check' ? 'check' :
+                  selectedPayment.payment_type === 'bank_transfer' || selectedPayment.payment_method === 'bank_transfer' ? 'bank_transfer' :
+                  'cash'
                 }
-              })()}
+                vehicleNumber={contract.vehicle_number || contract.vehicle?.plate_number || ''}
+                totalAmount={contract.contract_amount || 0}
+                paidAmount={contract.total_paid || 0}
+                remainingAmount={(contract.contract_amount || 0) - (contract.total_paid || 0)}
+                showPaymentDetails={true}
+              />
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setIsPaymentPreviewOpen(false)}
+              >
+                إغلاق
+              </Button>
+              <Button
+                onClick={() => handlePaymentPrint(selectedPayment)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
