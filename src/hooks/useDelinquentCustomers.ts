@@ -311,21 +311,42 @@ async function calculateDelinquentCustomersDynamically(
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
     // First, get all invoices for these contracts that are past due
-    // ⚠️ IMPORTANT: Supabase default limit is 1000 rows, we need to fetch ALL overdue invoices
-    const { data: invoicesData, error: invoicesError } = await supabase
-      .from('invoices')
-      .select('contract_id, due_date, payment_status, total_amount, paid_amount')
-      .eq('company_id', companyId)
-      .in('contract_id', contractIds)
-      .lt('due_date', todayStr) // Only past due dates
-      .order('due_date', { ascending: true })
-      .limit(10000); // ✅ جلب جميع الفواتير (تجاوز حد 1000 الافتراضي)
+    // ⚠️ Supabase has a hard limit of 1000 rows per request, so we need to paginate
+    let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number}> = [];
+    let hasMore = true;
+    let offset = 0;
+    const pageSize = 1000;
     
-    if (!invoicesError && invoicesData) {
-      console.log(`📊 [DELINQUENT] Fetched ${invoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
+    while (hasMore) {
+      const { data: pageData, error: pageError } = await supabase
+        .from('invoices')
+        .select('contract_id, due_date, payment_status, total_amount, paid_amount')
+        .eq('company_id', companyId)
+        .in('contract_id', contractIds)
+        .lt('due_date', todayStr) // Only past due dates
+        .order('due_date', { ascending: true })
+        .range(offset, offset + pageSize - 1);
       
+      if (pageError) {
+        console.warn('Error fetching invoices page:', pageError);
+        break;
+      }
+      
+      if (pageData && pageData.length > 0) {
+        allInvoicesData = [...allInvoicesData, ...pageData];
+        offset += pageData.length;
+        // If we got less than pageSize, we've reached the end
+        hasMore = pageData.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} total overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
+    
+    if (allInvoicesData.length > 0) {
       // Filter to only include invoices that are actually unpaid or partially paid
-      overdueInvoices = invoicesData.filter(inv => {
+      overdueInvoices = allInvoicesData.filter(inv => {
         const totalAmount = Number(inv.total_amount) || 0;
         const paidAmount = Number(inv.paid_amount) || 0;
         const hasRemainingBalance = paidAmount < totalAmount;
