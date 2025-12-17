@@ -320,6 +320,8 @@ async function calculateDelinquentCustomersDynamically(
       .order('due_date', { ascending: true }); // Oldest first
     
     if (!invoicesError && invoicesData) {
+      console.log(`📊 [DELINQUENT] Fetched ${invoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
+      
       // Filter to only include invoices that are actually unpaid or partially paid
       overdueInvoices = invoicesData.filter(inv => {
         const totalAmount = Number(inv.total_amount) || 0;
@@ -331,6 +333,8 @@ async function calculateDelinquentCustomersDynamically(
         
         return isUnpaidStatus || hasRemainingBalance;
       });
+      
+      console.log(`📊 [DELINQUENT] After filtering: ${overdueInvoices.length} unpaid overdue invoices`);
     }
   } catch (error) {
     console.warn('Error fetching overdue invoices:', error);
@@ -415,6 +419,8 @@ async function calculateDelinquentCustomersDynamically(
       // المبلغ المتأخر الفعلي = الرصيد المتبقي للفواتير المتأخرة
       // لا نطرح total_paid لأننا حسبنا الرصيد المتبقي مباشرة من كل فاتورة
       const overdueAmount = totalOverdueInvoicesBalance;
+      
+      console.log(`📊 [DELINQUENT] Contract ${contract.contract_number}: ${contractOverdueInvoicesForAmount.length} overdue invoices, balance: ${totalOverdueInvoicesBalance}, overdueAmount: ${overdueAmount}`);
       
       // Skip if no overdue amount (all overdue invoices are covered by payments)
       if (overdueAmount <= 0) continue;
