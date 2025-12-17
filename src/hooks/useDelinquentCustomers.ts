@@ -311,13 +311,15 @@ async function calculateDelinquentCustomersDynamically(
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
     // First, get all invoices for these contracts that are past due
+    // ⚠️ IMPORTANT: Supabase default limit is 1000 rows, we need to fetch ALL overdue invoices
     const { data: invoicesData, error: invoicesError } = await supabase
       .from('invoices')
       .select('contract_id, due_date, payment_status, total_amount, paid_amount')
       .eq('company_id', companyId)
       .in('contract_id', contractIds)
       .lt('due_date', todayStr) // Only past due dates
-      .order('due_date', { ascending: true }); // Oldest first
+      .order('due_date', { ascending: true })
+      .range(0, 9999); // جلب جميع الفواتير (تجاوز حد 1000 الافتراضي)
     
     if (!invoicesError && invoicesData) {
       console.log(`📊 [DELINQUENT] Fetched ${invoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
