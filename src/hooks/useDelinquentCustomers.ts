@@ -319,7 +319,7 @@ async function calculateDelinquentCustomersDynamically(
       .in('contract_id', contractIds)
       .lt('due_date', todayStr) // Only past due dates
       .order('due_date', { ascending: true })
-      .range(0, 9999); // جلب جميع الفواتير (تجاوز حد 1000 الافتراضي)
+      .limit(10000); // ✅ جلب جميع الفواتير (تجاوز حد 1000 الافتراضي)
     
     if (!invoicesError && invoicesData) {
       console.log(`📊 [DELINQUENT] Fetched ${invoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
