@@ -405,14 +405,16 @@ async function calculateDelinquentCustomersDynamically(
       // حساب الفواتير المتأخرة (تاريخ الاستحقاق قبل اليوم)
       const contractOverdueInvoicesForAmount = overdueInvoices.filter(i => i.contract_id === contract.id);
       
-      // إجمالي مبلغ الفواتير المتأخرة
-      const totalOverdueInvoicesAmount = contractOverdueInvoicesForAmount.reduce((sum, inv) => {
-        return sum + (Number(inv.total_amount) || 0);
+      // إجمالي الرصيد المتبقي للفواتير المتأخرة (total_amount - paid_amount لكل فاتورة)
+      const totalOverdueInvoicesBalance = contractOverdueInvoicesForAmount.reduce((sum, inv) => {
+        const totalAmount = Number(inv.total_amount) || 0;
+        const paidAmount = Number(inv.paid_amount) || 0;
+        return sum + Math.max(0, totalAmount - paidAmount); // ✅ الرصيد المتبقي فقط
       }, 0);
       
-      // المبلغ المتأخر الفعلي = إجمالي الفواتير المتأخرة - المدفوع من العقد
-      // ملاحظة: نستخدم total_paid من العقد لأن بعض الدفعات غير مربوطة بالفواتير
-      const overdueAmount = Math.max(0, totalOverdueInvoicesAmount - totalPaidFromContract);
+      // المبلغ المتأخر الفعلي = الرصيد المتبقي للفواتير المتأخرة
+      // لا نطرح total_paid لأننا حسبنا الرصيد المتبقي مباشرة من كل فاتورة
+      const overdueAmount = totalOverdueInvoicesBalance;
       
       // Skip if no overdue amount (all overdue invoices are covered by payments)
       if (overdueAmount <= 0) continue;
