@@ -160,34 +160,35 @@ export default function Maintenance() {
       maintenanceRecords?.map(r => r.vehicle_id).filter(Boolean) || []
     );
     
-    // Add vehicles in maintenance status ONLY if they don't have a maintenance record
-    if (maintenanceVehicles && statusFilter !== "completed" && statusFilter !== "cancelled") {
-      maintenanceVehicles.forEach(vehicle => {
-        if (vehiclesWithMaintenance.has(vehicle.id)) {
-          return;
-        }
-        
-        const matchesSearch = !searchQuery || 
-          vehicle.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        if (matchesSearch && (statusFilter === "all" || statusFilter === "in_progress")) {
-          records.push({
-            id: `vehicle-${vehicle.id}`,
-            maintenance_number: `VEH-${vehicle.plate_number}`,
-            maintenance_type: 'maintenance',
-            status: 'in_progress',
-            priority: 'medium',
-            vehicle_id: vehicle.id,
-            vehicles: {
-              plate_number: vehicle.plate_number,
-              make: vehicle.make,
-              model: vehicle.model
-            },
-          });
-        }
-      });
-    }
+  // Add vehicles in maintenance status ONLY if they don't have any maintenance records
+  if (maintenanceVehicles && !vehiclesWithMaintenance.size) {
+    maintenanceVehicles.forEach(vehicle => {
+      if (vehiclesWithMaintenance.has(vehicle.id)) {
+        return;
+      }
+      
+      const matchesSearch = !searchQuery || 
+        vehicle.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Always show vehicles if searching or in specific status, regardless of maintenance records
+      if (matchesSearch || statusFilter === "all" || statusFilter === "in_progress" || statusFilter === "completed") {
+        records.push({
+          id: `vehicle-${vehicle.id}`,
+          maintenance_number: `VEH-${vehicle.plate_number}`,
+          maintenance_type: 'maintenance',
+          status: statusFilter === "all" ? 'available' : statusFilter === "completed" ? 'completed' : 'in_progress',
+          priority: statusFilter === "completed" ? 'low' : 'medium',
+          vehicle_id: vehicle.id,
+          vehicles: {
+            plate_number: vehicle.plate_number,
+            make: vehicle.make,
+            model: vehicle.model
+          },
+        });
+      }
+    });
+  }
     
     return records;
   }, [filteredRecords, maintenanceVehicles, searchQuery, statusFilter]);
