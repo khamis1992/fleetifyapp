@@ -56,6 +56,7 @@ import {
   Clock,
   Zap,
   CreditCard,
+  Star,
 } from 'lucide-react';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
@@ -161,22 +162,39 @@ const StatCard: React.FC<StatCardProps> = ({
 
 // ===== Risk Badge Component =====
 const RiskBadge: React.FC<{ level: string; score: number }> = ({ level, score }) => {
-  const config: Record<string, { bg: string; text: string; label: string }> = {
-    CRITICAL: { bg: 'bg-red-100', text: 'text-red-700', label: 'حرج' },
-    HIGH: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'عالي' },
-    MEDIUM: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'متوسط' },
-    LOW: { bg: 'bg-green-100', text: 'text-green-700', label: 'منخفض' },
-    MONITOR: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'مراقبة' },
+  const config: Record<string, { bg: string; text: string; label: string; color: string }> = {
+    CRITICAL: { bg: 'bg-red-100', text: 'text-red-700', label: 'حرج', color: 'bg-red-500' },
+    HIGH: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'عالي', color: 'bg-orange-500' },
+    MEDIUM: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'متوسط', color: 'bg-yellow-500' },
+    LOW: { bg: 'bg-green-100', text: 'text-green-700', label: 'منخفض', color: 'bg-green-500' },
+    MONITOR: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'مراقبة', color: 'bg-blue-500' },
   };
 
-  const { bg, text, label } = config[level] || config.MONITOR;
+  const { bg, text, label, color } = config[level] || config.MONITOR;
 
   return (
-    <div className="flex items-center gap-2">
-      <Badge className={cn(bg, text, 'font-medium')}>
-        {label}
-      </Badge>
-      <span className="text-xs text-neutral-500">{score}%</span>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <Badge className={cn(bg, text, 'font-medium')}>
+          {label}
+        </Badge>
+        <span className="text-xs text-neutral-500">{score}%</span>
+      </div>
+      {/* Visual Risk Indicator */}
+      <div className="flex items-center gap-2">
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className={cn("h-full transition-all", color)}
+            style={{ width: `${Math.min(score, 100)}%` }}
+          />
+        </div>
+        {score >= 80 && (
+          <AlertCircle className="w-3 h-3 text-red-500" />
+        )}
+        {score >= 60 && score < 80 && (
+          <AlertTriangle className="w-3 h-3 text-orange-500" />
+        )}
+      </div>
     </div>
   );
 };
@@ -187,6 +205,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
   const [overduePeriodFilter, setOverduePeriodFilter] = useState<string>('all');
+  const [amountRangeFilter, setAmountRangeFilter] = useState<string>('all');
   const [violationsFilter, setViolationsFilter] = useState<string>('all');
   const [contractStatusFilter, setContractStatusFilter] = useState<string>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
@@ -209,8 +228,9 @@ export const DelinquentCustomersTab: React.FC = () => {
     search: searchTerm || undefined,
     riskLevel: riskLevelFilter !== 'all' ? riskLevelFilter as any : undefined,
     overduePeriod: overduePeriodFilter !== 'all' ? overduePeriodFilter as any : undefined,
+    amountRange: amountRangeFilter !== 'all' ? amountRangeFilter as any : undefined,
     hasViolations: violationsFilter !== 'all' ? violationsFilter === 'yes' : undefined,
-  }), [searchTerm, riskLevelFilter, overduePeriodFilter, violationsFilter]);
+  }), [searchTerm, riskLevelFilter, overduePeriodFilter, amountRangeFilter, violationsFilter]);
 
   const { data: rawCustomers, isLoading: customersLoading, error } = useDelinquentCustomers(filters);
 
@@ -538,12 +558,13 @@ export const DelinquentCustomersTab: React.FC = () => {
     setSearchTerm('');
     setRiskLevelFilter('all');
     setOverduePeriodFilter('all');
+    setAmountRangeFilter('all');
     setViolationsFilter('all');
     setContractStatusFilter('all');
     setCurrentPage(1);
   }, []);
 
-  const activeFiltersCount = [searchTerm, riskLevelFilter !== 'all', overduePeriodFilter !== 'all', violationsFilter !== 'all', contractStatusFilter !== 'all'].filter(Boolean).length;
+  const activeFiltersCount = [searchTerm, riskLevelFilter !== 'all', overduePeriodFilter !== 'all', amountRangeFilter !== 'all', violationsFilter !== 'all', contractStatusFilter !== 'all'].filter(Boolean).length;
 
   // Loading state
   if (statsLoading) {
@@ -559,6 +580,83 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Urgent Cases Alert */}
+      {stats?.needImmediateAction > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl p-4 shadow-lg"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">
+                  {stats.needImmediateAction} حالة عاجلة تحتاج اهتمام فوري
+                </h3>
+                <p className="text-sm opacity-90">
+                  عملاء متأخرون أكثر من 90 يوم - إجراء فوري مطلوب
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                onClick={() => setRiskLevelFilter('CRITICAL')}
+              >
+                <Eye className="w-4 h-4 ml-2" />
+                عرض الحالات
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Quick Actions Bar */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">
+              إجراءات سريعة
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              onClick={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
+            >
+              <Mail className="w-4 h-4" />
+              إرسال تذكيرات جماعية
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              onClick={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
+            >
+              <Phone className="w-4 h-4" />
+              جدولة مكالمات
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              onClick={() => setRiskLevelFilter('CRITICAL')}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              عرض الحالات العاجلة
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -781,6 +879,21 @@ export const DelinquentCustomersTab: React.FC = () => {
                 </SelectContent>
               </Select>
 
+              {/* Amount Range Filter */}
+          <Select value={amountRangeFilter} onValueChange={(v) => { setAmountRangeFilter(v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
+              <DollarSign className="w-4 h-4 ml-2 text-neutral-400" />
+                  <SelectValue placeholder="نطاق المبلغ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المبالغ</SelectItem>
+                  <SelectItem value="0-1000">أقل من 1,000</SelectItem>
+                  <SelectItem value="1000-5000">1,000 - 5,000</SelectItem>
+                  <SelectItem value="5000-10000">5,000 - 10,000</SelectItem>
+                  <SelectItem value="10000+">أكثر من 10,000</SelectItem>
+                </SelectContent>
+              </Select>
+
               {/* Violations Filter */}
           <Select value={violationsFilter} onValueChange={(v) => { setViolationsFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
@@ -840,8 +953,82 @@ export const DelinquentCustomersTab: React.FC = () => {
         )}
       </div>
 
-      {/* Customers Table */}
-      <Card className="border-neutral-200">
+      {/* Mobile Cards View */}
+      <div className="md:hidden grid gap-4 mb-6">
+        {paginatedCustomers.map(customer => (
+          <Card key={customer.customer_id} className={cn(
+            "p-4 border-2 transition-all",
+            customer.contract_status === 'cancelled' && "border-red-200 bg-red-50",
+            customer.contract_status === 'closed' && "border-gray-200 bg-gray-50"
+          )}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-neutral-900">{customer.customer_name}</h3>
+                  <RiskBadge level={customer.risk_level || 'LOW'} score={customer.risk_score || 0} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-neutral-600">{customer.contract_number}</span>
+                  {customer.contract_status === 'cancelled' && (
+                    <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white gap-1">
+                      <X className="w-3 h-3" />
+                      ملغي
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-xs text-neutral-500 mt-1">
+                  🚗 {customer.vehicle_plate || 'غير محدد'}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <div className="text-lg font-bold text-red-600">
+                  {formatCurrency(customer.total_debt || 0)}
+                </div>
+                <Badge variant={customer.days_overdue > 90 ? 'destructive' : customer.days_overdue > 30 ? 'default' : 'secondary'}>
+                  {customer.days_overdue} يوم
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div className="text-sm">
+                <div className="text-neutral-500">آخر تواصل</div>
+                <div className="font-medium">{customer.last_contact_days || 0} يوم</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-neutral-500">هذا الشهر</div>
+                <div className="font-medium">{customer.contact_count_this_month || 0} مرة</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleSendWarning(customer)}
+                className="flex-1"
+              >
+                <AlertTriangle className="w-4 h-4 ml-1 text-orange-500" />
+                إنذار
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => handleRecordPayment(customer)}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <CreditCard className="w-4 h-4 ml-1" />
+                دفع
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => handleViewDetails(customer)}>
+                <Eye className="w-4 h-4" />
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="border-neutral-200 hidden md:block">
         <CardContent className="p-0">
           {customersLoading ? (
             <div className="flex items-center justify-center h-64">
@@ -876,6 +1063,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                       <TableHead>العميل</TableHead>
                       <TableHead>العقد / المركبة</TableHead>
                       <TableHead>المستحقات</TableHead>
+                      <TableHead>التواصل</TableHead>
                       <TableHead>التأخير</TableHead>
                       <TableHead>المخاطر</TableHead>
                       <TableHead className="text-center">الإجراءات</TableHead>
@@ -903,7 +1091,22 @@ export const DelinquentCustomersTab: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="font-medium text-neutral-900">{customer.customer_name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-neutral-900">{customer.customer_name}</span>
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4,5].map(i => (
+                                    <Star 
+                                      key={i} 
+                                      className={cn(
+                                        "w-3 h-3", 
+                                        i <= (customer.payment_history_score || 3) 
+                                          ? "text-yellow-400 fill-current" 
+                                          : "text-gray-300"
+                                      )} 
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                               <span className="text-xs text-neutral-500">{customer.customer_code}</span>
                               {customer.phone && (
                                 <span className="text-xs text-neutral-400 mt-1" dir="ltr">{customer.phone}</span>
@@ -950,6 +1153,25 @@ export const DelinquentCustomersTab: React.FC = () => {
                                   <div className="text-rose-600">+ مخالفات ({customer.violations_count}): {formatCurrency(customer.violations_amount)}</div>
                                 )}
                               </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-neutral-400" />
+                                <span className="text-xs text-neutral-600">
+                                  آخر تواصل: {customer.last_contact_days || 0} يوم
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-neutral-400" />
+                                <span className="text-xs text-neutral-500">
+                                  هذا الشهر: {customer.contact_count_this_month || 0} مرة
+                                </span>
+                              </div>
+                              {customer.contact_count_this_month > 5 && (
+                                <span className="text-xs text-amber-600">⚠️ متكرر</span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
