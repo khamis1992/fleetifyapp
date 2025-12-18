@@ -150,17 +150,17 @@ ON payments(invoice_id) WHERE company_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_journal_entries_company_id
 ON journal_entries(company_id);
 
--- Index for date filtering
-CREATE INDEX IF NOT EXISTS idx_journal_entries_date
-ON journal_entries(date) WHERE company_id IS NOT NULL;
+-- Index for entry_date filtering
+CREATE INDEX IF NOT EXISTS idx_journal_entries_entry_date
+ON journal_entries(entry_date) WHERE company_id IS NOT NULL;
 
--- Index for account filtering
-CREATE INDEX IF NOT EXISTS idx_journal_entries_account_id
-ON journal_entries(account_id) WHERE company_id IS NOT NULL;
+-- Index for status filtering
+CREATE INDEX IF NOT EXISTS idx_journal_entries_status
+ON journal_entries(status) WHERE company_id IS NOT NULL;
 
--- Composite index for date + account
-CREATE INDEX IF NOT EXISTS idx_journal_entries_date_account
-ON journal_entries(date, account_id) WHERE company_id IS NOT NULL;
+-- Composite index for entry_date + status
+CREATE INDEX IF NOT EXISTS idx_journal_entries_date_status
+ON journal_entries(entry_date, status) WHERE company_id IS NOT NULL;
 
 -- ================================================================
 -- AUDIT_LOGS TABLE INDEXES
