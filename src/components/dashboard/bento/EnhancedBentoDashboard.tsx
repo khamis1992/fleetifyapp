@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { SkeletonMetrics, SkeletonWidget } from '@/components/loaders';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
@@ -15,6 +15,7 @@ import { HierarchicalDashboard } from '../customization/HierarchicalDashboard';
 import { SmartInsights } from '../customization/SmartInsights';
 import { OptimizedDashboard } from '../customization/OptimizedDashboard';
 import { MobileOptimizedDashboard } from '../customization/MobileOptimizedDashboard';
+import MobileEnhancedDashboard from '../customization/MobileEnhancements';
 import {
   Car,
   FileText,
@@ -322,7 +323,7 @@ const EnhancedBentoDashboard: React.FC = () => {
 
   // Render based on dashboard mode
   if (isMobile() || dashboardMode === DashboardMode.MOBILE) {
-    return <MobileOptimizedDashboard />;
+    return <MobileEnhancedDashboard />;
   }
 
   if (dashboardMode === DashboardMode.HIERARCHICAL) {

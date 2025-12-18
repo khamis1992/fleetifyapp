@@ -53,7 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background" dir="rtl">
-        <AppSidebar />
+        <EnhancedSidebar />
         
         <div className="flex-1 flex flex-col">
           {/* Header */}

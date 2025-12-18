@@ -24,6 +24,18 @@ const CACHE_EXPIRY = {
   TERTIARY: 15 // 15 دقيقة للبيانات الثالثية
 };
 
+// تحسينات الأداء
+const PERFORMANCE_SETTINGS = {
+  // تحديد عدد العناصر المعروضة في البداية
+  INITIAL_ITEMS_COUNT: 20,
+  // حجم الصفحة للتحميل التدريجي
+  PAGE_SIZE: 10,
+  // التأخير قبل تحميل العناصر الإضافية (بالميلي ثانية)
+  LOAD_DELAY: 300,
+  // عدد مرات إعادة المحاولة عند الفشل
+  RETRY_ATTEMPTS: 3
+};
+
 // تعريف واجهة للبيانات الحرجة
 interface CriticalData {
   totalVehicles: number;

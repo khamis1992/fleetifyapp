@@ -48,24 +48,32 @@ import { cn } from '@/lib/utils';
 function useScrollDirection() {
   const [scrollDirection, setScrollDirection] = React.useState<'up' | 'down' | null>(null);
   const lastScrollY = React.useRef(0);
+  const scrollThreshold = React.useRef(10); // Threshold to trigger direction change
 
   React.useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const scrollDiff = Math.abs(currentScrollY - lastScrollY.current);
       
-      if (currentScrollY > lastScrollY.current) {
-        setScrollDirection('down');
-      } else if (currentScrollY < lastScrollY.current) {
-        setScrollDirection('up');
+      // Only update direction if scroll difference exceeds threshold
+      if (scrollDiff > scrollThreshold.current) {
+        if (currentScrollY > lastScrollY.current) {
+          setScrollDirection('down');
+        } else if (currentScrollY < lastScrollY.current) {
+          setScrollDirection('up');
+        }
+        
+        lastScrollY.current = currentScrollY;
       }
-      
-      lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const mainContent = document.querySelector('main');
+    const scrollElement = mainContent || window;
+    
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      scrollElement.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -259,7 +267,9 @@ export function EnhancedSidebar() {
       <Sidebar side="right" className={cn(
         "border-l border-sidebar-border bg-sidebar-background",
         // Add transition classes for smooth collapse/expand
-        "transition-all duration-300 ease-in-out"
+        "transition-all duration-300 ease-in-out",
+        // Make sidebar sticky and fill the entire viewport height
+        "fixed top-0 bottom-0 h-screen z-40"
       )}>
         {/* Header with Toggle Button */}
         <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -321,41 +331,42 @@ export function EnhancedSidebar() {
         </SidebarHeader>
 
         {/* Navigation */}
-        <SidebarContent className="px-3 py-4">
+        <SidebarContent className={cn(
+          "px-3 py-4",
+          // Make content flexible to fill available space
+          "flex-1 overflow-y-auto"
+        )}>
           <SidebarGroup>
-            {/* Only show main navigation when scrolling up or not scrolling */}
-            {(scrollDirection === 'up' || scrollDirection === null) && (
-              <AnimatePresence mode="wait">
-                {!collapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
-                      القائمة الرئيسية
-                    </SidebarGroupLabel>
-                    <SidebarMenu className="space-y-1">
-                      {PRIMARY_NAVIGATION.map((section) => renderNavItem(section))}
-                    </SidebarMenu>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            )}
+            {/* Main navigation always visible */}
+            <AnimatePresence mode="wait">
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
+                    القائمة الرئيسية
+                  </SidebarGroupLabel>
+                  <SidebarMenu className="space-y-1">
+                    {PRIMARY_NAVIGATION.map((section) => renderNavItem(section))}
+                  </SidebarMenu>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </SidebarGroup>
 
           {/* Settings Section */}
           {(hasCompanyAdminAccess || hasGlobalAccess) && (
             <SidebarGroup>
-              <AnimatePresence mode="wait">
-                {(!collapsed || isMobile) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
                     <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
                       الإعدادات والإدارة
                     </SidebarGroupLabel>
@@ -480,16 +491,16 @@ export function EnhancedSidebar() {
                     </SidebarMenu>
                   </motion.div>
                 )}
-              </AnimatePresence>
-            )}
+              </motion.div>
+              )}
           </SidebarGroup>
         </SidebarContent>
 
         {/* Footer */}
         <SidebarFooter className={cn(
-          "border-t border-sidebar-border p-4 mt-auto",
-          // Hide footer when scrolling down on desktop
-          scrollDirection === 'down' && !isMobile && "opacity-0 pointer-events-none"
+          "border-t border-sidebar-border p-4",
+          // Make sure footer is always visible
+          "sticky bottom-0 bg-sidebar-background"
         )}>
           <div className="flex flex-col gap-2">
             <Button 
