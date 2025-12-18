@@ -3,8 +3,8 @@ import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-// Lazy load the new Enhanced Bento Dashboard
-const EnhancedBentoDashboard = lazy(() => import('@/components/dashboard/bento/EnhancedBentoDashboard'));
+// Lazy load the original Bento Dashboard
+const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDashboard'));
 
 // Loading component
 const DashboardLoader: React.FC = () => (
@@ -74,10 +74,10 @@ const DashboardInner: React.FC = () => {
     return <DashboardLoader />;
   }
 
-  // Render the new Enhanced Bento Dashboard directly (no wrappers)
+  // Render the original Bento Dashboard directly (no wrappers)
   return (
     <Suspense fallback={<DashboardLoader />}>
-      <EnhancedBentoDashboard />
+      <BentoDashboard />
     </Suspense>
   );
 };
