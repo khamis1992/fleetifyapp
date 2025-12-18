@@ -335,7 +335,7 @@ export const SmartInsights: React.FC<SmartInsightsProps> = ({
   const filteredInsights = useMemo(() => {
     if (!analyticsData?.insights) return [];
     return analyticsData.insights.filter(insight => !dismissedInsights.has(insight.id));
-  }, [analyticsData, dismissededInsights]);
+  }, [analyticsData, dismissedInsights]);
   
   // ترتيب الرؤى حسب الأولوية
   const sortedInsights = useMemo(() => {
