@@ -35,8 +35,10 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         'react': path.resolve(__dirname, './node_modules/react'),
         'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+        // Fix date-fns v4 import issues
+        'date-fns': path.resolve(__dirname, './node_modules/date-fns'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: ['react', 'react-dom', 'date-fns'],
     },
     optimizeDeps: {
       include: [
@@ -68,6 +70,9 @@ export default defineConfig(({ mode }) => {
         '@dnd-kit/core',
         '@dnd-kit/sortable',
         '@dnd-kit/utilities',
+        // Fix date-fns v4 differential loading
+        'date-fns',
+        'date-fns/locale',
       ],
       exclude: [
         'recharts',
