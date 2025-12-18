@@ -142,7 +142,26 @@ export function useCustomer(customerId: string) {
 
       const { data } = await supabase
         .from('customers')
-        .select('*')
+        .select(`
+          id,
+          first_name_ar,
+          last_name_ar,
+          first_name_en,
+          last_name_en,
+          email,
+          phone,
+          phone_secondary,
+          national_id,
+          license_number,
+          license_expiry,
+          address,
+          city,
+          notes,
+          is_active,
+          company_id,
+          created_at,
+          updated_at
+        `)
         .eq('id', customerId)
         .eq('company_id', companyId)
         .single();
@@ -313,7 +332,27 @@ async function fetchCustomersFromSupabase(
 
   let query = supabase
     .from('customers')
-    .select('*', { count: 'exact' })
+    .select(`
+      id,
+      first_name_ar,
+      last_name_ar,
+      first_name_en,
+      last_name_en,
+      full_name,
+      email,
+      phone,
+      phone_secondary,
+      national_id,
+      license_number,
+      license_expiry,
+      address,
+      city,
+      notes,
+      is_active,
+      company_id,
+      created_at,
+      updated_at
+    `, { count: 'exact' })
     .eq('company_id', companyId);
 
   if (filters.status === 'active') query = query.eq('is_active', true);

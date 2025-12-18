@@ -275,7 +275,41 @@ async function fetchContractsFromSupabase(
 
   let query = supabase
     .from('contracts')
-    .select('*, customers(*), vehicles(*)', { count: 'exact' })
+    .select(`
+      id,
+      contract_number,
+      customer_id,
+      vehicle_id,
+      start_date,
+      end_date,
+      daily_rate,
+      total_amount,
+      status,
+      payment_method,
+      license_plate,
+      make,
+      model,
+      year,
+      notes,
+      company_id,
+      created_at,
+      updated_at,
+      customer:customer_id(
+        id,
+        first_name_ar,
+        last_name_ar,
+        phone,
+        email
+      ),
+      vehicle:vehicle_id(
+        id,
+        plate_number,
+        make,
+        model,
+        year,
+        status
+      )
+    `, { count: 'exact' })
     .eq('company_id', companyId);
 
   if (filters.status) {

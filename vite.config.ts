@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -21,6 +23,12 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      visualizer({
+        filename: "dist/stats.html",
+        open: true,
+        gzipSize: true,
+        brotliSize: true,
+      }),
     ],
     resolve: {
       alias: {
@@ -77,7 +85,7 @@ export default defineConfig(({ mode }) => {
       target: 'es2020',
       minify: isProduction ? 'esbuild' : false,
       outDir: 'dist',
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 500,
       reportCompressedSize: false,
       rollupOptions: {
         external: [],

@@ -181,9 +181,25 @@
       "Bash(git rm:*)",
       "Bash(VITE_SUPABASE_URL=https://test.supabase.co VITE_SUPABASE_ANON_KEY=test_key VITE_ENCRYPTION_SECRET=test_secret npm run build:*)",
       "Bash(powershell:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(cmd /C \"set ANALYZE=true && npm run build\")",
+      "Bash(ls:*)",
+      "Bash(where:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "typescript-sdk",
+    "github",
+    "puppeteer",
+    "slack",
+    "filesystem",
+    "memory-bank",
+    "sequential-thinking",
+    "brave-search",
+    "google-maps",
+    "deep-graph"
+  ]
 }
