@@ -345,37 +345,6 @@ export const MonthlyRentTracker: React.FC = () => {
           </div>
         </div>
         
-        {/* Comparison Stats - إذا كان هناك فرق بين المدخول الفعلي والدفعات التاريخية */}
-        {comparison && (comparison.actualIncome !== comparison.historicalPayments) && (
-          <div className="mt-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="w-5 h-5 text-yellow-300" />
-              <span className="font-semibold">مقارنة المدفوعات</span>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-xs text-white/60 mb-1">المدخول الفعلي للشهر</p>
-                <p className="text-lg font-bold text-green-200">{formatCurrency(comparison.actualIncome)}</p>
-                <p className="text-xs text-white/50">(حسب تاريخ التسجيل)</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/60 mb-1">دفعات الشهر التاريخية</p>
-                <p className="text-lg font-bold text-blue-200">{formatCurrency(comparison.historicalPayments)}</p>
-                <p className="text-xs text-white/50">(حسب تاريخ الدفع)</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/60 mb-1">الفرق</p>
-                <p className={cn(
-                  "text-lg font-bold",
-                  comparison.retroactivePayments > 0 ? "text-yellow-300" : "text-white"
-                )}>
-                  {formatCurrency(comparison.retroactivePayments)}
-                </p>
-                <p className="text-xs text-white/50">(دفعات قديمة مسجلة لاحقاً)</p>
-              </div>
-            </div>
-          </div>
-        )}
       </motion.div>
 
       {/* Date Selection & Filters */}
