@@ -174,7 +174,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
 
             {/* قائمة الفواتير - تصميم بطاقات بدلاً من جدول */}
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-neutral-800 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+              <div className="bg-gradient-to-l from-coral-500 to-orange-500 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
                 <Receipt className="w-4 h-4" />
                 الفواتير المتأخرة ({invoices.length})
               </div>
@@ -238,7 +238,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
               
               {/* صف المجموع */}
               {invoices.length > 0 && (
-                <div className="bg-neutral-800 text-white px-3 py-2 flex items-center justify-between">
+                <div className="bg-gradient-to-l from-coral-600 to-orange-600 text-white px-3 py-2 flex items-center justify-between">
                   <span className="text-sm font-medium">المجموع الكلي</span>
                   <div className="flex items-center gap-4 text-xs">
                     <span className="text-red-300">{formatCurrency(totalRent)}</span>
