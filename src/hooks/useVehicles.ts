@@ -24,6 +24,7 @@ export type {
 
 export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const companyId = useCurrentCompanyId()
+  const queryClient = useQueryClient()
   const { limit, status } = options || {}
   
   return useQuery({
@@ -104,13 +105,13 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
       
       // ربط العقود بالمركبات بناءً على vehicle_id أو license_plate
       const contracts = uniqueContracts.map(contract => {
-        // إذا كان العقد يحتوي على vehicle_id، استخدمه
-        if (contract.vehicle_id) {
+        // التحقق من أن vehicle_id في العقد يطابق إحدى المركبات المطلوبة
+        if (contract.vehicle_id && vehicleIds.includes(contract.vehicle_id)) {
           return contract
         }
         
-        // إذا لم يكن يحتوي على vehicle_id، ابحث عن المركبة باستخدام license_plate
-        // تطابق مرن (إزالة المسافات)
+        // إذا كان vehicle_id موجود لكنه لا يطابق أي مركبة، أو لم يكن موجوداً
+        // ابحث عن المركبة باستخدام license_plate
         const normalizedContractPlate = contract.license_plate?.trim().replace(/\s+/g, '') || ''
         const vehicle = data.find(v => {
           const normalizedVehiclePlate = v.plate_number?.trim().replace(/\s+/g, '') || ''
@@ -118,7 +119,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         })
         
         if (vehicle) {
-          console.log(`🔗 [useVehicles] Matched contract ${contract.id} to vehicle ${vehicle.plate_number} (${vehicle.id}) by license plate`)
+          console.log(`🔗 [useVehicles] Matched contract ${contract.id} (vehicle_id: ${contract.vehicle_id || 'null'}, license_plate: ${contract.license_plate}) to vehicle ${vehicle.plate_number} (${vehicle.id})`)
           return {
             ...contract,
             vehicle_id: vehicle.id
@@ -126,7 +127,10 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         }
         
         return contract
-      }).filter(c => c.vehicle_id) // إزالة العقود التي لا يمكن ربطها بمركبة
+      }).filter(c => {
+        // إزالة العقود التي لا يمكن ربطها بمركبة من القائمة المطلوبة
+        return c.vehicle_id && vehicleIds.includes(c.vehicle_id)
+      })
 
       // إنشاء Map للعقود النشطة لكل مركبة
       const vehicleActiveContractsMap = new Map<string, boolean>()
@@ -218,6 +222,10 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
             )
           )
           console.log(`✅ [useVehicles] Successfully updated ${vehiclesToUpdate.length} vehicle statuses`)
+          
+          // إعادة جلب البيانات لضمان تحديث الواجهة
+          queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }) })
+          queryClient.invalidateQueries({ queryKey: ['vehicles'] })
         } catch (err) {
           console.error("❌ [useVehicles] Error updating vehicle statuses:", err)
           // لا نرمي الخطأ هنا، نستمر بإرجاع البيانات المحدثة في الذاكرة
