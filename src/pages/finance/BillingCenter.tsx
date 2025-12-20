@@ -410,30 +410,11 @@ const BillingCenter = () => {
               {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
             </p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="text-center">
+          <div className="text-center">
               <p className="text-sm opacity-80">فواتير الشهر</p>
               <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
               <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
             </div>
-            <div className="text-center px-4 py-2 bg-white/20 rounded-xl">
-              <p className="text-sm opacity-90">مقارنة بالشهر السابق</p>
-              <p className={cn(
-                "text-xl font-bold flex items-center justify-center gap-1",
-                stats.monthlyChange >= 0 ? "text-green-200" : "text-red-200"
-              )}>
-                {stats.monthlyChange >= 0 ? (
-                  <TrendingUp className="w-5 h-5" />
-                ) : (
-                  <TrendingDown className="w-5 h-5" />
-                )}
-                {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange}%
-              </p>
-              <p className="text-xs opacity-70">
-                الشهر السابق: {formatCurrency(stats.lastMonthPayments)}
-              </p>
-            </div>
-          </div>
         </div>
       </motion.div>
 
