@@ -303,6 +303,28 @@ export const MonthlyRentTracker: React.FC = () => {
               </SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mr-auto">
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              size="sm"
+              className="h-11 rounded-xl border-gray-200 hover:bg-gray-50"
+            >
+              <RefreshCw className="h-4 w-4 ml-2" />
+              تحديث
+            </Button>
+            <Button
+              onClick={exportToCSV}
+              variant="outline"
+              size="sm"
+              className="h-11 rounded-xl border-coral-200 text-coral-600 hover:bg-coral-50"
+            >
+              <Download className="h-4 w-4 ml-2" />
+              تصدير
+            </Button>
+          </div>
         </div>
       </motion.div>
 
