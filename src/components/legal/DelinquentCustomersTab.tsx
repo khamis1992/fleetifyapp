@@ -65,6 +65,7 @@ import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
 import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
 import LegalWarningDialog from './LegalWarningDialog';
 import { CreateLegalCaseDialog } from './CreateLegalCaseDialog';
+import { DelinquentDetailsDialog } from './DelinquentDetailsDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -212,8 +213,10 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [createCaseDialogOpen, setCreateCaseDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [currentWarning, setCurrentWarning] = useState<GeneratedWarning | null>(null);
   const [currentCustomer, setCurrentCustomer] = useState<DelinquentCustomer | null>(null);
+  const [selectedCustomerForDetails, setSelectedCustomerForDetails] = useState<DelinquentCustomer | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -296,10 +299,11 @@ export const DelinquentCustomersTab: React.FC = () => {
     });
   }, []);
 
-  // Handle view details - Navigate to customer page
+  // Handle view details - Open details dialog with overdue invoices breakdown
   const handleViewDetails = useCallback((customer: DelinquentCustomer) => {
-    navigate(`/customers/${customer.customer_id}`);
-  }, [navigate]);
+    setSelectedCustomerForDetails(customer);
+    setDetailsDialogOpen(true);
+  }, []);
 
   // Handle record payment - Navigate to quick payment page with customer selected
   const handleRecordPayment = useCallback((customer: DelinquentCustomer) => {
@@ -1214,6 +1218,13 @@ export const DelinquentCustomersTab: React.FC = () => {
           setCreateCaseDialogOpen(false);
           setCurrentCustomer(null);
         }}
+      />
+
+      {/* Delinquent Details Dialog - تفاصيل الفواتير المتأخرة */}
+      <DelinquentDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        customer={selectedCustomerForDetails}
       />
     </div>
   );
