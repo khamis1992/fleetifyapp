@@ -23,15 +23,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { calculatePenalty } from '@/utils/delinquency-calculations';
 import type { DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from '@/components/ui/table';
 
 interface DelinquentDetailsDialogProps {
   open: boolean;
@@ -114,7 +105,6 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
   const formatShortDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('ar-QA', { 
-      year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     });
@@ -132,182 +122,142 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-        <DialogHeader className="p-6 pb-4 border-b bg-gradient-to-l from-red-50 to-orange-50">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-red-100 rounded-xl">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+      <DialogContent className="max-w-lg max-h-[85vh] p-0 overflow-hidden">
+        {/* Header - مضغوط */}
+        <DialogHeader className="px-4 py-3 border-b bg-gradient-to-l from-red-50 to-orange-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
-            <div>
-              <DialogTitle className="text-xl mb-1">تفاصيل التأخير</DialogTitle>
-              <DialogDescription className="text-base font-medium text-neutral-700">
+            <div className="min-w-0">
+              <DialogTitle className="text-base">تفاصيل التأخير</DialogTitle>
+              <DialogDescription className="text-sm font-medium text-neutral-700 truncate">
                 {customer.customer_name}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="p-6 space-y-6">
-          {/* Customer & Contract Info */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-neutral-50 rounded-xl border">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-blue-500" />
-              <span className="text-neutral-500">العميل:</span>
-              <span className="font-semibold truncate">{customer.customer_name}</span>
+        <ScrollArea className="max-h-[calc(85vh-80px)]">
+          <div className="p-4 space-y-4">
+            {/* معلومات مختصرة */}
+            <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded">
+                <FileText className="w-3 h-3 text-purple-500" />
+                <span className="font-mono">{customer.contract_number}</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded">
+                <Car className="w-3 h-3 text-green-500" />
+                <span>{customer.vehicle_plate || '-'}</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded">
+                <Phone className="w-3 h-3 text-orange-500" />
+                <span dir="ltr">{customer.phone || '-'}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <FileText className="w-4 h-4 text-purple-500" />
-              <span className="text-neutral-500">العقد:</span>
-              <span className="font-mono font-semibold">{customer.contract_number}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Car className="w-4 h-4 text-green-500" />
-              <span className="text-neutral-500">المركبة:</span>
-              <span className="font-mono font-semibold">{customer.vehicle_plate || '-'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="w-4 h-4 text-orange-500" />
-              <span className="text-neutral-500">الهاتف:</span>
-              <span className="font-mono font-semibold" dir="ltr">{customer.phone || '-'}</span>
-            </div>
-          </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-red-50 rounded-xl border-2 border-red-100 text-center">
-              <div className="text-sm text-red-600 mb-2 font-medium">الإيجار المتأخر</div>
-              <div className="text-2xl font-bold text-red-700">{formatCurrency(totalRent)}</div>
+            {/* بطاقات الملخص - أصغر */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 bg-red-50 rounded-lg border border-red-100 text-center">
+                <div className="text-[10px] text-red-600 mb-0.5">الإيجار</div>
+                <div className="text-sm font-bold text-red-700">{formatCurrency(totalRent)}</div>
+              </div>
+              <div className="p-2 bg-orange-50 rounded-lg border border-orange-100 text-center">
+                <div className="text-[10px] text-orange-600 mb-0.5">الغرامات</div>
+                <div className="text-sm font-bold text-orange-700">{formatCurrency(totalPenalties)}</div>
+              </div>
+              <div className="p-2 bg-neutral-100 rounded-lg border border-neutral-200 text-center">
+                <div className="text-[10px] text-neutral-600 mb-0.5">الإجمالي</div>
+                <div className="text-sm font-bold text-neutral-900">{formatCurrency(grandTotal)}</div>
+              </div>
             </div>
-            <div className="p-4 bg-orange-50 rounded-xl border-2 border-orange-100 text-center">
-              <div className="text-sm text-orange-600 mb-2 font-medium">الغرامات المتراكمة</div>
-              <div className="text-2xl font-bold text-orange-700">{formatCurrency(totalPenalties)}</div>
-            </div>
-            <div className="p-4 bg-neutral-100 rounded-xl border-2 border-neutral-200 text-center">
-              <div className="text-sm text-neutral-600 mb-2 font-medium">الإجمالي المستحق</div>
-              <div className="text-2xl font-bold text-neutral-900">{formatCurrency(grandTotal)}</div>
-            </div>
-          </div>
 
-          {/* Overdue Invoices Table */}
-          <div className="border rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-neutral-800 text-white px-4 py-3">
-              <h4 className="font-semibold flex items-center gap-2">
-                <Receipt className="w-5 h-5" />
-                الفواتير المتأخرة ({invoices.length} فاتورة)
-              </h4>
-            </div>
-            
-            <ScrollArea className="max-h-[350px]">
+            {/* قائمة الفواتير - تصميم بطاقات بدلاً من جدول */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-neutral-800 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+                <Receipt className="w-4 h-4" />
+                الفواتير المتأخرة ({invoices.length})
+              </div>
+              
               {loading ? (
-                <div className="p-4 space-y-3">
+                <div className="p-3 space-y-2">
                   {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-12 w-full" />
+                    <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
               ) : invoices.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <Receipt className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <div className="p-6 text-center text-muted-foreground text-sm">
+                  <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   لا توجد فواتير متأخرة
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-neutral-50">
-                      <TableHead className="text-center w-12">#</TableHead>
-                      <TableHead>تاريخ الاستحقاق</TableHead>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead className="text-center">التأخير</TableHead>
-                      <TableHead className="text-left">الإيجار</TableHead>
-                      <TableHead className="text-left">الغرامة</TableHead>
-                      <TableHead className="text-left font-bold">المجموع</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoices.map((invoice, index) => {
-                      const balance = invoice.total_amount - invoice.paid_amount;
-                      const total = balance + invoice.penalty;
-                      const monthsOverdue = getMonthsOverdue(invoice.days_overdue);
-                      
-                      return (
-                        <TableRow 
-                          key={invoice.id}
-                          className={index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'}
-                        >
-                          <TableCell className="text-center font-bold text-neutral-400">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-neutral-400" />
-                              <span className="font-medium">{formatShortDate(invoice.due_date)}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono text-xs bg-neutral-100 px-2 py-1 rounded">
-                              {invoice.invoice_number}
+                <div className="divide-y divide-neutral-100 max-h-[280px] overflow-y-auto">
+                  {invoices.map((invoice, index) => {
+                    const balance = invoice.total_amount - invoice.paid_amount;
+                    const total = balance + invoice.penalty;
+                    const monthsOverdue = getMonthsOverdue(invoice.days_overdue);
+                    
+                    return (
+                      <div 
+                        key={invoice.id}
+                        className={`p-3 ${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'}`}
+                      >
+                        {/* صف علوي: التاريخ + التأخير */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                            <span className="text-sm font-medium">{formatShortDate(invoice.due_date)}</span>
+                          </div>
+                          <Badge 
+                            variant={invoice.days_overdue > 90 ? "destructive" : invoice.days_overdue > 30 ? "default" : "secondary"}
+                            className="text-[10px] px-1.5 py-0 h-5"
+                          >
+                            {invoice.days_overdue} يوم ({monthsOverdue} ش)
+                          </Badge>
+                        </div>
+                        
+                        {/* صف سفلي: المبالغ */}
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex gap-3">
+                            <span className="text-red-600">
+                              إيجار: <strong>{formatCurrency(balance)}</strong>
                             </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge 
-                              variant={invoice.days_overdue > 90 ? "destructive" : invoice.days_overdue > 30 ? "default" : "secondary"}
-                              className="gap-1"
-                            >
-                              <Clock className="w-3 h-3" />
-                              {invoice.days_overdue} يوم
-                              <span className="opacity-70">({monthsOverdue} ش)</span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-left">
-                            <span className="font-semibold text-red-600">
-                              {formatCurrency(balance)}
+                            <span className="text-orange-600">
+                              غرامة: <strong>{formatCurrency(invoice.penalty)}</strong>
                             </span>
-                          </TableCell>
-                          <TableCell className="text-left">
-                            <span className="font-semibold text-orange-600">
-                              {formatCurrency(invoice.penalty)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-left">
-                            <span className="font-bold text-lg">
-                              {formatCurrency(total)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow className="bg-neutral-800 text-white hover:bg-neutral-800">
-                      <TableCell colSpan={4} className="font-bold text-base">
-                        المجموع الكلي
-                      </TableCell>
-                      <TableCell className="text-left font-bold text-red-300">
-                        {formatCurrency(totalRent)}
-                      </TableCell>
-                      <TableCell className="text-left font-bold text-orange-300">
-                        {formatCurrency(totalPenalties)}
-                      </TableCell>
-                      <TableCell className="text-left font-bold text-xl text-white">
-                        {formatCurrency(grandTotal)}
-                      </TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                          </div>
+                          <span className="font-bold text-sm">
+                            {formatCurrency(total)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-            </ScrollArea>
-          </div>
+              
+              {/* صف المجموع */}
+              {invoices.length > 0 && (
+                <div className="bg-neutral-800 text-white px-3 py-2 flex items-center justify-between">
+                  <span className="text-sm font-medium">المجموع الكلي</span>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="text-red-300">{formatCurrency(totalRent)}</span>
+                    <span className="text-orange-300">{formatCurrency(totalPenalties)}</span>
+                    <span className="font-bold text-base">{formatCurrency(grandTotal)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Penalty Calculation Note */}
-          <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-sm text-amber-800">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600" />
-              <div>
-                <strong className="block mb-1">طريقة حساب الغرامة:</strong>
-                <span>120 ر.ق لكل يوم تأخير بحد أقصى 3,000 ر.ق شهرياً لكل فاتورة.</span>
-              </div>
+            {/* ملاحظة - أصغر */}
+            <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-800 flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-amber-600" />
+              <span>
+                <strong>الغرامة:</strong> 120 ر.ق/يوم (حد أقصى 3,000 ر.ق/شهر)
+              </span>
             </div>
           </div>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
