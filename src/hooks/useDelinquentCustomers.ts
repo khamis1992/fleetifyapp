@@ -380,17 +380,40 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching payments:', error);
   }
 
-  // Step 3: Get traffic violations for these customers (handle errors gracefully)
+  // Step 3: Get traffic violations for vehicles in these contracts (handle errors gracefully)
+  // المخالفات مرتبطة بـ vehicle_id وليس customer_id
   try {
-    const { data: violationsData, error: violationsError } = await supabase
-      .from('traffic_violations')
-      .select('customer_id, fine_amount, status')
-      .eq('company_id', companyId)
-      .in('customer_id', customerIds)
-      .neq('status', 'paid');
+    // Get vehicle IDs from contracts
+    const vehicleIds = contracts
+      .map(c => c.vehicle_id)
+      .filter((id): id is string => id !== null && id !== undefined);
     
-    if (!violationsError && violationsData) {
-      violations = violationsData;
+    if (vehicleIds.length > 0) {
+      const { data: violationsData, error: violationsError } = await supabase
+        .from('traffic_violations')
+        .select('vehicle_id, fine_amount, status')
+        .eq('company_id', companyId)
+        .in('vehicle_id', vehicleIds)
+        .neq('status', 'paid');
+      
+      if (!violationsError && violationsData) {
+        // Map violations to customer_id through contracts
+        const vehicleToCustomerMap = new Map<string, string>();
+        contracts.forEach(c => {
+          if (c.vehicle_id && c.customer_id) {
+            vehicleToCustomerMap.set(c.vehicle_id, c.customer_id);
+          }
+        });
+        
+        violations = violationsData.map(v => ({
+          customer_id: vehicleToCustomerMap.get(v.vehicle_id) || '',
+          fine_amount: v.fine_amount,
+          status: v.status,
+          vehicle_id: v.vehicle_id,
+        })).filter(v => v.customer_id);
+        
+        console.log(`📋 [DELINQUENT] Found ${violations.length} unpaid traffic violations for ${vehicleIds.length} vehicles`);
+      }
     }
   } catch (error) {
     console.warn('Error fetching violations:', error);
