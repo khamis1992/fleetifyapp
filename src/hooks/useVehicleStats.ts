@@ -47,11 +47,12 @@ export const useVehicleStats = () => {
         throw new Error('Company ID not found');
       }
 
-      // جلب إحصائيات المركبات حسب الحالة
+      // جلب إحصائيات المركبات حسب الحالة (فقط المركبات النشطة)
       const { data: vehiclesByStatus, error: statusError } = await supabase
         .from('vehicles')
-        .select('status')
-        .eq('company_id', companyId);
+        .select('id, status')
+        .eq('company_id', companyId)
+        .eq('is_active', true);
 
       if (statusError) throw statusError;
 
@@ -59,6 +60,8 @@ export const useVehicleStats = () => {
         acc[v.status || 'unknown'] = (acc[v.status || 'unknown'] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
+      
+      const vehicleIds = vehiclesByStatus?.map(v => v.id) || [];
 
       const totalVehicles = vehiclesByStatus?.length || 0;
       const availableVehicles = statusCounts['available'] || 0;
@@ -91,15 +94,18 @@ export const useVehicleStats = () => {
         ? Math.round(totalMonthlyRevenue / rentedVehicles) 
         : 0;
 
-      // جلب تنبيهات التأمين والفحص
+      // جلب تنبيهات التأمين والفحص (فقط المركبات النشطة)
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة
       const thirtyDaysLater = new Date(today);
       thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+      thirtyDaysLater.setHours(23, 59, 59, 999); // نهاية اليوم
 
       const { data: expiringVehicles, error: expiringError } = await supabase
         .from('vehicles')
         .select('insurance_expiry, registration_expiry, next_service_due')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('is_active', true);
 
       if (expiringError) throw expiringError;
 
@@ -108,17 +114,31 @@ export const useVehicleStats = () => {
       let serviceOverdue = 0;
 
       expiringVehicles?.forEach(v => {
+        // التأمين: يجب أن يكون لم ينته بعد وأن ينتهي خلال 30 يوم
         if (v.insurance_expiry) {
           const expiry = new Date(v.insurance_expiry);
-          if (expiry <= thirtyDaysLater) insuranceExpiringSoon++;
+          expiry.setHours(0, 0, 0, 0);
+          if (expiry >= today && expiry <= thirtyDaysLater) {
+            insuranceExpiringSoon++;
+          }
         }
+        
+        // الفحص الدوري: يجب أن يكون لم ينته بعد وأن ينتهي خلال 30 يوم
         if (v.registration_expiry) {
           const expiry = new Date(v.registration_expiry);
-          if (expiry <= thirtyDaysLater) registrationExpiringSoon++;
+          expiry.setHours(0, 0, 0, 0);
+          if (expiry >= today && expiry <= thirtyDaysLater) {
+            registrationExpiringSoon++;
+          }
         }
+        
+        // الصيانة: يجب أن يكون تاريخ الاستحقاق قد مضى
         if (v.next_service_due) {
           const serviceDue = new Date(v.next_service_due);
-          if (serviceDue <= today) serviceOverdue++;
+          serviceDue.setHours(0, 0, 0, 0);
+          if (serviceDue < today) {
+            serviceOverdue++;
+          }
         }
       });
 
@@ -132,11 +152,12 @@ export const useVehicleStats = () => {
         (sum, m) => sum + (Number(m.actual_cost) || 0), 0
       ) || 0;
 
-      // جلب تكاليف التأمين
+      // جلب تكاليف التأمين (فقط للمركبات النشطة)
       const { data: insuranceData, error: insuranceError } = await supabase
         .from('vehicle_insurance')
         .select('premium_amount')
-        .in('vehicle_id', vehiclesByStatus?.map(v => v.status) || []);
+        .in('vehicle_id', vehicleIds)
+        .eq('is_active', true);
 
       const totalInsuranceCost = insuranceData?.reduce(
         (sum, i) => sum + (Number(i.premium_amount) || 0), 0
