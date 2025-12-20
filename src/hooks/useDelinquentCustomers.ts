@@ -481,8 +481,26 @@ async function calculateDelinquentCustomersDynamically(
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
       const actualPayments = customerPayments.length;
 
-      // Calculate penalty
-      const latePenalty = calculatePenalty(overdueAmount, daysOverdue);
+      // ✅ حساب الغرامة لكل فاتورة متأخرة على حدة ثم جمعها
+      // كل فاتورة لها أيام تأخير خاصة بها وغرامة خاصة بها
+      let latePenalty = 0;
+      const todayForPenalty = new Date();
+      
+      for (const invoice of unpaidOverdueInvoices) {
+        const invoiceDueDate = new Date(invoice.due_date);
+        const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (invoiceDaysOverdue > 0) {
+          // حساب الغرامة لهذه الفاتورة
+          const invoicePenalty = calculatePenalty(0, invoiceDaysOverdue);
+          latePenalty += invoicePenalty;
+        }
+      }
+      
+      // إذا لم تكن هناك فواتير متأخرة ولكن يوجد daysOverdue من العقد
+      if (latePenalty === 0 && daysOverdue > 0) {
+        latePenalty = calculatePenalty(overdueAmount, daysOverdue);
+      }
 
       // Get violations for this customer
       const customerViolations = (violations || []).filter(v => v && v.customer_id === contract.customer_id);
