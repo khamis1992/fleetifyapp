@@ -240,10 +240,16 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
               {invoices.length > 0 && (
                 <div className="bg-gradient-to-l from-coral-600 to-orange-600 text-white px-3 py-2 flex items-center justify-between">
                   <span className="text-sm font-medium">المجموع الكلي</span>
-                  <div className="flex items-center gap-4 text-xs">
-                    <span className="text-white/90">{formatCurrency(totalRent)}</span>
-                    <span className="text-white/90">{formatCurrency(totalPenalties)}</span>
-                    <span className="font-bold text-base text-white">{formatCurrency(grandTotal)}</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-white/80">
+                      <span className="opacity-70">إيجار:</span> {formatCurrency(totalRent)}
+                    </span>
+                    <span className="text-white/80">
+                      <span className="opacity-70">غرامة:</span> {formatCurrency(totalPenalties)}
+                    </span>
+                    <span className="font-bold text-sm text-white bg-white/20 px-2 py-0.5 rounded">
+                      {formatCurrency(grandTotal)}
+                    </span>
                   </div>
                 </div>
               )}
