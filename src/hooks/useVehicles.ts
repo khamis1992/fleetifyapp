@@ -110,8 +110,15 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         }
         
         // إذا لم يكن يحتوي على vehicle_id، ابحث عن المركبة باستخدام license_plate
-        const vehicle = data.find(v => v.plate_number === contract.license_plate)
+        // تطابق مرن (إزالة المسافات)
+        const normalizedContractPlate = contract.license_plate?.trim().replace(/\s+/g, '') || ''
+        const vehicle = data.find(v => {
+          const normalizedVehiclePlate = v.plate_number?.trim().replace(/\s+/g, '') || ''
+          return normalizedVehiclePlate === normalizedContractPlate
+        })
+        
         if (vehicle) {
+          console.log(`🔗 [useVehicles] Matched contract ${contract.id} to vehicle ${vehicle.plate_number} (${vehicle.id}) by license plate`)
           return {
             ...contract,
             vehicle_id: vehicle.id
