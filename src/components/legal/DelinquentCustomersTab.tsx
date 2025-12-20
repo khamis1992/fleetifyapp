@@ -955,8 +955,8 @@ export const DelinquentCustomersTab: React.FC = () => {
 
       {/* Mobile Cards View */}
       <div className="md:hidden grid gap-4 mb-6">
-        {paginatedCustomers.map(customer => (
-          <Card key={customer.customer_id} className={cn(
+        {paginatedCustomers.map((customer, index) => (
+          <Card key={`${customer.customer_id}-${index}`} className={cn(
             "p-4 border-2 transition-all",
             customer.contract_status === 'cancelled' && "border-red-200 bg-red-50",
             customer.contract_status === 'closed' && "border-gray-200 bg-gray-50"
@@ -1073,7 +1073,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                     <AnimatePresence>
                       {paginatedCustomers.map((customer, index) => (
                         <motion.tr
-                          key={customer.customer_id}
+                          key={`${customer.customer_id}-${index}`}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
