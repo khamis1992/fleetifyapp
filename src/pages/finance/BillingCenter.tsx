@@ -360,46 +360,137 @@ const BillingCenter = () => {
 
   return (
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-      {/* Header - العنوان فقط */}
+      {/* Header */}
       <motion.div 
-        className="mb-6"
+        className="mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg">
-            <Receipt className="w-7 h-7 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg">
+              <Receipt className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-900">مركز الفواتير والمدفوعات</h1>
+              <p className="text-neutral-500">إدارة الفواتير والمدفوعات في مكان واحد</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900">مركز الفواتير والمدفوعات</h1>
-            <p className="text-neutral-500">إدارة الفواتير والمدفوعات في مكان واحد</p>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setIsCreateInvoiceOpen(true)}
+              className="bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              فاتورة جديدة
+            </Button>
+            <Button 
+              onClick={() => setIsCreatePaymentOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <CreditCard className="w-4 h-4" />
+              تسجيل دفعة
+            </Button>
           </div>
         </div>
       </motion.div>
 
-      {/* Main Content Card - كل شيء داخل بطاقة واحدة */}
-      <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-6">
-        {/* Tabs and Actions */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            {/* Tabs */}
-            <TabsList className="bg-neutral-100 p-1 rounded-xl">
-              <TabsTrigger 
-                value="invoices" 
-                className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
-              >
-                <Receipt className="w-4 h-4 ml-2" />
-                الفواتير
-              </TabsTrigger>
-              <TabsTrigger 
-                value="payments"
-                className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
-              >
-                <CreditCard className="w-4 h-4 ml-2" />
-                المدفوعات
-              </TabsTrigger>
-              <TabsTrigger 
-                value="deposits"
+      {/* Monthly Summary - New Section */}
+      <motion.div 
+        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-lg font-semibold opacity-90 mb-1">ملخص الشهر الحالي</h2>
+            <p className="text-3xl font-bold">{formatCurrency(stats.currentMonthPayments)}</p>
+            <p className="text-sm opacity-80 mt-1">
+              {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
+            </p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-sm opacity-80">فواتير الشهر</p>
+              <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
+              <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
+            </div>
+            <div className="text-center px-4 py-2 bg-white/20 rounded-xl">
+              <p className="text-sm opacity-90">مقارنة بالشهر السابق</p>
+              <p className={cn(
+                "text-xl font-bold flex items-center justify-center gap-1",
+                stats.monthlyChange >= 0 ? "text-green-200" : "text-red-200"
+              )}>
+                {stats.monthlyChange >= 0 ? (
+                  <TrendingUp className="w-5 h-5" />
+                ) : (
+                  <TrendingDown className="w-5 h-5" />
+                )}
+                {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange}%
+              </p>
+              <p className="text-xs opacity-70">
+                الشهر السابق: {formatCurrency(stats.lastMonthPayments)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          title="إجمالي الفواتير"
+          value={formatCurrency(stats.totalInvoices)}
+          subtitle={`${stats.invoiceCount} فاتورة`}
+          icon={Receipt}
+          iconBg="bg-blue-100 text-blue-600"
+        />
+        <StatCard
+          title="المدفوع"
+          value={formatCurrency(stats.paidInvoices)}
+          icon={CheckCircle}
+          iconBg="bg-green-100 text-green-600"
+          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+        />
+        <StatCard
+          title="المستحق"
+          value={formatCurrency(stats.pendingInvoices)}
+          icon={Clock}
+          iconBg="bg-yellow-100 text-yellow-600"
+        />
+        <StatCard
+          title="مدفوعات هذا الشهر"
+          value={formatCurrency(stats.currentMonthPayments)}
+          subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
+          icon={CreditCard}
+          iconBg="bg-purple-100 text-purple-600"
+          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+        />
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger 
+              value="invoices" 
+              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <Receipt className="w-4 h-4 ml-2" />
+              الفواتير
+            </TabsTrigger>
+            <TabsTrigger 
+              value="payments"
+              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <CreditCard className="w-4 h-4 ml-2" />
+              المدفوعات
+            </TabsTrigger>
+            <TabsTrigger 
+              value="deposits"
               className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
             >
               <Wallet className="w-4 h-4 ml-2" />
@@ -414,39 +505,19 @@ const BillingCenter = () => {
             </TabsTrigger>
           </TabsList>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => setIsCreateInvoiceOpen(true)}
-                className="bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                فاتورة جديدة
-              </Button>
-              <Button 
-                onClick={() => setIsCreatePaymentOpen(true)}
-                variant="outline"
-                className="gap-2"
-              >
-                <CreditCard className="w-4 h-4" />
-                تسجيل دفعة
-              </Button>
-            </div>
-          </div>
-
-          {/* Search & Filter Row */}
-          <div className="flex gap-3 mt-4">
+          {/* Search & Filter */}
+          <div className="flex gap-3">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <Input
                 placeholder="بحث..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10 w-64 bg-neutral-50 rounded-xl border border-neutral-200"
+                className="pr-10 w-64 bg-white rounded-xl border-0 shadow-sm"
               />
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40 bg-neutral-50 rounded-xl border border-neutral-200">
+              <SelectTrigger className="w-40 bg-white rounded-xl border-0 shadow-sm">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -458,11 +529,12 @@ const BillingCenter = () => {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
         {/* Invoices Tab */}
         <TabsContent value="invoices">
           <motion.div 
-            className="overflow-hidden"
+            className="bg-white rounded-2xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -658,8 +730,7 @@ const BillingCenter = () => {
             </Suspense>
           </motion.div>
         </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
 
       {/* Dialogs */}
       {/* Create Invoice Dialog */}
