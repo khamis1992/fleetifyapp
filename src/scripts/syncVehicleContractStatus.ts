@@ -21,13 +21,13 @@ export async function linkContractsToVehicles(companyId: string): Promise<{ link
 
   console.log('🔗 [syncVehicleContractStatus] بدء ربط العقود بالمركبات...');
 
-  // جلب العقود التي لا تحتوي على vehicle_id لكنها تحتوي على license_plate
-  const { data: contractsWithoutVehicleId, error: contractsError } = await supabase
+  // جلب جميع العقود النشطة التي تحتوي على license_plate
+  // (سواء كانت تحتوي على vehicle_id أو لا، لأن vehicle_id قد يكون خاطئاً)
+  const { data: activeContractsWithLicensePlate, error: contractsError } = await supabase
     .from('contracts')
     .select('id, license_plate, vehicle_id, status')
     .eq('company_id', companyId)
     .eq('status', 'active')
-    .is('vehicle_id', null)
     .not('license_plate', 'is', null);
 
   if (contractsError) {
@@ -35,9 +35,9 @@ export async function linkContractsToVehicles(companyId: string): Promise<{ link
     return { linked, errors };
   }
 
-  console.log(`📋 [syncVehicleContractStatus] وجد ${contractsWithoutVehicleId?.length || 0} عقد بدون vehicle_id`);
+  console.log(`📋 [syncVehicleContractStatus] وجد ${activeContractsWithLicensePlate?.length || 0} عقد نشط مع license_plate`);
 
-  if (!contractsWithoutVehicleId || contractsWithoutVehicleId.length === 0) {
+  if (!activeContractsWithLicensePlate || activeContractsWithLicensePlate.length === 0) {
     return { linked, errors };
   }
 
@@ -53,7 +53,7 @@ export async function linkContractsToVehicles(companyId: string): Promise<{ link
     return { linked, errors };
   }
 
-  // إنشاء خريطة للمركبات بناءً على plate_number (بدون مسافات)
+  // إنشاء خريطة للمركبات بناءً على plate_number (بدون مسافات) - للمطابقة المرنة
   const vehicleMap = new Map<string, string>();
   vehicles?.forEach(v => {
     const normalizedPlate = v.plate_number?.trim().replace(/\s+/g, '') || '';
@@ -62,25 +62,34 @@ export async function linkContractsToVehicles(companyId: string): Promise<{ link
     }
   });
 
-  // ربط العقود بالمركبات
-  for (const contract of contractsWithoutVehicleId) {
-    const normalizedLicensePlate = contract.license_plate?.trim().replace(/\s+/g, '') || '';
-    const vehicleId = vehicleMap.get(normalizedLicensePlate);
+  // إنشاء مجموعة من vehicle_ids الصحيحة
+  const validVehicleIds = new Set(vehicles?.map(v => v.id) || []);
 
-    if (vehicleId) {
+  // ربط العقود بالمركبات (حتى لو كان vehicle_id موجوداً لكنه غير صحيح)
+  for (const contract of activeContractsWithLicensePlate) {
+    const normalizedLicensePlate = contract.license_plate?.trim().replace(/\s+/g, '') || '';
+    const correctVehicleId = vehicleMap.get(normalizedLicensePlate);
+
+    // التحقق إذا كان vehicle_id الحالي صحيحاً
+    const currentVehicleIdIsCorrect = contract.vehicle_id && 
+      validVehicleIds.has(contract.vehicle_id) && 
+      contract.vehicle_id === correctVehicleId;
+
+    if (correctVehicleId && !currentVehicleIdIsCorrect) {
+      // تحديث vehicle_id إذا كان خاطئاً أو غير موجود
       const { error: updateError } = await supabase
         .from('contracts')
-        .update({ vehicle_id: vehicleId })
+        .update({ vehicle_id: correctVehicleId })
         .eq('id', contract.id);
 
       if (updateError) {
         errors.push(`خطأ في تحديث العقد ${contract.id}: ${updateError.message}`);
       } else {
-        console.log(`✅ [syncVehicleContractStatus] ربط العقد ${contract.id} بالمركبة ${vehicleId}`);
+        console.log(`✅ [syncVehicleContractStatus] ربط العقد ${contract.id} (license_plate: '${contract.license_plate}') بالمركبة ${correctVehicleId} (كان: ${contract.vehicle_id || 'null'})`);
         linked++;
       }
-    } else {
-      console.log(`⚠️ [syncVehicleContractStatus] لم يتم العثور على مركبة للعقد ${contract.id} (license_plate: ${contract.license_plate})`);
+    } else if (!correctVehicleId) {
+      console.log(`⚠️ [syncVehicleContractStatus] لم يتم العثور على مركبة للعقد ${contract.id} (license_plate: '${contract.license_plate}')`);
     }
   }
 

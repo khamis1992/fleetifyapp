@@ -69,7 +69,16 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
       const vehicleIds = data.map(v => v.id)
       const plateNumbers = data.map(v => v.plate_number).filter(Boolean)
       
-      // جلب جميع العقود المرتبطة بهذه المركبات (باستخدام vehicle_id أو license_plate)
+      // إنشاء خريطة للمركبات بناءً على رقم اللوحة المُطبّع (بدون مسافات)
+      const normalizedPlateToVehicleId = new Map<string, string>()
+      data.forEach(v => {
+        if (v.plate_number) {
+          const normalized = v.plate_number.trim().replace(/\s+/g, '')
+          normalizedPlateToVehicleId.set(normalized, v.id)
+        }
+      })
+      
+      // جلب جميع العقود المرتبطة بهذه المركبات (باستخدام vehicle_id)
       const { data: contractsByVehicleId, error: contractsError1 } = await supabase
         .from("contracts")
         .select("id, vehicle_id, license_plate, status, start_date, end_date")
@@ -77,25 +86,34 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         .eq("company_id", companyId)
         .not("vehicle_id", "is", null)
 
-      // جلب العقود المرتبطة برقم اللوحة (جميع العقود، حتى التي تحتوي على vehicle_id)
-      // هذا مهم لأن بعض العقود قد تحتوي على vehicle_id خاطئ لكن license_plate صحيح
-      const { data: contractsByPlate, error: contractsError2 } = await supabase
+      // جلب جميع العقود النشطة للشركة (للتصفية بالمطابقة المرنة لرقم اللوحة)
+      // هذا ضروري لأن license_plate قد يحتوي على مسافات مختلفة (مثل "185 513" vs "185513")
+      const { data: allActiveContracts, error: contractsError2 } = await supabase
         .from("contracts")
         .select("id, vehicle_id, license_plate, status, start_date, end_date")
-        .in("license_plate", plateNumbers)
         .eq("company_id", companyId)
+        .eq("status", "active")
 
       if (contractsError1) {
         console.warn("Error fetching contracts by vehicle_id:", contractsError1)
       }
       if (contractsError2) {
-        console.warn("Error fetching contracts by license_plate:", contractsError2)
+        console.warn("Error fetching all active contracts:", contractsError2)
       }
+
+      // تصفية العقود النشطة التي تتطابق مع أرقام اللوحات (مطابقة مرنة)
+      const contractsByPlate = (allActiveContracts || []).filter(contract => {
+        if (!contract.license_plate) return false
+        const normalizedContractPlate = contract.license_plate.trim().replace(/\s+/g, '')
+        return normalizedPlateToVehicleId.has(normalizedContractPlate)
+      })
+
+      console.log(`🔍 [useVehicles] Found ${contractsByVehicleId?.length || 0} contracts by vehicle_id, ${contractsByPlate.length} by license_plate`)
 
       // دمج العقود وإزالة التكرارات
       const allContracts = [
         ...(contractsByVehicleId || []),
-        ...(contractsByPlate || [])
+        ...contractsByPlate
       ]
       
       // إزالة التكرارات بناءً على id
@@ -103,26 +121,24 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         new Map(allContracts.map(c => [c.id, c])).values()
       )
       
-      // ربط العقود بالمركبات بناءً على vehicle_id أو license_plate
+      // ربط العقود بالمركبات بناءً على vehicle_id أو license_plate (مطابقة مرنة)
       const contracts = uniqueContracts.map(contract => {
         // التحقق من أن vehicle_id في العقد يطابق إحدى المركبات المطلوبة
         if (contract.vehicle_id && vehicleIds.includes(contract.vehicle_id)) {
           return contract
         }
         
-        // إذا كان vehicle_id موجود لكنه لا يطابق أي مركبة، أو لم يكن موجوداً
-        // ابحث عن المركبة باستخدام license_plate
+        // إذا كان vehicle_id غير موجود أو لا يطابق أي مركبة
+        // ابحث عن المركبة باستخدام license_plate مع مطابقة مرنة (إزالة المسافات)
         const normalizedContractPlate = contract.license_plate?.trim().replace(/\s+/g, '') || ''
-        const vehicle = data.find(v => {
-          const normalizedVehiclePlate = v.plate_number?.trim().replace(/\s+/g, '') || ''
-          return normalizedVehiclePlate === normalizedContractPlate
-        })
+        const matchedVehicleId = normalizedPlateToVehicleId.get(normalizedContractPlate)
         
-        if (vehicle) {
-          console.log(`🔗 [useVehicles] Matched contract ${contract.id} (vehicle_id: ${contract.vehicle_id || 'null'}, license_plate: ${contract.license_plate}) to vehicle ${vehicle.plate_number} (${vehicle.id})`)
+        if (matchedVehicleId) {
+          const vehicle = data.find(v => v.id === matchedVehicleId)
+          console.log(`🔗 [useVehicles] Matched contract ${contract.id} (vehicle_id: ${contract.vehicle_id || 'null'}, license_plate: '${contract.license_plate}') to vehicle ${vehicle?.plate_number} (${matchedVehicleId}) via normalized plate matching`)
           return {
             ...contract,
-            vehicle_id: vehicle.id
+            vehicle_id: matchedVehicleId
           }
         }
         
