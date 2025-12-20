@@ -42,7 +42,7 @@ import {
   BarChart3,
   CreditCard,
 } from 'lucide-react';
-import { useMonthlyRentTracking, useRentPaymentSummary, usePaymentDateComparison, MonthlyRentStatus, DateFilterType } from '@/hooks/useMonthlyRentTracking';
+import { useMonthlyRentTracking, useRentPaymentSummary, MonthlyRentStatus, DateFilterType } from '@/hooks/useMonthlyRentTracking';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -117,9 +117,6 @@ export const MonthlyRentTracker: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<MonthlyRentStatus | null>(null);
 
   const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth, dateFilter);
-  
-  // مقارنة بين المدخول الفعلي والدفعات التاريخية
-  const { data: comparison } = usePaymentDateComparison(selectedYear, selectedMonth);
   
   // Handle opening payment dialog
   const handleOpenPaymentDialog = (item: MonthlyRentStatus) => {
@@ -297,18 +294,6 @@ export const MonthlyRentTracker: React.FC = () => {
               </div>
             </div>
             
-            {/* إظهار الفرق إذا وُجد */}
-            {comparison?.hasRetroactive && (
-              <div className="flex items-center gap-2 text-sm">
-                <AlertCircle className="w-4 h-4 text-yellow-300" />
-                <span className="text-white/90">
-                  {dateFilter === 'created_at' 
-                    ? `دفعات قديمة بقيمة ${formatCurrency(comparison.retroactivePayments)} غير مشمولة`
-                    : `يشمل ${formatCurrency(comparison.retroactivePayments)} من دفعات مسجلة لاحقاً`
-                  }
-                </span>
-              </div>
-            )}
           </div>
           
           {/* شرح مختصر */}
