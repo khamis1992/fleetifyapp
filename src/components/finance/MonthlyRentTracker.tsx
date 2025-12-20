@@ -59,6 +59,8 @@ interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral';
   change?: string;
   delay?: number;
+  onClick?: () => void;
+  isActive?: boolean;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -71,12 +73,21 @@ const StatCard: React.FC<StatCardProps> = ({
   trend = 'neutral',
   change,
   delay = 0,
+  onClick,
+  isActive = false,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className={cn(
+      "bg-white rounded-2xl p-5 shadow-sm transition-all border",
+      onClick ? "cursor-pointer hover:shadow-md" : "",
+      isActive ? "border-coral-500 ring-2 ring-coral-200" : "border-gray-100"
+    )}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
+    onClick={onClick}
+    whileHover={onClick ? { scale: 1.02 } : undefined}
+    whileTap={onClick ? { scale: 0.98 } : undefined}
   >
     <div className="flex items-center justify-between mb-3">
       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
@@ -337,6 +348,8 @@ export const MonthlyRentTracker: React.FC = () => {
           icon={Users}
           iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
           delay={0.1}
+          onClick={() => setFilterStatus('all')}
+          isActive={filterStatus === 'all'}
         />
         <StatCard
           title="العملاء الذين دفعوا"
@@ -347,6 +360,8 @@ export const MonthlyRentTracker: React.FC = () => {
           trend="up"
           change={`${summary.paidCount}`}
           delay={0.2}
+          onClick={() => setFilterStatus('paid')}
+          isActive={filterStatus === 'paid'}
         />
         <StatCard
           title="العملاء الذين لم يدفعوا"
@@ -357,6 +372,8 @@ export const MonthlyRentTracker: React.FC = () => {
           trend="down"
           change={`${summary.unpaidCount}`}
           delay={0.3}
+          onClick={() => setFilterStatus('unpaid')}
+          isActive={filterStatus === 'unpaid'}
         />
         <StatCard
           title="نسبة التحصيل"
