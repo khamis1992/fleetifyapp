@@ -76,13 +76,13 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         .eq("company_id", companyId)
         .not("vehicle_id", "is", null)
 
-      // جلب العقود المرتبطة برقم اللوحة (للعقود التي لا تحتوي على vehicle_id)
+      // جلب العقود المرتبطة برقم اللوحة (جميع العقود، حتى التي تحتوي على vehicle_id)
+      // هذا مهم لأن بعض العقود قد تحتوي على vehicle_id خاطئ لكن license_plate صحيح
       const { data: contractsByPlate, error: contractsError2 } = await supabase
         .from("contracts")
         .select("id, vehicle_id, license_plate, status, start_date, end_date")
         .in("license_plate", plateNumbers)
         .eq("company_id", companyId)
-        .is("vehicle_id", null)
 
       if (contractsError1) {
         console.warn("Error fetching contracts by vehicle_id:", contractsError1)
