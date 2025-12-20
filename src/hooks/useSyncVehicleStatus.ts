@@ -83,43 +83,44 @@ export function useSyncVehicleStatus() {
         const isActiveNow = startDate <= today && (endDate === null || endDate >= today);
 
         if (isActiveNow) {
-          // البحث عن المركبة باستخدام vehicle_id أو license_plate
+          // البحث عن المركبة باستخدام license_plate أولاً (مطابقة مرنة)
           let vehicleId = contract.vehicle_id;
-
-          if (!vehicleId && contract.license_plate) {
+          
+          // إنشاء مجموعة من IDs المركبات النشطة للتحقق السريع
+          const validVehicleIds = new Set(vehicles?.map(v => v.id) || []);
+          
+          // البحث عن المركبة المطابقة باستخدام license_plate
+          if (contract.license_plate) {
             const normalizedPlate = contract.license_plate.trim().replace(/\s+/g, '');
             const matchedVehicle = normalizedPlateToVehicle.get(normalizedPlate);
+            
             if (matchedVehicle) {
-              vehicleId = matchedVehicle.id;
-              console.log(`🔗 [syncVehicleStatus] ربط العقد ${contract.id} (license_plate: '${contract.license_plate}') بالمركبة ${matchedVehicle.plate_number} (${vehicleId})`);
+              // استخدام المركبة المطابقة إذا:
+              // 1. لا يوجد vehicle_id في العقد
+              // 2. أو vehicle_id لا يشير إلى مركبة صالحة
+              // 3. أو vehicle_id لا يطابق المركبة المتوقعة من license_plate
+              const needsUpdate = !vehicleId || !validVehicleIds.has(vehicleId) || vehicleId !== matchedVehicle.id;
+              
+              if (needsUpdate) {
+                const oldVehicleId = vehicleId;
+                vehicleId = matchedVehicle.id;
+                
+                console.log(`🔗 [syncVehicleStatus] ربط العقد ${contract.id} (license_plate: '${contract.license_plate}') بالمركبة ${matchedVehicle.plate_number} (${vehicleId}) [كان: ${oldVehicleId || 'null'}]`);
+                
+                // تحديث vehicle_id في العقد
+                const { error: updateContractError } = await supabase
+                  .from('contracts')
+                  .update({ vehicle_id: vehicleId })
+                  .eq('id', contract.id);
 
-              // تحديث vehicle_id في العقد
-              const { error: updateContractError } = await supabase
-                .from('contracts')
-                .update({ vehicle_id: vehicleId })
-                .eq('id', contract.id);
-
-              if (!updateContractError) {
-                result.contractsLinked++;
+                if (!updateContractError) {
+                  result.contractsLinked++;
+                } else {
+                  console.error(`❌ [syncVehicleStatus] خطأ في تحديث العقد ${contract.id}:`, updateContractError);
+                }
               }
-            }
-          } else if (vehicleId && contract.license_plate) {
-            // التحقق من أن vehicle_id يطابق license_plate
-            const normalizedPlate = contract.license_plate.trim().replace(/\s+/g, '');
-            const matchedVehicle = normalizedPlateToVehicle.get(normalizedPlate);
-            if (matchedVehicle && matchedVehicle.id !== vehicleId) {
-              // تصحيح vehicle_id
-              console.log(`🔧 [syncVehicleStatus] تصحيح vehicle_id للعقد ${contract.id}: ${vehicleId} -> ${matchedVehicle.id}`);
-              vehicleId = matchedVehicle.id;
-
-              const { error: updateContractError } = await supabase
-                .from('contracts')
-                .update({ vehicle_id: vehicleId })
-                .eq('id', contract.id);
-
-              if (!updateContractError) {
-                result.contractsLinked++;
-              }
+            } else {
+              console.warn(`⚠️ [syncVehicleStatus] لم يتم العثور على مركبة للعقد ${contract.id} (license_plate: '${contract.license_plate}', normalized: '${normalizedPlate}')`);
             }
           }
 
