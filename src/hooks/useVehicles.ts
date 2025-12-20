@@ -60,7 +60,105 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         throw error
       }
 
-      return data as Vehicle[]
+      if (!data || data.length === 0) {
+        return []
+      }
+
+      // التحقق من العقود النشطة المرتبطة بالمركبات وتحديث حالة المركبة
+      const vehicleIds = data.map(v => v.id)
+      
+      // جلب جميع العقود المرتبطة بهذه المركبات (نشطة وغير نشطة)
+      const { data: contracts, error: contractsError } = await supabase
+        .from("contracts")
+        .select("id, vehicle_id, status, start_date, end_date")
+        .in("vehicle_id", vehicleIds)
+        .eq("company_id", companyId)
+        .not("vehicle_id", "is", null)
+
+      if (contractsError) {
+        console.warn("Error fetching contracts for vehicles:", contractsError)
+        // لا نرمي خطأ هنا، فقط نستمر بدون تحديث الحالة
+      }
+
+      // إنشاء Map للعقود النشطة لكل مركبة
+      const vehicleActiveContractsMap = new Map<string, boolean>()
+      if (contracts) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // تصفير الوقت للمقارنة
+        
+        contracts.forEach(contract => {
+          if (contract.vehicle_id && contract.status === 'active') {
+            const startDate = new Date(contract.start_date)
+            startDate.setHours(0, 0, 0, 0)
+            const endDate = contract.end_date ? new Date(contract.end_date) : null
+            if (endDate) {
+              endDate.setHours(0, 0, 0, 0)
+            }
+            
+            // التحقق من أن العقد نشط في التاريخ الحالي
+            const isActiveNow = startDate <= today && (endDate === null || endDate >= today)
+            
+            if (isActiveNow) {
+              vehicleActiveContractsMap.set(contract.vehicle_id, true)
+            }
+          }
+        })
+        
+        if (vehicleActiveContractsMap.size > 0) {
+          console.log(`✅ [useVehicles] Found ${vehicleActiveContractsMap.size} vehicles with active contracts`)
+        }
+      }
+
+      // تحديث حالة المركبات التي لديها عقود نشطة
+      const vehiclesToUpdate: Array<{ id: string; newStatus: 'rented' | 'available' }> = []
+      
+      const updatedVehicles = data.map(vehicle => {
+        const hasActiveContract = vehicleActiveContractsMap.has(vehicle.id)
+        
+        // إذا كانت المركبة لديها عقد نشط ولكن حالتها ليست "rented"، نحدثها
+        if (hasActiveContract && vehicle.status !== 'rented') {
+          vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'rented' })
+          return {
+            ...vehicle,
+            status: 'rented' as const
+          }
+        }
+        
+        // إذا لم تكن لديها عقد نشط ولكن حالتها "rented"، نعيدها إلى "available"
+        if (!hasActiveContract && vehicle.status === 'rented') {
+          vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'available' })
+          return {
+            ...vehicle,
+            status: 'available' as const
+          }
+        }
+        
+        return vehicle
+      })
+
+      // تحديث قاعدة البيانات بشكل غير متزامن (لا ننتظر النتيجة)
+      if (vehiclesToUpdate.length > 0) {
+        console.log(`🔄 [useVehicles] Updating ${vehiclesToUpdate.length} vehicle statuses based on active contracts`)
+        
+        // تحديث كل مركبة بشكل غير متزامن
+        Promise.all(
+          vehiclesToUpdate.map(({ id, newStatus }) =>
+            supabase
+              .from("vehicles")
+              .update({ status: newStatus, updated_at: new Date().toISOString() })
+              .eq("id", id)
+              .then(({ error }) => {
+                if (error) {
+                  console.warn(`⚠️ [useVehicles] Failed to update vehicle ${id} status:`, error)
+                }
+              })
+          )
+        ).catch(err => {
+          console.error("❌ [useVehicles] Error updating vehicle statuses:", err)
+        })
+      }
+
+      return updatedVehicles as Vehicle[]
     },
     enabled: !!companyId,
     staleTime: 3 * 60 * 1000, // 3 minutes cache
