@@ -66,25 +66,68 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
 
       // التحقق من العقود النشطة المرتبطة بالمركبات وتحديث حالة المركبة
       const vehicleIds = data.map(v => v.id)
+      const plateNumbers = data.map(v => v.plate_number).filter(Boolean)
       
-      // جلب جميع العقود المرتبطة بهذه المركبات (نشطة وغير نشطة)
-      const { data: contracts, error: contractsError } = await supabase
+      // جلب جميع العقود المرتبطة بهذه المركبات (باستخدام vehicle_id أو license_plate)
+      const { data: contractsByVehicleId, error: contractsError1 } = await supabase
         .from("contracts")
-        .select("id, vehicle_id, status, start_date, end_date")
+        .select("id, vehicle_id, license_plate, status, start_date, end_date")
         .in("vehicle_id", vehicleIds)
         .eq("company_id", companyId)
         .not("vehicle_id", "is", null)
 
-      if (contractsError) {
-        console.warn("Error fetching contracts for vehicles:", contractsError)
-        // لا نرمي خطأ هنا، فقط نستمر بدون تحديث الحالة
+      // جلب العقود المرتبطة برقم اللوحة (للعقود التي لا تحتوي على vehicle_id)
+      const { data: contractsByPlate, error: contractsError2 } = await supabase
+        .from("contracts")
+        .select("id, vehicle_id, license_plate, status, start_date, end_date")
+        .in("license_plate", plateNumbers)
+        .eq("company_id", companyId)
+        .is("vehicle_id", null)
+
+      if (contractsError1) {
+        console.warn("Error fetching contracts by vehicle_id:", contractsError1)
       }
+      if (contractsError2) {
+        console.warn("Error fetching contracts by license_plate:", contractsError2)
+      }
+
+      // دمج العقود وإزالة التكرارات
+      const allContracts = [
+        ...(contractsByVehicleId || []),
+        ...(contractsByPlate || [])
+      ]
+      
+      // إزالة التكرارات بناءً على id
+      const uniqueContracts = Array.from(
+        new Map(allContracts.map(c => [c.id, c])).values()
+      )
+      
+      // ربط العقود بالمركبات بناءً على vehicle_id أو license_plate
+      const contracts = uniqueContracts.map(contract => {
+        // إذا كان العقد يحتوي على vehicle_id، استخدمه
+        if (contract.vehicle_id) {
+          return contract
+        }
+        
+        // إذا لم يكن يحتوي على vehicle_id، ابحث عن المركبة باستخدام license_plate
+        const vehicle = data.find(v => v.plate_number === contract.license_plate)
+        if (vehicle) {
+          return {
+            ...contract,
+            vehicle_id: vehicle.id
+          }
+        }
+        
+        return contract
+      }).filter(c => c.vehicle_id) // إزالة العقود التي لا يمكن ربطها بمركبة
 
       // إنشاء Map للعقود النشطة لكل مركبة
       const vehicleActiveContractsMap = new Map<string, boolean>()
       if (contracts) {
         const today = new Date()
         today.setHours(0, 0, 0, 0) // تصفير الوقت للمقارنة
+        
+        console.log(`🔍 [useVehicles] Checking ${contracts.length} contracts for ${vehicleIds.length} vehicles`)
         
         contracts.forEach(contract => {
           if (contract.vehicle_id && contract.status === 'active') {
@@ -100,13 +143,20 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
             
             if (isActiveNow) {
               vehicleActiveContractsMap.set(contract.vehicle_id, true)
+              console.log(`✅ [useVehicles] Vehicle ${contract.vehicle_id} has active contract ${contract.id} (${contract.start_date} to ${contract.end_date || 'no end'})`)
+            } else {
+              console.log(`⚠️ [useVehicles] Contract ${contract.id} for vehicle ${contract.vehicle_id} is active but not in date range (start: ${contract.start_date}, end: ${contract.end_date || 'null'}, today: ${today.toISOString().split('T')[0]})`)
             }
           }
         })
         
         if (vehicleActiveContractsMap.size > 0) {
-          console.log(`✅ [useVehicles] Found ${vehicleActiveContractsMap.size} vehicles with active contracts`)
+          console.log(`✅ [useVehicles] Found ${vehicleActiveContractsMap.size} vehicles with active contracts:`, Array.from(vehicleActiveContractsMap.keys()))
+        } else {
+          console.log(`⚠️ [useVehicles] No vehicles with active contracts found`)
         }
+      } else {
+        console.log(`⚠️ [useVehicles] No contracts found for vehicles`)
       }
 
       // تحديث حالة المركبات التي لديها عقود نشطة
@@ -117,6 +167,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         
         // إذا كانت المركبة لديها عقد نشط ولكن حالتها ليست "rented"، نحدثها
         if (hasActiveContract && vehicle.status !== 'rented') {
+          console.log(`🔄 [useVehicles] Vehicle ${vehicle.plate_number} (${vehicle.id}) has active contract but status is ${vehicle.status}, updating to rented`)
           vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'rented' })
           return {
             ...vehicle,
@@ -126,6 +177,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         
         // إذا لم تكن لديها عقد نشط ولكن حالتها "rented"، نعيدها إلى "available"
         if (!hasActiveContract && vehicle.status === 'rented') {
+          console.log(`🔄 [useVehicles] Vehicle ${vehicle.plate_number} (${vehicle.id}) has no active contract but status is rented, updating to available`)
           vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'available' })
           return {
             ...vehicle,
@@ -136,26 +188,33 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         return vehicle
       })
 
-      // تحديث قاعدة البيانات بشكل غير متزامن (لا ننتظر النتيجة)
+      // تحديث قاعدة البيانات بشكل متزامن قبل إرجاع البيانات
       if (vehiclesToUpdate.length > 0) {
         console.log(`🔄 [useVehicles] Updating ${vehiclesToUpdate.length} vehicle statuses based on active contracts`)
         
-        // تحديث كل مركبة بشكل غير متزامن
-        Promise.all(
-          vehiclesToUpdate.map(({ id, newStatus }) =>
-            supabase
-              .from("vehicles")
-              .update({ status: newStatus, updated_at: new Date().toISOString() })
-              .eq("id", id)
-              .then(({ error }) => {
-                if (error) {
-                  console.warn(`⚠️ [useVehicles] Failed to update vehicle ${id} status:`, error)
-                }
-              })
+        try {
+          // تحديث كل مركبة بشكل متزامن
+          await Promise.all(
+            vehiclesToUpdate.map(({ id, newStatus }) =>
+              supabase
+                .from("vehicles")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq("id", id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.warn(`⚠️ [useVehicles] Failed to update vehicle ${id} status:`, error)
+                    throw error
+                  } else {
+                    console.log(`✅ [useVehicles] Updated vehicle ${id} status to ${newStatus}`)
+                  }
+                })
+            )
           )
-        ).catch(err => {
+          console.log(`✅ [useVehicles] Successfully updated ${vehiclesToUpdate.length} vehicle statuses`)
+        } catch (err) {
           console.error("❌ [useVehicles] Error updating vehicle statuses:", err)
-        })
+          // لا نرمي الخطأ هنا، نستمر بإرجاع البيانات المحدثة في الذاكرة
+        }
       }
 
       return updatedVehicles as Vehicle[]
