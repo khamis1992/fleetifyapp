@@ -418,39 +418,41 @@ const BillingCenter = () => {
         </div>
       </motion.div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          title="إجمالي الفواتير"
-          value={formatCurrency(stats.totalInvoices)}
-          subtitle={`${stats.invoiceCount} فاتورة`}
-          icon={Receipt}
-          iconBg="bg-blue-100 text-blue-600"
-        />
-        <StatCard
-          title="المدفوع"
-          value={formatCurrency(stats.paidInvoices)}
-          icon={CheckCircle}
-          iconBg="bg-green-100 text-green-600"
-          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
-          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
-        />
-        <StatCard
-          title="المستحق"
-          value={formatCurrency(stats.pendingInvoices)}
-          icon={Clock}
-          iconBg="bg-yellow-100 text-yellow-600"
-        />
-        <StatCard
-          title="مدفوعات هذا الشهر"
-          value={formatCurrency(stats.currentMonthPayments)}
-          subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
-          icon={CreditCard}
-          iconBg="bg-purple-100 text-purple-600"
-          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
-          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
-        />
-      </div>
+      {/* Statistics Cards - تظهر فقط في تبويبة الفواتير */}
+      {activeTab === "invoices" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard
+            title="إجمالي الفواتير"
+            value={formatCurrency(stats.totalInvoices)}
+            subtitle={`${stats.invoiceCount} فاتورة`}
+            icon={Receipt}
+            iconBg="bg-blue-100 text-blue-600"
+          />
+          <StatCard
+            title="المدفوع"
+            value={formatCurrency(stats.paidInvoices)}
+            icon={CheckCircle}
+            iconBg="bg-green-100 text-green-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+          <StatCard
+            title="المستحق"
+            value={formatCurrency(stats.pendingInvoices)}
+            icon={Clock}
+            iconBg="bg-yellow-100 text-yellow-600"
+          />
+          <StatCard
+            title="مدفوعات هذا الشهر"
+            value={formatCurrency(stats.currentMonthPayments)}
+            subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
+            icon={CreditCard}
+            iconBg="bg-purple-100 text-purple-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
