@@ -90,7 +90,7 @@ import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { VehicleSidePanel } from '@/components/fleet/VehicleSidePanel';
-import { syncVehicleStatus } from '@/scripts/syncVehicleContractStatus';
+import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 
 // ===== Vehicle Card Component =====
 interface VehicleCardProps {
@@ -342,9 +342,9 @@ const FleetPageNew: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Hooks
+  const { isSyncing, handleSync } = useSyncVehicleStatus();
   const deleteVehicle = useDeleteVehicle();
   const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus();
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehiclesPaginated(
@@ -381,32 +381,13 @@ const FleetPageNew: React.FC = () => {
       return;
     }
 
-    setIsSyncing(true);
-    try {
-      const result = await syncVehicleStatus(user.profile.company_id);
-      
-      if (result.errors.length > 0) {
-        console.warn('⚠️ أخطاء أثناء المزامنة:', result.errors);
-      }
-      
-      const totalUpdated = result.vehiclesUpdatedToRented + result.vehiclesUpdatedToAvailable;
-      
-      if (totalUpdated > 0 || result.contractsLinked > 0) {
-        toast.success(
-          `تم المزامنة: ${result.vehiclesUpdatedToRented} مركبة → مؤجرة، ${result.vehiclesUpdatedToAvailable} مركبة → متاحة${result.contractsLinked > 0 ? `، ${result.contractsLinked} عقد تم ربطه` : ''}`
-        );
-        // تحديث البيانات
-        queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] });
-        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-        queryClient.invalidateQueries({ queryKey: ['fleet-status'] });
-      } else {
-        toast.info('جميع المركبات محدثة - لا توجد تغييرات مطلوبة');
-      }
-    } catch (error) {
-      console.error('❌ خطأ في مزامنة حالة المركبات:', error);
-      toast.error('فشل في مزامنة حالة المركبات');
-    } finally {
-      setIsSyncing(false);
+    const result = await handleSync(user.profile.company_id);
+    
+    if (result) {
+      // تحديث البيانات
+      queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-status'] });
     }
   };
 
