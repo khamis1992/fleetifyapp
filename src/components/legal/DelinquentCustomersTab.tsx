@@ -953,82 +953,8 @@ export const DelinquentCustomersTab: React.FC = () => {
         )}
       </div>
 
-      {/* Mobile Cards View */}
-      <div className="md:hidden grid gap-4 mb-6">
-        {paginatedCustomers.map((customer, index) => (
-          <Card key={`${customer.customer_id}-${index}`} className={cn(
-            "p-4 border-2 transition-all",
-            customer.contract_status === 'cancelled' && "border-red-200 bg-red-50",
-            customer.contract_status === 'closed' && "border-gray-200 bg-gray-50"
-          )}>
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-neutral-900">{customer.customer_name}</h3>
-                  <RiskBadge level={customer.risk_level || 'LOW'} score={customer.risk_score || 0} />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-neutral-600">{customer.contract_number}</span>
-                  {customer.contract_status === 'cancelled' && (
-                    <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white gap-1">
-                      <X className="w-3 h-3" />
-                      ملغي
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  🚗 {customer.vehicle_plate || 'غير محدد'}
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <div className="text-lg font-bold text-red-600">
-                  {formatCurrency(customer.total_debt || 0)}
-                </div>
-                <Badge variant={customer.days_overdue > 90 ? 'destructive' : customer.days_overdue > 30 ? 'default' : 'secondary'}>
-                  {customer.days_overdue} يوم
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mb-3">
-              <div className="text-sm">
-                <div className="text-neutral-500">آخر تواصل</div>
-                <div className="font-medium">{customer.last_contact_days || 0} يوم</div>
-              </div>
-              <div className="text-sm">
-                <div className="text-neutral-500">هذا الشهر</div>
-                <div className="font-medium">{customer.contact_count_this_month || 0} مرة</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 justify-end">
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => handleSendWarning(customer)}
-                className="flex-1"
-              >
-                <AlertTriangle className="w-4 h-4 ml-1 text-orange-500" />
-                إنذار
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => handleRecordPayment(customer)}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                <CreditCard className="w-4 h-4 ml-1" />
-                دفع
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => handleViewDetails(customer)}>
-                <Eye className="w-4 h-4" />
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Desktop Table View */}
-      <Card className="border-neutral-200 hidden md:block">
+      {/* Table View - يظهر دائماً */}
+      <Card className="border-neutral-200">
         <CardContent className="p-0">
           {customersLoading ? (
             <div className="flex items-center justify-center h-64">
