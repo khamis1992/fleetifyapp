@@ -1947,7 +1947,6 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
   const paidPaymentsCount = payments.filter(p => p.payment_status === 'completed').length;
 
   // إنشاء جدول دفعات موحد يجمع بين المجدول والفعلي
-  // ✅ إصلاح: حساب الأشهر المدفوعة بناءً على المبلغ الإجمالي المدفوع وليس عدد المدفوعات
   const unifiedPaymentSchedule = useMemo(() => {
     if (!contract.start_date || !contract.monthly_amount) return [];
 
@@ -1964,15 +1963,6 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       .filter(p => p.payment_status === 'completed')
       .sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
 
-    // ✅ حساب عدد الأشهر المدفوعة بناءً على المبلغ الإجمالي
-    // وليس عدد المدفوعات (لأن بعض المدفوعات قد تكون جزئية)
-    const fullyPaidMonths = Math.floor(totalPaid / monthlyAmount);
-    
-    // حساب المبلغ المتبقي بعد الأشهر الكاملة
-    const remainingAmount = totalPaid % monthlyAmount;
-    // إذا كان هناك مبلغ متبقي، فهو يغطي جزء من الشهر التالي
-    const partiallyPaidMonth = remainingAmount > 0 ? fullyPaidMonths : -1;
-
     const today = new Date();
     today.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة بالتاريخ فقط
 
@@ -1980,17 +1970,14 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       const dueDate = new Date(firstMonth);
       dueDate.setMonth(firstMonth.getMonth() + i);
 
-      // ✅ تحديد الحالة بناءً على المبلغ المدفوع الفعلي وليس عدد المدفوعات
-      let status: 'paid' | 'overdue' | 'pending' | 'upcoming';
+      // البحث عن الدفعة الفعلية المرتبطة بهذه الدفعة المجدولة
+      const actualPayment = sortedPayments[i] || null;
+      const isPaid = i < sortedPayments.length;
       
-      if (i < fullyPaidMonths) {
-        // هذا الشهر مدفوع بالكامل
+      // تحديد الحالة بناءً على التاريخ
+      let status: 'paid' | 'overdue' | 'pending' | 'upcoming';
+      if (isPaid) {
         status = 'paid';
-      } else if (i === partiallyPaidMonth) {
-        // هذا الشهر مدفوع جزئياً - يعتبر متأخر إذا مر تاريخ الاستحقاق
-        const dueDateOnly = new Date(dueDate);
-        dueDateOnly.setHours(0, 0, 0, 0);
-        status = dueDateOnly < today ? 'overdue' : 'pending';
       } else {
         // مقارنة تاريخ الاستحقاق مع اليوم
         const dueDateOnly = new Date(dueDate);
@@ -2005,9 +1992,6 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
         }
       }
 
-      // البحث عن الدفعات المرتبطة بهذا الشهر (للعرض فقط)
-      const actualPayment = sortedPayments[i] || null;
-
       schedule.push({
         number: i + 1,
         dueDate,
@@ -2021,7 +2005,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
     }
 
     return schedule;
-  }, [contract, payments, totalAmount, totalPaid]);
+  }, [contract, payments, totalAmount]);
 
   return (
     <div className="space-y-6">
