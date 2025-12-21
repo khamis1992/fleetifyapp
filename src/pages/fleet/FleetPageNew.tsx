@@ -88,7 +88,6 @@ import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagemen
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
 import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
-import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { VehicleSidePanel } from '@/components/fleet/VehicleSidePanel';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 
@@ -553,12 +552,6 @@ const FleetPageNew: React.FC = () => {
         <FleetSmartDashboard
           onFilterByStatus={handleDashboardFilterByStatus}
           activeStatus={filters.status}
-        />
-
-        {/* Alerts Panel - تنبيهات التأمين والفحص */}
-        <VehicleAlertPanel
-          onViewVehicle={handleViewVehicle}
-          maxAlerts={5}
         />
 
         {/* Secondary Status Bar - Other Statuses */}
