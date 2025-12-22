@@ -301,6 +301,7 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   // Handle view details - Open details dialog with overdue invoices breakdown
   const handleViewDetails = useCallback((customer: DelinquentCustomer) => {
+    console.log('🔍 [DelinquentCustomersTab] Opening details dialog for customer:', customer.customer_name);
     setSelectedCustomerForDetails(customer);
     setDetailsDialogOpen(true);
   }, []);
@@ -1114,7 +1115,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center justify-center gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => handleViewDetails(customer)} title="عرض التفاصيل">
+                              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }} title="عرض التفاصيل">
                                 <Eye className="w-4 h-4" />
                               </Button>
                               <Button variant="ghost" size="icon" onClick={() => handleSendWarning(customer)} title="إرسال إنذار">
@@ -1130,9 +1131,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewDetails(customer)}>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }}>
                                     <Eye className="w-4 h-4 ml-2" />
-                                    عرض تفاصيل العميل
+                                    عرض تفاصيل الغرامات
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleRecordPayment(customer)}>
                                     <CreditCard className="w-4 h-4 ml-2" />
