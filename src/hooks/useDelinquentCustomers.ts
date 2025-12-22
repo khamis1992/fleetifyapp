@@ -434,15 +434,37 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching legal cases:', error);
   }
 
-  // Step 5: Process each contract to identify delinquent customers
+  // Step 5: Group contracts by customer to handle multiple contracts
+  const contractsByCustomer = new Map<string, typeof contracts>();
+  
+  for (const contract of contracts) {
+    if (!contract.customer_id) continue;
+    
+    if (!contractsByCustomer.has(contract.customer_id)) {
+      contractsByCustomer.set(contract.customer_id, []);
+    }
+    contractsByCustomer.get(contract.customer_id)!.push(contract);
+  }
+  
+  // Step 6: Process each contract to identify delinquent customers
   // Using balance_due and days_overdue directly from contract table
   const today = new Date();
   const delinquentCustomers: DelinquentCustomer[] = [];
-
+  
   for (const contract of contracts) {
     try {
       const customer = contract.customers;
       if (!customer || !contract.customer_id) continue;
+
+      // الحصول على جميع عقود العميل
+      const customerContracts = contractsByCustomer.get(contract.customer_id) || [];
+      
+      // التحقق إذا كان هذا هو العقد النشط للعميل
+      // إذا كان العقد الحالي ملغيًا وعميل لديه عقد نشط آخر، فلا نعرضه
+      if (contract.status === 'cancelled' && customerContracts.some(c => c.status === 'active' && c.customer_id === contract.customer_id)) {
+        console.log(`Skipping cancelled contract ${contract.contract_number} for customer ${customer.first_name} ${customer.last_name} - has active contracts`);
+        continue;
+      }
 
       // Validate contract data
       if (!contract.start_date) continue;

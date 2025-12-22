@@ -1066,6 +1066,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                               </div>
                               <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
                               {customer.contract_status === 'cancelled' && (
+                                <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ العقد ملغي</span>
+                              )}
+                              {customer.contract_status === 'cancelled' && (
                                 <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ يجب استرداد المركبة</span>
                               )}
                             </div>
