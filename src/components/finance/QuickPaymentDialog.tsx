@@ -128,7 +128,7 @@ export function QuickPaymentDialog({
           )
         `)
         .eq('customer_id', customerId)
-        .in('payment_status', ['unpaid', 'partial'])
+        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .order('due_date', { ascending: true });
 
       if (error) throw error;
