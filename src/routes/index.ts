@@ -979,11 +979,11 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
-    path: '/vehicle-installments',
+    path: '/fleet/vehicle-installments',
     component: VehicleInstallments,
     lazy: true,
     exact: true,
-    title: 'Vehicle Installments',
+    title: 'أقساط المركبات',
     description: 'Vehicle installments',
     group: 'fleet',
     priority: 77,
