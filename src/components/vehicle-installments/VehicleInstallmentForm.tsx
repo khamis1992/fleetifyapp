@@ -18,7 +18,7 @@ import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments"
 import { VehicleSelector } from "./VehicleSelector";
 
 const installmentSchema = z.object({
-  vendor_id: z.string().min(1, "يجب اختيار التاجر"),
+  vendor_id: z.string().min(1, "يجب اختيار الوكيل / المورد"),
   vehicle_id: z.string().min(1, "يجب اختيار المركبة"),
   agreement_number: z.string().min(1, "رقم الاتفاقية مطلوب"),
   total_amount: z.number().min(1, "يجب أن يكون المبلغ الإجمالي أكبر من صفر"),
@@ -69,7 +69,7 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
   // Watch form values for calculations
   const watchedValues = watch(['total_amount', 'down_payment', 'number_of_installments', 'interest_rate', 'start_date']);
 
-  // Fetch vendors (customers with vendor role)
+  // Fetch vendors/dealers (الوكلاء/الموردين)
   const { data: vendors } = useQuery({
     queryKey: ['vendors', user?.id],
     queryFn: async () => {
@@ -221,10 +221,10 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
               </div>
 
               <div>
-                <Label htmlFor="vendor_id">التاجر</Label>
+                <Label htmlFor="vendor_id">الوكيل / المورد</Label>
                 <Select onValueChange={(value) => setValue('vendor_id', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر التاجر" />
+                    <SelectValue placeholder="اختر الوكيل / المورد" />
                   </SelectTrigger>
                   <SelectContent>
                     {(vendors || []).map((vendor) => (

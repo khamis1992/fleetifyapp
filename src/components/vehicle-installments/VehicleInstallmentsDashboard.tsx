@@ -237,7 +237,7 @@ const VehicleInstallmentsDashboard = () => {
                             : 'غير محدد'}
                         </div>
                         <div>
-                          <span className="font-semibold text-foreground">التاجر: </span>
+                          <span className="font-semibold text-foreground">الوكيل / المورد: </span>
                           {installment.customers?.customer_type === 'individual'
                             ? `${installment.customers?.first_name} ${installment.customers?.last_name}`
                             : installment.customers?.company_name}

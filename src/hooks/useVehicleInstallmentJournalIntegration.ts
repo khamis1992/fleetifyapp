@@ -4,39 +4,93 @@ import { useToast } from '@/hooks/use-toast';
 /**
  * Hook for integrating vehicle installment payments with the accounting system
  * Creates journal entries automatically when installments are paid
+ * 
+ * Accounting Logic:
+ * When paying installment to vendor/dealer:
+ * - Debit: Revenue (الإيرادات) - خصم من الإيرادات
+ * - Credit: Cash/Bank (الصندوق/البنك) - خصم من النقدية
  */
 export const useVehicleInstallmentJournalIntegration = () => {
   const { toast } = useToast();
 
   /**
-   * Create journal entry for a vehicle installment payment
-   * @param installment The installment payment record
+   * Record installment payment and create journal entry
+   * @param paymentData Payment data including installment and schedule IDs
    */
-  const createJournalEntry = async (installment: any) => {
+  const recordInstallmentPayment = async (paymentData: {
+    installmentId: string;
+    scheduleId: string;
+    principalAmount: number;
+    interestAmount: number;
+    date: string;
+  }) => {
     try {
-      // Get required accounts
-      const { data: accounts } = await supabase
-        .from('chart_of_accounts')
-        .select('id, account_code')
-        .eq('company_id', installment.company_id)
-        .in('account_code', ['1010', '2300', '5500']); 
-      // Cash, Vehicle Loans Payable, Interest Expense
+      // Get installment and schedule data
+      const { data: schedule } = await supabase
+        .from('vehicle_installment_schedules')
+        .select('*, vehicle_installments!inner(company_id, vendor_id, vehicles(plate_number))')
+        .eq('id', paymentData.scheduleId)
+        .single();
 
-      if (!accounts || accounts.length < 2) {
-        console.error('Required accounts not found for vehicle installment');
+      if (!schedule || !schedule.vehicle_installments) {
+        console.error('Schedule or installment not found');
         return;
       }
 
-      const accountMap: Record<string, string> = {};
-      accounts.forEach((acc) => {
-        accountMap[acc.account_code] = acc.id;
-      });
+      const installment = schedule.vehicle_installments as any;
+      const companyId = installment.company_id;
+      const totalPayment = paymentData.principalAmount + paymentData.interestAmount;
+
+      // Get required accounts - Revenue or Vehicle Purchase Expense, and Cash/Bank
+      // Try to find Revenue account first (4111 or any revenue account)
+      const { data: revenueAccounts } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name')
+        .eq('company_id', companyId)
+        .eq('account_type', 'revenue')
+        .eq('is_header', false)
+        .eq('is_active', true)
+        .order('account_code', { ascending: true })
+        .limit(1);
+
+      // Try to find Vehicle Purchase Expense account (if exists)
+      const { data: expenseAccounts } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name')
+        .eq('company_id', companyId)
+        .eq('account_type', 'expenses')
+        .ilike('account_name', '%vehicle%purchase%')
+        .or('account_name.ilike.%شراء%مركبة%,account_name.ilike.%مصروف%مركبة%')
+        .eq('is_header', false)
+        .eq('is_active', true)
+        .limit(1);
+
+      // Get Cash account (1010 or 1111)
+      const { data: cashAccounts } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code')
+        .eq('company_id', companyId)
+        .in('account_code', ['1010', '1111', '11151'])
+        .eq('is_header', false)
+        .eq('is_active', true)
+        .limit(1);
+
+      // Determine debit account - prefer expense, fallback to revenue
+      const debitAccountId = expenseAccounts?.[0]?.id || revenueAccounts?.[0]?.id;
+      const debitAccountName = expenseAccounts?.[0]?.account_name || revenueAccounts?.[0]?.account_name || 'الإيرادات';
+      const cashAccountId = cashAccounts?.[0]?.id;
+
+      if (!debitAccountId || !cashAccountId) {
+        console.error('Required accounts not found:', { debitAccountId, cashAccountId });
+        toast.error('الحسابات المطلوبة غير موجودة في دليل الحسابات');
+        return;
+      }
 
       // Get next entry number
       const { data: lastEntry } = await supabase
         .from('journal_entries')
         .select('entry_number')
-        .eq('company_id', installment.company_id)
+        .eq('company_id', companyId)
         .order('entry_number', { ascending: false })
         .limit(1)
         .single();
@@ -45,83 +99,124 @@ export const useVehicleInstallmentJournalIntegration = () => {
         ? (parseInt(lastEntry.entry_number) + 1).toString().padStart(6, '0')
         : '000001';
 
-      // Calculate principal and interest
-      const totalPayment = installment.amount || 0;
-      const interestAmount = installment.interest_amount || 0;
-      const principalAmount = totalPayment - interestAmount;
-
-      const description = `قسط مركبة - ${installment.vehicle_id || ''} - ${installment.installment_number || ''}`;
+      const vehiclePlate = (installment.vehicles as any)?.plate_number || '';
+      const description = `دفع قسط مركبة للوكيل - ${vehiclePlate} - قسط رقم ${schedule.installment_number}`;
 
       // Create journal entry
       const { data: entry, error: entryError } = await supabase
         .from('journal_entries')
         .insert({
-          company_id: installment.company_id,
+          company_id: companyId,
           entry_number: nextEntryNumber,
-          entry_date: installment.payment_date || installment.created_at,
+          entry_date: paymentData.date,
           description,
           reference_type: 'vehicle_installment',
-          reference_id: installment.id,
+          reference_id: paymentData.scheduleId,
           status: 'posted',
         })
         .select()
         .single();
 
       if (entryError || !entry) {
-        console.error('Failed to create journal entry for installment:', entryError);
+        console.error('Failed to create journal entry for installment payment:', entryError);
         return;
       }
 
       // Create journal entry lines
-      const lines: unknown[] = [];
+      const lines = [
+        {
+          journal_entry_id: entry.id,
+          company_id: companyId,
+          account_id: debitAccountId,
+          line_description: `مصروف قسط مركبة - ${debitAccountName}`,
+          debit_amount: totalPayment,
+          credit_amount: 0,
+          line_number: 1,
+        },
+        {
+          journal_entry_id: entry.id,
+          company_id: companyId,
+          account_id: cashAccountId,
+          line_description: 'دفع من الصندوق/البنك',
+          debit_amount: 0,
+          credit_amount: totalPayment,
+          line_number: 2,
+        },
+      ];
 
-      // Debit: Vehicle Loans Payable (principal portion)
-      if (principalAmount > 0) {
-        lines.push({
-          account_id: accountMap['2300'], // Vehicle Loans Payable
-          debit: principalAmount,
-          credit: 0,
-        });
+      // If there's interest, add separate line for interest expense
+      if (paymentData.interestAmount > 0) {
+        // Try to find Interest Expense account
+        const { data: interestAccounts } = await supabase
+          .from('chart_of_accounts')
+          .select('id, account_code')
+          .eq('company_id', companyId)
+          .eq('account_type', 'expenses')
+          .ilike('account_name', '%interest%')
+          .or('account_name.ilike.%فائدة%')
+          .eq('is_header', false)
+          .eq('is_active', true)
+          .limit(1);
+
+        if (interestAccounts?.[0]?.id) {
+          // Adjust the main expense line to only include principal
+          lines[0].debit_amount = paymentData.principalAmount;
+          
+          // Add interest expense line
+          lines.splice(1, 0, {
+            journal_entry_id: entry.id,
+            company_id: companyId,
+            account_id: interestAccounts[0].id,
+            line_description: 'مصروف الفائدة',
+            debit_amount: paymentData.interestAmount,
+            credit_amount: 0,
+            line_number: 2,
+          });
+          
+          // Update cash line number
+          lines[2].line_number = 3;
+        }
       }
-
-      // Debit: Interest Expense (interest portion)
-      if (interestAmount > 0) {
-        lines.push({
-          account_id: accountMap['5500'], // Interest Expense
-          debit: interestAmount,
-          credit: 0,
-        });
-      }
-
-      // Credit: Cash (total payment)
-      lines.push({
-        account_id: accountMap['1010'], // Cash
-        debit: 0,
-        credit: totalPayment,
-      });
-
-      // Insert lines
-      const linesWithEntry = lines.map((line) => ({
-        ...line,
-        journal_entry_id: entry.id,
-        company_id: installment.company_id,
-      }));
 
       const { error: linesError } = await supabase
         .from('journal_entry_lines')
-        .insert(linesWithEntry);
+        .insert(lines);
 
       if (linesError) {
-        console.error('Failed to create journal entry lines for installment:', linesError);
+        console.error('Failed to create journal entry lines:', linesError);
         // Rollback journal entry
         await supabase.from('journal_entries').delete().eq('id', entry.id);
         return;
       }
 
-      console.log('✅ Journal entry created for vehicle installment:', entry.entry_number);
+      // Update schedule with journal entry ID
+      await supabase
+        .from('vehicle_installment_schedules')
+        .update({ journal_entry_id: entry.id })
+        .eq('id', paymentData.scheduleId);
+
+      console.log('✅ Journal entry created for vehicle installment payment:', entry.entry_number);
+      return entry.id;
     } catch (error) {
-      console.error('Error creating journal entry for installment:', error);
+      console.error('Error recording installment payment:', error);
+      throw error;
     }
+  };
+
+  /**
+   * Create journal entry for a vehicle installment payment (legacy method)
+   * @param installment The installment payment record
+   */
+  const createJournalEntry = async (installment: any) => {
+    // This method is kept for backward compatibility
+    // But now uses the new recordInstallmentPayment logic
+    return recordInstallmentPayment({
+      installmentId: installment.installment_id || installment.id,
+      scheduleId: installment.id,
+      principalAmount: installment.amount - (installment.interest_amount || 0),
+      interestAmount: installment.interest_amount || 0,
+      date: installment.payment_date || installment.created_at,
+    });
   };
 
   /**
@@ -197,22 +292,28 @@ export const useVehicleInstallmentJournalIntegration = () => {
           journal_entry_id: entry.id,
           company_id: companyId,
           account_id: accountMap['1400'], // Vehicles (asset)
-          debit: purchasePrice,
-          credit: 0,
+          line_description: 'شراء مركبة',
+          debit_amount: purchasePrice,
+          credit_amount: 0,
+          line_number: 1,
         },
         {
           journal_entry_id: entry.id,
           company_id: companyId,
           account_id: accountMap['1010'], // Cash (down payment)
-          debit: 0,
-          credit: downPayment,
+          line_description: 'الدفعة المقدمة',
+          debit_amount: 0,
+          credit_amount: downPayment,
+          line_number: 2,
         },
         {
           journal_entry_id: entry.id,
           company_id: companyId,
-          account_id: accountMap['2300'], // Vehicle Loans Payable
-          debit: 0,
-          credit: loanAmount,
+          account_id: accountMap['2300'], // Vehicle Loans Payable (or Accounts Payable)
+          line_description: 'ذمم دائنة للوكيل',
+          debit_amount: 0,
+          credit_amount: loanAmount,
+          line_number: 3,
         },
       ];
 
@@ -269,6 +370,7 @@ export const useVehicleInstallmentJournalIntegration = () => {
   };
 
   return {
+    recordInstallmentPayment,
     createJournalEntry,
     createVehiclePurchaseEntry,
     deleteJournalEntry,

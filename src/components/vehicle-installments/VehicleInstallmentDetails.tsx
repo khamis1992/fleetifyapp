@@ -153,7 +153,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                 {getStatusBadge(installment.status)}
               </div>
               <div>
-                <span className="block text-sm text-muted-foreground mb-1">التاجر</span>
+                <span className="block text-sm text-muted-foreground mb-1">الوكيل / المورد</span>
                 <p className="font-semibold">
                   {installment.customers?.customer_type === 'individual' 
                     ? `${installment.customers?.first_name} ${installment.customers?.last_name}`
