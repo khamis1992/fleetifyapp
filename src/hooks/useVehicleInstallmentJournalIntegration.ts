@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
  * Hook for integrating vehicle installment payments with the accounting system
  * Creates journal entries automatically when installments are paid
  * 
- * Accounting Logic:
+ * Accounting Logic (Updated Dec 2024):
  * When paying installment to vendor/dealer:
  * - Debit: Revenue (الإيرادات) - خصم من الإيرادات
  * - Credit: Cash/Bank (الصندوق/البنك) - خصم من النقدية
