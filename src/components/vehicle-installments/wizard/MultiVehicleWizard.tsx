@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, ArrowRight, ArrowLeft, Save, Loader2, Car } from "lucide-react";
+import { ArrowRight, ArrowLeft, Save, Loader2, Car } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import { FinancialSummary } from "./FinancialSummary";
 import { VendorAutoSuggest } from "./VendorAutoSuggest";
 import { InstallmentCalendar } from "./InstallmentCalendar";
 import { AgreementPreview } from "./AgreementPreview";
-import { VehicleSelector } from "../VehicleSelector";
+import { VehicleBulkSelector } from "./VehicleBulkSelector";
 
 const STEPS = [
   { id: 1, title: "الوكيل", description: "معلومات المورد" },
@@ -169,41 +169,6 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
       }
     }
   }, [open, form]);
-
-  // المركبات المتاحة
-  const availableVehicles = useMemo(() => {
-    if (!vehicles) return [];
-    const selectedIds = vehicleAllocations.map(v => v.vehicle_id);
-    return vehicles.filter(v => v?.id && !selectedIds.includes(v.id));
-  }, [vehicles, vehicleAllocations]);
-
-  const addVehicle = () => {
-    setVehicleAllocations(prev => [...prev, { vehicle_id: "", allocated_amount: 0 }]);
-  };
-
-  const removeVehicle = (index: number) => {
-    setVehicleAllocations(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateVehicle = (index: number, vehicleId: string) => {
-    const vehicle = vehicles?.find(v => v.id === vehicleId);
-    setVehicleAllocations(prev => prev.map((v, i) => 
-      i === index ? {
-        ...v,
-        vehicle_id: vehicleId,
-        plate_number: vehicle?.plate_number,
-        make: vehicle?.make,
-        model: vehicle?.model,
-        year: vehicle?.year,
-      } : v
-    ));
-  };
-
-  const updateAmount = (index: number, amount: number) => {
-    setVehicleAllocations(prev => prev.map((v, i) => 
-      i === index ? { ...v, allocated_amount: amount } : v
-    ));
-  };
 
   const distributeEqually = () => {
     const { total_amount, down_payment } = watchedValues;
@@ -420,84 +385,48 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
               {/* الخطوة 2: اختيار المركبات */}
               {currentStep === 2 && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold flex items-center gap-2">
+                  {/* ملخص التوزيع */}
+                  <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                    <div className="flex items-center gap-2">
                       <Car className="w-5 h-5 text-coral-500" />
-                      المركبات المختارة ({vehicleAllocations.length})
-                    </h3>
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={distributeEqually}>
+                      <span className="font-medium">اختيار المركبات</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={distributeEqually}
+                        disabled={vehicleAllocations.length === 0}
+                        className="h-8"
+                      >
                         توزيع متساوي
                       </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={addVehicle}>
-                        <Plus className="w-4 h-4 ml-1" />
-                        إضافة مركبة
-                      </Button>
+                      <div className="text-sm">
+                        <span className="text-neutral-500">المتبقي: </span>
+                        <span className={`font-bold ${Math.abs(getRemainingAmount()) < 0.01 ? 'text-emerald-600' : 'text-coral-600'}`}>
+                          {formatCurrency(getRemainingAmount())}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* ملخص التوزيع */}
-                  <div className="p-3 bg-neutral-50 rounded-lg flex justify-between items-center">
-                    <span>المبلغ المتبقي للتوزيع:</span>
-                    <span className={`font-bold ${Math.abs(getRemainingAmount()) < 0.01 ? 'text-emerald-600' : 'text-coral-600'}`}>
-                      {formatCurrency(getRemainingAmount())}
-                    </span>
-                  </div>
-
-                  {/* قائمة المركبات */}
-                  <div className="space-y-3">
-                    {vehicleAllocations.map((allocation, index) => (
-                      <Card key={index} className="p-4">
-                        <div className="flex gap-4 items-start">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium mb-2 block">المركبة</label>
-                            <VehicleSelector
-                              vehicles={[
-                                ...availableVehicles,
-                                ...(allocation.vehicle_id ? 
-                                  vehicles?.filter(v => v.id === allocation.vehicle_id) || [] 
-                                  : [])
-                              ]}
-                              selectedVehicleId={allocation.vehicle_id}
-                              onSelect={(id) => updateVehicle(index, id)}
-                              placeholder="اختر المركبة..."
-                              isLoading={vehiclesLoading}
-                              error={vehiclesError?.message || null}
-                            />
-                          </div>
-                          <div className="w-48">
-                            <label className="text-sm font-medium mb-2 block">المبلغ (ريال قطري)</label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={allocation.allocated_amount || ''}
-                              onChange={(e) => updateAmount(index, parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="mt-6"
-                            onClick={() => removeVehicle(index)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-
-                    {vehicleAllocations.length === 0 && (
-                      <Card className="p-8 text-center border-dashed">
-                        <Car className="w-12 h-12 mx-auto text-neutral-300 mb-3" />
-                        <p className="text-neutral-500">لم يتم اختيار أي مركبة بعد</p>
-                        <Button type="button" variant="outline" className="mt-4" onClick={addVehicle}>
-                          <Plus className="w-4 h-4 ml-2" />
-                          إضافة مركبة
-                        </Button>
-                      </Card>
-                    )}
-                  </div>
+                  {/* مكون اختيار المركبات الجماعي */}
+                  <VehicleBulkSelector
+                    vehicles={vehicles || []}
+                    selectedVehicles={vehicleAllocations}
+                    onSelectionChange={(selected) => {
+                      setVehicleAllocations(selected.map(v => ({
+                        vehicle_id: v.id,
+                        allocated_amount: v.allocated_amount,
+                        plate_number: v.plate_number,
+                        make: v.make,
+                        model: v.model,
+                        year: v.year,
+                      })));
+                    }}
+                    isLoading={vehiclesLoading}
+                  />
                 </div>
               )}
 
