@@ -210,10 +210,11 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         return vehicleAllocations.length > 0 && 
                vehicleAllocations.every(v => v.vehicle_id);
       case 3:
+        // السماح بأي تاريخ (قديم أو جديد) لأن العقود قد تكون قديمة
         return watchedValues.total_amount > 0 && 
                watchedValues.number_of_installments > 0 &&
-               !!watchedValues.start_date &&
                !!watchedValues.agreement_number;
+        // ملاحظة: تم إزالة التحقق من start_date لأنه يتم تعيينه تلقائياً
       default:
         return true;
     }
