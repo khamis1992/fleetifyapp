@@ -373,3 +373,52 @@ export const useUpdateOverdueInstallments = () => {
     },
   });
 };
+
+export const useDeleteVehicleInstallment = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (installmentId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+
+      // First, delete all related schedules
+      const { error: schedulesError } = await supabase
+        .from('vehicle_installment_schedules')
+        .delete()
+        .eq('installment_id', installmentId);
+
+      if (schedulesError) throw schedulesError;
+
+      // Then, delete all related vehicle allocations (for multi-vehicle contracts)
+      const { error: allocationsError } = await supabase
+        .from('vehicle_installment_allocations')
+        .delete()
+        .eq('installment_id', installmentId);
+
+      // Ignore error if table doesn't exist or no allocations
+      if (allocationsError && !allocationsError.message.includes('does not exist')) {
+        console.warn('Could not delete allocations:', allocationsError);
+      }
+
+      // Finally, delete the main installment record
+      const { error: installmentError } = await supabase
+        .from('vehicle_installments')
+        .delete()
+        .eq('id', installmentId);
+
+      if (installmentError) throw installmentError;
+
+      return installmentId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-installment-summary'] });
+      toast.success('تم حذف الاتفاقية بنجاح');
+    },
+    onError: (error: unknown) => {
+      console.error('Error deleting vehicle installment:', error);
+      toast.error('حدث خطأ أثناء حذف الاتفاقية');
+    },
+  });
+};

@@ -15,9 +15,27 @@ import {
   FileText,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
-import { useVehicleInstallments, useVehicleInstallmentSummary } from "@/hooks/useVehicleInstallments";
+import { useVehicleInstallments, useVehicleInstallmentSummary, useDeleteVehicleInstallment } from "@/hooks/useVehicleInstallments";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -141,6 +159,7 @@ const FilterTab: React.FC<FilterTabProps> = ({ label, value, count, isActive, on
 interface AgreementCardProps {
   installment: VehicleInstallmentWithDetails;
   onClick: () => void;
+  onDelete: (id: string) => void;
   formatCurrency: (value: number) => string;
   index: number;
 }
@@ -148,6 +167,7 @@ interface AgreementCardProps {
 const AgreementCard: React.FC<AgreementCardProps> = ({ 
   installment, 
   onClick, 
+  onDelete,
   formatCurrency,
   index 
 }) => {
@@ -244,7 +264,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
           </div>
         </div>
 
-        {/* Right Side - Amount & Arrow */}
+        {/* Right Side - Amount & Actions */}
         <div className="flex items-center gap-4">
           <div className="text-left">
             <p className="text-xl font-bold text-neutral-900">
@@ -254,6 +274,43 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
               {installment.number_of_installments} قسط شهري
             </p>
           </div>
+          
+          {/* Actions Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClick();
+                }}
+                className="cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4 ml-2" />
+                عرض التفاصيل
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(installment.id);
+                }}
+                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                حذف الاتفاقية
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <motion.div
             className="opacity-0 group-hover:opacity-100 transition-opacity"
             initial={{ x: -5 }}
@@ -271,10 +328,26 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
 const VehicleInstallmentsDashboard = () => {
   const [selectedInstallment, setSelectedInstallment] = useState<VehicleInstallmentWithDetails | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [installmentToDelete, setInstallmentToDelete] = useState<string | null>(null);
 
   const { data: installments, isLoading } = useVehicleInstallments();
   const { data: summary } = useVehicleInstallmentSummary();
   const { formatCurrency } = useCurrencyFormatter();
+  const deleteInstallment = useDeleteVehicleInstallment();
+
+  const handleDeleteClick = (id: string) => {
+    setInstallmentToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (installmentToDelete) {
+      await deleteInstallment.mutateAsync(installmentToDelete);
+      setDeleteDialogOpen(false);
+      setInstallmentToDelete(null);
+    }
+  };
 
   const filteredInstallments = (installments || []).filter(installment => 
     statusFilter === 'all' || installment.status === statusFilter
@@ -476,6 +549,7 @@ const VehicleInstallmentsDashboard = () => {
                   key={installment.id}
                   installment={installment}
                   onClick={() => setSelectedInstallment(installment)}
+                  onDelete={handleDeleteClick}
                   formatCurrency={formatCurrency}
                   index={index}
                 />
@@ -485,6 +559,28 @@ const VehicleInstallmentsDashboard = () => {
         </AnimatePresence>
       </motion.section>
 
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف هذه الاتفاقية؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الاتفاقية وجميع الأقساط المرتبطة بها نهائياً. 
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteInstallment.isPending}
+            >
+              {deleteInstallment.isPending ? 'جاري الحذف...' : 'حذف الاتفاقية'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
