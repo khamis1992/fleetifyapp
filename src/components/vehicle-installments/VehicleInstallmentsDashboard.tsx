@@ -7,9 +7,7 @@ import {
   CalendarClock, 
   AlertCircle, 
   DollarSign, 
-  FilePlus, 
   AlertTriangle, 
-  Sparkles,
   Car,
   Building2,
   TrendingUp,
@@ -17,15 +15,12 @@ import {
   FileText,
   Clock,
   CheckCircle2,
-  XCircle,
-  Filter
+  XCircle
 } from "lucide-react";
 import { useVehicleInstallments, useVehicleInstallmentSummary } from "@/hooks/useVehicleInstallments";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import VehicleInstallmentForm from "./VehicleInstallmentForm";
-import MultiVehicleContractForm from "./MultiVehicleContractForm";
 import { MultiVehicleWizard } from "./wizard";
 import VehicleInstallmentDetails from "./VehicleInstallmentDetails";
 import type { VehicleInstallmentWithDetails } from "@/types/vehicle-installments";
@@ -275,7 +270,6 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
 // ===== Main Dashboard Component =====
 const VehicleInstallmentsDashboard = () => {
   const [selectedInstallment, setSelectedInstallment] = useState<VehicleInstallmentWithDetails | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data: installments, isLoading } = useVehicleInstallments();
@@ -304,15 +298,6 @@ const VehicleInstallmentsDashboard = () => {
     );
   }
 
-  if (showForm) {
-    return (
-      <VehicleInstallmentForm
-        onSuccess={() => setShowForm(false)}
-        onCancel={() => setShowForm(false)}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#f0efed] p-5 md:p-8">
       {/* Header Section */}
@@ -331,24 +316,14 @@ const VehicleInstallmentsDashboard = () => {
               إدارة اتفاقيات الأقساط مع الوكلاء والموردين
             </p>
           </div>
-          <div className="flex gap-3 flex-wrap">
-            <Button 
-              onClick={() => setShowForm(true)} 
-              variant="outline" 
-              className="gap-2 bg-white hover:bg-neutral-50 border-neutral-200 rounded-xl"
-            >
-              <Plus className="h-4 w-4" />
-              مركبة واحدة
-            </Button>
-            <MultiVehicleWizard 
-              trigger={
-                <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/25">
-                  <Sparkles className="h-4 w-4" />
-                  عقد متعدد المركبات
-                </Button>
-              }
-            />
-          </div>
+          <MultiVehicleWizard 
+            trigger={
+              <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/25">
+                <Plus className="h-4 w-4" />
+                إنشاء اتفاقية جديدة
+              </Button>
+            }
+          />
         </div>
       </motion.header>
 
@@ -510,21 +485,6 @@ const VehicleInstallmentsDashboard = () => {
         </AnimatePresence>
       </motion.section>
 
-      {/* Classic Form Button (Hidden) */}
-      <div className="fixed bottom-6 left-6">
-        <MultiVehicleContractForm 
-          trigger={
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-white rounded-xl shadow-lg text-neutral-500 text-sm font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors"
-            >
-              <FilePlus className="h-4 w-4" />
-              النموذج الكلاسيكي
-            </motion.button>
-          }
-        />
-      </div>
     </div>
   );
 };
