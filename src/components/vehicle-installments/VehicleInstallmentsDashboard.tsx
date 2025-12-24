@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CalendarClock, AlertCircle, CheckCircle, DollarSign, FileText, FilePlus, CheckCheck, AlertTriangle } from "lucide-react";
+import { Plus, CalendarClock, AlertCircle, CheckCircle, DollarSign, FileText, FilePlus, CheckCheck, AlertTriangle, Sparkles } from "lucide-react";
 import { useVehicleInstallments, useVehicleInstallmentSummary } from "@/hooks/useVehicleInstallments";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import VehicleInstallmentForm from "./VehicleInstallmentForm";
 import MultiVehicleContractForm from "./MultiVehicleContractForm";
+import { MultiVehicleWizard } from "./wizard";
 import VehicleInstallmentDetails from "./VehicleInstallmentDetails";
 import type { VehicleInstallmentWithDetails } from "@/types/vehicle-installments";
 import "./vehicle-installments.css";
@@ -74,14 +75,29 @@ const VehicleInstallmentsDashboard = () => {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">أقساط المركبات</h1>
-            <p className="text-muted-foreground text-base">إدارة اتفاقيات الأقساط مع التجار</p>
+            <p className="text-muted-foreground text-base">إدارة اتفاقيات الأقساط مع الوكلاء والموردين</p>
           </div>
           <div className="flex gap-3 flex-wrap">
-            <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
               اتفاقية مركبة واحدة
             </Button>
-            <MultiVehicleContractForm />
+            <MultiVehicleWizard 
+              trigger={
+                <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600">
+                  <Sparkles className="h-4 w-4" />
+                  عقد متعدد المركبات (محسّن)
+                </Button>
+              }
+            />
+            <MultiVehicleContractForm 
+              trigger={
+                <Button variant="ghost" size="sm" className="text-neutral-500">
+                  <FilePlus className="h-4 w-4 ml-1" />
+                  النموذج الكلاسيكي
+                </Button>
+              }
+            />
           </div>
         </div>
       </header>
