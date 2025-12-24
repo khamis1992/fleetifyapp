@@ -14,7 +14,7 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
   return (
-    <div className="w-full py-4">
+    <div className="w-full py-3">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
           <div key={step.id} className="flex items-center flex-1">
@@ -22,30 +22,30 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                  "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 text-sm",
                   currentStep > step.id
                     ? "bg-emerald-500 border-emerald-500 text-white"
                     : currentStep === step.id
-                    ? "bg-coral-500 border-coral-500 text-white shadow-lg shadow-coral-500/30"
+                    ? "bg-coral-500 border-coral-500 text-white shadow-md shadow-coral-500/30"
                     : "bg-neutral-100 border-neutral-300 text-neutral-400"
                 )}
               >
                 {currentStep > step.id ? (
-                  <Check className="w-5 h-5" />
+                  <Check className="w-4 h-4" />
                 ) : (
                   <span className="font-semibold">{step.id}</span>
                 )}
               </div>
-              <div className="mt-2 text-center">
+              <div className="mt-1 text-center">
                 <p
                   className={cn(
-                    "text-sm font-medium",
+                    "text-xs font-medium",
                     currentStep >= step.id ? "text-neutral-900" : "text-neutral-400"
                   )}
                 >
                   {step.title}
                 </p>
-                <p className="text-xs text-neutral-500 hidden md:block">
+                <p className="text-[10px] text-neutral-500 hidden md:block">
                   {step.description}
                 </p>
               </div>
@@ -55,7 +55,7 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
             {index < steps.length - 1 && (
               <div
                 className={cn(
-                  "flex-1 h-1 mx-2 rounded-full transition-all duration-300",
+                  "flex-1 h-0.5 mx-2 rounded-full transition-all duration-300",
                   currentStep > step.id ? "bg-emerald-500" : "bg-neutral-200"
                 )}
               />

@@ -88,11 +88,11 @@ export function VendorAutoSuggest({
   };
 
   return (
-    <div className="space-y-4" ref={wrapperRef}>
+    <div className="space-y-3" ref={wrapperRef}>
       {/* حقل اسم الوكيل */}
       <div className="relative">
-        <Label htmlFor="vendor_name" className="flex items-center gap-2 mb-2">
-          <Building2 className="w-4 h-4 text-coral-500" />
+        <Label htmlFor="vendor_name" className="flex items-center gap-2 mb-1.5 text-sm">
+          <Building2 className="w-3.5 h-3.5 text-coral-500" />
           اسم الوكيل / المورد
         </Label>
         <div className="relative">
@@ -162,11 +162,11 @@ export function VendorAutoSuggest({
 
       {/* حقل رقم الهاتف */}
       <div>
-        <Label htmlFor="vendor_phone" className="flex items-center gap-2 mb-2">
-          <Phone className="w-4 h-4 text-coral-500" />
+        <Label htmlFor="vendor_phone" className="flex items-center gap-2 mb-1.5 text-sm">
+          <Phone className="w-3.5 h-3.5 text-coral-500" />
           رقم هاتف الوكيل
           {!selectedVendor && (
-            <span className="text-xs text-neutral-400">(مطلوب للوكيل الجديد)</span>
+            <span className="text-[10px] text-neutral-400">(اختياري)</span>
           )}
         </Label>
         <Input
@@ -175,13 +175,8 @@ export function VendorAutoSuggest({
           onChange={(e) => handlePhoneChange(e.target.value)}
           placeholder="+974 XXXX XXXX"
           disabled={!!selectedVendor}
-          className={selectedVendor ? "bg-neutral-50" : ""}
+          className={cn("h-9", selectedVendor ? "bg-neutral-50" : "")}
         />
-        {selectedVendor && (
-          <p className="text-xs text-neutral-500 mt-1">
-            رقم الهاتف المسجل للوكيل
-          </p>
-        )}
       </div>
     </div>
   );

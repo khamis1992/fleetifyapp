@@ -351,17 +351,19 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            إنشاء عقد أقساط متعدد المركبات
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl h-[85vh] overflow-hidden flex flex-col p-0">
+        <div className="p-6 pb-0">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              إنشاء عقد أقساط متعدد المركبات
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* مؤشر التقدم */}
-        <StepIndicator steps={STEPS} currentStep={currentStep} />
+          {/* مؤشر التقدم */}
+          <StepIndicator steps={STEPS} currentStep={currentStep} />
+        </div>
 
-        <ScrollArea className="flex-1 px-1">
+        <ScrollArea className="flex-1 px-6 overflow-y-auto">
           <Form {...form}>
             <form className="space-y-6 py-4">
               
@@ -663,7 +665,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         </ScrollArea>
 
         {/* أزرار التنقل */}
-        <div className="flex justify-between pt-4 border-t">
+        <div className="flex justify-between p-6 pt-4 border-t bg-white">
           <Button
             type="button"
             variant="outline"
