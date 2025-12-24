@@ -1,8 +1,25 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CalendarClock, AlertCircle, CheckCircle, DollarSign, FileText, FilePlus, CheckCheck, AlertTriangle, Sparkles } from "lucide-react";
+import { 
+  Plus, 
+  CalendarClock, 
+  AlertCircle, 
+  DollarSign, 
+  FilePlus, 
+  AlertTriangle, 
+  Sparkles,
+  Car,
+  Building2,
+  TrendingUp,
+  ChevronLeft,
+  FileText,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Filter
+} from "lucide-react";
 import { useVehicleInstallments, useVehicleInstallmentSummary } from "@/hooks/useVehicleInstallments";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { format } from "date-fns";
@@ -12,8 +29,250 @@ import MultiVehicleContractForm from "./MultiVehicleContractForm";
 import { MultiVehicleWizard } from "./wizard";
 import VehicleInstallmentDetails from "./VehicleInstallmentDetails";
 import type { VehicleInstallmentWithDetails } from "@/types/vehicle-installments";
-import "./vehicle-installments.css";
+import { cn } from "@/lib/utils";
 
+// ===== Stat Card Component =====
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
+  trend?: string;
+  trendUp?: boolean;
+  onClick?: () => void;
+  delay?: number;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconBg,
+  iconColor,
+  trend,
+  trendUp,
+  onClick,
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: delay * 0.1 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={onClick ? { scale: 0.98 } : undefined}
+      onClick={onClick}
+      className={cn(
+        "bg-white rounded-[1.25rem] p-5 shadow-sm hover:shadow-lg transition-all",
+        onClick && "cursor-pointer"
+      )}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <motion.div 
+          className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Icon className={cn("w-6 h-6", iconColor)} />
+        </motion.div>
+        {trend && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className={cn(
+              "px-2 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1",
+              trendUp ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+            )}
+          >
+            <TrendingUp className={cn("w-3 h-3", !trendUp && "rotate-180")} />
+            {trend}
+          </motion.span>
+        )}
+      </div>
+      <p className="text-[11px] text-neutral-500 font-medium mb-1">{title}</p>
+      <motion.p 
+        className="text-[1.75rem] font-bold text-neutral-900 leading-none"
+        key={String(value)}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {value}
+      </motion.p>
+      {subtitle && (
+        <p className="text-xs text-neutral-400 mt-2">{subtitle}</p>
+      )}
+    </motion.div>
+  );
+};
+
+// ===== Filter Tab Component =====
+interface FilterTabProps {
+  label: string;
+  value: string;
+  count?: number;
+  isActive: boolean;
+  onClick: () => void;
+  color?: string;
+}
+
+const FilterTab: React.FC<FilterTabProps> = ({ label, value, count, isActive, onClick, color }) => (
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className={cn(
+      "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
+      isActive
+        ? "bg-coral-500 text-white shadow-md"
+        : "bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200"
+    )}
+  >
+    {label}
+    {count !== undefined && (
+      <span className={cn(
+        "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+        isActive ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-500"
+      )}>
+        {count}
+      </span>
+    )}
+  </motion.button>
+);
+
+// ===== Agreement Card Component =====
+interface AgreementCardProps {
+  installment: VehicleInstallmentWithDetails;
+  onClick: () => void;
+  formatCurrency: (value: number) => string;
+  index: number;
+}
+
+const AgreementCard: React.FC<AgreementCardProps> = ({ 
+  installment, 
+  onClick, 
+  formatCurrency,
+  index 
+}) => {
+  const statusConfig = {
+    active: { 
+      bg: "bg-emerald-50", 
+      border: "border-emerald-200", 
+      text: "text-emerald-700",
+      icon: CheckCircle2,
+      label: "نشط"
+    },
+    completed: { 
+      bg: "bg-blue-50", 
+      border: "border-blue-200", 
+      text: "text-blue-700",
+      icon: CheckCircle2,
+      label: "مكتمل"
+    },
+    cancelled: { 
+      bg: "bg-red-50", 
+      border: "border-red-200", 
+      text: "text-red-700",
+      icon: XCircle,
+      label: "ملغي"
+    },
+    draft: { 
+      bg: "bg-neutral-50", 
+      border: "border-neutral-200", 
+      text: "text-neutral-600",
+      icon: FileText,
+      label: "مسودة"
+    },
+  };
+
+  const status = statusConfig[installment.status as keyof typeof statusConfig] || statusConfig.draft;
+  const StatusIcon = status.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      whileHover={{ x: 4, backgroundColor: "#fafafa" }}
+      onClick={onClick}
+      className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer border border-neutral-100 group"
+    >
+      <div className="flex items-start justify-between gap-4">
+        {/* Left Side - Main Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <h3 className="text-base font-bold text-neutral-900">
+              {installment.agreement_number}
+            </h3>
+            <span className={cn(
+              "px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1",
+              status.bg, status.text
+            )}>
+              <StatusIcon className="w-3 h-3" />
+              {status.label}
+            </span>
+            {installment.contract_type === 'multi_vehicle' && (
+              <Badge variant="outline" className="text-[10px] border-coral-200 text-coral-600">
+                <Car className="w-3 h-3 ml-1" />
+                {installment.total_vehicles_count} مركبات
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div className="flex items-center gap-2 text-neutral-600">
+              <Car className="w-4 h-4 text-coral-400" />
+              <span className="truncate">
+                {installment.contract_type === 'multi_vehicle'
+                  ? `عقد متعدد (${installment.total_vehicles_count} مركبة)`
+                  : installment.vehicles?.plate_number
+                  ? `${installment.vehicles.plate_number}`
+                  : 'غير محدد'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-neutral-600">
+              <Building2 className="w-4 h-4 text-coral-400" />
+              <span className="truncate">
+                {installment.customers?.customer_type === 'individual'
+                  ? `${installment.customers?.first_name} ${installment.customers?.last_name}`
+                  : installment.customers?.company_name || 'غير محدد'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-neutral-600">
+              <Clock className="w-4 h-4 text-coral-400" />
+              <span>
+                {format(new Date(installment.start_date), 'dd MMM yyyy', { locale: ar })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Amount & Arrow */}
+        <div className="flex items-center gap-4">
+          <div className="text-left">
+            <p className="text-xl font-bold text-neutral-900">
+              {formatCurrency(installment.total_amount)}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {installment.number_of_installments} قسط شهري
+            </p>
+          </div>
+          <motion.div
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            initial={{ x: -5 }}
+            animate={{ x: 0 }}
+          >
+            <ChevronLeft className="w-5 h-5 text-coral-400" />
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ===== Main Dashboard Component =====
 const VehicleInstallmentsDashboard = () => {
   const [selectedInstallment, setSelectedInstallment] = useState<VehicleInstallmentWithDetails | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -23,31 +282,17 @@ const VehicleInstallmentsDashboard = () => {
   const { data: summary } = useVehicleInstallmentSummary();
   const { formatCurrency } = useCurrencyFormatter();
 
-
   const filteredInstallments = (installments || []).filter(installment => 
     statusFilter === 'all' || installment.status === statusFilter
   );
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'bg-green-100 text-green-800 border-green-200',
-      completed: 'bg-blue-100 text-blue-800 border-blue-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
-      draft: 'bg-gray-100 text-gray-800 border-gray-200',
-    };
-
-    const labels = {
-      active: 'نشط',
-      completed: 'مكتمل',
-      cancelled: 'ملغي',
-      draft: 'مسودة',
-    };
-
-    return (
-      <Badge className={variants[status as keyof typeof variants] || variants.draft}>
-        {labels[status as keyof typeof labels] || status}
-      </Badge>
-    );
+  // Count by status
+  const statusCounts = {
+    all: installments?.length || 0,
+    active: installments?.filter(i => i.status === 'active').length || 0,
+    completed: installments?.filter(i => i.status === 'completed').length || 0,
+    draft: installments?.filter(i => i.status === 'draft').length || 0,
+    cancelled: installments?.filter(i => i.status === 'cancelled').length || 0,
   };
 
   if (selectedInstallment) {
@@ -69,216 +314,217 @@ const VehicleInstallmentsDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[#f0efed] p-5 md:p-8">
       {/* Header Section */}
-      <header className="animate-header">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">أقساط المركبات</h1>
-            <p className="text-muted-foreground text-base">إدارة اتفاقيات الأقساط مع الوكلاء والموردين</p>
+            <h1 className="text-3xl font-black text-neutral-900 mb-2">
+              أقساط المركبات
+            </h1>
+            <p className="text-neutral-500 font-medium">
+              إدارة اتفاقيات الأقساط مع الوكلاء والموردين
+            </p>
           </div>
           <div className="flex gap-3 flex-wrap">
-            <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
+            <Button 
+              onClick={() => setShowForm(true)} 
+              variant="outline" 
+              className="gap-2 bg-white hover:bg-neutral-50 border-neutral-200 rounded-xl"
+            >
               <Plus className="h-4 w-4" />
-              اتفاقية مركبة واحدة
+              مركبة واحدة
             </Button>
             <MultiVehicleWizard 
               trigger={
-                <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600">
+                <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/25">
                   <Sparkles className="h-4 w-4" />
-                  عقد متعدد المركبات (محسّن)
-                </Button>
-              }
-            />
-            <MultiVehicleContractForm 
-              trigger={
-                <Button variant="ghost" size="sm" className="text-neutral-500">
-                  <FilePlus className="h-4 w-4 ml-1" />
-                  النموذج الكلاسيكي
+                  عقد متعدد المركبات
                 </Button>
               }
             />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Statistics Cards */}
       {summary && (
-        <section className="mt-8">
-          <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-            {/* Total Agreements Card */}
-            <div className="stat-card animate-card-appear delay-100">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  إجمالي الاتفاقيات
-                </h3>
-                <div className="p-2 bg-accent-light rounded-lg">
-                  <CalendarClock className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-2">{summary.total_agreements}</div>
-              <p className="text-xs text-muted-foreground">
-                {summary.active_agreements} نشط، {summary.completed_agreements} مكتمل
-              </p>
-            </div>
-
-            {/* Total Amount Card */}
-            <div className="stat-card animate-card-appear delay-200">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  إجمالي المبلغ
-                </h3>
-                <div className="p-2 bg-success-light rounded-lg">
-                  <DollarSign className="h-5 w-5 text-success" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-2">{formatCurrency(summary.total_amount)}</div>
-              <p className="text-xs text-muted-foreground">
-                مدفوع: {formatCurrency(summary.total_paid)}
-              </p>
-            </div>
-
-            {/* Outstanding Amount Card */}
-            <div className="stat-card animate-card-appear delay-300">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  المبلغ المستحق
-                </h3>
-                <div className="p-2 bg-warning-light rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-warning" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-2">{formatCurrency(summary.total_outstanding)}</div>
-              <p className="text-xs text-muted-foreground">
-                {summary.overdue_count} قسط متبقي
-              </p>
-            </div>
-
-            {/* Overdue Amount Card */}
-            <div className="stat-card animate-card-appear delay-400">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  الأقساط المتأخرة
-                </h3>
-                <div className="p-2 bg-destructive-light rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-destructive mb-2">{formatCurrency(summary.overdue_amount)}</div>
-              <p className="text-xs text-muted-foreground">
-                {summary.overdue_count} أقساط متأخرة
-              </p>
-            </div>
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="إجمالي الاتفاقيات"
+              value={summary.total_agreements}
+              subtitle={`${summary.active_agreements} نشط • ${summary.completed_agreements} مكتمل`}
+              icon={CalendarClock}
+              iconBg="bg-coral-100"
+              iconColor="text-coral-600"
+              delay={1}
+            />
+            <StatCard
+              title="إجمالي المبلغ"
+              value={formatCurrency(summary.total_amount)}
+              subtitle={`مدفوع: ${formatCurrency(summary.total_paid)}`}
+              icon={DollarSign}
+              iconBg="bg-emerald-100"
+              iconColor="text-emerald-600"
+              trend="+12%"
+              trendUp={true}
+              delay={2}
+            />
+            <StatCard
+              title="المبلغ المستحق"
+              value={formatCurrency(summary.total_outstanding)}
+              subtitle={`${summary.overdue_count || 0} قسط متبقي`}
+              icon={AlertCircle}
+              iconBg="bg-amber-100"
+              iconColor="text-amber-600"
+              delay={3}
+            />
+            <StatCard
+              title="الأقساط المتأخرة"
+              value={formatCurrency(summary.overdue_amount)}
+              subtitle={`${summary.overdue_count} أقساط متأخرة`}
+              icon={AlertTriangle}
+              iconBg="bg-red-100"
+              iconColor="text-red-600"
+              delay={4}
+            />
           </div>
-        </section>
+        </motion.section>
       )}
 
-      {/* Agreements List Section */}
-      <section className="mt-10">
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          {/* List Header */}
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-            <div>
-              <h2 className="text-xl font-bold mb-1">اتفاقيات الأقساط</h2>
-              <p className="text-sm text-muted-foreground">
-                قائمة جميع اتفاقيات الأقساط مع التجار
-              </p>
-            </div>
-
-            {/* Filter Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              <button
-                className={`btn-filter ${statusFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('all')}
-              >
-                الكل
-              </button>
-              <button
-                className={`btn-filter ${statusFilter === 'draft' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('draft')}
-              >
-                مسودة
-              </button>
-              <button
-                className={`btn-filter ${statusFilter === 'active' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('active')}
-              >
-                نشط
-              </button>
-              <button
-                className={`btn-filter ${statusFilter === 'completed' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('completed')}
-              >
-                مكتمل
-              </button>
-            </div>
+      {/* Filter & List Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="bg-white rounded-[1.5rem] p-6 shadow-sm"
+      >
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-neutral-900 mb-1">
+              اتفاقيات الأقساط
+            </h2>
+            <p className="text-sm text-neutral-500">
+              {filteredInstallments.length} اتفاقية
+            </p>
           </div>
 
-          {/* Agreements List */}
-          {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
-          ) : filteredInstallments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              لا توجد اتفاقيات أقساط
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {filteredInstallments.map((installment, index) => (
-                <div
-                  key={installment.id}
-                  className={`agreement-card animate-list-item delay-${Math.min((index + 1) * 100, 500)} ${
-                    installment.status === 'active' && summary && summary.overdue_count > 0 ? 'animate-overdue-glow' : ''
-                  }`}
-                  onClick={() => setSelectedInstallment(installment)}
-                >
-                  <div className="flex justify-between items-start gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[250px]">
-                      <div className="flex items-center gap-3 mb-3 flex-wrap">
-                        <h3 className="text-base font-semibold">{installment.agreement_number}</h3>
-                        {getStatusBadge(installment.status)}
-                        {installment.status === 'active' && summary && summary.overdue_count > 0 && index === 0 && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-destructive-light text-destructive border border-destructive/20 animate-badge-pulse">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            {summary.overdue_count} قسط متأخر
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <div>
-                          <span className="font-semibold text-foreground">المركبة: </span>
-                          {installment.contract_type === 'multi_vehicle'
-                            ? `عقد متعدد المركبات (${installment.total_vehicles_count || 0} مركبة)`
-                            : installment.vehicles?.plate_number
-                            ? `${installment.vehicles.plate_number} - ${installment.vehicles.make} ${installment.vehicles.model}`
-                            : 'غير محدد'}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-foreground">الوكيل / المورد: </span>
-                          {installment.customers?.customer_type === 'individual'
-                            ? `${installment.customers?.first_name} ${installment.customers?.last_name}`
-                            : installment.customers?.company_name}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-foreground">تاريخ البداية: </span>
-                          {format(new Date(installment.start_date), 'dd/MM/yyyy', { locale: ar })}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-left flex-shrink-0">
-                      <div className="text-xl font-bold mb-1">
-                        {formatCurrency(installment.total_amount)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {installment.number_of_installments} قسط
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Filter Tabs */}
+          <div className="flex gap-2 flex-wrap">
+            <FilterTab
+              label="الكل"
+              value="all"
+              count={statusCounts.all}
+              isActive={statusFilter === 'all'}
+              onClick={() => setStatusFilter('all')}
+            />
+            <FilterTab
+              label="نشط"
+              value="active"
+              count={statusCounts.active}
+              isActive={statusFilter === 'active'}
+              onClick={() => setStatusFilter('active')}
+            />
+            <FilterTab
+              label="مكتمل"
+              value="completed"
+              count={statusCounts.completed}
+              isActive={statusFilter === 'completed'}
+              onClick={() => setStatusFilter('completed')}
+            />
+            <FilterTab
+              label="مسودة"
+              value="draft"
+              count={statusCounts.draft}
+              isActive={statusFilter === 'draft'}
+              onClick={() => setStatusFilter('draft')}
+            />
+          </div>
         </div>
-      </section>
+
+        {/* Agreements List */}
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-16"
+            >
+              <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-neutral-500 font-medium">جاري التحميل...</p>
+            </motion.div>
+          ) : filteredInstallments.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-16"
+            >
+              <div className="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
+                <FileText className="w-10 h-10 text-neutral-300" />
+              </div>
+              <p className="text-neutral-500 font-medium mb-4">لا توجد اتفاقيات أقساط</p>
+              <MultiVehicleWizard 
+                trigger={
+                  <Button className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl">
+                    <Plus className="h-4 w-4" />
+                    إنشاء اتفاقية جديدة
+                  </Button>
+                }
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col gap-3"
+            >
+              {filteredInstallments.map((installment, index) => (
+                <AgreementCard
+                  key={installment.id}
+                  installment={installment}
+                  onClick={() => setSelectedInstallment(installment)}
+                  formatCurrency={formatCurrency}
+                  index={index}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.section>
+
+      {/* Classic Form Button (Hidden) */}
+      <div className="fixed bottom-6 left-6">
+        <MultiVehicleContractForm 
+          trigger={
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-white rounded-xl shadow-lg text-neutral-500 text-sm font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors"
+            >
+              <FilePlus className="h-4 w-4" />
+              النموذج الكلاسيكي
+            </motion.button>
+          }
+        />
+      </div>
     </div>
   );
 };
