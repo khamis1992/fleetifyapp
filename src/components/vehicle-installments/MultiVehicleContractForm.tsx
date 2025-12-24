@@ -516,7 +516,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                       <FormItem>
                         <FormLabel>رقم هاتف الوكيل / المورد</FormLabel>
                         <FormControl>
-                          <Input placeholder="+965" {...field} />
+                          <Input placeholder="+974" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -542,7 +542,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="total_amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>المبلغ الإجمالي (دينار كويتي)</FormLabel>
+                        <FormLabel>المبلغ الإجمالي (ريال قطري)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -561,7 +561,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="down_payment"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>الدفعة المقدمة (دينار كويتي)</FormLabel>
+                        <FormLabel>الدفعة المقدمة (ريال قطري)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -866,7 +866,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     </div>
                     
                     <div className="flex-1">
-                      <label className="text-sm font-medium">المبلغ المخصص (دينار كويتي)</label>
+                      <label className="text-sm font-medium">المبلغ المخصص (ريال قطري)</label>
                       <Input
                         type="number"
                         step="0.01"
