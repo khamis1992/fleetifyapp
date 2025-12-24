@@ -35,6 +35,7 @@ interface VehicleBulkSelectorProps {
   selectedVehicles: SelectedVehicle[];
   onSelectionChange: (vehicles: SelectedVehicle[]) => void;
   isLoading?: boolean;
+  hideAmountInput?: boolean;
 }
 
 export function VehicleBulkSelector({
@@ -42,6 +43,7 @@ export function VehicleBulkSelector({
   selectedVehicles,
   onSelectionChange,
   isLoading,
+  hideAmountInput = false,
 }: VehicleBulkSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMake, setSelectedMake] = useState<string>("all");
@@ -354,14 +356,16 @@ export function VehicleBulkSelector({
                         {vehicle.make} {vehicle.model}
                       </p>
                     </div>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={vehicle.allocated_amount || ''}
-                      onChange={(e) => updateAmount(vehicle.id, parseFloat(e.target.value) || 0)}
-                      placeholder="المبلغ"
-                      className="w-24 h-7 text-xs"
-                    />
+                    {!hideAmountInput && (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={vehicle.allocated_amount || ''}
+                        onChange={(e) => updateAmount(vehicle.id, parseFloat(e.target.value) || 0)}
+                        placeholder="المبلغ"
+                        className="w-24 h-7 text-xs"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="ghost"

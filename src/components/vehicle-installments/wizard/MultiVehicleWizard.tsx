@@ -119,6 +119,23 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
     return number_of_installments > 0 ? Math.round(principal / number_of_installments * 100) / 100 : 0;
   }, [watchedValues]);
 
+  // توزيع المبلغ تلقائياً عند تغيير إجمالي العقد أو الدفعة المقدمة
+  useEffect(() => {
+    if (currentStep === 3 && vehicleAllocations.length > 0) {
+      const { total_amount, down_payment } = watchedValues;
+      if (total_amount > 0) {
+        const amountToDistribute = total_amount - down_payment;
+        const perVehicle = Math.round(amountToDistribute / vehicleAllocations.length * 100) / 100;
+        
+        // فقط التحديث إذا كانت القيم مختلفة
+        const currentTotal = vehicleAllocations.reduce((sum, v) => sum + (v.allocated_amount || 0), 0);
+        if (Math.abs(currentTotal - amountToDistribute) > 0.01) {
+          setVehicleAllocations(prev => prev.map(v => ({ ...v, allocated_amount: perVehicle })));
+        }
+      }
+    }
+  }, [currentStep, watchedValues.total_amount, watchedValues.down_payment, vehicleAllocations.length]);
+
   // حفظ المسودة تلقائياً
   useEffect(() => {
     const saveTimeout = setTimeout(() => {
@@ -170,21 +187,18 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
     }
   }, [open, form]);
 
-  const distributeEqually = () => {
+
+  // توزيع المبلغ تلقائياً على المركبات
+  const autoDistributeAmount = useCallback(() => {
     const { total_amount, down_payment } = watchedValues;
-    const amountToDistribute = total_amount - down_payment;
     const count = vehicleAllocations.length;
-    if (count === 0) return;
+    if (count === 0 || total_amount <= 0) return;
 
+    const amountToDistribute = total_amount - down_payment;
     const perVehicle = Math.round(amountToDistribute / count * 100) / 100;
+    
     setVehicleAllocations(prev => prev.map(v => ({ ...v, allocated_amount: perVehicle })));
-  };
-
-  const getRemainingAmount = useCallback(() => {
-    const { total_amount, down_payment } = watchedValues;
-    const allocated = vehicleAllocations.reduce((sum, v) => sum + (v.allocated_amount || 0), 0);
-    return total_amount - down_payment - allocated;
-  }, [watchedValues, vehicleAllocations]);
+  }, [watchedValues, vehicleAllocations.length]);
 
   // التحقق من صحة الخطوة الحالية
   const canProceed = useCallback(() => {
@@ -192,9 +206,9 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
       case 1:
         return !!watchedValues.vendor_company_name?.trim();
       case 2:
+        // فقط التحقق من اختيار مركبات
         return vehicleAllocations.length > 0 && 
-               vehicleAllocations.every(v => v.vehicle_id) &&
-               Math.abs(getRemainingAmount()) < 0.01;
+               vehicleAllocations.every(v => v.vehicle_id);
       case 3:
         return watchedValues.total_amount > 0 && 
                watchedValues.number_of_installments > 0 &&
@@ -203,10 +217,15 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
       default:
         return true;
     }
-  }, [currentStep, watchedValues, vehicleAllocations, getRemainingAmount]);
+  }, [currentStep, watchedValues, vehicleAllocations]);
 
   const nextStep = () => {
     if (canProceed() && currentStep < 4) {
+      // عند الانتقال من اختيار المركبات إلى التفاصيل المالية
+      if (currentStep === 2) {
+        // توزيع المبلغ تلقائياً إذا كان هناك مبلغ محدد
+        autoDistributeAmount();
+      }
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -385,30 +404,15 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
               {/* الخطوة 2: اختيار المركبات */}
               {currentStep === 2 && (
                 <div className="space-y-4">
-                  {/* ملخص التوزيع */}
-                  <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                  {/* عنوان الخطوة */}
+                  <div className="flex items-center justify-between p-3 bg-coral-50 rounded-lg border border-coral-100">
                     <div className="flex items-center gap-2">
                       <Car className="w-5 h-5 text-coral-500" />
-                      <span className="font-medium">اختيار المركبات</span>
+                      <span className="font-medium text-coral-700">اختيار المركبات للعقد</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={distributeEqually}
-                        disabled={vehicleAllocations.length === 0}
-                        className="h-8"
-                      >
-                        توزيع متساوي
-                      </Button>
-                      <div className="text-sm">
-                        <span className="text-neutral-500">المتبقي: </span>
-                        <span className={`font-bold ${Math.abs(getRemainingAmount()) < 0.01 ? 'text-emerald-600' : 'text-coral-600'}`}>
-                          {formatCurrency(getRemainingAmount())}
-                        </span>
-                      </div>
-                    </div>
+                    <span className="text-sm text-coral-600">
+                      سيتم توزيع المبلغ تلقائياً في الخطوة التالية
+                    </span>
                   </div>
 
                   {/* مكون اختيار المركبات الجماعي */}
@@ -418,7 +422,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                     onSelectionChange={(selected) => {
                       setVehicleAllocations(selected.map(v => ({
                         vehicle_id: v.id,
-                        allocated_amount: v.allocated_amount,
+                        allocated_amount: 0, // سيتم توزيعه لاحقاً
                         plate_number: v.plate_number,
                         make: v.make,
                         model: v.model,
@@ -426,6 +430,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                       })));
                     }}
                     isLoading={vehiclesLoading}
+                    hideAmountInput={true}
                   />
                 </div>
               )}
@@ -552,6 +557,43 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                       startDate={watchedValues.start_date}
                       vehicleCount={vehicleAllocations.length}
                     />
+
+                    {/* ملخص توزيع المركبات */}
+                    {vehicleAllocations.length > 0 && watchedValues.total_amount > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Car className="w-4 h-4 text-coral-500" />
+                            توزيع المبلغ على المركبات ({vehicleAllocations.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {vehicleAllocations.slice(0, 5).map((v, idx) => (
+                              <div key={v.vehicle_id || idx} className="flex justify-between text-sm">
+                                <span className="text-neutral-600 truncate max-w-[60%]">
+                                  {v.plate_number || `مركبة ${idx + 1}`}
+                                </span>
+                                <span className="font-medium text-coral-600">
+                                  {formatCurrency(v.allocated_amount)}
+                                </span>
+                              </div>
+                            ))}
+                            {vehicleAllocations.length > 5 && (
+                              <div className="text-xs text-neutral-400 text-center pt-1 border-t">
+                                + {vehicleAllocations.length - 5} مركبات أخرى
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-between font-semibold text-sm mt-3 pt-2 border-t">
+                            <span>إجمالي الموزع:</span>
+                            <span className="text-emerald-600">
+                              {formatCurrency(vehicleAllocations.reduce((sum, v) => sum + (v.allocated_amount || 0), 0))}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                     <InstallmentCalendar
                       startDate={watchedValues.start_date}
