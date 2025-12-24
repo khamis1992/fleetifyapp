@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Calculator } from "lucide-react";
 import { useCreateVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import { useQuery } from "@tanstack/react-query";
@@ -16,9 +15,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import type { VehicleInstallmentCreateData } from "@/types/vehicle-installments";
 import { VehicleSelector } from "./VehicleSelector";
+import { toast } from "sonner";
 
 const installmentSchema = z.object({
-  vendor_id: z.string().min(1, "يجب اختيار الوكيل / المورد"),
+  vendor_company_name: z.string().min(1, "يجب إدخال اسم الوكيل / المورد"),
+  vendor_phone: z.string().optional(),
   vehicle_id: z.string().min(1, "يجب اختيار المركبة"),
   agreement_number: z.string().min(1, "رقم الاتفاقية مطلوب"),
   total_amount: z.number().min(1, "يجب أن يكون المبلغ الإجمالي أكبر من صفر"),
@@ -59,6 +60,8 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
   } = useForm<InstallmentFormData>({
     resolver: zodResolver(installmentSchema),
     defaultValues: {
+      vendor_company_name: "",
+      vendor_phone: "",
       agreement_date: new Date().toISOString().split('T')[0],
       start_date: new Date().toISOString().split('T')[0],
       interest_rate: 0,
@@ -68,33 +71,6 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
 
   // Watch form values for calculations
   const watchedValues = watch(['total_amount', 'down_payment', 'number_of_installments', 'interest_rate', 'start_date']);
-
-  // Fetch vendors/dealers (الوكلاء/الموردين)
-  const { data: vendors } = useQuery({
-    queryKey: ['vendors', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) return [];
-
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, first_name, last_name, company_name, customer_type')
-        .eq('company_id', profile.company_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
 
   // Fetch vehicles
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
@@ -168,8 +144,77 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
       return;
     }
 
+    // الحصول على company_id من profile المستخدم
+    let companyId: string | null = null;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (!profile?.company_id) {
+        toast.error("تعذر تحديد الشركة");
+        return;
+      }
+      companyId = profile.company_id;
+    } catch {
+      toast.error("خطأ في الحصول على بيانات الشركة");
+      return;
+    }
+
+    // تحديد/إنشاء الوكيل/المورد تلقائياً بناءً على الاسم المُدخل
+    let vendorId: string | null = null;
+    try {
+      const companyName = data.vendor_company_name.trim();
+
+      if (!companyName) {
+        toast.error('اسم الوكيل / المورد مطلوب');
+        return;
+      }
+
+      // البحث عن وكيل موجود
+      const { data: existing, error: searchError } = await supabase
+        .from('customers')
+        .select('id, customer_type, company_name')
+        .eq('company_id', companyId)
+        .ilike('company_name', companyName)
+        .maybeSingle();
+
+      if (searchError) {
+        throw new Error(`خطأ في البحث عن الوكيل: ${searchError.message}`);
+      }
+
+      if (existing?.id) {
+        vendorId = existing.id;
+      } else {
+        // إنشاء وكيل جديد
+        const { data: created, error: insertError } = await supabase
+          .from('customers')
+          .insert({
+            company_id: companyId,
+            customer_type: 'corporate',
+            company_name: companyName,
+            phone: data.vendor_phone?.trim() || '',
+            created_by: user!.id,
+          } as any)
+          .select('id')
+          .single();
+
+        if (insertError) {
+          throw new Error(`خطأ في إنشاء الوكيل: ${insertError.message}`);
+        }
+        
+        vendorId = created.id;
+        toast.success(`تم إنشاء وكيل جديد: ${companyName}`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "حدث خطأ أثناء تحديد الوكيل / المورد");
+      return;
+    }
+
     const formData: VehicleInstallmentCreateData = {
-      vendor_id: data.vendor_id,
+      vendor_id: vendorId!,
       vehicle_id: data.vehicle_id,
       agreement_number: data.agreement_number,
       total_amount: data.total_amount,
@@ -221,24 +266,24 @@ const VehicleInstallmentForm = ({ onSuccess, onCancel }: VehicleInstallmentFormP
               </div>
 
               <div>
-                <Label htmlFor="vendor_id">الوكيل / المورد</Label>
-                <Select onValueChange={(value) => setValue('vendor_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر الوكيل / المورد" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(vendors || []).map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
-                        {vendor.customer_type === 'individual' 
-                          ? `${vendor.first_name} ${vendor.last_name}`
-                          : vendor.company_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.vendor_id && (
-                  <p className="text-sm text-destructive mt-1">{errors.vendor_id.message}</p>
+                <Label htmlFor="vendor_company_name">اسم الوكيل / المورد</Label>
+                <Input
+                  id="vendor_company_name"
+                  {...register('vendor_company_name')}
+                  placeholder="اسم الشركة أو الوكيل"
+                />
+                {errors.vendor_company_name && (
+                  <p className="text-sm text-destructive mt-1">{errors.vendor_company_name.message}</p>
                 )}
+              </div>
+
+              <div>
+                <Label htmlFor="vendor_phone">رقم هاتف الوكيل (اختياري)</Label>
+                <Input
+                  id="vendor_phone"
+                  {...register('vendor_phone')}
+                  placeholder="رقم الهاتف"
+                />
               </div>
 
               <div>
