@@ -49,7 +49,7 @@ const STEPS = [
 const wizardSchema = z.object({
   vendor_company_name: z.string().min(1, "يجب إدخال اسم الوكيل"),
   vendor_phone: z.string().optional(),
-  agreement_number: z.string().min(1, "يجب إدخال رقم الاتفاقية"),
+  agreement_number: z.string().optional(), // Made optional - will auto-generate if empty
   total_amount: z.number().min(1, "يجب إدخال المبلغ الإجمالي"),
   down_payment: z.number().min(0, "الدفعة المقدمة لا يمكن أن تكون سالبة"),
   number_of_installments: z.number().min(1, "يجب إدخال عدد الأقساط"),
@@ -253,6 +253,28 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
 
     const data = form.getValues();
 
+    // التحقق من البيانات الأساسية
+    if (!data.vendor_company_name?.trim()) {
+      toast.error("يجب إدخال اسم الوكيل");
+      return;
+    }
+    if (vehicleAllocations.length === 0) {
+      toast.error("يجب اختيار مركبة واحدة على الأقل");
+      return;
+    }
+    if (data.total_amount <= 0) {
+      toast.error("يجب إدخال المبلغ الإجمالي");
+      return;
+    }
+    if (data.number_of_installments <= 0) {
+      toast.error("يجب إدخال عدد الأقساط");
+      return;
+    }
+
+    // إنشاء رقم اتفاقية تلقائي إذا كان فارغاً
+    const agreementNumber = data.agreement_number?.trim() || 
+      `INST-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+
     // إنشاء/البحث عن الوكيل
     let vendorId: string | null = null;
     try {
@@ -296,7 +318,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         acc[v.vehicle_id] = v.allocated_amount;
         return acc;
       }, {} as { [key: string]: number }),
-      agreement_number: data.agreement_number,
+      agreement_number: agreementNumber,
       total_amount: data.total_amount,
       down_payment: data.down_payment,
       installment_amount: installmentAmount,
