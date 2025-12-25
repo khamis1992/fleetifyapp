@@ -157,7 +157,7 @@ export const useCreateVehicleInstallment = () => {
           .from('vehicle_installment_allocations')
           .insert(allocations);
 
-        if (allocationError && !allocationError.message.includes('does not exist')) {
+        if (allocationError && !(allocationError.message?.includes('does not exist') || allocationError.code === '42P01')) {
           console.warn('Error creating allocations:', allocationError);
         }
       }
