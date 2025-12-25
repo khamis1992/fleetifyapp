@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -10,6 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Plus, 
   CalendarClock, 
@@ -29,9 +39,11 @@ import {
   Search,
   ArrowUpDown,
   CreditCard,
-  Bell
+  Bell,
+  Pencil,
+  Save
 } from "lucide-react";
-import { useVehicleInstallments, useVehicleInstallmentSummary, useDeleteVehicleInstallment } from "@/hooks/useVehicleInstallments";
+import { useVehicleInstallments, useVehicleInstallmentSummary, useDeleteVehicleInstallment, useUpdateVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -172,6 +184,7 @@ const FilterTab: React.FC<FilterTabProps> = ({ label, value, count, isActive, on
 interface AgreementCardProps {
   installment: VehicleInstallmentWithDetails;
   onClick: () => void;
+  onEdit: (installment: VehicleInstallmentWithDetails) => void;
   onDelete: (id: string) => void;
   formatCurrency: (value: number) => string;
   index: number;
@@ -180,6 +193,7 @@ interface AgreementCardProps {
 const AgreementCard: React.FC<AgreementCardProps> = ({ 
   installment, 
   onClick, 
+  onEdit,
   onDelete,
   formatCurrency,
   index 
@@ -344,6 +358,16 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
                 <ChevronLeft className="w-4 h-4 ml-2" />
                 عرض التفاصيل
               </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(installment);
+                }}
+                className="cursor-pointer"
+              >
+                <Pencil className="w-4 h-4 ml-2" />
+                تعديل الاتفاقية
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={(e) => {
@@ -379,11 +403,24 @@ const VehicleInstallmentsDashboard = () => {
   const [sortBy, setSortBy] = useState<string>('date_desc');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [installmentToDelete, setInstallmentToDelete] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [installmentToEdit, setInstallmentToEdit] = useState<VehicleInstallmentWithDetails | null>(null);
+  const [editForm, setEditForm] = useState({
+    agreement_number: '',
+    total_amount: 0,
+    down_payment: 0,
+    installment_amount: 0,
+    number_of_installments: 0,
+    interest_rate: 0,
+    notes: '',
+    status: 'active' as string,
+  });
 
   const { data: installments, isLoading } = useVehicleInstallments();
   const { data: summary } = useVehicleInstallmentSummary();
   const { formatCurrency } = useCurrencyFormatter();
   const deleteInstallment = useDeleteVehicleInstallment();
+  const updateInstallment = useUpdateVehicleInstallment();
 
   const handleDeleteClick = (id: string) => {
     setInstallmentToDelete(id);
@@ -396,6 +433,42 @@ const VehicleInstallmentsDashboard = () => {
       setDeleteDialogOpen(false);
       setInstallmentToDelete(null);
     }
+  };
+
+  const handleEditClick = (installment: VehicleInstallmentWithDetails) => {
+    setInstallmentToEdit(installment);
+    setEditForm({
+      agreement_number: installment.agreement_number || '',
+      total_amount: installment.total_amount,
+      down_payment: installment.down_payment,
+      installment_amount: installment.installment_amount,
+      number_of_installments: installment.number_of_installments,
+      interest_rate: installment.interest_rate || 0,
+      notes: installment.notes || '',
+      status: installment.status,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!installmentToEdit) return;
+    
+    await updateInstallment.mutateAsync({
+      id: installmentToEdit.id,
+      data: {
+        agreement_number: editForm.agreement_number,
+        total_amount: editForm.total_amount,
+        down_payment: editForm.down_payment,
+        installment_amount: editForm.installment_amount,
+        number_of_installments: editForm.number_of_installments,
+        interest_rate: editForm.interest_rate,
+        notes: editForm.notes,
+        status: editForm.status as any,
+      },
+    });
+    
+    setEditDialogOpen(false);
+    setInstallmentToEdit(null);
   };
 
   // Filter and sort installments
@@ -708,6 +781,7 @@ const VehicleInstallmentsDashboard = () => {
                   key={installment.id}
                   installment={installment}
                   onClick={() => setSelectedInstallment(installment)}
+                  onEdit={handleEditClick}
                   onDelete={handleDeleteClick}
                   formatCurrency={formatCurrency}
                   index={index}
@@ -740,6 +814,138 @@ const VehicleInstallmentsDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Agreement Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-coral-500" />
+              تعديل الاتفاقية
+            </DialogTitle>
+            <DialogDescription>
+              تعديل بيانات اتفاقية الأقساط: {installmentToEdit?.agreement_number}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="agreement_number">رقم الاتفاقية</Label>
+                <Input
+                  id="agreement_number"
+                  value={editForm.agreement_number}
+                  onChange={(e) => setEditForm({ ...editForm, agreement_number: e.target.value })}
+                  placeholder="رقم الاتفاقية"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">الحالة</Label>
+                <Select 
+                  value={editForm.status} 
+                  onValueChange={(value) => setEditForm({ ...editForm, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="completed">مكتمل</SelectItem>
+                    <SelectItem value="cancelled">ملغي</SelectItem>
+                    <SelectItem value="draft">مسودة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="total_amount">المبلغ الإجمالي</Label>
+                <Input
+                  id="total_amount"
+                  type="number"
+                  value={editForm.total_amount}
+                  onChange={(e) => setEditForm({ ...editForm, total_amount: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="down_payment">الدفعة المقدمة</Label>
+                <Input
+                  id="down_payment"
+                  type="number"
+                  value={editForm.down_payment}
+                  onChange={(e) => setEditForm({ ...editForm, down_payment: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="installment_amount">مبلغ القسط</Label>
+                <Input
+                  id="installment_amount"
+                  type="number"
+                  value={editForm.installment_amount}
+                  onChange={(e) => setEditForm({ ...editForm, installment_amount: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="number_of_installments">عدد الأقساط</Label>
+                <Input
+                  id="number_of_installments"
+                  type="number"
+                  value={editForm.number_of_installments}
+                  onChange={(e) => setEditForm({ ...editForm, number_of_installments: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="interest_rate">نسبة الفائدة %</Label>
+                <Input
+                  id="interest_rate"
+                  type="number"
+                  step="0.01"
+                  value={editForm.interest_rate}
+                  onChange={(e) => setEditForm({ ...editForm, interest_rate: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">ملاحظات</Label>
+              <Textarea
+                id="notes"
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                placeholder="ملاحظات إضافية..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={updateInstallment.isPending}
+              className="bg-coral-500 hover:bg-coral-600"
+            >
+              {updateInstallment.isPending ? (
+                <>جاري الحفظ...</>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 ml-2" />
+                  حفظ التغييرات
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
