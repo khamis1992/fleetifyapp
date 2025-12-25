@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +33,31 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
   const processPayment = useProcessInstallmentPayment();
   const { formatCurrency } = useCurrencyFormatter();
   
-  
   const isMultiVehicle = installment.contract_type === 'multi_vehicle' || (contractVehicles && contractVehicles.length > 1);
+
+  // ===== حسابات الإحصائيات =====
+  const stats = useMemo(() => {
+    if (!schedules || schedules.length === 0) return null;
+    
+    const totalPaid = schedules.reduce((sum, s) => sum + (s.paid_amount || 0), 0);
+    const totalRemaining = schedules.reduce((sum, s) => sum + (s.amount - (s.paid_amount || 0)), 0);
+    const paidCount = schedules.filter(s => s.status === 'paid').length;
+    const remainingCount = schedules.filter(s => s.status !== 'paid').length;
+    const overdueCount = schedules.filter(s => s.status === 'overdue').length;
+    const nextInstallment = schedules.find(s => s.status === 'pending' || s.status === 'overdue');
+    const progressPercentage = schedules.length > 0 ? (paidCount / schedules.length) * 100 : 0;
+    
+    return {
+      totalPaid,
+      totalRemaining,
+      paidCount,
+      remainingCount,
+      overdueCount,
+      nextInstallment,
+      progressPercentage,
+      totalInstallments: schedules.length,
+    };
+  }, [schedules]);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -136,6 +159,140 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
           <p className="text-muted-foreground text-base">{installment.agreement_number}</p>
         </div>
       </header>
+
+      {/* ===== بطاقات الإحصائيات ===== */}
+      {stats && (
+        <section className="mb-8 animate-fade-in">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+            {/* المدفوع */}
+            <div className="bg-emerald-50 dark:bg-emerald-950 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300">المدفوع</span>
+              </div>
+              <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100">
+                {formatCurrency(stats.totalPaid)}
+              </p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                {stats.paidCount} من {stats.totalInstallments} قسط
+              </p>
+            </div>
+
+            {/* المتبقي */}
+            <div className="bg-amber-50 dark:bg-amber-950 rounded-2xl p-4 border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                  <CalendarClock className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-amber-700 dark:text-amber-300">المتبقي</span>
+              </div>
+              <p className="text-xl font-bold text-amber-900 dark:text-amber-100">
+                {formatCurrency(stats.totalRemaining)}
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                {stats.remainingCount} قسط متبقي
+              </p>
+            </div>
+
+            {/* المتأخر */}
+            <div className={`rounded-2xl p-4 border ${
+              stats.overdueCount > 0 
+                ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800' 
+                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  stats.overdueCount > 0 ? 'bg-red-500' : 'bg-gray-400'
+                }`}>
+                  <AlertCircle className="w-4 h-4 text-white" />
+                </div>
+                <span className={`text-sm ${
+                  stats.overdueCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-600'
+                }`}>متأخر</span>
+              </div>
+              <p className={`text-xl font-bold ${
+                stats.overdueCount > 0 ? 'text-red-900 dark:text-red-100' : 'text-gray-500'
+              }`}>
+                {stats.overdueCount}
+              </p>
+              <p className={`text-xs mt-1 ${
+                stats.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
+              }`}>
+                {stats.overdueCount > 0 ? 'يجب الدفع فوراً' : 'لا يوجد متأخرات'}
+              </p>
+            </div>
+
+            {/* نسبة الإنجاز */}
+            <div className="bg-blue-50 dark:bg-blue-950 rounded-2xl p-4 border border-blue-200 dark:border-blue-800 col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-blue-700 dark:text-blue-300">نسبة الإنجاز</span>
+                <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                  {stats.progressPercentage.toFixed(0)}%
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                  style={{ width: `${stats.progressPercentage}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-blue-600 dark:text-blue-400 mt-2">
+                <span>{stats.paidCount} مدفوع</span>
+                <span>{stats.remainingCount} متبقي</span>
+              </div>
+            </div>
+          </div>
+
+          {/* القسط القادم */}
+          {stats.nextInstallment && (
+            <div className={`mt-4 p-4 rounded-xl border-2 border-dashed flex items-center justify-between flex-wrap gap-4 ${
+              stats.nextInstallment.status === 'overdue' 
+                ? 'bg-red-50 border-red-300 dark:bg-red-950 dark:border-red-700' 
+                : 'bg-orange-50 border-orange-300 dark:bg-orange-950 dark:border-orange-700'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  stats.nextInstallment.status === 'overdue' ? 'bg-red-500' : 'bg-orange-500'
+                }`}>
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className={`font-bold ${
+                    stats.nextInstallment.status === 'overdue' ? 'text-red-800 dark:text-red-200' : 'text-orange-800 dark:text-orange-200'
+                  }`}>
+                    {stats.nextInstallment.status === 'overdue' ? '⚠️ قسط متأخر!' : 'القسط القادم'}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    القسط رقم {stats.nextInstallment.installment_number} - 
+                    {format(new Date(stats.nextInstallment.due_date), ' dd MMM yyyy', { locale: ar })}
+                  </p>
+                </div>
+              </div>
+              <div className="text-left">
+                <p className={`text-xl font-bold ${
+                  stats.nextInstallment.status === 'overdue' ? 'text-red-800 dark:text-red-200' : 'text-orange-800 dark:text-orange-200'
+                }`}>
+                  {formatCurrency(stats.nextInstallment.amount - (stats.nextInstallment.paid_amount || 0))}
+                </p>
+                <Button 
+                  size="sm" 
+                  className={`mt-1 ${
+                    stats.nextInstallment.status === 'overdue' 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
+                  onClick={() => openPaymentDialog(stats.nextInstallment!)}
+                >
+                  <CreditCard className="w-4 h-4 ml-1" />
+                  ادفع الآن
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Info Cards Grid */}
       <section className="mb-8">
