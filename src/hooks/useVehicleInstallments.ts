@@ -126,7 +126,7 @@ export const useCreateVehicleInstallment = () => {
         end_date: data.end_date,
         agreement_date: data.agreement_date,
         notes: data.notes,
-        status: 'draft' as const,
+        status: 'active' as const,
         contract_type: isMultiVehicle ? 'multi_vehicle' as const : 'single_vehicle' as const,
         total_vehicles_count: isMultiVehicle ? (data.vehicle_ids?.length || 1) : 1,
         company_id: profile.company_id,
