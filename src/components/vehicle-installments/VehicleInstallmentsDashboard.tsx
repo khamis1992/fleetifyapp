@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Plus, 
   CalendarClock, 
@@ -17,7 +25,11 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Search,
+  ArrowUpDown,
+  CreditCard,
+  Bell
 } from "lucide-react";
 import { useVehicleInstallments, useVehicleInstallmentSummary, useDeleteVehicleInstallment } from "@/hooks/useVehicleInstallments";
 import {
@@ -206,6 +218,15 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
   const status = statusConfig[installment.status as keyof typeof statusConfig] || statusConfig.draft;
   const StatusIcon = status.icon;
 
+  // Calculate progress (estimate based on start date and number of installments)
+  const startDate = new Date(installment.start_date);
+  const now = new Date();
+  const monthsElapsed = Math.max(0, (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()));
+  const estimatedPaidInstallments = Math.min(monthsElapsed, installment.number_of_installments);
+  const progressPercentage = (estimatedPaidInstallments / installment.number_of_installments) * 100;
+  const estimatedPaid = estimatedPaidInstallments * installment.installment_amount;
+  const estimatedRemaining = installment.total_amount - installment.down_payment - estimatedPaid;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -220,7 +241,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
             <h3 className="text-base font-bold text-neutral-900">
-              {installment.agreement_number}
+              {installment.agreement_number || 'بدون رقم'}
             </h3>
             <span className={cn(
               "px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1",
@@ -237,7 +258,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-3">
             <div className="flex items-center gap-2 text-neutral-600">
               <Car className="w-4 h-4 text-coral-400" />
               <span className="truncate">
@@ -263,6 +284,24 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Progress Bar */}
+          {installment.status === 'active' && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                <span>التقدم: {estimatedPaidInstallments} من {installment.number_of_installments} قسط</span>
+                <span>{progressPercentage.toFixed(0)}%</span>
+              </div>
+              <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-coral-400 to-coral-500 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercentage}%` }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side - Amount & Actions */}
@@ -271,9 +310,15 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
             <p className="text-xl font-bold text-neutral-900">
               {formatCurrency(installment.total_amount)}
             </p>
-            <p className="text-xs text-neutral-500">
-              {installment.number_of_installments} قسط شهري
+            <p className="text-xs text-neutral-500 mb-1">
+              {installment.number_of_installments} قسط × {formatCurrency(installment.installment_amount)}
             </p>
+            {installment.status === 'active' && (
+              <div className="flex gap-2 text-[10px]">
+                <span className="text-emerald-600">مدفوع: ~{formatCurrency(estimatedPaid + installment.down_payment)}</span>
+                <span className="text-amber-600">متبقي: ~{formatCurrency(Math.max(0, estimatedRemaining))}</span>
+              </div>
+            )}
           </div>
           
           {/* Actions Menu */}
@@ -330,6 +375,8 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
 const VehicleInstallmentsDashboard = () => {
   const [selectedInstallment, setSelectedInstallment] = useState<VehicleInstallmentWithDetails | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<string>('date_desc');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [installmentToDelete, setInstallmentToDelete] = useState<string | null>(null);
 
@@ -351,9 +398,47 @@ const VehicleInstallmentsDashboard = () => {
     }
   };
 
-  const filteredInstallments = (installments || []).filter(installment => 
-    statusFilter === 'all' || installment.status === statusFilter
-  );
+  // Filter and sort installments
+  const filteredInstallments = useMemo(() => {
+    let result = installments || [];
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(i => i.status === statusFilter);
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(i => 
+        i.agreement_number?.toLowerCase().includes(query) ||
+        i.customers?.company_name?.toLowerCase().includes(query) ||
+        i.customers?.first_name?.toLowerCase().includes(query) ||
+        i.customers?.last_name?.toLowerCase().includes(query) ||
+        i.vehicles?.plate_number?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'date_desc':
+          return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+        case 'date_asc':
+          return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+        case 'amount_desc':
+          return b.total_amount - a.total_amount;
+        case 'amount_asc':
+          return a.total_amount - b.total_amount;
+        case 'installments_desc':
+          return b.number_of_installments - a.number_of_installments;
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  }, [installments, statusFilter, searchQuery, sortBy]);
 
   // Count by status
   const statusCounts = {
@@ -362,6 +447,16 @@ const VehicleInstallmentsDashboard = () => {
     completed: installments?.filter(i => i.status === 'completed').length || 0,
     draft: installments?.filter(i => i.status === 'draft').length || 0,
     cancelled: installments?.filter(i => i.status === 'cancelled').length || 0,
+  };
+
+  // Handle stat card clicks for filtering
+  const handleStatCardClick = (filter: string) => {
+    if (filter === 'overdue') {
+      // For overdue, we'll filter active agreements that might have overdue payments
+      setStatusFilter('active');
+    } else {
+      setStatusFilter(filter);
+    }
   };
 
   if (selectedInstallment) {
@@ -402,6 +497,37 @@ const VehicleInstallmentsDashboard = () => {
         </div>
       </motion.header>
 
+      {/* Overdue Alert Bar */}
+      {summary && summary.overdue_count > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 shadow-lg shadow-red-500/20"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3 text-white">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Bell className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <p className="font-bold">⚠️ تنبيه: يوجد {summary.overdue_count} أقساط متأخرة!</p>
+                <p className="text-sm text-white/80">
+                  إجمالي المبلغ المتأخر: {formatCurrency(summary.overdue_amount)}
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="bg-white text-red-600 hover:bg-white/90"
+              onClick={() => handleStatCardClick('overdue')}
+            >
+              عرض التفاصيل
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Statistics Cards */}
       {summary && (
         <motion.section
@@ -419,6 +545,7 @@ const VehicleInstallmentsDashboard = () => {
               iconBg="bg-coral-100"
               iconColor="text-coral-600"
               delay={1}
+              onClick={() => handleStatCardClick('all')}
             />
             <StatCard
               title="إجمالي المبلغ"
@@ -427,9 +554,8 @@ const VehicleInstallmentsDashboard = () => {
               icon={DollarSign}
               iconBg="bg-emerald-100"
               iconColor="text-emerald-600"
-              trend="+12%"
-              trendUp={true}
               delay={2}
+              onClick={() => handleStatCardClick('all')}
             />
             <StatCard
               title="المبلغ المستحق"
@@ -439,6 +565,7 @@ const VehicleInstallmentsDashboard = () => {
               iconBg="bg-amber-100"
               iconColor="text-amber-600"
               delay={3}
+              onClick={() => handleStatCardClick('active')}
             />
             <StatCard
               title="الأقساط المتأخرة"
@@ -448,6 +575,7 @@ const VehicleInstallmentsDashboard = () => {
               iconBg="bg-red-100"
               iconColor="text-red-600"
               delay={4}
+              onClick={() => handleStatCardClick('overdue')}
             />
           </div>
         </motion.section>
@@ -502,6 +630,35 @@ const VehicleInstallmentsDashboard = () => {
               onClick={() => setStatusFilter('draft')}
             />
           </div>
+        </div>
+
+        {/* Search and Sort Row */}
+        <div className="flex items-center gap-4 mb-6 flex-wrap">
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[250px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Input
+              placeholder="البحث برقم الاتفاقية، الوكيل، أو المركبة..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10 bg-neutral-50 border-neutral-200 focus:bg-white"
+            />
+          </div>
+
+          {/* Sort Dropdown */}
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px] bg-neutral-50 border-neutral-200">
+              <ArrowUpDown className="w-4 h-4 ml-2 text-neutral-500" />
+              <SelectValue placeholder="ترتيب حسب" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date_desc">الأحدث أولاً</SelectItem>
+              <SelectItem value="date_asc">الأقدم أولاً</SelectItem>
+              <SelectItem value="amount_desc">المبلغ (الأعلى)</SelectItem>
+              <SelectItem value="amount_asc">المبلغ (الأقل)</SelectItem>
+              <SelectItem value="installments_desc">عدد الأقساط</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Agreements List */}
