@@ -198,7 +198,6 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
 
   // التحقق من صحة الخطوة الحالية - تم تبسيطها v2
   const canProceed = useCallback(() => {
-    console.log('canProceed check:', { currentStep, vendor: watchedValues.vendor_company_name, vehicles: vehicleAllocations.length });
     switch (currentStep) {
       case 1:
         return !!watchedValues.vendor_company_name?.trim();
@@ -438,10 +437,18 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                     vehicles={vehicles || []}
                     selectedVehicles={vehicleAllocations}
                     onSelectionChange={(selected) => {
+                      // منع التحديث إذا كانت البيانات متطابقة
+                      const newIds = new Set(selected.map(v => v.id));
+                      const currentIds = new Set(vehicleAllocations.map(v => v.id));
+                      if (newIds.size === currentIds.size && 
+                          [...newIds].every(id => currentIds.has(id))) {
+                        return; // لا تحديث مطلوب
+                      }
+                      
                       setVehicleAllocations(selected.map(v => ({
-                        id: v.id, // Required for VehicleBulkSelector
+                        id: v.id,
                         vehicle_id: v.id,
-                        allocated_amount: 0, // سيتم توزيعه لاحقاً
+                        allocated_amount: 0,
                         plate_number: v.plate_number,
                         make: v.make,
                         model: v.model,

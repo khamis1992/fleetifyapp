@@ -116,6 +116,10 @@ export function VehicleBulkSelector({
     const newVehicles = filteredVehicles
       .filter(v => !selectedIds.has(v.id))
       .map(v => ({ ...v, allocated_amount: 0 }));
+    
+    // منع التحديث إذا لم يتم إضافة مركبات جديدة
+    if (newVehicles.length === 0) return;
+    
     onSelectionChange([...selectedVehicles, ...newVehicles]);
   };
 
@@ -130,6 +134,10 @@ export function VehicleBulkSelector({
     const makeVehicles = vehicles
       .filter(v => v.make?.trim() === make && !selectedIds.has(v.id))
       .map(v => ({ ...v, allocated_amount: 0 }));
+    
+    // منع التحديث إذا لم يتم إضافة مركبات جديدة
+    if (makeVehicles.length === 0) return;
+    
     onSelectionChange([...selectedVehicles, ...makeVehicles]);
   };
 
