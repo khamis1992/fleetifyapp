@@ -60,6 +60,7 @@ const wizardSchema = z.object({
 });
 
 interface VehicleAllocation {
+  id: string; // Required for VehicleBulkSelector compatibility
   vehicle_id: string;
   allocated_amount: number;
   plate_number?: string;
@@ -442,6 +443,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                     selectedVehicles={vehicleAllocations}
                     onSelectionChange={(selected) => {
                       setVehicleAllocations(selected.map(v => ({
+                        id: v.id, // Required for VehicleBulkSelector
                         vehicle_id: v.id,
                         allocated_amount: 0, // سيتم توزيعه لاحقاً
                         plate_number: v.plate_number,
