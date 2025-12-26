@@ -201,8 +201,9 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
     setVehicleAllocations(prev => prev.map(v => ({ ...v, allocated_amount: perVehicle })));
   }, [watchedValues, vehicleAllocations.length]);
 
-  // التحقق من صحة الخطوة الحالية
+  // التحقق من صحة الخطوة الحالية - تم تبسيطها v2
   const canProceed = useCallback(() => {
+    console.log('canProceed check:', { currentStep, vendor: watchedValues.vendor_company_name, vehicles: vehicleAllocations.length });
     switch (currentStep) {
       case 1:
         return !!watchedValues.vendor_company_name?.trim();
@@ -211,7 +212,8 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         return vehicleAllocations.length > 0 && 
                vehicleAllocations.every(v => v.vehicle_id);
       case 3:
-        // الخطوة 3 دائماً متاحة - التحقق النهائي يتم عند الحفظ
+      case 4:
+        // الخطوات 3 و 4 دائماً متاحة - التحقق النهائي يتم عند الحفظ
         return true;
       default:
         return true;
