@@ -211,9 +211,8 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
         return vehicleAllocations.length > 0 && 
                vehicleAllocations.every(v => v.vehicle_id);
       case 3:
-        // تم تبسيط الشروط للسماح بالعقود القديمة
-        return watchedValues.total_amount > 0 && 
-               watchedValues.number_of_installments > 0;
+        // الخطوة 3 دائماً متاحة - التحقق النهائي يتم عند الحفظ
+        return true;
       default:
         return true;
     }
