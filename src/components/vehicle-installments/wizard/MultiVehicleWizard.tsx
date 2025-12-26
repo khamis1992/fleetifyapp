@@ -121,21 +121,8 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
   }, [watchedValues]);
 
   // توزيع المبلغ تلقائياً عند تغيير إجمالي العقد أو الدفعة المقدمة
-  useEffect(() => {
-    if (currentStep === 3 && vehicleAllocations.length > 0) {
-      const { total_amount, down_payment } = watchedValues;
-      if (total_amount > 0) {
-        const amountToDistribute = total_amount - down_payment;
-        const perVehicle = Math.round(amountToDistribute / vehicleAllocations.length * 100) / 100;
-        
-        // فقط التحديث إذا كانت القيم مختلفة
-        const currentTotal = vehicleAllocations.reduce((sum, v) => sum + (v.allocated_amount || 0), 0);
-        if (Math.abs(currentTotal - amountToDistribute) > 0.01) {
-          setVehicleAllocations(prev => prev.map(v => ({ ...v, allocated_amount: perVehicle })));
-        }
-      }
-    }
-  }, [currentStep, watchedValues.total_amount, watchedValues.down_payment, vehicleAllocations.length]);
+  // ملاحظة: تم إزالة التحديث التلقائي لتجنب الحلقة اللانهائية
+  // التوزيع يتم عند الانتقال من الخطوة 2 إلى 3 فقط
 
   // حفظ المسودة تلقائياً
   useEffect(() => {
@@ -153,9 +140,11 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
     return () => clearTimeout(saveTimeout);
   }, [watchedValues, vehicleAllocations, open]);
 
-  // استرجاع المسودة
+  // استرجاع المسودة - يتم مرة واحدة فقط عند فتح النافذة
+  const [draftRestored, setDraftRestored] = useState(false);
+  
   useEffect(() => {
-    if (open) {
+    if (open && !draftRestored) {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
         try {
@@ -185,8 +174,14 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
           localStorage.removeItem(DRAFT_KEY);
         }
       }
+      setDraftRestored(true);
     }
-  }, [open, form]);
+    
+    // إعادة تعيين العلم عند إغلاق النافذة
+    if (!open) {
+      setDraftRestored(false);
+    }
+  }, [open, draftRestored]);
 
 
   // توزيع المبلغ تلقائياً على المركبات
