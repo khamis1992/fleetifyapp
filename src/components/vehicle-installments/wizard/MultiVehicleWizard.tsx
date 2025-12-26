@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Save, Loader2, Car } from "lucide-react";
+import { ArrowRight, ArrowLeft, Save, Loader2, Car, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
