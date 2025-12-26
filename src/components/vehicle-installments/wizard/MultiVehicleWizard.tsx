@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useTransition, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -80,6 +80,8 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [vehicleAllocations, setVehicleAllocations] = useState<VehicleAllocation[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const lastSelectionRef = useRef<Set<string>>(new Set());
   const { formatCurrency } = useCurrencyFormatter();
   
   const companyId = useCurrentCompanyId();
@@ -439,23 +441,30 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                     onSelectionChange={(selected) => {
                       // منع التحديث إذا كانت البيانات متطابقة
                       const newIds = new Set(selected.map(v => v.id));
-                      const currentIds = new Set(vehicleAllocations.map(v => v.id));
-                      if (newIds.size === currentIds.size && 
-                          [...newIds].every(id => currentIds.has(id))) {
+                      
+                      // تحقق من التطابق مع آخر تحديد
+                      if (newIds.size === lastSelectionRef.current.size && 
+                          [...newIds].every(id => lastSelectionRef.current.has(id))) {
                         return; // لا تحديث مطلوب
                       }
                       
-                      setVehicleAllocations(selected.map(v => ({
-                        id: v.id,
-                        vehicle_id: v.id,
-                        allocated_amount: 0,
-                        plate_number: v.plate_number,
-                        make: v.make,
-                        model: v.model,
-                        year: v.year,
-                      })));
+                      // تحديث المرجع
+                      lastSelectionRef.current = newIds;
+                      
+                      // استخدام startTransition لتأجيل التحديث الكبير
+                      startTransition(() => {
+                        setVehicleAllocations(selected.map(v => ({
+                          id: v.id,
+                          vehicle_id: v.id,
+                          allocated_amount: 0,
+                          plate_number: v.plate_number,
+                          make: v.make,
+                          model: v.model,
+                          year: v.year,
+                        })));
+                      });
                     }}
-                    isLoading={vehiclesLoading}
+                    isLoading={vehiclesLoading || isPending}
                     hideAmountInput={true}
                   />
                 </div>
