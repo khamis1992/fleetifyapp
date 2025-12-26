@@ -675,7 +675,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
             <Button
               type="button"
               onClick={nextStep}
-              disabled={!canProceed()}
+              disabled={currentStep !== 3 && !canProceed()}
               className="bg-coral-500 hover:bg-coral-600"
             >
               التالي
