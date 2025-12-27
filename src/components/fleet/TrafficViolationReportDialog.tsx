@@ -55,6 +55,8 @@ interface ReportFilters {
   sortBy: 'violations_count' | 'total_amount' | 'total_amount_asc' | 'plate_number' | 'last_date';
   includeAdvancedStats: boolean;
   includeUnlinkedSection: boolean;
+  minAmount: string;
+  maxAmount: string;
 }
 
 interface VehicleGroup {
@@ -62,6 +64,8 @@ interface VehicleGroup {
   plateNumber: string;
   make: string;
   model: string;
+  registrationExpiry?: string;
+  registrationStatus: 'valid' | 'expired' | 'unknown';
   violations: TrafficViolation[];
   totalAmount: number;
   paidAmount: number;
@@ -89,6 +93,8 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     sortBy: 'violations_count',
     includeAdvancedStats: true,
     includeUnlinkedSection: true,
+    minAmount: '',
+    maxAmount: '',
   });
 
   // قائمة المركبات المتاحة للفلترة
@@ -164,12 +170,20 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
   // تجميع المخالفات حسب المركبة
   const vehicleGroups = useMemo(() => {
     const groups = new Map<string, VehicleGroup>();
+    const today = new Date();
     
     filteredViolations.forEach(v => {
       if (!v.vehicle_id) return;
       
       const key = v.vehicle_id;
       const existing = groups.get(key);
+      
+      // حساب حالة الاستمارة
+      const getRegistrationStatus = (): 'valid' | 'expired' | 'unknown' => {
+        if (!v.vehicles?.registration_expiry) return 'unknown';
+        const expiry = new Date(v.vehicles.registration_expiry);
+        return expiry >= today ? 'valid' : 'expired';
+      };
       
       if (existing) {
         existing.violations.push(v);
@@ -190,6 +204,8 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
           plateNumber: v.vehicles?.plate_number || v.vehicle_plate || 'غير محدد',
           make: v.vehicles?.make || '',
           model: v.vehicles?.model || '',
+          registrationExpiry: v.vehicles?.registration_expiry,
+          registrationStatus: getRegistrationStatus(),
           violations: [v],
           totalAmount: v.amount || 0,
           paidAmount: v.payment_status === 'paid' ? (v.amount || 0) : 0,
@@ -201,9 +217,20 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
       }
     });
     
-    // ترتيب المجموعات
-    const groupsArray = Array.from(groups.values());
+    // تطبيق فلتر المبلغ
+    let groupsArray = Array.from(groups.values());
     
+    const minAmount = filters.minAmount ? parseFloat(filters.minAmount) : null;
+    const maxAmount = filters.maxAmount ? parseFloat(filters.maxAmount) : null;
+    
+    if (minAmount !== null) {
+      groupsArray = groupsArray.filter(g => g.totalAmount >= minAmount);
+    }
+    if (maxAmount !== null) {
+      groupsArray = groupsArray.filter(g => g.totalAmount <= maxAmount);
+    }
+    
+    // ترتيب المجموعات
     switch (filters.sortBy) {
       case 'violations_count':
         return groupsArray.sort((a, b) => b.violations.length - a.violations.length);
@@ -218,7 +245,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
       default:
         return groupsArray;
     }
-  }, [filteredViolations, filters.sortBy]);
+  }, [filteredViolations, filters.sortBy, filters.minAmount, filters.maxAmount]);
 
   // أعلى 5 مركبات بالمخالفات
   const top5Vehicles = useMemo(() => {
@@ -263,6 +290,8 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
       filters.selectedVehicleId !== 'all' ? `مركبة محددة` : '',
       filters.paymentStatus !== 'all' ? `حالة الدفع: ${filters.paymentStatus === 'paid' ? 'مسددة' : filters.paymentStatus === 'unpaid' ? 'غير مسددة' : 'مسددة جزئياً'}` : '',
       filters.status !== 'all' ? `الحالة: ${filters.status === 'confirmed' ? 'مؤكدة' : filters.status === 'pending' ? 'قيد المراجعة' : 'ملغاة'}` : '',
+      filters.minAmount ? `الحد الأدنى: ${formatCurrency(parseFloat(filters.minAmount))}` : '',
+      filters.maxAmount ? `الحد الأقصى: ${formatCurrency(parseFloat(filters.maxAmount))}` : '',
     ].filter(Boolean).join(' | ');
 
     // توليد محتوى أعلى 5 مركبات
@@ -295,6 +324,9 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
             <div class="vehicle-title">
               <span class="plate-number">${group.plateNumber}</span>
               <span class="vehicle-name">${group.make} ${group.model}</span>
+              <span class="badge ${group.registrationStatus === 'valid' ? 'badge-success' : group.registrationStatus === 'expired' ? 'badge-danger' : 'badge-secondary'}">
+                ${group.registrationStatus === 'valid' ? 'استمارة سارية' : group.registrationStatus === 'expired' ? 'استمارة منتهية' : 'غير محدد'}
+              </span>
             </div>
             <div class="vehicle-summary">
               <span class="badge badge-info">${group.violations.length} مخالفة</span>
@@ -1209,6 +1241,38 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                 <SelectItem value="partially_paid">مسددة جزئياً</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* فلتر المبلغ */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minAmount" className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-neutral-500" />
+                الحد الأدنى للمبلغ
+              </Label>
+              <Input
+                id="minAmount"
+                type="number"
+                placeholder="مثال: 500"
+                value={filters.minAmount}
+                onChange={(e) => setFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxAmount" className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-neutral-500" />
+                الحد الأقصى للمبلغ
+              </Label>
+              <Input
+                id="maxAmount"
+                type="number"
+                placeholder="مثال: 2000"
+                value={filters.maxAmount}
+                onChange={(e) => setFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                className="rounded-xl"
+              />
+            </div>
           </div>
 
           {/* فلتر الحالة */}
