@@ -52,7 +52,7 @@ interface ReportFilters {
   status: 'all' | 'pending' | 'confirmed' | 'cancelled';
   selectedVehicleId: string;
   viewMode: 'grouped' | 'flat';
-  sortBy: 'violations_count' | 'total_amount' | 'plate_number' | 'last_date';
+  sortBy: 'violations_count' | 'total_amount' | 'total_amount_asc' | 'plate_number' | 'last_date';
   includeAdvancedStats: boolean;
   includeUnlinkedSection: boolean;
 }
@@ -209,6 +209,8 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         return groupsArray.sort((a, b) => b.violations.length - a.violations.length);
       case 'total_amount':
         return groupsArray.sort((a, b) => b.totalAmount - a.totalAmount);
+      case 'total_amount_asc':
+        return groupsArray.sort((a, b) => a.totalAmount - b.totalAmount);
       case 'plate_number':
         return groupsArray.sort((a, b) => a.plateNumber.localeCompare(b.plateNumber));
       case 'last_date':
@@ -1090,6 +1092,11 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                   <SelectItem value="total_amount">
                     <span className="flex items-center gap-2">
                       حسب المبلغ الإجمالي (الأعلى أولاً)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="total_amount_asc">
+                    <span className="flex items-center gap-2">
+                      حسب المبلغ الإجمالي (الأقل أولاً)
                     </span>
                   </SelectItem>
                   <SelectItem value="plate_number">
