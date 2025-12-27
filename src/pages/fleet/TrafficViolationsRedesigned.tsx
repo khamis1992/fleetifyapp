@@ -34,6 +34,7 @@ import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useU
 import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViolationsSmartDashboard';
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
 import { TrafficViolationSidePanelNew } from '@/components/fleet/TrafficViolationSidePanelNew';
+import { TrafficViolationReportDialog } from '@/components/fleet/TrafficViolationReportDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useVehicles } from '@/hooks/useVehicles';
@@ -69,6 +70,7 @@ export default function TrafficViolationsRedesigned() {
   const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
   const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   
   // Data Fetching
   const { data: violations = [], isLoading, refetch } = useTrafficViolations({ limit: 10000, offset: 0 });
@@ -166,8 +168,8 @@ export default function TrafficViolationsRedesigned() {
     }
   }, [updatePaymentStatusMutation]);
 
-  const handlePrint = useCallback(() => {
-    window.print();
+  const handleOpenReportDialog = useCallback(() => {
+    setIsReportDialogOpen(true);
   }, []);
 
   const handleOpenSidePanel = useCallback((violation: TrafficViolation) => {
@@ -248,6 +250,13 @@ export default function TrafficViolationsRedesigned() {
         />
       </Suspense>
 
+      {/* Report Customization Dialog */}
+      <TrafficViolationReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        violations={violations}
+      />
+
       {/* --- Top Navbar --- */}
       <header className="bg-white border-b border-neutral-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -270,11 +279,11 @@ export default function TrafficViolationsRedesigned() {
           </Button>
           <Button
             variant="outline"
-            onClick={handlePrint}
+            onClick={handleOpenReportDialog}
             className="border-neutral-200 hover:bg-neutral-50 rounded-xl"
           >
             <Printer className="w-4 h-4 ml-2" />
-            <span className="hidden md:inline">طباعة</span>
+            <span className="hidden md:inline">طباعة التقرير</span>
           </Button>
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
