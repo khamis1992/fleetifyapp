@@ -266,7 +266,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     // توليد محتوى أعلى 5 مركبات
     const top5HTML = filters.includeAdvancedStats && top5Vehicles.length > 0 ? `
       <div class="top-vehicles-section">
-        <h3 class="section-title">🏆 أعلى 5 مركبات بالمخالفات</h3>
+        <h3 class="section-title">أعلى 5 مركبات بالمخالفات</h3>
         <div class="top-vehicles-grid">
           ${top5Vehicles.map((v, idx) => `
             <div class="top-vehicle-card rank-${idx + 1}">
@@ -291,7 +291,6 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         <div class="vehicle-section">
           <div class="vehicle-header">
             <div class="vehicle-title">
-              <span class="vehicle-icon">🚗</span>
               <span class="plate-number">${group.plateNumber}</span>
               <span class="vehicle-name">${group.make} ${group.model}</span>
             </div>
@@ -325,7 +324,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                   <td class="amount">${formatCurrency(v.amount || 0)}</td>
                   <td>
                     <span class="badge ${v.payment_status === 'paid' ? 'badge-success' : v.payment_status === 'partially_paid' ? 'badge-warning' : 'badge-danger'}">
-                      ${v.payment_status === 'paid' ? '✅ مسددة' : v.payment_status === 'partially_paid' ? '⏳ جزئي' : '❌ غير مسددة'}
+                      ${v.payment_status === 'paid' ? 'مسددة' : v.payment_status === 'partially_paid' ? 'جزئي' : 'غير مسددة'}
                     </span>
                   </td>
                 </tr>
@@ -377,7 +376,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                 <td class="amount">${formatCurrency(v.amount || 0)}</td>
                 <td>
                   <span class="badge ${v.payment_status === 'paid' ? 'badge-success' : v.payment_status === 'partially_paid' ? 'badge-warning' : 'badge-danger'}">
-                    ${v.payment_status === 'paid' ? '✅ مسددة' : v.payment_status === 'partially_paid' ? '⏳ جزئي' : '❌ غير مسددة'}
+                    ${v.payment_status === 'paid' ? 'مسددة' : v.payment_status === 'partially_paid' ? 'جزئي' : 'غير مسددة'}
                   </span>
                 </td>
                 <td>
@@ -395,7 +394,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     // قسم المخالفات غير المرتبطة
     const unlinkedSectionHTML = filters.includeUnlinkedSection && unlinkedViolations.length > 0 ? `
       <div class="unlinked-section">
-        <h3 class="section-title">⚠️ المخالفات غير المرتبطة بمركبات (${unlinkedViolations.length})</h3>
+        <h3 class="section-title">المخالفات غير المرتبطة بمركبات (${unlinkedViolations.length})</h3>
         <table>
           <thead>
             <tr>
@@ -922,21 +921,21 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     <div class="container">
         <div class="controls">
             <button class="btn btn-primary" onclick="window.print()">
-                🖨️ طباعة التقرير
+                طباعة التقرير
             </button>
             <button class="btn btn-secondary" onclick="window.close()">
-                ✖️ إغلاق
+                إغلاق
             </button>
         </div>
         
         <div class="header">
-            <div class="company-logo">🚗 شركة العراف لتأجير السيارات</div>
+            <div class="company-logo">شركة العراف لتأجير السيارات</div>
             <div class="report-title">تقرير المخالفات المرورية ${filters.viewMode === 'grouped' ? '(مجمع حسب المركبة)' : ''}</div>
             <div class="report-meta">${currentDate} | ${dateRangeText}</div>
         </div>
         
         <div class="filter-info">
-            <strong>🔍 معايير التصفية:</strong> ${filterDescription || 'بدون تصفية'}
+            <strong>معايير التصفية:</strong> ${filterDescription || 'بدون تصفية'}
         </div>
         
         <div class="stats-grid">
@@ -1085,22 +1084,22 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                 <SelectContent>
                   <SelectItem value="violations_count">
                     <span className="flex items-center gap-2">
-                      🔢 حسب عدد المخالفات (الأكثر أولاً)
+                      حسب عدد المخالفات (الأكثر أولاً)
                     </span>
                   </SelectItem>
                   <SelectItem value="total_amount">
                     <span className="flex items-center gap-2">
-                      💰 حسب المبلغ الإجمالي (الأعلى أولاً)
+                      حسب المبلغ الإجمالي (الأعلى أولاً)
                     </span>
                   </SelectItem>
                   <SelectItem value="plate_number">
                     <span className="flex items-center gap-2">
-                      🔤 حسب رقم اللوحة (أبجدي)
+                      حسب رقم اللوحة (أبجدي)
                     </span>
                   </SelectItem>
                   <SelectItem value="last_date">
                     <span className="flex items-center gap-2">
-                      📅 حسب تاريخ آخر مخالفة
+                      حسب تاريخ آخر مخالفة
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -1198,9 +1197,9 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="paid">🟢 مسددة</SelectItem>
-                <SelectItem value="unpaid">🔴 غير مسددة</SelectItem>
-                <SelectItem value="partially_paid">🟠 مسددة جزئياً</SelectItem>
+                <SelectItem value="paid">مسددة</SelectItem>
+                <SelectItem value="unpaid">غير مسددة</SelectItem>
+                <SelectItem value="partially_paid">مسددة جزئياً</SelectItem>
               </SelectContent>
             </Select>
           </div>
