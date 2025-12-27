@@ -484,10 +484,11 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
             color: #1a1a2e;
             padding: 20px;
             line-height: 1.6;
+            margin: 0;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 210mm; /* A4 width */
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -911,43 +912,152 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         }
         
         @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
             body {
-                background: white;
-                padding: 0;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 10pt !important;
+                line-height: 1.4 !important;
             }
             
             .container {
-                box-shadow: none;
-                border-radius: 0;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             
             .controls {
-                display: none;
+                display: none !important;
             }
             
             .header {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                padding: 15px 20px !important;
+                margin-bottom: 10px !important;
             }
             
-            thead {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .company-logo {
+                font-size: 18pt !important;
             }
             
-            .stat-card, .badge, .vehicle-header, .top-vehicle-card {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .report-title {
+                font-size: 14pt !important;
+            }
+            
+            .report-meta {
+                font-size: 9pt !important;
+            }
+            
+            .filter-info {
+                margin: 10px 15px !important;
+                padding: 8px 15px !important;
+                font-size: 9pt !important;
+            }
+            
+            .stats-grid {
+                padding: 10px 15px !important;
+                gap: 8px !important;
+            }
+            
+            .stat-card {
+                padding: 10px !important;
+            }
+            
+            .stat-value {
+                font-size: 16pt !important;
+            }
+            
+            .stat-label {
+                font-size: 8pt !important;
+            }
+            
+            .top-vehicles-section {
+                padding: 10px 15px !important;
+            }
+            
+            .section-title {
+                font-size: 12pt !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .top-vehicles-grid {
+                gap: 8px !important;
+            }
+            
+            .top-vehicle-card {
+                padding: 8px !important;
             }
             
             .vehicle-section {
-                page-break-inside: avoid;
+                margin: 10px 15px !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .vehicle-header {
+                padding: 10px 15px !important;
+            }
+            
+            .plate-number {
+                font-size: 11pt !important;
+            }
+            
+            .vehicle-name {
+                font-size: 9pt !important;
+            }
+            
+            table {
+                font-size: 9pt !important;
+            }
+            
+            th, td {
+                padding: 6px 8px !important;
+            }
+            
+            .violations-table th,
+            .violations-table td {
+                padding: 5px 8px !important;
+            }
+            
+            thead {
+                display: table-header-group !important;
+            }
+            
+            tr {
+                page-break-inside: avoid !important;
+            }
+            
+            .footer {
+                padding: 10px 15px !important;
+                font-size: 8pt !important;
+                margin-top: 10px !important;
+            }
+            
+            .unlinked-section {
+                margin: 15px !important;
+                padding: 10px !important;
+                page-break-before: auto !important;
+            }
+            
+            .badge {
+                padding: 2px 6px !important;
+                font-size: 8pt !important;
             }
         }
         
         @page {
-            size: A4 landscape;
-            margin: 1cm;
+            size: A4;
+            margin: 1.5cm 1cm;
+        }
+        
+        @page :first {
+            margin-top: 1cm;
         }
     </style>
 </head>
