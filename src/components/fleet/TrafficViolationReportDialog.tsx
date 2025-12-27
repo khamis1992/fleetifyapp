@@ -66,6 +66,8 @@ interface VehicleGroup {
   model: string;
   registrationExpiry?: string;
   registrationStatus: 'valid' | 'expired' | 'unknown';
+  customerName: string;
+  customerPhone: string;
   violations: TrafficViolation[];
   totalAmount: number;
   paidAmount: number;
@@ -199,6 +201,20 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
           existing.lastViolationDate = v.penalty_date;
         }
       } else {
+        // الحصول على اسم العميل ورقم الجوال
+        const getCustomerInfo = () => {
+          if (v.customers) {
+            const name = `${v.customers.first_name || ''} ${v.customers.last_name || ''}`.trim() || v.customers.company_name || 'غير محدد';
+            return { name, phone: v.customers.phone || '' };
+          }
+          if (v.contracts?.customers) {
+            const name = `${v.contracts.customers.first_name || ''} ${v.contracts.customers.last_name || ''}`.trim() || v.contracts.customers.company_name || 'غير محدد';
+            return { name, phone: v.contracts.customers.phone || '' };
+          }
+          return { name: 'غير محدد', phone: '' };
+        };
+        const customerInfo = getCustomerInfo();
+        
         groups.set(key, {
           vehicleId: v.vehicle_id,
           plateNumber: v.vehicles?.plate_number || v.vehicle_plate || 'غير محدد',
@@ -206,6 +222,8 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
           model: v.vehicles?.model || '',
           registrationExpiry: v.vehicles?.registration_expiry,
           registrationStatus: getRegistrationStatus(),
+          customerName: customerInfo.name,
+          customerPhone: customerInfo.phone,
           violations: [v],
           totalAmount: v.amount || 0,
           paidAmount: v.payment_status === 'paid' ? (v.amount || 0) : 0,
@@ -329,6 +347,10 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
               </span>
             </div>
             <div class="vehicle-summary">
+              <span class="customer-info">
+                <span class="customer-name">${group.customerName}</span>
+                ${group.customerPhone ? `<span class="customer-phone">${group.customerPhone}</span>` : ''}
+              </span>
               <span class="badge badge-info">${group.violations.length} مخالفة</span>
               <span class="badge ${group.unpaidAmount > 0 ? 'badge-danger' : 'badge-success'}">
                 ${formatCurrency(group.totalAmount)}
@@ -693,6 +715,27 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         .vehicle-summary {
             display: flex;
             gap: 10px;
+            align-items: center;
+        }
+        
+        .customer-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 15px;
+            padding-left: 15px;
+            border-left: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .customer-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .customer-phone {
+            font-size: 11px;
+            opacity: 0.8;
+            direction: ltr;
         }
         
         .violations-table {
