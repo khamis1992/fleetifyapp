@@ -8,12 +8,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -37,6 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { DocumentTemplate, TemplateVariable, TemplateRenderContext } from '@/types/legal-document-generator';
 import { renderTemplate } from '@/utils/legal-document-template-engine';
 import { useToast } from '@/components/ui/use-toast';
+import { AIAssistant } from './AIAssistant';
 
 interface DocumentWizardProps {
   template: DocumentTemplate;
@@ -60,6 +62,7 @@ export function DocumentWizard({ template, onSubmit, onBack }: DocumentWizardPro
 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Group variables by sections
   const variableGroups = groupVariables(template.variables);
@@ -178,15 +181,28 @@ export function DocumentWizard({ template, onSubmit, onBack }: DocumentWizardPro
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 ml-2" />
-            رجوع
-          </Button>
-
           <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 ml-2" />
+              رجوع
+            </Button>
             <Button type="button" variant="outline" onClick={handlePreview}>
               معاينة
             </Button>
+          </div>
+
+          <div className="flex gap-2">
+            {/* AI Assistant Button */}
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setShowAIAssistant(true)}
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+            >
+              <Sparkles className="h-4 w-4 ml-2" />
+              <span className="hidden md:inline">مساعد GLM</span>
+            </Button>
+
             <Button type="submit" disabled={generateMutation.isPending}>
               {generateMutation.isPending ? (
                 <Loader2 className="h-4 w-4 ml-2 animate-spin" />
@@ -196,6 +212,43 @@ export function DocumentWizard({ template, onSubmit, onBack }: DocumentWizardPro
             </Button>
           </div>
         </div>
+
+        {/* AI Assistant Dialog */}
+        <Dialog open={showAIAssistant} onOpenChange={setShowAIAssistant}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-indigo-600" />
+                المساعد الذكي - GLM
+              </DialogTitle>
+              <DialogDescription>
+                استخدم الذكاء الاصطناعي GLM لتوليد وتحسين الكتب الرسمية
+              </DialogDescription>
+            </DialogHeader>
+            <AIAssistant 
+              template={template}
+              onGenerateDocument={(content) => {
+                setPreviewData({ html: content, errors: [] });
+                setIsPreviewing(true);
+                setShowAIAssistant(false);
+              }}
+              onSuggestValues={(suggestions) => {
+                // Apply suggested values to form
+                Object.entries(suggestions).forEach(([key, value]) => {
+                  if (key !== 'suggestions') {
+                    form.setValue(key, value, { shouldValidate: false, shouldDirty: true });
+                  }
+                });
+                setShowAIAssistant(false);
+              }}
+              onImproveDocument={(improvedContent) => {
+                setPreviewData({ html: improvedContent, errors: [] });
+                setIsPreviewing(true);
+                setShowAIAssistant(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </form>
     </Form>
   );
