@@ -130,35 +130,41 @@ export class ContractRepository extends BaseRepository<Contract> {
 
   /**
    * Update contract status
-   * When cancelling a contract, automatically delete unpaid invoices and log the action
+   * When cancelling a contract, automatically delete FUTURE unpaid invoices only
+   * Invoices during the contract period (even if unpaid) are legitimate dues and should remain
    */
   async updateStatus(id: string, status: Contract['status']): Promise<Contract> {
-    // If cancelling the contract, delete all unpaid invoices
+    // If cancelling the contract, delete only FUTURE unpaid invoices
     if (status === 'cancelled') {
       try {
-        // First, get the count and details of unpaid invoices
-        const { data: unpaidInvoices, error: countError } = await supabase
+        // Get current date (cancellation date)
+        const cancellationDate = new Date().toISOString().split('T')[0];
+
+        // First, get the count and details of FUTURE unpaid invoices only
+        const { data: futureUnpaidInvoices, error: countError } = await supabase
           .from('invoices')
-          .select('id, invoice_number, balance_due')
+          .select('id, invoice_number, balance_due, due_date')
           .eq('contract_id', id)
-          .eq('payment_status', 'unpaid');
+          .eq('payment_status', 'unpaid')
+          .gt('due_date', cancellationDate);  // Only invoices AFTER cancellation date
 
         if (countError) {
-          console.error('Error fetching unpaid invoices:', countError);
+          console.error('Error fetching future unpaid invoices:', countError);
         }
 
-        const invoiceCount = unpaidInvoices?.length || 0;
-        const totalAmount = unpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
+        const invoiceCount = futureUnpaidInvoices?.length || 0;
+        const totalAmount = futureUnpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
 
-        // Delete unpaid invoices
+        // Delete only FUTURE unpaid invoices
         const { error: deleteError } = await supabase
           .from('invoices')
           .delete()
           .eq('contract_id', id)
-          .eq('payment_status', 'unpaid');
+          .eq('payment_status', 'unpaid')
+          .gt('due_date', cancellationDate);  // Only invoices AFTER cancellation date
 
         if (deleteError) {
-          console.error('Error deleting unpaid invoices:', deleteError);
+          console.error('Error deleting future unpaid invoices:', deleteError);
           // Continue with status update even if invoice deletion fails
         } else if (invoiceCount > 0) {
           // Log the deletion to audit_logs
@@ -172,31 +178,33 @@ export class ContractRepository extends BaseRepository<Contract> {
             await supabase
               .from('audit_logs')
               .insert({
-                action: 'DELETE_INVOICES',
+                action: 'DELETE_FUTURE_INVOICES',
                 resource_type: 'invoice',
                 resource_id: id,
-                entity_name: `Invoices for contract ${contract?.contract_number || id}`,
-                changes_summary: `Deleted ${invoiceCount} unpaid invoices (total: ${totalAmount.toFixed(2)})`,
+                entity_name: `Future invoices for contract ${contract?.contract_number || id}`,
+                changes_summary: `Deleted ${invoiceCount} future unpaid invoices after ${cancellationDate} (total: ${totalAmount.toFixed(2)})`,
                 metadata: {
                   contract_id: id,
                   contract_number: contract?.contract_number,
                   deleted_count: invoiceCount,
                   total_amount: totalAmount,
-                  reason: 'Contract cancelled',
-                  invoice_numbers: unpaidInvoices?.map(inv => inv.invoice_number)
+                  cancellation_date: cancellationDate,
+                  reason: 'Contract cancelled - removed future invoices only',
+                  invoice_numbers: futureUnpaidInvoices?.map(inv => inv.invoice_number),
+                  note: 'Unpaid invoices during contract period are retained as legitimate dues'
                 },
                 severity: 'medium',
                 status: 'completed'
               });
 
-            console.log(`Successfully deleted ${invoiceCount} unpaid invoices for contract ${contract?.contract_number}`);
+            console.log(`Successfully deleted ${invoiceCount} future unpaid invoices for contract ${contract?.contract_number}`);
           } catch (auditError) {
             console.error('Error logging audit:', auditError);
             // Continue even if audit logging fails
           }
         }
       } catch (error) {
-        console.error('Error in invoice cleanup:', error);
+        console.error('Error in future invoice cleanup:', error);
         // Continue with status update even if invoice deletion fails
       }
     }

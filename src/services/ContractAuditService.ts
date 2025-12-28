@@ -26,31 +26,36 @@ export interface AuditResult {
 export class ContractAuditService {
   /**
    * Audit contract-invoice consistency
-   * Checks for cancelled contracts with unpaid invoices
+   * Checks for cancelled contracts with FUTURE unpaid invoices
+   * (Unpaid invoices during contract period are legitimate dues and should remain)
    */
   async auditContractInvoiceConsistency(autoFix: boolean = false): Promise<AuditResult> {
     const timestamp = new Date().toISOString();
+    const currentDate = new Date().toISOString().split('T')[0];
     const errors: string[] = [];
     let autoFixed = 0;
 
     try {
-      logger.info('Starting contract-invoice consistency audit', { autoFix });
+      logger.info('Starting contract-invoice consistency audit', { autoFix, currentDate });
 
-      // Find cancelled contracts with unpaid invoices
+      // Find cancelled contracts with FUTURE unpaid invoices
       const { data: inconsistencies, error } = await supabase
         .from('contracts')
         .select(`
           id,
           contract_number,
           status,
+          updated_at,
           invoices!inner (
             id,
             payment_status,
-            balance_due
+            balance_due,
+            due_date
           )
         `)
         .eq('status', 'cancelled')
-        .eq('invoices.payment_status', 'unpaid');
+        .eq('invoices.payment_status', 'unpaid')
+        .gt('invoices.due_date', currentDate);  // Only FUTURE invoices
 
       if (error) {
         logger.error('Error fetching inconsistencies', { error });
@@ -89,7 +94,8 @@ export class ContractAuditService {
                 .from('invoices')
                 .delete()
                 .eq('contract_id', contract.id)
-                .eq('payment_status', 'unpaid');
+                .eq('payment_status', 'unpaid')
+                .gt('due_date', currentDate);  // Only delete FUTURE invoices
 
               if (deleteError) {
                 logger.error('Error auto-fixing inconsistency', { 

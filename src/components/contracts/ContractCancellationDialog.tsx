@@ -98,22 +98,44 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   };
 
   const handleFinalCancellation = async () => {
-    // Get unpaid invoices count before cancellation
-    const { data: unpaidInvoices } = await supabase
+    // Get FUTURE unpaid invoices count before cancellation
+    const currentDate = new Date().toISOString().split('T')[0];
+    const { data: futureUnpaidInvoices } = await supabase
       .from('invoices')
-      .select('id, invoice_number, balance_due')
+      .select('id, invoice_number, balance_due, due_date')
       .eq('contract_id', contract.id)
-      .eq('payment_status', 'unpaid');
+      .eq('payment_status', 'unpaid')
+      .gt('due_date', currentDate);  // Only future invoices
 
-    const unpaidCount = unpaidInvoices?.length || 0;
-    const unpaidTotal = unpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
+    const futureUnpaidCount = futureUnpaidInvoices?.length || 0;
+    const futureUnpaidTotal = futureUnpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
 
-    // Show confirmation dialog if there are unpaid invoices
-    if (unpaidCount > 0) {
-      const confirmed = window.confirm(
-        `تحذير: سيتم حذف ${unpaidCount} فاتورة غير مدفوعة بقيمة إجمالية ${unpaidTotal.toFixed(2)} ريال عند إلغاء هذا العقد.\n\nهل أنت متأكد من المتابعة؟`
-      );
+    // Get legitimate dues (unpaid invoices during contract period)
+    const { data: legitimateDues } = await supabase
+      .from('invoices')
+      .select('id, balance_due')
+      .eq('contract_id', contract.id)
+      .eq('payment_status', 'unpaid')
+      .lte('due_date', currentDate);  // Past or current invoices
 
+    const legitimateDuesCount = legitimateDues?.length || 0;
+    const legitimateDuesTotal = legitimateDues?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
+
+    // Show confirmation dialog
+    let confirmMessage = '';
+    
+    if (futureUnpaidCount > 0) {
+      confirmMessage += `سيتم حذف ${futureUnpaidCount} فاتورة مستقبلية غير مدفوعة بقيمة ${futureUnpaidTotal.toFixed(2)} ريال.\n\n`;
+    }
+    
+    if (legitimateDuesCount > 0) {
+      confirmMessage += `⚠️ تنبيه: يوجد ${legitimateDuesCount} فاتورة مستحقة غير مدفوعة بقيمة ${legitimateDuesTotal.toFixed(2)} ريال.\nهذه الفواتير لن يتم حذفها لأنها مستحقات شرعية خلال فترة العقد.\n\n`;
+    }
+    
+    if (futureUnpaidCount > 0 || legitimateDuesCount > 0) {
+      confirmMessage += 'هل أنت متأكد من المتابعة؟';
+      
+      const confirmed = window.confirm(confirmMessage);
       if (!confirmed) {
         return;
       }
