@@ -194,6 +194,11 @@ function ContractsNew() {
     [statistics]
   );
 
+  // Reset page to 1 when search or activeTab changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, activeTab]);
+
   // Handle pre-selected customer from navigation
   useEffect(() => {
     if (location.state?.selectedCustomerId) {
