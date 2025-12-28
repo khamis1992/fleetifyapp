@@ -322,7 +322,7 @@ export default function TrafficViolationsRedesigned() {
       <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
         
         {/* --- Smart Dashboard --- */}
-        <TrafficViolationsSmartDashboard />
+        <TrafficViolationsSmartDashboard violations={filteredViolations} />
 
         {/* --- Alerts Panel (collapsible) --- */}
         <TrafficViolationsAlertsPanel 
