@@ -130,8 +130,28 @@ export class ContractRepository extends BaseRepository<Contract> {
 
   /**
    * Update contract status
+   * When cancelling a contract, automatically delete unpaid invoices
    */
   async updateStatus(id: string, status: Contract['status']): Promise<Contract> {
+    // If cancelling the contract, delete all unpaid invoices
+    if (status === 'cancelled') {
+      try {
+        const { error: deleteError } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('contract_id', id)
+          .eq('payment_status', 'unpaid');
+
+        if (deleteError) {
+          console.error('Error deleting unpaid invoices:', deleteError);
+          // Continue with status update even if invoice deletion fails
+        }
+      } catch (error) {
+        console.error('Error in invoice cleanup:', error);
+        // Continue with status update even if invoice deletion fails
+      }
+    }
+
     return this.update(id, { status } as Partial<Contract>);
   }
 

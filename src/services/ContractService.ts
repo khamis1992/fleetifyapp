@@ -333,6 +333,25 @@ export class ContractService extends BaseService<Contract> {
     if (data.status !== 'available') {
       logger.warn('Vehicle is not available', { vehicleId, status: data.status });
     }
+
+    // Check if there's an active contract for this vehicle
+    const { data: activeContracts, error: contractError } = await supabase
+      .from('contracts')
+      .select('id, contract_number, status')
+      .eq('vehicle_id', vehicleId)
+      .eq('status', 'active')
+      .limit(1);
+
+    if (contractError) {
+      logger.error('Error checking active contracts', { vehicleId, error: contractError });
+    }
+
+    if (activeContracts && activeContracts.length > 0) {
+      const activeContract = activeContracts[0];
+      throw new Error(
+        `لا يمكن إنشاء عقد جديد. المركبة لديها عقد نشط برقم ${activeContract.contract_number}. يرجى إلغاء العقد القديم أولاً.`
+      );
+    }
   }
 
   private async checkAccountMapping(companyId: string): Promise<boolean> {
