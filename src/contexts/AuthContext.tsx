@@ -325,6 +325,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
+  // Sync auth state across tabs using storage events
+  React.useEffect(() => {
+    const handleStorageChange = async (e: StorageEvent) => {
+      // Only handle changes to our auth storage key
+      if (e.key === 'fleetify-auth-token' || e.key === 'sb-qwhunliohlkkahbspfiu-auth-token') {
+        console.log('📝 [AUTH_CONTEXT] Storage change detected in another tab');
+        
+        // If the token was removed (logout in another tab)
+        if (e.newValue === null && user) {
+          console.log('📝 [AUTH_CONTEXT] User logged out in another tab - syncing');
+          setUser(null);
+          setSession(null);
+          clearCachedUser();
+        }
+        // If a new token was added (login in another tab)
+        else if (e.newValue && !user) {
+          console.log('📝 [AUTH_CONTEXT] User logged in another tab - syncing');
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            setSession(session);
+            try {
+              const authUser = await authService.getCurrentUser();
+              if (authUser) {
+                setUser(authUser);
+                cacheUser(authUser);
+              }
+            } catch (error) {
+              console.error('📝 [AUTH_CONTEXT] Error fetching user after tab sync:', error);
+              setUser(session.user as AuthUser);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [user]);
+
 
   const signUp = async (email: string, password: string, userData?: Record<string, unknown>) => {
     return authService.signUp(email, password, userData);

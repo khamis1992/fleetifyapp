@@ -33,8 +33,11 @@ if (!supabaseConfig.url || !supabaseConfig.anonKey) {
 export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfig.anonKey, {
   auth: {
     storage: localStorage,
+    storageKey: 'fleetify-auth-token', // Unique key to avoid conflicts
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true, // Detect session from URL for OAuth flows
+    flowType: 'pkce', // Use PKCE flow for better security
   }
 });
 
