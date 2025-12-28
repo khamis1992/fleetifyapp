@@ -42,7 +42,7 @@ import {
   BarChart3,
   CreditCard,
 } from 'lucide-react';
-import { useMonthlyRentTracking, useRentPaymentSummary, usePaymentDateComparison, MonthlyRentStatus, DateFilterType } from '@/hooks/useMonthlyRentTracking';
+import { useMonthlyRentTracking, useRentPaymentSummary, MonthlyRentStatus, DateFilterType } from '@/hooks/useMonthlyRentTracking';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +59,8 @@ interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral';
   change?: string;
   delay?: number;
+  onClick?: () => void;
+  isActive?: boolean;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -71,12 +73,21 @@ const StatCard: React.FC<StatCardProps> = ({
   trend = 'neutral',
   change,
   delay = 0,
+  onClick,
+  isActive = false,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className={cn(
+      "bg-white rounded-2xl p-5 shadow-sm transition-all border",
+      onClick ? "cursor-pointer hover:shadow-md" : "",
+      isActive ? "border-coral-500 ring-2 ring-coral-200" : "border-gray-100"
+    )}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
+    onClick={onClick}
+    whileHover={onClick ? { scale: 1.02 } : undefined}
+    whileTap={onClick ? { scale: 0.98 } : undefined}
   >
     <div className="flex items-center justify-between mb-3">
       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
@@ -117,9 +128,6 @@ export const MonthlyRentTracker: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<MonthlyRentStatus | null>(null);
 
   const { data: rentStatuses, isLoading, refetch } = useMonthlyRentTracking(selectedYear, selectedMonth, dateFilter);
-  
-  // مقارنة بين المدخول الفعلي والدفعات التاريخية
-  const { data: comparison } = usePaymentDateComparison(selectedYear, selectedMonth);
   
   // Handle opening payment dialog
   const handleOpenPaymentDialog = (item: MonthlyRentStatus) => {
@@ -224,160 +232,6 @@ export const MonthlyRentTracker: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f0efed]" dir="rtl">
-      {/* Hero Header */}
-      <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <CalendarDays className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">متابعة الإيجارات الشهرية</h1>
-              <p className="text-white/80 text-sm mt-1">
-                {selectedMonthName} {selectedYear} • تتبع دفعات العملاء والإيجارات المستحقة
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => refetch()}
-              variant="secondary"
-              size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-            >
-              <RefreshCw className="h-4 w-4 ml-2" />
-              تحديث
-            </Button>
-            <Button
-              onClick={exportToCSV}
-              variant="secondary"
-              size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-            >
-              <Download className="h-4 w-4 ml-2" />
-              تصدير
-            </Button>
-          </div>
-        </div>
-
-        {/* Date Filter Toggle - للتبديل بين تاريخ الدفع وتاريخ التسجيل */}
-        <div className="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-white/80">عرض حسب:</span>
-              <div className="flex bg-white/10 rounded-lg p-1">
-                <button
-                  onClick={() => setDateFilter('created_at')}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                    dateFilter === 'created_at'
-                      ? "bg-white text-coral-600 shadow-sm"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
-                  )}
-                >
-                  <Clock className="w-4 h-4 inline-block ml-1" />
-                  المدخول الفعلي
-                </button>
-                <button
-                  onClick={() => setDateFilter('payment_date')}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                    dateFilter === 'payment_date'
-                      ? "bg-white text-coral-600 shadow-sm"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
-                  )}
-                >
-                  <Calendar className="w-4 h-4 inline-block ml-1" />
-                  تاريخ الدفع
-                </button>
-              </div>
-            </div>
-            
-            {/* إظهار الفرق إذا وُجد */}
-            {comparison?.hasRetroactive && (
-              <div className="flex items-center gap-2 text-sm">
-                <AlertCircle className="w-4 h-4 text-yellow-300" />
-                <span className="text-white/90">
-                  {dateFilter === 'created_at' 
-                    ? `دفعات قديمة بقيمة ${formatCurrency(comparison.retroactivePayments)} غير مشمولة`
-                    : `يشمل ${formatCurrency(comparison.retroactivePayments)} من دفعات مسجلة لاحقاً`
-                  }
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* شرح مختصر */}
-          <p className="text-xs text-white/60 mt-2">
-            {dateFilter === 'created_at' 
-              ? "💡 المدخول الفعلي: المبالغ التي تم تسجيلها في النظام خلال هذا الشهر (بغض النظر عن تاريخ الدفع الفعلي)"
-              : "💡 تاريخ الدفع: المبالغ حسب تاريخ الدفع الفعلي (قد تشمل دفعات قديمة تم تسجيلها لاحقاً)"
-            }
-          </p>
-        </div>
-
-        {/* Quick Stats in Header */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">الإيجار المتوقع</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(summary.totalRentExpected)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">
-              {dateFilter === 'created_at' ? 'المدخول الفعلي' : 'المحصّل'}
-            </p>
-            <p className="text-2xl font-bold mt-1 text-green-200">{formatCurrency(summary.totalRentCollected)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">المتبقي</p>
-            <p className="text-2xl font-bold mt-1 text-red-200">{formatCurrency(summary.totalRentOutstanding)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">نسبة التحصيل</p>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-2xl font-bold">{summary.collectionRate}%</p>
-              <Progress value={summary.collectionRate} className="flex-1 h-2 bg-white/20" />
-            </div>
-          </div>
-        </div>
-        
-        {/* Comparison Stats - إذا كان هناك فرق بين المدخول الفعلي والدفعات التاريخية */}
-        {comparison && (comparison.actualIncome !== comparison.historicalPayments) && (
-          <div className="mt-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="w-5 h-5 text-yellow-300" />
-              <span className="font-semibold">مقارنة المدفوعات</span>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-xs text-white/60 mb-1">المدخول الفعلي للشهر</p>
-                <p className="text-lg font-bold text-green-200">{formatCurrency(comparison.actualIncome)}</p>
-                <p className="text-xs text-white/50">(حسب تاريخ التسجيل)</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/60 mb-1">دفعات الشهر التاريخية</p>
-                <p className="text-lg font-bold text-blue-200">{formatCurrency(comparison.historicalPayments)}</p>
-                <p className="text-xs text-white/50">(حسب تاريخ الدفع)</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/60 mb-1">الفرق</p>
-                <p className={cn(
-                  "text-lg font-bold",
-                  comparison.retroactivePayments > 0 ? "text-yellow-300" : "text-white"
-                )}>
-                  {formatCurrency(comparison.retroactivePayments)}
-                </p>
-                <p className="text-xs text-white/50">(دفعات قديمة مسجلة لاحقاً)</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </motion.div>
-
       {/* Date Selection & Filters */}
       <motion.div
         className="bg-white rounded-2xl p-4 mb-6 shadow-sm"
@@ -460,6 +314,28 @@ export const MonthlyRentTracker: React.FC = () => {
               </SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mr-auto">
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              size="sm"
+              className="h-11 rounded-xl border-gray-200 hover:bg-gray-50"
+            >
+              <RefreshCw className="h-4 w-4 ml-2" />
+              تحديث
+            </Button>
+            <Button
+              onClick={exportToCSV}
+              variant="outline"
+              size="sm"
+              className="h-11 rounded-xl border-coral-200 text-coral-600 hover:bg-coral-50"
+            >
+              <Download className="h-4 w-4 ml-2" />
+              تصدير
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -472,6 +348,8 @@ export const MonthlyRentTracker: React.FC = () => {
           icon={Users}
           iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
           delay={0.1}
+          onClick={() => setFilterStatus('all')}
+          isActive={filterStatus === 'all'}
         />
         <StatCard
           title="العملاء الذين دفعوا"
@@ -482,6 +360,8 @@ export const MonthlyRentTracker: React.FC = () => {
           trend="up"
           change={`${summary.paidCount}`}
           delay={0.2}
+          onClick={() => setFilterStatus('paid')}
+          isActive={filterStatus === 'paid'}
         />
         <StatCard
           title="العملاء الذين لم يدفعوا"
@@ -492,6 +372,8 @@ export const MonthlyRentTracker: React.FC = () => {
           trend="down"
           change={`${summary.unpaidCount}`}
           delay={0.3}
+          onClick={() => setFilterStatus('unpaid')}
+          isActive={filterStatus === 'unpaid'}
         />
         <StatCard
           title="نسبة التحصيل"

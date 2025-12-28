@@ -410,66 +410,49 @@ const BillingCenter = () => {
               {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
             </p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="text-center">
+          <div className="text-center">
               <p className="text-sm opacity-80">فواتير الشهر</p>
               <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
               <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
             </div>
-            <div className="text-center px-4 py-2 bg-white/20 rounded-xl">
-              <p className="text-sm opacity-90">مقارنة بالشهر السابق</p>
-              <p className={cn(
-                "text-xl font-bold flex items-center justify-center gap-1",
-                stats.monthlyChange >= 0 ? "text-green-200" : "text-red-200"
-              )}>
-                {stats.monthlyChange >= 0 ? (
-                  <TrendingUp className="w-5 h-5" />
-                ) : (
-                  <TrendingDown className="w-5 h-5" />
-                )}
-                {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange}%
-              </p>
-              <p className="text-xs opacity-70">
-                الشهر السابق: {formatCurrency(stats.lastMonthPayments)}
-              </p>
-            </div>
-          </div>
         </div>
       </motion.div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          title="إجمالي الفواتير"
-          value={formatCurrency(stats.totalInvoices)}
-          subtitle={`${stats.invoiceCount} فاتورة`}
-          icon={Receipt}
-          iconBg="bg-blue-100 text-blue-600"
-        />
-        <StatCard
-          title="المدفوع"
-          value={formatCurrency(stats.paidInvoices)}
-          icon={CheckCircle}
-          iconBg="bg-green-100 text-green-600"
-          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
-          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
-        />
-        <StatCard
-          title="المستحق"
-          value={formatCurrency(stats.pendingInvoices)}
-          icon={Clock}
-          iconBg="bg-yellow-100 text-yellow-600"
-        />
-        <StatCard
-          title="مدفوعات هذا الشهر"
-          value={formatCurrency(stats.currentMonthPayments)}
-          subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
-          icon={CreditCard}
-          iconBg="bg-purple-100 text-purple-600"
-          trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
-          change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
-        />
-      </div>
+      {/* Statistics Cards - تظهر فقط في تبويبة الفواتير */}
+      {activeTab === "invoices" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard
+            title="إجمالي الفواتير"
+            value={formatCurrency(stats.totalInvoices)}
+            subtitle={`${stats.invoiceCount} فاتورة`}
+            icon={Receipt}
+            iconBg="bg-blue-100 text-blue-600"
+          />
+          <StatCard
+            title="المدفوع"
+            value={formatCurrency(stats.paidInvoices)}
+            icon={CheckCircle}
+            iconBg="bg-green-100 text-green-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+          <StatCard
+            title="المستحق"
+            value={formatCurrency(stats.pendingInvoices)}
+            icon={Clock}
+            iconBg="bg-yellow-100 text-yellow-600"
+          />
+          <StatCard
+            title="مدفوعات هذا الشهر"
+            value={formatCurrency(stats.currentMonthPayments)}
+            subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
+            icon={CreditCard}
+            iconBg="bg-purple-100 text-purple-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

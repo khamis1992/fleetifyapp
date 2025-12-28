@@ -42,26 +42,46 @@ interface ContractPrintViewProps {
 
 export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }) => {
   // حساب جدول الدفعات
+  // ✅ إصلاح: حساب الأشهر المتأخرة بناءً على تاريخ الاستحقاق
   const paymentSchedule = useMemo(() => {
     if (!contract.start_date || !contract.monthly_amount) return [];
 
     const monthlyAmount = contract.monthly_amount;
     const totalAmount = contract.contract_amount || 0;
+    const totalPaid = contract.total_paid || 0;
     const numberOfPayments = Math.ceil(totalAmount / monthlyAmount);
     const schedule = [];
 
     const startDate = new Date(contract.start_date);
     const firstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // حساب عدد الأشهر المدفوعة بناءً على المبلغ الإجمالي
+    const fullyPaidMonths = Math.floor(totalPaid / monthlyAmount);
 
     for (let i = 0; i < numberOfPayments; i++) {
       const dueDate = addMonths(firstMonth, i);
-      const paidPayments = Math.floor((contract.total_paid || 0) / monthlyAmount);
+      const dueDateOnly = new Date(dueDate);
+      dueDateOnly.setHours(0, 0, 0, 0);
+      
+      let status: 'paid' | 'overdue' | 'pending' | 'upcoming';
+      
+      if (i < fullyPaidMonths) {
+        status = 'paid';
+      } else if (dueDateOnly < today) {
+        status = 'overdue'; // متأخر - تاريخ الاستحقاق مضى ولم يُدفع
+      } else if (dueDateOnly.getTime() === today.getTime()) {
+        status = 'pending';
+      } else {
+        status = 'upcoming';
+      }
       
       schedule.push({
         number: i + 1,
         dueDate,
         amount: monthlyAmount,
-        status: i < paidPayments ? 'paid' : i === paidPayments ? 'pending' : 'upcoming',
+        status,
       });
     }
 

@@ -380,17 +380,40 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching payments:', error);
   }
 
-  // Step 3: Get traffic violations for these customers (handle errors gracefully)
+  // Step 3: Get traffic violations for vehicles in these contracts (handle errors gracefully)
+  // المخالفات مرتبطة بـ vehicle_id وليس customer_id
   try {
-    const { data: violationsData, error: violationsError } = await supabase
-      .from('traffic_violations')
-      .select('customer_id, fine_amount, status')
-      .eq('company_id', companyId)
-      .in('customer_id', customerIds)
-      .neq('status', 'paid');
+    // Get vehicle IDs from contracts
+    const vehicleIds = contracts
+      .map(c => c.vehicle_id)
+      .filter((id): id is string => id !== null && id !== undefined);
     
-    if (!violationsError && violationsData) {
-      violations = violationsData;
+    if (vehicleIds.length > 0) {
+      const { data: violationsData, error: violationsError } = await supabase
+        .from('traffic_violations')
+        .select('vehicle_id, fine_amount, status')
+        .eq('company_id', companyId)
+        .in('vehicle_id', vehicleIds)
+        .neq('status', 'paid');
+      
+      if (!violationsError && violationsData) {
+        // Map violations to customer_id through contracts
+        const vehicleToCustomerMap = new Map<string, string>();
+        contracts.forEach(c => {
+          if (c.vehicle_id && c.customer_id) {
+            vehicleToCustomerMap.set(c.vehicle_id, c.customer_id);
+          }
+        });
+        
+        violations = violationsData.map(v => ({
+          customer_id: vehicleToCustomerMap.get(v.vehicle_id) || '',
+          fine_amount: v.fine_amount,
+          status: v.status,
+          vehicle_id: v.vehicle_id,
+        })).filter(v => v.customer_id);
+        
+        console.log(`📋 [DELINQUENT] Found ${violations.length} unpaid traffic violations for ${vehicleIds.length} vehicles`);
+      }
     }
   } catch (error) {
     console.warn('Error fetching violations:', error);
@@ -411,15 +434,37 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching legal cases:', error);
   }
 
-  // Step 5: Process each contract to identify delinquent customers
+  // Step 5: Group contracts by customer to handle multiple contracts
+  const contractsByCustomer = new Map<string, typeof contracts>();
+  
+  for (const contract of contracts) {
+    if (!contract.customer_id) continue;
+    
+    if (!contractsByCustomer.has(contract.customer_id)) {
+      contractsByCustomer.set(contract.customer_id, []);
+    }
+    contractsByCustomer.get(contract.customer_id)!.push(contract);
+  }
+  
+  // Step 6: Process each contract to identify delinquent customers
   // Using balance_due and days_overdue directly from contract table
   const today = new Date();
   const delinquentCustomers: DelinquentCustomer[] = [];
-
+  
   for (const contract of contracts) {
     try {
       const customer = contract.customers;
       if (!customer || !contract.customer_id) continue;
+
+      // الحصول على جميع عقود العميل
+      const customerContracts = contractsByCustomer.get(contract.customer_id) || [];
+      
+      // التحقق إذا كان هذا هو العقد النشط للعميل
+      // إذا كان العقد الحالي ملغيًا وعميل لديه عقد نشط آخر، فلا نعرضه
+      if (contract.status === 'cancelled' && customerContracts.some(c => c.status === 'active' && c.customer_id === contract.customer_id)) {
+        console.log(`Skipping cancelled contract ${contract.contract_number} for customer ${customer.first_name} ${customer.last_name} - has active contracts`);
+        continue;
+      }
 
       // Validate contract data
       if (!contract.start_date) continue;
@@ -481,8 +526,26 @@ async function calculateDelinquentCustomersDynamically(
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
       const actualPayments = customerPayments.length;
 
-      // Calculate penalty
-      const latePenalty = calculatePenalty(overdueAmount, daysOverdue);
+      // ✅ حساب الغرامة لكل فاتورة متأخرة على حدة ثم جمعها
+      // كل فاتورة لها أيام تأخير خاصة بها وغرامة خاصة بها
+      let latePenalty = 0;
+      const todayForPenalty = new Date();
+      
+      for (const invoice of unpaidOverdueInvoices) {
+        const invoiceDueDate = new Date(invoice.due_date);
+        const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (invoiceDaysOverdue > 0) {
+          // حساب الغرامة لهذه الفاتورة
+          const invoicePenalty = calculatePenalty(0, invoiceDaysOverdue);
+          latePenalty += invoicePenalty;
+        }
+      }
+      
+      // إذا لم تكن هناك فواتير متأخرة ولكن يوجد daysOverdue من العقد
+      if (latePenalty === 0 && daysOverdue > 0) {
+        latePenalty = calculatePenalty(overdueAmount, daysOverdue);
+      }
 
       // Get violations for this customer
       const customerViolations = (violations || []).filter(v => v && v.customer_id === contract.customer_id);

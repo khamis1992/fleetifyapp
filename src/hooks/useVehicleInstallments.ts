@@ -126,7 +126,7 @@ export const useCreateVehicleInstallment = () => {
         end_date: data.end_date,
         agreement_date: data.agreement_date,
         notes: data.notes,
-        status: 'draft' as const,
+        status: 'active' as const,
         contract_type: isMultiVehicle ? 'multi_vehicle' as const : 'single_vehicle' as const,
         total_vehicles_count: isMultiVehicle ? (data.vehicle_ids?.length || 1) : 1,
         company_id: profile.company_id,
@@ -142,50 +142,50 @@ export const useCreateVehicleInstallment = () => {
 
       if (installmentError) throw installmentError;
 
-      // Handle multi-vehicle setup
-      if (isMultiVehicle && data.vehicle_ids) {
+      // Handle multi-vehicle allocations (optional - only if vehicle_installment_allocations table exists)
+      if (isMultiVehicle && data.vehicle_ids && data.vehicle_ids.length > 0) {
         const vehicleAmounts = data.vehicle_amounts || {};
-        const vehicleIds = data.vehicle_ids;
-        const amounts = vehicleIds.map(id => vehicleAmounts[id] || 0);
+        const allocations = data.vehicle_ids.map(vehicleId => ({
+          company_id: profile.company_id,
+          installment_id: installment.id,
+          vehicle_id: vehicleId,
+          allocated_amount: vehicleAmounts[vehicleId] || 0,
+        }));
 
-        const { error: vehicleError } = await supabase.rpc(
-          'add_vehicles_to_installment',
-          {
-            p_installment_id: installment.id,
-            p_vehicle_ids: vehicleIds,
-            p_vehicle_amounts: amounts,
-          }
-        );
+        // Try to insert allocations, but don't fail if table doesn't exist
+        const { error: allocationError } = await supabase
+          .from('vehicle_installment_allocations')
+          .insert(allocations);
 
-        if (vehicleError) throw vehicleError;
-
-        // Distribute amounts
-        const { error: distributeError } = await supabase.rpc(
-          'distribute_vehicle_installment_amount',
-          {
-            p_installment_id: installment.id,
-            p_total_amount: data.total_amount - data.down_payment,
-            p_vehicle_amounts: vehicleAmounts,
-          }
-        );
-
-        if (distributeError) throw distributeError;
+        if (allocationError && !(allocationError.message?.includes('does not exist') || allocationError.code === '42P01')) {
+          console.warn('Error creating allocations:', allocationError);
+        }
       }
 
-      // Create the installment schedule using the database function
-      const { error: scheduleError } = await supabase.rpc(
-        'create_vehicle_installment_schedule',
-        {
-          p_installment_id: installment.id,
-          p_company_id: profile.company_id,
-          p_total_amount: data.total_amount,
-          p_down_payment: data.down_payment,
-          p_installment_amount: data.installment_amount,
-          p_number_of_installments: data.number_of_installments,
-          p_interest_rate: data.interest_rate || 0,
-          p_start_date: data.start_date,
-        }
-      );
+      // Create the installment schedule directly
+      const scheduleEntries = [];
+      const startDate = new Date(data.start_date);
+      
+      for (let i = 1; i <= data.number_of_installments; i++) {
+        const dueDate = new Date(startDate);
+        dueDate.setMonth(dueDate.getMonth() + (i - 1));
+        
+        scheduleEntries.push({
+          company_id: profile.company_id,
+          installment_id: installment.id,
+          installment_number: i,
+          due_date: dueDate.toISOString().split('T')[0],
+          amount: data.installment_amount,
+          principal_amount: data.installment_amount * (1 - (data.interest_rate || 0) / 100),
+          interest_amount: data.installment_amount * ((data.interest_rate || 0) / 100),
+          status: 'pending',
+          paid_amount: 0,
+        });
+      }
+
+      const { error: scheduleError } = await supabase
+        .from('vehicle_installment_schedules')
+        .insert(scheduleEntries);
 
       if (scheduleError) throw scheduleError;
 
@@ -195,9 +195,10 @@ export const useCreateVehicleInstallment = () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
       toast.success('تم إنشاء اتفاقية الأقساط بنجاح');
     },
-    onError: (error: unknown) => {
+    onError: (error: any) => {
       console.error('Error creating vehicle installment:', error);
-      toast.error('حدث خطأ أثناء إنشاء اتفاقية الأقساط');
+      const errorMessage = error?.message || error?.details || 'حدث خطأ أثناء إنشاء اتفاقية الأقساط';
+      toast.error(errorMessage);
     },
   });
 };
@@ -370,6 +371,55 @@ export const useUpdateOverdueInstallments = () => {
     onError: (error: unknown) => {
       console.error('Error updating overdue installments:', error);
       toast.error('حدث خطأ أثناء تحديث الأقساط المتأخرة');
+    },
+  });
+};
+
+export const useDeleteVehicleInstallment = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (installmentId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+
+      // First, delete all related schedules
+      const { error: schedulesError } = await supabase
+        .from('vehicle_installment_schedules')
+        .delete()
+        .eq('installment_id', installmentId);
+
+      if (schedulesError) throw schedulesError;
+
+      // Then, delete all related vehicle allocations (for multi-vehicle contracts)
+      const { error: allocationsError } = await supabase
+        .from('vehicle_installment_allocations')
+        .delete()
+        .eq('installment_id', installmentId);
+
+      // Ignore error if table doesn't exist or no allocations
+      if (allocationsError && !allocationsError.message.includes('does not exist')) {
+        console.warn('Could not delete allocations:', allocationsError);
+      }
+
+      // Finally, delete the main installment record
+      const { error: installmentError } = await supabase
+        .from('vehicle_installments')
+        .delete()
+        .eq('id', installmentId);
+
+      if (installmentError) throw installmentError;
+
+      return installmentId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-installments'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-installment-summary'] });
+      toast.success('تم حذف الاتفاقية بنجاح');
+    },
+    onError: (error: unknown) => {
+      console.error('Error deleting vehicle installment:', error);
+      toast.error('حدث خطأ أثناء حذف الاتفاقية');
     },
   });
 };

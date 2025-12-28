@@ -158,6 +158,33 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
             .from('contracts')
             .update({ vehicle_id: firstVehicle.vehicle_id })
             .eq('id', insertedContract.id);
+          
+          // Update vehicle status to rented if contract is active
+          if (insertedContract.status === 'active') {
+            await supabase
+              .from('vehicles')
+              .update({ status: 'rented', updated_at: new Date().toISOString() })
+              .eq('id', firstVehicle.vehicle_id);
+          }
+        }
+      }
+
+      // Update vehicle status if vehicle_id is directly provided and contract is active
+      if (insertedContract.vehicle_id && insertedContract.status === 'active') {
+        const today = new Date()
+        const startDate = new Date(insertedContract.start_date)
+        const endDate = insertedContract.end_date ? new Date(insertedContract.end_date) : null
+        
+        // Check if contract is active now
+        const isActiveNow = startDate <= today && (endDate === null || endDate >= today)
+        
+        if (isActiveNow) {
+          await supabase
+            .from('vehicles')
+            .update({ status: 'rented', updated_at: new Date().toISOString() })
+            .eq('id', insertedContract.vehicle_id);
+          
+          console.log(`✅ [useContractOperations] Updated vehicle ${insertedContract.vehicle_id} status to rented`)
         }
       }
 
@@ -264,11 +291,55 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
       }
 
       console.log('✅ [useContractOperations] Contract updated successfully:', updatedContract);
+
+      // Update vehicle status based on contract status
+      if (updatedContract.vehicle_id) {
+        const today = new Date()
+        const startDate = new Date(updatedContract.start_date)
+        const endDate = updatedContract.end_date ? new Date(updatedContract.end_date) : null
+        
+        // Check if contract is active now
+        const isActiveNow = updatedContract.status === 'active' && 
+                           startDate <= today && 
+                           (endDate === null || endDate >= today)
+        
+        if (isActiveNow) {
+          // Contract is active - set vehicle to rented
+          await supabase
+            .from('vehicles')
+            .update({ status: 'rented', updated_at: new Date().toISOString() })
+            .eq('id', updatedContract.vehicle_id);
+          
+          console.log(`✅ [useContractOperations] Updated vehicle ${updatedContract.vehicle_id} status to rented`)
+        } else if (updatedContract.status === 'cancelled' || updatedContract.status === 'closed' || updatedContract.status === 'expired') {
+          // Contract is cancelled/closed/expired - check if there are other active contracts for this vehicle
+          const { data: otherActiveContracts } = await supabase
+            .from('contracts')
+            .select('id')
+            .eq('vehicle_id', updatedContract.vehicle_id)
+            .eq('status', 'active')
+            .neq('id', updatedContract.id)
+            .lte('start_date', today.toISOString().split('T')[0])
+            .or(`end_date.gte.${today.toISOString().split('T')[0]},end_date.is.null`)
+          
+          // Only set to available if no other active contracts exist
+          if (!otherActiveContracts || otherActiveContracts.length === 0) {
+            await supabase
+              .from('vehicles')
+              .update({ status: 'available', updated_at: new Date().toISOString() })
+              .eq('id', updatedContract.vehicle_id);
+            
+            console.log(`✅ [useContractOperations] Updated vehicle ${updatedContract.vehicle_id} status to available`)
+          }
+        }
+      }
+
       return updatedContract;
     },
     onSuccess: (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
 
       toast.success('تم تحديث العقد بنجاح');
     },

@@ -90,6 +90,7 @@ import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { VehicleSidePanel } from '@/components/fleet/VehicleSidePanel';
+import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 
 // ===== Vehicle Card Component =====
 interface VehicleCardProps {
@@ -343,6 +344,7 @@ const FleetPageNew: React.FC = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
   // Hooks
+  const { isSyncing, handleSync } = useSyncVehicleStatus();
   const deleteVehicle = useDeleteVehicle();
   const { data: fleetStatus, isLoading: statusLoading } = useFleetStatus();
   const { data: vehiclesData, isLoading: vehiclesLoading } = useVehiclesPaginated(
@@ -370,6 +372,23 @@ const FleetPageNew: React.FC = () => {
     setFilters({ excludeMaintenanceStatus: false });
     setSearchQuery('');
     setCurrentPage(1);
+  };
+
+  // دالة مزامنة حالة المركبات مع العقود
+  const handleSyncVehicleStatus = async () => {
+    if (!user?.profile?.company_id) {
+      toast.error('لا يمكن تحديد الشركة');
+      return;
+    }
+
+    const result = await handleSync(user.profile.company_id);
+    
+    if (result) {
+      // تحديث البيانات
+      queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['fleet-status'] });
+    }
   };
 
   const handleVehicleFormClose = (open: boolean) => {
@@ -500,6 +519,15 @@ const FleetPageNew: React.FC = () => {
             >
               <Layers3 className="w-4 h-4" />
               المجموعات
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-white gap-2"
+              onClick={handleSyncVehicleStatus}
+              disabled={isSyncing}
+            >
+              <RotateCcw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+              {isSyncing ? "جاري المزامنة..." : "مزامنة الحالات"}
             </Button>
             {user?.roles?.includes('super_admin') && (
               <Button

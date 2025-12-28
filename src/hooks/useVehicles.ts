@@ -24,6 +24,7 @@ export type {
 
 export const useVehicles = (options?: { limit?: number; status?: string }) => {
   const companyId = useCurrentCompanyId()
+  const queryClient = useQueryClient()
   const { limit, status } = options || {}
   
   return useQuery({
@@ -60,7 +61,194 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
         throw error
       }
 
-      return data as Vehicle[]
+      if (!data || data.length === 0) {
+        return []
+      }
+
+      // التحقق من العقود النشطة المرتبطة بالمركبات وتحديث حالة المركبة
+      const vehicleIds = data.map(v => v.id)
+      const plateNumbers = data.map(v => v.plate_number).filter(Boolean)
+      
+      // إنشاء خريطة للمركبات بناءً على رقم اللوحة المُطبّع (بدون مسافات)
+      const normalizedPlateToVehicleId = new Map<string, string>()
+      data.forEach(v => {
+        if (v.plate_number) {
+          const normalized = v.plate_number.trim().replace(/\s+/g, '')
+          normalizedPlateToVehicleId.set(normalized, v.id)
+        }
+      })
+      
+      // جلب جميع العقود المرتبطة بهذه المركبات (باستخدام vehicle_id)
+      const { data: contractsByVehicleId, error: contractsError1 } = await supabase
+        .from("contracts")
+        .select("id, vehicle_id, license_plate, status, start_date, end_date")
+        .in("vehicle_id", vehicleIds)
+        .eq("company_id", companyId)
+        .not("vehicle_id", "is", null)
+
+      // جلب جميع العقود النشطة للشركة (للتصفية بالمطابقة المرنة لرقم اللوحة)
+      // هذا ضروري لأن license_plate قد يحتوي على مسافات مختلفة (مثل "185 513" vs "185513")
+      const { data: allActiveContracts, error: contractsError2 } = await supabase
+        .from("contracts")
+        .select("id, vehicle_id, license_plate, status, start_date, end_date")
+        .eq("company_id", companyId)
+        .eq("status", "active")
+
+      if (contractsError1) {
+        console.warn("Error fetching contracts by vehicle_id:", contractsError1)
+      }
+      if (contractsError2) {
+        console.warn("Error fetching all active contracts:", contractsError2)
+      }
+
+      // تصفية العقود النشطة التي تتطابق مع أرقام اللوحات (مطابقة مرنة)
+      const contractsByPlate = (allActiveContracts || []).filter(contract => {
+        if (!contract.license_plate) return false
+        const normalizedContractPlate = contract.license_plate.trim().replace(/\s+/g, '')
+        return normalizedPlateToVehicleId.has(normalizedContractPlate)
+      })
+
+      console.log(`🔍 [useVehicles] Found ${contractsByVehicleId?.length || 0} contracts by vehicle_id, ${contractsByPlate.length} by license_plate`)
+
+      // دمج العقود وإزالة التكرارات
+      const allContracts = [
+        ...(contractsByVehicleId || []),
+        ...contractsByPlate
+      ]
+      
+      // إزالة التكرارات بناءً على id
+      const uniqueContracts = Array.from(
+        new Map(allContracts.map(c => [c.id, c])).values()
+      )
+      
+      // ربط العقود بالمركبات بناءً على vehicle_id أو license_plate (مطابقة مرنة)
+      const contracts = uniqueContracts.map(contract => {
+        // التحقق من أن vehicle_id في العقد يطابق إحدى المركبات المطلوبة
+        if (contract.vehicle_id && vehicleIds.includes(contract.vehicle_id)) {
+          return contract
+        }
+        
+        // إذا كان vehicle_id غير موجود أو لا يطابق أي مركبة
+        // ابحث عن المركبة باستخدام license_plate مع مطابقة مرنة (إزالة المسافات)
+        const normalizedContractPlate = contract.license_plate?.trim().replace(/\s+/g, '') || ''
+        const matchedVehicleId = normalizedPlateToVehicleId.get(normalizedContractPlate)
+        
+        if (matchedVehicleId) {
+          const vehicle = data.find(v => v.id === matchedVehicleId)
+          console.log(`🔗 [useVehicles] Matched contract ${contract.id} (vehicle_id: ${contract.vehicle_id || 'null'}, license_plate: '${contract.license_plate}') to vehicle ${vehicle?.plate_number} (${matchedVehicleId}) via normalized plate matching`)
+          return {
+            ...contract,
+            vehicle_id: matchedVehicleId
+          }
+        }
+        
+        return contract
+      }).filter(c => {
+        // إزالة العقود التي لا يمكن ربطها بمركبة من القائمة المطلوبة
+        return c.vehicle_id && vehicleIds.includes(c.vehicle_id)
+      })
+
+      // إنشاء Map للعقود النشطة لكل مركبة
+      const vehicleActiveContractsMap = new Map<string, boolean>()
+      if (contracts) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // تصفير الوقت للمقارنة
+        
+        console.log(`🔍 [useVehicles] Checking ${contracts.length} contracts for ${vehicleIds.length} vehicles`)
+        
+        contracts.forEach(contract => {
+          if (contract.vehicle_id && contract.status === 'active') {
+            const startDate = new Date(contract.start_date)
+            startDate.setHours(0, 0, 0, 0)
+            const endDate = contract.end_date ? new Date(contract.end_date) : null
+            if (endDate) {
+              endDate.setHours(0, 0, 0, 0)
+            }
+            
+            // التحقق من أن العقد نشط في التاريخ الحالي
+            const isActiveNow = startDate <= today && (endDate === null || endDate >= today)
+            
+            if (isActiveNow) {
+              vehicleActiveContractsMap.set(contract.vehicle_id, true)
+              console.log(`✅ [useVehicles] Vehicle ${contract.vehicle_id} has active contract ${contract.id} (${contract.start_date} to ${contract.end_date || 'no end'})`)
+            } else {
+              console.log(`⚠️ [useVehicles] Contract ${contract.id} for vehicle ${contract.vehicle_id} is active but not in date range (start: ${contract.start_date}, end: ${contract.end_date || 'null'}, today: ${today.toISOString().split('T')[0]})`)
+            }
+          }
+        })
+        
+        if (vehicleActiveContractsMap.size > 0) {
+          console.log(`✅ [useVehicles] Found ${vehicleActiveContractsMap.size} vehicles with active contracts:`, Array.from(vehicleActiveContractsMap.keys()))
+        } else {
+          console.log(`⚠️ [useVehicles] No vehicles with active contracts found`)
+        }
+      } else {
+        console.log(`⚠️ [useVehicles] No contracts found for vehicles`)
+      }
+
+      // تحديث حالة المركبات التي لديها عقود نشطة
+      const vehiclesToUpdate: Array<{ id: string; newStatus: 'rented' | 'available' }> = []
+      
+      const updatedVehicles = data.map(vehicle => {
+        const hasActiveContract = vehicleActiveContractsMap.has(vehicle.id)
+        
+        // إذا كانت المركبة لديها عقد نشط ولكن حالتها ليست "rented"، نحدثها
+        if (hasActiveContract && vehicle.status !== 'rented') {
+          console.log(`🔄 [useVehicles] Vehicle ${vehicle.plate_number} (${vehicle.id}) has active contract but status is ${vehicle.status}, updating to rented`)
+          vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'rented' })
+          return {
+            ...vehicle,
+            status: 'rented' as const
+          }
+        }
+        
+        // إذا لم تكن لديها عقد نشط ولكن حالتها "rented"، نعيدها إلى "available"
+        if (!hasActiveContract && vehicle.status === 'rented') {
+          console.log(`🔄 [useVehicles] Vehicle ${vehicle.plate_number} (${vehicle.id}) has no active contract but status is rented, updating to available`)
+          vehiclesToUpdate.push({ id: vehicle.id, newStatus: 'available' })
+          return {
+            ...vehicle,
+            status: 'available' as const
+          }
+        }
+        
+        return vehicle
+      })
+
+      // تحديث قاعدة البيانات بشكل متزامن قبل إرجاع البيانات
+      if (vehiclesToUpdate.length > 0) {
+        console.log(`🔄 [useVehicles] Updating ${vehiclesToUpdate.length} vehicle statuses based on active contracts`)
+        
+        try {
+          // تحديث كل مركبة بشكل متزامن
+          await Promise.all(
+            vehiclesToUpdate.map(({ id, newStatus }) =>
+              supabase
+                .from("vehicles")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq("id", id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.warn(`⚠️ [useVehicles] Failed to update vehicle ${id} status:`, error)
+                    throw error
+                  } else {
+                    console.log(`✅ [useVehicles] Updated vehicle ${id} status to ${newStatus}`)
+                  }
+                })
+            )
+          )
+          console.log(`✅ [useVehicles] Successfully updated ${vehiclesToUpdate.length} vehicle statuses`)
+          
+          // إعادة جلب البيانات لضمان تحديث الواجهة
+          queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }) })
+          queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+        } catch (err) {
+          console.error("❌ [useVehicles] Error updating vehicle statuses:", err)
+          // لا نرمي الخطأ هنا، نستمر بإرجاع البيانات المحدثة في الذاكرة
+        }
+      }
+
+      return updatedVehicles as Vehicle[]
     },
     enabled: !!companyId,
     staleTime: 3 * 60 * 1000, // 3 minutes cache

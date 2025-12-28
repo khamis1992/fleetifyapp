@@ -86,7 +86,6 @@ import {
   CustomerSplitView,
 } from '@/components/customers';
 import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
-import { CustomersSmartDashboard } from '@/components/customers/CustomersSmartDashboard';
 import { exportTableToCSV } from '@/utils/exports/csvExport';
 
 // ===== بطاقة العميل =====
@@ -519,14 +518,6 @@ const CustomersPageNew: React.FC = () => {
             </Button>
           </div>
         </header>
-
-        {/* Smart Dashboard */}
-        <div className="mb-6">
-          <CustomersSmartDashboard
-            onFilterChange={handleSmartFilterChange}
-            onCustomerClick={handleViewCustomerDetails}
-          />
-        </div>
 
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl p-4 mb-6 border border-neutral-200 shadow-sm">

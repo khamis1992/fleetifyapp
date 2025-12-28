@@ -222,7 +222,7 @@ export function QuickPaymentRecording() {
           )
         `)
         .eq('customer_id', customer.id)
-        .in('payment_status', ['unpaid', 'partial'])
+        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .order('due_date', { ascending: true });
 
       if (error) throw error;
@@ -654,7 +654,7 @@ export function QuickPaymentRecording() {
           )
         `)
         .eq('customer_id', currentCustomer.id)
-        .in('payment_status', ['unpaid', 'partial'])
+        .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .order('due_date', { ascending: true });
 
       if (error) throw error;

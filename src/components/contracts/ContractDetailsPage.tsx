@@ -1295,7 +1295,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           <InfoRow label="نوع العقد" value={contract.contract_type === 'rental' ? 'إيجار' : contract.contract_type} />
           <InfoRow
             label="تاريخ الإنشاء"
-            value={contract.contract_date ? format(new Date(contract.contract_date), 'dd/MM/yyyy') : '-'}
+            value={contract.contract_date ? format(new Date(contract.contract_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
           />
           <InfoRow
             label="الحالة"

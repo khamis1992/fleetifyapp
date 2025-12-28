@@ -38,8 +38,8 @@ import { toast } from "sonner";
 import { VehicleSelector } from "./VehicleSelector";
 
 const multiVehicleSchema = z.object({
-  vendor_company_name: z.string().min(1, "يجب إدخال اسم شركة التاجر"),
-  vendor_phone: z.string().min(1, "يجب إدخال رقم هاتف التاجر"),
+  vendor_company_name: z.string().min(1, "يجب إدخال اسم شركة الوكيل / المورد"),
+  vendor_phone: z.string().min(1, "يجب إدخال رقم هاتف الوكيل / المورد"),
   agreement_number: z.string().min(1, "يجب إدخال رقم الاتفاقية"),
   total_amount: z.number().min(1, "يجب إدخال المبلغ الإجمالي"),
   down_payment: z.number().min(0, "يجب إدخال الدفعة المقدمة"),
@@ -366,7 +366,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
     const calculatedData = calculateInstallmentDetails();
 
-    // تحديد/إنشاء التاجر (شركة) تلقائياً بناءً على الاسم المُدخل
+    // تحديد/إنشاء الوكيل/المورد (شركة) تلقائياً بناءً على الاسم المُدخل
     let vendorId: string | null = null;
     try {
       if (!companyId) {
@@ -377,11 +377,11 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
       const companyName = data.vendor_company_name.trim();
 
       if (!companyName) {
-        toast.error('اسم شركة التاجر مطلوب');
+        toast.error('اسم شركة الوكيل / المورد مطلوب');
         return;
       }
 
-      console.log('Resolving vendor for company:', companyName);
+      console.log('Resolving vendor/dealer for company:', companyName);
 
       const { data: existing, error: searchError } = await supabase
         .from('customers')
@@ -392,24 +392,24 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
       if (searchError) {
         console.error('Error searching customer:', searchError);
-        throw new Error(`خطأ في البحث عن العميل: ${searchError.message}`);
+        throw new Error(`خطأ في البحث عن الوكيل: ${searchError.message}`);
       }
 
       if (existing?.id) {
-        console.log('Found existing vendor:', existing.id);
+        console.log('Found existing vendor/dealer:', existing.id);
         vendorId = existing.id;
       } else {
-        console.log('Creating new vendor...');
+        console.log('Creating new vendor/dealer...');
         
         // Validate required fields for new customer
         if (!data.vendor_phone?.trim()) {
-          toast.error('رقم هاتف التاجر مطلوب لإنشاء عميل جديد');
+          toast.error('رقم هاتف الوكيل / المورد مطلوب لإنشاء عميل جديد');
           return;
         }
 
         const { data: created, error: insertError } = await supabase
           .from('customers')
-.insert({
+          .insert({
             company_id: companyId,
             customer_type: 'corporate',
             company_name: companyName,
@@ -421,15 +421,15 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
 
         if (insertError) {
           console.error('Error creating customer:', insertError);
-          throw new Error(`خطأ في إنشاء العميل: ${insertError.message}`);
+          throw new Error(`خطأ في إنشاء الوكيل: ${insertError.message}`);
         }
         
-        console.log('Created new vendor:', created.id);
+        console.log('Created new vendor/dealer:', created.id);
         vendorId = created.id;
       }
     } catch (e: any) {
-      console.error('Vendor resolution failed:', e);
-      toast.error(e.message || "حدث خطأ أثناء تحديد التاجر");
+      console.error('Vendor/dealer resolution failed:', e);
+      toast.error(e.message || "حدث خطأ أثناء تحديد الوكيل / المورد");
       return;
     }
 
@@ -500,9 +500,9 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="vendor_company_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>شركة التاجر</FormLabel>
+                        <FormLabel>شركة الوكيل / المورد</FormLabel>
                         <FormControl>
-                          <Input placeholder="اسم شركة التاجر" {...field} />
+                          <Input placeholder="اسم شركة الوكيل / المورد" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -514,9 +514,9 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="vendor_phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>رقم هاتف التاجر</FormLabel>
+                        <FormLabel>رقم هاتف الوكيل / المورد</FormLabel>
                         <FormControl>
-                          <Input placeholder="+965" {...field} />
+                          <Input placeholder="+974" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -542,7 +542,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="total_amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>المبلغ الإجمالي (دينار كويتي)</FormLabel>
+                        <FormLabel>المبلغ الإجمالي (ريال قطري)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -561,7 +561,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     name="down_payment"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>الدفعة المقدمة (دينار كويتي)</FormLabel>
+                        <FormLabel>الدفعة المقدمة (ريال قطري)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -866,7 +866,7 @@ export default function MultiVehicleContractForm({ trigger }: MultiVehicleContra
                     </div>
                     
                     <div className="flex-1">
-                      <label className="text-sm font-medium">المبلغ المخصص (دينار كويتي)</label>
+                      <label className="text-sm font-medium">المبلغ المخصص (ريال قطري)</label>
                       <Input
                         type="number"
                         step="0.01"
