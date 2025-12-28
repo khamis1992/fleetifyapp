@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useContractVehicleReturn';
 import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContractCancellationDialogProps {
   open: boolean;
@@ -97,6 +98,27 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   };
 
   const handleFinalCancellation = async () => {
+    // Get unpaid invoices count before cancellation
+    const { data: unpaidInvoices } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, balance_due')
+      .eq('contract_id', contract.id)
+      .eq('payment_status', 'unpaid');
+
+    const unpaidCount = unpaidInvoices?.length || 0;
+    const unpaidTotal = unpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
+
+    // Show confirmation dialog if there are unpaid invoices
+    if (unpaidCount > 0) {
+      const confirmed = window.confirm(
+        `تحذير: سيتم حذف ${unpaidCount} فاتورة غير مدفوعة بقيمة إجمالية ${unpaidTotal.toFixed(2)} ريال عند إلغاء هذا العقد.\n\nهل أنت متأكد من المتابعة؟`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       await updateContractStatus.mutateAsync({
         contractId: contract.id,

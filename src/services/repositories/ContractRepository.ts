@@ -130,12 +130,27 @@ export class ContractRepository extends BaseRepository<Contract> {
 
   /**
    * Update contract status
-   * When cancelling a contract, automatically delete unpaid invoices
+   * When cancelling a contract, automatically delete unpaid invoices and log the action
    */
   async updateStatus(id: string, status: Contract['status']): Promise<Contract> {
     // If cancelling the contract, delete all unpaid invoices
     if (status === 'cancelled') {
       try {
+        // First, get the count and details of unpaid invoices
+        const { data: unpaidInvoices, error: countError } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, balance_due')
+          .eq('contract_id', id)
+          .eq('payment_status', 'unpaid');
+
+        if (countError) {
+          console.error('Error fetching unpaid invoices:', countError);
+        }
+
+        const invoiceCount = unpaidInvoices?.length || 0;
+        const totalAmount = unpaidInvoices?.reduce((sum, inv) => sum + (inv.balance_due || 0), 0) || 0;
+
+        // Delete unpaid invoices
         const { error: deleteError } = await supabase
           .from('invoices')
           .delete()
@@ -145,6 +160,40 @@ export class ContractRepository extends BaseRepository<Contract> {
         if (deleteError) {
           console.error('Error deleting unpaid invoices:', deleteError);
           // Continue with status update even if invoice deletion fails
+        } else if (invoiceCount > 0) {
+          // Log the deletion to audit_logs
+          try {
+            const { data: contract } = await supabase
+              .from('contracts')
+              .select('contract_number')
+              .eq('id', id)
+              .single();
+
+            await supabase
+              .from('audit_logs')
+              .insert({
+                action: 'DELETE_INVOICES',
+                resource_type: 'invoice',
+                resource_id: id,
+                entity_name: `Invoices for contract ${contract?.contract_number || id}`,
+                changes_summary: `Deleted ${invoiceCount} unpaid invoices (total: ${totalAmount.toFixed(2)})`,
+                metadata: {
+                  contract_id: id,
+                  contract_number: contract?.contract_number,
+                  deleted_count: invoiceCount,
+                  total_amount: totalAmount,
+                  reason: 'Contract cancelled',
+                  invoice_numbers: unpaidInvoices?.map(inv => inv.invoice_number)
+                },
+                severity: 'medium',
+                status: 'completed'
+              });
+
+            console.log(`Successfully deleted ${invoiceCount} unpaid invoices for contract ${contract?.contract_number}`);
+          } catch (auditError) {
+            console.error('Error logging audit:', auditError);
+            // Continue even if audit logging fails
+          }
         }
       } catch (error) {
         console.error('Error in invoice cleanup:', error);
