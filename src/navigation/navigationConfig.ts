@@ -356,6 +356,12 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         href: '/legal/cases',
         icon: FileText,
       },
+      {
+        id: 'legal-document-generator',
+        name: 'مولد الكتب الرسمية',
+        href: '/legal/document-generator',
+        icon: FileText,
+      },
     ],
   },
 

@@ -141,6 +141,7 @@ const LegalReports = lazy(() => import('@/pages/legal/LegalReports'));
 const LateFees = lazy(() => import('@/pages/legal/LateFees'));
 const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
 const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
+const LegalDocumentGenerator = lazy(() => import('@/pages/legal/LegalDocumentGenerator'));
 
 // Contract management
 const DuplicateContractsManager = lazy(() => import('@/components/contracts/DuplicateContractsManager'));
@@ -1438,6 +1439,18 @@ const routeConfigs: RouteConfig[] = [
     description: 'Invoice disputes',
     group: 'legal',
     priority: 127,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/legal/document-generator',
+    component: LegalDocumentGenerator,
+    lazy: true,
+    exact: true,
+    title: 'مولد الكتب الرسمية',
+    description: 'Legal Document Generator',
+    group: 'legal',
+    priority: 128,
     protected: true,
     layout: 'bento',
   },
