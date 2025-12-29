@@ -395,6 +395,102 @@ async function main() {
   }
   if (amountWordsFilled) filledCount++;
 
+  // تعبئة نوع المطالبة (Kendo Dropdown)
+  log('   جاري البحث عن نوع المطالبة...', 'blue');
+  try {
+    const dropdownFilled = await page.evaluate(() => {
+      // البحث عن dropdown نوع المطالبة
+      const dropdowns = document.querySelectorAll('.k-dropdown, [data-role="dropdownlist"]');
+      for (const dropdown of dropdowns) {
+        const parent = dropdown.closest('div, li');
+        if (parent && parent.textContent.includes('نوع المطالبة')) {
+          // النقر على الـ dropdown لفتحه
+          const wrapper = dropdown.querySelector('.k-dropdown-wrap') || dropdown;
+          wrapper.click();
+          return 'clicked';
+        }
+      }
+      return false;
+    });
+    
+    if (dropdownFilled === 'clicked') {
+      await page.waitForTimeout(500);
+      // اختيار "مطالبة مالية" أو أول خيار
+      const optionClicked = await page.evaluate(() => {
+        const options = document.querySelectorAll('.k-list .k-item, .k-popup .k-item');
+        for (const opt of options) {
+          if (opt.textContent.includes('مطالبة') || opt.textContent.includes('إيجار')) {
+            opt.click();
+            return true;
+          }
+        }
+        // اختر أول خيار
+        if (options.length > 0) {
+          options[0].click();
+          return true;
+        }
+        return false;
+      });
+      
+      if (optionClicked) {
+        logSuccess('تم اختيار: نوع المطالبة');
+        filledCount++;
+      }
+    }
+  } catch (e) {
+    logWarning('لم يتم العثور على نوع المطالبة');
+  }
+
+  // تعبئة المبلغ (Kendo Numeric)
+  log('   جاري البحث عن حقل المبلغ الرقمي...', 'blue');
+  try {
+    const amountFilled = await page.evaluate((amount) => {
+      // البحث عن حقل المبلغ
+      const numericInputs = document.querySelectorAll('.k-numerictextbox input, input.k-formatted-value, input[data-role="numerictextbox"]');
+      for (const input of numericInputs) {
+        const parent = input.closest('div, li');
+        if (parent && parent.textContent.includes('المبلغ') && !parent.textContent.includes('كتابة')) {
+          // البحث عن الـ input الفعلي
+          const realInput = parent.querySelector('input[type="text"], input.k-input');
+          if (realInput) {
+            realInput.value = amount.toString();
+            realInput.dispatchEvent(new Event('input', { bubbles: true }));
+            realInput.dispatchEvent(new Event('change', { bubbles: true }));
+            realInput.dispatchEvent(new Event('blur', { bubbles: true }));
+            return true;
+          }
+        }
+      }
+      
+      // محاولة أخرى - البحث بالتسمية
+      const labels = document.querySelectorAll('label, span, div');
+      for (const label of labels) {
+        if (label.textContent.trim() === 'المبلغ') {
+          const parent = label.closest('div, li');
+          if (parent) {
+            const input = parent.querySelector('input');
+            if (input) {
+              input.value = amount.toString();
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }, data.amount);
+    
+    if (amountFilled) {
+      logSuccess('تم تعبئة: المبلغ الرقمي');
+      filledCount++;
+    } else {
+      logWarning('لم يتم العثور على حقل المبلغ الرقمي');
+    }
+  } catch (e) {
+    logWarning('خطأ في تعبئة المبلغ: ' + e.message);
+  }
+
   console.log('\n');
   log(`═══════════════════════════════════════════════════════════`, 'green');
   logSuccess(`تم تعبئة ${filledCount} حقول بنجاح!`);
@@ -402,10 +498,8 @@ async function main() {
   
   logWarning('\n⚠️  ملاحظات هامة:');
   console.log('   1. تحقق من جميع البيانات المعبأة');
-  console.log('   2. قم بتعبئة حقل "المبلغ" (الرقمي) يدوياً');
-  console.log('   3. اختر "نوع المطالبة" من القائمة');
-  console.log('   4. أكمل باقي الخطوات يدوياً');
-  console.log('   5. راجع الدعوى قبل الإرسال النهائي\n');
+  console.log('   2. أكمل باقي الخطوات يدوياً (أطراف الدعوى، المستندات)');
+  console.log('   3. راجع الدعوى قبل الإرسال النهائي\n');
 
   log('🔵 المتصفح مفتوح. اضغط Ctrl+C لإغلاق البرنامج.', 'blue');
   
