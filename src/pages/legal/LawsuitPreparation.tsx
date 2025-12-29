@@ -193,6 +193,48 @@ ${taqadiData.claims}
     window.open('https://taqadi.sjc.gov.qa/itc/f/caseinfoext/create', '_blank');
   };
 
+  // إرسال البيانات للإضافة
+  const sendToExtension = useCallback(() => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات للإرسال');
+      return;
+    }
+
+    const extensionData = {
+      caseTitle: taqadiData.caseTitle,
+      facts: taqadiData.facts,
+      claims: taqadiData.claims,
+      amount: taqadiData.amount,
+      amountInWords: taqadiData.amountInWords,
+      defendantName: customerFullName,
+      contractNumber: contract.contract_number,
+      savedAt: new Date().toISOString(),
+    };
+
+    // حفظ في localStorage للإضافة
+    localStorage.setItem('alarafLawsuitData', JSON.stringify(extensionData));
+    
+    // محاولة إرسال للإضافة مباشرة (إذا كانت مثبتة)
+    try {
+      // @ts-ignore - Chrome extension API
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        // Extension ID - يجب تحديثه بعد تثبيت الإضافة
+        const extensionId = localStorage.getItem('alarafExtensionId');
+        if (extensionId) {
+          // @ts-ignore
+          chrome.runtime.sendMessage(extensionId, {
+            action: 'saveLawsuitData',
+            data: extensionData
+          });
+        }
+      }
+    } catch (e) {
+      // الإضافة غير مثبتة - لا مشكلة
+    }
+
+    toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط "تعبئة من العراف"');
+  }, [taqadiData, contract, customerFullName]);
+
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
     return legalDocs.find(doc => doc.document_type === type);
@@ -567,18 +609,33 @@ ${taqadiData.claims}
             <div className="text-center space-y-4">
               <h3 className="text-lg font-bold">الخطوة التالية</h3>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                بعد نسخ البيانات وتحميل المستندات، افتح موقع تقاضي وأكمل رفع الدعوى
+                استخدم إضافة المتصفح للتعبئة التلقائية أو انسخ البيانات يدوياً
               </p>
-              <div className="flex justify-center gap-3 flex-wrap">
-                <Button size="lg" onClick={openTaqadi}>
-                  <ExternalLink className="h-5 w-5 ml-2" />
-                  فتح موقع تقاضي
-                </Button>
-                <Button size="lg" variant="outline" onClick={copyAllData}>
-                  <Copy className="h-5 w-5 ml-2" />
-                  نسخ جميع البيانات
+              
+              {/* زر إرسال للإضافة - الطريقة الموصى بها */}
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-sm font-medium mb-3">✨ للتعبئة التلقائية (موصى به):</p>
+                <Button size="lg" onClick={sendToExtension} className="w-full sm:w-auto">
+                  <Sparkles className="h-5 w-5 ml-2" />
+                  إرسال للإضافة
                 </Button>
               </div>
+
+              {/* الطريقة اليدوية */}
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-3">أو استخدم الطريقة اليدوية:</p>
+                <div className="flex justify-center gap-3 flex-wrap">
+                  <Button size="lg" variant="outline" onClick={openTaqadi}>
+                    <ExternalLink className="h-5 w-5 ml-2" />
+                    فتح موقع تقاضي
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={copyAllData}>
+                    <Copy className="h-5 w-5 ml-2" />
+                    نسخ جميع البيانات
+                  </Button>
+                </div>
+              </div>
+
               <div className="pt-4 text-sm text-muted-foreground">
                 <p>💡 نصيحة: اختر "عقود الخدمات التجارية" ← "عقود إيجار السيارات وخدمات الليموزين"</p>
               </div>
