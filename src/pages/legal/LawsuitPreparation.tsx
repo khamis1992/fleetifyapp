@@ -193,6 +193,56 @@ ${taqadiData.claims}
     window.open('https://taqadi.sjc.gov.qa/itc/f/caseinfoext/create', '_blank');
   };
 
+  // تحميل ملف البيانات للأتمتة
+  const downloadDataFile = useCallback(() => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات للتحميل');
+      return;
+    }
+
+    const customer = (contract as any).customers;
+    const vehicle = (contract as any).vehicles;
+    
+    const fileData = {
+      caseTitle: taqadiData.caseTitle,
+      facts: taqadiData.facts,
+      claims: taqadiData.claims,
+      amount: taqadiData.amount,
+      amountInWords: taqadiData.amountInWords,
+      defendantName: customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+        : 'غير معروف',
+      defendantIdNumber: customer?.national_id || '',
+      defendantPhone: customer?.phone || '',
+      contractNumber: contract.contract_number,
+      vehicleInfo: vehicle 
+        ? `${vehicle.make} ${vehicle.model} ${vehicle.year} - ${vehicle.plate_number}`
+        : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
+      contractStartDate: contract.start_date,
+      contractEndDate: contract.end_date,
+      documents: {
+        contract: 'documents/contract.pdf',
+        commercialRegister: 'documents/commercial-register.pdf',
+        ibanCertificate: 'documents/iban-certificate.pdf',
+        representativeId: 'documents/representative-id.pdf'
+      },
+      generatedAt: new Date().toISOString(),
+    };
+
+    // إنشاء وتحميل الملف
+    const blob = new Blob([JSON.stringify(fileData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lawsuit-data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success('✅ تم تحميل ملف البيانات! ضعه في مجلد taqadi-automation');
+  }, [taqadiData, contract]);
+
   // إرسال البيانات للإضافة
   const sendToExtension = useCallback(() => {
     if (!taqadiData || !contract) {
@@ -623,6 +673,10 @@ ${taqadiData.claims}
                   <Sparkles className="h-5 w-5 ml-2" />
                   حفظ للتعبئة التلقائية
                 </Button>
+                <Button size="lg" variant="outline" onClick={downloadDataFile}>
+                  <Download className="h-5 w-5 ml-2" />
+                  تحميل ملف البيانات
+                </Button>
                 <Button size="lg" variant="outline" onClick={openTaqadi}>
                   <ExternalLink className="h-5 w-5 ml-2" />
                   فتح موقع تقاضي
@@ -635,12 +689,12 @@ ${taqadiData.claims}
 
               {/* تعليمات */}
               <div className="p-4 bg-muted/50 rounded-lg text-sm text-right space-y-2">
-                <p className="font-medium">📋 طريقة الاستخدام:</p>
+                <p className="font-medium">📋 طريقة الاستخدام (أداة الأتمتة):</p>
                 <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>اضغط <strong>"حفظ للتعبئة التلقائية"</strong> أعلاه</li>
-                  <li>افتح <strong>موقع تقاضي</strong> وابدأ إنشاء دعوى</li>
-                  <li>في صفحة تفاصيل الدعوى، اضغط على <strong>أيقونة الإضافة 🚗</strong></li>
-                  <li>اضغط <strong>"تعبئة النموذج"</strong> أو انسخ كل حقل على حدة</li>
+                  <li>اضغط <strong>"تحميل ملف البيانات"</strong> لتحميل ملف JSON</li>
+                  <li>ضع الملف في مجلد <code className="bg-muted px-1 rounded">taqadi-automation</code></li>
+                  <li>شغّل الأداة: <code className="bg-muted px-1 rounded">npm start</code></li>
+                  <li>سجّل الدخول عبر توثيق، ثم ستتم التعبئة تلقائياً</li>
                 </ol>
               </div>
 

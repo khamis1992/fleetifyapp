@@ -1,0 +1,19 @@
+{
+  "name": "taqadi-automation",
+  "version": "1.0.0",
+  "description": "أداة أتمتة تقاضي - لتعبئة نماذج الدعاوى تلقائياً",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "fill": "node index.js --fill",
+    "install-browser": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2"
+  },
+  "author": "Al-Araf Company",
+  "license": "MIT"
+}
+
