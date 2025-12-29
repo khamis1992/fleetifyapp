@@ -41,6 +41,7 @@ import {
   PlayCircle,
   MessageSquare,
   PhoneCall,
+  Sparkles,
   LucideIcon,
 } from 'lucide-react'
 
@@ -360,7 +361,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         id: 'legal-document-generator',
         name: 'مولد الكتب الرسمية',
         href: '/legal/document-generator',
-        icon: FileText,
+        icon: Sparkles,
       },
     ],
   },
