@@ -204,8 +204,9 @@ class LawsuitService {
         days_overdue,
         customers(
           id,
-          full_name,
-          id_number
+          first_name,
+          last_name,
+          national_id
         ),
         vehicles(
           make,
@@ -278,12 +279,17 @@ class LawsuitService {
       const vehicleYear = vehicle?.year || (contract as any).year || '';
       const vehiclePlate = vehicle?.plate_number || (contract as any).license_plate || '';
 
+      // تجميع اسم العميل من first_name و last_name
+      const customerName = customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+        : 'غير معروف';
+
       overdueContracts.push({
         contract_id: contract.id,
         contract_number: contract.contract_number,
         customer_id: contract.customer_id || '',
-        customer_name: customer?.full_name || 'غير معروف',
-        customer_id_number: customer?.id_number,
+        customer_name: customerName,
+        customer_id_number: customer?.national_id,
         vehicle_info: `${vehicleMake} ${vehicleModel} ${vehicleYear} - ${vehiclePlate}`.trim(),
         total_overdue: totalOverdue,
         days_overdue: daysOverdue,

@@ -76,7 +76,7 @@ export default function LawsuitPreparationPage() {
         .from('contracts')
         .select(`
           *,
-          customers(id, full_name, id_number, phone, email),
+          customers(id, first_name, last_name, national_id, phone, email),
           vehicles(make, model, year, plate_number, color)
         `)
         .eq('id', contractId)
@@ -137,10 +137,15 @@ export default function LawsuitPreparationPage() {
       const vehicle = contract.vehicles as any;
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
       
+      // تجميع اسم العميل
+      const customerFullName = customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+        : 'غير معروف';
+      
       setTaqadiData({
-        caseTitle: lawsuitService.generateCaseTitle(customer?.full_name || ''),
+        caseTitle: lawsuitService.generateCaseTitle(customerFullName),
         facts: lawsuitService.generateFactsText(
-          customer?.full_name || '',
+          customerFullName,
           contract.start_date,
           vehicleInfo,
           calculations.total
@@ -219,6 +224,11 @@ ${taqadiData.claims}
 
   const customer = contract.customers as any;
   const vehicle = contract.vehicles as any;
+  
+  // تجميع اسم العميل الكامل
+  const customerFullName = customer 
+    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+    : 'غير معروف';
 
   return (
     <div className="container mx-auto p-4 max-w-6xl" dir="rtl">
@@ -258,11 +268,11 @@ ${taqadiData.claims}
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">الاسم:</span>
-              <span className="font-medium">{customer?.full_name}</span>
+              <span className="font-medium">{customerFullName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">رقم الهوية:</span>
-              <span className="font-medium">{customer?.id_number || '-'}</span>
+              <span className="font-medium">{customer?.national_id || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">الهاتف:</span>
