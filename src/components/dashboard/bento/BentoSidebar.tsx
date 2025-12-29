@@ -105,7 +105,7 @@ const navigation: NavItem[] = [
     icon: Shield,
     children: [
       { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases' },
-      { id: 'legal-document-generator', label: 'مولد الكتب الرسمية', href: '/legal/document-generator' },
+      { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator' },
     ],
   },
   {

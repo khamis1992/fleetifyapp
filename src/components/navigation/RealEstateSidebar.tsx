@@ -564,7 +564,7 @@ export function RealEstateSidebar() {
                         <SidebarMenuSubButton asChild>
                           <NavLink to="/legal/document-generator" className={getNavClassName}>
                             <Sparkles className="h-4 w-4" />
-                            {(!collapsed || isMobile) && <span>مولد الكتب الرسمية</span>}
+                            {(!collapsed || isMobile) && <span>مساعد الكتب الذكي</span>}
                           </NavLink>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>

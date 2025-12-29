@@ -359,7 +359,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
       },
       {
         id: 'legal-document-generator',
-        name: 'مولد الكتب الرسمية',
+        name: 'مساعد الكتب الذكي',
         href: '/legal/document-generator',
         icon: Sparkles,
       },

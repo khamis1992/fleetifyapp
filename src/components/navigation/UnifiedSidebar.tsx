@@ -181,7 +181,7 @@ const getMenuGroups = (variant: SidebarVariant): MenuGroup[] => {
     icon: Scale,
     items: [
       { name: 'القضايا', href: '/legal/cases', icon: Scale },
-      { name: 'مولد الكتب الرسمية', href: '/legal/document-generator', icon: Sparkles },
+      { name: 'مساعد الكتب الذكي', href: '/legal/document-generator', icon: Sparkles },
     ],
   });
 
