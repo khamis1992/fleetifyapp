@@ -493,15 +493,135 @@ async function main() {
 
   console.log('\n');
   log(`═══════════════════════════════════════════════════════════`, 'green');
-  logSuccess(`تم تعبئة ${filledCount} حقول بنجاح!`);
+  logSuccess(`تم تعبئة ${filledCount} حقول في صفحة التفاصيل!`);
   log(`═══════════════════════════════════════════════════════════`, 'green');
-  
-  logWarning('\n⚠️  ملاحظات هامة:');
-  console.log('   1. تحقق من جميع البيانات المعبأة');
-  console.log('   2. أكمل باقي الخطوات يدوياً (أطراف الدعوى، المستندات)');
-  console.log('   3. راجع الدعوى قبل الإرسال النهائي\n');
 
-  log('🔵 المتصفح مفتوح. اضغط Ctrl+C لإغلاق البرنامج.', 'blue');
+  // الانتقال للصفحة التالية - أطراف الدعوى
+  logStep('7', 'جاري الانتقال لصفحة أطراف الدعوى...');
+  await page.waitForTimeout(2000);
+  
+  try {
+    await page.click('text="التالي"', { timeout: 5000 });
+    await page.waitForTimeout(4000);
+    logSuccess('تم الانتقال لصفحة أطراف الدعوى');
+    
+    // تعبئة بيانات أطراف الدعوى
+    log('   جاري تعبئة بيانات الأطراف...', 'blue');
+    
+    // محاولة تعبئة بيانات المدعى عليه
+    const defendantFilled = await page.evaluate((defendantData) => {
+      let filled = 0;
+      
+      // البحث عن حقول الاسم
+      const allInputs = document.querySelectorAll('input[type="text"], input.k-textbox, input.k-input');
+      for (const input of allInputs) {
+        const parent = input.closest('div, li, fieldset');
+        if (parent) {
+          const text = parent.textContent || '';
+          
+          // اسم المدعى عليه
+          if ((text.includes('المدعى عليه') || text.includes('اسم الطرف')) && text.includes('اسم')) {
+            if (!input.value) {
+              input.value = defendantData.name;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+              filled++;
+            }
+          }
+          
+          // رقم الهوية
+          if (text.includes('هوية') || text.includes('رقم الهوية') || text.includes('QID')) {
+            if (!input.value && defendantData.idNumber) {
+              input.value = defendantData.idNumber;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              filled++;
+            }
+          }
+          
+          // رقم الهاتف
+          if (text.includes('هاتف') || text.includes('جوال') || text.includes('موبايل')) {
+            if (!input.value && defendantData.phone) {
+              input.value = defendantData.phone;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              filled++;
+            }
+          }
+        }
+      }
+      
+      return filled;
+    }, { 
+      name: data.defendantName, 
+      idNumber: data.defendantIdNumber || '', 
+      phone: data.defendantPhone || '' 
+    });
+    
+    if (defendantFilled > 0) {
+      logSuccess(`تم تعبئة ${defendantFilled} حقول في أطراف الدعوى`);
+    } else {
+      logWarning('لم يتم العثور على حقول أطراف الدعوى - قد تحتاج إضافة يدوية');
+    }
+    
+  } catch (e) {
+    logWarning('لم يتم الانتقال لصفحة أطراف الدعوى: ' + e.message);
+  }
+
+  // الانتقال لصفحة المستندات
+  logStep('8', 'جاري الانتقال لصفحة المستندات...');
+  await page.waitForTimeout(2000);
+  
+  try {
+    await page.click('text="التالي"', { timeout: 5000 });
+    await page.waitForTimeout(3000);
+    logSuccess('تم الانتقال لصفحة المستندات');
+    
+    logWarning('يرجى رفع المستندات التالية:');
+    console.log('   📄 عقد الإيجار');
+    console.log('   📄 السجل التجاري');
+    console.log('   📄 شهادة IBAN');
+    console.log('   📄 هوية ممثل الشركة');
+    
+  } catch (e) {
+    logWarning('لم يتم الانتقال لصفحة المستندات');
+  }
+
+  // الانتقال لصفحة الرسوم
+  logStep('9', 'جاري الانتقال لصفحة تفاصيل الرسوم...');
+  await page.waitForTimeout(2000);
+  
+  try {
+    await page.click('text="التالي"', { timeout: 5000 });
+    await page.waitForTimeout(2000);
+    logSuccess('تم الانتقال لصفحة تفاصيل الرسوم');
+  } catch (e) {
+    logWarning('لم يتم الانتقال لصفحة الرسوم');
+  }
+
+  // الانتقال لصفحة الملخص
+  logStep('10', 'جاري الانتقال لصفحة ملخص الدعوى...');
+  await page.waitForTimeout(2000);
+  
+  try {
+    await page.click('text="التالي"', { timeout: 5000 });
+    await page.waitForTimeout(2000);
+    logSuccess('تم الانتقال لصفحة ملخص الدعوى');
+  } catch (e) {
+    logWarning('لم يتم الانتقال لصفحة الملخص');
+  }
+
+  console.log('\n');
+  log('═══════════════════════════════════════════════════════════', 'green');
+  log('   🎉  تم إكمال جميع الخطوات التلقائية!  🎉', 'green');
+  log('═══════════════════════════════════════════════════════════', 'green');
+  
+  logWarning('\n⚠️  قبل الإرسال، تأكد من:');
+  console.log('   1. ✅ مراجعة جميع البيانات');
+  console.log('   2. ✅ إضافة أطراف الدعوى (إذا لم تُضف تلقائياً)');
+  console.log('   3. ✅ رفع جميع المستندات المطلوبة');
+  console.log('   4. ✅ مراجعة الرسوم');
+  console.log('   5. ⚠️ اضغط "إرسال" يدوياً بعد المراجعة\n');
+
+  log('🔵 المتصفح مفتوح للمراجعة. اضغط Ctrl+C للإغلاق.', 'blue');
   
   // منع إغلاق البرنامج
   await new Promise(() => {});
