@@ -187,6 +187,7 @@ class LawsuitService {
    */
   async getOverdueContracts(companyId: string, minDaysOverdue: number = 30): Promise<OverdueContract[]> {
     // استعلام للحصول على العقود المتعثرة مع حساب المبالغ
+    // نستخدم left join بدون !inner لتجنب فشل الاستعلام عند عدم وجود علاقة
     const { data: contracts, error } = await supabase
       .from('contracts')
       .select(`
@@ -195,12 +196,18 @@ class LawsuitService {
         customer_id,
         start_date,
         end_date,
-        customers!inner(
+        make,
+        model,
+        year,
+        license_plate,
+        balance_due,
+        days_overdue,
+        customers(
           id,
           full_name,
           id_number
         ),
-        vehicles!inner(
+        vehicles(
           make,
           model,
           year,
@@ -216,35 +223,42 @@ class LawsuitService {
     const overdueContracts: OverdueContract[] = [];
 
     for (const contract of contracts || []) {
-      // حساب إجمالي المستحق
-      const { data: invoices } = await supabase
-        .from('invoices')
-        .select('total_amount, paid_amount, due_date')
-        .eq('contract_id', contract.id)
-        .lt('due_date', new Date().toISOString().split('T')[0]);
+      // استخدام balance_due و days_overdue من العقد مباشرة إن وجدت
+      const balanceDue = (contract as any).balance_due || 0;
+      const contractDaysOverdue = (contract as any).days_overdue || 0;
+      
+      let totalOverdue = balanceDue;
+      let daysOverdue = contractDaysOverdue;
 
-      if (!invoices) continue;
+      // إذا لم تكن القيم موجودة، نحسبها من الفواتير
+      if (totalOverdue <= 0) {
+        const { data: invoices } = await supabase
+          .from('invoices')
+          .select('total_amount, paid_amount, due_date')
+          .eq('contract_id', contract.id)
+          .lt('due_date', new Date().toISOString().split('T')[0]);
 
-      let totalOverdue = 0;
-      let oldestDueDate: Date | null = null;
+        if (!invoices || invoices.length === 0) continue;
 
-      for (const invoice of invoices) {
-        const unpaid = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
-        if (unpaid > 0) {
-          totalOverdue += unpaid;
-          const dueDate = new Date(invoice.due_date);
-          if (!oldestDueDate || dueDate < oldestDueDate) {
-            oldestDueDate = dueDate;
+        let oldestDueDate: Date | null = null;
+
+        for (const invoice of invoices) {
+          const unpaid = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
+          if (unpaid > 0) {
+            totalOverdue += unpaid;
+            const dueDate = new Date(invoice.due_date);
+            if (!oldestDueDate || dueDate < oldestDueDate) {
+              oldestDueDate = dueDate;
+            }
           }
         }
+
+        daysOverdue = oldestDueDate 
+          ? Math.floor((Date.now() - oldestDueDate.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
       }
 
       if (totalOverdue <= 0) continue;
-
-      const daysOverdue = oldestDueDate 
-        ? Math.floor((Date.now() - oldestDueDate.getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-
       if (daysOverdue < minDaysOverdue) continue;
 
       // التحقق من وجود دعوى سابقة
@@ -253,18 +267,24 @@ class LawsuitService {
         .select('id')
         .eq('contract_id', contract.id)
         .neq('status', 'closed')
-        .single();
+        .maybeSingle();
 
-      const customer = contract.customers as any;
-      const vehicle = contract.vehicles as any;
+      const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
+      
+      // استخدام بيانات السيارة من العقد مباشرة كـ fallback
+      const vehicleMake = vehicle?.make || (contract as any).make || '';
+      const vehicleModel = vehicle?.model || (contract as any).model || '';
+      const vehicleYear = vehicle?.year || (contract as any).year || '';
+      const vehiclePlate = vehicle?.plate_number || (contract as any).license_plate || '';
 
       overdueContracts.push({
         contract_id: contract.id,
         contract_number: contract.contract_number,
-        customer_id: contract.customer_id,
+        customer_id: contract.customer_id || '',
         customer_name: customer?.full_name || 'غير معروف',
         customer_id_number: customer?.id_number,
-        vehicle_info: `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''} - ${vehicle?.plate_number || ''}`,
+        vehicle_info: `${vehicleMake} ${vehicleModel} ${vehicleYear} - ${vehiclePlate}`.trim(),
         total_overdue: totalOverdue,
         days_overdue: daysOverdue,
         contract_start_date: contract.start_date,
