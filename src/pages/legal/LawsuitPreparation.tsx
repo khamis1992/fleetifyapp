@@ -193,12 +193,18 @@ ${taqadiData.claims}
     window.open('https://taqadi.sjc.gov.qa/itc/f/caseinfoext/create', '_blank');
   };
 
-  // إرسال البيانات للإضافة
+  // إرسال البيانات للإضافة / Bookmarklet
   const sendToExtension = useCallback(() => {
     if (!taqadiData || !contract) {
       toast.error('لا توجد بيانات للإرسال');
       return;
     }
+
+    // تجميع اسم العميل
+    const customer = (contract as any).customers;
+    const defendantName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
 
     const extensionData = {
       caseTitle: taqadiData.caseTitle,
@@ -206,34 +212,16 @@ ${taqadiData.claims}
       claims: taqadiData.claims,
       amount: taqadiData.amount,
       amountInWords: taqadiData.amountInWords,
-      defendantName: customerFullName,
+      defendantName: defendantName,
       contractNumber: contract.contract_number,
       savedAt: new Date().toISOString(),
     };
 
-    // حفظ في localStorage للإضافة
+    // حفظ في localStorage للـ Bookmarklet أو الإضافة
     localStorage.setItem('alarafLawsuitData', JSON.stringify(extensionData));
     
-    // محاولة إرسال للإضافة مباشرة (إذا كانت مثبتة)
-    try {
-      // @ts-ignore - Chrome extension API
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        // Extension ID - يجب تحديثه بعد تثبيت الإضافة
-        const extensionId = localStorage.getItem('alarafExtensionId');
-        if (extensionId) {
-          // @ts-ignore
-          chrome.runtime.sendMessage(extensionId, {
-            action: 'saveLawsuitData',
-            data: extensionData
-          });
-        }
-      }
-    } catch (e) {
-      // الإضافة غير مثبتة - لا مشكلة
-    }
-
-    toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط "تعبئة من العراف"');
-  }, [taqadiData, contract, customerFullName]);
+    toast.success('✅ تم حفظ البيانات! افتح موقع تقاضي واضغط "🚗 تعبئة من العراف"');
+  }, [taqadiData, contract]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
@@ -612,28 +600,45 @@ ${taqadiData.claims}
                 استخدم إضافة المتصفح للتعبئة التلقائية أو انسخ البيانات يدوياً
               </p>
               
-              {/* زر إرسال للإضافة - الطريقة الموصى بها */}
+              {/* زر حفظ البيانات للتعبئة */}
               <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <p className="text-sm font-medium mb-3">✨ للتعبئة التلقائية (موصى به):</p>
-                <Button size="lg" onClick={sendToExtension} className="w-full sm:w-auto">
+                <p className="text-sm font-medium mb-3">✨ الخطوة الأولى: حفظ البيانات</p>
+                <Button size="lg" onClick={sendToExtension} className="w-full sm:w-auto mb-3">
                   <Sparkles className="h-5 w-5 ml-2" />
-                  إرسال للإضافة
+                  حفظ بيانات الدعوى
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  بعد الحفظ، افتح موقع تقاضي واضغط على المفضلة "🚗 تعبئة من العراف"
+                </p>
+              </div>
+
+              {/* فتح تقاضي */}
+              <div className="flex justify-center gap-3 flex-wrap">
+                <Button size="lg" onClick={openTaqadi}>
+                  <ExternalLink className="h-5 w-5 ml-2" />
+                  فتح موقع تقاضي
+                </Button>
+                <Button size="lg" variant="outline" onClick={copyAllData}>
+                  <Copy className="h-5 w-5 ml-2" />
+                  نسخ جميع البيانات
                 </Button>
               </div>
 
-              {/* الطريقة اليدوية */}
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-3">أو استخدم الطريقة اليدوية:</p>
-                <div className="flex justify-center gap-3 flex-wrap">
-                  <Button size="lg" variant="outline" onClick={openTaqadi}>
-                    <ExternalLink className="h-5 w-5 ml-2" />
-                    فتح موقع تقاضي
-                  </Button>
-                  <Button size="lg" variant="outline" onClick={copyAllData}>
-                    <Copy className="h-5 w-5 ml-2" />
-                    نسخ جميع البيانات
-                  </Button>
-                </div>
+              {/* تعليمات Bookmarklet */}
+              <div className="border-t pt-4 mt-4">
+                <details className="text-right">
+                  <summary className="cursor-pointer text-sm text-primary hover:underline">
+                    📌 لم تثبت أداة التعبئة التلقائية؟ اضغط هنا
+                  </summary>
+                  <div className="mt-3 p-4 bg-muted rounded-lg text-sm space-y-2">
+                    <p><strong>طريقة سهلة بدون تثبيت إضافات:</strong></p>
+                    <ol className="list-decimal list-inside space-y-1 pr-2">
+                      <li>افتح ملف <code className="bg-background px-1 rounded">browser-extension/bookmarklet.html</code></li>
+                      <li>اسحب الزر الأحمر إلى شريط المفضلات في متصفحك</li>
+                      <li>عند فتح تقاضي، اضغط على المفضلة وسيتم التعبئة تلقائياً</li>
+                    </ol>
+                  </div>
+                </details>
               </div>
 
               <div className="pt-4 text-sm text-muted-foreground">
