@@ -2,8 +2,10 @@
  * Smart Document Generation Service
  * خدمة توليد الكتب الرسمية الذكية
  * 
- * تم تحديث الخدمة لتوليد الكتب محلياً باستخدام قوالب HTML
+ * يستخدم Supabase Edge Function + Zhipu AI (GLM-4) لتوليد كتب احترافية
  */
+
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -14,6 +16,7 @@ export interface ChatResponse {
   success: boolean;
   content: string;
   error?: string;
+  aiPowered?: boolean;
 }
 
 export interface DocumentTemplate {
@@ -679,15 +682,49 @@ function generateLetterHTML(
 
 /**
  * توليد كتاب رسمي بناءً على القالب والإجابات
+ * يستخدم الذكاء الاصطناعي (Zhipu GLM-4) عبر Supabase Edge Function
+ * مع وجود fallback للقوالب المحلية في حالة الفشل
  */
 export async function generateOfficialDocument(
   template: DocumentTemplate,
   answers: Record<string, string>
 ): Promise<ChatResponse> {
+  
+  // محاولة استخدام الذكاء الاصطناعي أولاً
   try {
-    // محاكاة تأخير قصير لتجربة مستخدم أفضل
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('🤖 Attempting AI-powered document generation...');
     
+    const { data, error } = await supabase.functions.invoke('smart-document-generator', {
+      body: {
+        templateId: template.id,
+        templateName: template.name,
+        answers: answers,
+        documentType: template.category
+      }
+    });
+
+    if (error) {
+      console.warn('AI generation failed, falling back to templates:', error);
+      throw error;
+    }
+
+    if (data?.success) {
+      console.log('✅ AI document generated successfully');
+      return {
+        success: true,
+        content: data.content,
+        aiPowered: true
+      };
+    }
+    
+    throw new Error(data?.error || 'AI generation failed');
+    
+  } catch (aiError) {
+    console.log('📝 Falling back to template-based generation...');
+  }
+  
+  // Fallback: استخدام القوالب المحلية
+  try {
     let recipient = '';
     let subject = '';
     let body = '';
@@ -1049,6 +1086,7 @@ ${answers.content}
     return {
       success: true,
       content: html,
+      aiPowered: false // تم استخدام القوالب المحلية
     };
   } catch (error: any) {
     console.error('Document generation error:', error);
