@@ -2,8 +2,11 @@
  * Smart Document Generation Service
  * خدمة توليد الكتب الرسمية الذكية
  * 
- * تم تحديث الخدمة لتوليد الكتب محلياً باستخدام قوالب HTML
+ * تستخدم OpenAI عبر Supabase Edge Function لتوليد كتب احترافية
  */
+
+// Supabase Edge Function URL
+const EDGE_FUNCTION_URL = 'https://qwhunliohlkkahbspfiu.supabase.co/functions/v1/smart-document-generator';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -678,16 +681,131 @@ function generateLetterHTML(
 }
 
 /**
- * توليد كتاب رسمي بناءً على القالب والإجابات
+ * توليد كتاب رسمي باستخدام OpenAI عبر Edge Function
  */
 export async function generateOfficialDocument(
   template: DocumentTemplate,
   answers: Record<string, string>
+): Promise<ChatResponse & { aiPowered?: boolean }> {
+  
+  // أولاً: محاولة استخدام OpenAI عبر Edge Function
+  try {
+    console.log('🤖 Calling OpenAI via Edge Function...');
+    
+    // تحضير البيانات للإرسال
+    const requestData = {
+      templateName: template.name,
+      answers: {
+        ...answers,
+        recipient: getRecipientFromTemplate(template.id, answers),
+        subject: getSubjectFromTemplate(template.id, answers),
+        content: getContentHintFromTemplate(template.id, answers),
+      },
+    };
+    
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && result.content) {
+        console.log('✅ OpenAI document generated successfully, AI powered:', result.aiPowered);
+        return {
+          success: true,
+          content: result.content,
+          aiPowered: result.aiPowered,
+        };
+      }
+    }
+    
+    console.log('⚠️ Edge function failed, falling back to local generation');
+  } catch (error) {
+    console.log('⚠️ Edge function error, falling back to local generation:', error);
+  }
+  
+  // Fallback: توليد محلي في حالة فشل Edge Function
+  return generateLocalDocument(template, answers);
+}
+
+/**
+ * استخراج المستلم من القالب
+ */
+function getRecipientFromTemplate(templateId: string, answers: Record<string, string>): string {
+  switch (templateId) {
+    case 'insurance-deletion':
+    case 'insurance-accident':
+    case 'insurance-claim':
+      return `شركة ${answers.insurance_company} للتأمين`;
+    case 'traffic-ownership-transfer':
+    case 'traffic-license-renewal':
+    case 'traffic-violation-objection':
+      return 'إدارة المرور - وزارة الداخلية';
+    case 'customer-payment-warning':
+    case 'customer-contract-termination':
+      return answers.customer_name || 'العميل';
+    case 'general-official':
+      return answers.recipient || 'الجهة المعنية';
+    default:
+      return 'الجهة المعنية';
+  }
+}
+
+/**
+ * استخراج الموضوع من القالب
+ */
+function getSubjectFromTemplate(templateId: string, answers: Record<string, string>): string {
+  switch (templateId) {
+    case 'insurance-deletion':
+      return `طلب شطب مركبة رقم ${answers.vehicle_plate} من بوليصة التأمين رقم ${answers.policy_number}`;
+    case 'insurance-accident':
+      return `إخطار بحادث مروري للمركبة رقم ${answers.vehicle_plate}`;
+    case 'insurance-claim':
+      return `طلب تعويض تأميني - بوليصة رقم ${answers.policy_number}`;
+    case 'traffic-ownership-transfer':
+      return `طلب نقل ملكية مركبة رقم ${answers.vehicle_plate}`;
+    case 'traffic-license-renewal':
+      return `طلب تجديد رخصة مركبة رقم ${answers.vehicle_plate}`;
+    case 'traffic-violation-objection':
+      return `اعتراض على مخالفة مرورية رقم ${answers.violation_number}`;
+    case 'customer-payment-warning':
+      return `إنذار سداد - عقد رقم ${answers.contract_number}`;
+    case 'customer-contract-termination':
+      return `إشعار إنهاء عقد رقم ${answers.contract_number}`;
+    case 'general-official':
+      return answers.subject || 'كتاب رسمي';
+    default:
+      return 'كتاب رسمي';
+  }
+}
+
+/**
+ * استخراج تلميح المحتوى من القالب
+ */
+function getContentHintFromTemplate(templateId: string, answers: Record<string, string>): string {
+  const parts: string[] = [];
+  
+  Object.entries(answers).forEach(([key, value]) => {
+    if (value && key !== 'recipient' && key !== 'subject') {
+      parts.push(`${key}: ${value}`);
+    }
+  });
+  
+  return parts.join('\n');
+}
+
+/**
+ * توليد كتاب محلياً (Fallback)
+ */
+async function generateLocalDocument(
+  template: DocumentTemplate,
+  answers: Record<string, string>
 ): Promise<ChatResponse> {
   try {
-    // محاكاة تأخير قصير لتجربة مستخدم أفضل
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     let recipient = '';
     let subject = '';
     let body = '';
