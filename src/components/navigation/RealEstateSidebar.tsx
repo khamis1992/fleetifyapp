@@ -40,7 +40,8 @@ import {
   PhoneCall,
   MessageSquare,
   Activity,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Sparkles,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -556,6 +557,14 @@ export function RealEstateSidebar() {
                           <NavLink to="/legal/cases" className={getNavClassName}>
                             <FileText className="h-4 w-4" />
                             {(!collapsed || isMobile) && <span>تتبع القضايا</span>}
+                          </NavLink>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                          <NavLink to="/legal/document-generator" className={getNavClassName}>
+                            <Sparkles className="h-4 w-4" />
+                            {(!collapsed || isMobile) && <span>مولد الكتب الرسمية</span>}
                           </NavLink>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>

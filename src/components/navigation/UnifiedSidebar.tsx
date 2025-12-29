@@ -32,6 +32,7 @@ import {
   Map,
   UserCog,
   Key,
+  Sparkles,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -180,6 +181,7 @@ const getMenuGroups = (variant: SidebarVariant): MenuGroup[] => {
     icon: Scale,
     items: [
       { name: 'القضايا', href: '/legal/cases', icon: Scale },
+      { name: 'مولد الكتب الرسمية', href: '/legal/document-generator', icon: Sparkles },
     ],
   });
 
