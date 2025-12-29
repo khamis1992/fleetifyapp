@@ -38,11 +38,14 @@ export interface Question {
 // معلومات الشركة
 const COMPANY_INFO = {
   name_ar: 'شركة العراف لتأجير السيارات',
-  name_en: 'Al-Araf Car Rental Company',
-  address: 'الدوحة - قطر',
-  phone: '+974 XXXX XXXX',
+  name_en: 'AL-ARAF CAR RENTAL L.L.C',
+  address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+  phone: '+974 5555 5555',
   email: 'info@alaraf.qa',
-  cr: 'س.ت: XXXXX',
+  cr: 'س.ت: 146832',
+  logo: '/receipts/logo.png',
+  authorized_signatory: 'أسامة أحمد البشرى',
+  authorized_title: 'المخول بالتوقيع',
 };
 
 // تنسيق التاريخ
@@ -226,7 +229,7 @@ export const DOCUMENT_CATEGORIES = [
 ];
 
 /**
- * توليد قالب HTML للكتاب
+ * توليد قالب HTML احترافي للكتاب الرسمي
  */
 function generateLetterHTML(
   recipient: string,
@@ -238,62 +241,123 @@ function generateLetterHTML(
   const currentDate = formatDate();
   
   return `
-<div style="direction: rtl; font-family: 'Arial', 'Tahoma', sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 2;">
+<div style="direction: rtl; font-family: 'Traditional Arabic', 'Arial', 'Tahoma', serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 2; background: #fff; border: 2px solid #1e3a5f;">
   
-  <!-- الترويسة -->
-  <div style="text-align: center; border-bottom: 3px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
-    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">${COMPANY_INFO.name_ar}</h1>
-    <p style="color: #6b7280; margin: 5px 0; font-size: 14px;">${COMPANY_INFO.name_en}</p>
-    <p style="color: #6b7280; margin: 5px 0; font-size: 12px;">${COMPANY_INFO.address} | ${COMPANY_INFO.phone} | ${COMPANY_INFO.email}</p>
+  <!-- الترويسة الرسمية -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px double #1e3a5f; padding-bottom: 20px; margin-bottom: 25px;">
+    
+    <!-- بيانات الشركة بالعربية -->
+    <div style="flex: 1; text-align: right;">
+      <h1 style="color: #1e3a5f; margin: 0; font-size: 22px; font-weight: bold;">${COMPANY_INFO.name_ar}</h1>
+      <p style="color: #4a5568; margin: 3px 0; font-size: 11px;">ذ.م.م</p>
+      <p style="color: #718096; margin: 3px 0; font-size: 11px;">${COMPANY_INFO.cr}</p>
+    </div>
+    
+    <!-- الشعار -->
+    <div style="flex: 0 0 150px; text-align: center; padding: 0 20px;">
+      <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" style="max-height: 80px; max-width: 140px;" onerror="this.style.display='none'" />
+    </div>
+    
+    <!-- بيانات الشركة بالإنجليزية -->
+    <div style="flex: 1; text-align: left;" dir="ltr">
+      <h1 style="color: #1e3a5f; margin: 0; font-size: 16px; font-weight: bold;">${COMPANY_INFO.name_en}</h1>
+      <p style="color: #718096; margin: 3px 0; font-size: 10px;">C.R: 146832</p>
+    </div>
+  </div>
+  
+  <!-- العنوان -->
+  <div style="text-align: center; color: #718096; font-size: 11px; margin-bottom: 20px;">
+    ${COMPANY_INFO.address}
+    <br/>
+    هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
   </div>
 
   <!-- التاريخ والرقم المرجعي -->
-  <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-    <div>
-      <strong>الرقم المرجعي:</strong> ${refNumber}
+  <div style="display: flex; justify-content: space-between; margin-bottom: 25px; padding: 12px 15px; background: #f7fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+    <div style="font-size: 14px;">
+      <strong style="color: #2d3748;">الرقم المرجعي:</strong>
+      <span style="color: #1e3a5f; font-weight: bold; margin-right: 8px;">${refNumber}</span>
     </div>
-    <div>
-      <strong>التاريخ:</strong> ${currentDate}
+    <div style="font-size: 14px;">
+      <strong style="color: #2d3748;">التاريخ:</strong>
+      <span style="color: #1e3a5f; margin-right: 8px;">${currentDate}</span>
     </div>
   </div>
 
   <!-- المرسل إليه -->
-  <div style="margin-bottom: 20px;">
-    <p style="margin: 0;"><strong>إلى:</strong> ${recipient}</p>
-    <p style="margin: 5px 0 0 0; color: #6b7280;">حفظه الله</p>
+  <div style="margin-bottom: 20px; padding: 15px; border-right: 4px solid #1e3a5f; background: #f8fafc;">
+    <p style="margin: 0; font-size: 16px;"><strong style="color: #1e3a5f;">إلى / </strong> ${recipient}</p>
+    <p style="margin: 8px 0 0 0; color: #4a5568; font-size: 14px;">حفظه الله ورعاه</p>
   </div>
 
   <!-- التحية -->
-  <p style="margin-bottom: 20px;">السلام عليكم ورحمة الله وبركاته،</p>
+  <p style="margin: 25px 0; font-size: 16px; color: #2d3748;">السلام عليكم ورحمة الله وبركاته،</p>
+  <p style="margin: 0 0 20px 0; font-size: 15px; color: #4a5568;">تحية طيبة وبعد،،،</p>
 
   <!-- الموضوع -->
-  <div style="background: #f3f4f6; padding: 10px 15px; border-right: 4px solid #1e40af; margin-bottom: 20px;">
-    <strong>الموضوع:</strong> ${subject}
+  <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); color: #fff; padding: 12px 20px; margin-bottom: 25px; border-radius: 6px;">
+    <strong style="font-size: 15px;">الموضوع: </strong>
+    <span style="font-size: 15px;">${subject}</span>
   </div>
 
+  <!-- المقدمة -->
+  <p style="margin: 0 0 15px 0; font-size: 15px; color: #2d3748;">
+    نحن <strong>${COMPANY_INFO.name_ar}</strong>، نتقدم إليكم بهذا الكتاب الرسمي بخصوص الموضوع المذكور أعلاه، ونفيدكم بالآتي:
+  </p>
+
   <!-- المحتوى -->
-  <div style="text-align: justify; margin-bottom: 30px;">
-    ${body.split('\n').map(p => `<p style="margin: 10px 0;">${p}</p>`).join('')}
+  <div style="text-align: justify; margin-bottom: 30px; font-size: 15px; color: #2d3748; padding: 20px; background: #fafafa; border-radius: 8px; border: 1px solid #e8e8e8;">
+    ${body.split('\n').filter(p => p.trim()).map(p => `<p style="margin: 12px 0; line-height: 2.2;">${p}</p>`).join('')}
   </div>
 
   ${attachments ? `
   <!-- المرفقات -->
-  <div style="margin-bottom: 30px; background: #fef3c7; padding: 15px; border-radius: 8px;">
-    <strong>📎 المرفقات:</strong>
-    <p style="margin: 10px 0 0 0;">${attachments}</p>
+  <div style="margin-bottom: 25px; background: #fffbeb; padding: 15px 20px; border-radius: 8px; border: 1px solid #fcd34d;">
+    <strong style="color: #92400e; font-size: 14px;">📎 المرفقات:</strong>
+    <ul style="margin: 10px 0 0 0; padding-right: 20px; color: #78350f;">
+      ${attachments.split('،').map(att => `<li style="margin: 5px 0;">${att.trim()}</li>`).join('')}
+    </ul>
   </div>
   ` : ''}
 
   <!-- الختام -->
-  <p style="margin-bottom: 40px;">وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+  <div style="margin: 30px 0; text-align: center;">
+    <p style="font-size: 15px; color: #2d3748; margin: 0;">وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
+  </div>
 
-  <!-- التوقيع -->
-  <div style="margin-top: 60px;">
-    <p style="margin: 0;"><strong>${COMPANY_INFO.name_ar}</strong></p>
-    <p style="margin: 5px 0; color: #6b7280;">الإدارة</p>
-    <div style="margin-top: 40px; border-top: 1px solid #d1d5db; width: 200px; padding-top: 10px;">
-      <p style="margin: 0; color: #6b7280; font-size: 12px;">التوقيع والختم</p>
+  <!-- التوقيع الرسمي -->
+  <div style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end;">
+    
+    <!-- مكان الختم -->
+    <div style="text-align: center; width: 150px;">
+      <div style="width: 120px; height: 120px; border: 2px dashed #cbd5e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        <span style="color: #a0aec0; font-size: 11px;">مكان الختم</span>
+      </div>
     </div>
+    
+    <!-- بيانات الموقع -->
+    <div style="text-align: center; flex: 1;">
+      <p style="margin: 0 0 5px 0; color: #1e3a5f; font-weight: bold; font-size: 16px;">${COMPANY_INFO.name_ar}</p>
+      <div style="border-top: 2px solid #1e3a5f; width: 250px; margin: 40px auto 10px auto; padding-top: 10px;">
+        <p style="margin: 0; font-size: 16px; font-weight: bold; color: #1e3a5f;">${COMPANY_INFO.authorized_signatory}</p>
+        <p style="margin: 5px 0 0 0; font-size: 13px; color: #718096;">${COMPANY_INFO.authorized_title}</p>
+      </div>
+    </div>
+    
+    <!-- مكان التوقيع -->
+    <div style="text-align: center; width: 150px;">
+      <div style="width: 120px; height: 60px; border-bottom: 2px solid #cbd5e0; margin: 0 auto 10px auto;"></div>
+      <span style="color: #718096; font-size: 11px;">التوقيع</span>
+    </div>
+  </div>
+
+  <!-- الذيل -->
+  <div style="margin-top: 40px; padding-top: 15px; border-top: 2px solid #e2e8f0; text-align: center;">
+    <p style="margin: 0; font-size: 10px; color: #a0aec0;">
+      ${COMPANY_INFO.address}
+      <br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+    </p>
   </div>
 
 </div>
@@ -318,152 +382,342 @@ export async function generateOfficialDocument(
 
     switch (template.id) {
       case 'insurance-deletion':
-        recipient = `سعادة مدير ${answers.insurance_company}`;
-        subject = `طلب شطب مركبة من بوليصة التأمين رقم ${answers.policy_number}`;
-        body = `نشير إلى بوليصة التأمين رقم (${answers.policy_number}) الصادرة من شركتكم الموقرة، والخاصة بالمركبة التالية:
+        recipient = `سعادة السيد مدير عام شركة ${answers.insurance_company} للتأمين`;
+        subject = `طلب شطب مركبة من بوليصة التأمين رقم (${answers.policy_number})`;
+        body = `إشارةً إلى بوليصة التأمين الشامل رقم <strong>(${answers.policy_number})</strong> الصادرة من شركتكم الموقرة والسارية المفعول، والتي تغطي أسطول مركبات شركتنا.
 
-• نوع المركبة: ${answers.vehicle_type}
-• رقم اللوحة: ${answers.vehicle_plate}
-• رقم الشاصي: ${answers.chassis_number}
+يسرنا أن نتقدم إلى سيادتكم بطلب شطب المركبة المبينة بياناتها أدناه من البوليصة المذكورة:
 
-نرجو التكرم بشطب المركبة المذكورة أعلاه من البوليصة اعتباراً من تاريخ ${answers.deletion_date || 'المحدد'}، وذلك بسبب: ${answers.deletion_reason || 'السبب المذكور'}.
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0; width: 35%;"><strong>نوع المركبة وموديلها:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.vehicle_type}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم اللوحة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; color: #1e3a5f;">${answers.vehicle_plate}</td>
+  </tr>
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم الشاصي (VIN):</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-family: monospace;">${answers.chassis_number}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>تاريخ الشطب المطلوب:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.deletion_date || 'فوري'}</td>
+  </tr>
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>سبب طلب الشطب:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.deletion_reason || 'بيع المركبة'}</td>
+  </tr>
+</table>
 
-كما نرجو إفادتنا بأي مبالغ مستحقة أو مستردة نتيجة لهذا الإجراء.
+وعليه، نأمل من سيادتكم التكرم بالموافقة على هذا الطلب، واتخاذ الإجراءات اللازمة لشطب المركبة من البوليصة اعتباراً من التاريخ المحدد أعلاه.
 
-شاكرين لكم تعاونكم الدائم معنا.`;
+كما نرجو إفادتنا خطياً بما يلي:
+• تأكيد إتمام عملية الشطب
+• أي مبالغ مستردة من قسط التأمين (إن وجدت)
+• أي متطلبات أو مستندات إضافية
+
+نشكر لكم تعاونكم الدائم، ونتطلع إلى استمرار شراكتنا المثمرة.`;
+        attachments = 'صورة من رخصة المركبة، صورة من البوليصة';
         break;
 
       case 'insurance-accident':
-        recipient = `سعادة مدير قسم المطالبات - ${answers.insurance_company}`;
-        subject = `إخطار بحادث مروري - بوليصة رقم ${answers.policy_number}`;
-        body = `نود إخطاركم بوقوع حادث مروري للمركبة المؤمنة لدى شركتكم، وفيما يلي التفاصيل:
+        recipient = `سعادة السيد مدير قسم المطالبات والتعويضات - شركة ${answers.insurance_company} للتأمين`;
+        subject = `إخطار رسمي بوقوع حادث مروري - بوليصة رقم (${answers.policy_number})`;
+        body = `عملاً بأحكام بوليصة التأمين الشامل رقم <strong>(${answers.policy_number})</strong>، والتي تلزمنا بالإخطار الفوري عن أي حوادث، يسرنا إحاطتكم علماً بوقوع حادث مروري لإحدى مركبات أسطولنا المؤمنة لديكم.
 
-• رقم البوليصة: ${answers.policy_number}
-• رقم لوحة المركبة: ${answers.vehicle_plate}
-• تاريخ الحادث: ${answers.accident_date}
-• مكان الحادث: ${answers.accident_location}
-• رقم تقرير الشرطة: ${answers.police_report}
+<div style="background: #fef2f2; border: 2px solid #fecaca; padding: 15px; border-radius: 8px; margin: 15px 0;">
+  <strong style="color: #dc2626;">⚠️ بيانات الحادث:</strong>
+</div>
 
-وصف الحادث:
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #fee2e2;">
+    <td style="padding: 10px; border: 1px solid #fecaca; width: 35%;"><strong>تاريخ ووقت الحادث:</strong></td>
+    <td style="padding: 10px; border: 1px solid #fecaca;">${answers.accident_date}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>موقع الحادث:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.accident_location}</td>
+  </tr>
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم لوحة المركبة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">${answers.vehicle_plate}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم تقرير الشرطة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-family: monospace; color: #1e3a5f;">${answers.police_report}</td>
+  </tr>
+</table>
+
+<strong>وصف الحادث:</strong>
+<div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #64748b;">
 ${answers.accident_description}
+</div>
 
-وصف الأضرار:
+<strong>الأضرار الناتجة:</strong>
+<div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #f59e0b;">
 ${answers.damages}
+</div>
 
-نرجو التكرم بإرسال مندوبكم لمعاينة الأضرار واتخاذ الإجراءات اللازمة.`;
-        attachments = 'صورة من تقرير الشرطة، صور الأضرار';
+بناءً على ما سبق، نرجو من سيادتكم التكرم بإيفاد مندوبكم المختص لمعاينة المركبة وتقدير الأضرار، وذلك تمهيداً لاتخاذ إجراءات التعويض وفق أحكام البوليصة.
+
+نؤكد استعدادنا التام للتعاون وتقديم أي معلومات أو مستندات إضافية قد تطلبونها.`;
+        attachments = 'نسخة من تقرير الشرطة، صور فوتوغرافية للأضرار، نسخة من رخصة القيادة';
         break;
 
       case 'insurance-claim':
-        recipient = `سعادة مدير قسم المطالبات - ${answers.insurance_company}`;
-        subject = `طلب تعويض - بوليصة رقم ${answers.policy_number}`;
-        body = `نتقدم إليكم بطلب تعويض عن الأضرار المشمولة ببوليصة التأمين رقم (${answers.policy_number})، وفيما يلي التفاصيل:
+        recipient = `سعادة السيد مدير إدارة المطالبات والتعويضات - شركة ${answers.insurance_company} للتأمين`;
+        subject = `طلب صرف تعويض تأميني - بوليصة رقم (${answers.policy_number})`;
+        body = `استناداً إلى بوليصة التأمين الشامل رقم <strong>(${answers.policy_number})</strong> السارية المفعول، والتي تغطي المخاطر المشار إليها في شروط وأحكام البوليصة.
 
-• نوع التعويض: ${answers.claim_type}
-• مبلغ التعويض المطلوب: ${Number(answers.claim_amount).toLocaleString('ar-QA')} ريال قطري
+يسرنا أن نتقدم إلى سيادتكم بطلب صرف تعويض عن الأضرار/الخسائر التي لحقت بنا، وفيما يلي تفاصيل المطالبة:
 
-سبب طلب التعويض:
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0; width: 35%;"><strong>نوع التعويض:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.claim_type}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>مبلغ التعويض المطلوب:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">
+      <span style="font-size: 18px; font-weight: bold; color: #059669;">${Number(answers.claim_amount).toLocaleString('ar-QA')} ريال قطري</span>
+    </td>
+  </tr>
+</table>
+
+<strong>أسباب ومبررات طلب التعويض:</strong>
+<div style="background: #f0fdf4; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #10b981;">
 ${answers.claim_reason}
+</div>
 
-نرفق لكم المستندات المؤيدة لطلبنا، ونرجو التكرم بدراسة الطلب وإفادتنا بالموافقة في أقرب وقت.`;
+نرفق لسيادتكم كافة المستندات الثبوتية المؤيدة لهذه المطالبة، ونؤكد صحة البيانات المذكورة أعلاه، ونتحمل المسؤولية الكاملة عن أي معلومات غير دقيقة.
+
+نأمل من سيادتكم سرعة البت في هذا الطلب، وإفادتنا بالموافقة وآلية صرف التعويض في أقرب وقت ممكن.`;
         attachments = answers.supporting_docs;
         break;
 
       case 'traffic-ownership-transfer':
-        recipient = 'سعادة مدير إدارة المرور - قطر';
-        subject = `طلب نقل ملكية مركبة - لوحة رقم ${answers.vehicle_plate}`;
-        body = `نتقدم إلى إدارتكم الموقرة بطلب نقل ملكية المركبة التالية:
+        recipient = 'سعادة السيد مدير عام الإدارة العامة للمرور - وزارة الداخلية';
+        subject = `طلب الموافقة على نقل ملكية مركبة - لوحة رقم (${answers.vehicle_plate})`;
+        body = `نتقدم إلى إدارتكم الموقرة بطلب الموافقة على نقل ملكية المركبة المبينة بياناتها أدناه، وذلك وفقاً للأنظمة واللوائح المعمول بها في دولة قطر.
 
-• نوع المركبة: ${answers.vehicle_type}
-• رقم اللوحة: ${answers.vehicle_plate}
-• رقم الشاصي: ${answers.chassis_number}
+<div style="background: #eff6ff; border: 2px solid #3b82f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+  <strong style="color: #1d4ed8;">🚗 بيانات المركبة:</strong>
+</div>
 
-من: ${answers.current_owner}
-إلى: ${answers.new_owner}
-رقم هوية المالك الجديد: ${answers.new_owner_id}
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0; width: 35%;"><strong>نوع المركبة وموديلها:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.vehicle_type}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم اللوحة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; font-size: 16px; color: #1e3a5f;">${answers.vehicle_plate}</td>
+  </tr>
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم الشاصي (VIN):</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-family: monospace;">${answers.chassis_number}</td>
+  </tr>
+</table>
 
-سبب نقل الملكية: ${answers.transfer_reason}
+<div style="display: flex; gap: 20px; margin: 20px 0;">
+  <div style="flex: 1; background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca;">
+    <strong style="color: #dc2626;">المالك الحالي (البائع):</strong>
+    <p style="margin: 10px 0 0 0; font-size: 15px;">${answers.current_owner}</p>
+  </div>
+  <div style="flex: 1; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #86efac;">
+    <strong style="color: #16a34a;">المالك الجديد (المشتري):</strong>
+    <p style="margin: 10px 0 0 0; font-size: 15px;">${answers.new_owner}</p>
+    <p style="margin: 5px 0 0 0; font-size: 13px; color: #4b5563;">رقم الهوية: ${answers.new_owner_id}</p>
+  </div>
+</div>
 
-نرجو التكرم باتخاذ الإجراءات اللازمة لإتمام عملية النقل.`;
-        attachments = 'صورة من بطاقة الهوية، صورة من رخصة المركبة، عقد البيع';
+<strong>سبب نقل الملكية:</strong> ${answers.transfer_reason}
+
+نلتزم بتقديم كافة المستندات المطلوبة لإتمام إجراءات النقل، ونتعهد بصحة البيانات المذكورة أعلاه.`;
+        attachments = 'صورة من البطاقة الشخصية للطرفين، رخصة المركبة الأصلية، شهادة الفحص الفني، بوليصة التأمين السارية، عقد البيع الموثق';
         break;
 
       case 'traffic-license-renewal':
-        recipient = 'سعادة مدير إدارة المرور - قطر';
-        subject = `طلب تجديد رخصة مركبة - لوحة رقم ${answers.vehicle_plate}`;
-        body = `نتقدم إلى إدارتكم الموقرة بطلب تجديد رخصة سير المركبة التالية:
+        recipient = 'سعادة السيد مدير إدارة تراخيص المركبات - الإدارة العامة للمرور';
+        subject = `طلب تجديد رخصة سير مركبة - لوحة رقم (${answers.vehicle_plate})`;
+        body = `نتقدم إلى إدارتكم الموقرة بطلب تجديد رخصة سير المركبة المملوكة لشركتنا، والمبينة بياناتها أدناه:
 
-• نوع المركبة: ${answers.vehicle_type}
-• رقم اللوحة: ${answers.vehicle_plate}
-• تاريخ انتهاء الرخصة الحالية: ${answers.license_expiry}
-• مدة التجديد المطلوبة: ${answers.renewal_period}
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0; width: 35%;"><strong>نوع المركبة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.vehicle_type}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم اللوحة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; color: #1e3a5f;">${answers.vehicle_plate}</td>
+  </tr>
+  <tr style="background: #fef2f2;">
+    <td style="padding: 10px; border: 1px solid #fecaca;"><strong>تاريخ انتهاء الرخصة الحالية:</strong></td>
+    <td style="padding: 10px; border: 1px solid #fecaca; color: #dc2626; font-weight: bold;">${answers.license_expiry}</td>
+  </tr>
+  <tr style="background: #f0fdf4;">
+    <td style="padding: 10px; border: 1px solid #86efac;"><strong>مدة التجديد المطلوبة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #86efac; color: #16a34a; font-weight: bold;">${answers.renewal_period}</td>
+  </tr>
+</table>
 
-نرجو التكرم باتخاذ الإجراءات اللازمة لتجديد الرخصة.`;
-        attachments = 'صورة من الرخصة الحالية، شهادة الفحص الفني، بوليصة التأمين';
+نؤكد لسيادتكم استيفاء جميع الشروط والمتطلبات النظامية للتجديد، بما في ذلك:
+• سداد كافة المخالفات المرورية (إن وجدت)
+• اجتياز الفحص الفني الدوري
+• سريان بوليصة التأمين على المركبة
+
+نرجو التكرم بالموافقة على تجديد الرخصة للمدة المطلوبة، ونتعهد بالالتزام بكافة الأنظمة واللوائح المرورية.`;
+        attachments = 'رخصة المركبة الحالية، شهادة الفحص الفني الدوري، بوليصة التأمين السارية، السجل التجاري للشركة';
         break;
 
       case 'traffic-violation-objection':
-        recipient = 'سعادة مدير إدارة المرور - قطر';
-        subject = `اعتراض على مخالفة مرورية رقم ${answers.violation_number}`;
-        body = `نتقدم إلى إدارتكم الموقرة باعتراض على المخالفة المرورية التالية:
+        recipient = 'سعادة السيد رئيس لجنة التظلمات والاعتراضات - الإدارة العامة للمرور';
+        subject = `تظلم رسمي من مخالفة مرورية - رقم المخالفة (${answers.violation_number})`;
+        body = `استناداً إلى حق التظلم المكفول بموجب القانون، نتقدم إلى سيادتكم بهذا الاعتراض الرسمي على المخالفة المرورية الصادرة بحق مركبتنا، والمبينة تفاصيلها أدناه:
 
-• رقم المخالفة: ${answers.violation_number}
-• تاريخ المخالفة: ${answers.violation_date}
-• رقم لوحة المركبة: ${answers.vehicle_plate}
-• نوع المخالفة: ${answers.violation_type}
+<div style="background: #fef2f2; border: 2px solid #fecaca; padding: 15px; border-radius: 8px; margin: 15px 0;">
+  <strong style="color: #dc2626;">📋 بيانات المخالفة محل الاعتراض:</strong>
+</div>
 
-سبب الاعتراض:
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #fee2e2;">
+    <td style="padding: 10px; border: 1px solid #fecaca; width: 35%;"><strong>رقم المخالفة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #fecaca; font-weight: bold; font-family: monospace; font-size: 16px;">${answers.violation_number}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>تاريخ المخالفة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.violation_date}</td>
+  </tr>
+  <tr style="background: #f1f5f9;">
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>رقم لوحة المركبة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">${answers.vehicle_plate}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>نوع المخالفة:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;">${answers.violation_type}</td>
+  </tr>
+</table>
+
+<strong style="color: #1e3a5f;">أسباب ومبررات الاعتراض:</strong>
+<div style="background: #eff6ff; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #3b82f6;">
 ${answers.objection_reason}
+</div>
 
-${answers.supporting_evidence ? `الأدلة المؤيدة:\n${answers.supporting_evidence}` : ''}
+${answers.supporting_evidence ? `
+<strong style="color: #1e3a5f;">الأدلة والشواهد المؤيدة للاعتراض:</strong>
+<div style="background: #f0fdf4; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #10b981;">
+${answers.supporting_evidence}
+</div>
+` : ''}
 
-نرجو التكرم بدراسة اعتراضنا والنظر في إلغاء المخالفة أو تخفيضها.`;
+بناءً على ما تقدم، نلتمس من سيادتكم التكرم بدراسة اعتراضنا والنظر في إلغاء المخالفة أو تخفيض قيمتها، وذلك للأسباب الموضحة أعلاه.
+
+نثق في عدالة لجنتكم الموقرة، ونتطلع إلى قراركم الكريم.`;
+        attachments = answers.supporting_evidence ? 'المستندات والأدلة المؤيدة للاعتراض' : '';
         break;
 
       case 'customer-payment-warning':
-        recipient = `السيد / ${answers.customer_name}`;
-        subject = `إنذار أول بسداد مبلغ مستحق - عقد رقم ${answers.contract_number}`;
-        body = `نشير إلى عقد الإيجار المبرم بيننا رقم (${answers.contract_number})، ونود إفادتكم بأنه ترصد عليكم مبلغ وقدره:
+        recipient = `السيد / السيدة ${answers.customer_name} المحترم/ة`;
+        subject = `إنذار رسمي بالسداد - عقد الإيجار رقم (${answers.contract_number})`;
+        body = `تحية طيبة،
 
-<div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
-  <strong style="font-size: 24px; color: #dc2626;">${Number(answers.amount_due).toLocaleString('ar-QA')} ريال قطري</strong>
+إشارةً إلى عقد تأجير المركبات المبرم بيننا تحت رقم <strong>(${answers.contract_number})</strong>، والذي ينظم العلاقة التعاقدية بين الطرفين ويحدد الالتزامات المالية المترتبة على كل منهما.
+
+نود إحاطة سيادتكم علماً بأن سجلاتنا المالية تُظهر وجود مستحقات مالية متأخرة السداد، وتفاصيلها كالتالي:
+
+<div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #dc2626; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+  <p style="margin: 0 0 10px 0; color: #991b1b; font-size: 14px;">المبلغ المستحق</p>
+  <strong style="font-size: 28px; color: #dc2626;">${Number(answers.amount_due).toLocaleString('ar-QA')} ريال قطري</strong>
 </div>
 
-• تاريخ الاستحقاق: ${answers.due_date}
-• عدد أيام التأخير: ${answers.days_overdue} يوم
-• المهلة النهائية للسداد: ${answers.payment_deadline}
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+  <tr style="background: #fef2f2;">
+    <td style="padding: 10px; border: 1px solid #fecaca; width: 40%;"><strong>تاريخ الاستحقاق الأصلي:</strong></td>
+    <td style="padding: 10px; border: 1px solid #fecaca;">${answers.due_date}</td>
+  </tr>
+  <tr>
+    <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>عدد أيام التأخير:</strong></td>
+    <td style="padding: 10px; border: 1px solid #e2e8f0; color: #dc2626; font-weight: bold;">${answers.days_overdue} يوم</td>
+  </tr>
+  <tr style="background: #fef3c7;">
+    <td style="padding: 10px; border: 1px solid #fcd34d;"><strong>المهلة النهائية للسداد:</strong></td>
+    <td style="padding: 10px; border: 1px solid #fcd34d; font-weight: bold; color: #92400e;">${answers.payment_deadline}</td>
+  </tr>
+</table>
 
-<strong style="color: #dc2626;">⚠️ تحذير هام:</strong>
-في حالة عدم السداد خلال المهلة المحددة، سيتم اتخاذ الإجراءات التالية:
-${answers.consequences}
+<div style="background: #fef2f2; border-right: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+  <strong style="color: #dc2626;">⚠️ تنبيه هام:</strong>
+  <p style="margin: 10px 0 0 0;">في حالة عدم الالتزام بالسداد خلال المهلة المحددة أعلاه، فإننا نحتفظ بحقنا في اتخاذ كافة الإجراءات القانونية اللازمة، والتي تشمل:</p>
+  <div style="margin: 10px 0 0 20px; color: #7f1d1d;">
+    ${answers.consequences}
+  </div>
+</div>
 
-نأمل المبادرة بالسداد تجنباً لأي إجراءات قد لا ترغبون بها.`;
+نأمل منكم المبادرة بتسوية هذه المستحقات في أقرب وقت ممكن، تجنباً لأي إجراءات قد تترتب عليها تبعات قانونية ومالية إضافية.
+
+<strong>طرق السداد المتاحة:</strong>
+• الحضور لمقر الشركة
+• التحويل البنكي على حساب الشركة
+• الدفع الإلكتروني
+
+نبقى على استعداد للتواصل معكم لتسوية أي خلاف بشكل ودي.`;
         break;
 
       case 'customer-contract-termination':
-        recipient = `السيد / ${answers.customer_name}`;
-        subject = `إشعار إنهاء عقد الإيجار رقم ${answers.contract_number}`;
-        body = `نشير إلى عقد الإيجار المبرم بيننا رقم (${answers.contract_number}) والمؤرخ في ${answers.contract_start}، ونود إفادتكم بأنه قد تقرر إنهاء العقد المذكور اعتباراً من تاريخ:
+        recipient = `السيد / السيدة ${answers.customer_name} المحترم/ة`;
+        subject = `إشعار رسمي بإنهاء عقد الإيجار رقم (${answers.contract_number})`;
+        body = `تحية طيبة،
 
-<div style="background: #fef3c7; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
-  <strong style="font-size: 20px;">${answers.termination_date}</strong>
+بالإشارة إلى عقد تأجير المركبات المبرم بين شركتنا وبين سيادتكم تحت رقم <strong>(${answers.contract_number})</strong>، والمؤرخ في <strong>${answers.contract_start}</strong>.
+
+يؤسفنا إبلاغكم بقرارنا إنهاء العلاقة التعاقدية بموجب العقد المذكور أعلاه، وذلك وفقاً للشروط والأحكام المنصوص عليها في العقد.
+
+<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+  <p style="margin: 0 0 10px 0; color: #92400e; font-size: 14px;">تاريخ سريان الإنهاء</p>
+  <strong style="font-size: 24px; color: #b45309;">${answers.termination_date}</strong>
 </div>
 
-سبب الإنهاء:
+<strong style="color: #1e3a5f;">أسباب الإنهاء:</strong>
+<div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #64748b;">
 ${answers.termination_reason}
+</div>
 
-التسوية النهائية:
+<strong style="color: #1e3a5f;">التسوية المالية النهائية:</strong>
+<div style="background: #eff6ff; padding: 15px; border-radius: 6px; margin: 10px 0; border-right: 4px solid #3b82f6;">
 ${answers.final_settlement}
+</div>
 
-نرجو التكرم بتسليم المركبة وتسوية أي مستحقات متبقية في الموعد المحدد.`;
+<div style="background: #fef2f2; border-right: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+  <strong style="color: #dc2626;">📌 الإجراءات المطلوبة من سيادتكم:</strong>
+  <ol style="margin: 10px 0 0 0; padding-right: 20px; color: #7f1d1d;">
+    <li>تسليم المركبة/المركبات المستأجرة في الموعد المحدد</li>
+    <li>تسوية كافة المستحقات المالية المتبقية</li>
+    <li>إعادة جميع المستندات والمفاتيح</li>
+    <li>التوقيع على محضر الاستلام النهائي</li>
+  </ol>
+</div>
+
+نأمل منكم الالتزام بالموعد المحدد لتسليم المركبة وإتمام إجراءات التسوية النهائية، علماً بأن أي تأخير قد يترتب عليه رسوم إضافية وفقاً لشروط العقد.
+
+نشكر لكم تعاملكم معنا، ونتمنى لكم التوفيق.`;
         break;
 
       case 'general-official':
         recipient = answers.recipient_title 
-          ? `سعادة ${answers.recipient_title} - ${answers.recipient}`
-          : answers.recipient;
+          ? `سعادة السيد ${answers.recipient_title} - ${answers.recipient}`
+          : `سعادة السيد المسؤول - ${answers.recipient}`;
         subject = answers.subject;
-        body = answers.content;
+        body = `بالإشارة إلى الموضوع المذكور أعلاه، يسرنا أن نتقدم إلى سيادتكم بهذا الكتاب الرسمي.
+
+<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
+${answers.content}
+</div>
+
+نأمل من سيادتكم التكرم بالاطلاع والتفضل بالرد أو اتخاذ الإجراء المناسب.
+
+نشكر لكم تعاونكم الدائم، ونتطلع إلى استمرار العلاقة الإيجابية بين الطرفين.`;
         attachments = answers.attachments || '';
         break;
 
