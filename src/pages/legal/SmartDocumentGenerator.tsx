@@ -390,14 +390,14 @@ export default function SmartDocumentGenerator() {
                       )}
                     >
                       {message.type === 'bot' && (
-                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/30">
+                        <div className="flex items-center justify-end gap-2 mb-2 pb-2 border-b border-border/30">
+                          <span className="text-xs font-semibold text-primary">المساعد الذكي</span>
                           <div className="p-1.5 bg-primary/10 rounded-lg">
                             <Sparkles className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <span className="text-xs font-semibold text-primary">المساعد الذكي</span>
                         </div>
                       )}
-                      <p className="whitespace-pre-line text-[15px] leading-relaxed">{message.content}</p>
+                      <p className="whitespace-pre-line text-[15px] leading-relaxed text-right">{message.content}</p>
                       
                       {/* Options buttons */}
                       {message.options && (
