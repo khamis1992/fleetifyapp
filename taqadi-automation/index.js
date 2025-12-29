@@ -305,7 +305,53 @@ async function main() {
     factsFilled = await fillTextarea(page, 'textarea[name="facts"]', data.facts, 'الوقائع');
   }
   if (!factsFilled) {
-    factsFilled = await fillTextarea(page, 'textarea', data.facts, 'الوقائع');
+    // محاولة عبر البحث بالتسمية
+    try {
+      const filled = await page.evaluate((val) => {
+        // البحث عن العنصر الذي يحتوي على "الوقائع"
+        const labels = document.querySelectorAll('label, span, div');
+        for (const label of labels) {
+          if (label.textContent && label.textContent.includes('الوقائع')) {
+            const parent = label.closest('div[class*="form"], div[class*="col"], li, fieldset');
+            if (parent) {
+              const textarea = parent.querySelector('textarea');
+              if (textarea) {
+                textarea.value = val;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+              }
+            }
+          }
+        }
+        // محاولة أخرى - البحث في كل textareas
+        const textareas = document.querySelectorAll('textarea');
+        for (const ta of textareas) {
+          const parent = ta.closest('div, li, fieldset');
+          if (parent && parent.textContent && parent.textContent.includes('الوقائع')) {
+            ta.value = val;
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+            ta.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+          }
+        }
+        // محاولة أخيرة - أول textarea في الصفحة
+        if (textareas.length > 0) {
+          textareas[0].value = val;
+          textareas[0].dispatchEvent(new Event('input', { bubbles: true }));
+          textareas[0].dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+        return false;
+      }, data.facts);
+      
+      if (filled) {
+        logSuccess('تم تعبئة: الوقائع');
+        factsFilled = true;
+      }
+    } catch (e) {
+      logWarning('لم يتم العثور على حقل الوقائع');
+    }
   }
   if (factsFilled) filledCount++;
 
