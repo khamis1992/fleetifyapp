@@ -184,15 +184,16 @@ async function main() {
     if (fillCode) {
       try {
         // تنفيذ الكود المولّد
-        const result = await page.evaluate((code, value) => {
+        const result = await page.evaluate(({ code, value }) => {
           try {
             // إنشاء دالة من الكود
             const func = new Function('value', code);
             return func(value);
           } catch (e) {
+            console.error('Error executing AI code:', e);
             return false;
           }
-        }, fillCode, fieldData.value);
+        }, { code: fillCode, value: fieldData.value });
 
         if (result) {
           logSuccess(`تم تعبئة: ${fieldData.name}`);
