@@ -1,10 +1,6 @@
 /**
- * أداة أتمتة تقاضي
+ * أداة أتمتة تقاضي - النسخة المحسّنة
  * للتحكم بالمتصفح وتعبئة نماذج الدعاوى تلقائياً
- * 
- * الاستخدام:
- *   node index.js                    - تشغيل عادي مع واجهة تفاعلية
- *   node index.js --file data.json   - تعبئة من ملف JSON
  */
 
 const { chromium } = require('playwright');
@@ -20,7 +16,6 @@ const colors = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  magenta: '\x1b[35m',
   cyan: '\x1b[36m',
 };
 
@@ -51,7 +46,7 @@ function loadLawsuitData(filePath) {
   
   if (!fs.existsSync(dataPath)) {
     logError(`ملف البيانات غير موجود: ${dataPath}`);
-    logWarning('قم بإنشاء ملف lawsuit-data.json أو استخدم --file لتحديد ملف آخر');
+    logWarning('قم بتحميل ملف البيانات من نظام العراف');
     process.exit(1);
   }
   
@@ -64,47 +59,74 @@ function loadLawsuitData(filePath) {
   }
 }
 
-// الانتظار للضغط على Enter
-function waitForEnter(message) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-    rl.question(`\n${colors.yellow}${message}${colors.reset}`, () => {
-      rl.close();
-      resolve();
-    });
-  });
+// تعبئة حقل بانتظار ظهوره
+async function safeFill(page, selector, value, fieldName, timeout = 10000) {
+  try {
+    // انتظار ظهور العنصر
+    await page.waitForSelector(selector, { state: 'visible', timeout });
+    
+    // التركيز على العنصر أولاً
+    await page.click(selector);
+    await page.waitForTimeout(200);
+    
+    // مسح المحتوى السابق وتعبئة الجديد
+    await page.fill(selector, '');
+    await page.fill(selector, value);
+    
+    // إطلاق أحداث التغيير
+    await page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, selector);
+    
+    logSuccess(`تم تعبئة: ${fieldName}`);
+    return true;
+  } catch (error) {
+    logWarning(`لم يتم العثور على: ${fieldName} (${error.message})`);
+    return false;
+  }
 }
 
-// تعبئة حقل نصي
-async function fillField(page, selector, value, fieldName) {
+// تعبئة textarea
+async function fillTextarea(page, selector, value, fieldName) {
   try {
-    const element = await page.$(selector);
-    if (element) {
-      await element.fill(value);
-      logSuccess(`تم تعبئة: ${fieldName}`);
-      return true;
-    } else {
-      logWarning(`لم يتم العثور على: ${fieldName}`);
-      return false;
-    }
+    await page.waitForSelector(selector, { state: 'visible', timeout: 10000 });
+    await page.click(selector);
+    await page.waitForTimeout(200);
+    
+    // استخدام evaluate للتعبئة المباشرة
+    await page.evaluate((sel, val) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.value = val;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, selector, value);
+    
+    logSuccess(`تم تعبئة: ${fieldName}`);
+    return true;
   } catch (error) {
-    logError(`خطأ في تعبئة ${fieldName}: ${error.message}`);
+    logWarning(`لم يتم العثور على: ${fieldName}`);
     return false;
   }
 }
 
 // تعبئة TinyMCE
-async function fillTinyMCE(page, iframeId, value, fieldName) {
+async function fillTinyMCE(page, iframeSelector, value, fieldName) {
   try {
-    const iframe = await page.$(`#${iframeId}`);
+    await page.waitForSelector(iframeSelector, { state: 'visible', timeout: 10000 });
+    
+    const iframe = await page.$(iframeSelector);
     if (iframe) {
       const frame = await iframe.contentFrame();
       if (frame) {
-        await frame.$eval('body', (body, val) => {
-          body.innerHTML = val.replace(/\n/g, '<br>');
+        await frame.waitForSelector('body', { state: 'visible' });
+        await frame.evaluate((val) => {
+          document.body.innerHTML = val.replace(/\n/g, '<br>');
         }, value);
         logSuccess(`تم تعبئة: ${fieldName}`);
         return true;
@@ -113,15 +135,16 @@ async function fillTinyMCE(page, iframeId, value, fieldName) {
     logWarning(`لم يتم العثور على: ${fieldName}`);
     return false;
   } catch (error) {
-    logError(`خطأ في تعبئة ${fieldName}: ${error.message}`);
+    logWarning(`خطأ في تعبئة ${fieldName}: ${error.message}`);
     return false;
   }
 }
 
-// النقر على عنصر
-async function clickElement(page, selector, elementName) {
+// النقر على عنصر بأمان
+async function safeClick(page, selector, elementName, timeout = 10000) {
   try {
-    await page.click(selector, { timeout: 5000 });
+    await page.waitForSelector(selector, { state: 'visible', timeout });
+    await page.click(selector);
     logSuccess(`تم النقر على: ${elementName}`);
     return true;
   } catch (error) {
@@ -130,46 +153,18 @@ async function clickElement(page, selector, elementName) {
   }
 }
 
-// اختيار من قائمة منسدلة
-async function selectFromDropdown(page, dropdownSelector, optionText, fieldName) {
+// البحث عن عنصر بالنص والنقر عليه
+async function clickByText(page, text, elementName, timeout = 10000) {
   try {
-    // النقر على القائمة المنسدلة
-    await page.click(dropdownSelector);
-    await page.waitForTimeout(500);
-    
-    // البحث عن الخيار والنقر عليه
-    const option = await page.$(`text="${optionText}"`);
-    if (option) {
-      await option.click();
-      logSuccess(`تم اختيار: ${fieldName} = ${optionText}`);
+    const element = await page.waitForSelector(`text="${text}"`, { state: 'visible', timeout });
+    if (element) {
+      await element.click();
+      logSuccess(`تم النقر على: ${elementName}`);
       return true;
     }
-    logWarning(`لم يتم العثور على الخيار: ${optionText}`);
     return false;
   } catch (error) {
-    logError(`خطأ في اختيار ${fieldName}: ${error.message}`);
-    return false;
-  }
-}
-
-// رفع ملف
-async function uploadFile(page, inputSelector, filePath, fieldName) {
-  try {
-    if (!fs.existsSync(filePath)) {
-      logWarning(`الملف غير موجود: ${filePath}`);
-      return false;
-    }
-    
-    const input = await page.$(inputSelector);
-    if (input) {
-      await input.setInputFiles(filePath);
-      logSuccess(`تم رفع: ${fieldName}`);
-      return true;
-    }
-    logWarning(`لم يتم العثور على حقل الرفع: ${fieldName}`);
-    return false;
-  } catch (error) {
-    logError(`خطأ في رفع ${fieldName}: ${error.message}`);
+    logWarning(`لم يتم العثور على: ${elementName}`);
     return false;
   }
 }
@@ -188,20 +183,20 @@ async function main() {
   const filePath = fileArgIndex !== -1 ? args[fileArgIndex + 1] : null;
   
   logStep('1', 'جاري قراءة بيانات الدعوى...');
-  const lawsuitData = loadLawsuitData(filePath);
-  logSuccess(`تم تحميل بيانات الدعوى: ${lawsuitData.caseTitle}`);
+  const data = loadLawsuitData(filePath);
+  logSuccess(`تم تحميل بيانات الدعوى: ${data.caseTitle}`);
   
   console.log('\n--- معلومات الدعوى ---');
-  console.log(`عنوان الدعوى: ${lawsuitData.caseTitle}`);
-  console.log(`المبلغ: ${lawsuitData.amount} ريال قطري`);
-  console.log(`المدعى عليه: ${lawsuitData.defendantName || 'غير محدد'}`);
+  console.log(`عنوان الدعوى: ${data.caseTitle}`);
+  console.log(`المبلغ: ${data.amount} ريال قطري`);
+  console.log(`المدعى عليه: ${data.defendantName || 'غير محدد'}`);
   console.log('------------------------\n');
 
   // تشغيل المتصفح
   logStep('2', 'جاري تشغيل المتصفح...');
   const browser = await chromium.launch({
-    headless: false, // عرض المتصفح
-    slowMo: 100, // إبطاء العمليات للمشاهدة
+    headless: false,
+    slowMo: 50,
   });
   
   const context = await browser.newContext({
@@ -222,8 +217,7 @@ async function main() {
   log('   سيتم استكمال العملية تلقائياً بعد تسجيل الدخول.\n', 'yellow');
   
   try {
-    // انتظار الوصول للصفحة الرئيسية بعد تسجيل الدخول
-    await page.waitForURL('**/home**', { timeout: 300000 }); // 5 دقائق
+    await page.waitForURL('**/home**', { timeout: 300000 });
     logSuccess('تم تسجيل الدخول بنجاح!');
   } catch (error) {
     logError('انتهت مهلة تسجيل الدخول');
@@ -231,75 +225,129 @@ async function main() {
     process.exit(1);
   }
 
+  await page.waitForTimeout(2000);
+
   // الذهاب لصفحة إنشاء دعوى
   logStep('4', 'جاري الذهاب لصفحة إنشاء دعوى...');
   await page.goto('https://taqadi.sjc.gov.qa/itc/f/caseinfo/create');
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(3000);
   logSuccess('تم فتح صفحة إنشاء دعوى');
 
   // الخطوة 1: اختيار نوع الدعوى
   logStep('5', 'جاري اختيار نوع الدعوى...');
   
+  await page.waitForTimeout(2000);
+  
   // اختيار "عقود الخدمات التجارية"
-  await page.waitForTimeout(1000);
-  const serviceContracts = await page.$('text="عقود الخدمات التجارية"');
-  if (serviceContracts) {
-    await serviceContracts.click();
-    await page.waitForTimeout(500);
-    logSuccess('تم اختيار: عقود الخدمات التجارية');
-  }
+  await clickByText(page, 'عقود الخدمات التجارية', 'عقود الخدمات التجارية');
+  await page.waitForTimeout(1500);
   
   // اختيار "عقود إيجار السيارات"
-  await page.waitForTimeout(1000);
-  const carRental = await page.$('text="عقود إيجار السيارات وخدمات الليموزين"');
-  if (carRental) {
-    await carRental.click();
-    await page.waitForTimeout(500);
-    logSuccess('تم اختيار: عقود إيجار السيارات وخدمات الليموزين');
-  }
+  await clickByText(page, 'عقود إيجار السيارات وخدمات الليموزين', 'عقود إيجار السيارات');
+  await page.waitForTimeout(1500);
   
   // الضغط على التالي
-  await page.waitForTimeout(500);
-  const nextBtn1 = await page.$('text="التالي"');
-  if (nextBtn1) {
-    await nextBtn1.click();
-    await page.waitForTimeout(2000);
-    logSuccess('تم الانتقال للخطوة التالية');
-  }
+  await clickByText(page, 'التالي', 'زر التالي');
+  await page.waitForTimeout(3000);
 
   // الخطوة 2: تفاصيل الدعوى
   logStep('6', 'جاري تعبئة تفاصيل الدعوى...');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
   
   let filledCount = 0;
 
-  // عنوان الدعوى
-  const caseTitleInput = await page.$('input.k-input');
-  if (caseTitleInput) {
-    await caseTitleInput.fill(lawsuitData.caseTitle);
-    filledCount++;
-    logSuccess('تم تعبئة: عنوان الدعوى');
+  // البحث عن حقل عنوان الدعوى بعدة طرق
+  log('   جاري البحث عن حقل عنوان الدعوى...', 'blue');
+  
+  // محاولة 1: عن طريق placeholder
+  let caseTitleFilled = await safeFill(page, 'input[placeholder*="عنوان"]', data.caseTitle, 'عنوان الدعوى');
+  
+  // محاولة 2: عن طريق class
+  if (!caseTitleFilled) {
+    caseTitleFilled = await safeFill(page, 'input.k-textbox', data.caseTitle, 'عنوان الدعوى');
   }
+  
+  // محاولة 3: أول input في المنطقة
+  if (!caseTitleFilled) {
+    try {
+      // البحث عن العنصر الذي يحتوي على "عنوان الدعوى" والحصول على الـ input المجاور
+      await page.evaluate((title) => {
+        const labels = document.querySelectorAll('label, span, div');
+        for (const label of labels) {
+          if (label.textContent && label.textContent.includes('عنوان الدعوى')) {
+            const parent = label.closest('div[class*="form"], div[class*="col"], li');
+            if (parent) {
+              const input = parent.querySelector('input');
+              if (input) {
+                input.value = title;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }, data.caseTitle);
+      logSuccess('تم تعبئة: عنوان الدعوى');
+      caseTitleFilled = true;
+    } catch (e) {
+      logWarning('لم يتم العثور على حقل عنوان الدعوى');
+    }
+  }
+  
+  if (caseTitleFilled) filledCount++;
 
   // الوقائع
-  const factsField = await page.$('#facts') || await page.$('textarea[name="facts"]');
-  if (factsField) {
-    await factsField.fill(lawsuitData.facts);
-    filledCount++;
-    logSuccess('تم تعبئة: الوقائع');
+  log('   جاري البحث عن حقل الوقائع...', 'blue');
+  let factsFilled = await fillTextarea(page, '#facts', data.facts, 'الوقائع');
+  if (!factsFilled) {
+    factsFilled = await fillTextarea(page, 'textarea[name="facts"]', data.facts, 'الوقائع');
   }
+  if (!factsFilled) {
+    factsFilled = await fillTextarea(page, 'textarea', data.facts, 'الوقائع');
+  }
+  if (factsFilled) filledCount++;
 
   // الطلبات (TinyMCE)
-  await fillTinyMCE(page, 'caseDetails_ifr', lawsuitData.claims, 'الطلبات');
-  filledCount++;
+  log('   جاري البحث عن حقل الطلبات...', 'blue');
+  const claimsFilled = await fillTinyMCE(page, '#caseDetails_ifr', data.claims, 'الطلبات');
+  if (claimsFilled) filledCount++;
 
   // المبلغ كتابة
-  const amountWordsField = await page.$('#totalAmountInText');
-  if (amountWordsField) {
-    await amountWordsField.fill(lawsuitData.amountInWords);
-    filledCount++;
-    logSuccess('تم تعبئة: المبلغ كتابة');
+  log('   جاري البحث عن حقل المبلغ كتابة...', 'blue');
+  let amountWordsFilled = await safeFill(page, '#totalAmountInText', data.amountInWords, 'المبلغ كتابة');
+  if (!amountWordsFilled) {
+    amountWordsFilled = await safeFill(page, 'input[name="totalAmountInText"]', data.amountInWords, 'المبلغ كتابة');
   }
+  if (!amountWordsFilled) {
+    // محاولة بالتقييم المباشر
+    try {
+      await page.evaluate((val) => {
+        const labels = document.querySelectorAll('label, span, div');
+        for (const label of labels) {
+          if (label.textContent && label.textContent.includes('المبلغ الإجمالي كتابة')) {
+            const parent = label.closest('div[class*="form"], div[class*="col"], li');
+            if (parent) {
+              const input = parent.querySelector('input');
+              if (input) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }, data.amountInWords);
+      logSuccess('تم تعبئة: المبلغ كتابة');
+      amountWordsFilled = true;
+    } catch (e) {
+      logWarning('لم يتم العثور على حقل المبلغ كتابة');
+    }
+  }
+  if (amountWordsFilled) filledCount++;
 
   console.log('\n');
   log(`═══════════════════════════════════════════════════════════`, 'green');
@@ -308,12 +356,11 @@ async function main() {
   
   logWarning('\n⚠️  ملاحظات هامة:');
   console.log('   1. تحقق من جميع البيانات المعبأة');
-  console.log('   2. قم بتعبئة حقل "المبلغ" يدوياً');
+  console.log('   2. قم بتعبئة حقل "المبلغ" (الرقمي) يدوياً');
   console.log('   3. اختر "نوع المطالبة" من القائمة');
-  console.log('   4. أكمل باقي الخطوات يدوياً (أطراف الدعوى، المستندات، إلخ)');
+  console.log('   4. أكمل باقي الخطوات يدوياً');
   console.log('   5. راجع الدعوى قبل الإرسال النهائي\n');
 
-  // إبقاء المتصفح مفتوحاً
   log('🔵 المتصفح مفتوح. اضغط Ctrl+C لإغلاق البرنامج.', 'blue');
   
   // منع إغلاق البرنامج
@@ -325,4 +372,3 @@ main().catch((error) => {
   logError(`خطأ غير متوقع: ${error.message}`);
   process.exit(1);
 });
-
