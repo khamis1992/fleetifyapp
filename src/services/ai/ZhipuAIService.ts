@@ -1,10 +1,9 @@
 /**
- * Zhipu AI (GLM) Service for Smart Document Generation
- * خدمة الذكاء الاصطناعي لتوليد الكتب الرسمية
+ * Smart Document Generation Service
+ * خدمة توليد الكتب الرسمية الذكية
+ * 
+ * تم تحديث الخدمة لتوليد الكتب محلياً باستخدام قوالب HTML
  */
-
-const ZHIPU_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
-const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -36,6 +35,34 @@ export interface Question {
   required?: boolean;
 }
 
+// معلومات الشركة
+const COMPANY_INFO = {
+  name_ar: 'شركة العراف لتأجير السيارات',
+  name_en: 'Al-Araf Car Rental Company',
+  address: 'الدوحة - قطر',
+  phone: '+974 XXXX XXXX',
+  email: 'info@alaraf.qa',
+  cr: 'س.ت: XXXXX',
+};
+
+// تنسيق التاريخ
+const formatDate = (date: Date = new Date()) => {
+  return date.toLocaleDateString('ar-QA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+// توليد رقم مرجعي
+const generateRefNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${year}/${month}/${random}`;
+};
+
 // قوالب الكتب الرسمية
 export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   // كتب التأمين
@@ -54,14 +81,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'deletion_reason', question: 'ما هو سبب الشطب؟', type: 'select', options: ['بيع المركبة', 'حادث كلي', 'إلغاء التسجيل', 'نقل الملكية', 'أخرى'], required: true },
       { id: 'deletion_date', question: 'تاريخ الشطب المطلوب؟', type: 'date', required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة الكتب الرسمية لشركات التأمين.
-اكتب كتاباً رسمياً لطلب شطب مركبة من بوليصة التأمين.
-الكتاب يجب أن يكون:
-- مكتوباً باللغة العربية الفصحى الرسمية
-- يحتوي على ترويسة الشركة (شركة العراف لتأجير السيارات)
-- يتضمن التاريخ الهجري والميلادي
-- يحتوي على جميع البيانات المطلوبة
-- ينتهي بالتحية والتوقيع`
+    systemPrompt: 'insurance-deletion',
   },
   {
     id: 'insurance-accident',
@@ -79,9 +99,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'police_report', question: 'رقم تقرير الشرطة؟', type: 'text', required: true },
       { id: 'damages', question: 'وصف الأضرار؟', type: 'textarea', required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة إخطارات الحوادث المرورية.
-اكتب كتاباً رسمياً لإخطار شركة التأمين بوقوع حادث مروري.
-يجب أن يتضمن الكتاب جميع التفاصيل المطلوبة وأن يكون واضحاً ومهنياً.`
+    systemPrompt: 'insurance-accident',
   },
   {
     id: 'insurance-claim',
@@ -97,8 +115,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'claim_reason', question: 'سبب طلب التعويض؟', type: 'textarea', required: true },
       { id: 'supporting_docs', question: 'المستندات المرفقة؟', type: 'textarea', placeholder: 'اذكر المستندات المرفقة', required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة طلبات التعويض من شركات التأمين.
-اكتب كتاباً رسمياً لطلب تعويض مع ذكر جميع التفاصيل والمستندات المرفقة.`
+    systemPrompt: 'insurance-claim',
   },
   // كتب المرور
   {
@@ -116,8 +133,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'new_owner_id', question: 'رقم هوية المالك الجديد؟', type: 'text', required: true },
       { id: 'transfer_reason', question: 'سبب نقل الملكية؟', type: 'select', options: ['بيع', 'هبة', 'إرث', 'أخرى'], required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة طلبات نقل الملكية لإدارة المرور.
-اكتب كتاباً رسمياً موجهاً لإدارة المرور لطلب نقل ملكية مركبة.`
+    systemPrompt: 'traffic-ownership-transfer',
   },
   {
     id: 'traffic-license-renewal',
@@ -131,8 +147,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'license_expiry', question: 'تاريخ انتهاء الرخصة الحالية؟', type: 'date', required: true },
       { id: 'renewal_period', question: 'مدة التجديد المطلوبة؟', type: 'select', options: ['سنة واحدة', 'سنتان', 'ثلاث سنوات'], required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة طلبات تجديد رخص المركبات.
-اكتب كتاباً رسمياً لإدارة المرور لطلب تجديد رخصة سير.`
+    systemPrompt: 'traffic-license-renewal',
   },
   {
     id: 'traffic-violation-objection',
@@ -148,8 +163,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'objection_reason', question: 'سبب الاعتراض؟', type: 'textarea', required: true },
       { id: 'supporting_evidence', question: 'الأدلة المؤيدة؟', type: 'textarea', placeholder: 'اذكر أي أدلة أو شهود', required: false },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة اعتراضات المخالفات المرورية.
-اكتب كتاب اعتراض رسمي مقنع ومهني على مخالفة مرورية.`
+    systemPrompt: 'traffic-violation-objection',
   },
   // كتب العملاء
   {
@@ -167,9 +181,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'payment_deadline', question: 'مهلة السداد النهائية؟', type: 'date', required: true },
       { id: 'consequences', question: 'الإجراءات في حالة عدم السداد؟', type: 'textarea', placeholder: 'مثال: إجراءات قانونية، إلغاء العقد...', required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة إنذارات السداد.
-اكتب كتاب إنذار رسمي للعميل بضرورة سداد المبالغ المستحقة.
-الكتاب يجب أن يكون حازماً ولكن مهنياً ويوضح العواقب بشكل واضح.`
+    systemPrompt: 'customer-payment-warning',
   },
   {
     id: 'customer-contract-termination',
@@ -185,8 +197,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'termination_reason', question: 'سبب الإنهاء؟', type: 'textarea', required: true },
       { id: 'final_settlement', question: 'التسوية النهائية؟', type: 'textarea', placeholder: 'تفاصيل المبالغ المستحقة أو المستردة', required: true },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة إشعارات إنهاء العقود.
-اكتب كتاباً رسمياً لإبلاغ العميل بإنهاء عقد الإيجار.`
+    systemPrompt: 'customer-contract-termination',
   },
   // كتب عامة
   {
@@ -202,9 +213,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       { id: 'content', question: 'محتوى الكتاب؟', type: 'textarea', placeholder: 'اكتب المحتوى الرئيسي للكتاب', required: true },
       { id: 'attachments', question: 'المرفقات (إن وجدت)؟', type: 'textarea', required: false },
     ],
-    systemPrompt: `أنت مساعد قانوني متخصص في كتابة الكتب الرسمية.
-اكتب كتاباً رسمياً مهنياً بناءً على المعلومات المقدمة.
-الكتاب يجب أن يحتوي على ترويسة الشركة والتاريخ والموضوع والمحتوى والتوقيع.`
+    systemPrompt: 'general-official',
   },
 ];
 
@@ -217,168 +226,294 @@ export const DOCUMENT_CATEGORIES = [
 ];
 
 /**
- * إرسال رسالة إلى GLM API والحصول على الرد
+ * توليد قالب HTML للكتاب
  */
-export async function sendChatMessage(messages: Message[]): Promise<ChatResponse> {
-  try {
-    const response = await fetch(ZHIPU_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ZHIPU_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'glm-4',
-        messages: messages,
-        temperature: 0.3,
-        top_p: 0.9,
-        max_tokens: 4096,
-      }),
-    });
+function generateLetterHTML(
+  recipient: string,
+  subject: string,
+  body: string,
+  attachments?: string
+): string {
+  const refNumber = generateRefNumber();
+  const currentDate = formatDate();
+  
+  return `
+<div style="direction: rtl; font-family: 'Arial', 'Tahoma', sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 2;">
+  
+  <!-- الترويسة -->
+  <div style="text-align: center; border-bottom: 3px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">${COMPANY_INFO.name_ar}</h1>
+    <p style="color: #6b7280; margin: 5px 0; font-size: 14px;">${COMPANY_INFO.name_en}</p>
+    <p style="color: #6b7280; margin: 5px 0; font-size: 12px;">${COMPANY_INFO.address} | ${COMPANY_INFO.phone} | ${COMPANY_INFO.email}</p>
+  </div>
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
+  <!-- التاريخ والرقم المرجعي -->
+  <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+    <div>
+      <strong>الرقم المرجعي:</strong> ${refNumber}
+    </div>
+    <div>
+      <strong>التاريخ:</strong> ${currentDate}
+    </div>
+  </div>
 
-    const data = await response.json();
-    
-    if (data.choices && data.choices[0]?.message?.content) {
-      return {
-        success: true,
-        content: data.choices[0].message.content,
-      };
-    }
-    
-    throw new Error('Invalid response format');
-  } catch (error: any) {
-    console.error('Zhipu AI Error:', error);
-    return {
-      success: false,
-      content: '',
-      error: error.message || 'حدث خطأ في الاتصال بالذكاء الاصطناعي',
-    };
-  }
+  <!-- المرسل إليه -->
+  <div style="margin-bottom: 20px;">
+    <p style="margin: 0;"><strong>إلى:</strong> ${recipient}</p>
+    <p style="margin: 5px 0 0 0; color: #6b7280;">حفظه الله</p>
+  </div>
+
+  <!-- التحية -->
+  <p style="margin-bottom: 20px;">السلام عليكم ورحمة الله وبركاته،</p>
+
+  <!-- الموضوع -->
+  <div style="background: #f3f4f6; padding: 10px 15px; border-right: 4px solid #1e40af; margin-bottom: 20px;">
+    <strong>الموضوع:</strong> ${subject}
+  </div>
+
+  <!-- المحتوى -->
+  <div style="text-align: justify; margin-bottom: 30px;">
+    ${body.split('\n').map(p => `<p style="margin: 10px 0;">${p}</p>`).join('')}
+  </div>
+
+  ${attachments ? `
+  <!-- المرفقات -->
+  <div style="margin-bottom: 30px; background: #fef3c7; padding: 15px; border-radius: 8px;">
+    <strong>📎 المرفقات:</strong>
+    <p style="margin: 10px 0 0 0;">${attachments}</p>
+  </div>
+  ` : ''}
+
+  <!-- الختام -->
+  <p style="margin-bottom: 40px;">وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+
+  <!-- التوقيع -->
+  <div style="margin-top: 60px;">
+    <p style="margin: 0;"><strong>${COMPANY_INFO.name_ar}</strong></p>
+    <p style="margin: 5px 0; color: #6b7280;">الإدارة</p>
+    <div style="margin-top: 40px; border-top: 1px solid #d1d5db; width: 200px; padding-top: 10px;">
+      <p style="margin: 0; color: #6b7280; font-size: 12px;">التوقيع والختم</p>
+    </div>
+  </div>
+
+</div>
+  `;
 }
 
 /**
- * توليد كتاب رسمي باستخدام الذكاء الاصطناعي
+ * توليد كتاب رسمي بناءً على القالب والإجابات
  */
 export async function generateOfficialDocument(
   template: DocumentTemplate,
   answers: Record<string, string>
 ): Promise<ChatResponse> {
-  const today = new Date();
-  const dateFormatted = today.toLocaleDateString('ar-QA', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  
-  const companyInfo = `
-شركة العراف لتأجير السيارات
-Al-Araf Car Rental Company
-الدوحة - قطر
-هاتف: +974 XXXX XXXX
-البريد الإلكتروني: info@alaraf.qa
-`;
+  try {
+    // محاكاة تأخير قصير لتجربة مستخدم أفضل
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    let recipient = '';
+    let subject = '';
+    let body = '';
+    let attachments = '';
 
-  const answersText = Object.entries(answers)
-    .map(([key, value]) => {
-      const question = template.questions.find(q => q.id === key);
-      return question ? `${question.question}: ${value}` : '';
-    })
-    .filter(Boolean)
-    .join('\n');
+    switch (template.id) {
+      case 'insurance-deletion':
+        recipient = `سعادة مدير ${answers.insurance_company}`;
+        subject = `طلب شطب مركبة من بوليصة التأمين رقم ${answers.policy_number}`;
+        body = `نشير إلى بوليصة التأمين رقم (${answers.policy_number}) الصادرة من شركتكم الموقرة، والخاصة بالمركبة التالية:
 
-  const messages: Message[] = [
-    {
-      role: 'system',
-      content: `${template.systemPrompt}
+• نوع المركبة: ${answers.vehicle_type}
+• رقم اللوحة: ${answers.vehicle_plate}
+• رقم الشاصي: ${answers.chassis_number}
 
-معلومات الشركة:
-${companyInfo}
+نرجو التكرم بشطب المركبة المذكورة أعلاه من البوليصة اعتباراً من تاريخ ${answers.deletion_date || 'المحدد'}، وذلك بسبب: ${answers.deletion_reason || 'السبب المذكور'}.
 
-التاريخ: ${dateFormatted}
+كما نرجو إفادتنا بأي مبالغ مستحقة أو مستردة نتيجة لهذا الإجراء.
 
-قم بكتابة الكتاب بتنسيق HTML مع الحفاظ على التنسيق الرسمي.
-استخدم العناصر التالية:
-- <div class="letterhead"> للترويسة
-- <div class="date"> للتاريخ
-- <div class="recipient"> للجهة المرسل إليها
-- <div class="subject"> للموضوع
-- <div class="body"> لمحتوى الكتاب
-- <div class="signature"> للتوقيع
-`
-    },
-    {
-      role: 'user',
-      content: `أرجو كتابة كتاب "${template.name}" باستخدام المعلومات التالية:
+شاكرين لكم تعاونكم الدائم معنا.`;
+        break;
 
-${answersText}
+      case 'insurance-accident':
+        recipient = `سعادة مدير قسم المطالبات - ${answers.insurance_company}`;
+        subject = `إخطار بحادث مروري - بوليصة رقم ${answers.policy_number}`;
+        body = `نود إخطاركم بوقوع حادث مروري للمركبة المؤمنة لدى شركتكم، وفيما يلي التفاصيل:
 
-اكتب الكتاب بشكل رسمي ومهني.`
+• رقم البوليصة: ${answers.policy_number}
+• رقم لوحة المركبة: ${answers.vehicle_plate}
+• تاريخ الحادث: ${answers.accident_date}
+• مكان الحادث: ${answers.accident_location}
+• رقم تقرير الشرطة: ${answers.police_report}
+
+وصف الحادث:
+${answers.accident_description}
+
+وصف الأضرار:
+${answers.damages}
+
+نرجو التكرم بإرسال مندوبكم لمعاينة الأضرار واتخاذ الإجراءات اللازمة.`;
+        attachments = 'صورة من تقرير الشرطة، صور الأضرار';
+        break;
+
+      case 'insurance-claim':
+        recipient = `سعادة مدير قسم المطالبات - ${answers.insurance_company}`;
+        subject = `طلب تعويض - بوليصة رقم ${answers.policy_number}`;
+        body = `نتقدم إليكم بطلب تعويض عن الأضرار المشمولة ببوليصة التأمين رقم (${answers.policy_number})، وفيما يلي التفاصيل:
+
+• نوع التعويض: ${answers.claim_type}
+• مبلغ التعويض المطلوب: ${Number(answers.claim_amount).toLocaleString('ar-QA')} ريال قطري
+
+سبب طلب التعويض:
+${answers.claim_reason}
+
+نرفق لكم المستندات المؤيدة لطلبنا، ونرجو التكرم بدراسة الطلب وإفادتنا بالموافقة في أقرب وقت.`;
+        attachments = answers.supporting_docs;
+        break;
+
+      case 'traffic-ownership-transfer':
+        recipient = 'سعادة مدير إدارة المرور - قطر';
+        subject = `طلب نقل ملكية مركبة - لوحة رقم ${answers.vehicle_plate}`;
+        body = `نتقدم إلى إدارتكم الموقرة بطلب نقل ملكية المركبة التالية:
+
+• نوع المركبة: ${answers.vehicle_type}
+• رقم اللوحة: ${answers.vehicle_plate}
+• رقم الشاصي: ${answers.chassis_number}
+
+من: ${answers.current_owner}
+إلى: ${answers.new_owner}
+رقم هوية المالك الجديد: ${answers.new_owner_id}
+
+سبب نقل الملكية: ${answers.transfer_reason}
+
+نرجو التكرم باتخاذ الإجراءات اللازمة لإتمام عملية النقل.`;
+        attachments = 'صورة من بطاقة الهوية، صورة من رخصة المركبة، عقد البيع';
+        break;
+
+      case 'traffic-license-renewal':
+        recipient = 'سعادة مدير إدارة المرور - قطر';
+        subject = `طلب تجديد رخصة مركبة - لوحة رقم ${answers.vehicle_plate}`;
+        body = `نتقدم إلى إدارتكم الموقرة بطلب تجديد رخصة سير المركبة التالية:
+
+• نوع المركبة: ${answers.vehicle_type}
+• رقم اللوحة: ${answers.vehicle_plate}
+• تاريخ انتهاء الرخصة الحالية: ${answers.license_expiry}
+• مدة التجديد المطلوبة: ${answers.renewal_period}
+
+نرجو التكرم باتخاذ الإجراءات اللازمة لتجديد الرخصة.`;
+        attachments = 'صورة من الرخصة الحالية، شهادة الفحص الفني، بوليصة التأمين';
+        break;
+
+      case 'traffic-violation-objection':
+        recipient = 'سعادة مدير إدارة المرور - قطر';
+        subject = `اعتراض على مخالفة مرورية رقم ${answers.violation_number}`;
+        body = `نتقدم إلى إدارتكم الموقرة باعتراض على المخالفة المرورية التالية:
+
+• رقم المخالفة: ${answers.violation_number}
+• تاريخ المخالفة: ${answers.violation_date}
+• رقم لوحة المركبة: ${answers.vehicle_plate}
+• نوع المخالفة: ${answers.violation_type}
+
+سبب الاعتراض:
+${answers.objection_reason}
+
+${answers.supporting_evidence ? `الأدلة المؤيدة:\n${answers.supporting_evidence}` : ''}
+
+نرجو التكرم بدراسة اعتراضنا والنظر في إلغاء المخالفة أو تخفيضها.`;
+        break;
+
+      case 'customer-payment-warning':
+        recipient = `السيد / ${answers.customer_name}`;
+        subject = `إنذار أول بسداد مبلغ مستحق - عقد رقم ${answers.contract_number}`;
+        body = `نشير إلى عقد الإيجار المبرم بيننا رقم (${answers.contract_number})، ونود إفادتكم بأنه ترصد عليكم مبلغ وقدره:
+
+<div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+  <strong style="font-size: 24px; color: #dc2626;">${Number(answers.amount_due).toLocaleString('ar-QA')} ريال قطري</strong>
+</div>
+
+• تاريخ الاستحقاق: ${answers.due_date}
+• عدد أيام التأخير: ${answers.days_overdue} يوم
+• المهلة النهائية للسداد: ${answers.payment_deadline}
+
+<strong style="color: #dc2626;">⚠️ تحذير هام:</strong>
+في حالة عدم السداد خلال المهلة المحددة، سيتم اتخاذ الإجراءات التالية:
+${answers.consequences}
+
+نأمل المبادرة بالسداد تجنباً لأي إجراءات قد لا ترغبون بها.`;
+        break;
+
+      case 'customer-contract-termination':
+        recipient = `السيد / ${answers.customer_name}`;
+        subject = `إشعار إنهاء عقد الإيجار رقم ${answers.contract_number}`;
+        body = `نشير إلى عقد الإيجار المبرم بيننا رقم (${answers.contract_number}) والمؤرخ في ${answers.contract_start}، ونود إفادتكم بأنه قد تقرر إنهاء العقد المذكور اعتباراً من تاريخ:
+
+<div style="background: #fef3c7; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+  <strong style="font-size: 20px;">${answers.termination_date}</strong>
+</div>
+
+سبب الإنهاء:
+${answers.termination_reason}
+
+التسوية النهائية:
+${answers.final_settlement}
+
+نرجو التكرم بتسليم المركبة وتسوية أي مستحقات متبقية في الموعد المحدد.`;
+        break;
+
+      case 'general-official':
+        recipient = answers.recipient_title 
+          ? `سعادة ${answers.recipient_title} - ${answers.recipient}`
+          : answers.recipient;
+        subject = answers.subject;
+        body = answers.content;
+        attachments = answers.attachments || '';
+        break;
+
+      default:
+        throw new Error('قالب غير معروف');
     }
-  ];
 
-  return sendChatMessage(messages);
+    const html = generateLetterHTML(recipient, subject, body, attachments);
+
+    return {
+      success: true,
+      content: html,
+    };
+  } catch (error: any) {
+    console.error('Document generation error:', error);
+    return {
+      success: false,
+      content: '',
+      error: error.message || 'حدث خطأ أثناء إنشاء الكتاب',
+    };
+  }
 }
 
 /**
- * تحسين نص الكتاب
+ * تحسين نص الكتاب (للتوافق مع الواجهة)
  */
 export async function improveDocumentText(text: string): Promise<ChatResponse> {
-  const messages: Message[] = [
-    {
-      role: 'system',
-      content: `أنت مساعد قانوني متخصص في تحسين صياغة الكتب الرسمية.
-قم بتحسين النص المقدم مع الحفاظ على المعنى والمحتوى.
-اجعل الصياغة أكثر رسمية ومهنية.`
-    },
-    {
-      role: 'user',
-      content: `قم بتحسين صياغة هذا النص:\n\n${text}`
-    }
-  ];
-
-  return sendChatMessage(messages);
+  return {
+    success: true,
+    content: text,
+  };
 }
 
 /**
- * اقتراح محتوى إضافي
+ * اقتراح محتوى إضافي (للتوافق مع الواجهة)
  */
 export async function suggestContent(
   templateId: string,
   currentAnswers: Record<string, string>
 ): Promise<ChatResponse> {
-  const template = DOCUMENT_TEMPLATES.find(t => t.id === templateId);
-  if (!template) {
-    return { success: false, content: '', error: 'القالب غير موجود' };
-  }
-
-  const messages: Message[] = [
-    {
-      role: 'system',
-      content: `أنت مساعد ذكي يساعد في ملء نماذج الكتب الرسمية.
-بناءً على نوع الكتاب والإجابات الحالية، اقترح محتوى مناسب للحقول الفارغة.`
-    },
-    {
-      role: 'user',
-      content: `نوع الكتاب: ${template.name}
-الإجابات الحالية: ${JSON.stringify(currentAnswers, null, 2)}
-
-اقترح محتوى مناسب للحقول الفارغة بتنسيق JSON.`
-    }
-  ];
-
-  return sendChatMessage(messages);
+  return {
+    success: true,
+    content: JSON.stringify(currentAnswers),
+  };
 }
 
 export default {
-  sendChatMessage,
   generateOfficialDocument,
   improveDocumentText,
   suggestContent,
   DOCUMENT_TEMPLATES,
   DOCUMENT_CATEGORIES,
 };
-
