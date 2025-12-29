@@ -200,13 +200,19 @@ ${taqadiData.claims}
       return;
     }
 
+    // حساب اسم العميل داخل الدالة لتجنب مشكلة الترتيب
+    const customer = (contract as any).customers;
+    const defendantName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
     const extensionData = {
       caseTitle: taqadiData.caseTitle,
       facts: taqadiData.facts,
       claims: taqadiData.claims,
       amount: taqadiData.amount,
       amountInWords: taqadiData.amountInWords,
-      defendantName: customerFullName,
+      defendantName: defendantName,
       contractNumber: contract.contract_number,
       savedAt: new Date().toISOString(),
     };
@@ -233,7 +239,7 @@ ${taqadiData.claims}
     }
 
     toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط "تعبئة من العراف"');
-  }, [taqadiData, contract, customerFullName]);
+  }, [taqadiData, contract]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
