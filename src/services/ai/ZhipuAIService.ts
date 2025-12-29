@@ -229,7 +229,38 @@ export const DOCUMENT_CATEGORIES = [
 ];
 
 /**
- * توليد قالب HTML احترافي للكتاب الرسمي
+ * التحقق من نوع المستلم (جهة/محكمة أو شخص)
+ */
+function isOrganization(recipient: string): boolean {
+  const orgKeywords = [
+    'محكمة', 'إدارة', 'وزارة', 'هيئة', 'مؤسسة', 'شركة', 'بنك', 'مصرف',
+    'جامعة', 'كلية', 'مدرسة', 'مستشفى', 'مركز', 'قسم', 'دائرة', 'مكتب',
+    'سفارة', 'قنصلية', 'نيابة', 'تنفيذ', 'استئناف', 'تمييز', 'مرور', 'شرطة'
+  ];
+  return orgKeywords.some(keyword => recipient.includes(keyword));
+}
+
+/**
+ * تنسيق المستلم بشكل صحيح
+ */
+function formatRecipient(recipient: string): { formatted: string; greeting: string } {
+  const isOrg = isOrganization(recipient);
+  
+  if (isOrg) {
+    return {
+      formatted: recipient,
+      greeting: '' // لا نضع "حفظه الله" للجهات
+    };
+  } else {
+    return {
+      formatted: `السيد / ${recipient}`,
+      greeting: 'حفظه الله ورعاه'
+    };
+  }
+}
+
+/**
+ * توليد قالب HTML احترافي للكتاب الرسمي - مُحسّن للطباعة على A4
  */
 function generateLetterHTML(
   recipient: string,
@@ -239,128 +270,410 @@ function generateLetterHTML(
 ): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDate();
+  const recipientInfo = formatRecipient(recipient);
   
   return `
-<div style="direction: rtl; font-family: 'Traditional Arabic', 'Arial', 'Tahoma', serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 2; background: #fff; border: 2px solid #1e3a5f;">
-  
-  <!-- الترويسة الرسمية -->
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px double #1e3a5f; padding-bottom: 20px; margin-bottom: 25px;">
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>كتاب رسمي - ${COMPANY_INFO.name_ar}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
     
-    <!-- بيانات الشركة بالعربية -->
-    <div style="flex: 1; text-align: right;">
-      <h1 style="color: #1e3a5f; margin: 0; font-size: 22px; font-weight: bold;">${COMPANY_INFO.name_ar}</h1>
-      <p style="color: #4a5568; margin: 3px 0; font-size: 11px;">ذ.م.م</p>
-      <p style="color: #718096; margin: 3px 0; font-size: 11px;">${COMPANY_INFO.cr}</p>
-    </div>
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .letter-container {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+    }
     
-    <!-- الشعار -->
-    <div style="flex: 0 0 150px; text-align: center; padding: 0 20px;">
-      <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" style="max-height: 80px; max-width: 140px;" onerror="this.style.display='none'" />
-    </div>
+    body {
+      font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #000;
+      background: #fff;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
     
-    <!-- بيانات الشركة بالإنجليزية -->
-    <div style="flex: 1; text-align: left;" dir="ltr">
-      <h1 style="color: #1e3a5f; margin: 0; font-size: 16px; font-weight: bold;">${COMPANY_INFO.name_en}</h1>
-      <p style="color: #718096; margin: 3px 0; font-size: 10px;">C.R: 146832</p>
-    </div>
-  </div>
-  
-  <!-- العنوان -->
-  <div style="text-align: center; color: #718096; font-size: 11px; margin-bottom: 20px;">
-    ${COMPANY_INFO.address}
-    <br/>
-    هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
-  </div>
-
-  <!-- التاريخ والرقم المرجعي -->
-  <div style="display: flex; justify-content: space-between; margin-bottom: 25px; padding: 12px 15px; background: #f7fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-    <div style="font-size: 14px;">
-      <strong style="color: #2d3748;">الرقم المرجعي:</strong>
-      <span style="color: #1e3a5f; font-weight: bold; margin-right: 8px;">${refNumber}</span>
-    </div>
-    <div style="font-size: 14px;">
-      <strong style="color: #2d3748;">التاريخ:</strong>
-      <span style="color: #1e3a5f; margin-right: 8px;">${currentDate}</span>
-    </div>
-  </div>
-
-  <!-- المرسل إليه -->
-  <div style="margin-bottom: 20px; padding: 15px; border-right: 4px solid #1e3a5f; background: #f8fafc;">
-    <p style="margin: 0; font-size: 16px;"><strong style="color: #1e3a5f;">إلى / </strong> ${recipient}</p>
-    <p style="margin: 8px 0 0 0; color: #4a5568; font-size: 14px;">حفظه الله ورعاه</p>
-  </div>
-
-  <!-- التحية -->
-  <p style="margin: 25px 0; font-size: 16px; color: #2d3748;">السلام عليكم ورحمة الله وبركاته،</p>
-  <p style="margin: 0 0 20px 0; font-size: 15px; color: #4a5568;">تحية طيبة وبعد،،،</p>
-
-  <!-- الموضوع -->
-  <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); color: #fff; padding: 12px 20px; margin-bottom: 25px; border-radius: 6px;">
-    <strong style="font-size: 15px;">الموضوع: </strong>
-    <span style="font-size: 15px;">${subject}</span>
-  </div>
-
-  <!-- المقدمة -->
-  <p style="margin: 0 0 15px 0; font-size: 15px; color: #2d3748;">
-    نحن <strong>${COMPANY_INFO.name_ar}</strong>، نتقدم إليكم بهذا الكتاب الرسمي بخصوص الموضوع المذكور أعلاه، ونفيدكم بالآتي:
-  </p>
-
-  <!-- المحتوى -->
-  <div style="text-align: justify; margin-bottom: 30px; font-size: 15px; color: #2d3748; padding: 20px; background: #fafafa; border-radius: 8px; border: 1px solid #e8e8e8;">
-    ${body.split('\n').filter(p => p.trim()).map(p => `<p style="margin: 12px 0; line-height: 2.2;">${p}</p>`).join('')}
-  </div>
-
-  ${attachments ? `
-  <!-- المرفقات -->
-  <div style="margin-bottom: 25px; background: #fffbeb; padding: 15px 20px; border-radius: 8px; border: 1px solid #fcd34d;">
-    <strong style="color: #92400e; font-size: 14px;">📎 المرفقات:</strong>
-    <ul style="margin: 10px 0 0 0; padding-right: 20px; color: #78350f;">
-      ${attachments.split('،').map(att => `<li style="margin: 5px 0;">${att.trim()}</li>`).join('')}
-    </ul>
-  </div>
-  ` : ''}
-
-  <!-- الختام -->
-  <div style="margin: 30px 0; text-align: center;">
-    <p style="font-size: 15px; color: #2d3748; margin: 0;">وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
-  </div>
-
-  <!-- التوقيع الرسمي -->
-  <div style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end;">
+    .letter-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px 30px;
+      background: #fff;
+    }
     
-    <!-- مكان الختم -->
-    <div style="text-align: center; width: 150px;">
-      <div style="width: 120px; height: 120px; border: 2px dashed #cbd5e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-        <span style="color: #a0aec0; font-size: 11px;">مكان الختم</span>
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px double #1e3a5f;
+      padding-bottom: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .company-ar {
+      flex: 1;
+      text-align: right;
+    }
+    
+    .company-ar h1 {
+      color: #1e3a5f;
+      margin: 0;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .company-ar p {
+      color: #000;
+      margin: 2px 0;
+      font-size: 11px;
+    }
+    
+    .logo-container {
+      flex: 0 0 130px;
+      text-align: center;
+      padding: 0 15px;
+    }
+    
+    .logo-container img {
+      max-height: 70px;
+      max-width: 120px;
+    }
+    
+    .company-en {
+      flex: 1;
+      text-align: left;
+    }
+    
+    .company-en h1 {
+      color: #1e3a5f;
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .company-en p {
+      color: #000;
+      margin: 2px 0;
+      font-size: 10px;
+    }
+    
+    .address-bar {
+      text-align: center;
+      color: #000;
+      font-size: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .ref-date {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #000;
+    }
+    
+    .recipient-box {
+      margin-bottom: 15px;
+      padding: 12px 15px;
+      border-right: 4px solid #1e3a5f;
+      background: #f5f5f5;
+    }
+    
+    .recipient-box p {
+      margin: 0;
+      font-size: 15px;
+      color: #000;
+    }
+    
+    .recipient-box .greeting {
+      margin-top: 5px;
+      font-size: 13px;
+    }
+    
+    .salutation {
+      margin: 20px 0 10px 0;
+      font-size: 15px;
+      color: #000;
+    }
+    
+    .subject-box {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .intro {
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #000;
+    }
+    
+    .content {
+      text-align: justify;
+      margin-bottom: 25px;
+      font-size: 14px;
+      color: #000;
+      padding: 15px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .content p {
+      margin: 10px 0;
+      line-height: 2;
+    }
+    
+    .attachments {
+      margin-bottom: 20px;
+      background: #fffbeb;
+      padding: 12px 15px;
+      border: 1px solid #fcd34d;
+    }
+    
+    .attachments strong {
+      color: #92400e;
+      font-size: 13px;
+    }
+    
+    .attachments ul {
+      margin: 8px 0 0 0;
+      padding-right: 20px;
+      color: #000;
+    }
+    
+    .attachments li {
+      margin: 4px 0;
+    }
+    
+    .closing {
+      text-align: center;
+      margin: 25px 0;
+      font-size: 14px;
+      color: #000;
+    }
+    
+    .signature-section {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    
+    .stamp-area {
+      text-align: center;
+      width: 120px;
+    }
+    
+    .stamp-circle {
+      width: 100px;
+      height: 100px;
+      border: 2px dashed #999;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    
+    .stamp-circle span {
+      color: #666;
+      font-size: 10px;
+    }
+    
+    .signatory {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .signatory .company-name {
+      color: #1e3a5f;
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 35px;
+    }
+    
+    .signatory .line {
+      border-top: 2px solid #1e3a5f;
+      width: 200px;
+      margin: 0 auto;
+      padding-top: 8px;
+    }
+    
+    .signatory .name {
+      font-size: 15px;
+      font-weight: bold;
+      color: #000;
+      margin: 0;
+    }
+    
+    .signatory .title {
+      font-size: 12px;
+      color: #000;
+      margin-top: 3px;
+    }
+    
+    .sign-area {
+      text-align: center;
+      width: 120px;
+    }
+    
+    .sign-line {
+      width: 100px;
+      height: 50px;
+      border-bottom: 2px solid #999;
+      margin: 0 auto 8px auto;
+    }
+    
+    .sign-area span {
+      color: #666;
+      font-size: 10px;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+      text-align: center;
+      font-size: 9px;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="letter-container">
+    
+    <!-- الترويسة -->
+    <div class="header">
+      <div class="company-ar">
+        <h1>${COMPANY_INFO.name_ar}</h1>
+        <p>ذ.م.م</p>
+        <p>${COMPANY_INFO.cr}</p>
+      </div>
+      
+      <div class="logo-container">
+        <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" onerror="this.style.display='none'" />
+      </div>
+      
+      <div class="company-en" dir="ltr">
+        <h1>${COMPANY_INFO.name_en}</h1>
+        <p>C.R: 146832</p>
       </div>
     </div>
     
-    <!-- بيانات الموقع -->
-    <div style="text-align: center; flex: 1;">
-      <p style="margin: 0 0 5px 0; color: #1e3a5f; font-weight: bold; font-size: 16px;">${COMPANY_INFO.name_ar}</p>
-      <div style="border-top: 2px solid #1e3a5f; width: 250px; margin: 40px auto 10px auto; padding-top: 10px;">
-        <p style="margin: 0; font-size: 16px; font-weight: bold; color: #1e3a5f;">${COMPANY_INFO.authorized_signatory}</p>
-        <p style="margin: 5px 0 0 0; font-size: 13px; color: #718096;">${COMPANY_INFO.authorized_title}</p>
-      </div>
+    <!-- العنوان -->
+    <div class="address-bar">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
     </div>
     
-    <!-- مكان التوقيع -->
-    <div style="text-align: center; width: 150px;">
-      <div style="width: 120px; height: 60px; border-bottom: 2px solid #cbd5e0; margin: 0 auto 10px auto;"></div>
-      <span style="color: #718096; font-size: 11px;">التوقيع</span>
+    <!-- التاريخ والرقم المرجعي -->
+    <div class="ref-date">
+      <div><strong>الرقم المرجعي:</strong> ${refNumber}</div>
+      <div><strong>التاريخ:</strong> ${currentDate}</div>
     </div>
-  </div>
-
-  <!-- الذيل -->
-  <div style="margin-top: 40px; padding-top: 15px; border-top: 2px solid #e2e8f0; text-align: center;">
-    <p style="margin: 0; font-size: 10px; color: #a0aec0;">
-      ${COMPANY_INFO.address}
-      <br/>
-      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+    
+    <!-- المرسل إليه -->
+    <div class="recipient-box">
+      <p><strong>إلى / </strong> ${recipientInfo.formatted}</p>
+      ${recipientInfo.greeting ? `<p class="greeting">${recipientInfo.greeting}</p>` : ''}
+    </div>
+    
+    <!-- التحية -->
+    <p class="salutation">السلام عليكم ورحمة الله وبركاته،</p>
+    <p class="salutation" style="margin-top: 0;">تحية طيبة وبعد،،،</p>
+    
+    <!-- الموضوع -->
+    <div class="subject-box">
+      <strong>الموضوع: </strong>${subject}
+    </div>
+    
+    <!-- المقدمة -->
+    <p class="intro">
+      نحن <strong>${COMPANY_INFO.name_ar}</strong>، نتقدم إليكم بهذا الكتاب الرسمي بخصوص الموضوع المذكور أعلاه، ونفيدكم بالآتي:
     </p>
+    
+    <!-- المحتوى -->
+    <div class="content">
+      ${body.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('')}
+    </div>
+    
+    ${attachments ? `
+    <!-- المرفقات -->
+    <div class="attachments">
+      <strong>📎 المرفقات:</strong>
+      <ul>
+        ${attachments.split('،').map(att => `<li>${att.trim()}</li>`).join('')}
+      </ul>
+    </div>
+    ` : ''}
+    
+    <!-- الختام -->
+    <div class="closing">
+      <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
+    </div>
+    
+    <!-- التوقيع -->
+    <div class="signature-section">
+      <div class="stamp-area">
+        <div class="stamp-circle">
+          <span>مكان الختم</span>
+        </div>
+      </div>
+      
+      <div class="signatory">
+        <p class="company-name">${COMPANY_INFO.name_ar}</p>
+        <div class="line">
+          <p class="name">${COMPANY_INFO.authorized_signatory}</p>
+          <p class="title">${COMPANY_INFO.authorized_title}</p>
+        </div>
+      </div>
+      
+      <div class="sign-area">
+        <div class="sign-line"></div>
+        <span>التوقيع</span>
+      </div>
+    </div>
+    
+    <!-- الذيل -->
+    <div class="footer">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+    </div>
+    
   </div>
-
-</div>
+</body>
+</html>
   `;
 }
 
@@ -705,17 +1018,23 @@ ${answers.final_settlement}
         break;
 
       case 'general-official':
-        recipient = answers.recipient_title 
-          ? `سعادة السيد ${answers.recipient_title} - ${answers.recipient}`
-          : `سعادة السيد المسؤول - ${answers.recipient}`;
+        // التعامل مع الجهات والمحاكم بشكل صحيح
+        const isRecipientOrg = isOrganization(answers.recipient);
+        if (isRecipientOrg) {
+          recipient = answers.recipient_title 
+            ? `${answers.recipient_title} - ${answers.recipient}`
+            : answers.recipient;
+        } else {
+          recipient = answers.recipient_title 
+            ? `سعادة ${answers.recipient_title} / ${answers.recipient}`
+            : answers.recipient;
+        }
         subject = answers.subject;
-        body = `بالإشارة إلى الموضوع المذكور أعلاه، يسرنا أن نتقدم إلى سيادتكم بهذا الكتاب الرسمي.
+        body = `بالإشارة إلى الموضوع المذكور أعلاه، يسرنا أن نتقدم إليكم بهذا الكتاب الرسمي.
 
-<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
 ${answers.content}
-</div>
 
-نأمل من سيادتكم التكرم بالاطلاع والتفضل بالرد أو اتخاذ الإجراء المناسب.
+نأمل التكرم بالاطلاع والتفضل بالرد أو اتخاذ الإجراء المناسب.
 
 نشكر لكم تعاونكم الدائم، ونتطلع إلى استمرار العلاقة الإيجابية بين الطرفين.`;
         attachments = answers.attachments || '';
