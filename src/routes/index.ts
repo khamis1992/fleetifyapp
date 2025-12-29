@@ -142,6 +142,9 @@ const LateFees = lazy(() => import('@/pages/legal/LateFees'));
 const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
 const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
 const SmartDocumentGenerator = lazy(() => import('@/pages/legal/SmartDocumentGenerator'));
+const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocuments'));
+const OverdueContracts = lazy(() => import('@/pages/legal/OverdueContracts'));
+const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
 
 // Contract management
 const DuplicateContractsManager = lazy(() => import('@/components/contracts/DuplicateContractsManager'));
@@ -1451,6 +1454,42 @@ const routeConfigs: RouteConfig[] = [
     description: 'Legal Document Generator',
     group: 'legal',
     priority: 128,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/legal/documents',
+    component: CompanyLegalDocuments,
+    lazy: true,
+    exact: true,
+    title: 'مستندات الشركة القانونية',
+    description: 'Company Legal Documents',
+    group: 'legal',
+    priority: 129,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/legal/overdue-contracts',
+    component: OverdueContracts,
+    lazy: true,
+    exact: true,
+    title: 'العقود المتعثرة',
+    description: 'Overdue Contracts',
+    group: 'legal',
+    priority: 130,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/legal/lawsuit/prepare/:contractId',
+    component: LawsuitPreparation,
+    lazy: true,
+    exact: true,
+    title: 'تجهيز الدعوى',
+    description: 'Lawsuit Preparation',
+    group: 'legal',
+    priority: 131,
     protected: true,
     layout: 'bento',
   },

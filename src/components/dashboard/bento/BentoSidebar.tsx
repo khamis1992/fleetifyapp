@@ -106,6 +106,8 @@ const navigation: NavItem[] = [
     children: [
       { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases' },
       { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator' },
+      { id: 'legal-documents', label: 'مستندات الشركة', href: '/legal/documents' },
+      { id: 'legal-overdue', label: 'العقود المتعثرة', href: '/legal/overdue-contracts' },
     ],
   },
   {
