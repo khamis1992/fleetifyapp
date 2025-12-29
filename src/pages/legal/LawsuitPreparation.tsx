@@ -220,25 +220,27 @@ ${taqadiData.claims}
     // حفظ في localStorage للإضافة
     localStorage.setItem('alarafLawsuitData', JSON.stringify(extensionData));
     
+    // إرسال رسالة للإضافة عبر postMessage
+    window.postMessage({
+      type: 'ALARAF_LAWSUIT_DATA',
+      data: extensionData
+    }, '*');
+    
     // محاولة إرسال للإضافة مباشرة (إذا كانت مثبتة)
     try {
       // @ts-ignore - Chrome extension API
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        // Extension ID - يجب تحديثه بعد تثبيت الإضافة
-        const extensionId = localStorage.getItem('alarafExtensionId');
-        if (extensionId) {
-          // @ts-ignore
-          chrome.runtime.sendMessage(extensionId, {
-            action: 'saveLawsuitData',
-            data: extensionData
-          });
-        }
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        // @ts-ignore
+        chrome.storage.local.set({ alarafLawsuitData: extensionData }, () => {
+          console.log('[العراف] تم حفظ البيانات في تخزين الإضافة');
+        });
       }
     } catch (e) {
-      // الإضافة غير مثبتة - لا مشكلة
+      // الإضافة غير مثبتة أو غير متاحة - لا مشكلة
+      console.log('[العراف] الإضافة غير مثبتة، البيانات محفوظة في localStorage');
     }
 
-    toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط "تعبئة من العراف"');
+    toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط على أيقونة الإضافة 🚗');
   }, [taqadiData, contract]);
 
   // الحصول على مستند حسب النوع
