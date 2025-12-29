@@ -244,3 +244,15 @@
   color: white;
 }
 
+/* قوائم داخل رسائل الحالة */
+.alaraf-status ul {
+  margin: 10px 0 0 0;
+  padding-right: 20px;
+  list-style-type: disc;
+}
+
+.alaraf-status ul li {
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+

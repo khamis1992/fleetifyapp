@@ -179,6 +179,95 @@
     });
   }
 
+  // تعبئة TinyMCE editor
+  function fillTinyMCE(iframeId, value, description) {
+    try {
+      const iframe = document.getElementById(iframeId);
+      if (iframe && iframe.contentDocument) {
+        const body = iframe.contentDocument.body;
+        if (body) {
+          body.innerHTML = value.replace(/\n/g, '<br>');
+          // Trigger change event on the hidden textarea
+          const textareaId = iframeId.replace('_ifr', '');
+          const textarea = document.getElementById(textareaId);
+          if (textarea) {
+            textarea.value = value;
+            textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          console.log(`[العراف] تم تعبئة TinyMCE: ${description}`);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error(`[العراف] خطأ في تعبئة TinyMCE: ${e.message}`);
+    }
+    return false;
+  }
+
+  // تعبئة حقل Kendo بالبحث عن Label
+  function fillKendoByLabel(labelText, value, description) {
+    try {
+      // البحث عن جميع العناصر التي تحتوي على النص
+      const labels = document.querySelectorAll('span, label, div');
+      for (const label of labels) {
+        if (label.textContent?.trim() === labelText) {
+          // البحث عن الحقل في نفس الـ parent
+          const parent = label.closest('div[class*="form-group"], div[class*="col"], div[class*="field"]');
+          if (parent) {
+            // البحث عن input من نوع Kendo
+            const kendoInput = parent.querySelector('.k-input, input.form-control, input[type="text"]');
+            if (kendoInput && !kendoInput.name?.includes('temp')) {
+              kendoInput.value = value;
+              kendoInput.dispatchEvent(new Event('input', { bubbles: true }));
+              kendoInput.dispatchEvent(new Event('change', { bubbles: true }));
+              // التركيز ثم إزالة التركيز لتفعيل التحقق
+              kendoInput.focus();
+              kendoInput.blur();
+              console.log(`[العراف] تم تعبئة Kendo: ${description}`);
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`[العراف] خطأ في البحث بالـ label: ${e.message}`);
+    }
+    return false;
+  }
+
+  // تعبئة حقل Kendo الرقمي
+  function fillKendoNumeric(labelText, value, description) {
+    try {
+      const labels = document.querySelectorAll('span, label, div');
+      for (const label of labels) {
+        if (label.textContent?.trim() === labelText) {
+          const parent = label.closest('div[class*="form-group"], div[class*="col"], li');
+          if (parent) {
+            // البحث عن kendo-numerictextbox
+            const numericWidget = parent.querySelector('kendo-numerictextbox, .k-numerictextbox');
+            if (numericWidget) {
+              const inputs = numericWidget.querySelectorAll('input');
+              for (const input of inputs) {
+                if (!input.classList.contains('k-formatted-value')) {
+                  input.value = value;
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true }));
+                  input.focus();
+                  input.blur();
+                }
+              }
+              console.log(`[العراف] تم تعبئة Kendo Numeric: ${description}`);
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`[العراف] خطأ في تعبئة Kendo Numeric: ${e.message}`);
+    }
+    return false;
+  }
+
   // التعبئة التلقائية
   async function handleAutoFill() {
     showStatus('جاري جلب بيانات الدعوى...', 'loading');
@@ -195,98 +284,69 @@
       showStatus('جاري تعبئة النموذج...', 'loading');
 
       let filledFields = 0;
-      let totalFields = 5;
+      const totalFields = 4; // الوقائع، الطلبات، المبلغ كتابة، + عنوان اختياري
 
-      // 1. تعبئة عنوان الدعوى
-      await new Promise(r => setTimeout(r, 500));
-      const titleSelectors = [
-        'input[formcontrolname="caseTitle"]',
-        'input[name="caseTitle"]',
-        '#caseTitle',
-        'input[placeholder*="عنوان"]'
-      ];
-      for (const sel of titleSelectors) {
-        if (fillTextField(sel, data.caseTitle, 'عنوان الدعوى')) {
-          filledFields++;
-          break;
-        }
-      }
+      // انتظار تحميل الصفحة
+      await new Promise(r => setTimeout(r, 1000));
 
-      // 2. تعبئة الوقائع
-      await new Promise(r => setTimeout(r, 300));
-      const factsSelectors = [
-        '[formcontrolname="facts"]',
-        '[name="facts"]',
-        '#facts',
-        '.ql-editor' // Quill editor
-      ];
-      for (const sel of factsSelectors) {
-        if (fillRichTextField(sel, data.facts, 'الوقائع')) {
-          filledFields++;
-          break;
-        }
-      }
-
-      // 3. تعبئة الطلبات
-      await new Promise(r => setTimeout(r, 300));
-      const claimsSelectors = [
-        '[formcontrolname="requests"]',
-        '[name="requests"]',
-        '#requests',
-        '.ql-editor'
-      ];
-      // قد يكون هناك أكثر من محرر Quill
-      const quillEditors = document.querySelectorAll('.ql-editor');
-      if (quillEditors.length >= 2) {
-        quillEditors[1].innerHTML = data.claims.replace(/\n/g, '<br>');
-        quillEditors[1].dispatchEvent(new Event('input', { bubbles: true }));
+      // 1. تعبئة الوقائع - #facts أو textarea[name="facts"]
+      console.log('[العراف] محاولة تعبئة الوقائع...');
+      if (fillTextField('#facts', data.facts, 'الوقائع') ||
+          fillTextField('textarea[name="facts"]', data.facts, 'الوقائع')) {
         filledFields++;
-        console.log('[العراف] تم تعبئة: الطلبات');
-      } else {
-        for (const sel of claimsSelectors) {
-          if (fillRichTextField(sel, data.claims, 'الطلبات')) {
-            filledFields++;
-            break;
-          }
-        }
       }
 
-      // 4. تعبئة المبلغ
-      await new Promise(r => setTimeout(r, 300));
-      const amountSelectors = [
-        'input[formcontrolname="amount"]',
-        'input[name="amount"]',
-        '#amount',
-        'input[type="number"]'
-      ];
-      for (const sel of amountSelectors) {
-        if (fillTextField(sel, data.amount.toString(), 'المبلغ')) {
-          filledFields++;
-          break;
-        }
+      await new Promise(r => setTimeout(r, 500));
+
+      // 2. تعبئة الطلبات - TinyMCE مع iframe #caseDetails_ifr
+      console.log('[العراف] محاولة تعبئة الطلبات...');
+      if (fillTinyMCE('caseDetails_ifr', data.claims, 'الطلبات')) {
+        filledFields++;
+      } else if (fillTextField('#caseDetails', data.claims, 'الطلبات') ||
+                 fillTextField('textarea[name="caseDetails"]', data.claims, 'الطلبات')) {
+        filledFields++;
       }
 
-      // 5. تعبئة المبلغ كتابة
-      await new Promise(r => setTimeout(r, 300));
-      const amountWordsSelectors = [
-        'input[formcontrolname="amountInWords"]',
-        'input[name="amountInWords"]',
-        '#amountInWords',
-        'input[placeholder*="كتابة"]'
-      ];
-      for (const sel of amountWordsSelectors) {
-        if (fillTextField(sel, data.amountInWords, 'المبلغ كتابة')) {
-          filledFields++;
-          break;
-        }
+      await new Promise(r => setTimeout(r, 500));
+
+      // 3. تعبئة المبلغ كتابة - #totalAmountInText
+      console.log('[العراف] محاولة تعبئة المبلغ كتابة...');
+      if (fillTextField('#totalAmountInText', data.amountInWords, 'المبلغ كتابة') ||
+          fillTextField('input[name="totalAmountInText"]', data.amountInWords, 'المبلغ كتابة')) {
+        filledFields++;
+      }
+
+      await new Promise(r => setTimeout(r, 500));
+
+      // 4. محاولة تعبئة عنوان الدعوى (Kendo textbox بدون ID)
+      console.log('[العراف] محاولة تعبئة عنوان الدعوى...');
+      if (fillKendoByLabel('عنوان الدعوى', data.caseTitle, 'عنوان الدعوى')) {
+        filledFields++;
+      }
+
+      // 5. محاولة تعبئة المبلغ (Kendo numeric)
+      console.log('[العراف] محاولة تعبئة المبلغ...');
+      if (data.amount && fillKendoNumeric('المبلغ', data.amount.toString(), 'المبلغ')) {
+        // نجاح إضافي
       }
 
       // عرض النتيجة
       if (filledFields > 0) {
-        showStatus(`تم تعبئة ${filledFields} من ${totalFields} حقول بنجاح!<br><br>
-          <strong>ملاحظة:</strong> تحقق من البيانات وأكمل الحقول المتبقية يدوياً.`, 'success');
+        showStatus(`✅ تم تعبئة ${filledFields} من ${totalFields} حقول بنجاح!<br><br>
+          <strong>الحقول المعبأة:</strong>
+          <ul style="text-align:right; margin-top:10px;">
+            <li>الوقائع ✓</li>
+            <li>الطلبات ✓</li>
+            <li>المبلغ كتابة ✓</li>
+          </ul>
+          <br><strong>ملاحظة:</strong> تحقق من البيانات وأكمل الحقول المتبقية يدوياً (نوع المطالبة، المبلغ).`, 'success');
       } else {
-        showStatus('لم يتم العثور على الحقول المطلوبة. تأكد أنك في صفحة "تفاصيل الدعوى".', 'error');
+        showStatus(`❌ لم يتم العثور على الحقول المطلوبة.<br><br>
+          <strong>تأكد من:</strong>
+          <ul style="text-align:right;">
+            <li>أنك في تبويب "تفاصيل الدعوى" (الخطوة 2)</li>
+            <li>تم تحميل الصفحة بالكامل</li>
+          </ul>`, 'error');
       }
 
     } catch (error) {
