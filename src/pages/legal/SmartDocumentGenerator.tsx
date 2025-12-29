@@ -1,22 +1,15 @@
 /**
  * مساعد الكتب الرسمية الذكي
  * Smart Official Document Generator
- * 
- * نظام ذكي لتوليد الكتب الرسمية باستخدام الذكاء الاصطناعي GLM
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MessageSquare, 
   Send, 
   FileText, 
-  Download, 
   Printer,
   Sparkles,
-  ChevronRight,
-  ArrowLeft,
-  Check,
   Loader2,
   RefreshCw,
   Copy,
@@ -26,22 +19,14 @@ import {
   User,
   FileEdit,
   Bot,
-  Wand2
+  ArrowRight
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 
 import {
   DOCUMENT_TEMPLATES,
@@ -51,18 +36,15 @@ import {
   Question,
 } from '@/services/ai/ZhipuAIService';
 
-// أنواع الرسائل
 interface ChatMessage {
   id: string;
-  type: 'bot' | 'user' | 'system';
+  type: 'bot' | 'user';
   content: string;
   timestamp: Date;
-  questionId?: string;
   options?: string[];
 }
 
-// خطوات المحادثة
-type ConversationStep = 'welcome' | 'category' | 'template' | 'questions' | 'generating' | 'preview';
+type ConversationStep = 'welcome' | 'category' | 'template' | 'questions' | 'generating' | 'complete';
 
 const categoryIcons: Record<string, any> = {
   insurance: Building2,
@@ -76,7 +58,6 @@ export default function SmartDocumentGenerator() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // الحالات
   const [step, setStep] = useState<ConversationStep>('welcome');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -89,46 +70,36 @@ export default function SmartDocumentGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // التمرير التلقائي للرسائل
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // رسالة الترحيب
   useEffect(() => {
     if (messages.length === 0) {
-      addBotMessage(
-        'مرحباً بك في مساعد الكتب الرسمية الذكي! 👋\n\nأنا هنا لمساعدتك في إنشاء الكتب الرسمية بسهولة وسرعة.\n\nاختر نوع الكتاب الذي تريد إنشاءه:'
-      );
+      addBotMessage('مرحباً! 👋 أنا مساعدك لإنشاء الكتب الرسمية.\n\nاختر نوع الكتاب المطلوب:');
       setStep('category');
     }
   }, []);
 
-  // إضافة رسالة من البوت
-  const addBotMessage = (content: string, options?: string[], questionId?: string) => {
-    const message: ChatMessage = {
+  const addBotMessage = (content: string, options?: string[]) => {
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       type: 'bot',
       content,
       timestamp: new Date(),
       options,
-      questionId,
-    };
-    setMessages(prev => [...prev, message]);
+    }]);
   };
 
-  // إضافة رسالة من المستخدم
   const addUserMessage = (content: string) => {
-    const message: ChatMessage = {
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       type: 'user',
       content,
       timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, message]);
+    }]);
   };
 
-  // اختيار الفئة
   const handleCategorySelect = (categoryId: string) => {
     const category = DOCUMENT_CATEGORIES.find(c => c.id === categoryId);
     if (!category) return;
@@ -139,16 +110,11 @@ export default function SmartDocumentGenerator() {
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
-      const templates = DOCUMENT_TEMPLATES.filter(t => t.category === categoryId);
-      const templatesList = templates.map(t => `• ${t.name}`).join('\n');
-      addBotMessage(
-        `ممتاز! اخترت قسم ${category.name}.\n\nالكتب المتاحة:\n${templatesList}\n\nاختر الكتاب الذي تريد إنشاءه:`
-      );
+      addBotMessage(`اختر الكتاب من قسم ${category.name}:`);
       setStep('template');
-    }, 500);
+    }, 400);
   };
 
-  // اختيار القالب
   const handleTemplateSelect = (templateId: string) => {
     const template = DOCUMENT_TEMPLATES.find(t => t.id === templateId);
     if (!template) return;
@@ -161,44 +127,24 @@ export default function SmartDocumentGenerator() {
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
-      addBotMessage(
-        `رائع! سأساعدك في إنشاء "${template.name}".\n\nسأطرح عليك بعض الأسئلة لجمع المعلومات المطلوبة. 📝`
-      );
-      
-      setTimeout(() => {
-        askQuestion(template.questions[0]);
-        setStep('questions');
-      }, 800);
-    }, 500);
+      addBotMessage(`سأجمع المعلومات المطلوبة لـ "${template.name}"`);
+      setTimeout(() => askQuestion(template.questions[0]), 500);
+      setStep('questions');
+    }, 400);
   };
 
-  // طرح سؤال
   const askQuestion = (question: Question) => {
-    const questionText = question.required 
-      ? `${question.question} *` 
-      : question.question;
-    
-    addBotMessage(
-      questionText,
-      question.type === 'select' ? question.options : undefined,
-      question.id
-    );
+    const text = question.required ? `${question.question} *` : question.question;
+    addBotMessage(text, question.type === 'select' ? question.options : undefined);
   };
 
-  // الإجابة على السؤال
   const handleAnswer = (answer: string) => {
     if (!selectedTemplate) return;
     
     const currentQuestion = selectedTemplate.questions[currentQuestionIndex];
     addUserMessage(answer);
-    
-    // حفظ الإجابة
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion.id]: answer,
-    }));
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: answer }));
 
-    // الانتقال للسؤال التالي أو التوليد
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < selectedTemplate.questions.length) {
       setCurrentQuestionIndex(nextIndex);
@@ -206,131 +152,63 @@ export default function SmartDocumentGenerator() {
       setTimeout(() => {
         setIsTyping(false);
         askQuestion(selectedTemplate.questions[nextIndex]);
-      }, 500);
+      }, 400);
     } else {
-      // كل الأسئلة انتهت، نبدأ التوليد
       generateDocument();
     }
   };
 
-  // إرسال الرسالة
   const handleSend = () => {
     if (!inputValue.trim()) return;
-    
-    if (step === 'questions') {
-      handleAnswer(inputValue.trim());
-    }
-    
+    if (step === 'questions') handleAnswer(inputValue.trim());
     setInputValue('');
   };
 
-  // توليد الكتاب
   const generateDocument = async () => {
     if (!selectedTemplate) return;
     
     setStep('generating');
     setIsGenerating(true);
-    
-    addBotMessage('جاري إنشاء الكتاب... ⏳\n\nيرجى الانتظار قليلاً بينما أقوم بصياغة الكتاب لك.');
+    addBotMessage('⏳ جاري إنشاء الكتاب...');
     
     try {
       const result = await generateOfficialDocument(selectedTemplate, answers);
-      
       if (result.success) {
         setGeneratedDocument(result.content);
-        setStep('preview');
-        addBotMessage('✅ تم إنشاء الكتاب بنجاح!\n\nيمكنك معاينة الكتاب وتحميله أو طباعته.');
+        setStep('complete');
+        addBotMessage('✅ تم إنشاء الكتاب بنجاح!');
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      toast({
-        title: 'خطأ',
-        description: error.message || 'حدث خطأ أثناء إنشاء الكتاب',
-        variant: 'destructive',
-      });
-      addBotMessage('❌ حدث خطأ أثناء إنشاء الكتاب. يرجى المحاولة مرة أخرى.');
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      addBotMessage('❌ حدث خطأ. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // نسخ الكتاب
   const handleCopy = () => {
     if (generatedDocument) {
-      // إزالة HTML tags للنسخ
-      const textContent = generatedDocument.replace(/<[^>]+>/g, '\n').replace(/\n+/g, '\n').trim();
-      navigator.clipboard.writeText(textContent);
+      const text = generatedDocument.replace(/<[^>]+>/g, '\n').replace(/\n+/g, '\n').trim();
+      navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: 'تم النسخ',
-        description: 'تم نسخ الكتاب إلى الحافظة',
-      });
+      toast({ title: 'تم النسخ', description: 'تم نسخ الكتاب إلى الحافظة' });
     }
   };
 
-  // طباعة الكتاب
   const handlePrint = () => {
     if (generatedDocument) {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html dir="rtl" lang="ar">
-          <head>
-            <meta charset="UTF-8">
-            <title>كتاب رسمي - شركة العراف</title>
-            <style>
-              body {
-                font-family: 'Arial', 'Tahoma', sans-serif;
-                padding: 40px;
-                max-width: 800px;
-                margin: 0 auto;
-                line-height: 1.8;
-              }
-              .letterhead {
-                text-align: center;
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
-              }
-              .date {
-                text-align: left;
-                margin-bottom: 20px;
-              }
-              .recipient {
-                margin-bottom: 20px;
-              }
-              .subject {
-                font-weight: bold;
-                text-decoration: underline;
-                margin-bottom: 20px;
-              }
-              .body {
-                text-align: justify;
-                margin-bottom: 40px;
-              }
-              .signature {
-                margin-top: 60px;
-              }
-              @media print {
-                body { padding: 20px; }
-              }
-            </style>
-          </head>
-          <body>
-            ${generatedDocument}
-          </body>
-          </html>
-        `);
+        printWindow.document.write(generatedDocument);
         printWindow.document.close();
         printWindow.print();
       }
     }
   };
 
-  // إعادة البدء
   const handleRestart = () => {
     setMessages([]);
     setStep('welcome');
@@ -341,269 +219,238 @@ export default function SmartDocumentGenerator() {
     setGeneratedDocument(null);
   };
 
+  const progress = selectedTemplate 
+    ? ((currentQuestionIndex + 1) / selectedTemplate.questions.length) * 100 
+    : 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950">
-      <div className="container mx-auto p-4 max-w-5xl">
+    <div className="min-h-screen bg-[#f0efed] dark:bg-[#1a1a1a]">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="text-center mb-8"
         >
-          <div className="flex items-center gap-4 mb-2">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-              <Bot className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                مساعد الكتب الرسمية الذكي
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                أنشئ كتبك الرسمية بسهولة باستخدام الذكاء الاصطناعي
-              </p>
-            </div>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-coral-500 to-orange-500 shadow-lg mb-4">
+            <Bot className="h-8 w-8 text-white" />
           </div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+            مساعد الكتب الذكي
+          </h1>
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+            أنشئ كتبك الرسمية بسهولة
+          </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chat Area */}
-          <Card className="lg:col-span-2 border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-            <CardContent className="p-0">
-              {/* Messages */}
-              <ScrollArea className="h-[500px] p-4">
-                <AnimatePresence>
-                  {messages.map((message, index) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={cn(
-                        'mb-4 flex',
-                        message.type === 'user' ? 'justify-start' : 'justify-end'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'max-w-[80%] rounded-2xl px-4 py-3 shadow-md',
-                          message.type === 'user'
-                            ? 'bg-indigo-600 text-white rounded-br-none'
-                            : 'bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-bl-none border'
-                        )}
-                      >
-                        {message.type === 'bot' && (
-                          <div className="flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
-                            <Sparkles className="h-4 w-4" />
-                            <span className="text-xs font-medium">المساعد الذكي</span>
-                          </div>
-                        )}
-                        <p className="whitespace-pre-line text-sm">{message.content}</p>
-                        
-                        {/* Options buttons for select questions */}
-                        {message.options && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {message.options.map((option, i) => (
-                              <Button
-                                key={i}
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAnswer(option)}
-                                className="text-xs"
-                              >
-                                {option}
-                              </Button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                
-                {/* Typing indicator */}
-                {isTyping && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-end mb-4"
-                  >
-                    <div className="bg-white dark:bg-slate-700 rounded-2xl px-4 py-3 shadow-md border">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                        <span className="text-xs text-gray-500">يكتب...</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {isGenerating && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-center py-8"
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-                      <p className="text-sm text-gray-600">جاري توليد الكتاب...</p>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </ScrollArea>
-
-              {/* Category Selection */}
-              {step === 'category' && (
-                <div className="p-4 border-t bg-gray-50 dark:bg-slate-900/50">
-                  <div className="grid grid-cols-2 gap-3">
-                    {DOCUMENT_CATEGORIES.map((category) => {
-                      const Icon = categoryIcons[category.id] || FileText;
-                      return (
-                        <Button
-                          key={category.id}
-                          variant="outline"
-                          className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-indigo-50 hover:border-indigo-300 dark:hover:bg-indigo-900/30"
-                          onClick={() => handleCategorySelect(category.id)}
-                        >
-                          <span className="text-2xl">{category.icon}</span>
-                          <span className="font-medium">{category.name}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Template Selection */}
-              {step === 'template' && selectedCategory && (
-                <div className="p-4 border-t bg-gray-50 dark:bg-slate-900/50">
-                  <div className="grid grid-cols-1 gap-2">
-                    {DOCUMENT_TEMPLATES
-                      .filter(t => t.category === selectedCategory)
-                      .map((template) => (
-                        <Button
-                          key={template.id}
-                          variant="outline"
-                          className="h-auto py-3 justify-start text-right hover:bg-indigo-50 hover:border-indigo-300 dark:hover:bg-indigo-900/30"
-                          onClick={() => handleTemplateSelect(template.id)}
-                        >
-                          <FileText className="h-4 w-4 ml-2 text-indigo-600" />
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium">{template.name}</span>
-                            <span className="text-xs text-gray-500">{template.description}</span>
-                          </div>
-                        </Button>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Input Area */}
-              {step === 'questions' && (
-                <div className="p-4 border-t bg-gray-50 dark:bg-slate-900/50">
-                  <div className="flex gap-2">
-                    <Input
-                      ref={inputRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                      placeholder="اكتب إجابتك هنا..."
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSend} className="bg-indigo-600 hover:bg-indigo-700">
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions after generation */}
-              {step === 'preview' && (
-                <div className="p-4 border-t bg-gray-50 dark:bg-slate-900/50">
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <Button onClick={handleCopy} variant="outline">
-                      {copied ? <CheckCircle2 className="h-4 w-4 ml-2" /> : <Copy className="h-4 w-4 ml-2" />}
-                      {copied ? 'تم النسخ' : 'نسخ'}
-                    </Button>
-                    <Button onClick={handlePrint} variant="outline">
-                      <Printer className="h-4 w-4 ml-2" />
-                      طباعة
-                    </Button>
-                    <Button onClick={handleRestart} variant="outline">
-                      <RefreshCw className="h-4 w-4 ml-2" />
-                      كتاب جديد
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Preview Panel */}
-          <Card className="border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-indigo-600" />
-                معاينة الكتاب
-              </CardTitle>
-              <CardDescription>
-                سيظهر الكتاب هنا بعد إنشائه
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
-                {generatedDocument ? (
-                  <div 
-                    className="prose prose-sm dark:prose-invert max-w-none p-4 bg-white dark:bg-slate-900 rounded-lg border"
-                    dangerouslySetInnerHTML={{ __html: generatedDocument }}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-12 text-gray-400">
-                    <Wand2 className="h-12 w-12 mb-4 opacity-50" />
-                    <p>سيظهر الكتاب هنا</p>
-                    <p className="text-xs">بعد الإجابة على جميع الأسئلة</p>
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progress indicator */}
-        {selectedTemplate && step === 'questions' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6"
+        {/* Progress Bar */}
+        {step === 'questions' && selectedTemplate && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-6"
           >
-            <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    تقدم الأسئلة
-                  </span>
-                  <Badge variant="secondary">
-                    {currentQuestionIndex + 1} / {selectedTemplate.questions.length}
-                  </Badge>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${((currentQuestionIndex + 1) / selectedTemplate.questions.length) * 100}%`,
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
+              <span>السؤال {currentQuestionIndex + 1} من {selectedTemplate.questions.length}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-coral-500 to-orange-500"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
           </motion.div>
         )}
+
+        {/* Chat Container */}
+        <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          
+          {/* Messages */}
+          <div className="h-[400px] overflow-y-auto p-4 space-y-4">
+            <AnimatePresence>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    'flex',
+                    message.type === 'user' ? 'justify-start' : 'justify-end'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'max-w-[85%] rounded-2xl px-4 py-3',
+                      message.type === 'user'
+                        ? 'bg-coral-500 text-white rounded-br-sm'
+                        : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white rounded-bl-sm'
+                    )}
+                  >
+                    {message.type === 'bot' && (
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-coral-500" />
+                        <span className="text-[10px] font-medium text-coral-500">المساعد</span>
+                      </div>
+                    )}
+                    <p className="text-sm whitespace-pre-line leading-relaxed">{message.content}</p>
+                    
+                    {message.options && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {message.options.map((option, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handleAnswer(option)}
+                            className="text-xs px-3 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-coral-50 hover:border-coral-300 dark:hover:bg-coral-900/20 transition-colors"
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            
+            {isTyping && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-end">
+                <div className="bg-neutral-100 dark:bg-neutral-700 rounded-2xl px-4 py-3 rounded-bl-sm">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-coral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-coral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-coral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {isGenerating && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-6">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-coral-500" />
+                  <p className="text-sm text-neutral-500">جاري التوليد...</p>
+                </div>
+              </motion.div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Category Selection */}
+          {step === 'category' && (
+            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+              <div className="grid grid-cols-2 gap-3">
+                {DOCUMENT_CATEGORIES.map((category) => {
+                  const Icon = categoryIcons[category.id] || FileText;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 hover:border-coral-400 hover:bg-coral-50 dark:hover:bg-coral-900/20 transition-all group"
+                    >
+                      <span className="text-2xl group-hover:scale-110 transition-transform">{category.icon}</span>
+                      <span className="font-medium text-sm text-neutral-900 dark:text-white">{category.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Template Selection */}
+          {step === 'template' && selectedCategory && (
+            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 max-h-[250px] overflow-y-auto">
+              <div className="space-y-2">
+                {DOCUMENT_TEMPLATES
+                  .filter(t => t.category === selectedCategory)
+                  .map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleTemplateSelect(template.id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 hover:border-coral-400 hover:bg-coral-50 dark:hover:bg-coral-900/20 transition-all text-right group"
+                    >
+                      <FileText className="h-5 w-5 text-coral-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-neutral-900 dark:text-white truncate">{template.name}</p>
+                        <p className="text-xs text-neutral-500 truncate">{template.description}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-coral-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input Area */}
+          {step === 'questions' && (
+            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="اكتب إجابتك..."
+                  className="flex-1 bg-white dark:bg-neutral-700 border-neutral-200 dark:border-neutral-600 focus:border-coral-400 focus:ring-coral-400"
+                />
+                <Button 
+                  onClick={handleSend} 
+                  className="bg-coral-500 hover:bg-coral-600 text-white px-4"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Actions after completion */}
+          {step === 'complete' && (
+            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button 
+                  onClick={handlePrint} 
+                  className="bg-coral-500 hover:bg-coral-600 text-white"
+                >
+                  <Printer className="h-4 w-4 ml-2" />
+                  طباعة الكتاب
+                </Button>
+                <Button 
+                  onClick={handleCopy} 
+                  variant="outline"
+                  className="border-coral-300 text-coral-600 hover:bg-coral-50"
+                >
+                  {copied ? <CheckCircle2 className="h-4 w-4 ml-2" /> : <Copy className="h-4 w-4 ml-2" />}
+                  {copied ? 'تم النسخ' : 'نسخ'}
+                </Button>
+                <Button 
+                  onClick={handleRestart} 
+                  variant="outline"
+                  className="border-neutral-300 hover:bg-neutral-100"
+                >
+                  <RefreshCw className="h-4 w-4 ml-2" />
+                  كتاب جديد
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Tips */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-6 text-center"
+        >
+          <p className="text-xs text-neutral-400">
+            💡 الكتب المُولّدة تستخدم الذكاء الاصطناعي لصياغة احترافية
+          </p>
+        </motion.div>
       </div>
     </div>
   );
 }
-
