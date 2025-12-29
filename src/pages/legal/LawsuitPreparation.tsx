@@ -616,36 +616,36 @@ ${taqadiData.claims}
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <h3 className="text-lg font-bold">الخطوة التالية</h3>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                استخدم إضافة المتصفح للتعبئة التلقائية أو انسخ البيانات يدوياً
-              </p>
               
-              {/* زر إرسال للإضافة - الطريقة الموصى بها */}
-              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <p className="text-sm font-medium mb-3">✨ للتعبئة التلقائية (موصى به):</p>
-                <Button size="lg" onClick={sendToExtension} className="w-full sm:w-auto">
+              {/* الأزرار الرئيسية */}
+              <div className="flex justify-center gap-3 flex-wrap">
+                <Button size="lg" onClick={sendToExtension}>
                   <Sparkles className="h-5 w-5 ml-2" />
-                  إرسال للإضافة
+                  حفظ للتعبئة التلقائية
+                </Button>
+                <Button size="lg" variant="outline" onClick={openTaqadi}>
+                  <ExternalLink className="h-5 w-5 ml-2" />
+                  فتح موقع تقاضي
+                </Button>
+                <Button size="lg" variant="outline" onClick={copyAllData}>
+                  <Copy className="h-5 w-5 ml-2" />
+                  نسخ الكل
                 </Button>
               </div>
 
-              {/* الطريقة اليدوية */}
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-3">أو استخدم الطريقة اليدوية:</p>
-                <div className="flex justify-center gap-3 flex-wrap">
-                  <Button size="lg" variant="outline" onClick={openTaqadi}>
-                    <ExternalLink className="h-5 w-5 ml-2" />
-                    فتح موقع تقاضي
-                  </Button>
-                  <Button size="lg" variant="outline" onClick={copyAllData}>
-                    <Copy className="h-5 w-5 ml-2" />
-                    نسخ جميع البيانات
-                  </Button>
-                </div>
+              {/* تعليمات */}
+              <div className="p-4 bg-muted/50 rounded-lg text-sm text-right space-y-2">
+                <p className="font-medium">📋 طريقة الاستخدام:</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>اضغط <strong>"حفظ للتعبئة التلقائية"</strong> أعلاه</li>
+                  <li>افتح <strong>موقع تقاضي</strong> وابدأ إنشاء دعوى</li>
+                  <li>في صفحة تفاصيل الدعوى، اضغط على <strong>أيقونة الإضافة 🚗</strong></li>
+                  <li>اضغط <strong>"تعبئة النموذج"</strong> أو انسخ كل حقل على حدة</li>
+                </ol>
               </div>
 
-              <div className="pt-4 text-sm text-muted-foreground">
-                <p>💡 نصيحة: اختر "عقود الخدمات التجارية" ← "عقود إيجار السيارات وخدمات الليموزين"</p>
+              <div className="text-sm text-muted-foreground">
+                <p>💡 اختر "عقود الخدمات التجارية" ← "عقود إيجار السيارات وخدمات الليموزين"</p>
               </div>
             </div>
           </CardContent>

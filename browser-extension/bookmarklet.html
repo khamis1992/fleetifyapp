@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مفضلة العراف - تعبئة تقاضي</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #1e3a5f;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    h1 span {
+      font-size: 40px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .step {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .step-number {
+      background: #e74c3c;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .step-title {
+      font-weight: bold;
+      color: #1e3a5f;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .bookmarklet-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: move;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    }
+    .bookmarklet-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+    }
+    .drag-hint {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      color: #856404;
+    }
+    .note {
+      background: #e8f4fd;
+      border-right: 4px solid #2196f3;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    code {
+      background: #f1f1f1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span>🚗</span>
+      مفضلة العراف لتقاضي
+    </h1>
+    <p class="subtitle">طريقة سهلة لتعبئة نماذج تقاضي تلقائياً</p>
+
+    <div class="step">
+      <div class="step-title"><span class="step-number">1</span> اسحب هذا الزر لشريط المفضلات</div>
+      <p>اضغط مع الاستمرار واسحب الزر التالي إلى شريط المفضلات في متصفحك:</p>
+      
+      <a class="bookmarklet-btn" href="javascript:(function(){const d=localStorage.getItem('alarafLawsuitData');if(!d){alert('❌ لا توجد بيانات!\n\nاذهب لنظام العراف > الشؤون القانونية > العقود المتعثرة\nثم اضغط رفع دعوى > إرسال للإضافة');return;}const data=JSON.parse(d);const fill=(v)=>{document.querySelectorAll('input,textarea').forEach(el=>{if(el.offsetParent!==null){el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}});};const modal=document.createElement('div');modal.innerHTML=`<div style='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;direction:rtl'><div style='background:white;border-radius:15px;padding:30px;max-width:500px;width:90%;max-height:80vh;overflow:auto'><h2 style='color:#1e3a5f;margin:0 0 20px'>🚗 بيانات العراف</h2><div style='margin-bottom:15px'><label style='font-weight:bold;display:block;margin-bottom:5px'>عنوان الدعوى:</label><input id='af-title' value='${data.caseTitle||''}' style='width:100%;padding:10px;border:1px solid #ddd;border-radius:8px' readonly><button onclick=\"navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓'\" style='margin-top:5px;padding:5px 15px;cursor:pointer'>نسخ</button></div><div style='margin-bottom:15px'><label style='font-weight:bold;display:block;margin-bottom:5px'>الوقائع:</label><textarea id='af-facts' style='width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;height:100px' readonly>${data.facts||''}</textarea><button onclick=\"navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓'\" style='margin-top:5px;padding:5px 15px;cursor:pointer'>نسخ</button></div><div style='margin-bottom:15px'><label style='font-weight:bold;display:block;margin-bottom:5px'>الطلبات:</label><textarea id='af-claims' style='width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;height:80px' readonly>${data.claims||''}</textarea><button onclick=\"navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓'\" style='margin-top:5px;padding:5px 15px;cursor:pointer'>نسخ</button></div><div style='margin-bottom:15px'><label style='font-weight:bold;display:block;margin-bottom:5px'>المبلغ:</label><input id='af-amount' value='${data.amount||''}' style='width:100%;padding:10px;border:1px solid #ddd;border-radius:8px' readonly><button onclick=\"navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓'\" style='margin-top:5px;padding:5px 15px;cursor:pointer'>نسخ</button></div><div style='margin-bottom:20px'><label style='font-weight:bold;display:block;margin-bottom:5px'>المبلغ كتابة:</label><input id='af-words' value='${data.amountInWords||''}' style='width:100%;padding:10px;border:1px solid #ddd;border-radius:8px' readonly><button onclick=\"navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓'\" style='margin-top:5px;padding:5px 15px;cursor:pointer'>نسخ</button></div><div style='text-align:center'><button onclick='this.closest(\"div\").parentElement.parentElement.remove()' style='background:#e74c3c;color:white;border:none;padding:12px 30px;border-radius:8px;cursor:pointer;font-size:16px'>إغلاق ❌</button></div></div></div>`;document.body.appendChild(modal);})();">
+        🚗 تعبئة من العراف
+      </a>
+      
+      <div class="drag-hint">
+        💡 <strong>نصيحة:</strong> إذا لم يظهر شريط المفضلات، اضغط <code>Ctrl+Shift+B</code>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title"><span class="step-number">2</span> جهّز الدعوى من نظام العراف</div>
+      <ol>
+        <li>اذهب إلى <strong>الشؤون القانونية</strong> > <strong>العقود المتعثرة</strong></li>
+        <li>اضغط <strong>"رفع دعوى"</strong> على العقد المطلوب</li>
+        <li>اضغط <strong>"إرسال للإضافة"</strong> أو <strong>"حفظ بيانات الدعوى"</strong></li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <div class="step-title"><span class="step-number">3</span> استخدم المفضلة في تقاضي</div>
+      <ol>
+        <li>افتح موقع <strong>تقاضي</strong> وابدأ إنشاء دعوى جديدة</li>
+        <li>عند الوصول لصفحة <strong>تفاصيل الدعوى</strong></li>
+        <li>اضغط على <strong>"🚗 تعبئة من العراف"</strong> في شريط المفضلات</li>
+        <li>ستظهر نافذة بها جميع البيانات مع أزرار نسخ!</li>
+      </ol>
+    </div>
+
+    <div class="note">
+      <strong>📌 ملاحظة:</strong> هذه الطريقة تعمل بدون تثبيت أي إضافة، وتعمل على جميع المتصفحات!
+    </div>
+  </div>
+</body>
+</html>
+
