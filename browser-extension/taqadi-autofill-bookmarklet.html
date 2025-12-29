@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعبئة تقاضي من العراف</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 700px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo { 
+            font-size: 60px; 
+            text-align: center; 
+            margin-bottom: 20px;
+        }
+        h1 { 
+            text-align: center; 
+            font-size: 28px; 
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 30px;
+        }
+        .bookmarklet-container {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .bookmarklet-link {
+            display: inline-block;
+            background: white;
+            color: #c0392b;
+            padding: 18px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: grab;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .bookmarklet-link:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+        .drag-hint {
+            margin-top: 15px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        .instructions {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .instructions h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #f39c12;
+        }
+        .instructions ol {
+            padding-right: 25px;
+            line-height: 2;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        .instructions strong {
+            color: #e74c3c;
+        }
+        .note {
+            background: rgba(241, 196, 15, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .note strong {
+            color: #f1c40f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>تعبئة تقاضي من العراف</h1>
+        <p class="subtitle">أداة لتعبئة نماذج تقاضي تلقائياً من بيانات نظام العراف</p>
+        
+        <div class="bookmarklet-container">
+            <a href="javascript:(function(){const d=JSON.parse(localStorage.getItem('alarafLawsuitData'));if(!d){alert('❌ لا توجد بيانات!\n\nاذهب لنظام العراف ← العقود المتعثرة ← رفع دعوى ← حفظ للتعبئة التلقائية');return;}if(!location.href.includes('taqadi.sjc.gov.qa')){alert('❌ افتح موقع تقاضي أولاً!');return;}let f=0;const i=document.querySelectorAll('input.k-input,input[type=text]');if(i[0]){i[0].value=d.caseTitle;i[0].dispatchEvent(new Event('input',{bubbles:true}));f++;}const t=document.getElementById('facts')||document.querySelector('textarea');if(t){t.value=d.facts;t.dispatchEvent(new Event('input',{bubbles:true}));f++;}const m=document.getElementById('caseDetails_ifr');if(m&&m.contentDocument){m.contentDocument.body.innerHTML=d.claims.replace(/\n/g,'<br>');f++;}const a=document.getElementById('totalAmountInText');if(a){a.value=d.amountInWords;a.dispatchEvent(new Event('input',{bubbles:true}));f++;}alert('✅ تم تعبئة '+f+' حقول!\n\n⚠️ تحقق من البيانات وأكمل حقل المبلغ يدوياً.');})();" class="bookmarklet-link">
+                🚗 تعبئة من العراف
+            </a>
+            <p class="drag-hint">👆 اسحب هذا الزر إلى شريط المفضلات</p>
+        </div>
+
+        <div class="instructions">
+            <h2>📋 طريقة الاستخدام:</h2>
+            <ol>
+                <li><strong>اسحب الزر أعلاه</strong> إلى شريط المفضلات في متصفحك</li>
+                <li>اذهب إلى <strong>نظام العراف</strong> ← الشؤون القانونية ← العقود المتعثرة</li>
+                <li>اختر عقد واضغط <strong>"رفع دعوى"</strong></li>
+                <li>اضغط <strong>"حفظ للتعبئة التلقائية"</strong></li>
+                <li>افتح <strong>موقع تقاضي</strong> وابدأ إنشاء دعوى</li>
+                <li>في صفحة <strong>"تفاصيل الدعوى"</strong>، اضغط على المفضلة 🚗</li>
+                <li>سيتم تعبئة الحقول تلقائياً!</li>
+            </ol>
+            
+            <div class="note">
+                <strong>💡 ملاحظة:</strong> حقل المبلغ (رقمياً) قد يحتاج تعبئة يدوية بسبب طريقة عمل موقع تقاضي.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
