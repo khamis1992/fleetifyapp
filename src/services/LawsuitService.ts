@@ -7,10 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 // أنواع المستندات القانونية
 export type LegalDocumentType = 
-  | 'commercial_register' 
-  | 'iban_certificate' 
-  | 'representative_id' 
-  | 'authorization_letter';
+  | 'commercial_register'      // السجل التجاري
+  | 'establishment_record'     // قيد المنشأة
+  | 'iban_certificate'         // شهادة IBAN
+  | 'representative_id'        // البطاقة الشخصية للممثل
+  | 'authorization_letter'     // خطاب التفويض
+  | 'explanatory_memo'         // مذكرة شارحة (تُنشأ لكل دعوى)
+  | 'contract_copy'            // صورة من العقد (لكل دعوى)
+  | 'documents_list';          // كشف بالمستندات المرفوعة (يُنشأ تلقائياً)
 
 // حالات الدعوى
 export type LawsuitStatus = 'draft' | 'prepared' | 'submitted' | 'registered' | 'closed';
@@ -82,10 +86,29 @@ export interface OverdueContract {
 // أسماء أنواع المستندات بالعربية
 export const DOCUMENT_TYPE_NAMES: Record<LegalDocumentType, string> = {
   commercial_register: 'السجل التجاري',
+  establishment_record: 'قيد المنشأة',
   iban_certificate: 'شهادة IBAN',
-  representative_id: 'هوية ممثل الشركة',
+  representative_id: 'البطاقة الشخصية للممثل',
   authorization_letter: 'خطاب التفويض',
+  explanatory_memo: 'المذكرة الشارحة',
+  contract_copy: 'صورة من العقد',
+  documents_list: 'كشف بالمستندات المرفوعة',
 };
+
+// المستندات الثابتة (تُرفع مرة واحدة)
+export const FIXED_DOCUMENTS: LegalDocumentType[] = [
+  'commercial_register',
+  'establishment_record',
+  'iban_certificate',
+  'representative_id',
+];
+
+// المستندات الديناميكية (تُنشأ لكل دعوى)
+export const DYNAMIC_DOCUMENTS: LegalDocumentType[] = [
+  'explanatory_memo',
+  'contract_copy',
+  'documents_list',
+];
 
 // أسماء حالات الدعوى بالعربية
 export const LAWSUIT_STATUS_NAMES: Record<LawsuitStatus, string> = {

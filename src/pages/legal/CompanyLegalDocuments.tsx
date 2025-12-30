@@ -59,24 +59,25 @@ import {
   lawsuitService, 
   CompanyLegalDocument, 
   LegalDocumentType,
-  DOCUMENT_TYPE_NAMES 
+  DOCUMENT_TYPE_NAMES,
+  FIXED_DOCUMENTS 
 } from '@/services/LawsuitService';
+import { Landmark } from 'lucide-react';
 
 // أيقونات أنواع المستندات
 const DOCUMENT_TYPE_ICONS: Record<LegalDocumentType, React.ReactNode> = {
   commercial_register: <Building2 className="h-5 w-5" />,
+  establishment_record: <Landmark className="h-5 w-5" />,
   iban_certificate: <CreditCard className="h-5 w-5" />,
   representative_id: <UserCheck className="h-5 w-5" />,
   authorization_letter: <FileSignature className="h-5 w-5" />,
+  explanatory_memo: <FileText className="h-5 w-5" />,
+  contract_copy: <FileText className="h-5 w-5" />,
+  documents_list: <FileText className="h-5 w-5" />,
 };
 
-// قائمة أنواع المستندات المطلوبة
-const REQUIRED_DOCUMENTS: LegalDocumentType[] = [
-  'commercial_register',
-  'iban_certificate',
-  'representative_id',
-  'authorization_letter',
-];
+// استخدام المستندات الثابتة من الخدمة
+const REQUIRED_DOCUMENTS = FIXED_DOCUMENTS;
 
 export default function CompanyLegalDocuments() {
   const queryClient = useQueryClient();
