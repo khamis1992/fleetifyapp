@@ -13,6 +13,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface DocumentUrls {
+  contractUrl?: string;
+  commercialRegisterUrl?: string;
+  ibanCertificateUrl?: string;
+  representativeIdUrl?: string;
+  establishmentRecordUrl?: string;
+  explanatoryMemoUrl?: string;
+  documentsListUrl?: string;
+}
+
 interface LawsuitData {
   caseTitle: string;
   facts: string;
@@ -26,13 +36,7 @@ interface LawsuitData {
   vehicleInfo: string;
   contractStartDate: string;
   contractEndDate: string;
-  documents?: {
-    contractUrl?: string;
-    commercialRegisterUrl?: string;
-    ibanCertificateUrl?: string;
-    representativeIdUrl?: string;
-    establishmentRecordUrl?: string;
-  };
+  documents?: DocumentUrls;
 }
 
 interface AutomationRequest {
@@ -342,21 +346,121 @@ async function addParties() {
   console.log('✅ تم إضافة أطراف الدعوى');
 }
 
-// الخطوة 6: المستندات (تذكير للرفع اليدوي)
+// دالة تحميل ملف من URL وتحويله لـ File
+async function downloadFileAsBlob(url, filename) {
+  try {
+    console.log('   📥 جاري تحميل: ' + filename);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('فشل التحميل');
+    const blob = await response.blob();
+    return new File([blob], filename, { type: blob.type || 'application/pdf' });
+  } catch (error) {
+    console.error('   ❌ فشل تحميل: ' + filename, error);
+    return null;
+  }
+}
+
+// دالة رفع ملف لحقل input[type="file"]
+async function uploadFileToInput(inputElement, file) {
+  try {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    inputElement.files = dataTransfer.files;
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+    await sleep(1000);
+    return true;
+  } catch (error) {
+    console.error('   ❌ فشل رفع الملف:', error);
+    return false;
+  }
+}
+
+// الخطوة 6: المستندات (رفع تلقائي)
 async function handleDocuments() {
-  console.log('📄 صفحة المستندات - يرجى رفع الملفات يدوياً:');
-  console.log('   1. المذكرة الشارحة (PDF + Word)');
-  console.log('   2. البطاقة الشخصية');
-  console.log('   3. السجل التجاري');
-  console.log('   4. قيد المنشأة');
-  console.log('   5. العقد');
-  console.log('   6. شهادة IBAN');
-  console.log('   7. كشف المستندات');
+  console.log('📄 جاري رفع المستندات تلقائياً...');
+  await sleep(2000);
   
-  // انتظار المستخدم لرفع الملفات
-  alert('يرجى رفع المستندات المطلوبة ثم اضغط OK للمتابعة');
+  const docs = LAWSUIT_DATA.documents || {};
+  const documentsToUpload = [
+    { url: docs.commercialRegisterUrl, name: 'السجل التجاري.pdf', label: 'السجل التجاري' },
+    { url: docs.establishmentRecordUrl, name: 'قيد المنشأة.pdf', label: 'قيد المنشأة' },
+    { url: docs.ibanCertificateUrl, name: 'شهادة IBAN.pdf', label: 'شهادة IBAN' },
+    { url: docs.representativeIdUrl, name: 'البطاقة الشخصية.pdf', label: 'البطاقة الشخصية' },
+    { url: docs.contractUrl, name: 'العقد.pdf', label: 'العقد' },
+    { url: docs.explanatoryMemoUrl, name: 'المذكرة الشارحة.pdf', label: 'المذكرة الشارحة' },
+  ].filter(d => d.url);
+  
+  let uploadedCount = 0;
+  
+  for (const doc of documentsToUpload) {
+    try {
+      console.log('   📤 جاري رفع: ' + doc.label);
+      
+      // البحث عن زر إضافة مستند
+      const addDocBtn = [...document.querySelectorAll('button, a')].find(el => 
+        el.textContent.includes('إضافة مستند') || 
+        el.textContent.includes('إضافة ملف') ||
+        el.textContent.includes('رفع')
+      );
+      
+      if (addDocBtn) {
+        addDocBtn.click();
+        await sleep(1500);
+        
+        // تحميل الملف
+        const file = await downloadFileAsBlob(doc.url, doc.name);
+        if (!file) continue;
+        
+        // البحث عن حقل الملف
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) {
+          const success = await uploadFileToInput(fileInput, file);
+          if (success) {
+            // البحث عن قائمة نوع المستند واختيار النوع المناسب
+            const docTypeDropdown = document.querySelector('.k-dropdownlist');
+            if (docTypeDropdown) {
+              docTypeDropdown.click();
+              await sleep(500);
+              const option = [...document.querySelectorAll('li.k-item')].find(el => 
+                el.textContent.includes(doc.label)
+              );
+              if (option) option.click();
+            }
+            
+            await sleep(500);
+            
+            // حفظ المستند
+            const saveBtn = [...document.querySelectorAll('button')].find(el => 
+              el.textContent.includes('حفظ') || el.textContent.includes('رفع') || el.textContent.includes('إضافة')
+            );
+            if (saveBtn) {
+              saveBtn.click();
+              await sleep(2000);
+            }
+            
+            uploadedCount++;
+            console.log('   ✅ تم رفع: ' + doc.label);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('   ❌ خطأ في رفع ' + doc.label + ':', error);
+    }
+  }
+  
+  console.log('📊 تم رفع ' + uploadedCount + ' من ' + documentsToUpload.length + ' مستندات');
+  
+  // إذا لم يتم رفع أي ملف أو بعض الملفات مفقودة
+  if (uploadedCount < documentsToUpload.length || documentsToUpload.length === 0) {
+    const missingDocs = documentsToUpload.length === 0 
+      ? 'جميع المستندات' 
+      : (documentsToUpload.length - uploadedCount) + ' مستندات';
+    
+    alert('⚠️ تنبيه:\\n\\nلم يتم رفع ' + missingDocs + ' تلقائياً.\\n\\nيرجى:\\n1. رفع المستندات المتبقية يدوياً\\n2. اضغط OK للمتابعة');
+  }
   
   // النقر على التالي
+  await sleep(1000);
   const nextBtn = [...document.querySelectorAll('a')].find(el => 
     el.textContent.includes('التالي')
   );

@@ -308,6 +308,12 @@ ${taqadiData.claims}
       const customer = (contract as any).customers;
       const vehicle = (contract as any).vehicles;
       
+      // جمع روابط المستندات
+      const getDocUrl = (type: string) => {
+        const doc = legalDocs.find(d => d.document_type === type);
+        return doc?.file_url;
+      };
+
       const lawsuitData = {
         caseTitle: taqadiData.caseTitle,
         facts: taqadiData.facts,
@@ -325,6 +331,17 @@ ${taqadiData.claims}
           : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
         contractStartDate: contract.start_date,
         contractEndDate: contract.end_date,
+        // إضافة روابط المستندات للرفع التلقائي
+        documents: {
+          commercialRegisterUrl: getDocUrl('commercial_register'),
+          establishmentRecordUrl: getDocUrl('establishment_record'),
+          ibanCertificateUrl: getDocUrl('iban_certificate'),
+          representativeIdUrl: getDocUrl('representative_id'),
+          // TODO: إضافة رابط العقد عند توفره
+          contractUrl: undefined,
+          // TODO: إضافة المذكرة الشارحة المُولّدة
+          explanatoryMemoUrl: undefined,
+        },
       };
 
       // استدعاء Edge Function
