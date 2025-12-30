@@ -67,6 +67,8 @@ export default function LawsuitPreparationPage() {
   const [taqadiData, setTaqadiData] = useState<TaqadiData | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutomating, setIsAutomating] = useState(false);
+  const [automationSession, setAutomationSession] = useState<{ sessionId: string; liveUrl: string } | null>(null);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -292,6 +294,91 @@ ${taqadiData.claims}
 
     toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط على أيقونة الإضافة 🚗');
   }, [taqadiData, contract]);
+
+  // بدء الأتمتة عبر Browserbase
+  const startAutomation = useCallback(async () => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات للدعوى');
+      return;
+    }
+
+    setIsAutomating(true);
+
+    try {
+      const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
+      
+      const lawsuitData = {
+        caseTitle: taqadiData.caseTitle,
+        facts: taqadiData.facts,
+        claims: taqadiData.claims,
+        amount: taqadiData.amount,
+        amountInWords: taqadiData.amountInWords,
+        defendantName: customer 
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+          : 'غير معروف',
+        defendantIdNumber: customer?.national_id || '',
+        defendantPhone: customer?.phone || '',
+        contractNumber: contract.contract_number,
+        vehicleInfo: vehicle 
+          ? `${vehicle.make} ${vehicle.model} ${vehicle.year} - ${vehicle.plate_number}`
+          : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
+        contractStartDate: contract.start_date,
+        contractEndDate: contract.end_date,
+      };
+
+      // استدعاء Edge Function
+      const response = await supabase.functions.invoke('taqadi-automation', {
+        body: {
+          action: 'start',
+          lawsuitData,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+
+      if (result.success) {
+        setAutomationSession({
+          sessionId: result.sessionId,
+          liveUrl: result.liveUrl,
+        });
+
+        // فتح المتصفح السحابي في نافذة جديدة
+        window.open(result.liveUrl, '_blank', 'width=1400,height=900');
+        
+        toast.success('🚀 تم فتح المتصفح السحابي! سجّل الدخول عبر توثيق.');
+      } else {
+        throw new Error(result.error || 'فشل في بدء الأتمتة');
+      }
+    } catch (error: any) {
+      console.error('Automation error:', error);
+      toast.error(`فشل بدء الأتمتة: ${error.message}`);
+    } finally {
+      setIsAutomating(false);
+    }
+  }, [taqadiData, contract]);
+
+  // إلغاء جلسة الأتمتة
+  const cancelAutomation = useCallback(async () => {
+    if (!automationSession) return;
+
+    try {
+      await supabase.functions.invoke('taqadi-automation', {
+        body: {
+          action: 'cancel',
+          sessionId: automationSession.sessionId,
+        },
+      });
+      setAutomationSession(null);
+      toast.success('تم إلغاء جلسة الأتمتة');
+    } catch (error) {
+      console.error('Cancel error:', error);
+    }
+  }, [automationSession]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
@@ -667,19 +754,70 @@ ${taqadiData.claims}
             <div className="text-center space-y-4">
               <h3 className="text-lg font-bold">الخطوة التالية</h3>
               
-              {/* الأزرار الرئيسية */}
+              {/* زر الأتمتة الرئيسي */}
+              <div className="mb-4">
+                <Button 
+                  size="lg" 
+                  onClick={startAutomation}
+                  disabled={isAutomating || !taqadiData}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-6 text-lg shadow-lg"
+                >
+                  {isAutomating ? (
+                    <>
+                      <LoadingSpinner className="h-5 w-5 ml-2" />
+                      جاري التجهيز...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-6 w-6 ml-2" />
+                      🚀 رفع دعوى تلقائي (Browserbase)
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* حالة الأتمتة */}
+              {automationSession && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-green-800">✅ المتصفح السحابي جاهز!</p>
+                      <p className="text-sm text-green-600">سجّل الدخول عبر توثيق، ثم ستتم التعبئة تلقائياً</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(automationSession.liveUrl, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 ml-1" />
+                        فتح المتصفح
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={cancelAutomation}
+                      >
+                        إلغاء
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* الأزرار البديلة */}
               <div className="flex justify-center gap-3 flex-wrap">
-                <Button size="lg" onClick={sendToExtension}>
+                <Button size="lg" variant="outline" onClick={sendToExtension}>
                   <Sparkles className="h-5 w-5 ml-2" />
-                  حفظ للتعبئة التلقائية
+                  حفظ للإضافة
                 </Button>
                 <Button size="lg" variant="outline" onClick={downloadDataFile}>
                   <Download className="h-5 w-5 ml-2" />
-                  تحميل ملف البيانات
+                  تحميل JSON
                 </Button>
                 <Button size="lg" variant="outline" onClick={openTaqadi}>
                   <ExternalLink className="h-5 w-5 ml-2" />
-                  فتح موقع تقاضي
+                  فتح تقاضي
                 </Button>
                 <Button size="lg" variant="outline" onClick={copyAllData}>
                   <Copy className="h-5 w-5 ml-2" />
