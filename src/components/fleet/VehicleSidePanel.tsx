@@ -37,7 +37,9 @@ import {
   XCircle,
   ExternalLink,
   Trash2,
+  ClipboardEdit,
 } from 'lucide-react';
+import { UpdateVehicleRegistrationDialog } from './UpdateVehicleRegistrationDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -166,7 +168,8 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const { data, isLoading } = useVehicleDetails(vehicleId);
+  const [isRegistrationDialogOpen, setIsRegistrationDialogOpen] = useState(false);
+  const { data, isLoading, refetch } = useVehicleDetails(vehicleId);
 
   // Handle create contract
   const handleCreateContract = () => {
@@ -260,6 +263,16 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                           حذف
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/20"
+                        onClick={() => setIsRegistrationDialogOpen(true)}
+                        title="تحديث بيانات الاستمارة"
+                      >
+                        <ClipboardEdit className="w-4 h-4 ml-1" />
+                        تحديث
+                      </Button>
                       {onEdit && (
                         <Button
                           variant="ghost"
@@ -650,6 +663,27 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
               </>
             )}
           </motion.div>
+
+          {/* نافذة تحديث بيانات الاستمارة */}
+          <UpdateVehicleRegistrationDialog
+            open={isRegistrationDialogOpen}
+            onOpenChange={setIsRegistrationDialogOpen}
+            vehicle={data?.vehicle ? {
+              id: data.vehicle.id,
+              plate_number: data.vehicle.plate_number,
+              make: data.vehicle.make,
+              model: data.vehicle.model,
+              year: data.vehicle.year,
+              registration_expiry: data.alerts.registrationExpiry,
+              insurance_expiry: data.alerts.insuranceExpiry,
+              current_mileage: data.vehicle.current_mileage,
+              fuel_level: data.vehicle.fuel_level,
+              location: data.vehicle.location,
+            } : null}
+            onSuccess={() => {
+              refetch();
+            }}
+          />
         </>
       )}
     </AnimatePresence>

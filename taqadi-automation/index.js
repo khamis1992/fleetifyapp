@@ -505,61 +505,154 @@ async function main() {
     await page.waitForTimeout(4000);
     logSuccess('تم الانتقال لصفحة أطراف الدعوى');
     
-    // تعبئة بيانات أطراف الدعوى
-    log('   جاري تعبئة بيانات الأطراف...', 'blue');
+    // ===== إضافة المدعي (الشركة) =====
+    log('   جاري إضافة المدعي (شركة العراف)...', 'blue');
     
-    // محاولة تعبئة بيانات المدعى عليه
-    const defendantFilled = await page.evaluate((defendantData) => {
-      let filled = 0;
-      
-      // البحث عن حقول الاسم
-      const allInputs = document.querySelectorAll('input[type="text"], input.k-textbox, input.k-input');
-      for (const input of allInputs) {
-        const parent = input.closest('div, li, fieldset');
-        if (parent) {
-          const text = parent.textContent || '';
-          
-          // اسم المدعى عليه
-          if ((text.includes('المدعى عليه') || text.includes('اسم الطرف')) && text.includes('اسم')) {
-            if (!input.value) {
-              input.value = defendantData.name;
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              input.dispatchEvent(new Event('change', { bubbles: true }));
-              filled++;
+    // البحث عن زر إضافة مدعي
+    let plaintiffAdded = false;
+    try {
+      const addPlaintiffBtn = await page.$('text="إضافة مدعي"');
+      if (addPlaintiffBtn) {
+        await addPlaintiffBtn.click();
+        await page.waitForTimeout(2000);
+        
+        // تعبئة بيانات المدعي
+        await page.evaluate(() => {
+          // اختيار نوع: شركة/مؤسسة
+          const companyRadios = document.querySelectorAll('input[type="radio"]');
+          for (const radio of companyRadios) {
+            const label = radio.closest('label') || radio.parentElement;
+            if (label && (label.textContent.includes('شركة') || label.textContent.includes('مؤسسة') || label.textContent.includes('اعتباري'))) {
+              radio.click();
+              break;
             }
           }
-          
-          // رقم الهوية
-          if (text.includes('هوية') || text.includes('رقم الهوية') || text.includes('QID')) {
-            if (!input.value && defendantData.idNumber) {
-              input.value = defendantData.idNumber;
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              filled++;
+        });
+        
+        await page.waitForTimeout(500);
+        
+        // تعبئة اسم الشركة
+        await page.evaluate((companyName) => {
+          const inputs = document.querySelectorAll('input[type="text"], input.k-textbox');
+          for (const input of inputs) {
+            const parent = input.closest('div, li, fieldset');
+            if (parent && (parent.textContent.includes('اسم') || parent.textContent.includes('الشركة'))) {
+              if (!input.value) {
+                input.value = companyName;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                break;
+              }
             }
           }
-          
-          // رقم الهاتف
-          if (text.includes('هاتف') || text.includes('جوال') || text.includes('موبايل')) {
-            if (!input.value && defendantData.phone) {
-              input.value = defendantData.phone;
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              filled++;
-            }
-          }
+        }, 'شركة العراف لتأجير السيارات');
+        
+        // حفظ المدعي
+        const savePlaintiffBtn = await page.$('text="حفظ"') || await page.$('text="إضافة"') || await page.$('text="تأكيد"');
+        if (savePlaintiffBtn) {
+          await savePlaintiffBtn.click();
+          await page.waitForTimeout(2000);
         }
+        
+        plaintiffAdded = true;
+        logSuccess('تم إضافة المدعي: شركة العراف لتأجير السيارات');
       }
-      
-      return filled;
-    }, { 
-      name: data.defendantName, 
-      idNumber: data.defendantIdNumber || '', 
-      phone: data.defendantPhone || '' 
-    });
+    } catch (e) {
+      logWarning('لم يتم العثور على زر إضافة مدعي');
+    }
     
-    if (defendantFilled > 0) {
-      logSuccess(`تم تعبئة ${defendantFilled} حقول في أطراف الدعوى`);
+    // ===== إضافة المدعى عليه (العميل) =====
+    log('   جاري إضافة المدعى عليه...', 'blue');
+    
+    let defendantAdded = false;
+    try {
+      const addDefendantBtn = await page.$('text="إضافة مدعى عليه"');
+      if (addDefendantBtn) {
+        await addDefendantBtn.click();
+        await page.waitForTimeout(2000);
+        
+        // تعبئة بيانات المدعى عليه
+        await page.evaluate(() => {
+          // اختيار نوع: فرد/شخص طبيعي
+          const personRadios = document.querySelectorAll('input[type="radio"]');
+          for (const radio of personRadios) {
+            const label = radio.closest('label') || radio.parentElement;
+            if (label && (label.textContent.includes('فرد') || label.textContent.includes('شخص') || label.textContent.includes('طبيعي'))) {
+              radio.click();
+              break;
+            }
+          }
+        });
+        
+        await page.waitForTimeout(500);
+        
+        // تعبئة بيانات المدعى عليه
+        await page.evaluate((defendant) => {
+          const inputs = document.querySelectorAll('input[type="text"], input.k-textbox');
+          let filledName = false;
+          let filledId = false;
+          let filledPhone = false;
+          
+          for (const input of inputs) {
+            const parent = input.closest('div, li, fieldset');
+            if (!parent) continue;
+            const text = parent.textContent || '';
+            
+            // الاسم
+            if (!filledName && text.includes('اسم') && !text.includes('هوية')) {
+              if (!input.value) {
+                input.value = defendant.name;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                filledName = true;
+              }
+            }
+            
+            // رقم الهوية
+            if (!filledId && (text.includes('هوية') || text.includes('QID') || text.includes('رقم الهوية'))) {
+              if (!input.value && defendant.idNumber) {
+                input.value = defendant.idNumber;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                filledId = true;
+              }
+            }
+            
+            // الهاتف
+            if (!filledPhone && (text.includes('هاتف') || text.includes('جوال'))) {
+              if (!input.value && defendant.phone) {
+                input.value = defendant.phone;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                filledPhone = true;
+              }
+            }
+          }
+        }, { 
+          name: data.defendantName, 
+          idNumber: data.defendantIdNumber || '', 
+          phone: data.defendantPhone || '' 
+        });
+        
+        // حفظ المدعى عليه
+        const saveDefendantBtn = await page.$('text="حفظ"') || await page.$('text="إضافة"') || await page.$('text="تأكيد"');
+        if (saveDefendantBtn) {
+          await saveDefendantBtn.click();
+          await page.waitForTimeout(2000);
+        }
+        
+        defendantAdded = true;
+        logSuccess(`تم إضافة المدعى عليه: ${data.defendantName}`);
+      }
+    } catch (e) {
+      logWarning('لم يتم العثور على زر إضافة مدعى عليه');
+    }
+    
+    // ملخص أطراف الدعوى
+    if (plaintiffAdded && defendantAdded) {
+      logSuccess('تم إضافة كلا الطرفين بنجاح!');
+    } else if (plaintiffAdded || defendantAdded) {
+      logWarning('تم إضافة طرف واحد فقط - أضف الطرف الآخر يدوياً');
     } else {
-      logWarning('لم يتم العثور على حقول أطراف الدعوى - قد تحتاج إضافة يدوية');
+      logWarning('لم يتم إضافة أي طرف - أضفهم يدوياً');
     }
     
   } catch (e) {
