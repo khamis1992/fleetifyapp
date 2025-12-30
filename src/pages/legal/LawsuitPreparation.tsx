@@ -69,6 +69,15 @@ export default function LawsuitPreparationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutomating, setIsAutomating] = useState(false);
   const [automationSession, setAutomationSession] = useState<{ sessionId: string; liveUrl: string } | null>(null);
+  
+  // حالات المستندات الجديدة
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [contractFileUrl, setContractFileUrl] = useState<string | null>(null);
+  const [isUploadingContract, setIsUploadingContract] = useState(false);
+  const [isGeneratingMemo, setIsGeneratingMemo] = useState(false);
+  const [memoUrl, setMemoUrl] = useState<string | null>(null);
+  const [isGeneratingDocsList, setIsGeneratingDocsList] = useState(false);
+  const [docsListUrl, setDocsListUrl] = useState<string | null>(null);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -337,10 +346,8 @@ ${taqadiData.claims}
           establishmentRecordUrl: getDocUrl('establishment_record'),
           ibanCertificateUrl: getDocUrl('iban_certificate'),
           representativeIdUrl: getDocUrl('representative_id'),
-          // TODO: إضافة رابط العقد عند توفره
-          contractUrl: undefined,
-          // TODO: إضافة المذكرة الشارحة المُولّدة
-          explanatoryMemoUrl: undefined,
+          contractUrl: contractFileUrl || undefined,
+          explanatoryMemoUrl: memoUrl || undefined,
         },
       };
 
@@ -396,6 +403,263 @@ ${taqadiData.claims}
       console.error('Cancel error:', error);
     }
   }, [automationSession]);
+
+  // رفع عقد الإيجار
+  const uploadContractFile = useCallback(async (file: File) => {
+    if (!companyId || !contractId) return;
+    
+    setIsUploadingContract(true);
+    try {
+      const fileName = `contracts/${companyId}/${contractId}/${Date.now()}_${file.name}`;
+      
+      const { data, error } = await supabase.storage
+        .from('legal-documents')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('legal-documents')
+        .getPublicUrl(fileName);
+      
+      setContractFileUrl(urlData.publicUrl);
+      setContractFile(file);
+      toast.success('✅ تم رفع عقد الإيجار بنجاح!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(`فشل رفع العقد: ${error.message}`);
+    } finally {
+      setIsUploadingContract(false);
+    }
+  }, [companyId, contractId]);
+
+  // توليد المذكرة الشارحة بالذكاء الاصطناعي
+  const generateExplanatoryMemo = useCallback(async () => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات كافية لتوليد المذكرة');
+      return;
+    }
+
+    setIsGeneratingMemo(true);
+    try {
+      const customer = (contract as any).customers;
+      const customerName = customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+        : 'غير معروف';
+
+      // استدعاء Edge Function لتوليد المذكرة
+      const { data, error } = await supabase.functions.invoke('generate-legal-memo', {
+        body: {
+          type: 'explanatory_memo',
+          lawsuitData: {
+            caseTitle: taqadiData.caseTitle,
+            facts: taqadiData.facts,
+            claims: taqadiData.claims,
+            amount: taqadiData.amount,
+            amountInWords: taqadiData.amountInWords,
+            defendantName: customerName,
+            contractNumber: contract.contract_number,
+            contractStartDate: contract.start_date,
+            contractEndDate: contract.end_date,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.pdfUrl) {
+        setMemoUrl(data.pdfUrl);
+        toast.success('✅ تم توليد المذكرة الشارحة بنجاح!');
+        // فتح المذكرة في نافذة جديدة
+        window.open(data.pdfUrl, '_blank');
+      } else if (data?.htmlContent) {
+        // إذا تم إرجاع HTML بدلاً من PDF، افتحه في نافذة جديدة
+        const blob = new Blob([data.htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        toast.success('✅ تم توليد المذكرة الشارحة!');
+      }
+    } catch (error: any) {
+      console.error('Memo generation error:', error);
+      // إذا فشل الـ Edge Function، نولد المذكرة محلياً
+      generateMemoLocally();
+    } finally {
+      setIsGeneratingMemo(false);
+    }
+  }, [taqadiData, contract]);
+
+  // توليد المذكرة محلياً (fallback)
+  const generateMemoLocally = useCallback(() => {
+    if (!taqadiData || !contract) return;
+    
+    const customer = (contract as any).customers;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+    
+    const today = new Date().toLocaleDateString('ar-QA', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
+    const memoHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مذكرة شارحة</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 14pt; line-height: 2; color: #000; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }
+    .logo { max-width: 150px; margin-bottom: 10px; }
+    h1 { color: #1e3a5f; font-size: 24pt; margin: 10px 0; }
+    .section { margin: 20px 0; }
+    .section-title { font-weight: bold; color: #1e3a5f; font-size: 16pt; margin-bottom: 10px; }
+    .content { text-align: justify; }
+    .footer { margin-top: 50px; text-align: center; }
+    .signature { margin-top: 80px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-assets/alaraf-logo.png" class="logo" alt="شركة العراف" onerror="this.style.display='none'">
+    <h1>مذكرة شارحة</h1>
+    <p>مقدمة من: شركة العراف للخدمات</p>
+    <p>التاريخ: ${today}</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">أولاً: موضوع الدعوى</div>
+    <div class="content">
+      <p>${taqadiData.caseTitle}</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ثانياً: الوقائع</div>
+    <div class="content">
+      <p>${taqadiData.facts.replace(/\n/g, '<br>')}</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ثالثاً: الأسانيد القانونية</div>
+    <div class="content">
+      <p>استناداً إلى أحكام القانون المدني القطري، وعلى وجه الخصوص المواد المتعلقة بعقود الإيجار والالتزامات التعاقدية، فإن المدعى عليه ملزم بسداد المبالغ المستحقة.</p>
+      <p>كما أن الامتناع عن الوفاء بالالتزامات التعاقدية يعد إخلالاً جسيماً بالعقد يستوجب التعويض.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">رابعاً: الطلبات</div>
+    <div class="content">
+      <p>${taqadiData.claims.replace(/\n/g, '<br>')}</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>والله ولي التوفيق</p>
+    <div class="signature">
+      <p>مقدمه</p>
+      <p><strong>أسامة أحمد البشري</strong></p>
+      <p>المخول بالتوقيع - شركة العراف للخدمات</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([memoHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    toast.success('✅ تم توليد المذكرة الشارحة!');
+  }, [taqadiData, contract]);
+
+  // توليد كشف المستندات المرفوعة
+  const generateDocumentsList = useCallback(() => {
+    const today = new Date().toLocaleDateString('ar-QA', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
+    const customer = (contract as any)?.customers;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
+    // تجميع قائمة المستندات
+    const documents = [
+      { name: 'المذكرة الشارحة', status: memoUrl ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من البطاقة الشخصية للممثل', status: legalDocs.find(d => d.document_type === 'representative_id') ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من السجل التجاري', status: legalDocs.find(d => d.document_type === 'commercial_register') ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من قيد المنشأة', status: legalDocs.find(d => d.document_type === 'establishment_record') ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من العقد', status: contractFileUrl ? 'مرفق' : 'غير مرفق' },
+      { name: 'شهادة IBAN', status: legalDocs.find(d => d.document_type === 'iban_certificate') ? 'مرفق' : 'غير مرفق' },
+    ];
+
+    const docsListHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>كشف بالمستندات المرفوعة</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 14pt; line-height: 1.8; color: #000; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }
+    h1 { color: #1e3a5f; font-size: 22pt; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #333; padding: 12px; text-align: right; }
+    th { background: #1e3a5f; color: white; }
+    .attached { color: green; font-weight: bold; }
+    .not-attached { color: red; }
+    .footer { margin-top: 40px; text-align: center; }
+    .case-info { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>كشف بالمستندات المرفوعة</h1>
+    <p>شركة العراف للخدمات</p>
+    <p>التاريخ: ${today}</p>
+  </div>
+
+  <div class="case-info">
+    <p><strong>عنوان الدعوى:</strong> ${taqadiData?.caseTitle || '-'}</p>
+    <p><strong>المدعى عليه:</strong> ${customerName}</p>
+    <p><strong>المبلغ المطالب به:</strong> ${taqadiData?.amount?.toLocaleString('ar-QA')} ريال قطري</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>م</th>
+        <th>اسم المستند</th>
+        <th>الحالة</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${documents.map((doc, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${doc.name}</td>
+          <td class="${doc.status === 'مرفق' ? 'attached' : 'not-attached'}">${doc.status}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p><strong>إجمالي المستندات:</strong> ${documents.length}</p>
+    <p><strong>المستندات المرفقة:</strong> ${documents.filter(d => d.status === 'مرفق').length}</p>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([docsListHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setDocsListUrl(url);
+    toast.success('✅ تم توليد كشف المستندات!');
+  }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
@@ -690,19 +954,75 @@ ${taqadiData.claims}
             )}
 
             <div className="grid gap-3">
-              {/* مذكرة شارحة - يتم توليدها */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              {/* مذكرة شارحة - توليد بالذكاء الاصطناعي */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-primary" />
                   <div>
                     <p className="font-medium">مذكرة شارحة</p>
-                    <p className="text-sm text-muted-foreground">يتم توليدها بالذكاء الاصطناعي</p>
+                    <p className="text-sm text-muted-foreground">
+                      {memoUrl ? '✅ تم التوليد' : 'توليد بالذكاء الاصطناعي'}
+                    </p>
                   </div>
                 </div>
-                <Badge variant="secondary">قريباً</Badge>
+                <div className="flex gap-2">
+                  {memoUrl && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(memoUrl, '_blank')}>
+                      <Download className="h-4 w-4 ml-2" />
+                      تحميل
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={generateExplanatoryMemo}
+                    disabled={isGeneratingMemo || !taqadiData}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {isGeneratingMemo ? (
+                      <>
+                        <LoadingSpinner className="h-4 w-4 ml-2" />
+                        جاري التوليد...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 ml-2" />
+                        {memoUrl ? 'إعادة التوليد' : 'توليد المذكرة'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
-              {/* كشف المطالبات */}
+              {/* كشف المستندات المرفوعة */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <ClipboardList className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">كشف بالمستندات المرفوعة</p>
+                    <p className="text-sm text-muted-foreground">
+                      {docsListUrl ? '✅ تم التوليد' : 'قائمة بجميع المستندات'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {docsListUrl && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(docsListUrl, '_blank')}>
+                      <Download className="h-4 w-4 ml-2" />
+                      تحميل
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={generateDocumentsList}
+                  >
+                    <FileCheck className="h-4 w-4 ml-2" />
+                    {docsListUrl ? 'إعادة التوليد' : 'توليد الكشف'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* كشف المطالبات (الأصلي) */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5" />
@@ -744,16 +1064,54 @@ ${taqadiData.claims}
                 );
               })}
 
-              {/* عقد الإيجار */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              {/* عقد الإيجار - رفع ملف */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5" />
+                  <FileText className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium">عقد الإيجار</p>
-                    <p className="text-sm text-muted-foreground">رقم {contract.contract_number}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {contractFileUrl ? '✅ تم الرفع' : `رقم ${contract.contract_number} - يرجى رفع صورة العقد`}
+                    </p>
                   </div>
                 </div>
-                <Badge variant="secondary">قريباً</Badge>
+                <div className="flex gap-2">
+                  {contractFileUrl && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(contractFileUrl, '_blank')}>
+                      <Download className="h-4 w-4 ml-2" />
+                      تحميل
+                    </Button>
+                  )}
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadContractFile(file);
+                      }}
+                      disabled={isUploadingContract}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={isUploadingContract}
+                    >
+                      {isUploadingContract ? (
+                        <>
+                          <LoadingSpinner className="h-4 w-4 ml-2" />
+                          جاري الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <FileCheck className="h-4 w-4 ml-2" />
+                          {contractFileUrl ? 'تغيير العقد' : 'رفع العقد'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
