@@ -872,9 +872,9 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
               <td class="amount">${v.fineAmount.toLocaleString('ar-QA')} ر.ق</td>
             </tr>
           `).join('')}
-          <tr class="total-row" style="background: #d32f2f !important;">
-            <td colspan="5">إجمالي المخالفات المرورية</td>
-            <td class="amount">${data.violations.reduce((s, v) => s + v.fineAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
+          <tr class="total-row" style="background: #d32f2f !important; color: #fff !important;">
+            <td colspan="5" style="color: #fff !important;">إجمالي المخالفات المرورية</td>
+            <td class="amount" style="color: #fff !important;">${data.violations.reduce((s, v) => s + v.fineAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
           </tr>
         </tbody>
       </table>
