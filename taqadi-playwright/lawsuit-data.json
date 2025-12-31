@@ -20,5 +20,70 @@
     "adminFee": 500,
     "total": 26355
   },
-  "createdAt": "2025-12-31T17:10:14.206Z"
+  "documents": [
+    {
+      "name": "السجل التجاري",
+      "type": "commercial_registration",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/commercial_registration.pdf",
+      "localPath": "temp/السجل_التجاري.pdf"
+    },
+    {
+      "name": "شهادة IBAN البنكي",
+      "type": "iban_certificate",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/iban_certificate.pdf",
+      "localPath": "temp/شهادة_IBAN.pdf"
+    },
+    {
+      "name": "البطاقة الشخصية للوكيل",
+      "type": "owner_id",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/owner_id.pdf",
+      "localPath": "temp/البطاقة_الشخصية.pdf"
+    },
+    {
+      "name": "الوكالة أو التوقيع المخول",
+      "type": "signature_authorization",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/signature_authorization.pdf",
+      "localPath": "temp/التوقيع_المخول.pdf"
+    },
+    {
+      "name": "قيد تأسيس المنشأة",
+      "type": "establishment_record",
+      "required": false,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/establishment_record.pdf",
+      "localPath": "temp/قيد_التأسيس.pdf"
+    },
+    {
+      "name": "المذكرة الشارحة",
+      "type": "explanatory_memo",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/المذكرة_الشارحة.pdf"
+    },
+    {
+      "name": "كشف المستندات",
+      "type": "documents_list",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/كشف_المستندات.pdf"
+    },
+    {
+      "name": "كشف المطالبات",
+      "type": "claims_statement",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/كشف_المطالبات.pdf"
+    },
+    {
+      "name": "عقد الإيجار",
+      "type": "rental_contract",
+      "required": true,
+      "contractSpecific": true,
+      "localPath": "temp/عقد_الإيجار.pdf"
+    }
+  ],
+  "createdAt": "2025-12-31T17:27:33.778Z"
 }

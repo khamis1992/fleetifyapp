@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node automate.js",
     "login": "node login.js",
-    "fetch": "node fetch-data.js"
+    "fetch": "node fetch-data.js",
+    "download": "node download-docs.js",
+    "all": "npm run fetch && npm run download && npm start"
   },
   "dependencies": {
     "playwright": "^1.40.0",

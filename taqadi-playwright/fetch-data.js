@@ -1,10 +1,16 @@
 /**
  * جلب بيانات الدعوى - يمكنك إدخالها يدوياً أو استخدام بيانات تجريبية
  * يحفظ البيانات في ملف lawsuit-data.json
+ * يتضمن روابط المستندات من Supabase Storage
  */
 
 const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
+
+// روابط المستندات القانونية من Supabase Storage
+const SUPABASE_URL = 'https://qwhunliohlkkahbspfiu.supabase.co';
+const COMPANY_DOCS_BUCKET = 'company-documents';
 
 async function fetchLawsuitData() {
   console.log('');
@@ -58,6 +64,9 @@ function getTestData() {
   const adminFee = 500;
   const totalAmount = totalOverdue + lateFee + totalViolations + adminFee;
   
+  // المستندات المطلوبة للدعوى
+  const documents = getDocumentsList();
+  
   return {
     contractId: 'c1d24b06-dd18-4f6a-8126-c83efaeddfb7',
     agreementNumber: contractNumber,
@@ -80,6 +89,7 @@ function getTestData() {
       adminFee: adminFee,
       total: totalAmount,
     },
+    documents: documents,
     createdAt: new Date().toISOString(),
   };
 }
@@ -98,6 +108,9 @@ async function getManualInput() {
   const totalAmount = parseInt(await askQuestion('إجمالي المبلغ المطالب به: ')) || 0;
   const amountInWords = await askQuestion('المبلغ كتابةً: ');
   
+  // المستندات المطلوبة للدعوى
+  const documents = getDocumentsList();
+  
   return {
     contractId: 'manual-entry',
     agreementNumber: contractNumber,
@@ -113,8 +126,80 @@ async function getManualInput() {
     amountFormatted: totalAmount.toLocaleString('ar-QA'),
     amountInWords: amountInWords,
     breakdown: { total: totalAmount },
+    documents: documents,
     createdAt: new Date().toISOString(),
   };
+}
+
+// قائمة المستندات المطلوبة مع روابطها
+function getDocumentsList() {
+  const companyId = '24bc0b21-4e2d-4413-9842-31719a3669f4'; // شركة العراف
+  
+  return [
+    {
+      name: 'السجل التجاري',
+      type: 'commercial_registration',
+      required: true,
+      url: `${SUPABASE_URL}/storage/v1/object/public/${COMPANY_DOCS_BUCKET}/${companyId}/commercial_registration.pdf`,
+      localPath: 'temp/السجل_التجاري.pdf',
+    },
+    {
+      name: 'شهادة IBAN البنكي',
+      type: 'iban_certificate',
+      required: true,
+      url: `${SUPABASE_URL}/storage/v1/object/public/${COMPANY_DOCS_BUCKET}/${companyId}/iban_certificate.pdf`,
+      localPath: 'temp/شهادة_IBAN.pdf',
+    },
+    {
+      name: 'البطاقة الشخصية للوكيل',
+      type: 'owner_id',
+      required: true,
+      url: `${SUPABASE_URL}/storage/v1/object/public/${COMPANY_DOCS_BUCKET}/${companyId}/owner_id.pdf`,
+      localPath: 'temp/البطاقة_الشخصية.pdf',
+    },
+    {
+      name: 'الوكالة أو التوقيع المخول',
+      type: 'signature_authorization',
+      required: true,
+      url: `${SUPABASE_URL}/storage/v1/object/public/${COMPANY_DOCS_BUCKET}/${companyId}/signature_authorization.pdf`,
+      localPath: 'temp/التوقيع_المخول.pdf',
+    },
+    {
+      name: 'قيد تأسيس المنشأة',
+      type: 'establishment_record',
+      required: false,
+      url: `${SUPABASE_URL}/storage/v1/object/public/${COMPANY_DOCS_BUCKET}/${companyId}/establishment_record.pdf`,
+      localPath: 'temp/قيد_التأسيس.pdf',
+    },
+    {
+      name: 'المذكرة الشارحة',
+      type: 'explanatory_memo',
+      required: true,
+      generated: true, // يتم توليدها من AI
+      localPath: 'temp/المذكرة_الشارحة.pdf',
+    },
+    {
+      name: 'كشف المستندات',
+      type: 'documents_list',
+      required: true,
+      generated: true, // يتم توليدها تلقائياً
+      localPath: 'temp/كشف_المستندات.pdf',
+    },
+    {
+      name: 'كشف المطالبات',
+      type: 'claims_statement',
+      required: true,
+      generated: true, // يتم توليدها تلقائياً
+      localPath: 'temp/كشف_المطالبات.pdf',
+    },
+    {
+      name: 'عقد الإيجار',
+      type: 'rental_contract',
+      required: true,
+      contractSpecific: true, // يختلف حسب العقد
+      localPath: 'temp/عقد_الإيجار.pdf',
+    },
+  ];
 }
 
 // دالة مساعدة للسؤال

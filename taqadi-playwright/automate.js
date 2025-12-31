@@ -2,14 +2,16 @@
  * أتمتة رفع الدعاوى على موقع تقاضي
  * 
  * الاستخدام:
- * 1. npm run fetch   - جلب بيانات الدعوى من العراف
- * 2. npm run login   - تسجيل الدخول (مرة واحدة)
- * 3. npm start       - تشغيل الأتمتة
+ * 1. npm run fetch     - جلب بيانات الدعوى من العراف
+ * 2. npm run download  - تحميل المستندات
+ * 3. npm run login     - تسجيل الدخول (مرة واحدة)
+ * 4. npm start         - تشغيل الأتمتة
  */
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // ألوان للطباعة
 const colors = {
@@ -32,6 +34,17 @@ async function automate() {
     log('❌', 'ملف lawsuit-data.json غير موجود!', colors.red);
     log('📋', 'شغّل أولاً: npm run fetch', colors.yellow);
     process.exit(1);
+  }
+
+  // التحقق من وجود مجلد المستندات
+  const tempDir = path.join(__dirname, 'temp');
+  if (!fs.existsSync(tempDir)) {
+    log('⚠️', 'مجلد temp غير موجود - جاري تحميل المستندات...', colors.yellow);
+    try {
+      execSync('node download-docs.js', { cwd: __dirname, stdio: 'inherit' });
+    } catch (e) {
+      log('❌', 'فشل تحميل المستندات', colors.red);
+    }
   }
 
   // التحقق من وجود بيانات تسجيل الدخول
@@ -242,6 +255,15 @@ async function automate() {
     log('📋', 'قد يكون تصميم الصفحة مختلفاً', colors.cyan);
   }
   
+  // رفع المستندات
+  console.log('');
+  log('═══════════════════════════════════════════════════════════', '');
+  log('📎', 'جاري رفع المستندات...', colors.magenta);
+  log('═══════════════════════════════════════════════════════════', '');
+  console.log('');
+
+  await uploadDocuments(page, lawsuitData);
+  
   console.log('');
   log('📋', 'راجع البيانات ثم اضغط "اعتماد" لتقديم الدعوى', colors.magenta);
   log('⚠️', 'لا تغلق هذه النافذة حتى تكتمل العملية', colors.yellow);
@@ -273,6 +295,133 @@ function waitForUser(message) {
       resolve();
     });
   });
+}
+
+// رفع المستندات
+async function uploadDocuments(page, lawsuitData) {
+  if (!lawsuitData.documents || lawsuitData.documents.length === 0) {
+    log('⚠️', 'لا توجد مستندات للرفع', colors.yellow);
+    return;
+  }
+
+  const tempDir = path.join(__dirname, 'temp');
+  let uploadedCount = 0;
+
+  // البحث عن زر رفع الملفات
+  const uploadSelectors = [
+    'input[type="file"]',
+    'button:has-text("رفع")',
+    'button:has-text("إرفاق")',
+    'button:has-text("ملف")',
+    'a:has-text("رفع")',
+    '.upload-btn',
+    '[data-action="upload"]',
+  ];
+
+  let fileInput = null;
+  for (const selector of uploadSelectors) {
+    try {
+      fileInput = await page.$(selector);
+      if (fileInput) {
+        log('🔍', `تم العثور على زر الرفع: ${selector}`, colors.green);
+        break;
+      }
+    } catch (e) {
+      // تجاهل
+    }
+  }
+
+  if (!fileInput) {
+    log('⚠️', 'لم يتم العثور على زر رفع الملفات', colors.yellow);
+    log('📋', 'يرجى رفع المستندات يدوياً', colors.cyan);
+    
+    // عرض قائمة المستندات للرفع اليدوي
+    console.log('');
+    log('📎', 'المستندات المتاحة للرفع:', colors.cyan);
+    
+    if (fs.existsSync(tempDir)) {
+      const files = fs.readdirSync(tempDir);
+      files.forEach((file, index) => {
+        const filePath = path.join(tempDir, file);
+        const stats = fs.statSync(filePath);
+        const sizeKB = (stats.size / 1024).toFixed(1);
+        log(`   ${index + 1}.`, `${file} (${sizeKB} KB)`, colors.reset);
+      });
+      console.log('');
+      log('📁', `المسار: ${tempDir}`, colors.cyan);
+    }
+    
+    await waitForUser('اضغط Enter بعد رفع المستندات يدوياً');
+    return;
+  }
+
+  // جمع الملفات للرفع
+  const filesToUpload = [];
+  
+  for (const doc of lawsuitData.documents) {
+    // البحث عن الملف في temp
+    let filePath = path.join(__dirname, doc.localPath);
+    
+    // إذا كان PDF غير موجود، جرب HTML
+    if (!fs.existsSync(filePath)) {
+      const htmlPath = filePath.replace('.pdf', '.html');
+      if (fs.existsSync(htmlPath)) {
+        filePath = htmlPath;
+      }
+    }
+    
+    if (fs.existsSync(filePath)) {
+      filesToUpload.push(filePath);
+      log('📄', `جاهز: ${doc.name}`, colors.cyan);
+    } else {
+      log('⚠️', `غير موجود: ${doc.name}`, colors.yellow);
+    }
+  }
+
+  if (filesToUpload.length === 0) {
+    log('⚠️', 'لا توجد ملفات جاهزة للرفع', colors.yellow);
+    return;
+  }
+
+  // محاولة رفع الملفات
+  try {
+    // إذا كان input[type="file"] - رفع مباشر
+    const tagName = await fileInput.evaluate(el => el.tagName.toLowerCase());
+    
+    if (tagName === 'input') {
+      // رفع جميع الملفات دفعة واحدة
+      await fileInput.setInputFiles(filesToUpload);
+      log('✅', `تم رفع ${filesToUpload.length} ملفات`, colors.green);
+      uploadedCount = filesToUpload.length;
+    } else {
+      // إذا كان زر، نحتاج للنقر وانتظار filechooser
+      for (const filePath of filesToUpload) {
+        try {
+          const [fileChooser] = await Promise.all([
+            page.waitForEvent('filechooser', { timeout: 5000 }),
+            fileInput.click(),
+          ]);
+          await fileChooser.setFiles([filePath]);
+          
+          const fileName = path.basename(filePath);
+          log('✅', `تم رفع: ${fileName}`, colors.green);
+          uploadedCount++;
+          
+          // انتظار قليل بين الملفات
+          await page.waitForTimeout(1000);
+        } catch (e) {
+          log('⚠️', `فشل رفع: ${path.basename(filePath)}`, colors.yellow);
+        }
+      }
+    }
+  } catch (error) {
+    log('❌', `خطأ في الرفع: ${error.message}`, colors.red);
+  }
+
+  console.log('');
+  log('═══════════════════════════════════════════════════════════', '');
+  log('📊', `تم رفع ${uploadedCount} من ${filesToUpload.length} ملفات`, colors.magenta);
+  log('═══════════════════════════════════════════════════════════', '');
 }
 
 // تشغيل
