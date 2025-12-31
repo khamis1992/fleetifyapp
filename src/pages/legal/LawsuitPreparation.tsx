@@ -441,32 +441,8 @@ ${taqadiData.claims}
     }
   }, [companyId, contractId]);
 
-  // دالة مساعدة لتوليد المذكرة محلياً
-  const doGenerateMemoLocally = () => {
-    if (!taqadiData || !contract) return;
-    
-    const customer = (contract as any).customers;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
-
-    // استخدام التنسيق الموحد للكتب الرسمية
-    const memoHtml = generateExplanatoryMemoHtml({
-      caseTitle: taqadiData.caseTitle,
-      facts: taqadiData.facts,
-      claims: taqadiData.claims,
-      amount: taqadiData.amount,
-      amountInWords: taqadiData.amountInWords,
-      defendantName: customerName,
-      contractNumber: contract.contract_number,
-    });
-
-    openLetterForPrint(memoHtml);
-    toast.success('✅ تم توليد المذكرة الشارحة!');
-  };
-
-  // توليد المذكرة الشارحة بالذكاء الاصطناعي
-  const generateExplanatoryMemo = useCallback(async () => {
+  // توليد المذكرة الشارحة بالتنسيق الموحد
+  const generateExplanatoryMemo = useCallback(() => {
     if (!taqadiData || !contract) {
       toast.error('لا توجد بيانات كافية لتوليد المذكرة');
       return;
@@ -479,44 +455,29 @@ ${taqadiData.claims}
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
         : 'غير معروف';
 
-      // استدعاء Edge Function لتوليد المذكرة
-      const { data, error } = await supabase.functions.invoke('generate-legal-memo', {
-        body: {
-          type: 'explanatory_memo',
-          lawsuitData: {
-            caseTitle: taqadiData.caseTitle,
-            facts: taqadiData.facts,
-            claims: taqadiData.claims,
-            amount: taqadiData.amount,
-            amountInWords: taqadiData.amountInWords,
-            defendantName: customerName,
-            contractNumber: contract.contract_number,
-            contractStartDate: contract.start_date,
-            contractEndDate: contract.end_date,
-          },
-        },
+      // استخدام التنسيق الموحد للكتب الرسمية
+      const memoHtml = generateExplanatoryMemoHtml({
+        caseTitle: taqadiData.caseTitle,
+        facts: taqadiData.facts,
+        claims: taqadiData.claims,
+        amount: taqadiData.amount,
+        amountInWords: taqadiData.amountInWords,
+        defendantName: customerName,
+        contractNumber: contract.contract_number,
       });
 
-      if (error) throw error;
-
-      if (data?.pdfUrl) {
-        setMemoUrl(data.pdfUrl);
-        toast.success('✅ تم توليد المذكرة الشارحة بنجاح!');
-        window.open(data.pdfUrl, '_blank');
-      } else if (data?.htmlContent) {
-        const blob = new Blob([data.htmlContent], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        setMemoUrl(url);
-        window.open(url, '_blank');
-        toast.success('✅ تم توليد المذكرة الشارحة!');
-      } else {
-        // Fallback محلي
-        doGenerateMemoLocally();
-      }
+      // فتح المستند في نافذة جديدة
+      openLetterForPrint(memoHtml);
+      
+      // حفظ URL للتحميل لاحقاً
+      const blob = new Blob([memoHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      setMemoUrl(url);
+      
+      toast.success('✅ تم توليد المذكرة الشارحة!');
     } catch (error: any) {
       console.error('Memo generation error:', error);
-      toast.info('جاري التوليد المحلي...');
-      doGenerateMemoLocally();
+      toast.error('حدث خطأ أثناء توليد المذكرة');
     } finally {
       setIsGeneratingMemo(false);
     }
