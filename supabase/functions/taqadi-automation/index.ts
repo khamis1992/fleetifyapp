@@ -601,14 +601,17 @@ serve(async (req) => {
       default:
         throw new Error("Invalid action");
     }
-  } catch (error) {
+  } catch (error: any) {
+    console.error("[Taqadi] Error:", error.message);
+    console.error("[Taqadi] Error stack:", error.stack);
+    // Return 200 so client can read the error message in JSON
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
       }),
       {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
