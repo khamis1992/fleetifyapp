@@ -70,6 +70,9 @@ async function executeCDPCommands(connectUrl: string, commands: Array<{method: s
 async function navigateToTaqadi(sessionId: string): Promise<void> {
   console.log("[CDP] Getting session debug URLs...");
   
+  // انتظار لتأكد من جاهزية الجلسة
+  await new Promise(r => setTimeout(r, 3000));
+  
   try {
     // الحصول على debug URLs من Browserbase
     const debugResponse = await fetch(`https://www.browserbase.com/v1/sessions/${sessionId}/debug`, {
@@ -84,20 +87,36 @@ async function navigateToTaqadi(sessionId: string): Promise<void> {
     }
     
     const debugInfo = await debugResponse.json();
-    console.log("[CDP] Debug info received");
+    console.log("[CDP] Debug info received, wsUrl:", debugInfo.wsUrl?.substring(0, 50));
     
-    // استخدام pages endpoint
-    if (debugInfo.pages && debugInfo.pages.length > 0) {
-      const pageWsUrl = debugInfo.pages[0].webSocketDebuggerUrl;
-      console.log("[CDP] Page WebSocket URL found");
+    // استخدام wsUrl الرئيسي للتنقل
+    if (debugInfo.wsUrl) {
+      console.log("[CDP] Using main wsUrl for navigation");
       
       // إرسال أوامر التنقل
-      await executeCDPCommands(pageWsUrl, [
-        { method: "Page.enable" },
-        { method: "Page.navigate", params: { url: "https://taqadi.sjc.gov.qa/itc/" } }
-      ]);
+      await executeCDPCommands(debugInfo.wsUrl, [
+        { method: "Target.getTargets" }
+      ]).then(async (targets: any) => {
+        console.log("[CDP] Targets received");
+        // البحث عن page target
+        if (targets && targets.targetInfos) {
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === "page");
+          if (pageTarget) {
+            console.log("[CDP] Found page target:", pageTarget.targetId);
+          }
+        }
+      }).catch(e => console.log("[CDP] getTargets error:", e.message));
+      
+      // التنقل مباشرة عبر browser wsUrl
+      await executeCDPCommands(debugInfo.wsUrl, [
+        { method: "Target.createTarget", params: { url: "https://taqadi.sjc.gov.qa/itc/" } }
+      ]).catch(e => console.log("[CDP] createTarget error:", e.message));
       
       console.log("[CDP] Navigation commands sent!");
+    } else if (debugInfo.pages && debugInfo.pages.length > 0) {
+      // fallback: استخدام page debugger URL
+      const pageDebugUrl = debugInfo.pages[0].debuggerUrl;
+      console.log("[CDP] Using page debugger URL");
     } else if (debugInfo.debuggerFullscreenUrl) {
       // fallback - استخدام browser websocket
       const wsUrl = debugInfo.debuggerFullscreenUrl.replace("https://", "wss://");
@@ -288,11 +307,38 @@ async function createBrowserSession(retryCount = 0): Promise<{ sessionId: string
   const session = await response.json();
   console.log("[Taqadi] Session created successfully:", session.id);
   
+  // الحصول على debugger URL الفعلي
+  const debugUrl = await getDebuggerUrl(session.id);
+  
   return {
     sessionId: session.id,
     connectUrl: session.connectUrl,
-    liveUrl: `https://www.browserbase.com/sessions/${session.id}/live`,
+    liveUrl: debugUrl,
   };
+}
+
+// الحصول على رابط debugger الفعلي
+async function getDebuggerUrl(sessionId: string): Promise<string> {
+  console.log("[Taqadi] Getting debugger URL for session:", sessionId);
+  
+  // انتظار قليل للتأكد من جاهزية الجلسة
+  await new Promise(r => setTimeout(r, 2000));
+  
+  const response = await fetch(`https://www.browserbase.com/v1/sessions/${sessionId}/debug`, {
+    headers: {
+      "x-bb-api-key": BROWSERBASE_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    console.error("[Taqadi] Failed to get debug URL, using fallback");
+    return `https://www.browserbase.com/sessions/${sessionId}/live`;
+  }
+
+  const debugInfo = await response.json();
+  console.log("[Taqadi] Debug info received:", debugInfo.debuggerFullscreenUrl?.substring(0, 50));
+  
+  return debugInfo.debuggerFullscreenUrl || `https://www.browserbase.com/sessions/${sessionId}/live`;
 }
 
 // الحصول على حالة الجلسة
