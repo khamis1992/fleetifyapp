@@ -1169,92 +1169,31 @@ ${taqadiData.claims}
         </Card>
       </motion.div>
 
-      {/* أزرار الإجراءات */}
+      {/* زر الأتمتة - زر واحد فقط */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
+        className="flex justify-center"
       >
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-bold">🚀 رفع الدعوى في تقاضي</h3>
-              
-              {/* زر الأتمتة المحلي */}
-              <div className="mb-4">
-                <Button
-                  size="lg"
-                  onClick={startLocalAutomation}
-                  disabled={isAutomating || !taqadiData}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-6 text-lg shadow-lg"
-                >
-                  {isAutomating ? (
-                    <>
-                      <LoadingSpinner className="h-5 w-5 ml-2" />
-                      جاري التجهيز...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-6 w-6 ml-2" />
-                      🚀 رفع تلقائي (متصفحك المحلي)
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  يعمل في متصفحك المحلي - لا يحتاج IP قطري
-                </p>
-              </div>
-
-              {/* حالة الأتمتة */}
-              {isAutomating && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-                  <div className="flex items-center gap-3">
-                    <LoadingSpinner className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-blue-800">جاري الأتمتة...</p>
-                      <p className="text-sm text-blue-600">سيتم فتح تقاضي وملء البيانات تلقائياً</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* الأزرار البديلة */}
-              <div className="flex justify-center gap-3 flex-wrap">
-                <Button 
-                  size="lg" 
-                  onClick={sendToExtension}
-                  className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
-                >
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                  إرسال لتقاضي (الإضافة)
-                </Button>
-                <Button size="lg" variant="outline" onClick={openTaqadi}>
-                  <ExternalLink className="h-5 w-5 ml-2" />
-                  فتح تقاضي يدوياً
-                </Button>
-                <Button size="lg" variant="outline" onClick={copyAllData}>
-                  <Copy className="h-5 w-5 ml-2" />
-                  نسخ جميع البيانات
-                </Button>
-              </div>
-
-              {/* تعليمات */}
-              <div className="p-4 bg-muted/50 rounded-lg text-sm text-right space-y-2">
-                <p className="font-medium">📋 طريقة الاستخدام:</p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>اضغط <strong>"رفع تلقائي"</strong> لفتح المتصفح السحابي</li>
-                  <li>سجّل الدخول عبر <strong>توثيق</strong> في النافذة الجديدة</li>
-                  <li>سيتم ملء البيانات ورفع المستندات <strong>تلقائياً</strong></li>
-                  <li>راجع البيانات ثم اضغط <strong>"اعتماد"</strong> لتقديم الدعوى</li>
-                </ol>
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                <p>💡 اختر "عقود الخدمات التجارية" ← "عقود إيجار السيارات وخدمات الليموزين"</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Button
+          size="lg"
+          onClick={startLocalAutomation}
+          disabled={isAutomating || !taqadiData}
+          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-12 py-6 text-lg shadow-xl"
+        >
+          {isAutomating ? (
+            <>
+              <LoadingSpinner className="h-5 w-5 ml-2" />
+              جاري فتح تقاضي...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-6 w-6 ml-2" />
+              🚀 رفع تلقائي إلى تقاضي
+            </>
+          )}
+        </Button>
       </motion.div>
     </div>
   );

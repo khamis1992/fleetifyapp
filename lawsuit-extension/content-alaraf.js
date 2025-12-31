@@ -1,14 +1,7 @@
-// Content Script لموقع alaraf.online
-// يعمل على صفحة تجهيز الدعوى القضائية (/legal/lawsuit-preparation/)
+// Content Script المبسط لموقع alaraf.online
+// يستخرج بيانات الدعوى فقط - بدون أزرار
 
-console.log('✅ تم تحميل إضافة رفع الدعاوى على alaraf.online');
-
-// ============================================
-// متغيرات عامة
-// ============================================
-
-let injectedButton = false;
-const LAWSUIT_PAGE_PATTERN = /\/legal\/lawsuit\/prepare\//;
+console.log('✅ تم تحميل إضافة استخراج بيانات الدعوى على alaraf.online');
 
 // ============================================
 // مراقبة التغييرات في الصفحة (React SPA)
@@ -18,9 +11,7 @@ function observePageChanges() {
   // مراقبة تغييرات DOM لأن الصفحة React SPA
   const observer = new MutationObserver((mutations) => {
     if (LAWSUIT_PAGE_PATTERN.test(window.location.pathname)) {
-      if (!injectedButton) {
-        setTimeout(injectExtensionButton, 500);
-      }
+      extractAndSaveData();
     }
   });
 
@@ -31,100 +22,17 @@ function observePageChanges() {
 
   // التحقق عند تحميل الصفحة
   if (LAWSUIT_PAGE_PATTERN.test(window.location.pathname)) {
-    setTimeout(injectExtensionButton, 1000);
+    setTimeout(extractAndSaveData, 2000);
   }
 }
 
 // ============================================
-// إضافة زر الإضافة إلى الصفحة
+// استخراج وحفظ البيانات تلقائياً
 // ============================================
 
-function injectExtensionButton() {
-  // التحقق من عدم وجود الزر مسبقاً
-  if (document.getElementById('lawsuit-extension-btn')) {
-    injectedButton = true;
-    return;
-  }
+const LAWSUIT_PAGE_PATTERN = /\/legal\/lawsuit\/prepare\//;
 
-  // البحث عن زر "نسخ الكل"
-  const copyAllBtn = Array.from(document.querySelectorAll('button')).find(
-    btn => btn.textContent?.includes('نسخ الكل')
-  );
-
-  // البحث عن زر "فتح تقاضي يدوياً"
-  const openTaqadiBtn = Array.from(document.querySelectorAll('button')).find(
-    btn => btn.textContent?.includes('فتح تقاضي يدوياً')
-  );
-
-  // البحث عن عنوان الصفحة
-  const pageTitle = Array.from(document.querySelectorAll('h1')).find(
-    h1 => h1.textContent?.includes('تجهيز دعوى')
-  );
-
-  if (!copyAllBtn && !openTaqadiBtn && !pageTitle) {
-    console.log('⏳ انتظار تحميل صفحة تجهيز الدعوى...');
-    return;
-  }
-
-  // إنشاء زر الإضافة
-  const extensionBtn = document.createElement('button');
-  extensionBtn.id = 'lawsuit-extension-btn';
-  extensionBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;">
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
-    إرسال لتقاضي
-  `;
-  extensionBtn.style.cssText = `
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    margin-right: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-  `;
-
-  extensionBtn.addEventListener('mouseover', () => {
-    extensionBtn.style.transform = 'translateY(-2px)';
-    extensionBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
-  });
-
-  extensionBtn.addEventListener('mouseout', () => {
-    extensionBtn.style.transform = 'translateY(0)';
-    extensionBtn.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
-  });
-
-  extensionBtn.addEventListener('click', handleSaveAndSend);
-
-  // إدراج الزر
-  if (openTaqadiBtn && openTaqadiBtn.parentElement) {
-    // إضافة بجانب "فتح تقاضي يدوياً"
-    openTaqadiBtn.parentElement.insertBefore(extensionBtn, openTaqadiBtn);
-    console.log('✅ تم إضافة زر الإضافة بجانب "فتح تقاضي"');
-  } else if (copyAllBtn && copyAllBtn.parentElement) {
-    copyAllBtn.parentElement.appendChild(extensionBtn);
-    console.log('✅ تم إضافة زر الإضافة بجانب "نسخ الكل"');
-  } else if (pageTitle && pageTitle.parentElement) {
-    pageTitle.parentElement.appendChild(extensionBtn);
-    console.log('✅ تم إضافة زر الإضافة في رأس الصفحة');
-  }
-
-  injectedButton = true;
-}
-
-// ============================================
-// استخراج البيانات من الصفحة
-// ============================================
-
-function extractLawsuitData() {
+function extractAndSaveData() {
   try {
     console.log('📋 جاري استخراج بيانات الدعوى...');
 
@@ -140,11 +48,12 @@ function extractLawsuitData() {
     };
 
     console.log('✅ تم استخراج البيانات:', data);
-    return data;
+
+    // حفظ البيانات تلقائياً
+    saveData(data);
 
   } catch (error) {
     console.error('❌ خطأ في استخراج البيانات:', error);
-    return null;
   }
 }
 
@@ -156,7 +65,7 @@ function extractDefendantData() {
   const sections = document.querySelectorAll('div');
   
   sections.forEach(section => {
-    const heading = section.querySelector('h3');
+    const heading = section.querySelector('h3, h4');
     if (heading && heading.textContent?.includes('بيانات المدعى عليه')) {
       // البحث عن الصفوف داخل هذا القسم
       const rows = section.querySelectorAll('div > div');
@@ -329,91 +238,26 @@ function extractDocumentLinks() {
 }
 
 // ============================================
-// معالج حفظ وإرسال البيانات
+// حفظ البيانات
 // ============================================
 
-async function handleSaveAndSend() {
-  try {
-    showNotification('📋 جاري حفظ البيانات...', 'info');
-
-    // استخراج البيانات
-    const data = extractLawsuitData();
-
-    if (!data || !data.texts.title) {
-      showNotification('❌ لم يتم العثور على بيانات الدعوى. تأكد من وجود بيانات في الصفحة.', 'error');
-      return;
-    }
-
-    // إرسال البيانات إلى background script
-    chrome.runtime.sendMessage({
-      action: 'saveLawsuitData',
-      data: data
-    }, (response) => {
+function saveData(data) {
+  // حفظ في chrome.storage.local
+  // @ts-ignore - Chrome extension API
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    // @ts-ignore
+    chrome.storage.local.set({ lawsuitData: data }, () => {
       if (chrome.runtime.lastError) {
-        console.error('خطأ في الإرسال:', chrome.runtime.lastError);
-        showNotification('❌ خطأ في الاتصال بالإضافة', 'error');
-        return;
-      }
-
-      if (response && response.success) {
-        showNotification('✅ تم حفظ البيانات! افتح موقع تقاضي واضغط "ملء البيانات"', 'success');
-        
-        // عرض خيار فتح تقاضي
-        setTimeout(() => {
-          if (confirm('هل تريد فتح موقع تقاضي الآن؟')) {
-            window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
-          }
-        }, 1500);
+        console.error('خطأ في الحفظ:', chrome.runtime.lastError);
       } else {
-        showNotification('❌ خطأ في حفظ البيانات', 'error');
+        console.log('✅ تم حفظ البيانات في chrome.storage.local');
       }
     });
-
-  } catch (error) {
-    console.error('خطأ:', error);
-    showNotification(`❌ خطأ: ${error.message}`, 'error');
   }
-}
 
-// ============================================
-// عرض الإشعارات
-// ============================================
-
-function showNotification(message, type = 'info') {
-  // إزالة الإشعارات السابقة
-  document.querySelectorAll('.lawsuit-extension-notification').forEach(n => n.remove());
-
-  const notification = document.createElement('div');
-  notification.className = 'lawsuit-extension-notification';
-  notification.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 18px;">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
-      <span>${message}</span>
-    </div>
-  `;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 16px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    z-index: 100000;
-    animation: slideDown 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    ${type === 'success' ? 'background: linear-gradient(135deg, #10b981, #059669); color: white;' : ''}
-    ${type === 'error' ? 'background: linear-gradient(135deg, #ef4444, #dc2626); color: white;' : ''}
-    ${type === 'info' ? 'background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;' : ''}
-  `;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideUp 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 4000);
+  // حفظ في localStorage أيضاً (للاستخدام المباشر)
+  localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(data));
+  console.log('✅ تم حفظ البيانات في localStorage');
 }
 
 // ============================================
@@ -422,7 +266,7 @@ function showNotification(message, type = 'info') {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractData') {
-    const data = extractLawsuitData();
+    const data = extractAndSaveData();
     sendResponse({ data: data });
   }
   if (request.action === 'ping') {
@@ -432,72 +276,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ============================================
-// استقبال البيانات من الصفحة عبر postMessage
+// بدء المراقبة
 // ============================================
-
-window.addEventListener('message', (event) => {
-  // التحقق من أن الرسالة من نفس النافذة
-  if (event.source !== window) return;
-
-  if (event.data && event.data.type === 'ALARAF_LAWSUIT_DATA') {
-    console.log('📨 استلام بيانات من صفحة العراف:', event.data.data);
-    
-    // حفظ البيانات في تخزين الإضافة
-    const extensionData = {
-      defendant: { 
-        name: event.data.data.defendantName,
-        phone: '',
-        nationalId: ''
-      },
-      texts: {
-        title: event.data.data.caseTitle,
-        facts: event.data.data.facts,
-        claims: event.data.data.claims,
-        amount: event.data.data.amount,
-        amountInWords: event.data.data.amountInWords
-      },
-      amounts: {
-        total: event.data.data.amount,
-        totalInWords: event.data.data.amountInWords
-      },
-      vehicle: {
-        contractNumber: event.data.data.contractNumber
-      },
-      documents: {},
-      extractedAt: new Date().toISOString(),
-      pageUrl: window.location.href
-    };
-
-    chrome.runtime.sendMessage({
-      action: 'saveLawsuitData',
-      data: extensionData
-    }, (response) => {
-      if (response && response.success) {
-        showNotification('✅ تم حفظ البيانات! افتح موقع تقاضي واضغط "ملء البيانات"', 'success');
-      }
-    });
-  }
-});
-
-// ============================================
-// التهيئة
-// ============================================
-
-// إضافة CSS للرسوم المتحركة
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideDown {
-    from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-    to { transform: translateX(-50%) translateY(0); opacity: 1; }
-  }
-  @keyframes slideUp {
-    from { transform: translateX(-50%) translateY(0); opacity: 1; }
-    to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-  }
-`;
-document.head.appendChild(style);
 
 // بدء المراقبة
 observePageChanges();
 
-console.log('🚀 إضافة رفع الدعاوى جاهزة للعمل');
+console.log('🚀 إضافة استخراج البيانات جاهزة للعمل - بدون أزرار');

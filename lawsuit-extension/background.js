@@ -1,7 +1,7 @@
-// Background Service Worker
-// يدير الاتصال بين content scripts و popup
+// Background Service Worker - مبسط جداً
+// يعمل فقط على الأتمتة التلقائية
 
-console.log('🚀 Lawsuit Extension Background Service Started');
+console.log('🚀 Lawsuit Extension Background Started - Simple Mode');
 
 // ============================================
 // إدارة التخزين
@@ -14,7 +14,7 @@ async function saveLawsuitData(data) {
       lawsuitData: data,
       savedAt: new Date().toISOString()
     });
-    console.log('✅ تم حفظ بيانات الدعوى:', data);
+    console.log('✅ تم حفظ بيانات الدعوى');
     return { success: true };
   } catch (error) {
     console.error('❌ خطأ في حفظ البيانات:', error);
@@ -49,12 +49,15 @@ async function clearData() {
   }
 }
 
+// ============================================
 // معالج الأتمتة الكاملة
+// ============================================
+
 async function handleAutomation(data) {
   try {
-    console.log('🚀 بدء الأتمتة في background:', data);
+    console.log('🚀 بدء الأتمتة في background...');
 
-    // التأكد من وجود البيانات
+    // التحقق من وجود البيانات
     if (!data) {
       const result = await chrome.storage.local.get(['lawsuitData']);
       data = result.lawsuitData;
@@ -123,7 +126,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
     case 'saveLawsuitData':
       saveLawsuitData(request.data).then(sendResponse);
-      return true; // للردود غير المتزامنة
+      return true; // للرد غير المتزامن
 
     case 'getLawsuitData':
       getLawsuitData().then(sendResponse);
@@ -133,26 +136,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       clearData().then(sendResponse);
       return true;
 
-    case 'openTaqadi':
-      chrome.tabs.create({ url: 'https://taqadi.sjc.gov.qa/itc/' });
-      sendResponse({ success: true });
-      return false;
-
-    case 'openAlaraf':
-      chrome.tabs.create({ url: 'https://www.alaraf.online/legal/overdue-contracts' });
-      sendResponse({ success: true });
-      return false;
-
-    case 'getActiveTab':
-      chrome.tabs.query({ active: true, currentWindow: true }).then(tabs => {
-        sendResponse({ tab: tabs[0] });
-      });
-      return true;
-
     case 'autoFill':
     case 'startAutomation':
       handleAutomation(request.data).then(sendResponse);
       return true;
+
+    case 'ping':
+      sendResponse({ status: 'alive' });
+      return false;
 
     default:
       console.log('⚠️ رسالة غير معروفة:', request.action);
@@ -168,43 +159,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('🎉 تم تثبيت الإضافة بنجاح!');
-    
-    // فتح صفحة الترحيب (اختياري)
-    // chrome.tabs.create({ url: 'https://www.alaraf.online/legal/overdue-contracts' });
   } else if (details.reason === 'update') {
     console.log('🔄 تم تحديث الإضافة إلى الإصدار:', chrome.runtime.getManifest().version);
   }
 });
 
-// ============================================
-// عند النقر على أيقونة الإضافة
-// ============================================
-
-chrome.action.onClicked.addListener((tab) => {
-  // فتح side panel إذا كان متاحاً
-  if (chrome.sidePanel) {
-    chrome.sidePanel.open({ windowId: tab.windowId });
-  }
-});
-
-// ============================================
-// مراقبة التنقل بين الصفحات
-// ============================================
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    // تفعيل الأيقونة على المواقع المدعومة
-    if (tab.url.includes('alaraf.online') || tab.url.includes('taqadi.sjc.gov.qa')) {
-      chrome.action.setIcon({
-        tabId: tabId,
-        path: {
-          16: 'icons/icon16.png',
-          48: 'icons/icon48.png',
-          128: 'icons/icon128.png'
-        }
-      });
-    }
-  }
-});
-
-console.log('✅ Background Service Worker جاهز للعمل');
+console.log('✅ Background Service Worker جاهز للعمل - Simple Mode');

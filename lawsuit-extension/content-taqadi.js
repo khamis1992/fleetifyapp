@@ -1,103 +1,29 @@
-// Content Script متقدم لموقع taqadi.sjc.gov.qa
-// يقوم بملء النماذج ورفع الملفات تلقائياً
+// Content Script مبسط لموقع taqadi.sjc.gov.qa
+// يملأ النماذج ويرفع الملفات تلقائياً بدون تدخل يدوي
 
-console.log('✅ تم تحميل الإضافة المتقدمة لموقع تقاضي');
+console.log('✅ تم تحميل الإضافة المبسطة لموقع تقاضي');
 
 // ============================================
 // المتغيرات العامة
 // ============================================
 
-let currentData = null;
 let automationStatus = 'idle'; // idle, processing, completed, error
-
-// ============================================
-// إضافة أزرار الإضافة إلى الصفحة
-// ============================================
-
-function injectButtons() {
-  if (document.getElementById('ext-fill-btn')) return;
-
-  // البحث عن مكان مناسب لإدراج الأزرار
-  const form = document.querySelector('form') || document.body;
-
-  // إنشاء حاوية الأزرار
-  const container = document.createElement('div');
-  container.id = 'lawsuit-extension-container';
-  container.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 100000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  `;
-
-  // زر ملء البيانات
-  const fillBtn = document.createElement('button');
-  fillBtn.id = 'ext-fill-btn';
-  fillBtn.innerHTML = '📋 ملء البيانات';
-  fillBtn.style.cssText = `
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-    transition: all 0.3s ease;
-  `;
-  fillBtn.addEventListener('click', handleFillData);
-  fillBtn.addEventListener('mouseover', () => {
-    fillBtn.style.transform = 'scale(1.05)';
-  });
-  fillBtn.addEventListener('mouseout', () => {
-    fillBtn.style.transform = 'scale(1)';
-  });
-
-  container.appendChild(fillBtn);
-  document.body.appendChild(container);
-
-  console.log('✅ تم إضافة أزرار الإضافة');
-}
 
 // ============================================
 // الاستماع للرسائل من background script
 // ============================================
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('📩 رسالة واردة:', request.action, request);
+  console.log('📩 رسالة واردة:', request.action);
 
   // رسالة بدء الأتمتة الكاملة
-  if (request.action === 'autoFill' || request.action === 'startAutomation') {
+  if (request.action === 'autoFill') {
     handleAutoFill(request.data)
       .then(result => sendResponse({ success: true, result }))
       .catch(error => {
         console.error('خطأ في الأتمتة:', error);
         sendResponse({ success: false, error: error.message });
       });
-    return true;
-  }
-
-  // رسالة ملء البيانات فقط (الزر اليدوي)
-  if (request.action === 'fillData') {
-    handleFillData().then(() => {
-      sendResponse({ success: true });
-    }).catch(error => {
-      sendResponse({ success: false, error: error.message });
-    });
-    return true;
-  }
-
-  // رسالة رفع الملفات
-  if (request.action === 'uploadFiles') {
-    uploadFiles(request.files).then(() => {
-      sendResponse({ success: true });
-    }).catch(error => {
-      sendResponse({ success: false, error: error.message });
-    });
     return true;
   }
 
@@ -172,36 +98,6 @@ async function handleAutoFill(data) {
 }
 
 // ============================================
-// معالج ملء البيانات (الزر اليدوي)
-// ============================================
-
-async function handleFillData() {
-  try {
-    showNotification('📋 جاري ملء البيانات...', 'info');
-
-    // جلب البيانات المحفوظة
-    const result = await chrome.storage.local.get(['lawsuitData']);
-
-    if (!result.lawsuitData) {
-      showNotification('❌ لا توجد بيانات محفوظة. ارجع لصفحة العراف واضغط "إرسال لتقاضي"', 'error');
-      return;
-    }
-
-    currentData = result.lawsuitData;
-    console.log('📋 البيانات المحفوظة:', currentData);
-
-    // ملء النموذج
-    await fillForm(currentData);
-
-    showNotification('✅ تم ملء البيانات! راجع وأكمل الخطوات', 'success');
-
-  } catch (error) {
-    console.error('خطأ:', error);
-    showNotification(`❌ خطأ: ${error.message}`, 'error');
-  }
-}
-
-// ============================================
 // واجهة التقدم
 // ============================================
 
@@ -220,28 +116,37 @@ function showProgressUI() {
       padding: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       z-index: 999999;
-      min-width: 300px;
+      min-width: 350px;
       direction: rtl;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     ">
-      <h3 style="margin: 0 0 15px 0; color: #10b981; font-size: 18px;">
-        🤖 جاري الأتمتة...
+      <h3 style="margin: 0 0 15px 0; color: #10b981; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+        <span>🤖</span>
+        <span>جاري رفع الدعوى تلقائياً...</span>
       </h3>
       <div id="progress-bar" style="
         width: 100%;
-        height: 8px;
+        height: 10px;
         background: #e5e7eb;
-        border-radius: 4px;
-        margin-bottom: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
         overflow: hidden;
       ">
         <div id="progress-fill" style="
           width: 0%;
           height: 100%;
           background: linear-gradient(90deg, #10b981, #059669);
-          transition: width 0.3s ease;
+          border-radius: 5px;
+          transition: width 0.5s ease;
         "></div>
       </div>
-      <p id="progress-text" style="margin: 0; color: #6b7280; font-size: 14px;">
+      <div id="progress-steps" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="step" style="display: flex; align-items: center; gap: 8px; color: #6b7280; font-size: 14px;">
+          <span style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #e5e7eb; border-radius: 50%; font-size: 12px;">1</span>
+          <span>تحميل الصفحة...</span>
+        </div>
+      </div>
+      <p id="progress-text" style="margin: 10px 0 0 0; color: #6b7280; font-size: 14px;">
         جاري التجهيز...
       </p>
     </div>
@@ -252,15 +157,74 @@ function showProgressUI() {
 function updateProgress(text, percentage) {
   const progressFill = document.getElementById('progress-fill');
   const progressText = document.getElementById('progress-text');
+  const stepsContainer = document.getElementById('progress-steps');
 
   if (progressFill) {
     progressFill.style.width = `${percentage}%`;
   }
+
   if (progressText) {
     progressText.textContent = text;
   }
 
+  if (stepsContainer && percentage > 0) {
+    const stepNumber = Math.ceil(percentage / 20); // 5 خطوات إجمالية
+    updateStepsUI(stepNumber, text);
+  }
+
   console.log(`✅ ${text} (${percentage}%)`);
+}
+
+function updateStepsUI(currentStep, statusText) {
+  const stepsContainer = document.getElementById('progress-steps');
+  if (!stepsContainer) return;
+
+  const steps = [
+    'تحميل الصفحة',
+    'التحقق من تسجيل الدخول',
+    'بدء دعوى جديدة',
+    'اختيار نوع الدعوى',
+    'ملء البيانات',
+    'رفع المستندات'
+  ];
+
+  stepsContainer.innerHTML = steps.map((step, index) => {
+    const isCompleted = index + 1 < currentStep;
+    const isCurrent = index + 1 === currentStep;
+    const isPending = index + 1 > currentStep;
+
+    return `
+      <div class="step" style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        border-radius: 8px;
+        background: ${isCompleted ? '#d1fae5' : isCurrent ? '#dbeafe' : 'transparent'};
+        color: ${isCompleted || isCurrent ? '#065f46' : '#6b7280'};
+        font-size: 14px;
+        transition: all 0.3s ease;
+      ">
+        <span style="
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${isCompleted ? '#10b981' : isCurrent ? '#3b82f6' : '#e5e7eb'};
+          color: white;
+          border-radius: 50%;
+          font-weight: bold;
+          font-size: 14px;
+        ">
+          ${isCompleted ? '✓' : index + 1}
+        </span>
+        <span>${step}</span>
+        ${isCompleted ? '<span style="margin-left: auto; color: #10b981;">✓</span>' : ''}
+        ${isCurrent ? '<span style="margin-left: auto; color: #3b82f6;">⏳</span>' : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 function hideProgressUI() {
@@ -275,28 +239,32 @@ function showSuccessNotification() {
   notification.innerHTML = `
     <div style="
       position: fixed;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-      z-index: 999999;
-      font-size: 16px;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+      z-index: 1000000;
+      font-size: 18px;
       font-weight: 600;
-      animation: slideDown 0.3s ease;
+      animation: scaleIn 0.3s ease;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     ">
-      ✅ تمت الأتمتة بنجاح! راجع البيانات واضغط "اعتماد"
+      <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+      <div style="margin-bottom: 8px;">تمت الأتمتة بنجاح!</div>
+      <div style="font-size: 14px; opacity: 0.9;">راجع البيانات واضغط "اعتماد"</div>
     </div>
   `;
   document.body.appendChild(notification);
 
   setTimeout(() => {
-    notification.style.animation = 'slideUp 0.3s ease';
+    notification.style.animation = 'scaleOut 0.3s ease';
     setTimeout(() => notification.remove(), 300);
-  }, 5000);
+  }, 4000);
 }
 
 function showErrorNotification(message) {
@@ -304,59 +272,31 @@ function showErrorNotification(message) {
   notification.innerHTML = `
     <div style="
       position: fixed;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       background: linear-gradient(135deg, #ef4444, #dc2626);
       color: white;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-      z-index: 999999;
-      font-size: 16px;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
+      z-index: 1000000;
+      font-size: 18px;
       font-weight: 600;
-      animation: slideDown 0.3s ease;
+      animation: scaleIn 0.3s ease;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     ">
-      ❌ ${message}
+      <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+      <div>${message}</div>
     </div>
   `;
   document.body.appendChild(notification);
 
   setTimeout(() => {
-    notification.style.animation = 'slideUp 0.3s ease';
+    notification.style.animation = 'scaleOut 0.3s ease';
     setTimeout(() => notification.remove(), 300);
   }, 5000);
-}
-
-function showNotification(message, type = 'info') {
-  document.querySelectorAll('.lawsuit-extension-notification').forEach(n => n.remove());
-
-  const notification = document.createElement('div');
-  notification.className = 'lawsuit-extension-notification';
-  notification.innerHTML = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 16px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    z-index: 100001;
-    animation: slideDown 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    ${type === 'success' ? 'background: linear-gradient(135deg, #10b981, #059669); color: white;' : ''}
-    ${type === 'error' ? 'background: linear-gradient(135deg, #ef4444, #dc2626); color: white;' : ''}
-    ${type === 'info' ? 'background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;' : ''}
-  `;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideUp 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 4000);
 }
 
 // ============================================
@@ -430,7 +370,8 @@ async function fillLawsuitForm(data) {
     await fillField([
       'input[name*="title"]',
       'input[name*="subject"]',
-      'input[placeholder*="عنوان"]'
+      'input[placeholder*="عنوان"]',
+      'input[placeholder*="موضوع"]'
     ], title);
     console.log('✅ عنوان الدعوى:', title);
   }
@@ -450,7 +391,8 @@ async function fillLawsuitForm(data) {
     await fillField([
       'textarea[name*="request"]',
       'textarea[placeholder*="طلبات"]',
-      'textarea[name*="claim"]'
+      'textarea[name*="claim"]',
+      'textarea[name*="demand"]'
     ], texts.claims);
     console.log('✅ الطلبات');
   }
@@ -461,7 +403,8 @@ async function fillLawsuitForm(data) {
     await fillField([
       'input[name*="amount"]',
       'input[type="number"]',
-      'input[placeholder*="مبلغ"]'
+      'input[placeholder*="مبلغ"]',
+      'input[placeholder*="قيمة"]'
     ], amount);
     console.log('✅ المبلغ:', amount);
   }
@@ -471,6 +414,7 @@ async function fillLawsuitForm(data) {
     const amountInWords = texts.amountInWords || amounts.totalInWords;
     await fillField([
       'input[name*="amountWord"]',
+      'input[name*="amountText"]',
       'input[placeholder*="كتابة"]',
       'textarea[name*="amountWord"]'
     ], amountInWords);
@@ -498,7 +442,8 @@ async function fillDefendantInfo(defendant) {
     await fillField([
       'input[name*="defendant"]',
       'input[placeholder*="اسم"]',
-      'input[name*="name"]'
+      'input[name*="name"]',
+      'input[name*="defendantName"]'
     ], name);
     console.log('✅ الاسم:', name);
   }
@@ -509,7 +454,8 @@ async function fillDefendantInfo(defendant) {
     await fillField([
       'input[name*="id"]',
       'input[placeholder*="هوية"]',
-      'input[name*="national"]'
+      'input[name*="national"]',
+      'input[name*="nationalId"]'
     ], idNumber);
     console.log('✅ رقم الهوية:', idNumber);
   }
@@ -520,7 +466,8 @@ async function fillDefendantInfo(defendant) {
     await fillField([
       'input[name*="phone"]',
       'input[placeholder*="هاتف"]',
-      'input[name*="mobile"]'
+      'input[name*="mobile"]',
+      'input[name*="defendantPhone"]'
     ], phone);
     console.log('✅ رقم الهاتف:', phone);
   }
@@ -698,139 +645,6 @@ function findElementByText(text, tagName) {
 }
 
 // ============================================
-// ملء النموذج (الزر اليدوي)
-// ============================================
-
-async function fillForm(data) {
-  console.log('🔄 جاري ملء النموذج...');
-
-  // تجميع البيانات
-  const texts = data.texts || {};
-  const amounts = data.amounts || {};
-  const defendant = data.defendant || {};
-
-  // قائمة الحقول للملء
-  const fieldsToFill = [
-    {
-      value: texts.title || '',
-      selectors: [
-        'input[name*="subject"]',
-        'input[name*="title"]',
-        'input[placeholder*="عنوان"]'
-      ]
-    },
-    {
-      value: texts.facts || '',
-      selectors: [
-        'textarea[name*="fact"]',
-        'textarea[placeholder*="وقائع"]'
-      ]
-    },
-    {
-      value: texts.claims || '',
-      selectors: [
-        'textarea[name*="request"]',
-        'textarea[placeholder*="طلبات"]'
-      ]
-    },
-    {
-      value: String(texts.amount || amounts.total || 0),
-      selectors: [
-        'input[name*="amount"]',
-        'input[type="number"]'
-      ]
-    },
-    {
-      value: texts.amountInWords || amounts.totalInWords || '',
-      selectors: [
-        'input[name*="amountWord"]',
-        'input[placeholder*="كتابة"]'
-      ]
-    },
-  ];
-
-  let filledCount = 0;
-
-  for (const field of fieldsToFill) {
-    if (!field.value) continue;
-
-    for (const selector of field.selectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        element.value = field.value;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-        element.dispatchEvent(new Event('blur', { bubbles: true }));
-
-        console.log(`✅ تم ملء: ${selector}`);
-        filledCount++;
-        break;
-      }
-    }
-  }
-
-  console.log(`✅ تم ملء ${filledCount} حقول`);
-
-  // محاولة ملء بيانات أطراف الدعوى
-  await fillPartyData(defendant);
-
-  return filledCount;
-}
-
-// ============================================
-// ملء بيانات الأطراف (الزر اليدوي)
-// ============================================
-
-async function fillPartyData(defendant) {
-  if (!defendant.name) return;
-
-  // البحث عن حقول الأطراف
-  const nameInputs = document.querySelectorAll('input[name*="name"], input[placeholder*="اسم"]');
-  const phoneInputs = document.querySelectorAll('input[name*="phone"], input[name*="mobile"]');
-  const idInputs = document.querySelectorAll('input[name*="id"], input[name*="national"]');
-
-  // تقسيم الاسم
-  const nameParts = defendant.name.split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts[nameParts.length - 1] || '';
-
-  // ملء الاسم
-  if (nameInputs.length > 0) {
-    const lastNameInput = nameInputs[nameInputs.length - 1];
-    lastNameInput.value = defendant.name;
-    lastNameInput.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
-  // ملء الهاتف
-  if (phoneInputs.length > 0 && defendant.phone) {
-    const lastPhoneInput = phoneInputs[phoneInputs.length - 1];
-    lastPhoneInput.value = defendant.phone;
-    lastPhoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
-  // ملء رقم الهوية
-  if (idInputs.length > 0 && defendant.nationalId) {
-    const lastIdInput = idInputs[idInputs.length - 1];
-    lastIdInput.value = defendant.nationalId;
-    lastIdInput.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-}
-
-// ============================================
-// رفع الملفات (للاستخدام المباشر)
-// ============================================
-
-async function uploadFiles(files) {
-  try {
-    await uploadAllDocuments(files);
-    showNotification('✅ تم رفع الملفات!', 'success');
-  } catch (error) {
-    console.error('خطأ في رفع الملفات:', error);
-    showNotification(`❌ خطأ في رفع الملفات: ${error.message}`, 'error');
-  }
-}
-
-// ============================================
 // الانتظار
 // ============================================
 
@@ -852,18 +666,15 @@ style.textContent = `
     from { transform: translateX(-50%) translateY(0); opacity: 1; }
     to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
   }
+  @keyframes scaleIn {
+    from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+  @keyframes scaleOut {
+    from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    to { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  }
 `;
 document.head.appendChild(style);
 
-// ============================================
-// التهيئة
-// ============================================
-
-// إضافة الأزرار عند تحميل الصفحة
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', injectButtons);
-} else {
-  injectButtons();
-}
-
-console.log('🚀 الإضافة المتقدمة جاهزة للعمل');
+console.log('🚀 الإضافة المبسطة جاهزة للعمل - لا تدخل يدوي مطلوب');
