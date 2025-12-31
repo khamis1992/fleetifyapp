@@ -441,8 +441,8 @@ ${taqadiData.claims}
     }
   }, [companyId, contractId]);
 
-  // توليد المذكرة محلياً (fallback) - يجب تعريفها أولاً
-  const generateMemoLocally = useCallback(() => {
+  // دالة مساعدة لتوليد المذكرة محلياً
+  const doGenerateMemoLocally = () => {
     if (!taqadiData || !contract) return;
     
     const customer = (contract as any).customers;
@@ -463,7 +463,7 @@ ${taqadiData.claims}
 
     openLetterForPrint(memoHtml);
     toast.success('✅ تم توليد المذكرة الشارحة!');
-  }, [taqadiData, contract]);
+  };
 
   // توليد المذكرة الشارحة بالذكاء الاصطناعي
   const generateExplanatoryMemo = useCallback(async () => {
@@ -511,16 +511,16 @@ ${taqadiData.claims}
         toast.success('✅ تم توليد المذكرة الشارحة!');
       } else {
         // Fallback محلي
-        generateMemoLocally();
+        doGenerateMemoLocally();
       }
     } catch (error: any) {
       console.error('Memo generation error:', error);
       toast.info('جاري التوليد المحلي...');
-      generateMemoLocally();
+      doGenerateMemoLocally();
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [taqadiData, contract, generateMemoLocally]);
+  }, [taqadiData, contract]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
