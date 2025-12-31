@@ -472,23 +472,25 @@ ${taqadiData.claims}
       if (data?.pdfUrl) {
         setMemoUrl(data.pdfUrl);
         toast.success('✅ تم توليد المذكرة الشارحة بنجاح!');
-        // فتح المذكرة في نافذة جديدة
         window.open(data.pdfUrl, '_blank');
       } else if (data?.htmlContent) {
-        // إذا تم إرجاع HTML بدلاً من PDF، افتحه في نافذة جديدة
-        const blob = new Blob([data.htmlContent], { type: 'text/html' });
+        const blob = new Blob([data.htmlContent], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
+        setMemoUrl(url);
         window.open(url, '_blank');
         toast.success('✅ تم توليد المذكرة الشارحة!');
+      } else {
+        // Fallback محلي
+        generateMemoLocally();
       }
     } catch (error: any) {
       console.error('Memo generation error:', error);
-      // إذا فشل الـ Edge Function، نولد المذكرة محلياً
+      toast.info('جاري التوليد المحلي...');
       generateMemoLocally();
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [taqadiData, contract]);
+  }, [taqadiData, contract, generateMemoLocally]);
 
   // توليد المذكرة محلياً (fallback)
   const generateMemoLocally = useCallback(() => {
