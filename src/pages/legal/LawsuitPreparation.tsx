@@ -441,6 +441,30 @@ ${taqadiData.claims}
     }
   }, [companyId, contractId]);
 
+  // توليد المذكرة محلياً (fallback) - يجب تعريفها أولاً
+  const generateMemoLocally = useCallback(() => {
+    if (!taqadiData || !contract) return;
+    
+    const customer = (contract as any).customers;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
+    // استخدام التنسيق الموحد للكتب الرسمية
+    const memoHtml = generateExplanatoryMemoHtml({
+      caseTitle: taqadiData.caseTitle,
+      facts: taqadiData.facts,
+      claims: taqadiData.claims,
+      amount: taqadiData.amount,
+      amountInWords: taqadiData.amountInWords,
+      defendantName: customerName,
+      contractNumber: contract.contract_number,
+    });
+
+    openLetterForPrint(memoHtml);
+    toast.success('✅ تم توليد المذكرة الشارحة!');
+  }, [taqadiData, contract]);
+
   // توليد المذكرة الشارحة بالذكاء الاصطناعي
   const generateExplanatoryMemo = useCallback(async () => {
     if (!taqadiData || !contract) {
@@ -497,30 +521,6 @@ ${taqadiData.claims}
       setIsGeneratingMemo(false);
     }
   }, [taqadiData, contract, generateMemoLocally]);
-
-  // توليد المذكرة محلياً (fallback)
-  const generateMemoLocally = useCallback(() => {
-    if (!taqadiData || !contract) return;
-    
-    const customer = (contract as any).customers;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
-
-    // استخدام التنسيق الموحد للكتب الرسمية
-    const memoHtml = generateExplanatoryMemoHtml({
-      caseTitle: taqadiData.caseTitle,
-      facts: taqadiData.facts,
-      claims: taqadiData.claims,
-      amount: taqadiData.amount,
-      amountInWords: taqadiData.amountInWords,
-      defendantName: customerName,
-      contractNumber: contract.contract_number,
-    });
-
-    openLetterForPrint(memoHtml);
-    toast.success('✅ تم توليد المذكرة الشارحة!');
-  }, [taqadiData, contract]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
