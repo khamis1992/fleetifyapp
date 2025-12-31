@@ -8,79 +8,107 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const BROWSERBASE_API_KEY = "bb_live_RqMcpDLo4ysMxVCU_RJjTbI5Z6E";
 const BROWSERBASE_PROJECT_ID = "01e67253-995a-456c-814c-ba30517bfba0";
 
-// تنفيذ أوامر CDP عبر WebSocket
-async function executeCDP(connectUrl: string, method: string, params: any = {}): Promise<any> {
+// تنفيذ CDP عبر WebSocket مع Promise متعدد الرسائل
+async function executeCDPCommands(connectUrl: string, commands: Array<{method: string, params?: any}>): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log(`[CDP] Connecting to: ${connectUrl.substring(0, 50)}...`);
+    console.log(`[CDP] Connecting to browser...`);
     const ws = new WebSocket(connectUrl);
-    let messageId = 1;
+    let messageId = 0;
+    let completedCommands = 0;
+    
     const timeout = setTimeout(() => {
+      console.log("[CDP] Timeout - closing connection");
       ws.close();
-      reject(new Error("CDP timeout"));
-    }, 30000);
+      resolve(); // لا نرفض، نسمح للعملية بالاستمرار
+    }, 15000);
     
     ws.onopen = () => {
-      console.log(`[CDP] Connected, sending ${method}`);
-      const message = { id: messageId, method, params };
-      ws.send(JSON.stringify(message));
-    };
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.id === messageId) {
-        clearTimeout(timeout);
-        ws.close();
-        if (data.error) {
-          reject(new Error(data.error.message));
-        } else {
-          resolve(data.result);
-        }
+      console.log(`[CDP] Connected! Sending ${commands.length} commands...`);
+      
+      // إرسال جميع الأوامر
+      for (const cmd of commands) {
+        messageId++;
+        const message = { id: messageId, method: cmd.method, params: cmd.params || {} };
+        console.log(`[CDP] Sending: ${cmd.method}`);
+        ws.send(JSON.stringify(message));
       }
     };
     
-    ws.onerror = (err) => {
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.id) {
+          completedCommands++;
+          console.log(`[CDP] Response ${completedCommands}/${commands.length}: ${data.error ? 'Error' : 'OK'}`);
+          
+          if (completedCommands >= commands.length) {
+            clearTimeout(timeout);
+            ws.close();
+            resolve();
+          }
+        }
+      } catch (e) {
+        console.log("[CDP] Parse error:", e);
+      }
+    };
+    
+    ws.onerror = () => {
+      console.log("[CDP] WebSocket error");
       clearTimeout(timeout);
-      reject(new Error("WebSocket error"));
+      resolve(); // لا نرفض
+    };
+    
+    ws.onclose = () => {
+      console.log("[CDP] Connection closed");
+      clearTimeout(timeout);
+      resolve();
     };
   });
 }
 
-// التنقل لموقع تقاضي وتنفيذ السكريبت
-async function navigateAndExecute(connectUrl: string, script: string): Promise<void> {
-  console.log("[CDP] Starting navigation to Taqadi...");
-  
-  // الحصول على targets
-  const targetsUrl = connectUrl.replace("wss://", "https://").replace("/devtools/browser/", "/json/list/");
-  console.log("[CDP] Getting targets from:", targetsUrl.substring(0, 50));
+// التنقل لموقع تقاضي
+async function navigateToTaqadi(sessionId: string): Promise<void> {
+  console.log("[CDP] Getting session debug URLs...");
   
   try {
-    const targetsResponse = await fetch(targetsUrl);
-    if (!targetsResponse.ok) {
-      console.log("[CDP] Failed to get targets, using browser websocket directly");
-    }
-    const targets = await targetsResponse.json();
-    console.log("[CDP] Found", targets.length, "targets");
+    // الحصول على debug URLs من Browserbase
+    const debugResponse = await fetch(`https://www.browserbase.com/v1/sessions/${sessionId}/debug`, {
+      headers: {
+        "x-bb-api-key": BROWSERBASE_API_KEY,
+      },
+    });
     
-    // العثور على target من نوع page
-    const pageTarget = targets.find((t: any) => t.type === "page");
-    if (pageTarget && pageTarget.webSocketDebuggerUrl) {
-      console.log("[CDP] Using page target:", pageTarget.url);
-      const pageWs = pageTarget.webSocketDebuggerUrl;
+    if (!debugResponse.ok) {
+      console.log("[CDP] Failed to get debug info:", debugResponse.status);
+      return;
+    }
+    
+    const debugInfo = await debugResponse.json();
+    console.log("[CDP] Debug info received");
+    
+    // استخدام pages endpoint
+    if (debugInfo.pages && debugInfo.pages.length > 0) {
+      const pageWsUrl = debugInfo.pages[0].webSocketDebuggerUrl;
+      console.log("[CDP] Page WebSocket URL found");
       
-      // التنقل للموقع
-      await executeCDP(pageWs, "Page.navigate", { url: "https://taqadi.sjc.gov.qa/itc/" });
-      console.log("[CDP] Navigation sent!");
+      // إرسال أوامر التنقل
+      await executeCDPCommands(pageWsUrl, [
+        { method: "Page.enable" },
+        { method: "Page.navigate", params: { url: "https://taqadi.sjc.gov.qa/itc/" } }
+      ]);
       
-      // انتظار التحميل
-      await new Promise(r => setTimeout(r, 3000));
+      console.log("[CDP] Navigation commands sent!");
+    } else if (debugInfo.debuggerFullscreenUrl) {
+      // fallback - استخدام browser websocket
+      const wsUrl = debugInfo.debuggerFullscreenUrl.replace("https://", "wss://");
+      console.log("[CDP] Using browser WebSocket as fallback");
       
-      // تنفيذ السكريبت
-      await executeCDP(pageWs, "Runtime.evaluate", { expression: script, awaitPromise: true });
-      console.log("[CDP] Script executed!");
+      await executeCDPCommands(wsUrl, [
+        { method: "Target.createTarget", params: { url: "https://taqadi.sjc.gov.qa/itc/" } }
+      ]);
     }
   } catch (e) {
-    console.error("[CDP] Error:", e);
-    // نتجاهل الخطأ ونترك المستخدم يستخدم المتصفح يدوياً
+    console.error("[CDP] Navigation error:", e);
   }
 }
 
@@ -152,7 +180,7 @@ async function getAllSessions(): Promise<any[]> {
   return allSessions;
 }
 
-// تنظيف جميع الجلسات (القوة الكاملة)
+// تنظيف جميع الجلسات (الطريقة الصحيحة: POST مع REQUEST_RELEASE)
 async function forceCleanupAllSessions(): Promise<number> {
   console.log("[Taqadi] Force cleaning up ALL sessions...");
   
@@ -160,32 +188,43 @@ async function forceCleanupAllSessions(): Promise<number> {
   let cleaned = 0;
   
   for (const session of sessions) {
+    // تخطي الجلسات المنتهية
+    if (session.status === "COMPLETED" || session.status === "ERROR" || session.endedAt) {
+      console.log("[Taqadi] Skipping completed session:", session.id);
+      continue;
+    }
+    
     try {
-      console.log("[Taqadi] Force cancelling session:", session.id, "status:", session.status);
+      console.log("[Taqadi] Force releasing session:", session.id, "status:", session.status);
       
-      // محاولة الإلغاء
-      const deleteResponse = await fetch(`https://www.browserbase.com/v1/sessions/${session.id}`, {
-        method: "DELETE",
+      // الطريقة الصحيحة: POST مع projectId و status
+      const releaseResponse = await fetch(`https://www.browserbase.com/v1/sessions/${session.id}`, {
+        method: "POST",
         headers: {
           "x-bb-api-key": BROWSERBASE_API_KEY,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          projectId: BROWSERBASE_PROJECT_ID,
+          status: "REQUEST_RELEASE"
+        }),
       });
       
-      if (deleteResponse.ok || deleteResponse.status === 404) {
-        // 404 يعني الجلسة غير موجودة أصلاً - هذا جيد
+      if (releaseResponse.ok) {
         cleaned++;
-        console.log("[Taqadi] Session cleaned:", session.id);
+        console.log("[Taqadi] Session released successfully:", session.id);
       } else {
-        console.log("[Taqadi] Delete response:", deleteResponse.status);
+        const errorText = await releaseResponse.text();
+        console.log("[Taqadi] Release failed:", releaseResponse.status, errorText);
       }
     } catch (e) {
-      console.error("[Taqadi] Error cleaning session:", session.id, e);
+      console.error("[Taqadi] Error releasing session:", session.id, e);
     }
   }
   
-  if (cleaned > 0 || sessions.length > 0) {
-    console.log("[Taqadi] Cleaned", cleaned, "of", sessions.length, "sessions. Waiting 5 seconds...");
-    await new Promise(r => setTimeout(r, 5000)); // انتظار 5 ثواني
+  if (cleaned > 0) {
+    console.log("[Taqadi] Released", cleaned, "sessions. Waiting 3 seconds...");
+    await new Promise(r => setTimeout(r, 3000)); // انتظار 3 ثواني
   }
   
   return cleaned;
@@ -712,8 +751,8 @@ serve(async (req) => {
         // توليد سكربت الأتمتة
         const script = generateAutomationScript(request.lawsuitData);
 
-        // محاولة التنقل وتنفيذ السكريبت (بدون انتظار)
-        navigateAndExecute(session.connectUrl, script).catch(e => {
+        // محاولة التنقل لموقع تقاضي (بدون انتظار الاكتمال)
+        navigateToTaqadi(session.sessionId).catch(e => {
           console.log("[Taqadi] CDP navigation failed (user will navigate manually):", e.message);
         });
 
