@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أتمتة تقاضي</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: 380px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      color: #f97316;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .status-box {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .status-box.has-data {
+      border: 1px solid #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    
+    .status-box.no-data {
+      border: 1px solid #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .status-icon {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .status-text {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    
+    .status-details {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    
+    .data-preview {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 15px 0;
+      font-size: 12px;
+    }
+    
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .data-row:last-child {
+      border-bottom: none;
+    }
+    
+    .data-label {
+      color: #94a3b8;
+    }
+    
+    .data-value {
+      color: #fff;
+      font-weight: 500;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .instructions {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 15px;
+    }
+    
+    .instructions h3 {
+      font-size: 12px;
+      color: #3b82f6;
+      margin-bottom: 8px;
+    }
+    
+    .instructions ol {
+      font-size: 11px;
+      color: #94a3b8;
+      padding-right: 20px;
+    }
+    
+    .instructions li {
+      margin-bottom: 5px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 10px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚗 أتمتة تقاضي - العراف</h1>
+    <p>ملء نماذج الدعاوى تلقائياً</p>
+  </div>
+
+  <div id="statusBox" class="status-box no-data">
+    <div class="status-icon" id="statusIcon">⏳</div>
+    <div class="status-text" id="statusText">جاري التحقق...</div>
+    <div class="status-details" id="statusDetails"></div>
+  </div>
+
+  <div id="dataPreview" class="data-preview" style="display: none;">
+    <div class="data-row">
+      <span class="data-label">عنوان الدعوى:</span>
+      <span class="data-value" id="caseTitle">-</span>
+    </div>
+    <div class="data-row">
+      <span class="data-label">المبلغ:</span>
+      <span class="data-value" id="amount">-</span>
+    </div>
+    <div class="data-row">
+      <span class="data-label">المدعى عليه:</span>
+      <span class="data-value" id="defendant">-</span>
+    </div>
+  </div>
+
+  <button id="fillBtn" class="btn btn-primary" disabled>
+    <span>📝</span>
+    <span>ملء النموذج تلقائياً</span>
+  </button>
+
+  <button id="openTaqadi" class="btn btn-secondary">
+    <span>🌐</span>
+    <span>فتح موقع تقاضي</span>
+  </button>
+
+  <button id="loadData" class="btn btn-secondary">
+    <span>🔄</span>
+    <span>تحديث البيانات من العراف</span>
+  </button>
+
+  <div class="instructions">
+    <h3>📋 طريقة الاستخدام:</h3>
+    <ol>
+      <li>افتح صفحة تجهيز الدعوى في نظام العراف</li>
+      <li>اضغط "تحديث البيانات" لحفظ بيانات الدعوى</li>
+      <li>افتح موقع تقاضي وسجل دخولك</li>
+      <li>ابدأ إنشاء دعوى جديدة</li>
+      <li>اضغط "ملء النموذج تلقائياً"</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    شركة العراف لتأجير السيارات © 2024
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

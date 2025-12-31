@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "أتمتة تقاضي - العراف",
+  "version": "1.0.0",
+  "description": "ملء نماذج الدعاوى في تقاضي تلقائياً من نظام العراف",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://taqadi.sjc.gov.qa/*",
+    "https://www.alaraf.online/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "أتمتة تقاضي 🚗"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://taqadi.sjc.gov.qa/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
