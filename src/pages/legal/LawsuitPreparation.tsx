@@ -47,6 +47,12 @@ import {
   DOCUMENT_TYPE_NAMES,
   LegalDocumentType,
 } from '@/services/LawsuitService';
+import {
+  generateExplanatoryMemoHtml,
+  generateDocumentsListHtml,
+  generateClaimsStatementHtml,
+  openLetterForPrint,
+} from '@/utils/official-letter-generator';
 
 // واجهة بيانات تقاضي
 interface TaqadiData {
@@ -500,97 +506,31 @@ ${taqadiData.claims}
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
-    
-    const today = new Date().toLocaleDateString('ar-QA', { 
-      year: 'numeric', month: 'long', day: 'numeric' 
+
+    // استخدام التنسيق الموحد للكتب الرسمية
+    const memoHtml = generateExplanatoryMemoHtml({
+      caseTitle: taqadiData.caseTitle,
+      facts: taqadiData.facts,
+      claims: taqadiData.claims,
+      amount: taqadiData.amount,
+      amountInWords: taqadiData.amountInWords,
+      defendantName: customerName,
+      contractNumber: contract.contract_number,
     });
 
-    const memoHtml = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>مذكرة شارحة</title>
-  <style>
-    @page { size: A4; margin: 20mm; }
-    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 14pt; line-height: 2; color: #000; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }
-    .logo { max-width: 150px; margin-bottom: 10px; }
-    h1 { color: #1e3a5f; font-size: 24pt; margin: 10px 0; }
-    .section { margin: 20px 0; }
-    .section-title { font-weight: bold; color: #1e3a5f; font-size: 16pt; margin-bottom: 10px; }
-    .content { text-align: justify; }
-    .footer { margin-top: 50px; text-align: center; }
-    .signature { margin-top: 80px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <img src="https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-assets/alaraf-logo.png" class="logo" alt="شركة العراف" onerror="this.style.display='none'">
-    <h1>مذكرة شارحة</h1>
-    <p>مقدمة من: شركة العراف للخدمات</p>
-    <p>التاريخ: ${today}</p>
-  </div>
-
-  <div class="section">
-    <div class="section-title">أولاً: موضوع الدعوى</div>
-    <div class="content">
-      <p>${taqadiData.caseTitle}</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">ثانياً: الوقائع</div>
-    <div class="content">
-      <p>${taqadiData.facts.replace(/\n/g, '<br>')}</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">ثالثاً: الأسانيد القانونية</div>
-    <div class="content">
-      <p>استناداً إلى أحكام القانون المدني القطري، وعلى وجه الخصوص المواد المتعلقة بعقود الإيجار والالتزامات التعاقدية، فإن المدعى عليه ملزم بسداد المبالغ المستحقة.</p>
-      <p>كما أن الامتناع عن الوفاء بالالتزامات التعاقدية يعد إخلالاً جسيماً بالعقد يستوجب التعويض.</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">رابعاً: الطلبات</div>
-    <div class="content">
-      <p>${taqadiData.claims.replace(/\n/g, '<br>')}</p>
-    </div>
-  </div>
-
-  <div class="footer">
-    <p>والله ولي التوفيق</p>
-    <div class="signature">
-      <p>مقدمه</p>
-      <p><strong>أسامة أحمد البشري</strong></p>
-      <p>المخول بالتوقيع - شركة العراف للخدمات</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([memoHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    openLetterForPrint(memoHtml);
     toast.success('✅ تم توليد المذكرة الشارحة!');
   }, [taqadiData, contract]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
-    const today = new Date().toLocaleDateString('ar-QA', { 
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
-
     const customer = (contract as any)?.customers;
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
     // تجميع قائمة المستندات
-    const documents = [
+    const documents: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [
       { name: 'المذكرة الشارحة', status: memoUrl ? 'مرفق' : 'غير مرفق' },
       { name: 'صورة من البطاقة الشخصية للممثل', status: legalDocs.find(d => d.document_type === 'representative_id') ? 'مرفق' : 'غير مرفق' },
       { name: 'صورة من السجل التجاري', status: legalDocs.find(d => d.document_type === 'commercial_register') ? 'مرفق' : 'غير مرفق' },
@@ -599,69 +539,16 @@ ${taqadiData.claims}
       { name: 'شهادة IBAN', status: legalDocs.find(d => d.document_type === 'iban_certificate') ? 'مرفق' : 'غير مرفق' },
     ];
 
-    const docsListHtml = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>كشف بالمستندات المرفوعة</title>
-  <style>
-    @page { size: A4; margin: 20mm; }
-    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 14pt; line-height: 1.8; color: #000; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }
-    h1 { color: #1e3a5f; font-size: 22pt; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #333; padding: 12px; text-align: right; }
-    th { background: #1e3a5f; color: white; }
-    .attached { color: green; font-weight: bold; }
-    .not-attached { color: red; }
-    .footer { margin-top: 40px; text-align: center; }
-    .case-info { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>كشف بالمستندات المرفوعة</h1>
-    <p>شركة العراف للخدمات</p>
-    <p>التاريخ: ${today}</p>
-  </div>
+    // استخدام التنسيق الموحد للكتب الرسمية
+    const docsListHtml = generateDocumentsListHtml({
+      caseTitle: taqadiData?.caseTitle || '-',
+      customerName,
+      amount: taqadiData?.amount || 0,
+      documents,
+    });
 
-  <div class="case-info">
-    <p><strong>عنوان الدعوى:</strong> ${taqadiData?.caseTitle || '-'}</p>
-    <p><strong>المدعى عليه:</strong> ${customerName}</p>
-    <p><strong>المبلغ المطالب به:</strong> ${taqadiData?.amount?.toLocaleString('ar-QA')} ريال قطري</p>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>م</th>
-        <th>اسم المستند</th>
-        <th>الحالة</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${documents.map((doc, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${doc.name}</td>
-          <td class="${doc.status === 'مرفق' ? 'attached' : 'not-attached'}">${doc.status}</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
-
-  <div class="footer">
-    <p><strong>إجمالي المستندات:</strong> ${documents.length}</p>
-    <p><strong>المستندات المرفقة:</strong> ${documents.filter(d => d.status === 'مرفق').length}</p>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([docsListHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setDocsListUrl(url);
+    openLetterForPrint(docsListHtml);
+    setDocsListUrl('generated');
     toast.success('✅ تم توليد كشف المستندات!');
   }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
 
@@ -674,10 +561,6 @@ ${taqadiData.claims}
 
     setIsGeneratingClaims(true);
 
-    const today = new Date().toLocaleDateString('ar-QA', { 
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
-
     const customer = (contract as any)?.customers;
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
@@ -689,148 +572,38 @@ ${taqadiData.claims}
       0
     );
 
-    const claimsHtml = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>كشف المطالبات - ${contract?.contract_number || ''}</title>
-  <style>
-    @page { size: A4; margin: 15mm; }
-    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 12pt; line-height: 1.6; color: #000; }
-    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 15px; }
-    h1 { color: #1e3a5f; font-size: 20pt; margin: 10px 0; }
-    h2 { color: #1e3a5f; font-size: 16pt; margin: 15px 0 10px; }
-    .info-box { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .info-label { font-weight: bold; color: #555; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 11pt; }
-    th, td { border: 1px solid #333; padding: 10px 8px; text-align: right; }
-    th { background: #1e3a5f; color: white; font-weight: bold; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .amount { font-weight: bold; color: #d32f2f; }
-    .total-row { background: #1e3a5f !important; color: white; font-weight: bold; }
-    .total-row td { border-color: #1e3a5f; }
-    .summary { margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; border-radius: 8px; }
-    .summary h3 { margin: 0 0 15px; font-size: 16pt; }
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .summary-item { text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; }
-    .summary-value { font-size: 18pt; font-weight: bold; }
-    .summary-label { font-size: 10pt; opacity: 0.9; }
-    .footer { margin-top: 40px; text-align: center; font-size: 10pt; color: #666; }
-    .stamp { margin-top: 50px; text-align: left; }
-    .days-late { color: #d32f2f; font-weight: bold; }
-    @media print {
-      .summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <img src="https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-assets/alaraf-logo.png" 
-         style="max-width: 120px; margin-bottom: 10px;" 
-         alt="شركة العراف" 
-         onerror="this.style.display='none'">
-    <h1>كشف المطالبات المالية</h1>
-    <p style="color: #666;">تاريخ الإصدار: ${today}</p>
-  </div>
+    // تحضير بيانات الفواتير
+    const invoicesData = overdueInvoices.map((inv) => {
+      const dueDate = new Date(inv.due_date);
+      const today = new Date();
+      const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      return {
+        invoiceNumber: inv.invoice_number || '-',
+        dueDate: inv.due_date,
+        totalAmount: inv.total_amount || 0,
+        paidAmount: inv.paid_amount || 0,
+        daysLate,
+      };
+    });
 
-  <div class="info-box">
-    <div class="info-row">
-      <span class="info-label">المدعى عليه:</span>
-      <span>${customerName}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">رقم الهوية:</span>
-      <span>${customer?.national_id || '-'}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">رقم العقد:</span>
-      <span>${contract?.contract_number || '-'}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">فترة العقد:</span>
-      <span>${contract?.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'} إلى ${contract?.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : '-'}</span>
-    </div>
-  </div>
+    // استخدام التنسيق الموحد للكتب الرسمية
+    const claimsHtml = generateClaimsStatementHtml({
+      customerName,
+      nationalId: customer?.national_id || '-',
+      contractNumber: contract?.contract_number || '-',
+      contractStartDate: contract?.start_date || '',
+      contractEndDate: contract?.end_date || '',
+      invoices: invoicesData,
+      totalOverdue,
+      amountInWords: calculations.amountInWords,
+      caseTitle: taqadiData?.caseTitle,
+    });
 
-  <h2>تفصيل الفواتير المتأخرة</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>م</th>
-        <th>رقم الفاتورة</th>
-        <th>تاريخ الاستحقاق</th>
-        <th>أيام التأخير</th>
-        <th>المبلغ الكلي</th>
-        <th>المدفوع</th>
-        <th>المتبقي</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${overdueInvoices.map((inv, i) => {
-        const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
-        const dueDate = new Date(inv.due_date);
-        const today = new Date();
-        const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-        return `
-          <tr>
-            <td>${i + 1}</td>
-            <td>${inv.invoice_number || '-'}</td>
-            <td>${new Date(inv.due_date).toLocaleDateString('ar-QA')}</td>
-            <td class="days-late">${daysLate} يوم</td>
-            <td>${(inv.total_amount || 0).toLocaleString('ar-QA')} ر.ق</td>
-            <td>${(inv.paid_amount || 0).toLocaleString('ar-QA')} ر.ق</td>
-            <td class="amount">${remaining.toLocaleString('ar-QA')} ر.ق</td>
-          </tr>
-        `;
-      }).join('')}
-      <tr class="total-row">
-        <td colspan="4">الإجمالي</td>
-        <td>${overdueInvoices.reduce((s, i) => s + (i.total_amount || 0), 0).toLocaleString('ar-QA')} ر.ق</td>
-        <td>${overdueInvoices.reduce((s, i) => s + (i.paid_amount || 0), 0).toLocaleString('ar-QA')} ر.ق</td>
-        <td class="amount">${totalOverdue.toLocaleString('ar-QA')} ر.ق</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="summary">
-    <h3>ملخص المطالبة</h3>
-    <div class="summary-grid">
-      <div class="summary-item">
-        <div class="summary-value">${overdueInvoices.length}</div>
-        <div class="summary-label">عدد الفواتير المتأخرة</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-value">${totalOverdue.toLocaleString('ar-QA')}</div>
-        <div class="summary-label">إجمالي المبالغ المستحقة (ر.ق)</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-value">${calculations.amountInWords.split(' ').slice(0, 3).join(' ')}</div>
-        <div class="summary-label">المبلغ كتابةً</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="stamp">
-    <p>___________________________</p>
-    <p><strong>التوقيع والختم</strong></p>
-    <p>شركة العراف للخدمات</p>
-  </div>
-
-  <div class="footer">
-    <p>هذا الكشف صادر من نظام العراف لإدارة الأساطيل | ${today}</p>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([claimsHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setClaimsStatementUrl(url);
+    openLetterForPrint(claimsHtml);
+    setClaimsStatementUrl('generated');
     setIsGeneratingClaims(false);
     toast.success('✅ تم توليد كشف المطالبات!');
-  }, [overdueInvoices, contract, calculations]);
+  }, [overdueInvoices, contract, calculations, taqadiData]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
