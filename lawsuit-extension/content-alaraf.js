@@ -8,7 +8,7 @@ console.log('✅ تم تحميل إضافة رفع الدعاوى على alaraf.
 // ============================================
 
 let injectedButton = false;
-const LAWSUIT_PAGE_PATTERN = /\/legal\/lawsuit-preparation\//;
+const LAWSUIT_PAGE_PATTERN = /\/legal\/lawsuit\/prepare\//;
 
 // ============================================
 // مراقبة التغييرات في الصفحة (React SPA)
@@ -46,18 +46,22 @@ function injectExtensionButton() {
     return;
   }
 
-  // البحث عن مكان إدراج الزر
-  // أولاً: البحث عن زر "نسخ الكل"
+  // البحث عن زر "نسخ الكل"
   const copyAllBtn = Array.from(document.querySelectorAll('button')).find(
     btn => btn.textContent?.includes('نسخ الكل')
   );
 
-  // ثانياً: البحث عن CardHeader الخاص ببيانات تقاضي
-  const taqadiHeader = Array.from(document.querySelectorAll('div')).find(
-    div => div.textContent?.includes('بيانات تقاضي')
+  // البحث عن زر "فتح تقاضي يدوياً"
+  const openTaqadiBtn = Array.from(document.querySelectorAll('button')).find(
+    btn => btn.textContent?.includes('فتح تقاضي يدوياً')
   );
 
-  if (!copyAllBtn && !taqadiHeader) {
+  // البحث عن عنوان الصفحة
+  const pageTitle = Array.from(document.querySelectorAll('h1')).find(
+    h1 => h1.textContent?.includes('تجهيز دعوى')
+  );
+
+  if (!copyAllBtn && !openTaqadiBtn && !pageTitle) {
     console.log('⏳ انتظار تحميل صفحة تجهيز الدعوى...');
     return;
   }
@@ -101,13 +105,16 @@ function injectExtensionButton() {
   extensionBtn.addEventListener('click', handleSaveAndSend);
 
   // إدراج الزر
-  if (copyAllBtn && copyAllBtn.parentElement) {
-    copyAllBtn.parentElement.insertBefore(extensionBtn, copyAllBtn);
+  if (openTaqadiBtn && openTaqadiBtn.parentElement) {
+    // إضافة بجانب "فتح تقاضي يدوياً"
+    openTaqadiBtn.parentElement.insertBefore(extensionBtn, openTaqadiBtn);
+    console.log('✅ تم إضافة زر الإضافة بجانب "فتح تقاضي"');
+  } else if (copyAllBtn && copyAllBtn.parentElement) {
+    copyAllBtn.parentElement.appendChild(extensionBtn);
     console.log('✅ تم إضافة زر الإضافة بجانب "نسخ الكل"');
-  } else if (taqadiHeader) {
-    const buttonContainer = taqadiHeader.querySelector('.flex') || taqadiHeader;
-    buttonContainer.appendChild(extensionBtn);
-    console.log('✅ تم إضافة زر الإضافة في بيانات تقاضي');
+  } else if (pageTitle && pageTitle.parentElement) {
+    pageTitle.parentElement.appendChild(extensionBtn);
+    console.log('✅ تم إضافة زر الإضافة في رأس الصفحة');
   }
 
   injectedButton = true;
@@ -143,37 +150,43 @@ function extractLawsuitData() {
 
 // استخراج بيانات المدعى عليه
 function extractDefendantData() {
-  // البحث عن بطاقة بيانات المدعى عليه
-  const cards = document.querySelectorAll('[class*="Card"]');
   let name = '', phone = '', nationalId = '';
 
-  cards.forEach(card => {
-    const text = card.textContent || '';
-    if (text.includes('بيانات المدعى عليه')) {
-      // استخراج الاسم
-      const nameMatch = text.match(/الاسم:\s*(.+?)(?=رقم الهوية|الهاتف|$)/);
-      if (nameMatch) name = nameMatch[1].trim();
-
-      // استخراج رقم الهوية
-      const idMatch = text.match(/رقم الهوية:\s*(.+?)(?=الهاتف|$)/);
-      if (idMatch) nationalId = idMatch[1].trim();
-
-      // استخراج الهاتف
-      const phoneMatch = text.match(/الهاتف:\s*(.+?)$/m);
-      if (phoneMatch) phone = phoneMatch[1].trim();
+  // البحث عن قسم "بيانات المدعى عليه"
+  const sections = document.querySelectorAll('div');
+  
+  sections.forEach(section => {
+    const heading = section.querySelector('h3');
+    if (heading && heading.textContent?.includes('بيانات المدعى عليه')) {
+      // البحث عن الصفوف داخل هذا القسم
+      const rows = section.querySelectorAll('div > div');
+      rows.forEach(row => {
+        const text = row.textContent || '';
+        const parts = row.querySelectorAll('div');
+        
+        if (parts.length >= 2) {
+          const label = parts[0]?.textContent?.trim() || '';
+          const value = parts[1]?.textContent?.trim() || '';
+          
+          if (label.includes('الاسم')) name = value;
+          if (label.includes('الهوية')) nationalId = value;
+          if (label.includes('الهاتف')) phone = value;
+        }
+      });
     }
   });
 
-  // طريقة بديلة: البحث في الجداول
+  // طريقة بديلة: البحث بالنص
   if (!name) {
-    document.querySelectorAll('.flex.justify-between').forEach(row => {
-      const label = row.querySelector('.text-muted-foreground')?.textContent?.trim();
-      const value = row.querySelector('.font-medium')?.textContent?.trim();
-      
-      if (label === 'الاسم:') name = value || '';
-      if (label === 'رقم الهوية:') nationalId = value || '';
-      if (label === 'الهاتف:') phone = value || '';
-    });
+    const allText = document.body.textContent || '';
+    const nameMatch = allText.match(/الاسم:\s*([^\n]+)/);
+    if (nameMatch) name = nameMatch[1].trim();
+  }
+
+  if (!phone) {
+    const allText = document.body.textContent || '';
+    const phoneMatch = allText.match(/الهاتف:\s*(\d+)/);
+    if (phoneMatch) phone = phoneMatch[1].trim();
   }
 
   return { name, phone, nationalId };
@@ -228,18 +241,53 @@ function extractTextsData() {
   let title = '', facts = '', claims = '', amount = 0, amountInWords = '';
 
   // البحث عن الحقول في قسم "بيانات تقاضي"
-  const inputs = document.querySelectorAll('input[readonly], textarea[readonly]');
+  // الحقول هي textbox في الصفحة
+  const allInputs = document.querySelectorAll('input, textarea');
   
-  inputs.forEach((input, index) => {
-    const label = input.closest('.space-y-2')?.querySelector('label')?.textContent?.trim();
-    const value = (input as HTMLInputElement | HTMLTextAreaElement).value;
+  allInputs.forEach((input) => {
+    const container = input.closest('div')?.parentElement;
+    const labelDiv = container?.querySelector('div:first-child');
+    const labelText = labelDiv?.textContent?.trim() || '';
+    const value = input.value || '';
 
-    if (label?.includes('عنوان الدعوى')) title = value;
-    if (label?.includes('الوقائع')) facts = value;
-    if (label?.includes('الطلبات')) claims = value;
-    if (label === 'المبلغ') amount = parseFloat(value) || 0;
-    if (label?.includes('كتابةً')) amountInWords = value;
+    if (labelText.includes('عنوان الدعوى')) {
+      title = value;
+    }
+    if (labelText === 'الوقائع' || labelText.includes('الوقائع')) {
+      facts = value;
+    }
+    if (labelText === 'الطلبات' || labelText.includes('الطلبات')) {
+      claims = value;
+    }
+    if (labelText === 'المبلغ' && !labelText.includes('كتابة')) {
+      amount = parseFloat(value.replace(/[^\d.]/g, '')) || 0;
+    }
+    if (labelText.includes('كتابةً') || labelText.includes('كتابة')) {
+      amountInWords = value;
+    }
   });
+
+  // طريقة بديلة: البحث بالقيم المتوقعة
+  if (!title) {
+    const titleInput = Array.from(document.querySelectorAll('input')).find(
+      i => i.value?.includes('مطالبة مالية')
+    );
+    if (titleInput) title = titleInput.value;
+  }
+
+  if (!facts) {
+    const factsInput = Array.from(document.querySelectorAll('textarea, input')).find(
+      i => i.value?.includes('أبرمت شركة العراف') || i.value?.includes('المدعية')
+    );
+    if (factsInput) facts = factsInput.value;
+  }
+
+  if (!claims) {
+    const claimsInput = Array.from(document.querySelectorAll('textarea, input')).find(
+      i => i.value?.includes('إلزام المدعى عليه')
+    );
+    if (claimsInput) claims = claimsInput.value;
+  }
 
   return { title, facts, claims, amount, amountInWords };
 }
@@ -381,6 +429,54 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ status: 'alive', page: 'alaraf' });
   }
   return true;
+});
+
+// ============================================
+// استقبال البيانات من الصفحة عبر postMessage
+// ============================================
+
+window.addEventListener('message', (event) => {
+  // التحقق من أن الرسالة من نفس النافذة
+  if (event.source !== window) return;
+
+  if (event.data && event.data.type === 'ALARAF_LAWSUIT_DATA') {
+    console.log('📨 استلام بيانات من صفحة العراف:', event.data.data);
+    
+    // حفظ البيانات في تخزين الإضافة
+    const extensionData = {
+      defendant: { 
+        name: event.data.data.defendantName,
+        phone: '',
+        nationalId: ''
+      },
+      texts: {
+        title: event.data.data.caseTitle,
+        facts: event.data.data.facts,
+        claims: event.data.data.claims,
+        amount: event.data.data.amount,
+        amountInWords: event.data.data.amountInWords
+      },
+      amounts: {
+        total: event.data.data.amount,
+        totalInWords: event.data.data.amountInWords
+      },
+      vehicle: {
+        contractNumber: event.data.data.contractNumber
+      },
+      documents: {},
+      extractedAt: new Date().toISOString(),
+      pageUrl: window.location.href
+    };
+
+    chrome.runtime.sendMessage({
+      action: 'saveLawsuitData',
+      data: extensionData
+    }, (response) => {
+      if (response && response.success) {
+        showNotification('✅ تم حفظ البيانات! افتح موقع تقاضي واضغط "ملء البيانات"', 'success');
+      }
+    });
+  }
 });
 
 // ============================================

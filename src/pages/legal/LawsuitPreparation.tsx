@@ -1214,6 +1214,14 @@ ${taqadiData.claims}
 
               {/* الأزرار البديلة */}
               <div className="flex justify-center gap-3 flex-wrap">
+                <Button 
+                  size="lg" 
+                  onClick={sendToExtension}
+                  className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
+                >
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                  إرسال لتقاضي (الإضافة)
+                </Button>
                 <Button size="lg" variant="outline" onClick={openTaqadi}>
                   <ExternalLink className="h-5 w-5 ml-2" />
                   فتح تقاضي يدوياً
