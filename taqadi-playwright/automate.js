@@ -1,0 +1,283 @@
+/**
+ * أتمتة رفع الدعاوى على موقع تقاضي
+ * 
+ * الاستخدام:
+ * 1. npm run fetch   - جلب بيانات الدعوى من العراف
+ * 2. npm run login   - تسجيل الدخول (مرة واحدة)
+ * 3. npm start       - تشغيل الأتمتة
+ */
+
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+// ألوان للطباعة
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+  magenta: '\x1b[35m',
+};
+
+function log(emoji, message, color = colors.reset) {
+  console.log(`${color}${emoji} ${message}${colors.reset}`);
+}
+
+async function automate() {
+  // التحقق من وجود بيانات الدعوى
+  const dataPath = path.join(__dirname, 'lawsuit-data.json');
+  if (!fs.existsSync(dataPath)) {
+    log('❌', 'ملف lawsuit-data.json غير موجود!', colors.red);
+    log('📋', 'شغّل أولاً: npm run fetch', colors.yellow);
+    process.exit(1);
+  }
+
+  // التحقق من وجود بيانات تسجيل الدخول
+  const authPath = path.join(__dirname, 'auth.json');
+  const hasAuth = fs.existsSync(authPath);
+  
+  if (!hasAuth) {
+    log('⚠️', 'لم يتم تسجيل الدخول بعد', colors.yellow);
+    log('🔐', 'سيتم فتح المتصفح لتسجيل الدخول...', colors.cyan);
+  }
+
+  // قراءة بيانات الدعوى
+  const lawsuitData = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+  
+  console.log('');
+  log('═══════════════════════════════════════════════════════════', '');
+  log('🚗', 'أتمتة تقاضي - شركة العراف', colors.magenta);
+  log('═══════════════════════════════════════════════════════════', '');
+  console.log('');
+  log('📋', `الدعوى: ${lawsuitData.caseTitle}`, colors.cyan);
+  log('👤', `المدعى عليه: ${lawsuitData.defendantName}`, colors.cyan);
+  log('💰', `المبلغ: ${lawsuitData.amountFormatted} ر.ق`, colors.cyan);
+  console.log('');
+
+  // فتح المتصفح
+  log('🌐', 'جاري فتح متصفح Chrome...', colors.yellow);
+  
+  const browser = await chromium.launch({
+    headless: false, // المتصفح مرئي للمراقبة
+    channel: 'chrome', // استخدام Chrome المثبت
+    slowMo: 100, // تبطيء قليل لرؤية الخطوات
+  });
+
+  // إنشاء سياق مع الـ cookies المحفوظة
+  const contextOptions = {
+    locale: 'ar-QA',
+    viewport: { width: 1400, height: 900 },
+  };
+  
+  if (hasAuth) {
+    contextOptions.storageState = authPath;
+  }
+  
+  const context = await browser.newContext(contextOptions);
+  const page = await context.newPage();
+
+  // الذهاب لموقع تقاضي
+  log('🔗', 'جاري الانتقال لموقع تقاضي...', colors.yellow);
+  await page.goto('https://taqadi.sjc.gov.qa/itc/');
+  await page.waitForLoadState('networkidle');
+
+  // التحقق من تسجيل الدخول
+  await page.waitForTimeout(2000);
+  
+  const currentUrl = page.url();
+  const isLoggedIn = !currentUrl.includes('login') && !currentUrl.includes('tawtheeq');
+  
+  if (!isLoggedIn) {
+    log('🔐', 'يرجى تسجيل الدخول عبر توثيق...', colors.yellow);
+    console.log('');
+    log('⏳', 'انتظار تسجيل الدخول...', colors.cyan);
+    
+    // انتظار التوجيه للصفحة الرئيسية
+    await page.waitForURL('**/itc/**', { timeout: 300000 }); // 5 دقائق
+    await page.waitForLoadState('networkidle');
+    
+    // حفظ بيانات الدخول للمرات القادمة
+    log('💾', 'جاري حفظ بيانات الدخول...', colors.yellow);
+    await context.storageState({ path: authPath });
+    log('✅', 'تم حفظ بيانات الدخول', colors.green);
+  } else {
+    log('✅', 'تم تسجيل الدخول بنجاح', colors.green);
+  }
+
+  // البحث عن زر إنشاء دعوى جديدة
+  console.log('');
+  log('📝', 'جاري البحث عن نموذج إنشاء الدعوى...', colors.yellow);
+  
+  // محاولة العثور على رابط/زر الدعوى الجديدة
+  const newCaseSelectors = [
+    'text=دعوى جديدة',
+    'text=إنشاء دعوى',
+    'text=تقديم دعوى',
+    'text=رفع دعوى',
+    'a[href*="new"]',
+    'button:has-text("جديد")',
+  ];
+
+  let foundNewCase = false;
+  for (const selector of newCaseSelectors) {
+    const element = await page.$(selector);
+    if (element) {
+      log('🔍', `تم العثور على: ${selector}`, colors.green);
+      await element.click();
+      await page.waitForLoadState('networkidle');
+      foundNewCase = true;
+      break;
+    }
+  }
+
+  if (!foundNewCase) {
+    log('⚠️', 'لم يتم العثور على زر الدعوى الجديدة', colors.yellow);
+    log('📋', 'يرجى التنقل يدوياً لصفحة إنشاء الدعوى', colors.cyan);
+    
+    // انتظار التنقل اليدوي
+    await waitForUser('اضغط Enter بعد فتح صفحة إنشاء الدعوى');
+  }
+
+  // ملء النموذج
+  console.log('');
+  log('═══════════════════════════════════════════════════════════', '');
+  log('📝', 'جاري ملء النموذج...', colors.magenta);
+  log('═══════════════════════════════════════════════════════════', '');
+  console.log('');
+
+  // قائمة الحقول للملء
+  const fieldsToFill = [
+    {
+      name: 'عنوان الدعوى',
+      value: lawsuitData.caseTitle,
+      selectors: [
+        'input[name*="subject"]',
+        'input[name*="title"]',
+        'input[id*="subject"]',
+        'input[id*="title"]',
+        'input[placeholder*="عنوان"]',
+        'input[placeholder*="موضوع"]',
+      ],
+    },
+    {
+      name: 'الوقائع',
+      value: lawsuitData.facts,
+      selectors: [
+        'textarea[name*="fact"]',
+        'textarea[name*="description"]',
+        'textarea[id*="fact"]',
+        'textarea[placeholder*="وقائع"]',
+        'textarea[placeholder*="وصف"]',
+      ],
+    },
+    {
+      name: 'الطلبات',
+      value: lawsuitData.requests,
+      selectors: [
+        'textarea[name*="request"]',
+        'textarea[name*="demand"]',
+        'textarea[id*="request"]',
+        'textarea[placeholder*="طلبات"]',
+        'textarea[placeholder*="مطالب"]',
+      ],
+    },
+    {
+      name: 'المبلغ',
+      value: lawsuitData.amount,
+      selectors: [
+        'input[name*="amount"]',
+        'input[name*="value"]',
+        'input[id*="amount"]',
+        'input[type="number"]',
+        'input[placeholder*="مبلغ"]',
+        'input[placeholder*="قيمة"]',
+      ],
+    },
+    {
+      name: 'المبلغ كتابةً',
+      value: lawsuitData.amountInWords,
+      selectors: [
+        'input[name*="amountText"]',
+        'input[name*="amountWord"]',
+        'textarea[name*="amountText"]',
+        'input[placeholder*="كتابة"]',
+      ],
+    },
+  ];
+
+  let filledCount = 0;
+
+  for (const field of fieldsToFill) {
+    let filled = false;
+    
+    for (const selector of field.selectors) {
+      try {
+        const element = await page.$(selector);
+        if (element) {
+          await element.fill(field.value);
+          log('✅', `${field.name}: تم الملء`, colors.green);
+          filled = true;
+          filledCount++;
+          break;
+        }
+      } catch (e) {
+        // تجاهل الأخطاء والمحاولة مع المحدد التالي
+      }
+    }
+    
+    if (!filled) {
+      log('⚠️', `${field.name}: لم يتم العثور على الحقل`, colors.yellow);
+    }
+  }
+
+  console.log('');
+  log('═══════════════════════════════════════════════════════════', '');
+  
+  if (filledCount > 0) {
+    log('✅', `تم ملء ${filledCount} حقول بنجاح!`, colors.green);
+  } else {
+    log('⚠️', 'لم يتم ملء أي حقول', colors.yellow);
+    log('📋', 'قد يكون تصميم الصفحة مختلفاً', colors.cyan);
+  }
+  
+  console.log('');
+  log('📋', 'راجع البيانات ثم اضغط "اعتماد" لتقديم الدعوى', colors.magenta);
+  log('⚠️', 'لا تغلق هذه النافذة حتى تكتمل العملية', colors.yellow);
+  console.log('');
+
+  // إبقاء المتصفح مفتوحاً
+  await waitForUser('اضغط Enter بعد الانتهاء من مراجعة الدعوى');
+
+  // حفظ screenshot للتوثيق
+  const screenshotPath = `screenshot-${Date.now()}.png`;
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  log('📸', `تم حفظ صورة الشاشة: ${screenshotPath}`, colors.cyan);
+
+  await browser.close();
+  
+  console.log('');
+  log('✅', 'تم الانتهاء!', colors.green);
+}
+
+// انتظار ضغط المستخدم
+function waitForUser(message) {
+  return new Promise(resolve => {
+    const readline = require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    readline.question(`${message}... `, () => {
+      readline.close();
+      resolve();
+    });
+  });
+}
+
+// تشغيل
+automate().catch(error => {
+  log('❌', `خطأ: ${error.message}`, colors.red);
+  process.exit(1);
+});
+
