@@ -1164,11 +1164,11 @@ ${taqadiData.claims}
 
               {/* حالة الأتمتة */}
               {automationSession && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-green-800">✅ المتصفح السحابي جاهز!</p>
-                      <p className="text-sm text-green-600">سجّل الدخول عبر توثيق، ثم ستتم التعبئة تلقائياً</p>
+                      <p className="text-sm text-green-600">افتح المتصفح ثم انسخ رابط تقاضي للشريط</p>
                     </div>
                     <div className="flex gap-2">
                       <Button 
@@ -1188,6 +1188,27 @@ ${taqadiData.claims}
                       </Button>
                     </div>
                   </div>
+                  
+                  {/* زر نسخ رابط تقاضي */}
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input 
+                      type="text" 
+                      value="https://taqadi.sjc.gov.qa/itc/" 
+                      readOnly 
+                      className="flex-1 px-3 py-2 text-sm bg-white border rounded-md text-left dir-ltr"
+                    />
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://taqadi.sjc.gov.qa/itc/');
+                        toast.success('تم نسخ رابط تقاضي! الصقه في شريط عنوان المتصفح السحابي');
+                      }}
+                    >
+                      <Copy className="h-4 w-4 ml-1" />
+                      نسخ الرابط
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600">💡 انسخ الرابط والصقه في شريط العنوان في المتصفح السحابي</p>
                 </div>
               )}
 
