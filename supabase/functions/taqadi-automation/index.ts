@@ -370,11 +370,11 @@ async function createBrowserSession(retryCount = 0): Promise<{ sessionId: string
   const requestBody = {
     projectId: BROWSERBASE_PROJECT_ID,
     browserSettings: {
-      fingerprint: {
-        locales: ["ar-QA", "ar"],
-        screen: { width: 1920, height: 1080 },
-      },
+      // Browserbase يولد fingerprints عشوائية تلقائياً
+      // لا تحدد fingerprint لتحسين anti-detection
+      solveCaptchas: true, // حل CAPTCHA تلقائياً
     },
+    proxies: true, // ✅ تفعيل Proxies لإخفاء IP وتجنب الكشف
     keepAlive: true, // إبقاء الجلسة مفتوحة حتى يتفاعل المستخدم
     timeout: 1800, // 30 دقيقة
   };
