@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "نظام رفع الدعاوى التلقائي - العراف",
+  "version": "1.0.0",
+  "description": "أتمتة نقل بيانات الدعاوى من نظام العراف إلى موقع تقاضي",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.alaraf.online/*",
+    "https://alaraf.online/*",
+    "https://taqadi.sjc.gov.qa/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "نظام رفع الدعاوى"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.alaraf.online/*",
+        "https://alaraf.online/*"
+      ],
+      "js": ["content-alaraf.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://taqadi.sjc.gov.qa/*"
+      ],
+      "js": ["content-taqadi.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
