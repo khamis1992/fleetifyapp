@@ -45,9 +45,59 @@ interface AutomationRequest {
   lawsuitData?: LawsuitData;
 }
 
-// إنشاء جلسة متصفح جديدة
-async function createBrowserSession(): Promise<{ sessionId: string; connectUrl: string; liveUrl: string }> {
-  console.log("[Taqadi] Creating Browserbase session...");
+// الحصول على جميع الجلسات النشطة
+async function getActiveSessions(): Promise<any[]> {
+  console.log("[Taqadi] Fetching active sessions...");
+  
+  const response = await fetch(`https://www.browserbase.com/v1/sessions?status=running`, {
+    headers: {
+      "x-bb-api-key": BROWSERBASE_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    console.error("[Taqadi] Failed to fetch sessions:", response.status);
+    return [];
+  }
+
+  const sessions = await response.json();
+  console.log("[Taqadi] Found", sessions.length, "active sessions");
+  return sessions || [];
+}
+
+// تنظيف جميع الجلسات النشطة
+async function cleanupAllSessions(): Promise<number> {
+  console.log("[Taqadi] Cleaning up all active sessions...");
+  
+  const sessions = await getActiveSessions();
+  let cleaned = 0;
+  
+  for (const session of sessions) {
+    try {
+      console.log("[Taqadi] Cancelling session:", session.id);
+      await fetch(`https://www.browserbase.com/v1/sessions/${session.id}`, {
+        method: "DELETE",
+        headers: {
+          "x-bb-api-key": BROWSERBASE_API_KEY,
+        },
+      });
+      cleaned++;
+    } catch (e) {
+      console.error("[Taqadi] Failed to cancel session:", session.id);
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log("[Taqadi] Cleaned", cleaned, "sessions. Waiting 3 seconds...");
+    await new Promise(r => setTimeout(r, 3000)); // انتظار 3 ثواني
+  }
+  
+  return cleaned;
+}
+
+// إنشاء جلسة متصفح جديدة (مع تنظيف تلقائي)
+async function createBrowserSession(retryCount = 0): Promise<{ sessionId: string; connectUrl: string; liveUrl: string }> {
+  console.log("[Taqadi] Creating Browserbase session (attempt", retryCount + 1, ")...");
   console.log("[Taqadi] Project ID:", BROWSERBASE_PROJECT_ID);
   
   const requestBody = {
@@ -58,8 +108,8 @@ async function createBrowserSession(): Promise<{ sessionId: string; connectUrl: 
         screen: { width: 1920, height: 1080 },
       },
     },
-    keepAlive: true,
-    timeout: 1800, // 30 دقيقة (بالثواني)
+    keepAlive: false, // لا نحتفظ بالجلسة بعد انتهاء المهلة
+    timeout: 900, // 15 دقيقة (بالثواني) - مهلة أقصر لتحرير الموارد بسرعة
   };
   
   console.log("[Taqadi] Request body:", JSON.stringify(requestBody));
@@ -78,6 +128,18 @@ async function createBrowserSession(): Promise<{ sessionId: string; connectUrl: 
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[Taqadi] Browserbase error:", errorText);
+    
+    // إذا كان الخطأ 429 (Too Many Requests) وهذه المحاولة الأولى
+    if (response.status === 429 && retryCount === 0) {
+      console.log("[Taqadi] Rate limited! Cleaning up old sessions...");
+      const cleaned = await cleanupAllSessions();
+      
+      if (cleaned > 0) {
+        console.log("[Taqadi] Retrying after cleanup...");
+        return createBrowserSession(retryCount + 1);
+      }
+    }
+    
     throw new Error(`Browserbase error (${response.status}): ${errorText}`);
   }
 

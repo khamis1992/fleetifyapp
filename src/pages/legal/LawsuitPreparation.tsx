@@ -73,6 +73,8 @@ export default function LawsuitPreparationPage() {
   const [taqadiData, setTaqadiData] = useState<TaqadiData | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutomating, setIsAutomating] = useState(false);
+  const [automationSession, setAutomationSession] = useState<{ sessionId: string; liveUrl: string } | null>(null);
   
   // حالات المستندات الجديدة
   const [contractFile, setContractFile] = useState<File | null>(null);
@@ -360,6 +362,105 @@ ${taqadiData.claims}
 
     toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط على أيقونة الإضافة 🚗');
   }, [taqadiData, contract]);
+
+  // بدء الأتمتة عبر Browserbase (مع تنظيف تلقائي)
+  const startAutomation = useCallback(async () => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات للدعوى');
+      return;
+    }
+
+    setIsAutomating(true);
+
+    try {
+      const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
+      
+      // جمع روابط المستندات
+      const getDocUrl = (type: string) => {
+        const doc = legalDocs.find(d => d.document_type === type);
+        return doc?.file_url;
+      };
+
+      const lawsuitData = {
+        caseTitle: taqadiData.caseTitle,
+        facts: taqadiData.facts,
+        claims: taqadiData.claims,
+        amount: taqadiData.amount,
+        amountInWords: taqadiData.amountInWords,
+        defendantName: customer 
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+          : 'غير معروف',
+        defendantIdNumber: customer?.national_id || '',
+        defendantPhone: customer?.phone || '',
+        contractNumber: contract.contract_number,
+        vehicleInfo: vehicle 
+          ? `${vehicle.make} ${vehicle.model} ${vehicle.year} - ${vehicle.plate_number}`
+          : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
+        contractStartDate: contract.start_date,
+        contractEndDate: contract.end_date,
+        documents: {
+          commercialRegisterUrl: getDocUrl('commercial_register'),
+          establishmentRecordUrl: getDocUrl('establishment_record'),
+          ibanCertificateUrl: getDocUrl('iban_certificate'),
+          representativeIdUrl: getDocUrl('representative_id'),
+          contractUrl: contractFileUrl || undefined,
+          explanatoryMemoUrl: memoUrl || undefined,
+        },
+      };
+
+      toast.info('🔄 جاري التجهيز... قد يستغرق بضع ثوانٍ');
+
+      const response = await supabase.functions.invoke('taqadi-automation', {
+        body: {
+          action: 'start',
+          lawsuitData,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+
+      if (result.success) {
+        setAutomationSession({
+          sessionId: result.sessionId,
+          liveUrl: result.liveUrl,
+        });
+
+        window.open(result.liveUrl, '_blank', 'width=1400,height=900');
+        
+        toast.success('🚀 تم فتح المتصفح السحابي! سجّل الدخول عبر توثيق.');
+      } else {
+        throw new Error(result.error || 'فشل في بدء الأتمتة');
+      }
+    } catch (error: any) {
+      console.error('Automation error:', error);
+      toast.error(`فشل بدء الأتمتة: ${error.message}`);
+    } finally {
+      setIsAutomating(false);
+    }
+  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl]);
+
+  // إلغاء جلسة الأتمتة
+  const cancelAutomation = useCallback(async () => {
+    if (!automationSession) return;
+
+    try {
+      await supabase.functions.invoke('taqadi-automation', {
+        body: {
+          action: 'cancel',
+          sessionId: automationSession.sessionId,
+        },
+      });
+      setAutomationSession(null);
+      toast.success('تم إلغاء جلسة الأتمتة');
+    } catch (error) {
+      console.error('Cancel error:', error);
+    }
+  }, [automationSession]);
 
   // رفع عقد الإيجار
   const uploadContractFile = useCallback(async (file: File) => {
@@ -1036,15 +1137,65 @@ ${taqadiData.claims}
             <div className="text-center space-y-4">
               <h3 className="text-lg font-bold">🚀 رفع الدعوى في تقاضي</h3>
               
-              {/* الأزرار الرئيسية */}
-              <div className="flex justify-center gap-3 flex-wrap">
+              {/* زر الأتمتة الرئيسي */}
+              <div className="mb-4">
                 <Button 
                   size="lg" 
-                  onClick={openTaqadi}
-                  className="bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-600 text-white px-8 py-6 text-lg shadow-lg"
+                  onClick={startAutomation}
+                  disabled={isAutomating || !taqadiData}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-6 text-lg shadow-lg"
                 >
-                  <ExternalLink className="h-6 w-6 ml-2" />
-                  فتح تقاضي (نافذة جديدة)
+                  {isAutomating ? (
+                    <>
+                      <LoadingSpinner className="h-5 w-5 ml-2" />
+                      جاري التجهيز...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-6 w-6 ml-2" />
+                      🤖 رفع تلقائي (Browserbase)
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  سيتم تنظيف الجلسات القديمة تلقائياً
+                </p>
+              </div>
+
+              {/* حالة الأتمتة */}
+              {automationSession && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-green-800">✅ المتصفح السحابي جاهز!</p>
+                      <p className="text-sm text-green-600">سجّل الدخول عبر توثيق، ثم ستتم التعبئة تلقائياً</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(automationSession.liveUrl, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 ml-1" />
+                        فتح المتصفح
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={cancelAutomation}
+                      >
+                        إلغاء
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* الأزرار البديلة */}
+              <div className="flex justify-center gap-3 flex-wrap">
+                <Button size="lg" variant="outline" onClick={openTaqadi}>
+                  <ExternalLink className="h-5 w-5 ml-2" />
+                  فتح تقاضي يدوياً
                 </Button>
                 <Button size="lg" variant="outline" onClick={copyAllData}>
                   <Copy className="h-5 w-5 ml-2" />
@@ -1052,20 +1203,19 @@ ${taqadiData.claims}
                 </Button>
               </div>
 
-              {/* تعليمات سريعة */}
+              {/* تعليمات */}
               <div className="p-4 bg-muted/50 rounded-lg text-sm text-right space-y-2">
-                <p className="font-medium">📋 خطوات بسيطة:</p>
+                <p className="font-medium">📋 طريقة الاستخدام:</p>
                 <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>اضغط <strong>"فتح تقاضي"</strong> لفتح الموقع في نافذة جديدة</li>
-                  <li>سجّل الدخول عبر <strong>توثيق</strong></li>
-                  <li>اختر <strong>"عقود الخدمات التجارية"</strong> ← <strong>"عقود إيجار السيارات"</strong></li>
-                  <li>استخدم أزرار <strong>النسخ</strong> أعلاه للصق البيانات بسرعة</li>
-                  <li>ارفع المستندات المحملة من قسم <strong>المستندات</strong></li>
+                  <li>اضغط <strong>"رفع تلقائي"</strong> لفتح المتصفح السحابي</li>
+                  <li>سجّل الدخول عبر <strong>توثيق</strong> في النافذة الجديدة</li>
+                  <li>سيتم ملء البيانات ورفع المستندات <strong>تلقائياً</strong></li>
+                  <li>راجع البيانات ثم اضغط <strong>"اعتماد"</strong> لتقديم الدعوى</li>
                 </ol>
               </div>
 
               <div className="text-sm text-muted-foreground">
-                <p>💡 كل حقل يحتوي زر نسخ - اضغط عليه ثم الصق في تقاضي مباشرة</p>
+                <p>💡 اختر "عقود الخدمات التجارية" ← "عقود إيجار السيارات وخدمات الليموزين"</p>
               </div>
             </div>
           </CardContent>
