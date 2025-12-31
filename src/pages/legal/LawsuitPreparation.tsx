@@ -78,6 +78,8 @@ export default function LawsuitPreparationPage() {
   const [memoUrl, setMemoUrl] = useState<string | null>(null);
   const [isGeneratingDocsList, setIsGeneratingDocsList] = useState(false);
   const [docsListUrl, setDocsListUrl] = useState<string | null>(null);
+  const [isGeneratingClaims, setIsGeneratingClaims] = useState(false);
+  const [claimsStatementUrl, setClaimsStatementUrl] = useState<string | null>(null);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -661,6 +663,173 @@ ${taqadiData.claims}
     toast.success('✅ تم توليد كشف المستندات!');
   }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
 
+  // توليد كشف المطالبات (الفواتير المتأخرة)
+  const generateClaimsStatement = useCallback(() => {
+    if (!overdueInvoices.length) {
+      toast.error('لا توجد فواتير متأخرة');
+      return;
+    }
+
+    setIsGeneratingClaims(true);
+
+    const today = new Date().toLocaleDateString('ar-QA', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
+    const customer = (contract as any)?.customers;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
+    // حساب إجمالي المبالغ
+    const totalOverdue = overdueInvoices.reduce(
+      (sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 
+      0
+    );
+
+    const claimsHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>كشف المطالبات - ${contract?.contract_number || ''}</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 12pt; line-height: 1.6; color: #000; }
+    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 15px; }
+    h1 { color: #1e3a5f; font-size: 20pt; margin: 10px 0; }
+    h2 { color: #1e3a5f; font-size: 16pt; margin: 15px 0 10px; }
+    .info-box { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .info-label { font-weight: bold; color: #555; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 11pt; }
+    th, td { border: 1px solid #333; padding: 10px 8px; text-align: right; }
+    th { background: #1e3a5f; color: white; font-weight: bold; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .amount { font-weight: bold; color: #d32f2f; }
+    .total-row { background: #1e3a5f !important; color: white; font-weight: bold; }
+    .total-row td { border-color: #1e3a5f; }
+    .summary { margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; border-radius: 8px; }
+    .summary h3 { margin: 0 0 15px; font-size: 16pt; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .summary-item { text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; }
+    .summary-value { font-size: 18pt; font-weight: bold; }
+    .summary-label { font-size: 10pt; opacity: 0.9; }
+    .footer { margin-top: 40px; text-align: center; font-size: 10pt; color: #666; }
+    .stamp { margin-top: 50px; text-align: left; }
+    .days-late { color: #d32f2f; font-weight: bold; }
+    @media print {
+      .summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-assets/alaraf-logo.png" 
+         style="max-width: 120px; margin-bottom: 10px;" 
+         alt="شركة العراف" 
+         onerror="this.style.display='none'">
+    <h1>كشف المطالبات المالية</h1>
+    <p style="color: #666;">تاريخ الإصدار: ${today}</p>
+  </div>
+
+  <div class="info-box">
+    <div class="info-row">
+      <span class="info-label">المدعى عليه:</span>
+      <span>${customerName}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">رقم الهوية:</span>
+      <span>${customer?.national_id || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">رقم العقد:</span>
+      <span>${contract?.contract_number || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">فترة العقد:</span>
+      <span>${contract?.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'} إلى ${contract?.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : '-'}</span>
+    </div>
+  </div>
+
+  <h2>تفصيل الفواتير المتأخرة</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>م</th>
+        <th>رقم الفاتورة</th>
+        <th>تاريخ الاستحقاق</th>
+        <th>أيام التأخير</th>
+        <th>المبلغ الكلي</th>
+        <th>المدفوع</th>
+        <th>المتبقي</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${overdueInvoices.map((inv, i) => {
+        const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
+        const dueDate = new Date(inv.due_date);
+        const today = new Date();
+        const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        return `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${inv.invoice_number || '-'}</td>
+            <td>${new Date(inv.due_date).toLocaleDateString('ar-QA')}</td>
+            <td class="days-late">${daysLate} يوم</td>
+            <td>${(inv.total_amount || 0).toLocaleString('ar-QA')} ر.ق</td>
+            <td>${(inv.paid_amount || 0).toLocaleString('ar-QA')} ر.ق</td>
+            <td class="amount">${remaining.toLocaleString('ar-QA')} ر.ق</td>
+          </tr>
+        `;
+      }).join('')}
+      <tr class="total-row">
+        <td colspan="4">الإجمالي</td>
+        <td>${overdueInvoices.reduce((s, i) => s + (i.total_amount || 0), 0).toLocaleString('ar-QA')} ر.ق</td>
+        <td>${overdueInvoices.reduce((s, i) => s + (i.paid_amount || 0), 0).toLocaleString('ar-QA')} ر.ق</td>
+        <td class="amount">${totalOverdue.toLocaleString('ar-QA')} ر.ق</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <h3>ملخص المطالبة</h3>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-value">${overdueInvoices.length}</div>
+        <div class="summary-label">عدد الفواتير المتأخرة</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value">${totalOverdue.toLocaleString('ar-QA')}</div>
+        <div class="summary-label">إجمالي المبالغ المستحقة (ر.ق)</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value">${calculations.amountInWords.split(' ').slice(0, 3).join(' ')}</div>
+        <div class="summary-label">المبلغ كتابةً</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stamp">
+    <p>___________________________</p>
+    <p><strong>التوقيع والختم</strong></p>
+    <p>شركة العراف للخدمات</p>
+  </div>
+
+  <div class="footer">
+    <p>هذا الكشف صادر من نظام العراف لإدارة الأساطيل | ${today}</p>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([claimsHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setClaimsStatementUrl(url);
+    setIsGeneratingClaims(false);
+    toast.success('✅ تم توليد كشف المطالبات!');
+  }, [overdueInvoices, contract, calculations]);
+
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
     return legalDocs.find(doc => doc.document_type === type);
@@ -1022,16 +1191,44 @@ ${taqadiData.claims}
                 </div>
               </div>
 
-              {/* كشف المطالبات (الأصلي) */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              {/* كشف المطالبات (الفواتير المتأخرة) */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5" />
+                  <FileText className="h-5 w-5 text-red-600" />
                   <div>
                     <p className="font-medium">كشف المطالبات</p>
-                    <p className="text-sm text-muted-foreground">{overdueInvoices.length} فاتورة متأخرة</p>
+                    <p className="text-sm text-muted-foreground">
+                      {claimsStatementUrl ? '✅ تم التوليد - ' : ''}{overdueInvoices.length} فاتورة متأخرة
+                    </p>
                   </div>
                 </div>
-                <Badge variant="secondary">قريباً</Badge>
+                <div className="flex gap-2">
+                  {claimsStatementUrl && (
+                    <Button variant="outline" size="sm" onClick={() => window.open(claimsStatementUrl, '_blank')}>
+                      <Download className="h-4 w-4 ml-2" />
+                      تحميل
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={generateClaimsStatement}
+                    disabled={isGeneratingClaims || overdueInvoices.length === 0}
+                    variant={claimsStatementUrl ? "outline" : "default"}
+                    className={!claimsStatementUrl ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                  >
+                    {isGeneratingClaims ? (
+                      <>
+                        <LoadingSpinner className="h-4 w-4 ml-2" />
+                        جاري التوليد...
+                      </>
+                    ) : (
+                      <>
+                        <FileCheck className="h-4 w-4 ml-2" />
+                        {claimsStatementUrl ? 'إعادة التوليد' : 'توليد الكشف'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* مستندات الشركة */}
