@@ -3,16 +3,16 @@
  * يستخدم نفس التنسيق في جميع أنحاء التطبيق
  */
 
-// معلومات الشركة
+// معلومات الشركة (مطابقة لـ ZhipuAIService.ts)
 const COMPANY_INFO = {
   name_ar: 'شركة العراف لتأجير السيارات',
-  name_en: 'Al Araf Rent A Car',
-  logo: 'https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-assets/alaraf-logo.png',
-  address: 'المنطقة الصناعية - الدوحة - قطر',
-  phone: '+974 3008 8857',
+  name_en: 'AL-ARAF CAR RENTAL L.L.C',
+  logo: '/receipts/logo.png',
+  address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+  phone: '+974 3141 1919',
   email: 'info@alaraf.qa',
-  cr: 'سجل تجاري: 146832',
-  authorized_signatory: 'أسامة أحمد البشري',
+  cr: 'س.ت: 146832',
+  authorized_signatory: 'أسامة أحمد البشرى',
   authorized_title: 'المخول بالتوقيع',
 };
 
