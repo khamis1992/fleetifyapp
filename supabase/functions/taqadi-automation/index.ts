@@ -59,7 +59,7 @@ async function createBrowserSession(): Promise<{ sessionId: string; connectUrl: 
       },
     },
     keepAlive: true,
-    timeout: 1800000, // 30 دقيقة
+    timeout: 1800, // 30 دقيقة (بالثواني)
   };
   
   console.log("[Taqadi] Request body:", JSON.stringify(requestBody));
