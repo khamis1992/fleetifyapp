@@ -448,11 +448,23 @@ ${taqadiData.claims}
             toast.success('✅ تم حفظ البيانات! جاري فتح تقاضي...');
 
             // @ts-ignore
-            chrome.runtime.sendMessage({ action: 'startAutomation' }, (result: any) => {
+            chrome.runtime.sendMessage({
+              action: 'autoFill',
+              data: lawsuitData
+            }, (result: any) => {
+              if (chrome.runtime.lastError) {
+                console.error('خطأ في بدء الأتمتة:', chrome.runtime.lastError);
+                toast.error('فشل بدء الأتمتة، حاول مرة أخرى');
+                setIsAutomating(false);
+                return;
+              }
+
+              console.log('[العراف] نتيجة بدء الأتمتة:', result);
+
               if (result && result.success) {
-                toast.success('🚀 تم فتح تقاضي! سيتم ملء البيانات تلقائياً');
+                toast.success('🚀 تم فتح تقاضي! سيتم ملء البيانات ورفع الملفات تلقائياً');
               } else {
-                toast.error('فشل فتح تقاضي، حاول مرة أخرى');
+                toast.error('فشل بدء الأتمتة، حاول مرة أخرى');
               }
               setIsAutomating(false);
             });

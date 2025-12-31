@@ -5,7 +5,9 @@
   "description": "أتمتة نقل بيانات الدعاوى من نظام العراف إلى موقع تقاضي",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.alaraf.online/*",

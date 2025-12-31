@@ -49,6 +49,70 @@ async function clearData() {
   }
 }
 
+// معالج الأتمتة الكاملة
+async function handleAutomation(data) {
+  try {
+    console.log('🚀 بدء الأتمتة في background:', data);
+
+    // التأكد من وجود البيانات
+    if (!data) {
+      const result = await chrome.storage.local.get(['lawsuitData']);
+      data = result.lawsuitData;
+    }
+
+    if (!data) {
+      throw new Error('لا توجد بيانات محفوظة');
+    }
+
+    // فتح موقع تقاضي في تبويب جديد
+    const tab = await chrome.tabs.create({
+      url: 'https://taqadi.sjc.gov.qa/itc/',
+      active: true
+    });
+
+    console.log('✅ تم فتح موقع تقاضي في تبويب:', tab.id);
+
+    // انتظار تحميل الصفحة
+    await waitForTab(tab.id);
+
+    // إرسال البيانات إلى content script
+    await chrome.tabs.sendMessage(tab.id, {
+      action: 'autoFill',
+      data: data
+    });
+
+    console.log('✅ تم إرسال البيانات إلى content script');
+
+    return {
+      success: true,
+      tabId: tab.id,
+      message: 'تم فتح تقاضي وإرسال البيانات'
+    };
+  } catch (error) {
+    console.error('❌ خطأ في الأتمتة:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+// انتظار تحميل التبويب
+async function waitForTab(tabId) {
+  return new Promise((resolve) => {
+    const checkReady = () => {
+      chrome.tabs.get(tabId, (tab) => {
+        if (tab.status === 'complete') {
+          resolve();
+        } else {
+          setTimeout(checkReady, 500);
+        }
+      });
+    };
+    checkReady();
+  });
+}
+
 // ============================================
 // الاستماع للرسائل
 // ============================================
@@ -83,6 +147,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tabs.query({ active: true, currentWindow: true }).then(tabs => {
         sendResponse({ tab: tabs[0] });
       });
+      return true;
+
+    case 'autoFill':
+    case 'startAutomation':
+      handleAutomation(request.data).then(sendResponse);
       return true;
 
     default:
