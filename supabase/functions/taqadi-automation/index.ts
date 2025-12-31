@@ -8,6 +8,82 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const BROWSERBASE_API_KEY = "bb_live_RqMcpDLo4ysMxVCU_RJjTbI5Z6E";
 const BROWSERBASE_PROJECT_ID = "01e67253-995a-456c-814c-ba30517bfba0";
 
+// تنفيذ أوامر CDP عبر WebSocket
+async function executeCDP(connectUrl: string, method: string, params: any = {}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    console.log(`[CDP] Connecting to: ${connectUrl.substring(0, 50)}...`);
+    const ws = new WebSocket(connectUrl);
+    let messageId = 1;
+    const timeout = setTimeout(() => {
+      ws.close();
+      reject(new Error("CDP timeout"));
+    }, 30000);
+    
+    ws.onopen = () => {
+      console.log(`[CDP] Connected, sending ${method}`);
+      const message = { id: messageId, method, params };
+      ws.send(JSON.stringify(message));
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.id === messageId) {
+        clearTimeout(timeout);
+        ws.close();
+        if (data.error) {
+          reject(new Error(data.error.message));
+        } else {
+          resolve(data.result);
+        }
+      }
+    };
+    
+    ws.onerror = (err) => {
+      clearTimeout(timeout);
+      reject(new Error("WebSocket error"));
+    };
+  });
+}
+
+// التنقل لموقع تقاضي وتنفيذ السكريبت
+async function navigateAndExecute(connectUrl: string, script: string): Promise<void> {
+  console.log("[CDP] Starting navigation to Taqadi...");
+  
+  // الحصول على targets
+  const targetsUrl = connectUrl.replace("wss://", "https://").replace("/devtools/browser/", "/json/list/");
+  console.log("[CDP] Getting targets from:", targetsUrl.substring(0, 50));
+  
+  try {
+    const targetsResponse = await fetch(targetsUrl);
+    if (!targetsResponse.ok) {
+      console.log("[CDP] Failed to get targets, using browser websocket directly");
+    }
+    const targets = await targetsResponse.json();
+    console.log("[CDP] Found", targets.length, "targets");
+    
+    // العثور على target من نوع page
+    const pageTarget = targets.find((t: any) => t.type === "page");
+    if (pageTarget && pageTarget.webSocketDebuggerUrl) {
+      console.log("[CDP] Using page target:", pageTarget.url);
+      const pageWs = pageTarget.webSocketDebuggerUrl;
+      
+      // التنقل للموقع
+      await executeCDP(pageWs, "Page.navigate", { url: "https://taqadi.sjc.gov.qa/itc/" });
+      console.log("[CDP] Navigation sent!");
+      
+      // انتظار التحميل
+      await new Promise(r => setTimeout(r, 3000));
+      
+      // تنفيذ السكريبت
+      await executeCDP(pageWs, "Runtime.evaluate", { expression: script, awaitPromise: true });
+      console.log("[CDP] Script executed!");
+    }
+  } catch (e) {
+    console.error("[CDP] Error:", e);
+    // نتجاهل الخطأ ونترك المستخدم يستخدم المتصفح يدوياً
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -636,6 +712,11 @@ serve(async (req) => {
         // توليد سكربت الأتمتة
         const script = generateAutomationScript(request.lawsuitData);
 
+        // محاولة التنقل وتنفيذ السكريبت (بدون انتظار)
+        navigateAndExecute(session.connectUrl, script).catch(e => {
+          console.log("[Taqadi] CDP navigation failed (user will navigate manually):", e.message);
+        });
+
         return new Response(
           JSON.stringify({
             success: true,
@@ -643,7 +724,7 @@ serve(async (req) => {
             liveUrl: session.liveUrl,
             connectUrl: session.connectUrl,
             script: script,
-            message: "تم إنشاء جلسة المتصفح بنجاح. افتح الرابط لمشاهدة التنفيذ.",
+            message: "تم إنشاء جلسة المتصفح. جاري التنقل لموقع تقاضي...",
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,0 +1,13 @@
+{
+  "name": "taqadi-local-automation",
+  "version": "1.0.0",
+  "description": "أتمتة رفع الدعاوى على موقع تقاضي",
+  "main": "run-automation.js",
+  "scripts": {
+    "start": "node run-automation.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}
+
