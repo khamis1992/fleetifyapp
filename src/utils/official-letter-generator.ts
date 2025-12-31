@@ -60,6 +60,13 @@ export interface ClaimsStatementData {
     paidAmount: number;
     daysLate: number;
   }[];
+  violations?: {
+    violationNumber: string;
+    violationDate: string;
+    violationType: string;
+    location: string;
+    fineAmount: number;
+  }[];
   totalOverdue: number;
   amountInWords: string;
   caseTitle?: string;
@@ -640,6 +647,7 @@ export function generateExplanatoryMemoHtml(data: {
   amountInWords: string;
   defendantName: string;
   contractNumber: string;
+  hasViolations?: boolean;
 }): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
@@ -659,18 +667,26 @@ ${data.facts}
 ${data.claims}
   `.trim();
 
+  // تجهيز قائمة المرفقات
+  const attachments = [
+    'صورة من عقد الإيجار',
+    'صورة من السجل التجاري',
+    'شهادة IBAN',
+    'كشف بالمطالبات المالية',
+  ];
+  
+  // إضافة كشف المخالفات المرورية إن وجدت
+  if (data.hasViolations) {
+    attachments.push('كشف بالمخالفات المرورية');
+  }
+
   return generateOfficialLetter({
     recipient: 'المحكمة المدنية الابتدائية',
     recipientGreeting: 'حفظها الله',
     subject: `مذكرة شارحة - ${data.caseTitle}`,
     body,
     refNumber,
-    attachments: [
-      'صورة من عقد الإيجار',
-      'صورة من السجل التجاري',
-      'شهادة IBAN',
-      'كشف بالمطالبات المالية',
-    ],
+    attachments,
   });
 }
 
@@ -789,6 +805,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
     </div>
     
     <!-- جدول الفواتير -->
+    ${data.invoices.length > 0 ? `
     <div class="section">
       <div class="section-title">تفصيل الفواتير المتأخرة</div>
       <table>
@@ -819,23 +836,67 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
             `;
           }).join('')}
           <tr class="total-row">
-            <td colspan="4">الإجمالي</td>
+            <td colspan="4">إجمالي الفواتير</td>
             <td>${data.invoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
             <td>${data.invoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
-            <td class="amount">${data.totalOverdue.toLocaleString('ar-QA')} ر.ق</td>
+            <td class="amount">${data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0).toLocaleString('ar-QA')} ر.ق</td>
           </tr>
         </tbody>
       </table>
     </div>
+    ` : ''}
+    
+    <!-- جدول المخالفات المرورية -->
+    ${data.violations && data.violations.length > 0 ? `
+    <div class="section">
+      <div class="section-title" style="color: #d32f2f;">المخالفات المرورية غير المسددة</div>
+      <table>
+        <thead>
+          <tr style="background: #d32f2f;">
+            <th>م</th>
+            <th>رقم المخالفة</th>
+            <th>تاريخ المخالفة</th>
+            <th>نوع المخالفة</th>
+            <th>الموقع</th>
+            <th>مبلغ الغرامة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.violations.map((v, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${v.violationNumber}</td>
+              <td>${v.violationDate ? new Date(v.violationDate).toLocaleDateString('ar-QA') : '-'}</td>
+              <td>${v.violationType}</td>
+              <td>${v.location}</td>
+              <td class="amount">${v.fineAmount.toLocaleString('ar-QA')} ر.ق</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row" style="background: #d32f2f !important;">
+            <td colspan="5">إجمالي المخالفات المرورية</td>
+            <td class="amount">${data.violations.reduce((s, v) => s + v.fineAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
     
     <!-- ملخص المطالبة -->
     <div class="summary">
-      <h3>ملخص المطالبة</h3>
-      <div class="summary-grid">
+      <h3>ملخص المطالبة الكلي</h3>
+      <div class="summary-grid" style="${data.violations && data.violations.length > 0 ? 'grid-template-columns: repeat(4, 1fr);' : ''}">
+        ${data.invoices.length > 0 ? `
         <div class="summary-item">
           <div class="summary-value">${data.invoices.length}</div>
           <div class="summary-label">عدد الفواتير المتأخرة</div>
         </div>
+        ` : ''}
+        ${data.violations && data.violations.length > 0 ? `
+        <div class="summary-item" style="background: rgba(211, 47, 47, 0.3);">
+          <div class="summary-value">${data.violations.length}</div>
+          <div class="summary-label">عدد المخالفات المرورية</div>
+        </div>
+        ` : ''}
         <div class="summary-item">
           <div class="summary-value">${data.totalOverdue.toLocaleString('ar-QA')}</div>
           <div class="summary-label">إجمالي المبالغ المستحقة (ر.ق)</div>

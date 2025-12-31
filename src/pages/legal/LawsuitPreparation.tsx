@@ -123,6 +123,26 @@ export default function LawsuitPreparationPage() {
     enabled: !!contractId,
   });
 
+  // جلب المخالفات المرورية المرتبطة بالعقد
+  const { data: trafficViolations = [], isLoading: violationsLoading } = useQuery({
+    queryKey: ['contract-traffic-violations', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .neq('status', 'paid')
+        .order('violation_date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
   // جلب مستندات الشركة
   const { data: legalDocs = [] } = useQuery({
     queryKey: ['company-legal-documents', companyId],
@@ -138,16 +158,25 @@ export default function LawsuitPreparationPage() {
     );
     const lateFees = Math.round(overdueRent * 0.05); // 5% غرامة تأخير
     const otherFees = 500; // رسوم إدارية
-    const total = overdueRent + lateFees + otherFees;
+    
+    // حساب إجمالي المخالفات المرورية غير المدفوعة
+    const violationsFines = trafficViolations.reduce(
+      (sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0),
+      0
+    );
+    
+    const total = overdueRent + lateFees + otherFees + violationsFines;
     
     return {
       overdueRent,
       lateFees,
       otherFees,
+      violationsFines,
+      violationsCount: trafficViolations.length,
       total,
       amountInWords: lawsuitService.convertAmountToWords(total),
     };
-  }, [overdueInvoices]);
+  }, [overdueInvoices, trafficViolations]);
 
   // توليد بيانات تقاضي
   useEffect(() => {
@@ -161,15 +190,37 @@ export default function LawsuitPreparationPage() {
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
         : 'غير معروف';
       
+      // توليد نص الوقائع مع المخالفات المرورية
+      let factsText = lawsuitService.generateFactsText(
+        customerFullName,
+        contract.start_date,
+        vehicleInfo,
+        calculations.total
+      );
+      
+      // إضافة المخالفات المرورية إلى الوقائع إن وجدت
+      if (calculations.violationsCount > 0) {
+        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${calculations.violationsCount}) مخالفة بإجمالي مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري، والتي لم يقم بسدادها حتى تاريخه.`;
+      }
+      
+      // توليد نص الطلبات مع المخالفات المرورية
+      let claimsText = lawsuitService.generateClaimsText(calculations.total);
+      
+      // تعديل الطلبات لتشمل المخالفات المرورية إن وجدت
+      if (calculations.violationsCount > 0) {
+        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.overdueRent.toLocaleString('ar-QA')}) ريال قطري قيمة الإيجارات المتأخرة.
+
+2. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري قيمة المخالفات المرورية غير المسددة (عدد ${calculations.violationsCount} مخالفة).
+
+3. إلزام المدعى عليه بالفوائد القانونية من تاريخ الاستحقاق وحتى تمام السداد.
+
+4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
+      }
+      
       setTaqadiData({
         caseTitle: lawsuitService.generateCaseTitle(customerFullName),
-        facts: lawsuitService.generateFactsText(
-          customerFullName,
-          contract.start_date,
-          vehicleInfo,
-          calculations.total
-        ),
-        claims: lawsuitService.generateClaimsText(calculations.total),
+        facts: factsText,
+        claims: claimsText,
         amount: calculations.total,
         amountInWords: calculations.amountInWords,
       });
@@ -464,6 +515,7 @@ ${taqadiData.claims}
         amountInWords: taqadiData.amountInWords,
         defendantName: customerName,
         contractNumber: contract.contract_number,
+        hasViolations: calculations.violationsCount > 0,
       });
 
       // فتح المستند في نافذة جديدة
@@ -481,7 +533,7 @@ ${taqadiData.claims}
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [taqadiData, contract]);
+  }, [taqadiData, contract, calculations]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
@@ -513,10 +565,10 @@ ${taqadiData.claims}
     toast.success('✅ تم توليد كشف المستندات!');
   }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
 
-  // توليد كشف المطالبات (الفواتير المتأخرة)
+  // توليد كشف المطالبات (الفواتير المتأخرة + المخالفات المرورية)
   const generateClaimsStatement = useCallback(() => {
-    if (!overdueInvoices.length) {
-      toast.error('لا توجد فواتير متأخرة');
+    if (!overdueInvoices.length && !trafficViolations.length) {
+      toast.error('لا توجد فواتير متأخرة أو مخالفات مرورية');
       return;
     }
 
@@ -527,11 +579,19 @@ ${taqadiData.claims}
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
-    // حساب إجمالي المبالغ
-    const totalOverdue = overdueInvoices.reduce(
+    // حساب إجمالي المبالغ من الفواتير
+    const totalOverdueInvoices = overdueInvoices.reduce(
       (sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 
       0
     );
+
+    // حساب إجمالي المخالفات المرورية
+    const totalViolationsFines = trafficViolations.reduce(
+      (sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0),
+      0
+    );
+
+    const totalOverdue = totalOverdueInvoices + totalViolationsFines;
 
     // تحضير بيانات الفواتير
     const invoicesData = overdueInvoices.map((inv) => {
@@ -547,6 +607,15 @@ ${taqadiData.claims}
       };
     });
 
+    // تحضير بيانات المخالفات المرورية
+    const violationsData = trafficViolations.map((v) => ({
+      violationNumber: v.violation_number || '-',
+      violationDate: v.violation_date || '',
+      violationType: v.violation_type || 'غير محدد',
+      location: v.location || '-',
+      fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
+    }));
+
     // استخدام التنسيق الموحد للكتب الرسمية
     const claimsHtml = generateClaimsStatementHtml({
       customerName,
@@ -555,6 +624,7 @@ ${taqadiData.claims}
       contractStartDate: contract?.start_date || '',
       contractEndDate: contract?.end_date || '',
       invoices: invoicesData,
+      violations: violationsData,
       totalOverdue,
       amountInWords: calculations.amountInWords,
       caseTitle: taqadiData?.caseTitle,
@@ -564,7 +634,7 @@ ${taqadiData.claims}
     setClaimsStatementUrl('generated');
     setIsGeneratingClaims(false);
     toast.success('✅ تم توليد كشف المطالبات!');
-  }, [overdueInvoices, contract, calculations, taqadiData]);
+  }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData]);
 
   // الحصول على مستند حسب النوع
   const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
@@ -695,7 +765,7 @@ ${taqadiData.claims}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-5 gap-4">
               <div className="text-center p-4 bg-background rounded-lg">
                 <p className="text-sm text-muted-foreground">الإيجار المتأخر</p>
                 <p className="text-xl font-bold">{calculations.overdueRent.toLocaleString('ar-QA')} ر.ق</p>
@@ -704,6 +774,12 @@ ${taqadiData.claims}
                 <p className="text-sm text-muted-foreground">غرامة التأخير</p>
                 <p className="text-xl font-bold">{calculations.lateFees.toLocaleString('ar-QA')} ر.ق</p>
               </div>
+              {calculations.violationsFines > 0 && (
+                <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">مخالفات مرورية ({calculations.violationsCount})</p>
+                  <p className="text-xl font-bold text-red-600">{calculations.violationsFines.toLocaleString('ar-QA')} ر.ق</p>
+                </div>
+              )}
               <div className="text-center p-4 bg-background rounded-lg">
                 <p className="text-sm text-muted-foreground">رسوم إدارية</p>
                 <p className="text-xl font-bold">{calculations.otherFees.toLocaleString('ar-QA')} ر.ق</p>
