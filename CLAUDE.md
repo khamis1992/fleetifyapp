@@ -653,6 +653,6 @@ SELECT * FROM information_schema.columns -- الأعمدة
 4. طبّق رابعاً
 5. backup دائماً
 ```
-
+عندما استخدم نموذج GLM لا تقوم بتصوير الشاشة لانه لا يدعم الصور
 **Remember: The database knows better than your assumptions!** 🎯
 

@@ -363,8 +363,8 @@ ${taqadiData.claims}
     toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط على أيقونة الإضافة 🚗');
   }, [taqadiData, contract]);
 
-  // بدء الأتمتة عبر Browserbase (مع تنظيف تلقائي)
-  const startAutomation = useCallback(async () => {
+  // بدء الأتمتة المحلية (في متصفح المستخدم)
+  const startLocalAutomation = useCallback(async () => {
     if (!taqadiData || !contract) {
       toast.error('لا توجد بيانات للدعوى');
       return;
@@ -375,7 +375,7 @@ ${taqadiData.claims}
     try {
       const customer = (contract as any).customers;
       const vehicle = (contract as any).vehicles;
-      
+
       // جمع روابط المستندات
       const getDocUrl = (type: string) => {
         const doc = legalDocs.find(d => d.document_type === type);
@@ -383,66 +383,97 @@ ${taqadiData.claims}
       };
 
       const lawsuitData = {
-        caseTitle: taqadiData.caseTitle,
-        facts: taqadiData.facts,
-        claims: taqadiData.claims,
-        amount: taqadiData.amount,
-        amountInWords: taqadiData.amountInWords,
-        defendantName: customer 
-          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-          : 'غير معروف',
-        defendantIdNumber: customer?.national_id || '',
-        defendantPhone: customer?.phone || '',
-        contractNumber: contract.contract_number,
-        vehicleInfo: vehicle 
-          ? `${vehicle.make} ${vehicle.model} ${vehicle.year} - ${vehicle.plate_number}`
-          : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
-        contractStartDate: contract.start_date,
-        contractEndDate: contract.end_date,
-        documents: {
-          commercialRegisterUrl: getDocUrl('commercial_register'),
-          establishmentRecordUrl: getDocUrl('establishment_record'),
-          ibanCertificateUrl: getDocUrl('iban_certificate'),
-          representativeIdUrl: getDocUrl('representative_id'),
-          contractUrl: contractFileUrl || undefined,
-          explanatoryMemoUrl: memoUrl || undefined,
+        defendant: {
+          name: customer 
+            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+            : 'غير معروف',
+          nationalId: customer?.national_id || '',
+          phone: customer?.phone || ''
         },
+        texts: {
+          title: taqadiData.caseTitle,
+          facts: taqadiData.facts,
+          claims: taqadiData.claims,
+          amount: taqadiData.amount,
+          amountInWords: taqadiData.amountInWords
+        },
+        amounts: {
+          overdueRent: calculations.overdueRent,
+          lateFees: calculations.lateFees,
+          violations: calculations.violationsFines,
+          otherFees: calculations.otherFees,
+          total: calculations.total,
+          totalInWords: calculations.amountInWords
+        },
+        vehicle: {
+          model: vehicle 
+            ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
+            : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''}`,
+          plate: vehicle?.plate_number || contract.license_plate || '',
+          contractNumber: contract.contract_number
+        },
+        documents: {
+          commercialRegister: getDocUrl('commercial_register'),
+          establishmentRecord: getDocUrl('establishment_record'),
+          iban: getDocUrl('iban_certificate'),
+          idCard: getDocUrl('representative_id'),
+          memo: memoUrl,
+          contract: contractFileUrl,
+          documentsList: docsListUrl,
+          claimsStatement: claimsStatementUrl
+        },
+        extractedAt: new Date().toISOString(),
+        pageUrl: window.location.href
       };
 
-      toast.info('🔄 جاري التجهيز... قد يستغرق بضع ثوانٍ');
+      // حفظ في localStorage للإضافة
+      localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(lawsuitData));
 
-      const response = await supabase.functions.invoke('taqadi-automation', {
-        body: {
-          action: 'start',
-          lawsuitData,
-        },
-      });
+      // إرسال للإضافة مباشرة
+      // @ts-ignore - Chrome extension API
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        // @ts-ignore
+        chrome.runtime.sendMessage({
+          action: 'saveLawsuitData',
+          data: lawsuitData
+        }, (response: any) => {
+          if (chrome.runtime.lastError) {
+            console.error('Chrome extension error:', chrome.runtime.lastError);
+            toast.error('تأكد من تثبيت الإضافة المحدثة');
+            setIsAutomating(false);
+            return;
+          }
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
+          if (response && response.success) {
+            toast.success('✅ تم حفظ البيانات! جاري فتح تقاضي...');
 
-      const result = response.data;
-
-      if (result.success) {
-        setAutomationSession({
-          sessionId: result.sessionId,
-          liveUrl: result.liveUrl,
+            // @ts-ignore
+            chrome.runtime.sendMessage({ action: 'startAutomation' }, (result: any) => {
+              if (result && result.success) {
+                toast.success('🚀 تم فتح تقاضي! سيتم ملء البيانات تلقائياً');
+              } else {
+                toast.error('فشل فتح تقاضي، حاول مرة أخرى');
+              }
+              setIsAutomating(false);
+            });
+          } else {
+            toast.error('فشل حفظ البيانات');
+            setIsAutomating(false);
+          }
         });
-
-        window.open(result.liveUrl, '_blank', 'width=1400,height=900');
-        
-        toast.success('🚀 تم فتح المتصفح السحابي! سجّل الدخول عبر توثيق.');
       } else {
-        throw new Error(result.error || 'فشل في بدء الأتمتة');
+        // الإضافة غير مثبتة - فتح تقاضي يدوياً
+        toast.info('⚠️ الإضافة غير مثبتة. سيتم فتح تقاضي يدوياً');
+        window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
+        setIsAutomating(false);
       }
+
     } catch (error: any) {
       console.error('Automation error:', error);
       toast.error(`فشل بدء الأتمتة: ${error.message}`);
-    } finally {
       setIsAutomating(false);
     }
-  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl]);
+  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl, calculations]);
 
   // إلغاء جلسة الأتمتة
   const cancelAutomation = useCallback(async () => {
@@ -1137,13 +1168,13 @@ ${taqadiData.claims}
             <div className="text-center space-y-4">
               <h3 className="text-lg font-bold">🚀 رفع الدعوى في تقاضي</h3>
               
-              {/* زر الأتمتة الرئيسي */}
+              {/* زر الأتمتة المحلي */}
               <div className="mb-4">
-                <Button 
-                  size="lg" 
-                  onClick={startAutomation}
+                <Button
+                  size="lg"
+                  onClick={startLocalAutomation}
                   disabled={isAutomating || !taqadiData}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-6 text-lg shadow-lg"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-6 text-lg shadow-lg"
                 >
                   {isAutomating ? (
                     <>
@@ -1153,62 +1184,25 @@ ${taqadiData.claims}
                   ) : (
                     <>
                       <Sparkles className="h-6 w-6 ml-2" />
-                      🤖 رفع تلقائي (Browserbase)
+                      🚀 رفع تلقائي (متصفحك المحلي)
                     </>
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
-                  سيتم تنظيف الجلسات القديمة تلقائياً
+                  يعمل في متصفحك المحلي - لا يحتاج IP قطري
                 </p>
               </div>
 
               {/* حالة الأتمتة */}
-              {automationSession && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4 space-y-3">
-                  <div className="flex items-center justify-between">
+              {isAutomating && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                  <div className="flex items-center gap-3">
+                    <LoadingSpinner className="h-5 w-5 text-blue-600" />
                     <div>
-                      <p className="font-medium text-green-800">✅ المتصفح السحابي جاهز!</p>
-                      <p className="text-sm text-green-600">افتح المتصفح ثم انسخ رابط تقاضي للشريط</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(automationSession.liveUrl, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4 ml-1" />
-                        فتح المتصفح
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={cancelAutomation}
-                      >
-                        إلغاء
-                      </Button>
+                      <p className="font-medium text-blue-800">جاري الأتمتة...</p>
+                      <p className="text-sm text-blue-600">سيتم فتح تقاضي وملء البيانات تلقائياً</p>
                     </div>
                   </div>
-                  
-                  {/* زر نسخ رابط تقاضي */}
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <input 
-                      type="text" 
-                      value="https://taqadi.sjc.gov.qa/itc/" 
-                      readOnly 
-                      className="flex-1 px-3 py-2 text-sm bg-white border rounded-md text-left dir-ltr"
-                    />
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText('https://taqadi.sjc.gov.qa/itc/');
-                        toast.success('تم نسخ رابط تقاضي! الصقه في شريط عنوان المتصفح السحابي');
-                      }}
-                    >
-                      <Copy className="h-4 w-4 ml-1" />
-                      نسخ الرابط
-                    </Button>
-                  </div>
-                  <p className="text-xs text-blue-600">💡 انسخ الرابط والصقه في شريط العنوان في المتصفح السحابي</p>
                 </div>
               )}
 
