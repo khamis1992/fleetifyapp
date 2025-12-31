@@ -375,8 +375,8 @@ async function createBrowserSession(retryCount = 0): Promise<{ sessionId: string
         screen: { width: 1920, height: 1080 },
       },
     },
-    keepAlive: false,
-    timeout: 600, // 10 دقائق فقط
+    keepAlive: true, // إبقاء الجلسة مفتوحة حتى يتفاعل المستخدم
+    timeout: 1800, // 30 دقيقة
   };
   
   console.log("[Taqadi] Request body:", JSON.stringify(requestBody));
