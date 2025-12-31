@@ -47,31 +47,42 @@ interface AutomationRequest {
 
 // إنشاء جلسة متصفح جديدة
 async function createBrowserSession(): Promise<{ sessionId: string; connectUrl: string; liveUrl: string }> {
+  console.log("[Taqadi] Creating Browserbase session...");
+  console.log("[Taqadi] Project ID:", BROWSERBASE_PROJECT_ID);
+  
+  const requestBody = {
+    projectId: BROWSERBASE_PROJECT_ID,
+    browserSettings: {
+      fingerprint: {
+        locales: ["ar-QA", "ar"],
+        screen: { width: 1920, height: 1080 },
+      },
+    },
+    keepAlive: true,
+    timeout: 1800000, // 30 دقيقة
+  };
+  
+  console.log("[Taqadi] Request body:", JSON.stringify(requestBody));
+  
   const response = await fetch("https://www.browserbase.com/v1/sessions", {
     method: "POST",
     headers: {
       "x-bb-api-key": BROWSERBASE_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      projectId: BROWSERBASE_PROJECT_ID,
-      browserSettings: {
-        fingerprint: {
-          locales: ["ar-QA", "ar"],
-          screen: { width: 1920, height: 1080 },
-        },
-      },
-      keepAlive: true,
-      timeout: 1800000, // 30 دقيقة
-    }),
+    body: JSON.stringify(requestBody),
   });
 
+  console.log("[Taqadi] Browserbase response status:", response.status);
+
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to create browser session: ${error}`);
+    const errorText = await response.text();
+    console.error("[Taqadi] Browserbase error:", errorText);
+    throw new Error(`Browserbase error (${response.status}): ${errorText}`);
   }
 
   const session = await response.json();
+  console.log("[Taqadi] Session created successfully:", session.id);
   
   return {
     sessionId: session.id,
@@ -522,6 +533,7 @@ serve(async (req) => {
 
   try {
     const request: AutomationRequest = await req.json();
+    console.log("[Taqadi] Received request:", JSON.stringify({ action: request.action, hasLawsuitData: !!request.lawsuitData }));
 
     switch (request.action) {
       case "start": {
