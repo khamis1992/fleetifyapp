@@ -206,7 +206,7 @@ export default function LawsuitPreparationPage() {
 
   // توليد بيانات تقاضي
   useEffect(() => {
-    if (contract && calculations.total > 0) {
+    if (contract) {
       const customer = contract.customers as any;
       const vehicle = contract.vehicles as any;
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
@@ -549,7 +549,10 @@ ${taqadiData.claims}
 
   // رفع عقد الإيجار
   const uploadContractFile = useCallback(async (file: File) => {
-    if (!companyId || !contractId) return;
+    if (!companyId || !contractId) {
+      toast.error('جاري تحميل بيانات الشركة... يرجى الانتظار');
+      return;
+    }
     
     setIsUploadingContract(true);
     try {
@@ -578,8 +581,12 @@ ${taqadiData.claims}
 
   // توليد المذكرة الشارحة بالتنسيق الموحد
   const generateExplanatoryMemo = useCallback(() => {
-    if (!taqadiData || !contract) {
-      toast.error('لا توجد بيانات كافية لتوليد المذكرة');
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
+      return;
+    }
+    if (!taqadiData) {
+      toast.error('جاري تجهيز بيانات الدعوى... يرجى الانتظار لحظة');
       return;
     }
 
@@ -621,6 +628,11 @@ ${taqadiData.claims}
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
+      return;
+    }
+    
     const customer = (contract as any)?.customers;
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
@@ -651,6 +663,10 @@ ${taqadiData.claims}
 
   // توليد كشف المطالبات (الفواتير المتأخرة + المخالفات المرورية)
   const generateClaimsStatement = useCallback(() => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
+      return;
+    }
     if (!overdueInvoices.length && !trafficViolations.length) {
       toast.error('لا توجد فواتير متأخرة أو مخالفات مرورية');
       return;
@@ -730,10 +746,11 @@ ${taqadiData.claims}
   const missingDocs = requiredDocs.filter(type => !getDocByType(type));
   const allDocsReady = missingDocs.length === 0;
 
-  if (companyLoading || contractLoading || invoicesLoading) {
+  if (companyLoading || contractLoading || invoicesLoading || violationsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner />
+        <span className="mr-2 text-muted-foreground">جاري تحميل البيانات...</span>
       </div>
     );
   }
