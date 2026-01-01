@@ -1386,6 +1386,63 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           </div>
         </CardContent>
       </Card>
+
+      {/* تفصيل المبالغ المالية - يظهر فقط إذا كان المدفوع أكبر من قيمة العقد */}
+      {(contract.total_paid || 0) > (contract.contract_amount || 0) && (
+        <Card className="bg-amber-50 border-amber-200 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="w-5 h-5" />
+              تفصيل المبالغ المالية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-white rounded-lg p-4 space-y-4">
+              <p className="text-sm text-amber-700 mb-4">
+                المبلغ المدفوع ({formatCurrency(contract.total_paid || 0)}) يتجاوز قيمة العقد الأساسية ({formatCurrency(contract.contract_amount || 0)}).
+                الفرق ({formatCurrency((contract.total_paid || 0) - (contract.contract_amount || 0))}) قد يشمل:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-blue-700 font-semibold mb-2">
+                    <FileText className="w-4 h-4" />
+                    قيمة العقد الأساسية
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(contract.contract_amount || 0)}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {contract.monthly_amount ? `${Math.ceil((contract.contract_amount || 0) / contract.monthly_amount)} دفعة × ${formatCurrency(contract.monthly_amount)}` : ''}
+                  </div>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-700 font-semibold mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    مبالغ إضافية
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {formatCurrency((contract.total_paid || 0) - (contract.contract_amount || 0))}
+                  </div>
+                  <div className="text-xs text-orange-600 mt-1">
+                    غرامات تأخير، مخالفات، رسوم أخرى
+                  </div>
+                </div>
+              </div>
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-semibold">إجمالي المدفوعات</span>
+                  <span className="text-xl font-bold text-green-600">
+                    {formatCurrency(contract.total_paid || 0)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 للاطلاع على تفاصيل كل دفعة، يرجى مراجعة تبويب "جدول الدفعات" أعلاه.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
