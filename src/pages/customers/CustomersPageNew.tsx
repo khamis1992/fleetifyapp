@@ -85,7 +85,6 @@ import {
   CustomerCSVUpload,
   CustomerSplitView,
 } from '@/components/customers';
-import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
 import { exportTableToCSV } from '@/utils/exports/csvExport';
 
 // ===== بطاقة العميل =====
@@ -300,9 +299,6 @@ const CustomersPageNew: React.FC = () => {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid'); // View mode toggle
   
-  // Side Panel State
-  const [sidePanelOpen, setSidePanelOpen] = useState(false);
-  const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
   
   // Smart Filter State
   const [smartFilter, setSmartFilter] = useState<string>('all');
@@ -368,15 +364,13 @@ const CustomersPageNew: React.FC = () => {
 
   // Handlers
   const handleViewCustomer = useCallback((customer: Customer) => {
-    // فتح Side Panel بدلاً من الانتقال لصفحة أخرى
-    setSelectedCustomerForPanel(customer.id);
-    setSidePanelOpen(true);
-  }, []);
+    // الانتقال إلى صفحة تفاصيل العميل
+    navigate(`/customers/${customer.id}`);
+  }, [navigate]);
 
   const handleViewCustomerDetails = useCallback((customerId: string) => {
-    setSelectedCustomerForPanel(customerId);
-    setSidePanelOpen(true);
-  }, []);
+    navigate(`/customers/${customerId}`);
+  }, [navigate]);
 
   const handleSmartFilterChange = useCallback((filter: string) => {
     setSmartFilter(filter);
@@ -735,36 +729,6 @@ const CustomersPageNew: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Customer Side Panel */}
-      <CustomerSidePanel
-        customerId={selectedCustomerForPanel}
-        isOpen={sidePanelOpen}
-        onClose={() => {
-          setSidePanelOpen(false);
-          setSelectedCustomerForPanel(null);
-        }}
-        onCall={(phone) => {
-          if (phone) window.open(`tel:${phone}`, '_self');
-        }}
-        onAddNote={(customerId) => {
-          // فتح صفحة CRM مع العميل المحدد
-          navigate(`/customers/crm?call=${customerId}`);
-        }}
-        onEdit={(customerId) => {
-          setSidePanelOpen(false);
-          const customer = customers.find(c => c.id === customerId);
-          if (customer) handleEditCustomer(customer);
-        }}
-        onDelete={(customerId) => {
-          setSidePanelOpen(false);
-          const customer = customers.find(c => c.id === customerId);
-          if (customer) handleDeleteCustomer(customer);
-        }}
-        onNewContract={(customerId) => {
-          setSidePanelOpen(false);
-          navigate(`/contracts/new?customer=${customerId}`);
-        }}
-      />
     </div>
   );
 };
