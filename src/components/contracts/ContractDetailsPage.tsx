@@ -266,22 +266,38 @@ const ContractDetailsPage = () => {
     
     const startDate = contract.start_date ? new Date(contract.start_date) : null;
     const endDate = contract.end_date ? new Date(contract.end_date) : null;
-    const daysRemaining = endDate ? Math.max(0, differenceInDays(endDate, new Date())) : 0;
+    const today = new Date();
+    
+    // حساب الأيام
+    const daysRemaining = endDate ? Math.max(0, differenceInDays(endDate, today)) : 0;
     const totalDays = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
+    const daysElapsed = startDate ? Math.max(0, differenceInDays(today, startDate)) : 0;
     const progressPercentage = totalDays > 0 ? Math.min(100, Math.round(((totalDays - daysRemaining) / totalDays) * 100)) : 0;
 
     // حساب عدد الأشهر الفعلية من مدة العقد
     const totalMonths = startDate && endDate 
       ? Math.ceil(differenceInDays(endDate, startDate) / 30) 
       : 0;
+    
+    // حساب الأشهر المنقضية والمتبقية
+    const monthsElapsed = Math.floor(daysElapsed / 30);
+    const monthsRemaining = Math.ceil(daysRemaining / 30);
 
     // حساب عدد الدفعات بناءً على قيمة العقد والمبلغ الشهري
     const monthlyAmount = contract.monthly_amount || 0;
     const totalPayments = monthlyAmount > 0 ? Math.ceil(totalAmount / monthlyAmount) : totalMonths;
     
-    // حساب عدد الدفعات المدفوعة مع الحد الأقصى لتجنب عرض قيم غير منطقية
-    const calculatedPaidPayments = monthlyAmount > 0 ? Math.floor(totalPaid / monthlyAmount) : 0;
-    const paidPayments = Math.min(calculatedPaidPayments, totalPayments);
+    // حساب عدد الدفعات المدفوعة - فقط من قيمة العقد الأساسية
+    // إذا كان المدفوع أكبر من قيمة العقد، فهذا يعني أن جميع الدفعات مكتملة
+    const paidPayments = totalPaid >= totalAmount ? totalPayments : 
+      (monthlyAmount > 0 ? Math.min(Math.floor(totalPaid / monthlyAmount), totalPayments) : 0);
+    
+    // حساب المبالغ الإضافية (غرامات، مخالفات، رسوم)
+    const extraPayments = totalPaid > totalAmount ? totalPaid - totalAmount : 0;
+    
+    // تحديد حالة الدفع
+    const paymentStatus = paidPayments >= totalPayments ? 'completed' : 
+      (paidPayments > 0 ? 'partial' : 'pending');
 
     return {
       totalAmount,
@@ -289,10 +305,16 @@ const ContractDetailsPage = () => {
       totalPaid,
       balanceDue,
       daysRemaining,
+      daysElapsed,
+      totalDays,
       progressPercentage,
       totalPayments,
       paidPayments,
       totalMonths,
+      monthsElapsed,
+      monthsRemaining,
+      extraPayments,
+      paymentStatus,
       hasCheckIn: !!checkInInspection,
       hasCheckOut: !!checkOutInspection,
     };
@@ -723,13 +745,26 @@ const ContractDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-xs text-gray-500">المدة</span>
+                <span className="text-xs text-gray-500">مدة العقد</span>
               </div>
               <div className="text-3xl font-bold text-green-600 mb-1">
                 {contractStats?.totalMonths || 0} شهر
               </div>
-              <div className="text-sm text-gray-600">
-                متبقي: {contractStats?.daysRemaining || 0} يوم
+              <div className="text-sm text-gray-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>المنقضي:</span>
+                  <span className="font-medium">{contractStats?.monthsElapsed || 0} شهر</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>المتبقي:</span>
+                  <span className="font-medium">{contractStats?.monthsRemaining || 0} شهر ({contractStats?.daysRemaining || 0} يوم)</span>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div
+                  className="bg-green-600 h-2 rounded-full transition-all"
+                  style={{ width: `${contractStats?.progressPercentage || 0}%` }}
+                />
               </div>
             </CardContent>
           </Card>
@@ -738,20 +773,45 @@ const ContractDetailsPage = () => {
           <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-orange-600" />
+                <div className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center",
+                  contractStats?.paymentStatus === 'completed' ? 'bg-green-50' : 'bg-orange-50'
+                )}>
+                  <CreditCard className={cn(
+                    "w-5 h-5",
+                    contractStats?.paymentStatus === 'completed' ? 'text-green-600' : 'text-orange-600'
+                  )} />
                 </div>
-                <span className="text-xs text-gray-500">حالة الدفع</span>
+                <span className="text-xs text-gray-500">حالة السداد</span>
               </div>
-              <div className="text-3xl font-bold text-orange-600 mb-1">
-                {contractStats?.paidPayments}/{contractStats?.totalPayments}
+              <div className={cn(
+                "text-3xl font-bold mb-1",
+                contractStats?.paymentStatus === 'completed' ? 'text-green-600' : 'text-orange-600'
+              )}>
+                {contractStats?.paidPayments} / {contractStats?.totalPayments}
               </div>
-              <div className="text-sm text-gray-600 mb-2">
-                متبقي: {formatCurrency(contractStats?.balanceDue || 0)}
+              <div className="text-sm text-gray-600 mb-1">
+                {contractStats?.paymentStatus === 'completed' ? (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    تم سداد جميع الدفعات
+                  </span>
+                ) : (
+                  <span>{contractStats?.paidPayments || 0} دفعة من {contractStats?.totalPayments || 0}</span>
+                )}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              {/* عرض المبالغ الإضافية إن وجدت */}
+              {(contractStats?.extraPayments || 0) > 0 && (
+                <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded mt-2">
+                  + {formatCurrency(contractStats?.extraPayments || 0)} مبالغ إضافية
+                </div>
+              )}
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                 <div
-                  className="bg-orange-600 h-2 rounded-full transition-all"
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    contractStats?.paymentStatus === 'completed' ? 'bg-green-600' : 'bg-orange-600'
+                  )}
                   style={{
                     width: `${contractStats?.totalPayments && contractStats.totalPayments > 0
                       ? Math.round((contractStats.paidPayments / contractStats.totalPayments) * 100)
@@ -1374,10 +1434,40 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <InfoRow label="القيمة الإجمالية" value={formatCurrency(contract.contract_amount || 0)} />
+          <InfoRow label="قيمة العقد الأساسية" value={formatCurrency(contract.contract_amount || 0)} />
           <InfoRow label="المبلغ الشهري" value={formatCurrency(contract.monthly_amount || 0)} />
-          <InfoRow label="المدفوع" value={formatCurrency(contract.total_paid || 0)} />
-          <InfoRow label="المتبقي" value={formatCurrency((contract.contract_amount || 0) - (contract.total_paid || 0))} />
+          <InfoRow 
+            label="إجمالي المدفوع" 
+            value={
+              <span className="flex items-center gap-2">
+                {formatCurrency(contract.total_paid || 0)}
+                {(contract.total_paid || 0) > (contract.contract_amount || 0) && (
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                    يشمل مبالغ إضافية
+                  </span>
+                )}
+              </span>
+            } 
+          />
+          {/* عرض المتبقي بشكل واضح */}
+          {(contract.contract_amount || 0) > (contract.total_paid || 0) ? (
+            <InfoRow 
+              label="المتبقي من قيمة العقد" 
+              value={
+                <span className="text-red-600 font-semibold">
+                  {formatCurrency((contract.contract_amount || 0) - (contract.total_paid || 0))}
+                </span>
+              } 
+            />
+          ) : (
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">حالة العقد</span>
+              <span className="flex items-center gap-1 text-green-600 font-semibold">
+                <CheckCircle className="w-4 h-4" />
+                تم سداد قيمة العقد بالكامل
+              </span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-gray-300">
             <span className="text-gray-900 font-semibold">الحساب المحاسبي</span>
             <span className="font-semibold text-red-600">
