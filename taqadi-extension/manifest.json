@@ -1,13 +1,24 @@
 {
   "manifest_version": 3,
   "name": "أتمتة تقاضي - العراف",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "ملء نماذج الدعاوى في تقاضي تلقائياً من نظام العراف",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "host_permissions": [
     "https://taqadi.sjc.gov.qa/*",
-    "https://www.alaraf.online/*"
+    "https://www.alaraf.online/*",
+    "https://alaraf.online/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "externally_connectable": {
+    "matches": [
+      "https://www.alaraf.online/*",
+      "https://alaraf.online/*",
+      "http://localhost:*/*"
+    ]
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "أتمتة تقاضي 🚗"
@@ -18,6 +29,10 @@
       "js": ["content.js"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }
-

@@ -406,6 +406,7 @@ ${taqadiData.claims}
   }, [taqadiData, contract]);
 
   // بدء الأتمتة المحلية (في متصفح المستخدم)
+  // بدء الأتمتة المحلية (في متصفح المستخدم)
   const startLocalAutomation = useCallback(async () => {
     if (!taqadiData || !contract) {
       toast.error('لا توجد بيانات للدعوى');
@@ -464,70 +465,30 @@ ${taqadiData.claims}
           documentsList: docsListUrl,
           claimsStatement: claimsStatementUrl
         },
+        savedAt: new Date().toISOString(),
         extractedAt: new Date().toISOString(),
         pageUrl: window.location.href
       };
 
       // حفظ في localStorage للإضافة
       localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(lawsuitData));
-
-      // إرسال للإضافة مباشرة
-      // @ts-ignore - Chrome extension API
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        // @ts-ignore
-        chrome.runtime.sendMessage({
-          action: 'saveLawsuitData',
-          data: lawsuitData
-        }, (response: any) => {
-          if (chrome.runtime.lastError) {
-            console.error('Chrome extension error:', chrome.runtime.lastError);
-            toast.error('تأكد من تثبيت الإضافة المحدثة');
-            setIsAutomating(false);
-            return;
-          }
-
-          if (response && response.success) {
-            toast.success('✅ تم حفظ البيانات! جاري فتح تقاضي...');
-
-            // @ts-ignore
-            chrome.runtime.sendMessage({
-              action: 'autoFill',
-              data: lawsuitData
-            }, (result: any) => {
-              if (chrome.runtime.lastError) {
-                console.error('خطأ في بدء الأتمتة:', chrome.runtime.lastError);
-                toast.error('فشل بدء الأتمتة، حاول مرة أخرى');
-                setIsAutomating(false);
-                return;
-              }
-
-              console.log('[العراف] نتيجة بدء الأتمتة:', result);
-
-              if (result && result.success) {
-                toast.success('🚀 تم فتح تقاضي! سيتم ملء البيانات ورفع الملفات تلقائياً');
-              } else {
-                toast.error('فشل بدء الأتمتة، حاول مرة أخرى');
-              }
-              setIsAutomating(false);
-            });
-          } else {
-            toast.error('فشل حفظ البيانات');
-            setIsAutomating(false);
-          }
-        });
-      } else {
-        // الإضافة غير مثبتة - فتح تقاضي يدوياً
-        toast.info('⚠️ الإضافة غير مثبتة. سيتم فتح تقاضي يدوياً');
-        window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
-        setIsAutomating(false);
-      }
+      
+      // عرض تعليمات للمستخدم
+      toast.info(
+        '📋 تم حفظ البيانات! بعد تسجيل الدخول في تقاضي، اضغط على زر 🚗 لملء النموذج تلقائياً',
+        { duration: 8000 }
+      );
+      
+      // فتح تقاضي
+      window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
+      setIsAutomating(false);
 
     } catch (error: any) {
       console.error('Automation error:', error);
       toast.error(`فشل بدء الأتمتة: ${error.message}`);
       setIsAutomating(false);
     }
-  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl, calculations]);
+  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl, calculations, docsListUrl, claimsStatementUrl]);
 
   // إلغاء جلسة الأتمتة
   const cancelAutomation = useCallback(async () => {
