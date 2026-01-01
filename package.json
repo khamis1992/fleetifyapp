@@ -154,6 +154,7 @@
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
+    "lovable-tagger": "^1.1.13",
     "lucide-react": "^0.544.0",
     "moment-hijri": "^3.0.0",
     "morgan": "^1.10.1",

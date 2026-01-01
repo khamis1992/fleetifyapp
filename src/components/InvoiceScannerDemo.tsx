@@ -138,72 +138,72 @@ const InvoiceScannerDemo: React.FC = () => {
   };
 
   return (
-    <div className=\"max-w-7xl mx-auto p-6 space-y-6\">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <Card className=\"bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200\">
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
-          <CardTitle className=\"flex items-center gap-3 text-2xl\">
-            <div className=\"p-2 bg-blue-500 rounded-lg\">
-              <Brain className=\"h-6 w-6 text-white\" />
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-blue-500 rounded-lg">
+              <Brain className="h-6 w-6 text-white" />
             </div>
             نظام مسح الفواتير الذكي - عرض توضيحي
-            <Badge className=\"bg-gradient-to-r from-blue-500 to-purple-600 text-white\">
-              <Sparkles className=\"h-3 w-3 mr-1\" />
+            <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              <Sparkles className="h-3 w-3 mr-1" />
               AI Demo
             </Badge>
           </CardTitle>
-          <p className=\"text-gray-600\">
+          <p className="text-gray-600">
             عرض توضيحي شامل لقدرات النظام في التعرف الضوئي، معالجة اللغات الطبيعية، والتطابق الضبابي
           </p>
         </CardHeader>
       </Card>
 
       {/* Stats Overview */}
-      <div className=\"grid grid-cols-1 md:grid-cols-4 gap-4\">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className=\"pt-6\">
-            <div className=\"flex items-center justify-between\">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className=\"text-sm font-medium text-gray-600\">إجمالي المسحات</p>
-                <p className=\"text-2xl font-bold text-blue-600\">{stats.total}</p>
+                <p className="text-sm font-medium text-gray-600">إجمالي المسحات</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
               </div>
-              <FileText className=\"h-8 w-8 text-blue-500\" />
+              <FileText className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className=\"pt-6\">
-            <div className=\"flex items-center justify-between\">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className=\"text-sm font-medium text-gray-600\">معدل النجاح</p>
-                <p className=\"text-2xl font-bold text-green-600\">{stats.successRate}%</p>
+                <p className="text-sm font-medium text-gray-600">معدل النجاح</p>
+                <p className="text-2xl font-bold text-green-600">{stats.successRate}%</p>
               </div>
-              <Target className=\"h-8 w-8 text-green-500\" />
+              <Target className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className=\"pt-6\">
-            <div className=\"flex items-center justify-between\">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className=\"text-sm font-medium text-gray-600\">دقة التعرف</p>
-                <p className=\"text-2xl font-bold text-purple-600\">{stats.avgOcrConfidence}%</p>
+                <p className="text-sm font-medium text-gray-600">دقة التعرف</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.avgOcrConfidence}%</p>
               </div>
-              <Eye className=\"h-8 w-8 text-purple-500\" />
+              <Eye className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className=\"pt-6\">
-            <div className=\"flex items-center justify-between\">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className=\"text-sm font-medium text-gray-600\">دقة التطابق</p>
-                <p className=\"text-2xl font-bold text-orange-600\">{stats.avgMatchConfidence}%</p>
+                <p className="text-sm font-medium text-gray-600">دقة التطابق</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.avgMatchConfidence}%</p>
               </div>
-              <Cpu className=\"h-8 w-8 text-orange-500\" />
+              <Cpu className="h-8 w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -211,48 +211,48 @@ const InvoiceScannerDemo: React.FC = () => {
 
       {/* Main Demo Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className=\"grid w-full grid-cols-3\">
-          <TabsTrigger value=\"demo\" className=\"flex items-center gap-2\">
-            <TestTube className=\"h-4 w-4\" />
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="demo" className="flex items-center gap-2">
+            <TestTube className="h-4 w-4" />
             عرض تفاعلي
           </TabsTrigger>
-          <TabsTrigger value=\"text-analysis\" className=\"flex items-center gap-2\">
-            <Languages className=\"h-4 w-4\" />
+          <TabsTrigger value="text-analysis" className="flex items-center gap-2">
+            <Languages className="h-4 w-4" />
             تحليل النصوص
           </TabsTrigger>
-          <TabsTrigger value=\"history\" className=\"flex items-center gap-2\">
-            <FileText className=\"h-4 w-4\" />
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
             سجل المسح
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value=\"demo\" className=\"space-y-6\">
+        <TabsContent value="demo" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className=\"flex items-center gap-2\">
-                <Zap className=\"h-5 w-5\" />
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
                 اختبر النظام مع عينات متنوعة
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {sampleInvoices.map((invoice, index) => (
-                  <Card key={index} className=\"border-dashed border-2 hover:border-blue-400 transition-colors\">
-                    <CardContent className=\"pt-6\">
-                      <div className=\"text-center space-y-3\">
-                        <h3 className=\"font-semibold\">{invoice.name}</h3>
-                        <p className=\"text-sm text-gray-600\">{invoice.description}</p>
-                        <div className=\"text-xs text-gray-500 bg-gray-50 p-2 rounded\">
+                  <Card key={index} className="border-dashed border-2 hover:border-blue-400 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="text-center space-y-3">
+                        <h3 className="font-semibold">{invoice.name}</h3>
+                        <p className="text-sm text-gray-600">{invoice.description}</p>
+                        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
                           <div>العميل: {invoice.mockData.customer_name}</div>
                           <div>المركبة: {invoice.mockData.car_number}</div>
                           <div>المبلغ: {invoice.mockData.total_amount} د.ك</div>
                         </div>
                         <Button 
                           onClick={() => handleDemoScan(invoice.mockData)}
-                          className=\"w-full\"
-                          variant=\"outline\"
+                          className="w-full"
+                          variant="outline"
                         >
-                          <Brain className=\"h-4 w-4 mr-2\" />
+                          <Brain className="h-4 w-4 mr-2" />
                           اختبار المسح
                         </Button>
                       </div>
@@ -262,52 +262,52 @@ const InvoiceScannerDemo: React.FC = () => {
               </div>
               
               {isScanning && (
-                <div className=\"mt-6\">
+                <div className="mt-6">
                   <Alert>
-                    <Cpu className=\"h-4 w-4\" />
+                    <Cpu className="h-4 w-4" />
                     <AlertDescription>
                       جاري معالجة الفاتورة بالذكاء الاصطناعي...
                     </AlertDescription>
                   </Alert>
-                  <Progress value={progress} className=\"mt-2\" />
+                  <Progress value={progress} className="mt-2" />
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value=\"text-analysis\" className=\"space-y-6\">
+        <TabsContent value="text-analysis" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className=\"flex items-center gap-2\">
-                <Languages className=\"h-5 w-5\" />
+              <CardTitle className="flex items-center gap-2">
+                <Languages className="h-5 w-5" />
                 محلل النصوص المتقدم
               </CardTitle>
             </CardHeader>
-            <CardContent className=\"space-y-4\">
+            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor=\"test-text\">أدخل نص لتحليله (عربي، إنجليزي، أو مختلط)</Label>
+                <Label htmlFor="test-text">أدخل نص لتحليله (عربي، إنجليزي، أو مختلط)</Label>
                 <Textarea
-                  id=\"test-text\"
-                  placeholder=\"مثال: فاتورة رقم 123 للعميل محمد أحمد، رقم السيارة ABC-456، المبلغ 100 د.ك لشهر يوليو\"
+                  id="test-text"
+                  placeholder="مثال: فاتورة رقم 123 للعميل محمد أحمد، رقم السيارة ABC-456، المبلغ 100 د.ك لشهر يوليو"
                   value={testText}
                   onChange={(e) => setTestText(e.target.value)}
-                  className=\"mt-2 h-32\"
+                  className="mt-2 h-32"
                 />
               </div>
               
               <Button onClick={handleTextAnalysis} disabled={!testText.trim()}>
-                <Brain className=\"h-4 w-4 mr-2\" />
+                <Brain className="h-4 w-4 mr-2" />
                 تحليل النص
               </Button>
               
               {textAnalysis && (
-                <Card className=\"bg-gray-50\">
-                  <CardContent className=\"pt-6\">
-                    <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+                <Card className="bg-gray-50">
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className=\"font-semibold mb-2\">معلومات اللغة</h4>
-                        <div className=\"space-y-1 text-sm\">
+                        <h4 className="font-semibold mb-2">معلومات اللغة</h4>
+                        <div className="space-y-1 text-sm">
                           <div>اللغة المكتشفة: <Badge>{textAnalysis.language}</Badge></div>
                           <div>يحتوي على عربية: {textAnalysis.has_arabic ? '✅' : '❌'}</div>
                           <div>يحتوي على إنجليزية: {textAnalysis.has_english ? '✅' : '❌'}</div>
@@ -316,8 +316,8 @@ const InvoiceScannerDemo: React.FC = () => {
                       </div>
                       
                       <div>
-                        <h4 className=\"font-semibold mb-2\">المعلومات المستخرجة</h4>
-                        <div className=\"space-y-1 text-sm\">
+                        <h4 className="font-semibold mb-2">المعلومات المستخرجة</h4>
+                        <div className="space-y-1 text-sm">
                           <div>أرقام السيارات: {textAnalysis.car_numbers?.join(', ') || 'لا يوجد'}</div>
                           <div>الشهور: {textAnalysis.months?.join(', ') || 'لا يوجد'}</div>
                           <div>المبالغ: {textAnalysis.potential_amounts?.join(', ') || 'لا يوجد'}</div>
@@ -332,32 +332,32 @@ const InvoiceScannerDemo: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value=\"history\" className=\"space-y-6\">
+        <TabsContent value="history" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className=\"flex items-center gap-2\">
-                <FileText className=\"h-5 w-5\" />
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
                 سجل عمليات المسح
               </CardTitle>
             </CardHeader>
             <CardContent>
               {scanHistory.length === 0 ? (
-                <div className=\"text-center py-8 text-gray-500\">
-                  <FileText className=\"h-12 w-12 mx-auto mb-4 opacity-50\" />
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>لا توجد عمليات مسح حتى الآن</p>
-                  <p className=\"text-sm\">جرب المسح في قسم العرض التفاعلي</p>
+                  <p className="text-sm">جرب المسح في قسم العرض التفاعلي</p>
                 </div>
               ) : (
-                <div className=\"space-y-4\">
+                <div className="space-y-4">
                   {scanHistory.map((scan, index) => (
-                    <Card key={scan.id} className=\"border-l-4 border-l-blue-500\">
-                      <CardContent className=\"pt-4\">
-                        <div className=\"flex items-center justify-between mb-3\">
-                          <div className=\"flex items-center gap-2\">
-                            <span className=\"font-medium\">مسح #{index + 1}</span>
-                            <Badge variant=\"outline\">{scan.processing_info.language_detected}</Badge>
+                    <Card key={scan.id} className="border-l-4 border-l-blue-500">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">مسح #{index + 1}</span>
+                            <Badge variant="outline">{scan.processing_info.language_detected}</Badge>
                           </div>
-                          <div className=\"flex items-center gap-2\">
+                          <div className="flex items-center gap-2">
                             <Badge className={getConfidenceBadge(scan.matching.total_confidence)}>
                               {getConfidenceIcon(scan.matching.total_confidence)}
                               {Math.round(scan.matching.total_confidence)}%
@@ -365,27 +365,27 @@ const InvoiceScannerDemo: React.FC = () => {
                           </div>
                         </div>
                         
-                        <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4 text-sm\">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className=\"font-medium\">العميل:</span>
-                            <p className=\"text-gray-600\">{scan.data.customer_name || 'غير محدد'}</p>
+                            <span className="font-medium">العميل:</span>
+                            <p className="text-gray-600">{scan.data.customer_name || 'غير محدد'}</p>
                           </div>
                           <div>
-                            <span className=\"font-medium\">أفضل تطابق:</span>
-                            <p className=\"text-gray-600\">{scan.matching.best_match?.name || 'لا يوجد'}</p>
+                            <span className="font-medium">أفضل تطابق:</span>
+                            <p className="text-gray-600">{scan.matching.best_match?.name || 'لا يوجد'}</p>
                           </div>
                           <div>
-                            <span className=\"font-medium\">دقة التعرف:</span>
-                            <p className=\"text-gray-600\">{scan.processing_info.ocr_confidence}%</p>
+                            <span className="font-medium">دقة التعرف:</span>
+                            <p className="text-gray-600">{scan.processing_info.ocr_confidence}%</p>
                           </div>
                         </div>
                         
                         {scan.matching.best_match?.match_reasons && (
-                          <div className=\"mt-3\">
-                            <span className=\"text-sm font-medium\">أسباب التطابق:</span>
-                            <div className=\"flex flex-wrap gap-1 mt-1\">
-                              {scan.matching.best_match.match_reasons.map((reason, idx) => (
-                                <Badge key={idx} variant=\"secondary\" className=\"text-xs\">
+                          <div className="mt-3">
+                            <span className="text-sm font-medium">أسباب التطابق:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {scan.matching.best_match.match_reasons.map((reason: string, idx: number) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
                                   {reason}
                                 </Badge>
                               ))}

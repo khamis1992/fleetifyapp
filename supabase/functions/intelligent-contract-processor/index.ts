@@ -159,16 +159,17 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error in intelligent-contract-processor:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: errorMessage,
       contract_data: null,
       validation_issues: [],
       auto_fixes: [],
       is_valid: false,
       confidence_score: 0,
-      processing_notes: [`خطأ في المعالجة: ${error.message}`]
+      processing_notes: [`خطأ في المعالجة: ${errorMessage}`]
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -283,7 +284,7 @@ function validateAndFixAmount(amount: any): { isValid: boolean; needsFix: boolea
     if (!isNaN(parsed) && parsed >= 0) {
       return {
         isValid: true,
-        needsFix: parsed !== amount,
+        needsFix: true,
         fixedAmount: parsed
       };
     }
