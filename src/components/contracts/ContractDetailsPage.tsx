@@ -266,14 +266,22 @@ const ContractDetailsPage = () => {
     
     const startDate = contract.start_date ? new Date(contract.start_date) : null;
     const endDate = contract.end_date ? new Date(contract.end_date) : null;
-    const daysRemaining = endDate ? differenceInDays(endDate, new Date()) : 0;
+    const daysRemaining = endDate ? Math.max(0, differenceInDays(endDate, new Date())) : 0;
     const totalDays = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
-    const progressPercentage = totalDays > 0 ? Math.round(((totalDays - daysRemaining) / totalDays) * 100) : 0;
+    const progressPercentage = totalDays > 0 ? Math.min(100, Math.round(((totalDays - daysRemaining) / totalDays) * 100)) : 0;
 
-    // حساب عدد الدفعات
+    // حساب عدد الأشهر الفعلية من مدة العقد
+    const totalMonths = startDate && endDate 
+      ? Math.ceil(differenceInDays(endDate, startDate) / 30) 
+      : 0;
+
+    // حساب عدد الدفعات بناءً على قيمة العقد والمبلغ الشهري
     const monthlyAmount = contract.monthly_amount || 0;
-    const totalPayments = monthlyAmount > 0 ? Math.ceil(totalAmount / monthlyAmount) : 0;
-    const paidPayments = monthlyAmount > 0 ? Math.floor(totalPaid / monthlyAmount) : 0;
+    const totalPayments = monthlyAmount > 0 ? Math.ceil(totalAmount / monthlyAmount) : totalMonths;
+    
+    // حساب عدد الدفعات المدفوعة مع الحد الأقصى لتجنب عرض قيم غير منطقية
+    const calculatedPaidPayments = monthlyAmount > 0 ? Math.floor(totalPaid / monthlyAmount) : 0;
+    const paidPayments = Math.min(calculatedPaidPayments, totalPayments);
 
     return {
       totalAmount,
@@ -284,6 +292,7 @@ const ContractDetailsPage = () => {
       progressPercentage,
       totalPayments,
       paidPayments,
+      totalMonths,
       hasCheckIn: !!checkInInspection,
       hasCheckOut: !!checkOutInspection,
     };
@@ -717,7 +726,7 @@ const ContractDetailsPage = () => {
                 <span className="text-xs text-gray-500">المدة</span>
               </div>
               <div className="text-3xl font-bold text-green-600 mb-1">
-                {contractStats?.totalPayments || 0} شهر
+                {contractStats?.totalMonths || 0} شهر
               </div>
               <div className="text-sm text-gray-600">
                 متبقي: {contractStats?.daysRemaining || 0} يوم
