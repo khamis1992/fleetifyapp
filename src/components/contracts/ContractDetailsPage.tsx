@@ -1793,25 +1793,6 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
             </p>
           </div>
           <div className="flex gap-2">
-            {hasMissingInvoices && (
-              <Button 
-                onClick={handleGenerateInvoicesFromSchedule} 
-                className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    جاري الإنشاء...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4" />
-                    {invoices.length === 0 ? 'إنشاء فواتير تلقائية' : `إكمال الفواتير الناقصة (${missingInvoicesCount})`}
-                  </>
-                )}
-              </Button>
-            )}
             <Button onClick={onCreateInvoice} className="gap-2 bg-red-600 hover:bg-red-700">
               <Plus className="w-4 h-4" />
               إنشاء فاتورة
@@ -1819,16 +1800,7 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
           </div>
         </div>
         
-        {/* تنبيه للفواتير الناقصة */}
-        {hasMissingInvoices && invoices.length > 0 && (
-          <Alert className="border-orange-200 bg-orange-50">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              تنقص هذا العقد <strong>{missingInvoicesCount} فاتورة</strong> من أصل {expectedInvoicesCount} فاتورة متوقعة حسب جدول الدفعات. 
-              يمكنك إنشاء الفواتير الناقصة تلقائياً بالضغط على الزر أعلاه.
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* تم أتمتة توليد الفواتير الناقصة عبر وظيفة تلقائية في قاعدة البيانات تعمل يومياً */}
       </div>
 
       {invoices.length === 0 ? (
