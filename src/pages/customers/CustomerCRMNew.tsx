@@ -292,10 +292,11 @@ export default function CustomerCRMNew() {
   const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
 
   // Use optimized CRM hook - single query with RPC
-  const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId);
+  const { data: crmCustomers = [], isLoading, refetch, error } = useCRMCustomersOptimized(companyId);
 
   // Transform CRM data to compatible formats
   const customers = useMemo(() => {
+    if (!crmCustomers || crmCustomers.length === 0) return [];
     return crmCustomers.map(c => ({
       id: c.customer_id,
       customer_code: c.customer_code,
@@ -305,12 +306,14 @@ export default function CustomerCRMNew() {
       last_name_ar: c.last_name_ar,
       phone: c.phone,
       email: c.email,
+      company_id: companyId || '',
       is_active: c.is_active,
       created_at: c.created_at,
     }));
-  }, [crmCustomers]);
+  }, [crmCustomers, companyId]);
 
   const contracts = useMemo(() => {
+    if (!crmCustomers || crmCustomers.length === 0) return [];
     return crmCustomers
       .filter(c => c.contract_id)
       .map(c => ({
@@ -318,9 +321,42 @@ export default function CustomerCRMNew() {
         contract_number: c.contract_number!,
         customer_id: c.customer_id,
         status: c.contract_status,
-        start_date: c.contract_start_date,
-        end_date: c.contract_end_date,
-        monthly_amount: c.total_invoiced_amount,
+        start_date: c.contract_start_date || '',
+        end_date: c.contract_end_date || '',
+        monthly_amount: c.total_invoiced_amount || 0,
+      }));
+  }, [crmCustomers]);
+
+  // Transform interactions from CRM data
+  const interactions = useMemo(() => {
+    if (!crmCustomers || crmCustomers.length === 0) return [];
+    const allInteractions: any[] = [];
+    crmCustomers.forEach(customer => {
+      if (customer.total_interactions && customer.total_interactions > 0) {
+        allInteractions.push({
+          id: `${customer.customer_id}-last`,
+          customer_id: customer.customer_id,
+          note_type: customer.last_interaction_type,
+          title: `آخر تواصل`,
+          created_at: customer.last_interaction_date,
+        });
+      }
+    });
+    return allInteractions;
+  }, [crmCustomers]);
+
+  // Transform invoices from CRM data
+  const invoices = useMemo(() => {
+    if (!crmCustomers || crmCustomers.length === 0) return [];
+    return crmCustomers
+      .filter(c => c.total_invoices && c.total_invoices > 0)
+      .map(c => ({
+        id: `${c.customer_id}-invoice-summary`,
+        customer_id: c.customer_id,
+        total_amount: c.total_invoiced_amount || 0,
+        paid_amount: c.total_paid_amount || 0,
+        payment_status: getPaymentStatusOptimized(c),
+        due_date: '',
       }));
   }, [crmCustomers]);
 
@@ -449,21 +485,16 @@ export default function CustomerCRMNew() {
 
     switch (activeFilter) {
       case 'late':
-        result = result.filter(c => getPaymentStatusOptimized({
-          customer_id: c.id,
-          created_at: c.created_at,
-          total_invoices: 0,
-          outstanding_amount: 0,
-          overdue_invoices: 0,
-        } as any) === 'late');
+        result = result.filter(c => {
+          const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
+          return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
+        });
         break;
       case 'needs_contact':
         result = result.filter(c => {
-          const lastContact = getLastContactDaysOptimized({
-            customer_id: c.id,
-            created_at: c.created_at,
-            days_since_last_interaction: undefined,
-          } as any);
+          const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
+          if (!crmCustomer) return true;
+          const lastContact = getLastContactDaysOptimized(crmCustomer);
           if (lastContact === null) return true;
           return lastContact > 7;
         });
@@ -479,15 +510,13 @@ export default function CustomerCRMNew() {
       case 'new':
         // Use optimized new customer function
         result = result.filter(c => {
-          return c.is_active && isNewCustomerOptimized({
-            customer_id: c.id,
-            created_at: c.created_at,
-          } as any);
+          const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
+          return c.is_active && crmCustomer && isNewCustomerOptimized(crmCustomer);
         });
         break;
     }
     return result;
-  }, [customers, searchTerm, activeFilter, getLastContactDays, getPaymentStatus, getCustomerContract]);
+  }, [customers, searchTerm, activeFilter, crmCustomers, getCustomerContract]);
 
   // Pagination
   const paginatedCustomers = useMemo(() => {
@@ -1104,29 +1133,25 @@ export default function CustomerCRMNew() {
                 <p className="text-gray-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
               </div>
             ) : (
-              paginatedCustomers.map(customer => (
-                <CustomerRow
-                  key={customer.id}
-                  customer={customer}
-                  contract={getCustomerContract(customer.id)}
-                  lastContact={getLastContactDaysOptimized({
-                    customer_id: customer.id,
-                    created_at: customer.created_at,
-                    days_since_last_interaction: undefined,
-                  } as any)}
-                  paymentStatus={getPaymentStatusOptimized({
-                    customer_id: customer.id,
-                    total_invoices: 0,
-                    outstanding_amount: 0,
-                    overdue_invoices: 0,
-                  } as any)}
-                  isExpanded={expandedId === customer.id}
-                  onToggle={() => handleOpenCustomerPanel(customer.id)}
-                  onCall={() => handleCall(customer)}
-                  onNote={() => openDialog('note', customer.id)}
-                  onWhatsApp={() => handleWhatsApp(customer.phone)}
-                />
-              ))
+              paginatedCustomers.map(customer => {
+                // Find the corresponding CRM customer data
+                const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+                
+                return (
+                  <CustomerRow
+                    key={customer.id}
+                    customer={customer}
+                    contract={getCustomerContract(customer.id)}
+                    lastContact={crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null}
+                    paymentStatus={crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none'}
+                    isExpanded={expandedId === customer.id}
+                    onToggle={() => handleOpenCustomerPanel(customer.id)}
+                    onCall={() => handleCall(customer)}
+                    onNote={() => openDialog('note', customer.id)}
+                    onWhatsApp={() => handleWhatsApp(customer.phone)}
+                  />
+                );
+              })
             )}
           </div>
 
