@@ -37,6 +37,7 @@ import {
   AlertCircle,
   Printer,
   RefreshCw,
+  Bookmark,
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
@@ -1214,6 +1215,57 @@ ${taqadiData.claims}
             </>
           )}
         </Button>
+      </motion.div>
+
+      {/* تعليمات Bookmarklet */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="mt-6"
+      >
+        <Card className="border-dashed border-2 border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                <Bookmark className="h-5 w-5" />
+                أداة الملء التلقائي (Bookmarklet)
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+                بعد الضغط على "رفع تلقائي إلى تقاضي" وتسجيل الدخول في موقع تقاضي،
+                اضغط على هذا الزر في شريط المفضلة لملء النموذج تلقائياً.
+              </p>
+              
+              <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border space-y-3">
+                <p className="text-sm font-medium">طريقة الإضافة:</p>
+                <ol className="text-sm text-right space-y-2 text-muted-foreground">
+                  <li>1. اسحب الزر الأزرق أدناه إلى شريط المفضلة</li>
+                  <li>2. أو انقر بالزر الأيمن واختر "إضافة إلى المفضلة"</li>
+                  <li>3. بعد تسجيل الدخول في تقاضي، اضغط على الزر في المفضلة</li>
+                </ol>
+                
+                <div className="pt-3 border-t">
+                  <a
+                    href={`javascript:(function(){var d=localStorage.getItem('alarafLawsuitDataFull');if(!d){alert('❌ لم يتم العثور على بيانات!\\n\\nاذهب لصفحة تجهيز الدعوى واضغط رفع تلقائي أولاً');return}var data=JSON.parse(d);var copyText='عنوان الدعوى:\\n'+data.title+'\\n\\nالوقائع:\\n'+data.facts+'\\n\\nالطلبات:\\n'+data.claims+'\\n\\nالمبلغ:\\n'+data.amount+'\\n\\nالمبلغ كتابة:\\n'+data.amountInWords;if(confirm('📋 بيانات الدعوى جاهزة!\\n\\nالعنوان: '+data.title+'\\nالمبلغ: '+data.amount+' ر.ق\\n\\nهل تريد نسخ البيانات؟')){navigator.clipboard.writeText(copyText).then(function(){alert('✅ تم نسخ البيانات!\\n\\nالصق في الحقول المناسبة.')}).catch(function(){var t=document.createElement('textarea');t.value=copyText;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ تم نسخ البيانات!')})}})();`}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg cursor-move"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toast.info('اسحب هذا الزر إلى شريط المفضلة في المتصفح', { duration: 5000 });
+                    }}
+                    draggable="true"
+                  >
+                    <Bookmark className="h-4 w-4" />
+                    📋 ملء تقاضي
+                  </a>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 نصيحة: بعد الإضافة، يمكنك الضغط على الزر في أي صفحة في موقع تقاضي
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   );
