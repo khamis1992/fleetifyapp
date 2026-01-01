@@ -465,7 +465,7 @@ export default function CustomerCRMNew() {
     const activeContracts = contracts.length;
 
     return { total: customers.length, late, needsContact, expiring, callsToday, callsThisMonth, newCustomers, activeContracts };
-  }, [crmCustomers, contracts, getPaymentStatusOptimized, getLastContactDaysOptimized, isNewCustomerOptimized]);
+  }, [crmCustomers, contracts, customers]);
 
   // Filtered data - using optimized functions
   const filteredData = useMemo(() => {
@@ -642,13 +642,17 @@ export default function CustomerCRMNew() {
   // طباعة تقرير العملاء المتأخرين
   const handlePrintLateReport = useCallback(() => {
     // جمع بيانات العملاء المتأخرين
-    const lateCustomers = customers.filter(c => getPaymentStatus(c.id) === 'late');
+    const lateCustomers = customers.filter(c => {
+      const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
+      return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
+    });
     
     // حساب إجمالي المستحقات لكل عميل
     const reportData = lateCustomers.map(customer => {
       const customerInvoices = invoices.filter(inv => inv.customer_id === customer.id);
       const contract = getCustomerContract(customer.id);
-      const lastContact = getLastContactDays(customer.id);
+      const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+      const lastContact = crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null;
       
       const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
       const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
@@ -1008,7 +1012,7 @@ export default function CustomerCRMNew() {
     `);
     
     printWindow.document.close();
-  }, [customers, invoices, getPaymentStatus, getCustomerContract, getLastContactDays, toast]);
+  }, [customers, invoices, crmCustomers, getCustomerContract, toast]);
 
   // --- Render ---
   if (isLoading) {
