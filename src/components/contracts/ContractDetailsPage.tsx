@@ -289,15 +289,20 @@ const ContractDetailsPage = () => {
 
     // حساب عدد الدفعات بناءً على قيمة العقد والمبلغ الشهري
     const monthlyAmount = contract.monthly_amount || 0;
-    const totalPayments = monthlyAmount > 0 ? Math.ceil(totalAmount / monthlyAmount) : totalMonths;
     
-    // حساب عدد الدفعات المدفوعة - فقط من قيمة العقد الأساسية
-    // إذا كان المدفوع أكبر من قيمة العقد، فهذا يعني أن جميع الدفعات مكتملة
-    const paidPayments = totalPaid >= totalAmount ? totalPayments : 
-      (monthlyAmount > 0 ? Math.min(Math.floor(totalPaid / monthlyAmount), totalPayments) : 0);
+    // القيمة المتوقعة بناءً على المدة الزمنية
+    const expectedTotalAmount = monthlyAmount * totalMonths;
     
-    // حساب المبالغ الإضافية (غرامات، مخالفات، رسوم)
-    const extraPayments = totalPaid > totalAmount ? totalPaid - totalAmount : 0;
+    // استخدام القيمة الأكبر بين المسجلة والمتوقعة لضمان الدقة
+    const effectiveTotalAmount = Math.max(totalAmount, expectedTotalAmount);
+    
+    const totalPayments = monthlyAmount > 0 ? Math.ceil(effectiveTotalAmount / monthlyAmount) : totalMonths;
+    
+    // حساب عدد الدفعات المدفوعة
+    const paidPayments = monthlyAmount > 0 ? Math.min(Math.floor(totalPaid / monthlyAmount), totalPayments) : 0;
+    
+    // حساب المبالغ الإضافية (فقط إذا تجاوز إجمالي المدفوع القيمة الفعلية القصوى)
+    const extraPayments = totalPaid > effectiveTotalAmount ? totalPaid - effectiveTotalAmount : 0;
     
     // تحديد حالة الدفع
     const paymentStatus = paidPayments >= totalPayments ? 'completed' : 
