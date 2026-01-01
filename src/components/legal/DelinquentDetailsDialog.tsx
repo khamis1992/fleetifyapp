@@ -50,25 +50,74 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && customer?.contract_id) {
+    console.log('🔍 [DelinquentDetailsDialog] useEffect triggered:', {
+      open,
+      contract_id: customer?.contract_id,
+      contract_number: customer?.contract_number,
+      customer_name: customer?.customer_name,
+    });
+    
+    if (open && customer) {
+      // Reset invoices when opening for a new customer
+      setInvoices([]);
       fetchOverdueInvoices();
     }
-  }, [open, customer?.contract_id]);
+  }, [open, customer?.contract_id, customer?.contract_number]);
 
   const fetchOverdueInvoices = async () => {
-    if (!customer?.contract_id) return;
+    // Support both contract_id (UUID) and contract_number
+    const contractId = customer?.contract_id;
+    const contractNumber = customer?.contract_number;
+    
+    console.log('🔍 [DelinquentDetailsDialog] fetchOverdueInvoices:', {
+      contractId,
+      contractNumber,
+      customer_name: customer?.customer_name,
+    });
+    
+    if (!contractId && !contractNumber) {
+      console.warn('⚠️ [DelinquentDetailsDialog] No contract_id or contract_number found');
+      return;
+    }
     
     setLoading(true);
     try {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      const { data, error } = await supabase
+      // Try to fetch by contract_id first, then by contract_number if needed
+      let query = supabase
         .from('invoices')
-        .select('id, invoice_number, due_date, total_amount, paid_amount, payment_status')
-        .eq('contract_id', customer.contract_id)
+        .select('id, invoice_number, due_date, total_amount, paid_amount, payment_status');
+      
+      if (contractId) {
+        query = query.eq('contract_id', contractId);
+      } else if (contractNumber) {
+        // Fallback: Get contract_id from contracts table first
+        const { data: contractData } = await supabase
+          .from('contracts')
+          .select('id')
+          .eq('contract_number', contractNumber)
+          .single();
+        
+        if (contractData?.id) {
+          query = query.eq('contract_id', contractData.id);
+        } else {
+          console.warn('⚠️ [DelinquentDetailsDialog] Could not find contract by number:', contractNumber);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      const { data, error } = await query
         .lt('due_date', todayStr)
         .order('due_date', { ascending: true });
+      
+      console.log('📊 [DelinquentDetailsDialog] Query result:', {
+        count: data?.length || 0,
+        error: error?.message,
+        todayStr,
+      });
 
       if (error) throw error;
 
