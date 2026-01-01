@@ -48,6 +48,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerDetails, CustomerHealthScore } from '@/hooks/useCustomerDetails';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { useCustomerVehicles } from '@/hooks/useCustomerVehicles';
+import { useCustomerTasks } from '@/hooks/useCustomerTasks';
 
 interface CustomerSidePanelProps {
   customerId: string | null;
@@ -271,6 +273,10 @@ export function CustomerSidePanel({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const { data: customer, isLoading, error } = useCustomerDetails(customerId);
+  
+  // Add hooks for vehicles and tasks
+  const { data: vehicles = [] } = useCustomerVehicles(customerId);
+  const { data: tasks = [] } = useCustomerTasks(customerId);
 
   const getFullName = () => {
     if (!customer?.basic) return 'عميل';
@@ -420,8 +426,10 @@ export function CustomerSidePanel({
                     <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">نظرة عامة</TabsTrigger>
                     <TabsTrigger value="financial" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">مالي</TabsTrigger>
                     <TabsTrigger value="contracts" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">عقود</TabsTrigger>
-                    <TabsTrigger value="history" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">تاريخ</TabsTrigger>
-                    <TabsTrigger value="legal" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">قانوني</TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">تاريخ</TabsTrigger>
+                  <TabsTrigger value="vehicles" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">المركبات</TabsTrigger>
+                  <TabsTrigger value="tasks" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">المهام</TabsTrigger>
+                  <TabsTrigger value="legal" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">قانوني</TabsTrigger>
                   </TabsList>
 
                   {/* نظرة عامة */}

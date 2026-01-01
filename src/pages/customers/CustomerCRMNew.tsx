@@ -37,6 +37,8 @@ import { CallDialog } from '@/components/customers/CallDialog';
 import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
 import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
 import { CRMSmartDashboard } from '@/components/customers/CRMSmartDashboard';
+import { CRMErrorBoundary } from '@/components/CRMErrorBoundary';
+import { useCRMCustomersOptimized, getPaymentStatusOptimized, getLastContactDaysOptimized, isNewCustomerOptimized } from '@/hooks/useCRMCustomersOptimized';
 
 // --- الثوابت ---
 const ITEMS_PER_PAGE = 15;
@@ -207,6 +209,16 @@ function CustomerRow({
                 <Hash size={10} /> {contract?.contract_number || customer.customer_code}
               </span>
             </div>
+            {/* Add phone number */}
+            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+              <Phone size={12} className="text-gray-400" />
+              <span className="font-mono">{customer.phone}</span>
+              {isNew && (
+                <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] rounded-full font-medium border border-orange-200">
+                  جديد
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -239,13 +251,14 @@ function CustomerRow({
           <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition shadow-sm" title="ملاحظة">
             <Plus size={18} />
           </button>
-          <button 
-            onClick={onToggle} 
-            className={`p-2.5 ${BRAND_BG} text-white rounded-lg hover:opacity-90 transition shadow-sm`} 
-            title="عرض التفاصيل"
+          <button
+            onClick={onToggle}
+            className={`px-3 py-2 ${BRAND_BG} text-white rounded-lg hover:bg-opacity-90 transition flex items-center gap-1 text-sm font-medium shadow-sm`}
+            title="عرض التفاصيل الشاملة"
           >
-            <ChevronDown size={18} className="transform -rotate-90" />
-                    </button>
+            <ChevronDown size={16} className="transform -rotate-90" />
+            <span>التفاصيل</span>
+          </button>
                   </div>
             </div>
     </motion.div>
@@ -278,73 +291,38 @@ export default function CustomerCRMNew() {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [selectedCustomerForPanel, setSelectedCustomerForPanel] = useState<string | null>(null);
 
-  // Fetch customers
-  const { data: customers = [], isLoading, refetch } = useQuery({
-    queryKey: ['crm-customers', companyId],
-    queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('customers')
-        .select(`
-          id, customer_code, first_name, last_name, first_name_ar, last_name_ar, phone, email,
-          company_id, is_active, created_at
-        `)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+  // Use optimized CRM hook - single query with RPC
+  const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId);
 
-      if (error) throw error;
-      return data as Customer[];
-    },
-    enabled: !!companyId,
-  });
+  // Transform CRM data to compatible formats
+  const customers = useMemo(() => {
+    return crmCustomers.map(c => ({
+      id: c.customer_id,
+      customer_code: c.customer_code,
+      first_name: c.first_name,
+      last_name: c.last_name,
+      first_name_ar: c.first_name_ar,
+      last_name_ar: c.last_name_ar,
+      phone: c.phone,
+      email: c.email,
+      is_active: c.is_active,
+      created_at: c.created_at,
+    }));
+  }, [crmCustomers]);
 
-  // Fetch contracts
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['crm-contracts', companyId],
-    queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('id, contract_number, customer_id, status, start_date, end_date, monthly_amount')
-        .eq('company_id', companyId)
-        .eq('status', 'active');
-      if (error) throw error;
-      return data as Contract[];
-    },
-    enabled: !!companyId,
-  });
-
-  // Fetch follow-ups (interactions)
-  const { data: interactions = [] } = useQuery({
-    queryKey: ['customer-follow-ups', companyId],
-    queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('customer_notes')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as FollowUp[];
-    },
-    enabled: !!companyId,
-  });
-
-  // Fetch invoices
-  const { data: invoices = [] } = useQuery({
-    queryKey: ['crm-invoices', companyId],
-    queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('id, customer_id, total_amount, paid_amount, payment_status, due_date')
-        .eq('company_id', companyId);
-      if (error) throw error;
-      return data as Invoice[];
-    },
-    enabled: !!companyId,
-  });
+  const contracts = useMemo(() => {
+    return crmCustomers
+      .filter(c => c.contract_id)
+      .map(c => ({
+        id: c.contract_id!,
+        contract_number: c.contract_number!,
+        customer_id: c.customer_id,
+        status: c.contract_status,
+        start_date: c.contract_start_date,
+        end_date: c.contract_end_date,
+        monthly_amount: c.total_invoiced_amount,
+      }));
+  }, [crmCustomers]);
 
   // Handle auto-call from URL parameter (e.g., /customers/crm?call=CUSTOMER_ID)
   useEffect(() => {
@@ -405,87 +383,55 @@ export default function CustomerCRMNew() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Helper functions
-  const getCustomerInteractions = useCallback((customerId: string) => {
-    return interactions.filter(i => i.customer_id === customerId);
-  }, [interactions]);
-
-  const getLastContactDays = useCallback((customerId: string) => {
-    const customerInteractions = getCustomerInteractions(customerId);
-    if (customerInteractions.length === 0) return null;
-    const lastContact = new Date(customerInteractions[0].created_at);
-    return differenceInDays(new Date(), lastContact);
-  }, [getCustomerInteractions]);
-
-  const getPaymentStatus = useCallback((customerId: string): string => {
-    const customerInvoices = invoices.filter(inv => inv.customer_id === customerId);
-
-    if (customerInvoices.length === 0) return 'none';
-
-    const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-    const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
-    const totalRemaining = totalAmount - totalPaid;
-
-    const overdueInvoices = customerInvoices.filter(inv => {
-      if (inv.payment_status === 'paid') return false;
-      if (!inv.due_date) return false;
-      return new Date(inv.due_date) < new Date();
-    });
-
-    if (totalRemaining === 0) return 'paid';
-    if (overdueInvoices.length > 0) return 'late';
-    return 'due';
-  }, [invoices]);
-
+  // Helper function for customer contract (kept from original)
   const getCustomerContract = useCallback((customerId: string) => {
     return contracts.find(c => c.customer_id === customerId && c.status === 'active');
   }, [contracts]);
 
   // Stats calculations
+  // Stats calculations - using optimized data from CRM hook
   const stats = useMemo(() => {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    const late = customers.filter(c => getPaymentStatus(c.id) === 'late').length;
+    // Use optimized functions from CRM hook data
+    const late = crmCustomers.filter(c => getPaymentStatusOptimized(c) === 'late').length;
 
-    const needsContact = customers.filter(c => {
-      const lastContact = getLastContactDays(c.id);
+    const needsContact = crmCustomers.filter(c => {
+      const lastContact = getLastContactDaysOptimized(c);
       if (lastContact === null) return true;
       return lastContact > 7;
     }).length;
 
-    const expiring = customers.filter(c => {
-      const contract = getCustomerContract(c.id);
-      if (!contract) return false;
-      const diff = differenceInDays(new Date(contract.end_date), today);
-      return diff < 30 && diff > 0;
+    const expiring = crmCustomers.filter(c => {
+      if (!c.days_until_expiry) return false;
+      const days = c.days_until_expiry;
+      return days < 30 && days > 0;
     }).length;
 
-    const callsToday = interactions.filter(i => {
-      if (!i.created_at) return false;
-      const iDate = new Date(i.created_at);
-      return i.note_type === 'phone' && iDate >= todayStart;
+    const callsToday = crmCustomers.filter(c => {
+      if (!c.last_interaction_date) return false;
+      const iDate = new Date(c.last_interaction_date);
+      return c.last_interaction_type === 'phone' && iDate >= todayStart;
     }).length;
 
     // الاتصالات هذا الشهر
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const callsThisMonth = interactions.filter(i => {
-      if (!i.created_at) return false;
-      const iDate = new Date(i.created_at);
-      return i.note_type === 'phone' && iDate >= monthStart;
+    const callsThisMonth = crmCustomers.filter(c => {
+      if (!c.last_interaction_date) return false;
+      const iDate = new Date(c.last_interaction_date);
+      return c.last_interaction_type === 'phone' && iDate >= monthStart;
     }).length;
 
-    const newCustomers = customers.filter(c => {
-      const customerInteractions = interactions.filter(i => i.customer_id === c.id);
-      return customerInteractions.length === 0;
-    }).length;
+    // New customers (using optimized function)
+    const newCustomers = crmCustomers.filter(c => isNewCustomerOptimized(c)).length;
 
     const activeContracts = contracts.length;
 
     return { total: customers.length, late, needsContact, expiring, callsToday, callsThisMonth, newCustomers, activeContracts };
-  }, [customers, interactions, contracts, getLastContactDays, getPaymentStatus, getCustomerContract]);
+  }, [crmCustomers, contracts, getPaymentStatusOptimized, getLastContactDaysOptimized, isNewCustomerOptimized]);
 
-  // Filtered data
+  // Filtered data - using optimized functions
   const filteredData = useMemo(() => {
     let result = customers;
     const today = new Date();
@@ -503,11 +449,21 @@ export default function CustomerCRMNew() {
 
     switch (activeFilter) {
       case 'late':
-        result = result.filter(c => getPaymentStatus(c.id) === 'late');
+        result = result.filter(c => getPaymentStatusOptimized({
+          customer_id: c.id,
+          created_at: c.created_at,
+          total_invoices: 0,
+          outstanding_amount: 0,
+          overdue_invoices: 0,
+        } as any) === 'late');
         break;
       case 'needs_contact':
         result = result.filter(c => {
-          const lastContact = getLastContactDays(c.id);
+          const lastContact = getLastContactDaysOptimized({
+            customer_id: c.id,
+            created_at: c.created_at,
+            days_since_last_interaction: undefined,
+          } as any);
           if (lastContact === null) return true;
           return lastContact > 7;
         });
@@ -521,14 +477,17 @@ export default function CustomerCRMNew() {
         });
         break;
       case 'new':
+        // Use optimized new customer function
         result = result.filter(c => {
-          const customerInteractions = interactions.filter(i => i.customer_id === c.id);
-          return customerInteractions.length === 0;
+          return c.is_active && isNewCustomerOptimized({
+            customer_id: c.id,
+            created_at: c.created_at,
+          } as any);
         });
         break;
     }
     return result;
-  }, [customers, searchTerm, activeFilter, interactions, getLastContactDays, getPaymentStatus, getCustomerContract]);
+  }, [customers, searchTerm, activeFilter, getLastContactDays, getPaymentStatus, getCustomerContract]);
 
   // Pagination
   const paginatedCustomers = useMemo(() => {
@@ -1035,7 +994,8 @@ export default function CustomerCRMNew() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans" dir="rtl">
+    <CRMErrorBoundary>
+      <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans" dir="rtl">
 
       {/* Top Navigation Bar */}
       <div className="bg-white border-b sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -1149,15 +1109,22 @@ export default function CustomerCRMNew() {
                   key={customer.id}
                   customer={customer}
                   contract={getCustomerContract(customer.id)}
-                  lastContact={getLastContactDays(customer.id)}
-                  paymentStatus={getPaymentStatus(customer.id)}
+                  lastContact={getLastContactDaysOptimized({
+                    customer_id: customer.id,
+                    created_at: customer.created_at,
+                    days_since_last_interaction: undefined,
+                  } as any)}
+                  paymentStatus={getPaymentStatusOptimized({
+                    customer_id: customer.id,
+                    total_invoices: 0,
+                    outstanding_amount: 0,
+                    overdue_invoices: 0,
+                  } as any)}
                   isExpanded={expandedId === customer.id}
                   onToggle={() => handleOpenCustomerPanel(customer.id)}
                   onCall={() => handleCall(customer)}
                   onNote={() => openDialog('note', customer.id)}
                   onWhatsApp={() => handleWhatsApp(customer.phone)}
-                  interactions={getCustomerInteractions(customer.id)}
-                  onQuickUpdate={handleQuickUpdate}
                 />
               ))
             )}
@@ -1314,6 +1281,7 @@ export default function CustomerCRMNew() {
       />
 
     </div>
-  );
-}
+    </CRMErrorBoundary>
+    );
+  }
 

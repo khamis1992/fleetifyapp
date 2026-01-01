@@ -398,18 +398,24 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
   const autoAlerts = useMemo(() => {
     const generatedAlerts: Alert[] = [];
 
-    if (stats.latePayments > 0) {
+    // تنبيه المتأخرين (فقط إذا أكثر من 10% من العملاء)
+    const latePercentage = stats.totalCustomers > 0 
+      ? (stats.latePayments / stats.totalCustomers) * 100 
+      : 0;
+
+    if (stats.latePayments > 0 && latePercentage > 10) {
       generatedAlerts.push({
         id: 'late-payments',
         type: 'urgent',
-        title: `${stats.latePayments} عميل متأخر بالدفع`,
+        title: `${stats.latePayments} عميل متأخر بالدفع (${latePercentage.toFixed(1)}%)`,
         description: 'يحتاجون متابعة عاجلة لتحصيل المستحقات',
         action: 'عرض',
         onClick: () => onStatClick?.('late'),
       });
     }
 
-    if (stats.needsContact > 5) {
+    // تنبيه من يحتاجون اتصال (فقط إذا أكثر من 10 عملاء)
+    if (stats.needsContact > 10) {
       generatedAlerts.push({
         id: 'needs-contact',
         type: 'warning',
@@ -420,10 +426,11 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
       });
     }
 
+    // تنبيه العقود المنتهية قريباً (عاجل إذا أكثر من 5 عقود)
     if (stats.expiringContracts > 0) {
       generatedAlerts.push({
         id: 'expiring',
-        type: 'warning',
+        type: stats.expiringContracts > 5 ? 'urgent' : 'warning',
         title: `${stats.expiringContracts} عقد قريب الانتهاء`,
         description: 'عقود ستنتهي خلال 30 يوم القادمة',
         action: 'مراجعة',
@@ -431,6 +438,19 @@ export function CRMSmartDashboard({ stats, alerts = [], onStatClick }: CRMSmartD
       });
     }
 
+    // تنبيه إذا لا توجد اتصالات هذا الشهر
+    if (stats.callsThisMonth === 0) {
+      generatedAlerts.push({
+        id: 'no-calls',
+        type: 'warning',
+        title: 'لم يتم تسجيل اتصالات هذا الشهر',
+        description: 'تأكد من تسجيل جميع الاتصالات في النظام',
+        action: 'ابدأ التواصل',
+        onClick: () => onStatClick?.('all'),
+      });
+    }
+
+    // تنبيه القضايا القانونية
     if (stats.activeLegalCases && stats.activeLegalCases > 0) {
       generatedAlerts.push({
         id: 'legal',
