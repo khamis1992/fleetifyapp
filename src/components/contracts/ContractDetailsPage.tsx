@@ -92,6 +92,10 @@ import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { FloatingAssistant } from '@/components/employee-assistant';
+import { FinancialDashboard } from './FinancialDashboard';
+import { ContractAlerts } from './ContractAlerts';
+import { TimelineView } from './TimelineView';
+import { QuickActionsButton } from './QuickActionsButton';
 
 /**
  * مكون صفحة تفاصيل العقد الرئيسية
@@ -718,6 +722,19 @@ const ContractDetailsPage = () => {
           </CardContent>
         </Card>
 
+        {/* التنبيهات الذكية */}
+        <ContractAlerts 
+          contract={contract} 
+          trafficViolationsCount={trafficViolations.length}
+          formatCurrency={formatCurrency}
+        />
+
+        {/* لوحة التحكم المالية */}
+        <FinancialDashboard 
+          contract={contract} 
+          formatCurrency={formatCurrency}
+        />
+
         {/* بطاقات الإحصائيات */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* بطاقة المبلغ الإجمالي */}
@@ -1134,7 +1151,11 @@ const ContractDetailsPage = () => {
 
               {/* تبويب الجدول الزمني */}
               <TabsContent value="timeline" className="mt-0">
-                <TimelineTab contract={contract} contractStats={contractStats} />
+                <TimelineView 
+                  contract={contract} 
+                  trafficViolationsCount={trafficViolations.length}
+                  formatCurrency={formatCurrency}
+                />
               </TabsContent>
 
               {/* تبويب سجل النشاط */}
@@ -1307,6 +1328,15 @@ const ContractDetailsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* زر الإجراءات السريعة */}
+      <QuickActionsButton
+        onRecordPayment={() => setIsPayDialogOpen(true)}
+        onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
+        onPrintStatement={handlePrint}
+        onEditContract={handleAmend}
+        onDownloadContract={handleExport}
+      />
 
       {/* مساعد الموظف لإعادة المركبة */}
       <FloatingAssistant 
