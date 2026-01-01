@@ -509,6 +509,92 @@ ${taqadiData.claims}
     }
   }, [automationSession]);
 
+  // إرسال المهمة إلى Manus AI (Browser Operator)
+  const sendToManus = useCallback(async () => {
+    if (!taqadiData || !contract) {
+      toast.error('لا توجد بيانات للدعوى');
+      return;
+    }
+
+    setIsAutomating(true);
+
+    try {
+      const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
+
+      // جمع روابط المستندات
+      const getDocUrl = (type: string) => {
+        const doc = legalDocs.find(d => d.document_type === type);
+        return doc?.file_url;
+      };
+
+      const lawsuitData = {
+        defendant: {
+          name: customer 
+            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+            : 'غير معروف',
+          nationalId: customer?.national_id || '',
+          phone: customer?.phone || ''
+        },
+        texts: {
+          title: taqadiData.caseTitle,
+          facts: taqadiData.facts,
+          claims: taqadiData.claims,
+          amount: taqadiData.amount,
+          amountInWords: taqadiData.amountInWords
+        },
+        amounts: {
+          overdueRent: calculations.overdueRent,
+          lateFees: calculations.lateFees,
+          violations: calculations.violationsFines,
+          otherFees: calculations.otherFees,
+          total: calculations.total,
+          totalInWords: calculations.amountInWords
+        },
+        vehicle: {
+          model: vehicle 
+            ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
+            : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''}`,
+          plate: vehicle?.plate_number || contract.license_plate || '',
+          contractNumber: contract.contract_number
+        },
+        documents: {
+          commercialRegister: getDocUrl('commercial_register'),
+          iban: getDocUrl('iban_certificate'),
+          idCard: getDocUrl('representative_id'),
+          memo: memoUrl,
+          contract: contractFileUrl,
+          documentsList: docsListUrl,
+          claimsStatement: claimsStatementUrl
+        }
+      };
+
+      toast.info('🤖 جاري إرسال المهمة إلى Manus AI...', { duration: 3000 });
+
+      const { data, error } = await supabase.functions.invoke('manus-taqadi', {
+        body: {
+          lawsuitData,
+          useBrowserOperator: true // استخدام Browser Operator (My Browser)
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('🚀 تم إرسال المهمة إلى Manus! سيفتح متصفحك قريباً.', { duration: 5000 });
+        toast.info('💡 راقب متصفحك - Manus سيملأ البيانات تلقائياً', { duration: 8000 });
+      } else {
+        throw new Error(data?.error || 'فشل إرسال المهمة');
+      }
+
+    } catch (error: any) {
+      console.error('Manus error:', error);
+      toast.error(`فشل إرسال المهمة: ${error.message}`);
+    } finally {
+      setIsAutomating(false);
+    }
+  }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl, docsListUrl, claimsStatementUrl, calculations]);
+
   // رفع عقد الإيجار
   const uploadContractFile = useCallback(async (file: File) => {
     if (!companyId || !contractId) {
@@ -1190,30 +1276,53 @@ ${taqadiData.claims}
         </Card>
       </motion.div>
 
-      {/* زر الأتمتة - زر واحد فقط */}
+      {/* أزرار الأتمتة */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="flex justify-center"
+        className="flex flex-col items-center gap-4"
       >
+        {/* زر Manus AI - الرئيسي */}
         <Button
           size="lg"
-          onClick={startLocalAutomation}
+          onClick={sendToManus}
           disabled={isAutomating || !taqadiData}
-          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-12 py-6 text-lg shadow-xl"
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-6 text-lg shadow-xl"
         >
           {isAutomating ? (
             <>
               <LoadingSpinner className="h-5 w-5 ml-2" />
-              جاري فتح تقاضي...
+              جاري الإرسال إلى Manus...
             </>
           ) : (
             <>
               <Sparkles className="h-6 w-6 ml-2" />
-              🚀 رفع تلقائي إلى تقاضي
+              🤖 رفع تلقائي عبر Manus AI
             </>
           )}
+        </Button>
+        <p className="text-sm text-muted-foreground text-center">
+          Manus AI سيفتح متصفحك ويملأ تقاضي تلقائياً
+        </p>
+
+        {/* خط فاصل */}
+        <div className="flex items-center gap-4 w-full max-w-md">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">أو</span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* زر الإضافة المحلية - بديل */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={startLocalAutomation}
+          disabled={isAutomating || !taqadiData}
+          className="text-muted-foreground"
+        >
+          <ExternalLink className="h-4 w-4 ml-2" />
+          استخدام إضافة Chrome المحلية
         </Button>
       </motion.div>
 
