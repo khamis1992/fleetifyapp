@@ -26,8 +26,8 @@ const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
-const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
-const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
+// Customer details pages removed - now using Side Panel
+const CustomerDetailsRedirect = lazy(() => import('@/components/customers/CustomerDetailsRedirect'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
@@ -300,13 +300,14 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
+  // Redirect old customer details URLs to customers list with Side Panel
   {
     path: '/customers/:customerId',
-    component: CustomerDetailsPageNew,
+    component: CustomerDetailsRedirect,
     lazy: true,
     exact: true,
-    title: 'Customer Details',
-    description: 'Customer details page - New Bento Style Design',
+    title: 'Customer Details Redirect',
+    description: 'Redirects to customers list with Side Panel',
     group: 'customers',
     priority: 13,
     protected: true,
@@ -314,11 +315,11 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId/classic',
-    component: CustomerDetailsPage,
+    component: CustomerDetailsRedirect,
     lazy: true,
     exact: true,
-    title: 'Customer Details Classic',
-    description: 'Classic customer details page design',
+    title: 'Customer Details Redirect',
+    description: 'Redirects to customers list with Side Panel',
     group: 'customers',
     priority: 13,
     protected: true,
