@@ -76,10 +76,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true, message: 'User transferred successfully', transferLogId: logData?.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Transfer error:', error)
-    return new Response(JSON.stringify({ success: false, error: error.message || 'Unexpected error' }),
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error'
+    return new Response(JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })
-

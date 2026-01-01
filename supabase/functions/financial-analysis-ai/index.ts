@@ -138,10 +138,11 @@ Please provide a detailed analysis and actionable recommendations.
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in financial analysis AI:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: errorMessage,
       fallback: true 
     }), {
       status: 500,
