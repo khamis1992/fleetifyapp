@@ -88,21 +88,47 @@ export default function LawsuitPreparationPage() {
   const [claimsStatementUrl, setClaimsStatementUrl] = useState<string | null>(null);
 
   // جلب بيانات العقد
-  const { data: contract, isLoading: contractLoading } = useQuery({
+  const { data: contract, isLoading: contractLoading, error: contractError } = useQuery({
     queryKey: ['contract-details', contractId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // جلب بيانات العقد أولاً
+      const { data: contractData, error: contractErr } = await supabase
         .from('contracts')
-        .select(`
-          *,
-          customers(id, first_name, last_name, national_id, phone, email),
-          vehicles(make, model, year, plate_number, color)
-        `)
+        .select('*')
         .eq('id', contractId)
         .single();
       
-      if (error) throw error;
-      return data;
+      if (contractErr) throw contractErr;
+      if (!contractData) throw new Error('لم يتم العثور على العقد');
+
+      // جلب بيانات العميل
+      let customerData = null;
+      if (contractData.customer_id) {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name, national_id, phone, email')
+          .eq('id', contractData.customer_id)
+          .single();
+        customerData = customer;
+      }
+
+      // جلب بيانات السيارة
+      let vehicleData = null;
+      if (contractData.vehicle_id) {
+        const { data: vehicle } = await supabase
+          .from('vehicles')
+          .select('make, model, year, plate_number, color')
+          .eq('id', contractData.vehicle_id)
+          .single();
+        vehicleData = vehicle;
+      }
+
+      // دمج البيانات
+      return {
+        ...contractData,
+        customers: customerData,
+        vehicles: vehicleData,
+      };
     },
     enabled: !!contractId,
   });
