@@ -35,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CallDialog } from '@/components/customers/CallDialog';
 import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
-import { CustomerSidePanel } from '@/components/customers/CustomerSidePanel';
+import { CRMActivityPanel } from '@/components/customers/CRMActivityPanel';
 import { CRMSmartDashboard } from '@/components/customers/CRMSmartDashboard';
 import { CRMErrorBoundary } from '@/components/CRMErrorBoundary';
 import { useCRMCustomersOptimized, getPaymentStatusOptimized, getLastContactDaysOptimized, isNewCustomerOptimized } from '@/hooks/useCRMCustomersOptimized';
@@ -1289,9 +1289,27 @@ export default function CustomerCRMNew() {
         />
       )}
 
-      {/* Customer Side Panel */}
-      <CustomerSidePanel
+      {/* CRM Activity Panel - سجل التفاعلات */}
+      <CRMActivityPanel
         customerId={selectedCustomerForPanel}
+        customerName={(() => {
+          const c = customers.find(cust => cust.id === selectedCustomerForPanel);
+          if (!c) return undefined;
+          const arName = `${c.first_name_ar || ''} ${c.last_name_ar || ''}`.trim();
+          const enName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
+          return arName || enName || c.customer_code;
+        })()}
+        customerPhone={customers.find(c => c.id === selectedCustomerForPanel)?.phone}
+        customerCode={customers.find(c => c.id === selectedCustomerForPanel)?.customer_code}
+        contractNumber={getCustomerContract(selectedCustomerForPanel || '')?.contract_number}
+        paymentStatus={(() => {
+          const crmCustomer = crmCustomers.find(cc => cc.customer_id === selectedCustomerForPanel);
+          return crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none';
+        })()}
+        lastContact={(() => {
+          const crmCustomer = crmCustomers.find(cc => cc.customer_id === selectedCustomerForPanel);
+          return crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null;
+        })()}
         isOpen={sidePanelOpen}
         onClose={() => {
           setSidePanelOpen(false);
@@ -1302,11 +1320,6 @@ export default function CustomerCRMNew() {
           if (customer) handleCall(customer);
         }}
         onWhatsApp={handleWhatsApp}
-        onAddNote={(customerId) => openDialog('note', customerId)}
-        onNewContract={(customerId) => {
-          setSidePanelOpen(false);
-          window.location.href = `/contracts/new?customer=${customerId}`;
-        }}
       />
 
     </div>
