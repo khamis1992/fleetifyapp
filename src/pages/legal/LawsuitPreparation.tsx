@@ -256,12 +256,28 @@ export default function LawsuitPreparationPage() {
   // نسخ نص
   const copyToClipboard = useCallback(async (text: string, field: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      // محاولة استخدام Clipboard API أولاً
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // استخدام طريقة بديلة للمتصفحات القديمة
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
       setCopiedField(field);
       toast.success('تم النسخ!');
       setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
-      toast.error('فشل النسخ');
+      console.error('Copy error:', err);
+      toast.error('فشل النسخ - حاول نسخ كل حقل على حدة');
     }
   }, []);
 
