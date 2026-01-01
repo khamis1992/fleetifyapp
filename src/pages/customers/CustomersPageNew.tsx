@@ -6,8 +6,8 @@
  * @component CustomersPageNew
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -279,7 +279,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, su
 // ===== الصفحة الرئيسية =====
 const CustomersPageNew: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { hasPermission } = useRolePermissions();
@@ -307,18 +306,6 @@ const CustomersPageNew: React.FC = () => {
   
   // Smart Filter State
   const [smartFilter, setSmartFilter] = useState<string>('all');
-
-  // Handle URL query parameter for opening customer panel
-  useEffect(() => {
-    const openCustomerId = searchParams.get('open');
-    if (openCustomerId) {
-      setSelectedCustomerForPanel(openCustomerId);
-      setSidePanelOpen(true);
-      // Remove the query parameter from URL
-      searchParams.delete('open');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   // Filters
   const filters: CustomerFilters = {

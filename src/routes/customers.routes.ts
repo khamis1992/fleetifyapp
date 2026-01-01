@@ -1,9 +1,6 @@
 /**
  * Customers Routes
  * Routes for customer management and CRM
- * 
- * ملاحظة: تم حذف صفحات تفاصيل العميل المنفصلة
- * يتم عرض التفاصيل في Side Panel داخل صفحة العملاء
  */
 
 import { lazy } from 'react';
@@ -12,9 +9,9 @@ import type { RouteConfig } from './types';
 // Lazy loaded components
 const Customers = lazy(() => import('@/pages/Customers'));
 const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
+const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
+const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
-// Redirect component for old customer details URLs
-const CustomerDetailsRedirect = lazy(() => import('@/components/customers/CustomerDetailsRedirect'));
 
 export const customersRoutes: RouteConfig[] = [
   {
@@ -41,14 +38,13 @@ export const customersRoutes: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
-  // Redirect old customer details URLs to customers list
   {
     path: '/customers/:customerId',
-    component: CustomerDetailsRedirect,
+    component: CustomerDetailsPageNew,
     lazy: true,
     exact: true,
-    title: 'إعادة توجيه',
-    description: 'Redirect to customers list',
+    title: 'تفاصيل العميل',
+    description: 'Customer details',
     group: 'customers',
     priority: 22,
     protected: true,
@@ -56,11 +52,11 @@ export const customersRoutes: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId/legacy',
-    component: CustomerDetailsRedirect,
+    component: CustomerDetailsPage,
     lazy: true,
     exact: true,
-    title: 'إعادة توجيه',
-    description: 'Redirect to customers list',
+    title: 'تفاصيل العميل (القديم)',
+    description: 'Legacy customer details',
     group: 'customers',
     priority: 23,
     protected: true,
