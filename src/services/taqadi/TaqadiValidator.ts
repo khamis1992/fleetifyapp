@@ -27,46 +27,47 @@ interface ValidationRule {
  * Validation rules for plaintiff data
  */
 const PLAINTIFF_VALIDATION_RULES: ValidationRule[] = [
+  // Only company name is strictly required - other fields are optional
   { field: 'plaintiff.companyName', required: true },
-  { field: 'plaintiff.companyNameArabic', required: true },
+  { field: 'plaintiff.companyNameArabic', required: false },
   {
     field: 'plaintiff.commercialRegisterNumber',
-    required: true,
-    validate: (v: string) => v && v.length >= 5,
+    required: false,
+    validate: (v: string) => !v || v.length >= 5,
     errorMessage: 'رقم السجل التجاري يجب أن يكون 5 أرقام على الأقل',
-    category: 'invalid',
+    category: 'incomplete',
   },
-  { field: 'plaintiff.address', required: true },
+  { field: 'plaintiff.address', required: false, category: 'incomplete' },
   {
     field: 'plaintiff.phone',
-    required: true,
-    validate: (v: string) => v && /^[+]?[0-9]{8,15}$/.test(v.replace(/\s/g, '')),
+    required: false,
+    validate: (v: string) => !v || /^[+]?[0-9]{8,15}$/.test(v.replace(/\s/g, '')),
     errorMessage: 'رقم الهاتف غير صحيح',
-    category: 'invalid',
+    category: 'incomplete',
   },
   {
     field: 'plaintiff.email',
-    required: true,
-    validate: (v: string) => v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    required: false,
+    validate: (v: string) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
     errorMessage: 'البريد الإلكتروني غير صحيح',
-    category: 'invalid',
+    category: 'incomplete',
   },
   {
     field: 'plaintiff.iban',
-    required: true,
-    validate: (v: string) => v && v.startsWith('QA') && v.length >= 29,
+    required: false,
+    validate: (v: string) => !v || (v.startsWith('QA') && v.length >= 29),
     errorMessage: 'رقم IBAN غير صحيح (يجب أن يبدأ بـ QA ويكون 29 حرف)',
-    category: 'invalid',
+    category: 'incomplete',
   },
-  { field: 'plaintiff.representativeName', required: true },
+  { field: 'plaintiff.representativeName', required: false, category: 'incomplete' },
   {
     field: 'plaintiff.representativeId',
-    required: true,
-    validate: (v: string) => v && v.length >= 5,
+    required: false,
+    validate: (v: string) => !v || v.length >= 5,
     errorMessage: 'رقم الهوية يجب أن يكون 5 أرقام على الأقل',
-    category: 'invalid',
+    category: 'incomplete',
   },
-  { field: 'plaintiff.representativePosition', required: true },
+  { field: 'plaintiff.representativePosition', required: false, category: 'incomplete' },
 ];
 
 /**
@@ -208,9 +209,11 @@ export class TaqadiValidator {
     const score = this.calculateCompletionScore(requiredFields);
 
     // Determine if valid and can submit
+    // Only block submission for critical errors (missing essential fields like case title, facts, claims)
+    // Allow submission even with high severity errors (missing optional fields like address, IBAN)
     const criticalErrors = errors.filter(e => e.severity === 'critical');
     const isValid = criticalErrors.length === 0;
-    const canSubmit = isValid && errors.filter(e => e.severity === 'high').length === 0;
+    const canSubmit = isValid; // Allow submission as long as no critical errors
 
     return {
       isValid,
