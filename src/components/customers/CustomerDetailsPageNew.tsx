@@ -99,6 +99,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ===== Types =====
 interface CustomerDocument {
@@ -549,37 +555,12 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any 
 };
 
 // تبويب الفواتير
-const InvoicesTab = ({ customerId, companyId, navigate }: { customerId: string, companyId: string, navigate: any }) => {
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['customer-invoices', customerId, companyId],
-    queryFn: async () => {
-      if (!customerId || !companyId) return [];
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('customer_id', customerId)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!customerId && !!companyId,
-  });
-
+const InvoicesTab = ({ invoices, navigate }: { invoices: any[], navigate: any }) => {
   const totalOutstanding = useMemo(() => {
     return invoices
       .filter(inv => inv.payment_status !== 'paid')
       .reduce((sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0);
   }, [invoices]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
-      </div>
-    );
-  }
 
   return (
     <motion.div 
@@ -1028,6 +1009,30 @@ const CustomerDetailsPageNew = () => {
   const { data: documents = [] } = useCustomerDocuments(customerId);
   const uploadDocument = useUploadCustomerDocument();
 
+  // جلب الفواتير بشكل منفصل
+  const { data: customerInvoices = [], isLoading: loadingInvoices } = useQuery({
+    queryKey: ['customer-invoices', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          contract:contracts!contract_id(id, contract_number)
+        `)
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        console.error('Error fetching invoices:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
   // جلب المخالفات المرورية
   const { data: trafficViolations = [], isLoading: loadingViolations } = useQuery({
     queryKey: ['customer-traffic-violations-new', customerId, companyId],
@@ -1089,7 +1094,9 @@ const CustomerDetailsPageNew = () => {
   const handleEdit = () => setIsEditDialogOpen(true);
   const handlePrint = () => window.print();
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0 || !customerId) return;
     const file = files[0];
@@ -1097,13 +1104,26 @@ const CustomerDetailsPageNew = () => {
       toast({ title: 'خطأ', description: 'حجم الملف كبير جداً', variant: 'destructive' });
       return;
     }
-    uploadDocument.mutate({
-      customer_id: customerId,
-      document_type: selectedDocumentType,
-      document_name: file.name,
-      file: file,
-    });
-    event.target.value = '';
+    
+    setIsUploading(true);
+    try {
+      await uploadDocument.mutate({
+        customer_id: customerId,
+        document_type: selectedDocumentType,
+        document_name: file.name,
+        file: file,
+      });
+      toast({ title: 'تم الرفع بنجاح', description: 'تم رفع المستند بنجاح' });
+    } catch (error) {
+      toast({ 
+        title: 'فشل الرفع', 
+        description: 'حدث خطأ أثناء رفع المستند',
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
   }, [customerId, selectedDocumentType, uploadDocument, toast]);
 
   // Loading & Error States
@@ -1131,58 +1151,137 @@ const CustomerDetailsPageNew = () => {
   return (
     <div className="min-h-screen bg-neutral-100">
       {/* Header Bar */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 text-neutral-600 hover:text-neutral-900">
-                <ArrowRight className="w-4 h-4" />
-                العودة للقائمة
-              </Button>
-            </div>
+      <TooltipProvider>
+        <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-14">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 text-neutral-600 hover:text-neutral-900">
+                  <ArrowRight className="w-4 h-4" />
+                  العودة للقائمة
+                </Button>
+              </div>
 
-            <div className="flex items-center gap-2">
-              {/* أزرار الإجراءات السريعة */}
-              {customer?.phone && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`tel:${customer.phone}`, '_self')}
-                    className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <Phone className="w-4 h-4" />
-                    اتصال
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`, '_blank')}
-                    className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    واتساب
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/customers/crm?customer=${customerId}`)}
-                className="gap-1.5"
-              >
-                <Activity className="w-4 h-4" />
-                CRM
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/contracts/new?customer=${customerId}`)}
-                className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
-              >
-                <Plus className="w-4 h-4" />
-                عقد جديد
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* أزرار الإجراءات السريعة */}
+                {customer?.phone && (
+                  <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (!customer?.phone) {
+                              toast({ 
+                                  title: 'رقم الهاتف غير متوفر', 
+                                  description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
+                                  variant: 'destructive' 
+                                });
+                              return;
+                            }
+                            window.open(`tel:${customer.phone}`, '_self');
+                          }}
+                          className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          <Phone className="w-4 h-4" />
+                          اتصال
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>اتصال بالعميل مباشرة</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (!customer?.phone) {
+                              toast({ 
+                                  title: 'رقم الهاتف غير متوفر', 
+                                  description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
+                                  variant: 'destructive' 
+                                });
+                              return;
+                            }
+                            const whatsappNumber = customer.whatsapp || customer.phone;
+                            const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
+                            if (!cleanedNumber || cleanedNumber.length < 7) {
+                              toast({ 
+                                  title: 'رقم الهاتف غير صالح', 
+                                  description: 'رقم الهاتف لا يمكن استخدامه مع واتساب',
+                                  variant: 'destructive' 
+                                });
+                              return;
+                            }
+                            window.open(`https://wa.me/${cleanedNumber}`, '_blank');
+                          }}
+                          className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          واتساب
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>مراسلة عبر واتساب</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (!customerId) {
+                                  toast({ 
+                                        title: 'خطأ', 
+                                        description: 'معرف العميل غير متوفر',
+                                        variant: 'destructive' 
+                                      });
+                                  return;
+                                }
+                                navigate(`/customers/crm?customer=${customerId}`);
+                              }}
+                              className="gap-1.5"
+                        >
+                          <Activity className="w-4 h-4" />
+                          CRM
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>إدارة علاقات العميل</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (!customerId) {
+                                  toast({ 
+                                        title: 'خطأ', 
+                                        description: 'معرف العميل غير متوفر',
+                                        variant: 'destructive' 
+                                      });
+                                  return;
+                                }
+                                navigate(`/contracts/new?customer=${customerId}`);
+                              }}
+                              className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
+                        >
+                          <Plus className="w-4 h-4" />
+                          عقد جديد
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>إنشاء عقد جديد لهذا العميل</p>
+                    </TooltipContent>
+                  </Tooltip>
               
               <span className="text-sm text-neutral-500 mr-2">|</span>
               <DropdownMenu>
@@ -1442,10 +1541,22 @@ const CustomerDetailsPageNew = () => {
 
             <div className="p-6">
               <TabsContent value="info" className="mt-0">
-                <PersonalInfoTab customer={customer} />
+                {loadingCustomer ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <PersonalInfoTab customer={customer} />
+                )}
               </TabsContent>
               <TabsContent value="phones" className="mt-0">
-                <PhoneNumbersTab customer={customer} />
+                {loadingCustomer ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <PhoneNumbersTab customer={customer} />
+                )}
               </TabsContent>
               <TabsContent value="contracts" className="mt-0">
                 <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
@@ -1454,19 +1565,31 @@ const CustomerDetailsPageNew = () => {
                 <VehiclesTab contracts={contracts} navigate={navigate} />
               </TabsContent>
               <TabsContent value="invoices" className="mt-0">
-                <InvoicesTab customerId={customerId || ''} companyId={companyId || ''} navigate={navigate} />
+                <InvoicesTab invoices={customerInvoices} navigate={navigate} />
               </TabsContent>
               <TabsContent value="payments" className="mt-0">
                 <PaymentsTab payments={payments} navigate={navigate} />
               </TabsContent>
               <TabsContent value="violations" className="mt-0">
-                <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
+                {loadingViolations ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
+                )}
               </TabsContent>
               <TabsContent value="activity" className="mt-0">
                 <ActivityTab customerId={customerId || ''} companyId={companyId || ''} />
               </TabsContent>
               <TabsContent value="notes" className="mt-0">
-                <NotesTab customer={customer} />
+                {loadingCustomer ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <NotesTab customer={customer} />
+                )}
               </TabsContent>
             </div>
           </Tabs>
@@ -1486,9 +1609,19 @@ const CustomerDetailsPageNew = () => {
               size="sm" 
               className="gap-2"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
             >
-              <Upload className="w-4 h-4" />
-              رفع مستند
+              {isUploading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  جاري الرفع...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  رفع مستند
+                </>
+              )}
             </Button>
             <input
               ref={fileInputRef}
