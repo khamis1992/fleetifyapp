@@ -1322,6 +1322,7 @@ const CustomerDetailsPageNew = () => {
           </div>
         </div>
       </header>
+      </TooltipProvider>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Profile Card */}
