@@ -112,6 +112,131 @@ interface CustomerDocument {
   notes?: string;
 }
 
+// ===== Helper Functions =====
+
+// التحقق من صحة QID قطري (11 رقم)
+const isValidQatarQID = (qid: string | null | undefined): boolean => {
+  if (!qid) return false;
+  const cleanQID = qid.replace(/\D/g, '');
+  return cleanQID.length === 11;
+};
+
+// التحقق من صحة رقم هاتف قطري (يبدأ بـ 3, 5, 6, 7)
+const isValidQatarPhone = (phone: string | null | undefined): boolean => {
+  if (!phone) return false;
+  const cleanPhone = phone.replace(/\D/g, '');
+  // قطر: +974 + 8 أرقام تبدأ بـ 3, 5, 6, 7
+  if (cleanPhone.startsWith('974')) {
+    const localNumber = cleanPhone.substring(3);
+    return localNumber.length === 8 && /^[3567]/.test(localNumber);
+  }
+  return cleanPhone.length === 8 && /^[3567]/.test(cleanPhone);
+};
+
+// ===== Components =====
+
+// مكون تحذيرات البيانات الناقصة
+const MissingDataWarnings = ({ customer }: { customer: any }) => {
+  const { missingFields, invalidFields } = useMemo(() => {
+    const missing: { label: string; priority: 'high' | 'medium' | 'low' }[] = [];
+    const invalid: { label: string; value: string }[] = [];
+    
+    // الحقول المهمة جداً
+    if (!customer.national_id && !customer.qid) {
+      missing.push({ label: 'الهوية الوطنية / QID', priority: 'high' });
+    } else {
+      // التحقق من صحة QID إذا موجود
+      const qid = customer.qid || customer.national_id;
+      if (qid && !isValidQatarQID(qid)) {
+        invalid.push({ label: 'QID غير صحيح', value: qid });
+      }
+    }
+    if (!customer.driver_license) {
+      missing.push({ label: 'رخصة القيادة', priority: 'high' });
+    }
+    
+    // التحقق من صحة الهاتف
+    if (customer.phone && !isValidQatarPhone(customer.phone)) {
+      invalid.push({ label: 'رقم الهاتف غير قياسي', value: customer.phone });
+    }
+    
+    // الحقول متوسطة الأهمية
+    if (!customer.address) {
+      missing.push({ label: 'العنوان', priority: 'medium' });
+    }
+    if (!customer.email) {
+      missing.push({ label: 'البريد الإلكتروني', priority: 'medium' });
+    }
+    if (!customer.date_of_birth) {
+      missing.push({ label: 'تاريخ الميلاد', priority: 'low' });
+    }
+    
+    return { missingFields: missing, invalidFields: invalid };
+  }, [customer]);
+
+  if (missingFields.length === 0 && invalidFields.length === 0) return null;
+
+  const highPriorityCount = missingFields.filter(f => f.priority === 'high').length;
+  const hasIssues = highPriorityCount > 0 || invalidFields.length > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "mb-4 p-4 rounded-xl border flex items-start gap-3",
+        hasIssues ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
+      )}
+    >
+      <AlertTriangle className={cn(
+        "w-5 h-5 mt-0.5",
+        hasIssues ? "text-amber-500" : "text-blue-500"
+      )} />
+      <div className="flex-1">
+        {missingFields.length > 0 && (
+          <>
+            <h4 className={cn(
+              "text-sm font-bold mb-1",
+              hasIssues ? "text-amber-800" : "text-blue-800"
+            )}>
+              بيانات ناقصة ({missingFields.length})
+            </h4>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {missingFields.map((field, idx) => (
+                <Badge
+                  key={idx}
+                  className={cn(
+                    "text-xs",
+                    field.priority === 'high' ? "bg-red-100 text-red-700" :
+                    field.priority === 'medium' ? "bg-amber-100 text-amber-700" :
+                    "bg-neutral-100 text-neutral-600"
+                  )}
+                >
+                  {field.label}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
+        {invalidFields.length > 0 && (
+          <>
+            <h4 className="text-sm font-bold mb-1 text-orange-800">
+              بيانات غير صحيحة ({invalidFields.length})
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {invalidFields.map((field, idx) => (
+                <Badge key={idx} className="text-xs bg-orange-100 text-orange-700">
+                  {field.label}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 // ===== Tab Components =====
 
 // تبويب المعلومات الشخصية
@@ -187,28 +312,70 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
       className="bg-white rounded-2xl p-6 border border-neutral-200"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {phones.map((phone, index) => (
-          <div 
-            key={index} 
-            className="p-4 bg-neutral-50 rounded-xl border border-neutral-100 hover:border-coral-200 transition-colors"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
-                <phone.icon className="w-5 h-5 text-coral-600" />
+        {phones.map((phone, index) => {
+          const isValid = phone.number !== '-' && isValidQatarPhone(phone.number);
+          const hasNumber = phone.number && phone.number !== '-';
+          
+          return (
+            <div 
+              key={index} 
+              className={cn(
+                "p-4 rounded-xl border transition-colors",
+                hasNumber && !isValid 
+                  ? "bg-amber-50 border-amber-200" 
+                  : "bg-neutral-50 border-neutral-100 hover:border-coral-200"
+              )}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    hasNumber && !isValid ? "bg-amber-100" : "bg-coral-100"
+                  )}>
+                    <phone.icon className={cn(
+                      "w-5 h-5",
+                      hasNumber && !isValid ? "text-amber-600" : "text-coral-600"
+                    )} />
+                  </div>
+                  <span className="text-xs font-medium text-neutral-500">{phone.type}</span>
+                </div>
+                {hasNumber && (
+                  <Badge className={cn(
+                    "text-[10px]",
+                    isValid ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                  )}>
+                    {isValid ? 'صحيح' : 'غير قياسي'}
+                  </Badge>
+                )}
               </div>
-              <span className="text-xs font-medium text-neutral-500">{phone.type}</span>
+              <p className="text-lg font-bold text-neutral-900 font-mono" dir="ltr">
+                {phone.number}
+              </p>
+              {phone.number !== '-' && (
+                <div className="flex gap-2 mt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-coral-600 hover:text-coral-700 p-0 h-auto"
+                    onClick={() => window.open(`tel:${phone.number}`, '_self')}
+                  >
+                    <PhoneCall className="w-4 h-4 mr-1" />
+                    اتصال
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-emerald-600 hover:text-emerald-700 p-0 h-auto"
+                    onClick={() => window.open(`https://wa.me/${phone.number.replace(/[^0-9]/g, '')}`, '_blank')}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    واتساب
+                  </Button>
+                </div>
+              )}
             </div>
-            <p className="text-lg font-bold text-neutral-900 font-mono" dir="ltr">
-              {phone.number}
-            </p>
-            {phone.number !== '-' && (
-              <Button variant="ghost" size="sm" className="mt-2 text-coral-600 hover:text-coral-700 p-0 h-auto">
-                <PhoneCall className="w-4 h-4 mr-1" />
-                اتصال
-              </Button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </motion.div>
   );
@@ -301,6 +468,199 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
         <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
           <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-500">لا توجد عقود لهذا العميل</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب المركبات
+const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any }) => {
+  // استخراج المركبات من العقود النشطة
+  const vehicles = useMemo(() => {
+    return contracts
+      .filter(c => c.vehicle && c.status === 'active')
+      .map(c => ({
+        ...c.vehicle,
+        contractNumber: c.contract_number,
+        contractId: c.id,
+        monthlyAmount: c.monthly_amount,
+      }));
+  }, [contracts]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">المركبات المستأجرة</h4>
+          <p className="text-xs text-neutral-500">{vehicles.length} مركبة</p>
+        </div>
+      </div>
+
+      {vehicles.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {vehicles.map((vehicle, index) => (
+            <motion.div
+              key={vehicle.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer"
+              onClick={() => navigate(`/fleet/${vehicle.id}`)}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                  <Car className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-neutral-900">{vehicle.make} {vehicle.model}</h5>
+                  <p className="text-xs text-neutral-500">{vehicle.year}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">رقم اللوحة</span>
+                  <span className="font-mono font-bold text-neutral-900">{vehicle.plate_number}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">رقم العقد</span>
+                  <span className="font-mono text-blue-600">{vehicle.contractNumber}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">الإيجار الشهري</span>
+                  <span className="font-bold text-coral-600">{vehicle.monthlyAmount?.toLocaleString()} ر.ق</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <Car className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-500">لا توجد مركبات مستأجرة حالياً</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب الفواتير
+const InvoicesTab = ({ customerId, companyId, navigate }: { customerId: string, companyId: string, navigate: any }) => {
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: ['customer-invoices', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
+  const totalOutstanding = useMemo(() => {
+    return invoices
+      .filter(inv => inv.payment_status !== 'paid')
+      .reduce((sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0);
+  }, [invoices]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-bold text-neutral-900">الفواتير</h4>
+          <p className="text-xs text-neutral-500">{invoices.length} فاتورة</p>
+        </div>
+        {totalOutstanding > 0 && (
+          <Badge className="bg-red-100 text-red-700">
+            مستحق: {totalOutstanding.toLocaleString()} ر.ق
+          </Badge>
+        )}
+      </div>
+
+      {invoices.length > 0 ? (
+        <div className="space-y-3">
+          {invoices.map((invoice, index) => {
+            const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
+            const isPaid = invoice.payment_status === 'paid';
+            const isOverdue = !isPaid && invoice.due_date && new Date(invoice.due_date) < new Date();
+
+            return (
+              <motion.div
+                key={invoice.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+                  isPaid ? "bg-green-50 border-green-200" : 
+                  isOverdue ? "bg-red-50 border-red-200" : 
+                  "bg-white border-neutral-200"
+                )}
+                onClick={() => navigate(`/finance/invoices/${invoice.id}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-lg flex items-center justify-center",
+                    isPaid ? "bg-green-100 text-green-600" : 
+                    isOverdue ? "bg-red-100 text-red-600" : 
+                    "bg-amber-100 text-amber-600"
+                  )}>
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-neutral-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
+                    <p className="text-xs text-neutral-500">
+                      {invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy') : '-'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className={cn(
+                    "font-bold",
+                    isPaid ? "text-green-600" : isOverdue ? "text-red-600" : "text-amber-600"
+                  )}>
+                    {invoice.total_amount?.toLocaleString()} ر.ق
+                  </p>
+                  <Badge className={cn(
+                    "text-[10px]",
+                    isPaid ? "bg-green-100 text-green-700" : 
+                    isOverdue ? "bg-red-100 text-red-700" : 
+                    "bg-amber-100 text-amber-700"
+                  )}>
+                    {isPaid ? 'مسدد' : isOverdue ? 'متأخر' : 'مستحق'}
+                  </Badge>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-500">لا توجد فواتير لهذا العميل</p>
         </div>
       )}
     </motion.div>
@@ -631,9 +991,9 @@ const CustomerDetailsPageNew = () => {
   });
 
   const { data: contracts = [] } = useQuery({
-    queryKey: ['customer-contracts-new', customerId],
+    queryKey: ['customer-contracts-new', customerId, companyId],
     queryFn: async () => {
-      if (!customerId) return [];
+      if (!customerId || !companyId) return [];
       const { data, error } = await supabase
         .from('contracts')
         .select(`*, vehicle:vehicles!vehicle_id(id, make, model, year, plate_number)`)
@@ -643,13 +1003,13 @@ const CustomerDetailsPageNew = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!customerId,
+    enabled: !!customerId && !!companyId,
   });
 
   const { data: payments = [] } = useQuery({
-    queryKey: ['customer-payments-new', customerId],
+    queryKey: ['customer-payments-new', customerId, companyId],
     queryFn: async () => {
-      if (!customerId) return [];
+      if (!customerId || !companyId) return [];
       const { data, error } = await supabase
         .from('payments')
         .select('*')
@@ -660,7 +1020,7 @@ const CustomerDetailsPageNew = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!customerId,
+    enabled: !!customerId && !!companyId,
   });
 
   const { data: documents = [] } = useCustomerDocuments(customerId);
@@ -708,7 +1068,10 @@ const CustomerDetailsPageNew = () => {
     const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.total_paid || 0), 0);
     const outstandingAmount = totalContractAmount - totalPaid;
     const paidOnTime = payments.filter(p => p.payment_status === 'completed').length;
-    const commitmentRate = payments.length > 0 ? Math.round((paidOnTime / payments.length) * 100) : 100;
+    // إذا لم تكن هناك عقود أو مدفوعات، لا تظهر نسبة
+    const commitmentRate = activeContracts > 0 && payments.length > 0 
+      ? Math.round((paidOnTime / payments.length) * 100) 
+      : null;
 
     return { activeContracts, outstandingAmount, commitmentRate, totalPayments };
   }, [contracts, payments]);
@@ -777,7 +1140,49 @@ const CustomerDetailsPageNew = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-500">نظرة عامة</span>
+              {/* أزرار الإجراءات السريعة */}
+              {customer?.phone && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`tel:${customer.phone}`, '_self')}
+                    className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Phone className="w-4 h-4" />
+                    اتصال
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                    className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    واتساب
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/customers/crm?customer=${customerId}`)}
+                className="gap-1.5"
+              >
+                <Activity className="w-4 h-4" />
+                CRM
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/contracts/new?customer=${customerId}`)}
+                className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
+              >
+                <Plus className="w-4 h-4" />
+                عقد جديد
+              </Button>
+              
+              <span className="text-sm text-neutral-500 mr-2">|</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -887,6 +1292,9 @@ const CustomerDetailsPageNew = () => {
           </div>
         </motion.div>
 
+        {/* تحذيرات البيانات الناقصة */}
+        <MissingDataWarnings customer={customer} />
+
         {/* Stats Cards - التصميم المحدث */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* بطاقة العقود النشطة */}
@@ -955,10 +1363,13 @@ const CustomerDetailsPageNew = () => {
             </div>
             
             <div className="text-center">
-              <p className="text-4xl font-black text-green-600 mb-2">
-                {stats.commitmentRate}%
+              <p className={`text-4xl font-black mb-2 ${stats.commitmentRate !== null ? 'text-green-600' : 'text-neutral-400'}`}>
+                {stats.commitmentRate !== null ? `${stats.commitmentRate}%` : '-'}
               </p>
               <p className="text-sm font-medium text-neutral-600">نسبة الالتزام</p>
+              {stats.commitmentRate === null && (
+                <p className="text-xs text-neutral-400 mt-1">لا توجد عقود</p>
+              )}
             </div>
           </motion.div>
 
@@ -1000,9 +1411,11 @@ const CustomerDetailsPageNew = () => {
                 { value: 'info', label: 'معلومات العميل', icon: User },
                 { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
                 { value: 'contracts', label: 'العقود', icon: FileText },
+                { value: 'vehicles', label: 'المركبات', icon: Car },
+                { value: 'invoices', label: 'الفواتير', icon: Wallet },
                 { value: 'payments', label: 'المدفوعات', icon: CreditCard },
                 { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                { value: 'activity', label: 'سجل النشاط', icon: Activity },
+                { value: 'activity', label: 'سجل التفاعلات', icon: Activity },
                 { value: 'notes', label: 'الملاحظات', icon: MessageSquare },
               ].map((tab) => (
                 <TabsTrigger 
@@ -1034,6 +1447,12 @@ const CustomerDetailsPageNew = () => {
               </TabsContent>
               <TabsContent value="contracts" className="mt-0">
                 <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
+              </TabsContent>
+              <TabsContent value="vehicles" className="mt-0">
+                <VehiclesTab contracts={contracts} navigate={navigate} />
+              </TabsContent>
+              <TabsContent value="invoices" className="mt-0">
+                <InvoicesTab customerId={customerId || ''} companyId={companyId || ''} navigate={navigate} />
               </TabsContent>
               <TabsContent value="payments" className="mt-0">
                 <PaymentsTab payments={payments} navigate={navigate} />
