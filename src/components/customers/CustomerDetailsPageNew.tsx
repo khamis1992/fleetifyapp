@@ -973,7 +973,7 @@ const CustomerDetailsPageNew = () => {
     enabled: !!customerId && !!companyId,
   });
 
-  const { data: contracts = [] } = useQuery({
+  const { data: contracts = [], isLoading: loadingContracts } = useQuery({
     queryKey: ['customer-contracts-new', customerId, companyId],
     queryFn: async () => {
       if (!customerId || !companyId) return [];
@@ -989,7 +989,7 @@ const CustomerDetailsPageNew = () => {
     enabled: !!customerId && !!companyId,
   });
 
-  const { data: payments = [] } = useQuery({
+  const { data: payments = [], isLoading: loadingPayments } = useQuery({
     queryKey: ['customer-payments-new', customerId, companyId],
     queryFn: async () => {
       if (!customerId || !companyId) return [];
@@ -1107,7 +1107,7 @@ const CustomerDetailsPageNew = () => {
     
     setIsUploading(true);
     try {
-      await uploadDocument.mutate({
+      await uploadDocument.mutateAsync({
         customer_id: customerId,
         document_type: selectedDocumentType,
         document_name: file.name,
@@ -1560,16 +1560,40 @@ const CustomerDetailsPageNew = () => {
                 )}
               </TabsContent>
               <TabsContent value="contracts" className="mt-0">
-                <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
+                {loadingContracts ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
+                )}
               </TabsContent>
               <TabsContent value="vehicles" className="mt-0">
-                <VehiclesTab contracts={contracts} navigate={navigate} />
+                {loadingContracts ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <VehiclesTab contracts={contracts} navigate={navigate} />
+                )}
               </TabsContent>
               <TabsContent value="invoices" className="mt-0">
-                <InvoicesTab invoices={customerInvoices} navigate={navigate} />
+                {loadingInvoices ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <InvoicesTab invoices={customerInvoices} navigate={navigate} />
+                )}
               </TabsContent>
               <TabsContent value="payments" className="mt-0">
-                <PaymentsTab payments={payments} navigate={navigate} />
+                {loadingPayments ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                  </div>
+                ) : (
+                  <PaymentsTab payments={payments} navigate={navigate} />
+                )}
               </TabsContent>
               <TabsContent value="violations" className="mt-0">
                 {loadingViolations ? (
