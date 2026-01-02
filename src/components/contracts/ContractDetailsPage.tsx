@@ -795,15 +795,18 @@ const ContractDetailsPage = () => {
                       <FileEdit className="w-4 h-4" />
                       تعديل العقد
                     </Button>
-                    <Button
-                      onClick={() => setIsConvertToLegalOpen(true)}
-                      variant="outline"
-                      className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-50"
-                    >
-                      <Scale className="w-4 h-4" />
-                      تحويل للشؤون القانونية
-                    </Button>
                   </>
+                )}
+                {/* زر تحويل للشؤون القانونية - متاح للعقود النشطة والملغاة */}
+                {(contract.status === 'active' || contract.status === 'cancelled') && (
+                  <Button
+                    onClick={() => setIsConvertToLegalOpen(true)}
+                    variant="outline"
+                    className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Scale className="w-4 h-4" />
+                    تحويل للشؤون القانونية
+                  </Button>
                 )}
                 {contract.status === 'under_legal_procedure' && (
                   <Button

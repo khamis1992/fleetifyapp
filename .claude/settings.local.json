@@ -185,7 +185,9 @@
       "Bash(cmd /C \"set ANALYZE=true && npm run build\")",
       "Bash(ls:*)",
       "Bash(where:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_wait_for"
     ],
     "deny": [],
     "ask": []

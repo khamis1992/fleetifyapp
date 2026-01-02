@@ -17,9 +17,9 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
-import { 
-  Gavel, 
-  FileText, 
+import {
+  Gavel,
+  FileText,
   Download,
   Copy,
   Check,
@@ -41,8 +41,8 @@ import {
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  lawsuitService, 
+import {
+  lawsuitService,
   LawsuitPreparation,
   CompanyLegalDocument,
   DOCUMENT_TYPE_NAMES,
@@ -54,6 +54,7 @@ import {
   generateClaimsStatementHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
+import { TaqadiControlPanel } from '@/components/taqidi';
 
 // واجهة بيانات تقاضي
 interface TaqadiData {
@@ -1276,54 +1277,65 @@ ${taqadiData.claims}
         </Card>
       </motion.div>
 
-      {/* أزرار الأتمتة */}
+      {/* أزرار الأتمتة - New Component */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="flex flex-col items-center gap-4"
       >
-        {/* زر Manus AI - الرئيسي */}
-        <Button
-          size="lg"
-          onClick={sendToManus}
-          disabled={isAutomating || !taqadiData}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-6 text-lg shadow-xl"
-        >
-          {isAutomating ? (
-            <>
-              <LoadingSpinner className="h-5 w-5 ml-2" />
-              جاري الإرسال إلى Manus...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-6 w-6 ml-2" />
-              🤖 رفع تلقائي عبر Manus AI
-            </>
-          )}
-        </Button>
-        <p className="text-sm text-muted-foreground text-center">
-          Manus AI سيفتح متصفحك ويملأ تقاضي تلقائياً
-        </p>
+        {/* Main Automation Control Panel */}
+        {contractId && companyId && (
+          <TaqadiControlPanel
+            contractId={contractId}
+            companyId={companyId}
+            className="mb-4"
+          />
+        )}
 
-        {/* خط فاصل */}
-        <div className="flex items-center gap-4 w-full max-w-md">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">أو</span>
-          <Separator className="flex-1" />
+        {/* Legacy automation options (kept for compatibility) */}
+        <div className="flex flex-col items-center gap-4">
+          {/* زر Manus AI - الرئيسي */}
+          <Button
+            size="lg"
+            onClick={sendToManus}
+            disabled={isAutomating || !taqadiData}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-6 text-lg shadow-xl"
+          >
+            {isAutomating ? (
+              <>
+                <LoadingSpinner className="h-5 w-5 ml-2" />
+                جاري الإرسال إلى Manus...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-6 w-6 ml-2" />
+                🤖 رفع تلقائي عبر Manus AI
+              </>
+            )}
+          </Button>
+          <p className="text-sm text-muted-foreground text-center">
+            Manus AI سيفتح متصفحك ويملأ تقاضي تلقائياً
+          </p>
+
+          {/* خط فاصل */}
+          <div className="flex items-center gap-4 w-full max-w-md">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">أو</span>
+            <Separator className="flex-1" />
+          </div>
+
+          {/* زر الإضافة المحلية - بديل */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={startLocalAutomation}
+            disabled={isAutomating || !taqadiData}
+            className="text-muted-foreground"
+          >
+            <ExternalLink className="h-4 w-4 ml-2" />
+            استخدام إضافة Chrome المحلية
+          </Button>
         </div>
-
-        {/* زر الإضافة المحلية - بديل */}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={startLocalAutomation}
-          disabled={isAutomating || !taqadiData}
-          className="text-muted-foreground"
-        >
-          <ExternalLink className="h-4 w-4 ml-2" />
-          استخدام إضافة Chrome المحلية
-        </Button>
       </motion.div>
 
       {/* تعليمات Bookmarklet */}
