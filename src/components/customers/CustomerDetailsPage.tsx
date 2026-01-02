@@ -512,7 +512,7 @@ const CustomerDetailsPage = () => {
   }, [navigate]);
 
   const handleRenewContract = useCallback((contract: any) => {
-    navigate(`/contracts/new?renew=${contract.id}`);
+    navigate(`/contracts?renew=${contract.id}`);
   }, [navigate]);
 
   const handleContinuePayment = useCallback((contract: any) => {

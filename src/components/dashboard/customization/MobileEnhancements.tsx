@@ -247,7 +247,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
     {
       icon: Plus,
       label: 'عقد جديد',
-      onClick: () => navigate('/contracts/new')
+      onClick: () => navigate('/contracts')
     },
     {
       icon: Car,

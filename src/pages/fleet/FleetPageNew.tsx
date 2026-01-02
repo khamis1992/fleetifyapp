@@ -982,7 +982,7 @@ const FleetPageNew: React.FC = () => {
         }}
         onNewContract={(id) => {
           handleCloseSidePanel();
-          navigate(`/contracts/new?vehicle=${id}`);
+          navigate(`/contracts?vehicle=${id}`);
         }}
         onNewMaintenance={(id) => {
           handleCloseSidePanel();

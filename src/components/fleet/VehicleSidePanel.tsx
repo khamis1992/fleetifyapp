@@ -177,7 +177,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
       if (onNewContract) {
         onNewContract(vehicleId);
       } else {
-        navigate(`/contracts/new?vehicle=${vehicleId}`);
+        navigate(`/contracts?vehicle=${vehicleId}`);
       }
     }
   };

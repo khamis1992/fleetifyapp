@@ -1270,7 +1270,7 @@ const CustomerDetailsPageNew = () => {
                                       });
                                   return;
                                 }
-                                navigate(`/contracts/new?customer=${customerId}`);
+                                navigate(`/contracts?customer=${customerId}`);
                               }}
                               className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
                         >
