@@ -849,7 +849,12 @@ const VehicleDetailsPageNew = () => {
                             <div
                               key={contract.id}
                               onClick={() => navigate(`/contracts/${contract.contract_number}`)}
-                              className="p-4 rounded-xl border border-neutral-200 hover:border-coral-300 hover:shadow-md transition-all cursor-pointer"
+                              className={cn(
+                                "p-4 rounded-xl border transition-all cursor-pointer",
+                                contract.status === 'active' 
+                                  ? "bg-green-50 border-green-300 hover:border-green-400 hover:shadow-md ring-1 ring-green-200" 
+                                  : "border-neutral-200 hover:border-coral-300 hover:shadow-md"
+                              )}
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <div>
