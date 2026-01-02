@@ -648,7 +648,7 @@ const InvoicesTab = ({ invoices, navigate }: { invoices: any[], navigate: any })
 };
 
 // تبويب المدفوعات
-const PaymentsTab = ({ payments, navigate }: { payments: any[], navigate: any }) => {
+const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], navigate: any, onAddPayment: () => void }) => {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -661,7 +661,7 @@ const PaymentsTab = ({ payments, navigate }: { payments: any[], navigate: any })
         </div>
         <Button 
           className="bg-green-500 hover:bg-green-600 text-white gap-2"
-          onClick={() => setIsPaymentDialogOpen(true)}
+          onClick={onAddPayment}
         >
           <Plus className="w-4 h-4" />
           تسجيل دفعة
@@ -1592,7 +1592,7 @@ const CustomerDetailsPageNew = () => {
                     <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
                   </div>
                 ) : (
-                  <PaymentsTab payments={payments} navigate={navigate} />
+                  <PaymentsTab payments={payments} navigate={navigate} onAddPayment={() => setIsPaymentDialogOpen(true)} />
                 )}
               </TabsContent>
               <TabsContent value="violations" className="mt-0">
