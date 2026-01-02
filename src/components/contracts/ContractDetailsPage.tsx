@@ -738,7 +738,13 @@ const ContractDetailsPage = () => {
                   <User className="w-5 h-5 text-red-600" />
                   <div>
                     <p className="text-xs text-gray-500">العميل</p>
-                    <p className="font-semibold text-gray-900">{customerName}</p>
+                    <button
+                      onClick={() => contract.customer_id && navigate(`/customers/${contract.customer_id}`)}
+                      className="font-semibold text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors text-right"
+                      title="عرض تفاصيل العميل"
+                    >
+                      {customerName}
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1536,6 +1542,7 @@ interface ContractDetailsTabProps {
 }
 
 const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProps) => {
+  const navigate = useNavigate();
   const customerName = contract.customer
     ? contract.customer.customer_type === 'corporate'
       ? contract.customer.company_name_ar || contract.customer.company_name
@@ -1591,7 +1598,18 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <InfoRow label="الاسم" value={customerName} />
+          <InfoRow 
+            label="الاسم" 
+            value={
+              <button
+                onClick={() => contract.customer_id && navigate(`/customers/${contract.customer_id}`)}
+                className="text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors"
+                title="عرض تفاصيل العميل"
+              >
+                {customerName}
+              </button>
+            } 
+          />
           <InfoRow label="رقم الجوال" value={contract.customer?.phone || '-'} mono dir="ltr" />
           <InfoRow label="البريد الإلكتروني" value={contract.customer?.email || '-'} />
           <InfoRow label="رقم الهوية" value={contract.customer?.national_id || '-'} mono />

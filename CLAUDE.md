@@ -1,658 +1,244 @@
-# Claude Rules
+# CLAUDE.md
 
-## 0) Goals & Constraints
-**Prime directive:** Improve the system safely, incrementally, and reversibly.  
-Default to non-breaking changes; use feature flags/config for risky paths.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## Project Overview
 
-## 1) Discover & Plan
-Read the codebase areas relevant to the request, plus `SYSTEM_REFERENCE.md` (update it if outdated).  
-Produce a plan in `tasks/todo.md` with:
+**Fleetify** is a comprehensive ERP system for car rental and fleet management, built for شركة العراف لتأجير السيارات (Al-Araf Car Rental) in Qatar.
 
-- Objective, assumptions, out-of-scope  
-- Acceptance criteria (observable, verifiable)  
-- Impact radius (files/modules touched)  
-- Risks + mitigations (flags, fallbacks)
+- **Company ID**: `24bc0b21-4e2d-4413-9842-31719a3669f4`
+- **Currency**: QAR (Qatari Riyal)
+- **Business Type**: Car rental and fleet management
+- **Deployment**: Vercel (https://www.alaraf.online)
 
-Post the plan for approval before coding.
+## Tech Stack
 
----
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Library**: shadcn/ui (Radix UI primitives) + Tailwind CSS
+- **State Management**: React Query (@tanstack/react-query)
+- **Database/Backend**: Supabase (PostgreSQL 17.6)
+- **Routing**: React Router v6 with custom route registry
+- **Internationalization**: i18next (Arabic/English, RTL support)
+- **Charts**: Recharts
+- **Mobile**: Capacitor (iOS/Android apps)
 
-## 2) Pre-Flight Safety Checks
-- Typecheck, lint, and unit tests must pass on `main`
-- **CRITICAL**: Build MUST succeed locally with EXACT same command as CI (`npm run build:ci`)
-- **REACT BUNDLING CHECK**: Verify React module resolution to prevent forwardRef errors
-  ```bash
-  # Test React bundling works correctly
-  npm run build:ci && npm run preview
-  # Check for React forwardRef errors in console
-  ```
-- Verify package manager consistency (pnpm-lock.yaml → use pnpm, npm → use npm)
-- Check `vercel.json` or platform config matches local setup
-- `.env` and secrets are not hard-coded
-- Confirm correct environment (dev/stage/prod) and feature flag paths
-- If DB/migrations involved: create reversible migrations with down scripts and test on sandbox
+## Common Development Commands
 
----
-
-## 3) Implementation Rules
-- Use feature branches: `feat/<slug>` or `fix/<slug>`  
-- Keep PRs small (≤ ~300 LOC diff if possible)  
-- Apply simplest change that meets acceptance criteria  
-- Add/adjust unit/integration/e2e tests  
-- Keep secrets out of code  
-- Gate risky logic behind flags/config
-
----
-
-## 4) Commit & PR Hygiene
-Follow **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).  
-Each PR must include:
-
-- What changed and why (+ screenshots/logs if UI)  
-- Impact radius and risk level  
-- Testing steps (commands/URLs)  
-- Rollback plan (revert / disable flag / down migration)  
-- Link to `tasks/todo.md` item(s)
-
----
-
-## 5) Communication While Working
-- After each meaningful step, post a short summary (what changed, why, result)  
-- If acceptance criteria need refinement → pause and confirm before proceeding
-
----
-
-## 6) Post-Work Review & Documentation
-Append **Review** section to `tasks/todo.md`:
-- What shipped vs. plan  
-- Known limitations  
-- Follow-ups  
-
-Update `SYSTEM_REFERENCE.md` and READMEs:
-- New flags/config  
-- New endpoints/APIs  
-- Schema diffs  
-- Runbooks
-
----
-
-## 7) Verification & Rollback
-- Verify in target env (dev/stage/prod) using test steps
-- **DEPLOYMENT VERIFICATION**: Always check deployment logs for:
-  - Package manager consistency (pnpm vs npm)
-  - Command not found errors (exit code 127)
-  - Build script execution order
-- If anomalies occur → rollback immediately per plan, then investigate
-
-### 7.1) Critical Deployment Troubleshooting
-**Before pushing changes that affect build:**
-
-1. **Package Manager Check**:
-   ```bash
-   # If pnpm-lock.yaml exists → vercel.json must use pnpm install
-   # If package-lock.json exists → vercel.json must use npm install
-   ls -la *lock.json
-   ```
-
-2. **Build Command Verification**:
-   ```bash
-   # ALWAYS test the EXACT command CI will run
-   npm run build:ci  # or whatever vercel.json buildCommand specifies
-   ```
-
-3. **Binary Resolution**:
-   ```bash
-   # If vite command not found → use npx vite build in package.json
-   # Check node_modules/.bin/vite exists
-   ls node_modules/.bin/ | grep vite
-   ```
-
-### 7.2) Common Deployment Pitfalls & Solutions
-
-| Problem | Root Cause | Solution |
-|---------|------------|----------|
-| `sh: line 1: vite: command not found` | Package manager mismatch | Match `vercel.json` `installCommand` with lock file |
-| `Exit code 127` | Binary not in PATH | Use `npx` prefix in build scripts |
-| **Blank page in production** | React module bundling issue | See "React Module Bundling" section below |
-| **`TypeError: Cannot read properties of undefined (reading 'forwardRef')`** | React separated from vendor chunks | Keep React in vendor chunk via vite.config.ts |
-| Parsing errors | Syntax issues in code | Fix JSX, template literals, special characters |
-| Cache pollution | Large .pnpm-store/ in git | `git rm -r --cached .pnpm-store/` + add to .gitignore |
-| Build fails locally but not in CI | Environment differences | Use same Node.js version, check env variables |
-
-**Quick Deployment Checklist:**
+### Development
 ```bash
-# Before any deployment-related changes:
-1. npm run build:ci           # Test exact CI command
-2. ls -la *lock.json          # Check package manager
-3. cat vercel.json           # Verify configuration
-4. git status                 # Ensure clean working directory
+npm run dev              # Start dev server on port 8080
+npm run build:ci        # Production build (matches CI command)
+npm run preview         # Preview production build
 ```
 
-## 8) MCP Usage Rules (Integration Layer)
-
-**Purpose:** Enforce consistent MCP usage per task category in Cursor.
-
-| Task Type | MCP Server | Purpose |
-|------------|-------------|----------|
-| Database operations (queries, migrations, schema, Supabase tasks) | `supabase mcp` | Execute and manage Supabase DB actions |
-| Verification / inspection (files, URLs, browser validation) | `browser mcp` | Validate files, URLs, and external outputs |
-| Service creation or modification (new features, APIs, logic) | `thinking mcp` | Perform structured reasoning and feature planning |
-
-### Execution Order (if multiple MCPs needed)
-1. `thinking mcp` → Planning and task breakdown  
-2. `supabase mcp` → Execution and data operations  
-3. `browser mcp` → Validation and verification  
-
-**Fallback Rule:**  
-If uncertain which MCP to use → default to `thinking mcp`.
-
-**Large Tasks:**  
-Split into smaller parallel segments handled by three agents:
-- Agent 1 → Planning (`thinking mcp`)  
-- Agent 2 → Execution (`supabase mcp`)  
-- Agent 3 → Validation (`browser mcp`)
-
-**UI Consistency:**
-All new features must maintain the same color scheme, button style, and layout as the existing system.
-
----
-
-## 9) React Module Bundling Guidelines
-
-### 9.1) Critical Prevention: Blank Page & forwardRef Errors
-
-**Problem**: When React is separated into different chunks during bundling, vendor libraries that use `React.forwardRef` fail with:
-```
-TypeError: Cannot read properties of undefined (reading 'forwardRef')
-```
-
-**Root Cause**: Module loading order issues where vendor chunks try to access React APIs before React chunk is loaded.
-
-### 9.2) Vite Configuration Requirements
-
-**Always ensure React stays bundled with vendor dependencies:**
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react/jsx-runtime',
-      // ALL Radix UI components that use React.forwardRef
-      '@radix-ui/react-slot',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-select',
-      '@radix-ui/react-popover',
-      '@radix-ui/react-tooltip',
-      '@radix-ui/react-tabs',
-      '@radix-ui/react-toast',
-      '@radix-ui/react-switch',
-      '@radix-ui/react-checkbox',
-      '@radix-ui/react-radio-group',
-      '@radix-ui/react-progress',
-      '@radix-ui/react-slider',
-      '@radix-ui/react-separator',
-      '@radix-ui/react-label',
-      '@radix-ui/react-textarea',
-      '@radix-ui/react-avatar',
-      '@radix-ui/react-badge',
-      '@radix-ui/react-card',
-      '@radix-ui/react-alert-dialog',
-      '@radix-ui/react-aspect-ratio',
-      // Add other UI libraries that use React.forwardRef
-    ],
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // CRITICAL: React and React DOM must stay in vendor chunk
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
-            return 'vendor';
-          }
-          // Other chunking logic...
-        },
-      },
-    },
-  },
-});
-```
-
-### 9.3) Pre-Deployment React Bundle Verification
-
+### Testing
 ```bash
-# Always test React bundling before deployment
-npm run build:ci
-npm run preview
-
-# Check console for React errors
-# Open http://localhost:3001 and verify:
-# 1. Page loads without blank screen
-# 2. No forwardRef errors in console
-# 3. UI components render correctly
+npm run test            # Run unit tests (Vitest)
+npm run test:run        # Run tests once
+npm run test:coverage   # Coverage report
+npm run test:e2e        # Playwright E2E tests
 ```
 
-### 9.4) Common React Bundling Pitfalls
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Blank white page | React chunks not loading | Keep React in vendor chunk |
-| forwardRef undefined | Vendor chunks load before React | Add UI libs to optimizeDeps.include |
-| UI components not rendering | Missing React dependencies | Check manualChunks configuration |
-| Large bundle size | Over-chunking React components | Consolidate React-related chunks |
-
-### 9.5) Package Manager Consistency
-
-**Critical for React module resolution:**
-
-```json
-// vercel.json
-{
-  "installCommand": "pnpm install",  // Must match lock file
-  "buildCommand": "pnpm run build:ci" // Must use same package manager
-}
-```
-
-### 9.6) Troubleshooting Checklist
-
-Before any deployment that affects React/components:
-
-1. **Build Test**: `npm run build:ci` succeeds
-2. **Bundle Analysis**: Check console for chunk loading issues
-3. **Preview Verification**: `npm run preview` loads correctly
-4. **Console Check**: No forwardRef or React undefined errors
-5. **UI Components**: All Radix/UI components render
-6. **Package Manager**: vercel.json matches lock file type
-
----
-
-## tasks/todo.md Template
-
-```markdown
-# Task: <short title>
-
-## Objective
-<Outcome and business/user impact>
-
-## Acceptance Criteria
-- [ ] <criterion 1>  
-- [ ] <criterion 2>
-
-## Scope & Impact Radius
-Modules/files likely touched: <list>  
-Out-of-scope: <list>
-
-## Risks & Mitigations
-- Risk: <...> → Mitigation: <flag, fallback, canary>
-
-## Steps
-- [ ] Pre-flight: typecheck/lint/tests/build green
-- [ ] **BUILD VERIFICATION**: Test exact CI command locally (`npm run build:ci`)
-- [ ] **REACT BUNDLE VERIFICATION**: Test React bundling with `npm run preview`
-- [ ] **PACKAGE MANAGER CHECK**: Verify vercel.json matches lock file (pnpm vs npm)
-- [ ] **FORWARDREF ERROR CHECK**: Check console for React forwardRef errors
-- [ ] Design small change set (link to diff or plan)
-- [ ] Implement behind flag/config `<FLAG_NAME>`
-- [ ] Add/adjust tests
-- [ ] Update docs (`SYSTEM_REFERENCE.md`)
-- [ ] Open PR with test steps & rollback plan
-- [ ] Verify in <env> and unflag if stable
-
-## Review (after merge)
-Summary of changes:  
-Known limitations:  
-Follow-ups:
-# 📜 قواعد وإرشادات التعامل مع قاعدة البيانات
-
-## 🎯 القواعد الذهبية
-
-### القاعدة #1: **لا تخمين - دائماً تحقق**
-```
-❌ افتراض البنية من اسم الجدول
-❌ نسخ كود من migration قديم
-❌ استخدام أسماء أعمدة "منطقية"
-
-✅ فحص البنية الفعلية أولاً
-✅ استخدام information_schema
-✅ التحقق من Migrations المطبقة
-```
-
-### القاعدة #2: **migrations قد تتعارض**
-- يمكن أن يوجد migration واحد يُعيد تعريف جدول أنشأه migration آخر
-- `CREATE TABLE IF NOT EXISTS` قد تخفي تعارضات
-- دائماً تحقق من التاريخ **والوقت** في اسم الملف
-
-### القاعدة #3: **البنية الفعلية هي المرجع**
-```
-الأولوية:
-1. ما هو موجود في قاعدة البيانات الفعلية (production/staging)
-2. آخر migration مطبق
-3. Migration files (قد لا تكون كلها مطبقة)
-```
-
----
-
-## 🔧 الأدوات الإلزامية
-
-### 1. فحص البنية قبل أي تعديل
-```sql
--- دائماً نفذ هذا أولاً
-SELECT 
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-  AND table_name = 'YOUR_TABLE_NAME'
-ORDER BY ordinal_position;
-```
-
-### 2. فحص Foreign Keys
-```sql
-SELECT 
-    tc.constraint_name,
-    kcu.column_name,
-    ccu.table_name AS foreign_table,
-    ccu.column_name AS foreign_column
-FROM information_schema.table_constraints tc
-JOIN information_schema.key_column_usage kcu
-    ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage ccu
-    ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-  AND tc.table_name = 'YOUR_TABLE_NAME';
-```
-
-### 3. فحص Constraints
-```sql
-SELECT 
-    conname,
-    contype,
-    pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'public.YOUR_TABLE_NAME'::regclass;
-```
-
----
-
-## 📋 Checklist قبل كتابة Migration
-
-```
-□ فحصت البنية الحالية باستخدام information_schema
-□ تحققت من جميع Foreign Keys
-□ تحققت من Constraints
-□ فحصت Migrations المطبقة السابقة
-□ تأكدت من عدم وجود تعارضات
-□ اختبرت على قاعدة بيانات تجريبية
-□ كتبت ROLLBACK للتراجع إذا لزم الأمر
-```
-
----
-
-## ⚠️ الأخطاء الشائعة
-
-### ❌ الخطأ 1: الافتراض
-```sql
--- ❌ خطأ
-UPDATE users SET last_login = NOW();
--- افترضت وجود عمود last_login بدون تحقق
-
--- ✅ صحيح
--- أولاً: تحقق
-SELECT column_name FROM information_schema.columns 
-WHERE table_name = 'users' AND column_name = 'last_login';
--- ثم: نفذ
-UPDATE users SET last_login = NOW();
-```
-
-### ❌ الخطأ 2: نسخ كود قديم
-```sql
--- ❌ خطأ
--- نسخت من migration قديم بدون تحقق
-ALTER TABLE orders ADD COLUMN customer_phone TEXT;
--- لكن العمود موجود فعلاً!
-
--- ✅ صحيح
-ALTER TABLE orders 
-ADD COLUMN IF NOT EXISTS customer_phone TEXT;
-```
-
-### ❌ الخطأ 3: تجاهل التعارضات
-```sql
--- ❌ خطأ
-CREATE TABLE products (...);
--- بدون التحقق من وجود جدول بنفس الاسم
-
--- ✅ صحيح
-CREATE TABLE IF NOT EXISTS products (...);
--- أو: فحص أولاً ثم قرر ما تفعل
-```
-
----
-
-## 🎓 سيناريوهات وحلولها
-
-### سيناريو 1: عمود موجود في Migration لكن غير موجود في DB
-**المشكلة:**
-```
-Migration A: ALTER TABLE users ADD COLUMN age INTEGER;
-قاعدة البيانات: لا يوجد عمود age
-```
-
-**الأسباب المحتملة:**
-1. Migration A لم يُطبق
-2. Migration B حذف العمود لاحقاً
-3. تم عمل rollback
-
-**الحل:**
-```sql
--- 1. تحقق من الوضع الحالي
-SELECT column_name FROM information_schema.columns 
-WHERE table_name = 'users' AND column_name = 'age';
-
--- 2. أضف العمود مع IF NOT EXISTS
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS age INTEGER;
-
--- 3. أو: اعمل مع البنية الحالية
-```
-
-### سيناريو 2: جدول بنسختين مختلفتين
-**المشكلة:** (مثل reminder_schedules)
-```
-Migration A: CREATE TABLE x (col1, col2, col3);
-Migration B: CREATE TABLE x (col4, col5, col6);
-```
-
-**الحل:**
-```sql
--- 1. فحص البنية الفعلية
-\d+ table_name
-
--- 2. قرر الاستراتيجية:
---    أ) توحيد: أضف الأعمدة الناقصة
---    ب) اختيار: اعمل مع واحدة فقط
---    ج) إعادة بناء: DROP و CREATE من جديد
-
--- 3. نفذ بحذر مع backup
-```
-
----
-
-## 🛡️ قواعد الأمان
-
-### 1. دائماً backup قبل تعديلات كبيرة
+### Code Quality
 ```bash
-pg_dump -h HOST -U USER -d DATABASE > backup_$(date +%Y%m%d_%H%M%S).sql
+npm run lint            # ESLint
+npm run type-check      # TypeScript check
 ```
 
-### 2. اختبر على staging أولاً
-```
-❌ لا تطبق migrations مباشرة على production
-✅ اختبر على staging/development أولاً
-✅ تحقق من النتائج
-✅ ثم طبق على production
-```
-
-### 3. اكتب ROLLBACK دائماً
-```sql
--- في بداية Migration
-BEGIN;
-
--- تعديلاتك هنا
-ALTER TABLE ...
-
--- في النهاية
--- COMMIT; -- علق هذا عند الاختبار
--- ROLLBACK; -- استخدم هذا للتراجع
-```
-
----
-
-## 📊 نموذج عملية صحيحة
-
-### مثال: إضافة نظام تنبيهات جديد
-
-#### 1️⃣ الفحص (30 دقيقة)
-```sql
--- فحص الجداول الحالية
-SELECT table_name FROM information_schema.tables 
-WHERE table_name LIKE '%reminder%';
-
--- فحص البنية
-\d+ reminder_schedules
-
--- فحص Migrations المطبقة
--- (حسب نظام تتبع migrations لديك)
-```
-
-#### 2️⃣ التحليل (15 دقيقة)
-```
-- ما الموجود؟
-- ما المطلوب؟
-- ما الفجوة؟
-- هل يوجد تعارضات؟
-```
-
-#### 3️⃣ التخطيط (30 دقيقة)
-```sql
--- خطة التعديلات
--- 1. إضافة عمود X
--- 2. إنشاء جدول Y
--- 3. ربط Foreign Key
--- 4. إنشاء Index
-```
-
-#### 4️⃣ التنفيذ على Staging (1 ساعة)
+### Database & Scripts
 ```bash
-# اختبار Migration
-psql -h staging -U user -d db -f migration.sql
-
-# فحص النتائج
-psql -h staging -U user -d db -c "SELECT COUNT(*) FROM new_table;"
+supabase status         # Check local Supabase status
+supabase db push        # Push migrations
+supabase db dump        # Dump database schema
 ```
 
-#### 5️⃣ المراجعة (30 دقيقة)
-```
-✅ البنية صحيحة
-✅ البيانات سليمة
-✅ Foreign Keys تعمل
-✅ Indexes موجودة
-✅ RLS Policies مطبقة
-```
-
-#### 6️⃣ التطبيق على Production (مع backup)
+### Mobile (Capacitor)
 ```bash
-# Backup
-pg_dump production > backup.sql
-
-# تطبيق
-psql production < migration.sql
-
-# تحقق
-psql production -c "SELECT version FROM migrations ORDER BY version DESC LIMIT 1;"
+npm run build:mobile    # Build for mobile
+npm run mobile:sync     # Sync Capacitor
+npm run android:build   # Build Android APK
+npm run ios:build       # Build iOS app
 ```
 
----
+## Architecture
 
-## 🎯 خلاصة المبادئ
+### Route Registry System
+Routes are centrally defined in `src/routes/index.ts` instead of being scattered across components. This reduces complexity and improves maintainability.
 
-### 1. **تحقق دائماً**
-```
-لا تفترض شيئاً
-تحقق من كل شيء
-استخدم information_schema
-```
+**Route Config Structure:**
+- `path`: URL path
+- `component`: Page component (lazy or regular import)
+- `lazy`: Whether component is lazy-loaded
+- `protected`: Requires authentication
+- `layout`: Layout type (`bento`, `admin`, `none`)
+- `requiredRole`: Role-based access (`super_admin`, `admin`)
+- `group`: Route group for organization
+- `priority`: Loading priority
 
-### 2. **وثّق كل شيء**
-```
-اكتب تعليقات واضحة
-سجل القرارات
-احتفظ بسجل التغييرات
-```
+**Key Route Groups:**
+- `public` - No authentication required (landing, auth)
+- `dashboard` - Main application dashboard
+- `finance` - Financial management
+- `customers` - Customer CRM
+- `contracts` - Contract management
+- `fleet` - Vehicle/fleet management
+- `admin` - Super admin routes
+- `legal` - Legal/cases tracking
 
-### 3. **اختبر قبل التطبيق**
-```
-staging أولاً
-production آخراً
-backup دائماً
-```
+### Context Providers (App.tsx)
+The app wraps components in multiple contexts:
+- `AuthProvider` - User authentication state
+- `CompanyContextProvider` - Current company context
+- `FABProvider` - Floating action button state
+- `FinanceProvider` - Financial data context
+- `MobileOptimizationProvider` - Performance optimization
 
-### 4. **كن حذراً مع Migrations**
-```
-قد تتعارض
-قد لا تُطبق كلها
-البنية الفعلية هي المرجع
-```
+### Database Schema Critical Points
 
----
+**Company Multi-Tenancy:**
+- Most tables include `company_id` for multi-tenancy
+- RLS policies enforce company isolation
+- Always filter by `company_id` in queries
 
-## 📞 عند الشك
+**Financial System:**
+- `chart_of_accounts` - Hierarchical chart (levels 1-6)
+  - Only `is_header = false AND account_level >= 3` can have postings
+  - `account_code` is the primary identifier
+  - `account_name` (NOT `account_name_en`)
+- `journal_entries` - Header table for transactions
+- `journal_entry_lines` - Line items
+  - Uses `line_description` (NOT `description`)
+  - Uses `line_number` for sequencing
+  - Each entry must have at least 2 lines (balanced debits/credits)
 
-إذا كنت **غير متأكد 100%**:
+**Key Tables:**
+- `contracts` - Rental contracts (588 records)
+- `customers` - Customer records (781 records)
+- `vehicles` - Fleet vehicles (510 records)
+- `invoices` - Billing documents (1,250 records)
+- `payments` - Payment records (6,568 records)
 
-1. ✅ **توقف**
-2. ✅ **افحص** البنية الفعلية
-3. ✅ **اسأل** من لديه صلاحيات الاطلاع على production
-4. ✅ **اختبر** على staging
-5. ✅ **وثّق** قرارك
+**Important Column Name Corrections:**
+- ❌ `description` → ✅ `line_description` (journal_entry_lines)
+- ❌ `level` → ✅ `account_level` (chart_of_accounts)
+- ❌ `parent_code` → ✅ `parent_account_code`
+- ❌ `account_name_en` → ✅ `account_name`
+- ❌ `status` → ✅ `payment_status` (payments table)
 
-**لا تخمن أبداً!**
+### Component Structure
 
----
+**Components are organized by domain:**
+- `src/components/{domain}/` - Feature-specific components
+- `src/components/common/` - Shared UI components
+- `src/components/ui/` - shadcn/ui base components
+- `src/pages/` - Page-level components
+- `src/pages/{domain}/` - Domain-specific pages
 
-**تاريخ الإنشاء**: 05 فبراير 2025  
-**آخر تحديث**: 05 فبراير 2025  
-**الحالة**: نشط ✅  
-**الإلزام**: على جميع المطورين
+**Key Component Directories:**
+- `src/components/contracts/` - Contract management UI
+- `src/components/customers/` - Customer components
+- `src/components/fleet/` - Vehicle/fleet components
+- `src/components/finance/` - Financial components
+- `src/components/legal/` - Legal/cases components
 
----
+### Hooks Organization
 
-## ⚡ مختصر سريع (للمراجعة السريعة)
+Custom hooks are organized in `src/hooks/`:
+- `hooks/api/` - API interaction hooks
+- `hooks/business/` - Business logic hooks
+- `hooks/company/` - Company-related hooks
+- `hooks/finance/` - Financial hooks
+- `hooks/integrations/` - Integration hooks
+- Many domain-specific hooks (contracts, vehicles, customers, etc.)
 
-```sql
--- قبل أي تعديل، نفذ:
-\d+ table_name                           -- بنية الجدول
-\di table_name*                          -- Indexes
-\df *function_name*                      -- Functions
-SELECT * FROM information_schema.columns -- الأعمدة
-  WHERE table_name = 'YOUR_TABLE';
-```
+## Development Guidelines
 
-```
-القواعد:
-1. تحقق أولاً
-2. وثّق ثانياً
-3. اختبر ثالثاً
-4. طبّق رابعاً
-5. backup دائماً
-```
-عندما استخدم نموذج GLM لا تقوم بتصوير الشاشة لانه لا يدعم الصور
-**Remember: The database knows better than your assumptions!** 🎯
+### Database Operations
+**CRITICAL: Never assume schema - always verify!**
+1. Check `src/integrations/supabase/types.ts` for actual schema
+2. Use `information_schema` to verify table structures
+3. Test migrations on staging before production
+4. Always write reversible migrations
 
+### React Module Bundling
+**To prevent blank page/forwardRef errors:**
+- Keep React bundled with vendor dependencies
+- Add all Radix UI components to `vite.config.ts` `optimizeDeps.include`
+- Test with `npm run build:ci && npm run preview` before deploying
+- Verify no forwardRef errors in console
+
+### Build & Deployment
+**Package Manager Consistency:**
+- This project uses `npm` (check for `package-lock.json`)
+- `vercel.json` must use `npm install` (NOT pnpm)
+- Build command: `npm run build:ci` (uses `npx vite build`)
+
+**Pre-Deployment Checklist:**
+1. `npm run build:ci` succeeds
+2. `npm run preview` loads correctly
+3. Console shows no React/forwardRef errors
+4. All UI components render properly
+
+### UI Consistency
+- Use shadcn/ui components from `src/components/ui/`
+- Follow existing color scheme and layout patterns
+- Maintain RTL (Arabic) support - use `dir="rtl"` where appropriate
+- Use existing icons from `lucide-react`
+
+### Code Style
+- Use TypeScript for all new code
+- Follow existing naming conventions (camelCase for variables, PascalCase for components)
+- Add proper error handling with try-catch
+- Use React Query for data fetching
+- Maintain existing component structure
+
+## Important Notes
+
+### Database-Specific Rules
+1. **Always verify schema** - Don't guess column names
+2. **Migrations can conflict** - Check timestamps and test thoroughly
+3. **Use information_schema** - For checking actual table structures
+4. **Test on staging first** - Never apply directly to production
+
+### Token Optimization
+- Do NOT create documentation files automatically
+- Only create docs when explicitly requested
+- Keep responses brief (2-3 lines when possible)
+
+### MCP Usage
+- Database operations → Use Supabase MCP
+- UI/design work → Use design MCP
+- Planning → Use thinking MCP
+- Verification → Use browser MCP
+
+## Common Pitfalls
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `vite: command not found` | Package manager mismatch | Ensure vercel.json uses `npm install` |
+| Blank page in production | React module bundling | Keep React in vendor chunk |
+| forwardRef undefined | Radix UI chunking | Add to optimizeDeps.include |
+| Type errors | Missing DB columns | Verify schema in types.ts |
+| RLS policy errors | Missing company_id filter | Always include company_id in queries |
+
+## Testing
+
+- Unit tests: Vitest + @testing-library/react
+- E2E tests: Playwright
+- Test location: `src/__tests__/`
+- Component tests: Co-located with components in `__tests__` directories
+
+## Localization
+
+- Primary language: Arabic (RTL)
+- Secondary: English (LTR)
+- Use `useTranslation()` hook from `react-i18next`
+- Translation files: `src/locales/`
+- Always test UI in both directions
+
+## Mobile (Capacitor)
+
+- iOS and Android apps supported
+- Build with `npm run build:mobile`
+- Capacitor config: `capacitor.config.ts`
+- Native features: Camera, Geolocation, etc.
