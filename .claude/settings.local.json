@@ -184,7 +184,8 @@
       "Bash(start:*)",
       "Bash(cmd /C \"set ANALYZE=true && npm run build\")",
       "Bash(ls:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(move:*)"
     ],
     "deny": [],
     "ask": []

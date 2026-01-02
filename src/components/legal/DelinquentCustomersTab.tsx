@@ -1011,7 +1011,8 @@ export const DelinquentCustomersTab: React.FC = () => {
                           className={cn(
                             "hover:bg-neutral-50 border-b border-neutral-100 relative",
                             customer.contract_status === 'cancelled' && "bg-gradient-to-l from-red-50 via-red-50/80 to-transparent border-r-4 border-r-red-500",
-                            customer.contract_status === 'closed' && "bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent border-r-4 border-r-gray-400"
+                            customer.contract_status === 'closed' && "bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent border-r-4 border-r-gray-400",
+                            customer.contract_status === 'under_legal_procedure' && "bg-gradient-to-l from-purple-100 via-purple-50/80 to-transparent border-r-4 border-r-purple-600"
                           )}
                         >
                           <TableCell>
@@ -1074,6 +1075,11 @@ export const DelinquentCustomersTab: React.FC = () => {
                                 {customer.contract_status === 'active' && (
                                   <Badge className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700">نشط</Badge>
                                 )}
+                                {customer.contract_status === 'under_legal_procedure' && (
+                                  <Badge className="text-[10px] px-2 py-0.5 bg-purple-600 text-white animate-pulse gap-1">
+                                    ⚖️ تحت الإجراء القانوني
+                                  </Badge>
+                                )}
                               </div>
                               <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
                               {customer.contract_status === 'cancelled' && (
@@ -1081,6 +1087,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                               )}
                               {customer.contract_status === 'cancelled' && (
                                 <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ يجب استرداد المركبة</span>
+                              )}
+                              {customer.contract_status === 'under_legal_procedure' && (
+                                <span className="text-[10px] text-purple-700 font-medium mt-0.5">⚖️ قضية مرفوعة</span>
                               )}
                             </div>
                           </TableCell>
