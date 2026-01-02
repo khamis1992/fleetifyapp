@@ -74,8 +74,10 @@ const PLAINTIFF_VALIDATION_RULES: ValidationRule[] = [
  * Validation rules for defendant data
  */
 const DEFENDANT_VALIDATION_RULES: ValidationRule[] = [
+  // Defendant name is required for lawsuit
   { field: 'defendant.fullName', required: true },
-  { field: 'defendant.type', required: true },
+  // Defendant type defaults to 'individual' so not strictly required
+  { field: 'defendant.type', required: false },
   {
     field: 'defendant.idNumber',
     required: false,
@@ -89,7 +91,8 @@ const DEFENDANT_VALIDATION_RULES: ValidationRule[] = [
  * Validation rules for case data
  */
 const CASE_VALIDATION_RULES: ValidationRule[] = [
-  { field: 'case.caseType', required: true },
+  // caseType is auto-set to 'rent', so not strictly required
+  { field: 'case.caseType', required: false },
   {
     field: 'case.caseTitle',
     required: true,
@@ -99,15 +102,15 @@ const CASE_VALIDATION_RULES: ValidationRule[] = [
   },
   {
     field: 'case.facts',
-    required: true,
-    validate: (v: string) => v && v.length >= 50,
+    required: false, // Allow submission even without full facts
+    validate: (v: string) => !v || v.length >= 50,
     errorMessage: 'الوقائع يجب أن تكون 50 حرف على الأقل',
     category: 'incomplete',
   },
   {
     field: 'case.claims',
-    required: true,
-    validate: (v: string) => v && v.length >= 30,
+    required: false, // Allow submission without complete claims
+    validate: (v: string) => !v || v.length >= 30,
     errorMessage: 'الطلبات يجب أن تكون 30 حرف على الأقل',
     category: 'incomplete',
   },
@@ -145,20 +148,24 @@ const AMOUNT_VALIDATION_RULES: ValidationRule[] = [
  * Validation rules for documents
  */
 const DOCUMENT_VALIDATION_RULES: ValidationRule[] = [
+  // Documents are optional for initial submission - can be uploaded later
   {
     field: 'plaintiff.documents.commercialRegister',
-    required: true,
+    required: false,
     errorMessage: 'السجل التجاري مطلوب',
+    category: 'incomplete',
   },
   {
     field: 'plaintiff.documents.ibanCertificate',
-    required: true,
+    required: false,
     errorMessage: 'شهادة IBAN مطلوبة',
+    category: 'incomplete',
   },
   {
     field: 'plaintiff.documents.representativeId',
-    required: true,
+    required: false,
     errorMessage: 'صورة هوية الممثل مطلوبة',
+    category: 'incomplete',
   },
 ];
 
