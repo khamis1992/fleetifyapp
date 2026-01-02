@@ -179,7 +179,7 @@ export default function TrafficViolationsRedesigned() {
 
   const handleNavigateToVehicle = useCallback((vehicleId: string) => {
     if (vehicleId) {
-      navigate(`/fleet/${vehicleId}`);
+      navigate(`/fleet/vehicles/${vehicleId}`);
     }
   }, [navigate]);
 

@@ -515,7 +515,7 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any 
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
               className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer"
-              onClick={() => navigate(`/fleet/${vehicle.id}`)}
+              onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
