@@ -122,6 +122,9 @@ const ContractDetailsPage = () => {
   const [isConvertToLegalOpen, setIsConvertToLegalOpen] = useState(false);
   const [isTerminateDialogOpen, setIsTerminateDialogOpen] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
+  const [isDeletePermanentDialogOpen, setIsDeletePermanentDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [relatedDataCounts, setRelatedDataCounts] = useState<{invoices: number; payments: number; violations: number} | null>(null);
 
   // جلب بيانات العقد مع العلاقات
   const { data: contract, isLoading, error } = useQuery({
@@ -461,6 +464,98 @@ const ContractDetailsPage = () => {
     }
   }, [contract, companyId, queryClient, toast]);
 
+  // فتح dialog الحذف النهائي وجلب عدد البيانات المرتبطة
+  const handleOpenDeletePermanent = useCallback(async () => {
+    if (!contract?.id) return;
+    
+    // جلب عدد البيانات المرتبطة
+    try {
+      const [invoicesRes, paymentsRes, violationsRes] = await Promise.all([
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+      ]);
+      
+      setRelatedDataCounts({
+        invoices: invoicesRes.count || 0,
+        payments: paymentsRes.count || 0,
+        violations: violationsRes.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching related data counts:', error);
+      setRelatedDataCounts({ invoices: 0, payments: 0, violations: 0 });
+    }
+    
+    setIsDeletePermanentDialogOpen(true);
+  }, [contract?.id]);
+
+  // تنفيذ الحذف النهائي
+  const executeDeletePermanent = useCallback(async () => {
+    if (!contract?.id || !companyId) return;
+
+    setIsDeleting(true);
+    try {
+      // 1. حذف البيانات المرتبطة أولاً
+      
+      // حذف delinquent_customers
+      await supabase.from('delinquent_customers').delete().eq('contract_id', contract.id);
+      
+      // حذف المدفوعات
+      await supabase.from('payments').delete().eq('contract_id', contract.id);
+      
+      // حذف الفواتير
+      await supabase.from('invoices').delete().eq('contract_id', contract.id);
+      
+      // حذف جداول الدفع
+      await supabase.from('contract_payment_schedules').delete().eq('contract_id', contract.id);
+      
+      // حذف تجهيزات الدعاوى
+      await supabase.from('lawsuit_preparations').delete().eq('contract_id', contract.id);
+
+      // 2. تحديث حالة المركبة
+      if (contract.vehicle_id) {
+        await supabase
+          .from('vehicles')
+          .update({ status: 'available' })
+          .eq('id', contract.vehicle_id);
+      }
+
+      // 3. حذف العقد نفسه
+      const { error: deleteError } = await supabase
+        .from('contracts')
+        .delete()
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
+
+      if (deleteError) throw deleteError;
+
+      // 4. تحديث البيانات والتنقل
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+
+      toast({
+        title: 'تم الحذف النهائي',
+        description: `تم حذف العقد #${contract.contract_number} وجميع البيانات المرتبطة به نهائياً`,
+      });
+
+      // الانتقال لصفحة العقود
+      navigate('/contracts');
+    } catch (error: any) {
+      console.error('خطأ في الحذف النهائي:', error);
+      toast({
+        title: 'خطأ في الحذف',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeletePermanentDialogOpen(false);
+    }
+  }, [contract, companyId, queryClient, toast, navigate]);
+
   // دوال مساعدة
   const getStatusColor = (status: string): string => {
     const colors: Record<string, string> = {
@@ -722,6 +817,17 @@ const ContractDetailsPage = () => {
                   <XCircle className="w-4 h-4" />
                   إنهاء العقد
                 </Button>
+                {/* زر الحذف النهائي - يظهر فقط للعقود الملغاة */}
+                {contract.status === 'cancelled' && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleOpenDeletePermanent}
+                    className="gap-2"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    حذف نهائي
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1286,6 +1392,62 @@ const ContractDetailsPage = () => {
           }}
         />
       )}
+
+      {/* Dialog الحذف النهائي */}
+      <AlertDialog open={isDeletePermanentDialogOpen} onOpenChange={setIsDeletePermanentDialogOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              تحذير: حذف العقد نهائياً
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div className="bg-red-50 p-4 rounded-lg border-2 border-red-300">
+                <p className="text-red-800 font-bold text-lg mb-2">⚠️ هذا الإجراء لا يمكن التراجع عنه!</p>
+                <p className="text-red-700">سيتم حذف العقد وجميع البيانات المرتبطة به نهائياً من النظام.</p>
+              </div>
+              
+              {contract && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-2">
+                  <p><strong>رقم العقد:</strong> {contract.contract_number}</p>
+                  <p><strong>العميل:</strong> {customerName}</p>
+                  <p><strong>المركبة:</strong> {vehicleName}</p>
+                </div>
+              )}
+
+              {relatedDataCounts && (
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                  <p className="font-semibold text-amber-800 mb-2">البيانات التي سيتم حذفها:</p>
+                  <ul className="text-amber-700 space-y-1 text-sm">
+                    <li>• {relatedDataCounts.invoices} فاتورة</li>
+                    <li>• {relatedDataCounts.payments} دفعة</li>
+                    <li>• {relatedDataCounts.violations} مخالفة مرورية مرتبطة</li>
+                    <li>• جداول الدفع والتحصيل</li>
+                    <li>• سجلات المتعثرين</li>
+                  </ul>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeDeletePermanent}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الحذف...
+                </>
+              ) : (
+                'تأكيد الحذف النهائي'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog إنهاء العقد */}
       <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>

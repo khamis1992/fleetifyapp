@@ -556,17 +556,134 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
     // Invoice creation logic here
   };
 
+  // Delete contract permanently with all dependencies
+  const deleteContractPermanently = useMutation({
+    mutationFn: async (contractId: string) => {
+      console.log('🗑️ [useContractOperations] Starting permanent contract deletion:', contractId);
+
+      if (!companyId) {
+        throw new Error('معرف الشركة غير متوفر');
+      }
+
+      // 1. Get contract info first
+      const { data: contract, error: contractFetchError } = await supabase
+        .from('contracts')
+        .select('id, contract_number, vehicle_id, customer_id')
+        .eq('id', contractId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (contractFetchError || !contract) {
+        throw new Error('العقد غير موجود');
+      }
+
+      // 2. Delete related records in order (due to foreign key constraints)
+      
+      // Delete delinquent_customers records
+      const { error: delinquentError } = await supabase
+        .from('delinquent_customers')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (delinquentError) {
+        console.warn('Error deleting delinquent_customers:', delinquentError);
+      }
+
+      // Delete payments
+      const { error: paymentsError } = await supabase
+        .from('payments')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (paymentsError) {
+        console.warn('Error deleting payments:', paymentsError);
+      }
+
+      // Delete invoices
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (invoicesError) {
+        console.warn('Error deleting invoices:', invoicesError);
+      }
+
+      // Delete contract_payment_schedules
+      const { error: schedulesError } = await supabase
+        .from('contract_payment_schedules')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (schedulesError) {
+        console.warn('Error deleting payment schedules:', schedulesError);
+      }
+
+      // Delete lawsuit_preparations
+      const { error: lawsuitPrepError } = await supabase
+        .from('lawsuit_preparations')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (lawsuitPrepError) {
+        console.warn('Error deleting lawsuit_preparations:', lawsuitPrepError);
+      }
+
+      // 3. Update vehicle status to available if exists
+      if (contract.vehicle_id) {
+        const { error: vehicleError } = await supabase
+          .from('vehicles')
+          .update({ status: 'available' })
+          .eq('id', contract.vehicle_id);
+        
+        if (vehicleError) {
+          console.warn('Error updating vehicle status:', vehicleError);
+        }
+      }
+
+      // 4. Finally delete the contract
+      const { error: deleteError } = await supabase
+        .from('contracts')
+        .delete()
+        .eq('id', contractId)
+        .eq('company_id', companyId);
+
+      if (deleteError) {
+        console.error('❌ [useContractOperations] Error deleting contract:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('✅ [useContractOperations] Contract deleted permanently:', contract.contract_number);
+      return contract;
+    },
+    onSuccess: (contract) => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      
+      toast.success(`تم حذف العقد #${contract.contract_number} نهائياً مع جميع البيانات المرتبطة`);
+    },
+    onError: (error: any) => {
+      console.error('❌ Delete contract error:', error);
+      toast.error(error.message || 'فشل حذف العقد');
+    }
+  });
+
   return {
     createContract,
     updateContract,
     getContracts,
     getContract,
+    deleteContractPermanently,
     calculateContractTotals,
     isContractOverdue,
     getDaysUntilExpiry,
     // Expose loading states
     isCreating: createContract.isPending,
     isUpdating: updateContract.isPending,
+    isDeleting: deleteContractPermanently.isPending,
     // Expose permissions
     canCreateContracts,
     canApproveContracts,
