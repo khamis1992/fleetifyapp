@@ -1627,7 +1627,13 @@ export const LegalCasesTracking: React.FC = () => {
                         <TableCell>
                           <div>
                             <p className="font-medium text-gray-900">{item.customer_name}</p>
-                            <p className="text-xs text-gray-500">{item.contract_number}</p>
+                            <button
+                              onClick={() => item.contract_number && navigate(`/contracts/${item.contract_number}`)}
+                              className="text-xs text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors"
+                              title="عرض تفاصيل العقد"
+                            >
+                              {item.contract_number}
+                            </button>
                           </div>
                         </TableCell>
                         <TableCell>

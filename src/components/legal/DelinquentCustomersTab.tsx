@@ -1047,7 +1047,18 @@ export const DelinquentCustomersTab: React.FC = () => {
                           <TableCell>
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-neutral-700">{customer.contract_number || '-'}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (customer.contract_number) {
+                                      navigate(`/contracts/${customer.contract_number}`);
+                                    }
+                                  }}
+                                  className="font-medium text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors"
+                                  title="عرض تفاصيل العقد"
+                                >
+                                  {customer.contract_number || '-'}
+                                </button>
                                 {customer.contract_status === 'cancelled' && (
                                   <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white animate-pulse gap-1">
                                     <X className="w-3 h-3" />

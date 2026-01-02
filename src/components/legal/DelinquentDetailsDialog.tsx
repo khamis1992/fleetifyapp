@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
   onOpenChange,
   customer,
 }) => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<OverdueInvoice[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -191,10 +193,19 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
           <div className="p-4 space-y-4">
             {/* معلومات مختصرة */}
             <div className="flex flex-wrap gap-3 text-xs">
-              <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded">
+              <button
+                onClick={() => {
+                  if (customer.contract_number) {
+                    onOpenChange(false);
+                    navigate(`/contracts/${customer.contract_number}`);
+                  }
+                }}
+                className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded hover:bg-coral-100 hover:text-coral-700 cursor-pointer transition-colors"
+                title="عرض تفاصيل العقد"
+              >
                 <FileText className="w-3 h-3 text-purple-500" />
                 <span className="font-mono">{customer.contract_number}</span>
-              </div>
+              </button>
               <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded">
                 <Car className="w-3 h-3 text-green-500" />
                 <span>{customer.vehicle_plate || '-'}</span>
