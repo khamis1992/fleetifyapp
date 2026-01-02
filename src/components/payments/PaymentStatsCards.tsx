@@ -55,7 +55,7 @@ export function PaymentStatsCards() {
         .select('amount')
         .eq('company_id', companyId)
         .eq('payment_date', today)
-        .eq('status', 'completed');
+        .eq('payment_status', 'completed');
 
       // Month's payments
       const { data: monthPaymentsData } = await supabase
@@ -63,21 +63,21 @@ export function PaymentStatsCards() {
         .select('amount')
         .eq('company_id', companyId)
         .gte('payment_date', startOfMonthStr)
-        .eq('status', 'completed');
+        .eq('payment_status', 'completed');
 
       // Active customers with unpaid invoices
       const { data: customersData } = await supabase
         .from('invoices')
         .select('customer_id')
         .eq('company_id', companyId)
-        .in('status', ['sent', 'unpaid', 'pending', 'overdue']);
+        .in('payment_status', ['unpaid', 'partial']);
 
       // Pending invoices count
       const { data: pendingInvoicesData } = await supabase
         .from('invoices')
         .select('id')
         .eq('company_id', companyId)
-        .in('status', ['sent', 'unpaid', 'pending', 'overdue']);
+        .in('payment_status', ['unpaid', 'partial']);
 
       setStats({
         todayPayments: todayPaymentsData?.reduce((sum, p) => sum + p.amount, 0) || 0,

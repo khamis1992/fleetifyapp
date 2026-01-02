@@ -109,7 +109,6 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           id,
           contract_number,
           monthly_amount,
-          monthly_rent,
           status,
           customer:customers!customer_id(
             id,
@@ -141,7 +140,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         contract_number: c.contract_number,
         customer_phone: c.customer?.phone,
         customers: c.customer,
-        monthly_rent: c.monthly_rent,
+        monthly_rent: c.monthly_amount || 0,
         monthly_amount: c.monthly_amount,
         status: c.status,
       }));

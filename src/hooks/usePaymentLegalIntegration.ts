@@ -50,7 +50,7 @@ export const useLatePaymentCustomers = () => {
           contract_number,
           customer_id,
           vehicle_id,
-          monthly_rent,
+          monthly_amount,
           start_date,
           end_date,
           status,
@@ -128,12 +128,12 @@ export const useLatePaymentCustomers = () => {
               contract_number: contract.contract_number,
               vehicle_id: contract.vehicle_id,
               vehicle_plate: (contract.vehicles as any)?.plate_number,
-              total_outstanding: unpaidMonths * contract.monthly_rent,
+              total_outstanding: unpaidMonths * (contract.monthly_amount || 0),
               oldest_unpaid_date: oldestUnpaidDate.toISOString(),
               days_overdue: daysOverdue,
               unpaid_months: unpaidMonths,
               last_payment_date: lastPayment?.payment_date,
-              monthly_rent: contract.monthly_rent,
+              monthly_rent: contract.monthly_amount || 0,
               total_fines: totalFines,
             });
           }
