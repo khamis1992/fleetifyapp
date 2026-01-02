@@ -642,14 +642,24 @@ function ContractsNew() {
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
-                    className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                    placeholder="بحث برقم العقد، اسم العميل، رقم المركبة... (يمكنك كتابة الاسم الكامل)"
+                    className="w-full pr-12 pl-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                     value={searchInput}
                     onChange={(e) => {
                       // تحديث searchInput فقط دون إعادة عرض القوائم
                       setSearchInput(e.target.value);
                     }}
                   />
+                  {/* Clear button when there's text */}
+                  {searchInput && !isFetching && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchInput("")}
+                      className="absolute left-10 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <XCircle className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
                   {/* Show spinner while typing (before debounce) OR while fetching data */}
                   {((searchInput && searchInput !== debouncedSearch) || (isFetching && !isInitialLoading)) && (
                     <div className="absolute left-4 top-1/2 -translate-y-1/2">
@@ -658,12 +668,21 @@ function ContractsNew() {
                   )}
                 </div>
 
+                {/* Search Results Count */}
+                {debouncedSearch && !isFetching && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">
+                      {safeFilteredContracts.length > 0 ? (
+                        <>تم العثور على <span className="font-semibold text-gray-900">{safeFilteredContracts.length}</span> عقد</>
+                      ) : (
+                        <span className="text-amber-600">لم يتم العثور على نتائج للبحث "{debouncedSearch}"</span>
+                      )}
+                    </span>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
-                  <Button className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    <span>تطبيق الفلاتر</span>
-                  </Button>
                   <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => {
                     setSearchInput("");
                     setActiveTab("all");
@@ -739,11 +758,25 @@ function ContractsNew() {
                     <div className="text-center py-12">
                       <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد عقود</h3>
-                      <p className="text-gray-500 mb-4">لم يتم العثور على أي عقود</p>
-                      <Button onClick={() => setShowContractWizard(true)} className="bg-gradient-to-r from-red-600 to-red-800 text-white">
-                        <Plus className="w-4 h-4 ml-2" />
-                        إنشاء عقد جديد
-                      </Button>
+                      {debouncedSearch ? (
+                        <>
+                          <p className="text-gray-500 mb-2">لم يتم العثور على نتائج للبحث:</p>
+                          <p className="text-amber-600 font-medium mb-4">"{debouncedSearch}"</p>
+                          <p className="text-sm text-gray-400 mb-4">جرب البحث باسم العميل الأول فقط أو رقم العقد</p>
+                          <Button variant="outline" onClick={() => setSearchInput("")} className="mr-2">
+                            <XCircle className="w-4 h-4 ml-2" />
+                            مسح البحث
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-gray-500 mb-4">لم يتم العثور على أي عقود</p>
+                          <Button onClick={() => setShowContractWizard(true)} className="bg-gradient-to-r from-red-600 to-red-800 text-white">
+                            <Plus className="w-4 h-4 ml-2" />
+                            إنشاء عقد جديد
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ) : (
                     safeFilteredContracts.map((contract) => (

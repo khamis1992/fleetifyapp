@@ -152,16 +152,41 @@ export const useContractsData = (filters: any = {}) => {
       
       // إذا كان هناك نص بحث، نبحث أولاً عن العملاء المطابقين
       if (searchTerm) {
+        // تقسيم كلمة البحث إلى كلمات منفصلة للبحث الأفضل
+        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        
+        // Build a more comprehensive OR query for customer search
+        // This handles cases where users search for "عمارة الخروبي" which is stored as first_name + last_name
+        let customerSearchConditions: string[] = [];
+        
+        // Search each word in first_name and last_name fields
+        for (const word of searchWords) {
+          customerSearchConditions.push(`first_name.ilike.%${word}%`);
+          customerSearchConditions.push(`last_name.ilike.%${word}%`);
+          customerSearchConditions.push(`first_name_ar.ilike.%${word}%`);
+          customerSearchConditions.push(`last_name_ar.ilike.%${word}%`);
+          customerSearchConditions.push(`company_name.ilike.%${word}%`);
+          customerSearchConditions.push(`company_name_ar.ilike.%${word}%`);
+        }
+        
+        // Also search the full term
+        customerSearchConditions.push(`first_name.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`last_name.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`first_name_ar.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`last_name_ar.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`company_name.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`company_name_ar.ilike.%${searchTerm}%`);
+        
         const { data: matchingCustomers } = await supabase
           .from('customers')
           .select('id')
           .eq('company_id', companyId)
-          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,first_name_ar.ilike.%${searchTerm}%,last_name_ar.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,company_name_ar.ilike.%${searchTerm}%`);
+          .or(customerSearchConditions.join(','));
         
         if (matchingCustomers && matchingCustomers.length > 0) {
           customerIds = matchingCustomers.map(c => c.id);
         }
-        console.log('🔍 [CONTRACTS_QUERY] Found matching customers:', customerIds.length);
+        console.log('🔍 [CONTRACTS_QUERY] Found matching customers:', customerIds.length, 'for search words:', searchWords);
       }
 
       // Get total count if pagination is requested
@@ -441,7 +466,10 @@ export const useContractsData = (filters: any = {}) => {
     const result = enhancedContracts.filter((contract: any) => {
       // Search filter
       if (filters.search && filters.search.trim()) {
-        const searchTerm = filters.search.toLowerCase().trim();
+        const searchTerm = filters.search.trim();
+        
+        // Split search into words for better matching (e.g., "عمارة الخروبي" -> ["عمارة", "الخروبي"])
+        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
         
         // Build customer name from contract.customers data
         let customerName = '';
@@ -464,7 +492,12 @@ export const useContractsData = (filters: any = {}) => {
           contract.vehicle?.model || contract.model || ''
         ].join(' ').toLowerCase();
         
-        if (!searchableText.includes(searchTerm)) {
+        // Check if ALL search words are found (for multi-word searches like "عمارة الخروبي")
+        const allWordsFound = searchWords.every(word => 
+          searchableText.includes(word.toLowerCase())
+        );
+        
+        if (!allWordsFound) {
           return false;
         }
       }
