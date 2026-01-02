@@ -782,12 +782,24 @@ function ContractsNew() {
                     safeFilteredContracts.map((contract) => (
                       <div 
                         key={contract.id} 
-                        className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        className={cn(
+                          "border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+                          contract.status === 'active' && "bg-white border-gray-200",
+                          contract.status === 'cancelled' && "bg-red-50 border-red-200",
+                          (contract.status === 'expired' || contract.status === 'under_legal_procedure') && "bg-amber-50 border-amber-200",
+                          !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-white border-gray-200"
+                        )}
                         onClick={() => handleViewDetails(contract)}
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                              contract.status === 'active' && "bg-gradient-to-br from-green-500 to-green-700",
+                              contract.status === 'cancelled' && "bg-gradient-to-br from-red-400 to-red-600",
+                              (contract.status === 'expired' || contract.status === 'under_legal_procedure') && "bg-gradient-to-br from-amber-400 to-amber-600",
+                              !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-gradient-to-br from-gray-400 to-gray-600"
+                            )}>
                               <FileText className="w-6 h-6 text-white" />
                             </div>
                             <div>
