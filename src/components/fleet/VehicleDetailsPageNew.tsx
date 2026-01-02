@@ -18,6 +18,8 @@ import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import type { Vehicle } from '@/hooks/useVehicles';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+import TabErrorFallback from '@/components/common/TabErrorFallback';
 import {
   ArrowRight,
   ArrowLeft,
@@ -67,7 +69,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { RefreshCw } from 'lucide-react';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
 import { VehicleDocumentsPanel } from './VehicleDocumentsPanel';
 import { VehicleInsurancePanel } from './VehicleInsurancePanel';
@@ -113,6 +132,34 @@ const getStatusConfig = (status: string) => {
       return { label: status, bg: 'bg-neutral-500', text: 'text-white', iconBg: 'bg-neutral-100', iconText: 'text-neutral-600' };
   }
 };
+
+// ===== Contract Status Translation =====
+const getContractStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    'active': 'نشط',
+    'completed': 'مكتمل',
+    'cancelled': 'ملغي',
+    'pending': 'قيد الانتظار',
+    'expired': 'منتهي',
+    'draft': 'مسودة',
+  };
+  return labels[status] || status;
+};
+
+// ===== Maintenance Status Translation =====
+const getMaintenanceStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    'completed': 'مكتملة',
+    'pending': 'قيد الانتظار',
+    'in_progress': 'قيد التنفيذ',
+    'scheduled': 'مجدولة',
+    'cancelled': 'ملغاة',
+  };
+  return labels[status] || status;
+};
+
+// ===== Critical Status List (require confirmation) =====
+const CRITICAL_STATUSES = ['accident', 'stolen', 'police_station', 'out_of_service'];
 
 // ===== Info Row Component =====
 interface InfoRowProps {
@@ -174,6 +221,8 @@ const VehicleDetailsPageNew = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
+  const [showStatusConfirmDialog, setShowStatusConfirmDialog] = useState(false);
 
   // Mutation لتحديث حالة المركبة
   const updateStatusMutation = useMutation({
@@ -363,6 +412,25 @@ const VehicleDetailsPageNew = () => {
     }
   }, [vehicle?.vin]);
 
+  // معالج تغيير الحالة مع تأكيد للحالات الحرجة
+  const handleStatusChange = useCallback((newStatus: string) => {
+    if (CRITICAL_STATUSES.includes(newStatus)) {
+      setPendingStatusChange(newStatus);
+      setShowStatusConfirmDialog(true);
+      setIsStatusDropdownOpen(false);
+    } else {
+      updateStatusMutation.mutate(newStatus);
+    }
+  }, [updateStatusMutation]);
+
+  const confirmStatusChange = useCallback(() => {
+    if (pendingStatusChange) {
+      updateStatusMutation.mutate(pendingStatusChange);
+      setPendingStatusChange(null);
+      setShowStatusConfirmDialog(false);
+    }
+  }, [pendingStatusChange, updateStatusMutation]);
+
   const getCustomerName = (customer: any): string => {
     if (!customer) return 'غير محدد';
     if (customer.customer_type === 'corporate') {
@@ -373,10 +441,8 @@ const VehicleDetailsPageNew = () => {
     return `${firstName} ${lastName}`.trim();
   };
 
-  // معالجة حالات التحميل
-  const isLoading = loadingVehicle || loadingContracts || loadingMaintenance || loadingViolations;
-
-  if (isAuthenticating || !companyId || isLoading) {
+  // معالجة حالات التحميل - فقط بيانات المركبة الأساسية تحجب الصفحة
+  if (isAuthenticating || !companyId || loadingVehicle) {
     return <PageSkeletonFallback />;
   }
 
@@ -433,21 +499,39 @@ const VehicleDetailsPageNew = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="rounded-xl hover:bg-neutral-100"
-                onClick={() => setIsFavorite(!isFavorite)}
-              >
-                <Heart className={cn("w-5 h-5", isFavorite ? "fill-red-500 text-red-500" : "text-neutral-600")} />
-              </Button>
-              <Button 
-                onClick={handleEdit}
-                className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl"
-              >
-                <Edit3 className="w-4 h-4" />
-                تعديل
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="rounded-xl hover:bg-neutral-100"
+                      onClick={() => setIsFavorite(!isFavorite)}
+                    >
+                      <Heart className={cn("w-5 h-5", isFavorite ? "fill-red-500 text-red-500" : "text-neutral-600")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      onClick={handleEdit}
+                      className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      تعديل
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>تعديل بيانات المركبة</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -504,15 +588,19 @@ const VehicleDetailsPageNew = () => {
                       {STATUS_OPTIONS.map((option) => (
                         <DropdownMenuItem
                           key={option.value}
-                          onClick={() => updateStatusMutation.mutate(option.value)}
+                          onClick={() => handleStatusChange(option.value)}
                           disabled={option.value === vehicle.status || updateStatusMutation.isPending}
                           className={cn(
                             "cursor-pointer flex items-center gap-2",
-                            option.value === vehicle.status && "bg-neutral-100"
+                            option.value === vehicle.status && "bg-neutral-100",
+                            CRITICAL_STATUSES.includes(option.value) && "text-red-600"
                           )}
                         >
                           <span className={cn("w-2.5 h-2.5 rounded-full", option.bg)} />
                           {option.label}
+                          {CRITICAL_STATUSES.includes(option.value) && (
+                            <AlertTriangle className="w-3 h-3 mr-1 text-red-500" />
+                          )}
                           {option.value === vehicle.status && (
                             <CheckCircle className="w-4 h-4 mr-auto text-green-600" />
                           )}
@@ -562,7 +650,7 @@ const VehicleDetailsPageNew = () => {
               </div>
             </motion.div>
 
-            {/* Features Section */}
+            {/* Features Section - Dynamic Vehicle Data */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -572,42 +660,68 @@ const VehicleDetailsPageNew = () => {
               <h3 className="text-lg font-bold text-neutral-900 mb-4">مواصفات المركبة</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Safety */}
+                {/* Basic Specs */}
                 <div>
                   <h4 className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-amber-500" />
-                    الأمان
+                    <Car className="w-4 h-4 text-amber-500" />
+                    المواصفات الأساسية
                   </h4>
                   <div className="space-y-2">
-                    <FeatureItem icon={CheckCircle} label="كاميرا خلفية" />
-                    <FeatureItem icon={CheckCircle} label="مراقبة ضغط الإطارات" />
-                    <FeatureItem icon={CheckCircle} label="تنبيه النقطة العمياء" />
+                    <FeatureItem 
+                      icon={CheckCircle} 
+                      label={`${vehicle.seating_capacity || '-'} مقاعد`} 
+                    />
+                    <FeatureItem 
+                      icon={CheckCircle} 
+                      label={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'ناقل يدوي'} 
+                    />
+                    <FeatureItem 
+                      icon={CheckCircle} 
+                      label={vehicle.color || 'لون غير محدد'} 
+                    />
                   </div>
                 </div>
                 
-                {/* Connectivity */}
+                {/* Fuel & Performance */}
                 <div>
                   <h4 className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-amber-500" />
-                    الاتصال
+                    <Fuel className="w-4 h-4 text-amber-500" />
+                    الوقود والأداء
                   </h4>
                   <div className="space-y-2">
-                    <FeatureItem icon={Smartphone} label="بلوتوث" />
-                    <FeatureItem icon={Radio} label="منفذ AUX" />
-                    <FeatureItem icon={Navigation} label="نظام ملاحة" />
+                    <FeatureItem 
+                      icon={CheckCircle} 
+                      label={
+                        vehicle.fuel_type === 'gasoline' ? 'بنزين' :
+                        vehicle.fuel_type === 'diesel' ? 'ديزل' :
+                        vehicle.fuel_type === 'hybrid' ? 'هجين' :
+                        vehicle.fuel_type === 'electric' ? 'كهربائي' : 'غير محدد'
+                      } 
+                    />
+                    {vehicle.fuel_capacity && (
+                      <FeatureItem icon={CheckCircle} label={`سعة الخزان: ${vehicle.fuel_capacity} لتر`} />
+                    )}
+                    <FeatureItem 
+                      icon={Gauge} 
+                      label={`${(vehicle.current_mileage || 0).toLocaleString('en-US')} كم`} 
+                    />
                   </div>
                 </div>
                 
-                {/* Comfort */}
+                {/* Category & Type */}
                 <div>
                   <h4 className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2">
-                    <Thermometer className="w-4 h-4 text-amber-500" />
-                    الراحة
+                    <Tag className="w-4 h-4 text-amber-500" />
+                    الفئة والنوع
                   </h4>
                   <div className="space-y-2">
-                    <FeatureItem icon={Zap} label="تشغيل بدون مفتاح" />
-                    <FeatureItem icon={Thermometer} label="تكييف خلفي" />
-                    <FeatureItem icon={Settings} label="مقاعد قابلة للتعديل" />
+                    {vehicle.vehicle_category && (
+                      <FeatureItem icon={CheckCircle} label={vehicle.vehicle_category} />
+                    )}
+                    <FeatureItem icon={CheckCircle} label={`${vehicle.year || '-'}`} />
+                    {vehicle.body_type && (
+                      <FeatureItem icon={CheckCircle} label={vehicle.body_type} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -681,174 +795,200 @@ const VehicleDetailsPageNew = () => {
                 <div className="p-6">
                   {/* Overview Tab */}
                   <TabsContent value="overview" className="mt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Basic Info */}
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-neutral-900 mb-3">المعلومات الأساسية</h4>
-                        <InfoRow label="الشركة المصنعة" value={vehicle.make} />
-                        <InfoRow label="الطراز" value={vehicle.model} />
-                        <InfoRow label="السنة" value={vehicle.year} />
-                        <InfoRow label="اللون" value={vehicle.color} />
-                        <InfoRow label="عدد المقاعد" value={vehicle.seating_capacity} />
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="نظرة عامة" />}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Basic Info */}
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-neutral-900 mb-3">المعلومات الأساسية</h4>
+                          <InfoRow label="الشركة المصنعة" value={vehicle.make} />
+                          <InfoRow label="الطراز" value={vehicle.model} />
+                          <InfoRow label="السنة" value={vehicle.year} />
+                          <InfoRow label="اللون" value={vehicle.color} />
+                          <InfoRow label="عدد المقاعد" value={vehicle.seating_capacity} />
+                        </div>
+                        
+                        {/* Technical Info */}
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-neutral-900 mb-3">المواصفات التقنية</h4>
+                          <InfoRow label="ناقل الحركة" value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'} />
+                          <InfoRow label="نوع الوقود" value={
+                            vehicle.fuel_type === 'gasoline' ? 'بنزين' :
+                            vehicle.fuel_type === 'diesel' ? 'ديزل' :
+                            vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'
+                          } />
+                          <InfoRow label="سعة الخزان" value={vehicle.fuel_capacity ? `${vehicle.fuel_capacity} لتر` : undefined} />
+                          <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
+                        </div>
                       </div>
-                      
-                      {/* Technical Info */}
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-neutral-900 mb-3">المواصفات التقنية</h4>
-                        <InfoRow label="ناقل الحركة" value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'} />
-                        <InfoRow label="نوع الوقود" value={
-                          vehicle.fuel_type === 'gasoline' ? 'بنزين' :
-                          vehicle.fuel_type === 'diesel' ? 'ديزل' :
-                          vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'
-                        } />
-                        <InfoRow label="سعة الخزان" value={vehicle.fuel_capacity ? `${vehicle.fuel_capacity} لتر` : undefined} />
-                        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
-                      </div>
-                    </div>
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Contracts Tab */}
                   <TabsContent value="contracts" className="mt-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-neutral-900">العقود المرتبطة</h4>
-                      <Button onClick={handleNewContract} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
-                        <Plus className="w-4 h-4" />
-                        عقد جديد
-                      </Button>
-                    </div>
-                    
-                    {contracts.length === 0 ? (
-                      <div className="text-center py-12 text-neutral-500">
-                        <FileText className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
-                        <p>لا توجد عقود لهذه المركبة</p>
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="العقود" />}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-neutral-900">العقود المرتبطة</h4>
+                        <Button onClick={handleNewContract} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                          <Plus className="w-4 h-4" />
+                          عقد جديد
+                        </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {contracts.map((contract) => (
-                          <div
-                            key={contract.id}
-                            onClick={() => navigate(`/contracts/${contract.contract_number}`)}
-                            className="p-4 rounded-xl border border-neutral-200 hover:border-coral-300 hover:shadow-md transition-all cursor-pointer"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <span className="font-bold text-neutral-900">#{contract.contract_number}</span>
-                                <p className="text-sm text-neutral-500">{getCustomerName(contract.customer)}</p>
+                      
+                      {loadingContracts ? (
+                        <div className="flex items-center justify-center h-32">
+                          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                        </div>
+                      ) : contracts.length === 0 ? (
+                        <div className="text-center py-12 text-neutral-500">
+                          <FileText className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
+                          <p>لا توجد عقود لهذه المركبة</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {contracts.map((contract) => (
+                            <div
+                              key={contract.id}
+                              onClick={() => navigate(`/contracts/${contract.contract_number}`)}
+                              className="p-4 rounded-xl border border-neutral-200 hover:border-coral-300 hover:shadow-md transition-all cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <span className="font-bold text-neutral-900">#{contract.contract_number}</span>
+                                  <p className="text-sm text-neutral-500">{getCustomerName(contract.customer)}</p>
+                                </div>
+                                <Badge className={contract.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}>
+                                  {getContractStatusLabel(contract.status)}
+                                </Badge>
                               </div>
-                              <Badge className={contract.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}>
-                                {contract.status === 'active' ? 'نشط' : contract.status}
-                              </Badge>
+                              <div className="flex items-center gap-4 text-sm text-neutral-500">
+                                <span>{contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '-'}</span>
+                                <span>←</span>
+                                <span>{contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '-'}</span>
+                                <span className="mr-auto font-semibold text-neutral-900">{formatCurrency(contract.monthly_amount || 0)}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-neutral-500">
-                              <span>{contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '-'}</span>
-                              <span>←</span>
-                              <span>{contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '-'}</span>
-                              <span className="mr-auto font-semibold text-neutral-900">{formatCurrency(contract.monthly_amount || 0)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Maintenance Tab */}
                   <TabsContent value="maintenance" className="mt-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-neutral-900">سجل الصيانة</h4>
-                      <Button onClick={() => setShowMaintenanceForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
-                        <Plus className="w-4 h-4" />
-                        تسجيل صيانة
-                      </Button>
-                    </div>
-                    
-                    {maintenanceRecords.length === 0 ? (
-                      <div className="text-center py-12 text-neutral-500">
-                        <Wrench className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
-                        <p>لا توجد سجلات صيانة لهذه المركبة</p>
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="الصيانة" />}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-neutral-900">سجل الصيانة</h4>
+                        <Button onClick={() => setShowMaintenanceForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                          <Plus className="w-4 h-4" />
+                          تسجيل صيانة
+                        </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {maintenanceRecords.map((record) => (
-                          <div key={record.id} className="p-4 rounded-xl border border-neutral-200">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                                <CheckCircle className="w-5 h-5 text-green-600" />
+                      
+                      {loadingMaintenance ? (
+                        <div className="flex items-center justify-center h-32">
+                          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                        </div>
+                      ) : maintenanceRecords.length === 0 ? (
+                        <div className="text-center py-12 text-neutral-500">
+                          <Wrench className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
+                          <p>لا توجد سجلات صيانة لهذه المركبة</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {maintenanceRecords.map((record) => (
+                            <div key={record.id} className="p-4 rounded-xl border border-neutral-200">
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                                  <CheckCircle className="w-5 h-5 text-green-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <h5 className="font-semibold text-neutral-900">{record.maintenance_type || 'صيانة'}</h5>
+                                  <p className="text-sm text-neutral-500">
+                                    {record.scheduled_date ? format(new Date(record.scheduled_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                                    {record.service_provider && ` • ${record.service_provider}`}
+                                  </p>
+                                  <p className="text-sm text-neutral-700 mt-1">
+                                    التكلفة: {formatCurrency(record.actual_cost || record.estimated_cost || 0)}
+                                  </p>
+                                </div>
+                                <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
+                                  {getMaintenanceStatusLabel(record.status)}
+                                </Badge>
                               </div>
-                              <div className="flex-1">
-                                <h5 className="font-semibold text-neutral-900">{record.maintenance_type || 'صيانة'}</h5>
-                                <p className="text-sm text-neutral-500">
-                                  {record.scheduled_date ? format(new Date(record.scheduled_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
-                                  {record.service_provider && ` • ${record.service_provider}`}
-                                </p>
-                                <p className="text-sm text-neutral-700 mt-1">
-                                  التكلفة: {formatCurrency(record.actual_cost || record.estimated_cost || 0)}
-                                </p>
-                              </div>
-                              <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
-                                {record.status === 'completed' ? 'مكتملة' : record.status}
-                              </Badge>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Violations Tab */}
                   <TabsContent value="violations" className="mt-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-neutral-900">المخالفات المرورية</h4>
-                      <Button onClick={() => setShowViolationForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
-                        <Plus className="w-4 h-4" />
-                        تسجيل مخالفة
-                      </Button>
-                    </div>
-                    
-                    {violations.length === 0 ? (
-                      <div className="text-center py-12 text-neutral-500">
-                        <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
-                        <p>لا توجد مخالفات مسجلة لهذه المركبة</p>
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="المخالفات" />}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-neutral-900">المخالفات المرورية</h4>
+                        <Button onClick={() => setShowViolationForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                          <Plus className="w-4 h-4" />
+                          تسجيل مخالفة
+                        </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {violations.map((violation) => (
-                          <div key={violation.id} className="p-4 rounded-xl border border-neutral-200">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h5 className="font-semibold text-neutral-900">{violation.violation_type || 'مخالفة مرورية'}</h5>
-                                <p className="text-sm text-neutral-500">#{violation.violation_number || violation.id.substring(0, 8)}</p>
+                      
+                      {loadingViolations ? (
+                        <div className="flex items-center justify-center h-32">
+                          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                        </div>
+                      ) : violations.length === 0 ? (
+                        <div className="text-center py-12 text-neutral-500">
+                          <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
+                          <p>لا توجد مخالفات مسجلة لهذه المركبة</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {violations.map((violation) => (
+                            <div key={violation.id} className="p-4 rounded-xl border border-neutral-200">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h5 className="font-semibold text-neutral-900">{violation.violation_type || 'مخالفة مرورية'}</h5>
+                                  <p className="text-sm text-neutral-500">#{violation.violation_number || violation.id.substring(0, 8)}</p>
+                                </div>
+                                <Badge className={violation.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                                  {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
+                                </Badge>
                               </div>
-                              <Badge className={violation.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
-                                {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
-                              </Badge>
+                              <div className="flex items-center gap-4 text-sm">
+                                <span className="text-neutral-500">
+                                  {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
+                                </span>
+                                <span className="font-bold text-red-600">
+                                  {formatCurrency(violation.fine_amount || 0)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-4 text-sm">
-                              <span className="text-neutral-500">
-                                {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
-                              </span>
-                              <span className="font-bold text-red-600">
-                                {formatCurrency(violation.fine_amount || 0)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Pricing Tab */}
                   <TabsContent value="pricing" className="mt-0">
-                    <VehiclePricingPanel vehicleId={vehicle.id} />
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="التسعير" />}>
+                      <VehiclePricingPanel vehicleId={vehicle.id} />
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Insurance Tab */}
                   <TabsContent value="insurance" className="mt-0">
-                    <VehicleInsurancePanel vehicleId={vehicle.id} />
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="التأمين" />}>
+                      <VehicleInsurancePanel vehicleId={vehicle.id} />
+                    </ErrorBoundary>
                   </TabsContent>
 
                   {/* Documents Tab */}
                   <TabsContent value="documents" className="mt-0">
-                    <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
+                    <ErrorBoundary fallback={<TabErrorFallback tabName="الوثائق" />}>
+                      <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
+                    </ErrorBoundary>
                   </TabsContent>
                 </div>
               </Tabs>
@@ -1076,6 +1216,42 @@ const VehicleDetailsPageNew = () => {
           <TrafficViolationForm onSuccess={handleViolationSuccess} vehicleId={vehicleId} />
         </DialogContent>
       </Dialog>
+
+      {/* Status Change Confirmation Dialog */}
+      <AlertDialog open={showStatusConfirmDialog} onOpenChange={setShowStatusConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              تأكيد تغيير الحالة
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              أنت على وشك تغيير حالة المركبة إلى{' '}
+              <span className="font-bold text-red-600">
+                {pendingStatusChange ? getStatusConfig(pendingStatusChange).label : ''}
+              </span>
+              . هذا الإجراء يتطلب تأكيداً لأنه قد يؤثر على العمليات الجارية.
+              <br />
+              <br />
+              هل أنت متأكد من المتابعة؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => {
+              setPendingStatusChange(null);
+              setShowStatusConfirmDialog(false);
+            }}>
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmStatusChange}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              تأكيد التغيير
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
