@@ -54,7 +54,7 @@ import {
   generateClaimsStatementHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
-import { TaqadiControlPanel } from '@/components/taqidi';
+import { TaqadiControlPanel } from '@/components/taqadi';
 
 // واجهة بيانات تقاضي
 interface TaqadiData {

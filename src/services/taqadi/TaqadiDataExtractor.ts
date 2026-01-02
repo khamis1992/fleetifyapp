@@ -112,7 +112,7 @@ export interface ExtractionOptions {
 // Extraction Service
 // ==========================================
 
-class TaqadiDataExtractor {
+export class TaqadiDataExtractor {
   /**
    * Main extraction function - extracts all data for Taqadi submission
    */

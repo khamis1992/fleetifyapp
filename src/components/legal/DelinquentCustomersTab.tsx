@@ -57,12 +57,24 @@ import {
   Zap,
   CreditCard,
   Star,
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
 import { useRefreshDelinquentCustomers } from '@/hooks/useDelinquentCustomers';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
 import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
+import { useContractOperations } from '@/hooks/business/useContractOperations';
 import LegalWarningDialog from './LegalWarningDialog';
 import { CreateLegalCaseDialog } from './CreateLegalCaseDialog';
 import { DelinquentDetailsDialog } from './DelinquentDetailsDialog';
@@ -218,6 +230,8 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [currentCustomer, setCurrentCustomer] = useState<DelinquentCustomer | null>(null);
   const [selectedCustomerForDetails, setSelectedCustomerForDetails] = useState<DelinquentCustomer | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const itemsPerPage = 10;
 
   // Hooks
@@ -225,6 +239,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const convertToCase = useConvertToLegalCase();
   const generateWarning = useGenerateLegalWarning();
   const refreshDelinquentCustomers = useRefreshDelinquentCustomers();
+  const { deleteContractPermanently } = useContractOperations();
 
   // Build filters object
   const filters = useMemo(() => ({
@@ -366,6 +381,43 @@ export const DelinquentCustomersTab: React.FC = () => {
     setSelectedCustomers([]);
     setSelectedIds(new Set());
   }, [selectedCustomers, convertToCase]);
+
+  // Handle bulk delete contracts permanently
+  const handleBulkDeleteContracts = useCallback(async () => {
+    if (selectedCustomers.length === 0) {
+      toast.error('لم يتم تحديد أي عقود');
+      return;
+    }
+
+    setBulkDeleting(true);
+    toast.info(`جاري حذف ${selectedCustomers.length} عقد نهائياً...`);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const customer of selectedCustomers) {
+      try {
+        await deleteContractPermanently.mutateAsync(customer.contract_id);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to delete contract ${customer.contract_number}:`, error);
+        failCount++;
+      }
+    }
+    
+    setBulkDeleting(false);
+    setBulkDeleteDialogOpen(false);
+    
+    if (successCount > 0) {
+      toast.success(`تم حذف ${successCount} عقد نهائياً`);
+    }
+    if (failCount > 0) {
+      toast.error(`فشل حذف ${failCount} عقد`);
+    }
+    
+    setSelectedCustomers([]);
+    setSelectedIds(new Set());
+  }, [selectedCustomers, deleteContractPermanently]);
 
   // Handle export to Excel
   const handleExport = useCallback(() => {
@@ -948,6 +1000,16 @@ export const DelinquentCustomersTab: React.FC = () => {
               إنشاء قضايا
               </Button>
               <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                disabled={bulkDeleting}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                حذف نهائي
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
               onClick={() => { setSelectedCustomers([]); setSelectedIds(new Set()); }}
@@ -1250,6 +1312,43 @@ export const DelinquentCustomersTab: React.FC = () => {
         onOpenChange={setDetailsDialogOpen}
         customer={selectedCustomerForDetails}
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              تأكيد الحذف النهائي
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-2">
+              <p>
+                أنت على وشك حذف <strong>{selectedCustomers.length} عقد</strong> نهائياً.
+              </p>
+              <p className="text-red-600 font-medium">
+                ⚠️ هذا الإجراء لا يمكن التراجع عنه!
+              </p>
+              <p>سيتم حذف جميع البيانات المرتبطة بالعقود المحددة:</p>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1">
+                <li>الفواتير والمدفوعات</li>
+                <li>جداول السداد</li>
+                <li>سجلات المتعثرين</li>
+                <li>ملفات القضايا القانونية</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel disabled={bulkDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDeleteContracts}
+              disabled={bulkDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {bulkDeleting ? 'جاري الحذف...' : `حذف ${selectedCustomers.length} عقد نهائياً`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

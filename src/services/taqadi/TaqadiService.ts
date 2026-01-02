@@ -51,7 +51,7 @@ export interface PreparationResult {
 // Service Class
 // ==========================================
 
-class TaqadiService {
+export class TaqadiService {
   /**
    * Prepare complete data for Taqadi submission
    * This is the main entry point for the service

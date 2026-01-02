@@ -20,18 +20,7 @@ export * from './TaqadiTypes';
 export { taqadiDataExtractor, TaqadiDataExtractor } from './TaqadiDataExtractor';
 export { taqadiValidator, TaqadiValidator } from './TaqadiValidator';
 
-// Browser automation
-export {
-  TaqadiBrowserAutomation,
-  createTaqadiAutomation,
-} from './TaqadiBrowserAutomation';
-export type {
-  BrowserAutomationConfig,
-  AutomationResult,
-  AutomationStep,
-} from './TaqadiBrowserAutomation';
-
-// Selectors
+// Selectors (useful for bookmarklet)
 export {
   TAQADI_URLS,
   CASE_FORM_SELECTORS,
@@ -39,3 +28,7 @@ export {
   SELECTOR_GROUPS,
   WAIT_CONDITIONS,
 } from './TaqadiSelectors';
+
+// Note: TaqadiBrowserAutomation is NOT exported here because it requires
+// Playwright which is a Node.js-only library. Use the bookmarklet approach
+// for client-side form filling instead.

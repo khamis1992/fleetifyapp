@@ -165,7 +165,7 @@ const DOCUMENT_VALIDATION_RULES: ValidationRule[] = [
 // Validation Service
 // ==========================================
 
-class TaqadiValidator {
+export class TaqadiValidator {
   /**
    * Validate complete submission data
    */
