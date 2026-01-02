@@ -118,30 +118,31 @@ const CASE_VALIDATION_RULES: ValidationRule[] = [
 
 /**
  * Validation rules for amounts
+ * Note: amounts are nested inside case.amounts in the data structure
  */
 const AMOUNT_VALIDATION_RULES: ValidationRule[] = [
   {
-    field: 'amounts.principalAmount',
+    field: 'case.amounts.principalAmount',
     required: true,
     validate: (v: number) => v !== null && v !== undefined && v > 0,
     errorMessage: 'المبلغ الأساسي يجب أن يكون أكبر من صفر',
     category: 'invalid',
   },
   {
-    field: 'amounts.totalAmount',
+    field: 'case.amounts.totalAmount',
     required: true,
     validate: (v: number) => v !== null && v !== undefined && v > 0,
     errorMessage: 'المبلغ الإجمالي يجب أن يكون أكبر من صفر',
     category: 'invalid',
   },
   {
-    field: 'amounts.amountInWords',
+    field: 'case.amounts.amountInWords',
     required: true,
     validate: (v: string) => v && v.length > 10,
     errorMessage: 'المبلغ كتابةً غير مكتمل',
     category: 'incomplete',
   },
-  { field: 'amounts.currency', required: true },
+  { field: 'case.amounts.currency', required: true },
 ];
 
 /**
