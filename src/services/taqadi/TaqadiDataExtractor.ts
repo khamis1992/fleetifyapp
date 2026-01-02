@@ -28,14 +28,12 @@ export interface ContractData {
   end_date: string;
   customer_id: string;
   vehicle_id: string;
-  make?: string;
-  model?: string;
-  year?: number;
-  license_plate?: string;
-  monthly_rent?: number;
+  monthly_amount?: number;
   balance_due?: number;
   days_overdue?: number;
   status: string;
+  customer?: CustomerData;
+  vehicle?: VehicleData;
 }
 
 /**
@@ -43,12 +41,16 @@ export interface ContractData {
  */
 export interface CustomerData {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  first_name_ar?: string;
+  last_name?: string;
+  last_name_ar?: string;
+  company_name_ar?: string;
   national_id?: string;
   phone?: string;
   email?: string;
   address?: string;
+  customer_type?: 'individual' | 'company';
 }
 
 /**
@@ -166,22 +168,22 @@ export class TaqadiDataExtractor {
         end_date,
         customer_id,
         vehicle_id,
-        make,
-        model,
-        year,
-        license_plate,
-        monthly_rent,
+        monthly_amount,
         balance_due,
         days_overdue,
         status,
         customers (
           id,
           first_name,
+          first_name_ar,
           last_name,
+          last_name_ar,
+          company_name_ar,
           national_id,
           phone,
           email,
-          address
+          address,
+          customer_type
         ),
         vehicles (
           make,
