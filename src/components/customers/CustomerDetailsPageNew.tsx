@@ -71,8 +71,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-// PaymentForm removed - not used in this file
-// import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
+import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
 import {
   Dialog,
@@ -679,7 +678,10 @@ const PaymentsTab = ({ payments, navigate }: { payments: any[], navigate: any })
           <h4 className="text-sm font-bold text-neutral-900">سجل المدفوعات</h4>
           <p className="text-xs text-neutral-500">{payments.length} عملية</p>
         </div>
-        <Button className="bg-green-500 hover:bg-green-600 text-white gap-2">
+        <Button 
+          className="bg-green-500 hover:bg-green-600 text-white gap-2"
+          onClick={() => setIsPaymentDialogOpen(true)}
+        >
           <Plus className="w-4 h-4" />
           تسجيل دفعة
         </Button>
@@ -1569,6 +1571,19 @@ const CustomerDetailsPageNew = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Payment Dialog */}
+      <UnifiedPaymentForm
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        type="customer_payment"
+        customerId={customerId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['customer-payments-new', customerId, companyId] });
+          setIsPaymentDialogOpen(false);
+          toast({ title: 'تم تسجيل الدفعة بنجاح' });
+        }}
+      />
     </div>
   );
 };

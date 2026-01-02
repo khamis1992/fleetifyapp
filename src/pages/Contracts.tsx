@@ -216,6 +216,20 @@ function ContractsNew() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Handle customer parameter from URL query string
+  useEffect(() => {
+    const customerParam = searchParams.get("customer");
+    if (customerParam) {
+      setPreselectedCustomerId(customerParam);
+      setShowContractWizard(true);
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.delete("customer");
+        return newParams;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Handlers
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
