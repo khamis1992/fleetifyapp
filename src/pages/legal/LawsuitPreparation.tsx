@@ -574,8 +574,7 @@ ${taqadiData.claims}
 
       const { data, error } = await supabase.functions.invoke('manus-taqadi', {
         body: {
-          lawsuitData,
-          useBrowserOperator: true // استخدام Browser Operator (My Browser)
+          lawsuitData
         }
       });
 

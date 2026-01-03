@@ -147,9 +147,8 @@ Deno.serve(async (req) => {
       throw new Error('MANUS_API_KEY not configured');
     }
 
-    const { lawsuitData, useBrowserOperator = true } = await req.json() as {
+    const { lawsuitData } = await req.json() as {
       lawsuitData: LawsuitData;
-      useBrowserOperator?: boolean;
     };
 
     if (!lawsuitData) {
@@ -172,8 +171,10 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         prompt: prompt,
-        // Request Browser Operator (My Browser) for local execution
-        browser_mode: useBrowserOperator ? 'my_browser' : 'cloud',
+        // Use 'agent' mode for full browser automation capabilities
+        taskMode: 'agent',
+        // Specify agent profile for quality
+        agentProfile: 'quality',
         // Additional metadata
         metadata: {
           source: 'fleetify-app',
@@ -197,7 +198,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        taskId: result.id || result.task_id,
+        taskId: result.taskId,
+        taskUrl: result.taskUrl,
         message: 'تم إرسال المهمة إلى Manus! سيفتح متصفحك قريباً.',
         manusResponse: result
       }),
