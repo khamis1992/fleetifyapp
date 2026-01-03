@@ -295,8 +295,8 @@ export default function LawsuitPreparationPage() {
 
   // توليد المذكرة الشارحة
   const generateExplanatoryMemo = useCallback(() => {
-    if (!contract || !taqadiData) {
-      toast.error('جاري تحميل البيانات...');
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد...');
       return;
     }
 
@@ -316,7 +316,7 @@ export default function LawsuitPreparationPage() {
           contract_number: contract.contract_number,
           contract_start_date: contract.start_date,
           vehicle_plate: vehicle?.plate_number || (contract as any).license_plate || '',
-          monthly_rent: (contract as any).rent_amount || 0,
+          monthly_rent: Number(contract.monthly_amount) || 0,
           months_unpaid: overdueInvoices.length,
           overdue_amount: calculations.overdueRent,
           late_penalty: calculations.lateFees,
@@ -340,7 +340,7 @@ export default function LawsuitPreparationPage() {
         contractInfo: {
           contract_number: contract.contract_number,
           start_date: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
-          monthly_rent: (contract as any).rent_amount || 0,
+          monthly_rent: Number(contract.monthly_amount) || 0,
         },
         damages: damagesAmount,
       };
@@ -356,7 +356,7 @@ export default function LawsuitPreparationPage() {
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [contract, taqadiData, calculations, overdueInvoices]);
+  }, [contract, calculations, overdueInvoices]);
 
   // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {
@@ -433,6 +433,48 @@ export default function LawsuitPreparationPage() {
     setIsGeneratingClaims(false);
     toast.success('✅ تم توليد كشف المطالبات!');
   }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData]);
+
+  // توليد كشف المخالفات المرورية
+  const generateViolationsList = useCallback(() => {
+    if (!contract || !trafficViolations.length) {
+      toast.error('لا توجد مخالفات مرورية');
+      return;
+    }
+
+    setIsGeneratingViolations(true);
+    const customer = (contract as any)?.customers;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+    const vehicle = (contract as any)?.vehicles;
+
+    const violationsData = trafficViolations.map((v) => ({
+      violationNumber: v.violation_number || '-',
+      violationDate: v.violation_date || '',
+      violationType: v.violation_type || 'غير محدد',
+      location: v.location || '-',
+      fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
+    }));
+
+    // استخدام نفس التنسيق مع الفواتير فارغة
+    const violationsHtml = generateClaimsStatementHtml({
+      customerName,
+      nationalId: customer?.national_id || '-',
+      contractNumber: contract?.contract_number || '-',
+      contractStartDate: contract?.start_date || '',
+      contractEndDate: contract?.end_date || '',
+      invoices: [],
+      violations: violationsData,
+      totalOverdue: calculations.violationsFines,
+      amountInWords: lawsuitService.convertAmountToWords(calculations.violationsFines),
+      caseTitle: `كشف المخالفات المرورية - ${customerName}`,
+    });
+
+    openLetterForPrint(violationsHtml);
+    setViolationsListUrl('generated');
+    setIsGeneratingViolations(false);
+    toast.success('✅ تم توليد كشف المخالفات المرورية!');
+  }, [trafficViolations, contract, calculations]);
 
   // بدء الأتمتة
   const startAutomation = useCallback(async () => {
@@ -560,12 +602,15 @@ export default function LawsuitPreparationPage() {
         type: 'optional' as const,
         category: 'violations' as const,
         url: violationsListUrl,
+        onGenerate: generateViolationsList,
+        isGenerating: isGeneratingViolations,
       }] : []),
     ];
   }, [
     memoUrl, claimsStatementUrl, docsListUrl, violationsListUrl, contractFileUrl,
     legalDocs, calculations, contract, overdueInvoices,
     isGeneratingMemo, isGeneratingClaims, isGeneratingDocsList, isUploadingContract,
+    isGeneratingViolations, generateViolationsList,
   ]);
 
   // حساب التقدم
@@ -858,19 +903,53 @@ export default function LawsuitPreparationPage() {
                 .map((doc) => (
                   <div
                     key={doc.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/20"
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      doc.status === 'ready' 
+                        ? 'bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20' 
+                        : 'bg-muted/20'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Circle className="h-4 w-4 text-muted-foreground" />
+                      {doc.status === 'ready' ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <Circle className="h-4 w-4 text-muted-foreground" />
+                      )}
                       <div>
                         <p className="font-medium text-sm">{doc.name}</p>
                         <p className="text-xs text-muted-foreground">{doc.description}</p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
-                      <Sparkles className="h-4 w-4 ml-1" />
-                      توليد
-                    </Button>
+                    <div className="flex gap-2">
+                      {doc.status === 'ready' && doc.url && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(doc.url!, '_blank')}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {doc.onGenerate && (
+                        <Button 
+                          size="sm" 
+                          variant={doc.status === 'ready' ? 'ghost' : 'default'}
+                          onClick={doc.onGenerate}
+                          disabled={doc.isGenerating}
+                        >
+                          {doc.isGenerating ? (
+                            <LoadingSpinner className="h-4 w-4" />
+                          ) : doc.status === 'ready' ? (
+                            <RefreshCw className="h-4 w-4" />
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 ml-1" />
+                              توليد
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
             </CardContent>
