@@ -1,21 +1,20 @@
 /**
- * صفحة تجهيز الدعوى
- * لتجهيز جميع البيانات والمستندات المطلوبة لرفع دعوى في تقاضي
+ * صفحة تجهيز الدعوى - تصميم جديد (Task List)
+ * قائمة مهام لتجهيز جميع المستندات المطلوبة لرفع دعوى في تقاضي
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import {
   Gavel,
@@ -27,23 +26,26 @@ import {
   User,
   Car,
   DollarSign,
-  Calendar,
   Building2,
   ClipboardList,
   FileCheck,
   Sparkles,
-  ArrowRight,
   CheckCircle2,
+  Circle,
   AlertCircle,
-  Printer,
   RefreshCw,
-  Bookmark,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Upload,
+  FolderDown,
+  ArrowLeft,
+  FileWarning,
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import {
   lawsuitService,
-  LawsuitPreparation,
   CompanyLegalDocument,
   DOCUMENT_TYPE_NAMES,
   LegalDocumentType,
@@ -54,7 +56,21 @@ import {
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
-import { TaqadiControlPanel } from '@/components/taqadi';
+
+// واجهة المستند
+interface DocumentItem {
+  id: string;
+  name: string;
+  description: string;
+  status: 'ready' | 'pending' | 'generating' | 'missing';
+  type: 'mandatory' | 'optional';
+  category: 'generated' | 'company' | 'contract' | 'violations';
+  url?: string | null;
+  onGenerate?: () => void;
+  onDownload?: () => void;
+  onUpload?: (file: File) => void;
+  isGenerating?: boolean;
+}
 
 // واجهة بيانات تقاضي
 interface TaqadiData {
@@ -68,42 +84,39 @@ interface TaqadiData {
 export default function LawsuitPreparationPage() {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { companyId, isLoading: companyLoading } = useUnifiedCompanyAccess();
   
   // الحالات
   const [taqadiData, setTaqadiData] = useState<TaqadiData | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isAutomating, setIsAutomating] = useState(false);
-  const [automationSession, setAutomationSession] = useState<{ sessionId: string; liveUrl: string } | null>(null);
+  const [showTaqadiData, setShowTaqadiData] = useState(false);
   
-  // حالات المستندات الجديدة
-  const [contractFile, setContractFile] = useState<File | null>(null);
+  // حالات المستندات
+  const [memoUrl, setMemoUrl] = useState<string | null>(null);
+  const [isGeneratingMemo, setIsGeneratingMemo] = useState(false);
+  const [docsListUrl, setDocsListUrl] = useState<string | null>(null);
+  const [isGeneratingDocsList, setIsGeneratingDocsList] = useState(false);
+  const [claimsStatementUrl, setClaimsStatementUrl] = useState<string | null>(null);
+  const [isGeneratingClaims, setIsGeneratingClaims] = useState(false);
+  const [violationsListUrl, setViolationsListUrl] = useState<string | null>(null);
+  const [isGeneratingViolations, setIsGeneratingViolations] = useState(false);
   const [contractFileUrl, setContractFileUrl] = useState<string | null>(null);
   const [isUploadingContract, setIsUploadingContract] = useState(false);
-  const [isGeneratingMemo, setIsGeneratingMemo] = useState(false);
-  const [memoUrl, setMemoUrl] = useState<string | null>(null);
-  const [isGeneratingDocsList, setIsGeneratingDocsList] = useState(false);
-  const [docsListUrl, setDocsListUrl] = useState<string | null>(null);
-  const [isGeneratingClaims, setIsGeneratingClaims] = useState(false);
-  const [claimsStatementUrl, setClaimsStatementUrl] = useState<string | null>(null);
 
   // جلب بيانات العقد
-  const { data: contract, isLoading: contractLoading, error: contractError } = useQuery({
+  const { data: contract, isLoading: contractLoading } = useQuery({
     queryKey: ['contract-details', contractId],
     queryFn: async () => {
-      // جلب بيانات العقد أولاً
-      const { data: contractData, error: contractErr } = await supabase
+      const { data: contractData, error } = await supabase
         .from('contracts')
         .select('*')
         .eq('id', contractId)
         .single();
       
-      if (contractErr) throw contractErr;
+      if (error) throw error;
       if (!contractData) throw new Error('لم يتم العثور على العقد');
 
-      // جلب بيانات العميل
       let customerData = null;
       if (contractData.customer_id) {
         const { data: customer } = await supabase
@@ -114,7 +127,6 @@ export default function LawsuitPreparationPage() {
         customerData = customer;
       }
 
-      // جلب بيانات السيارة
       let vehicleData = null;
       if (contractData.vehicle_id) {
         const { data: vehicle } = await supabase
@@ -125,12 +137,7 @@ export default function LawsuitPreparationPage() {
         vehicleData = vehicle;
       }
 
-      // دمج البيانات
-      return {
-        ...contractData,
-        customers: customerData,
-        vehicles: vehicleData,
-      };
+      return { ...contractData, customers: customerData, vehicles: vehicleData };
     },
     enabled: !!contractId,
   });
@@ -151,7 +158,7 @@ export default function LawsuitPreparationPage() {
     enabled: !!contractId,
   });
 
-  // جلب المخالفات المرورية المرتبطة بالعقد
+  // جلب المخالفات المرورية
   const { data: trafficViolations = [], isLoading: violationsLoading } = useQuery({
     queryKey: ['contract-traffic-violations', contractId, companyId],
     queryFn: async () => {
@@ -179,20 +186,17 @@ export default function LawsuitPreparationPage() {
   });
 
   // حساب المبالغ
-  const calculations = React.useMemo(() => {
+  const calculations = useMemo(() => {
     const overdueRent = overdueInvoices.reduce(
       (sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 
       0
     );
-    const lateFees = Math.round(overdueRent * 0.05); // 5% غرامة تأخير
-    const otherFees = 500; // رسوم إدارية
-    
-    // حساب إجمالي المخالفات المرورية غير المدفوعة
+    const lateFees = Math.round(overdueRent * 0.05);
+    const otherFees = 500;
     const violationsFines = trafficViolations.reduce(
       (sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0),
       0
     );
-    
     const total = overdueRent + lateFees + otherFees + violationsFines;
     
     return {
@@ -212,13 +216,10 @@ export default function LawsuitPreparationPage() {
       const customer = contract.customers as any;
       const vehicle = contract.vehicles as any;
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
-      
-      // تجميع اسم العميل
       const customerFullName = customer 
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
         : 'غير معروف';
       
-      // توليد نص الوقائع مع المخالفات المرورية
       let factsText = lawsuitService.generateFactsText(
         customerFullName,
         contract.start_date,
@@ -226,22 +227,16 @@ export default function LawsuitPreparationPage() {
         calculations.total
       );
       
-      // إضافة المخالفات المرورية إلى الوقائع إن وجدت
       if (calculations.violationsCount > 0) {
-        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${calculations.violationsCount}) مخالفة بإجمالي مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري، والتي لم يقم بسدادها حتى تاريخه.`;
+        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${calculations.violationsCount}) مخالفة بإجمالي مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري.`;
       }
       
-      // توليد نص الطلبات مع المخالفات المرورية
       let claimsText = lawsuitService.generateClaimsText(calculations.total);
       
-      // تعديل الطلبات لتشمل المخالفات المرورية إن وجدت
       if (calculations.violationsCount > 0) {
         claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.overdueRent.toLocaleString('ar-QA')}) ريال قطري قيمة الإيجارات المتأخرة.
-
-2. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري قيمة المخالفات المرورية غير المسددة (عدد ${calculations.violationsCount} مخالفة).
-
+2. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري قيمة المخالفات المرورية.
 3. إلزام المدعى عليه بالفوائد القانونية من تاريخ الاستحقاق وحتى تمام السداد.
-
 4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
       }
       
@@ -255,405 +250,53 @@ export default function LawsuitPreparationPage() {
     }
   }, [contract, calculations]);
 
+  // الحصول على مستند حسب النوع
+  const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
+    return legalDocs.find(doc => doc.document_type === type);
+  };
+
   // نسخ نص
   const copyToClipboard = useCallback(async (text: string, field: string) => {
     try {
-      // محاولة استخدام Clipboard API أولاً
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // استخدام طريقة بديلة للمتصفحات القديمة
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        textArea.remove();
-      }
+      await navigator.clipboard.writeText(text);
       setCopiedField(field);
       toast.success('تم النسخ!');
       setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Copy error:', err);
-      toast.error('فشل النسخ - حاول نسخ كل حقل على حدة');
+    } catch {
+      toast.error('فشل النسخ');
     }
   }, []);
 
-  // نسخ جميع البيانات
-  const copyAllData = useCallback(async () => {
-    if (!taqadiData) return;
-    
-    const allText = `عنوان الدعوى:
-${taqadiData.caseTitle}
-
-الوقائع:
-${taqadiData.facts}
-
-الطلبات:
-${taqadiData.claims}
-
-المبلغ: ${taqadiData.amount.toLocaleString('ar-QA')} ريال قطري
-المبلغ كتابة: ${taqadiData.amountInWords}`;
-    
-    await copyToClipboard(allText, 'all');
-  }, [taqadiData, copyToClipboard]);
-
-  // فتح تقاضي
-  const openTaqadi = () => {
-    window.open('https://taqadi.sjc.gov.qa/itc/f/caseinfoext/create', '_blank');
-  };
-
-  // تحميل ملف البيانات للأتمتة
-  const downloadDataFile = useCallback(() => {
-    if (!taqadiData || !contract) {
-      toast.error('لا توجد بيانات للتحميل');
-      return;
-    }
-
-    const customer = (contract as any).customers;
-    const vehicle = (contract as any).vehicles;
-    
-    const fileData = {
-      caseTitle: taqadiData.caseTitle,
-      facts: taqadiData.facts,
-      claims: taqadiData.claims,
-      amount: taqadiData.amount,
-      amountInWords: taqadiData.amountInWords,
-      defendantName: customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-        : 'غير معروف',
-      defendantIdNumber: customer?.national_id || '',
-      defendantPhone: customer?.phone || '',
-      contractNumber: contract.contract_number,
-      vehicleInfo: vehicle 
-        ? `${vehicle.make} ${vehicle.model} ${vehicle.year} - ${vehicle.plate_number}`
-        : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''} - ${contract.license_plate || ''}`,
-      contractStartDate: contract.start_date,
-      contractEndDate: contract.end_date,
-      documents: {
-        contract: 'documents/contract.pdf',
-        commercialRegister: 'documents/commercial-register.pdf',
-        ibanCertificate: 'documents/iban-certificate.pdf',
-        representativeId: 'documents/representative-id.pdf'
-      },
-      generatedAt: new Date().toISOString(),
-    };
-
-    // إنشاء وتحميل الملف
-    const blob = new Blob([JSON.stringify(fileData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'lawsuit-data.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success('✅ تم تحميل ملف البيانات! ضعه في مجلد taqadi-automation');
-  }, [taqadiData, contract]);
-
-  // إرسال البيانات للإضافة
-  const sendToExtension = useCallback(() => {
-    if (!taqadiData || !contract) {
-      toast.error('لا توجد بيانات للإرسال');
-      return;
-    }
-
-    // حساب اسم العميل داخل الدالة لتجنب مشكلة الترتيب
-    const customer = (contract as any).customers;
-    const defendantName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
-
-    const extensionData = {
-      caseTitle: taqadiData.caseTitle,
-      facts: taqadiData.facts,
-      claims: taqadiData.claims,
-      amount: taqadiData.amount,
-      amountInWords: taqadiData.amountInWords,
-      defendantName: defendantName,
-      contractNumber: contract.contract_number,
-      savedAt: new Date().toISOString(),
-    };
-
-    // حفظ في localStorage للإضافة
-    localStorage.setItem('alarafLawsuitData', JSON.stringify(extensionData));
-    
-    // إرسال رسالة للإضافة عبر postMessage
-    window.postMessage({
-      type: 'ALARAF_LAWSUIT_DATA',
-      data: extensionData
-    }, '*');
-    
-    // محاولة إرسال للإضافة مباشرة (إذا كانت مثبتة)
-    try {
-      // @ts-ignore - Chrome extension API
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        // @ts-ignore
-        chrome.storage.local.set({ alarafLawsuitData: extensionData }, () => {
-          console.log('[العراف] تم حفظ البيانات في تخزين الإضافة');
-        });
-      }
-    } catch (e) {
-      // الإضافة غير مثبتة أو غير متاحة - لا مشكلة
-      console.log('[العراف] الإضافة غير مثبتة، البيانات محفوظة في localStorage');
-    }
-
-    toast.success('تم حفظ البيانات! افتح موقع تقاضي واضغط على أيقونة الإضافة 🚗');
-  }, [taqadiData, contract]);
-
-  // بدء الأتمتة المحلية (في متصفح المستخدم)
-  // بدء الأتمتة المحلية (في متصفح المستخدم)
-  const startLocalAutomation = useCallback(async () => {
-    if (!taqadiData || !contract) {
-      toast.error('لا توجد بيانات للدعوى');
-      return;
-    }
-
-    setIsAutomating(true);
-
-    try {
-      const customer = (contract as any).customers;
-      const vehicle = (contract as any).vehicles;
-
-      // جمع روابط المستندات
-      const getDocUrl = (type: string) => {
-        const doc = legalDocs.find(d => d.document_type === type);
-        return doc?.file_url;
-      };
-
-      const lawsuitData = {
-        defendant: {
-          name: customer 
-            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-            : 'غير معروف',
-          nationalId: customer?.national_id || '',
-          phone: customer?.phone || ''
-        },
-        texts: {
-          title: taqadiData.caseTitle,
-          facts: taqadiData.facts,
-          claims: taqadiData.claims,
-          amount: taqadiData.amount,
-          amountInWords: taqadiData.amountInWords
-        },
-        amounts: {
-          overdueRent: calculations.overdueRent,
-          lateFees: calculations.lateFees,
-          violations: calculations.violationsFines,
-          otherFees: calculations.otherFees,
-          total: calculations.total,
-          totalInWords: calculations.amountInWords
-        },
-        vehicle: {
-          model: vehicle 
-            ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
-            : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''}`,
-          plate: vehicle?.plate_number || contract.license_plate || '',
-          contractNumber: contract.contract_number
-        },
-        documents: {
-          commercialRegister: getDocUrl('commercial_register'),
-          establishmentRecord: getDocUrl('establishment_record'),
-          iban: getDocUrl('iban_certificate'),
-          idCard: getDocUrl('representative_id'),
-          memo: memoUrl,
-          contract: contractFileUrl,
-          documentsList: docsListUrl,
-          claimsStatement: claimsStatementUrl
-        },
-        savedAt: new Date().toISOString(),
-        extractedAt: new Date().toISOString(),
-        pageUrl: window.location.href
-      };
-
-      // حفظ في localStorage للإضافة
-      localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(lawsuitData));
-      
-      // عرض تعليمات للمستخدم
-      toast.info(
-        '📋 تم حفظ البيانات! بعد تسجيل الدخول في تقاضي، اضغط على زر 🚗 لملء النموذج تلقائياً',
-        { duration: 8000 }
-      );
-      
-      // فتح تقاضي
-      window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
-      setIsAutomating(false);
-
-    } catch (error: any) {
-      console.error('Automation error:', error);
-      toast.error(`فشل بدء الأتمتة: ${error.message}`);
-      setIsAutomating(false);
-    }
-  }, [taqadiData, contract, legalDocs, contractFileUrl, memoUrl, calculations, docsListUrl, claimsStatementUrl]);
-
-  // إلغاء جلسة الأتمتة
-  const cancelAutomation = useCallback(async () => {
-    if (!automationSession) return;
-
-    try {
-      await supabase.functions.invoke('taqadi-automation', {
-        body: {
-          action: 'cancel',
-          sessionId: automationSession.sessionId,
-        },
-      });
-      setAutomationSession(null);
-      toast.success('تم إلغاء جلسة الأتمتة');
-    } catch (error) {
-      console.error('Cancel error:', error);
-    }
-  }, [automationSession]);
-
-  // إرسال المهمة إلى Manus AI (Browser Operator)
-  const sendToManus = useCallback(async () => {
-    if (!taqadiData || !contract) {
-      toast.error('لا توجد بيانات للدعوى');
-      return;
-    }
-
-    setIsAutomating(true);
-
-    try {
-      const customer = (contract as any).customers;
-      const vehicle = (contract as any).vehicles;
-
-      // جمع روابط المستندات
-      const getDocUrl = (type: string) => {
-        const doc = legalDocs.find(d => d.document_type === type);
-        return doc?.file_url;
-      };
-
-      const lawsuitData = {
-        defendant: {
-          name: customer 
-            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-            : 'غير معروف',
-          nationalId: customer?.national_id || '',
-          phone: customer?.phone || ''
-        },
-        texts: {
-          title: taqadiData.caseTitle,
-          facts: taqadiData.facts,
-          claims: taqadiData.claims,
-          amount: taqadiData.amount,
-          amountInWords: taqadiData.amountInWords
-        },
-        amounts: {
-          overdueRent: calculations.overdueRent,
-          lateFees: calculations.lateFees,
-          violations: calculations.violationsFines,
-          otherFees: calculations.otherFees,
-          total: calculations.total,
-          totalInWords: calculations.amountInWords
-        },
-        vehicle: {
-          model: vehicle 
-            ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
-            : `${contract.make || ''} ${contract.model || ''} ${contract.year || ''}`,
-          plate: vehicle?.plate_number || contract.license_plate || '',
-          contractNumber: contract.contract_number
-        },
-        documents: {
-          commercialRegister: getDocUrl('commercial_register'),
-          iban: getDocUrl('iban_certificate'),
-          idCard: getDocUrl('representative_id'),
-          memo: memoUrl,
-          contract: contractFileUrl,
-          documentsList: docsListUrl,
-          claimsStatement: claimsStatementUrl
-        }
-      };
-
-      toast.info('🤖 جاري إرسال المهمة إلى Manus AI...', { duration: 3000 });
-
-      const { data, error } = await supabase.functions.invoke('manus-taqadi', {
-        body: {
-          lawsuitData
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        console.log('Manus response:', data);
-
-        // Try to open the Manus task page in a new tab
-        let opened = false;
-        if (data.taskUrl) {
-          try {
-            const newWindow = window.open(data.taskUrl, '_blank');
-            if (newWindow) {
-              opened = true;
-              toast.success('🚀 تم إرسال المهمة إلى Manus! تم فتح صفحة Manus في نافذة جديدة', { duration: 8000 });
-            } else {
-              // Popup blocked - show link instead
-              toast.success('🚀 تم إرسال المهمة! <a href="' + data.taskUrl + '" target="_blank" style="color:white;text-decoration:underline;">اضغط هنا لفتح Manus</a>', {
-                duration: 10000,
-                dangerouslySetInnerHTML: { __html: '🚀 تم إرسال المهمة! <a href="' + data.taskUrl + '" target="_blank" style="color:white;text-decoration:underline;">اضغط هنا لفتح Manus</a>' }
-              } as any);
-            }
-          } catch (e) {
-            console.error('Failed to open window:', e);
-          }
-        }
-
-        if (!opened) {
-          toast.success('🚀 تم إرسال المهمة إلى Manus! تحقق من بريدك الإلكتروني أو افتح Manus AI', { duration: 8000 });
-        }
-      } else {
-        throw new Error(data?.error || 'فشل إرسال المهمة');
-      }
-
-    } catch (error: any) {
-      console.error('Manus error:', error);
-      toast.error(`فشل إرسال المهمة: ${error.message}`);
-    } finally {
-      setIsAutomating(false);
-    }
-  }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl, docsListUrl, claimsStatementUrl, calculations]);
-
-  // رفع عقد الإيجار
+  // رفع ملف العقد
   const uploadContractFile = useCallback(async (file: File) => {
-    if (!companyId || !contractId) {
-      toast.error('جاري تحميل بيانات الشركة... يرجى الانتظار');
-      return;
-    }
+    if (!companyId || !contractId) return;
     
     setIsUploadingContract(true);
     try {
-      const fileName = `contracts/${companyId}/${contractId}/${Date.now()}_${file.name}`;
-      
-      const { data, error } = await supabase.storage
+      const fileName = `contracts/${companyId}/${contractId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
         .from('legal-documents')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
       const { data: urlData } = supabase.storage
         .from('legal-documents')
         .getPublicUrl(fileName);
-      
+
       setContractFileUrl(urlData.publicUrl);
-      setContractFile(file);
-      toast.success('✅ تم رفع عقد الإيجار بنجاح!');
+      toast.success('✅ تم رفع العقد بنجاح!');
     } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(`فشل رفع العقد: ${error.message}`);
+      toast.error('فشل رفع الملف: ' + error.message);
     } finally {
       setIsUploadingContract(false);
     }
   }, [companyId, contractId]);
 
-  // توليد المذكرة الشارحة (نفس الطريقة المستخدمة في صفحة العملاء المتأخرين)
+  // توليد المذكرة الشارحة
   const generateExplanatoryMemo = useCallback(() => {
-    if (!contract) {
-      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
+    if (!contract || !taqadiData) {
+      toast.error('جاري تحميل البيانات...');
       return;
     }
 
@@ -661,42 +304,27 @@ ${taqadiData.claims}
     try {
       const customer = (contract as any).customers;
       const vehicle = (contract as any).vehicles;
-
-      // حساب أيام التأخير
-      const daysOverdue = overdueInvoices.length > 0 
-        ? Math.max(...overdueInvoices.map(inv => {
-            const dueDate = new Date(inv.due_date || new Date());
-            const today = new Date();
-            return Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          }))
-        : 0;
-
-      // حساب التعويضات (30% من الإجمالي)
       const damagesAmount = Math.round(calculations.total * 0.3);
 
-      // تجهيز بيانات المستند (نفس الهيكل المستخدم في CreateLegalCaseDialog)
       const documentData: LegalDocumentData = {
         customer: {
-          customer_name: customer 
-            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-            : 'غير معروف',
+          customer_name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف' : 'غير معروف',
           customer_code: customer?.id || '',
           id_number: customer?.national_id || '',
           phone: customer?.phone || '',
           email: customer?.email || '',
           contract_number: contract.contract_number,
-          contract_start_date: contract.start_date || '',
+          contract_start_date: contract.start_date,
           vehicle_plate: vehicle?.plate_number || (contract as any).license_plate || '',
           monthly_rent: (contract as any).rent_amount || 0,
           months_unpaid: overdueInvoices.length,
-          days_overdue: daysOverdue,
           overdue_amount: calculations.overdueRent,
           late_penalty: calculations.lateFees,
-          total_debt: calculations.total,
+          days_overdue: Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)),
           violations_count: calculations.violationsCount,
           violations_amount: calculations.violationsFines,
-          risk_score: 0,
-        } as any, // تجاوز الفحص لأننا نستخدم الحقول المطلوبة فقط
+          total_debt: calculations.total,
+        } as any,
         companyInfo: {
           name_ar: 'شركة العراف لتأجير السيارات',
           name_en: 'Al-Araf Car Rental',
@@ -705,129 +333,80 @@ ${taqadiData.claims}
         },
         vehicleInfo: {
           plate: vehicle?.plate_number || (contract as any).license_plate || 'غير محدد',
-          make: vehicle?.make || (contract as any).make || '',
-          model: vehicle?.model || (contract as any).model || '',
-          year: vehicle?.year || (contract as any).year || undefined,
+          make: vehicle?.make || '',
+          model: vehicle?.model || '',
+          year: vehicle?.year || 0,
         },
         contractInfo: {
           contract_number: contract.contract_number,
-          start_date: contract.start_date 
-            ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
-            : '',
+          start_date: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
           monthly_rent: (contract as any).rent_amount || 0,
         },
         damages: damagesAmount,
-        additionalNotes: '',
       };
 
-      // توليد المذكرة (نفس الدالة المستخدمة في صفحة العملاء المتأخرين)
       const memoHtml = generateLegalComplaintHTML(documentData);
-
-      // فتح المستند في نافذة جديدة
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(memoHtml);
-        printWindow.document.close();
-      } else {
-        toast.error('تعذر فتح نافذة الطباعة');
-      }
+      openLetterForPrint(memoHtml);
       
-      // حفظ URL للتحميل لاحقاً
       const blob = new Blob([memoHtml], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      setMemoUrl(url);
-      
+      setMemoUrl(URL.createObjectURL(blob));
       toast.success('✅ تم توليد المذكرة الشارحة!');
     } catch (error: any) {
-      console.error('Memo generation error:', error);
       toast.error('حدث خطأ أثناء توليد المذكرة');
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [contract, calculations, overdueInvoices]);
+  }, [contract, taqadiData, calculations, overdueInvoices]);
 
-  // توليد كشف المستندات المرفوعة
+  // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {
-    if (!contract) {
-      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
-      return;
-    }
+    if (!contract || !taqadiData) return;
     
+    setIsGeneratingDocsList(true);
     const customer = (contract as any)?.customers;
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
-    // تجميع قائمة المستندات
     const documents: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [
       { name: 'المذكرة الشارحة', status: memoUrl ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من البطاقة الشخصية للممثل', status: legalDocs.find(d => d.document_type === 'representative_id') ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من السجل التجاري', status: legalDocs.find(d => d.document_type === 'commercial_register') ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من قيد المنشأة', status: legalDocs.find(d => d.document_type === 'establishment_record') ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من البطاقة الشخصية للممثل', status: getDocByType('representative_id') ? 'مرفق' : 'غير مرفق' },
+      { name: 'صورة من السجل التجاري', status: getDocByType('commercial_register') ? 'مرفق' : 'غير مرفق' },
       { name: 'صورة من العقد', status: contractFileUrl ? 'مرفق' : 'غير مرفق' },
-      { name: 'شهادة IBAN', status: legalDocs.find(d => d.document_type === 'iban_certificate') ? 'مرفق' : 'غير مرفق' },
+      { name: 'شهادة IBAN', status: getDocByType('iban_certificate') ? 'مرفق' : 'غير مرفق' },
     ];
 
-    // استخدام التنسيق الموحد للكتب الرسمية
     const docsListHtml = generateDocumentsListHtml({
-      caseTitle: taqadiData?.caseTitle || '-',
+      caseTitle: taqadiData.caseTitle,
       customerName,
-      amount: taqadiData?.amount || 0,
+      amount: taqadiData.amount,
       documents,
     });
 
     openLetterForPrint(docsListHtml);
     setDocsListUrl('generated');
+    setIsGeneratingDocsList(false);
     toast.success('✅ تم توليد كشف المستندات!');
   }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
 
-  // توليد كشف المطالبات (الفواتير المتأخرة + المخالفات المرورية)
+  // توليد كشف المطالبات
   const generateClaimsStatement = useCallback(() => {
-    if (!contract) {
-      toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
-      return;
-    }
-    if (!overdueInvoices.length && !trafficViolations.length) {
-      toast.error('لا توجد فواتير متأخرة أو مخالفات مرورية');
-      return;
-    }
+    if (!contract || !overdueInvoices.length && !trafficViolations.length) return;
 
     setIsGeneratingClaims(true);
-
     const customer = (contract as any)?.customers;
     const customerName = customer 
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
-    // حساب إجمالي المبالغ من الفواتير
-    const totalOverdueInvoices = overdueInvoices.reduce(
-      (sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 
-      0
-    );
+    const invoicesData = overdueInvoices.map((inv) => ({
+      invoiceNumber: inv.invoice_number || '-',
+      dueDate: inv.due_date,
+      totalAmount: inv.total_amount || 0,
+      paidAmount: inv.paid_amount || 0,
+      daysLate: Math.floor((new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)),
+    }));
 
-    // حساب إجمالي المخالفات المرورية
-    const totalViolationsFines = trafficViolations.reduce(
-      (sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0),
-      0
-    );
-
-    const totalOverdue = totalOverdueInvoices + totalViolationsFines;
-
-    // تحضير بيانات الفواتير
-    const invoicesData = overdueInvoices.map((inv) => {
-      const dueDate = new Date(inv.due_date);
-      const today = new Date();
-      const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-      return {
-        invoiceNumber: inv.invoice_number || '-',
-        dueDate: inv.due_date,
-        totalAmount: inv.total_amount || 0,
-        paidAmount: inv.paid_amount || 0,
-        daysLate,
-      };
-    });
-
-    // تحضير بيانات المخالفات المرورية
     const violationsData = trafficViolations.map((v) => ({
       violationNumber: v.violation_number || '-',
       violationDate: v.violation_date || '',
@@ -836,7 +415,6 @@ ${taqadiData.claims}
       fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
     }));
 
-    // استخدام التنسيق الموحد للكتب الرسمية
     const claimsHtml = generateClaimsStatementHtml({
       customerName,
       nationalId: customer?.national_id || '-',
@@ -845,7 +423,7 @@ ${taqadiData.claims}
       contractEndDate: contract?.end_date || '',
       invoices: invoicesData,
       violations: violationsData,
-      totalOverdue,
+      totalOverdue: calculations.overdueRent + calculations.violationsFines,
       amountInWords: calculations.amountInWords,
       caseTitle: taqadiData?.caseTitle,
     });
@@ -856,16 +434,149 @@ ${taqadiData.claims}
     toast.success('✅ تم توليد كشف المطالبات!');
   }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData]);
 
-  // الحصول على مستند حسب النوع
-  const getDocByType = (type: LegalDocumentType): CompanyLegalDocument | undefined => {
-    return legalDocs.find(doc => doc.document_type === type);
-  };
+  // بدء الأتمتة
+  const startAutomation = useCallback(async () => {
+    if (!taqadiData || !contract) return;
 
-  // التحقق من اكتمال المستندات
-  const requiredDocs: LegalDocumentType[] = ['commercial_register', 'iban_certificate', 'representative_id'];
-  const missingDocs = requiredDocs.filter(type => !getDocByType(type));
-  const allDocsReady = missingDocs.length === 0;
+    setIsAutomating(true);
+    const customer = (contract as any).customers;
+    const vehicle = (contract as any).vehicles;
 
+    const lawsuitData = {
+      defendant: {
+        name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : 'غير معروف',
+        nationalId: customer?.national_id || '',
+        phone: customer?.phone || ''
+      },
+      texts: {
+        title: taqadiData.caseTitle,
+        facts: taqadiData.facts,
+        claims: taqadiData.claims,
+        amount: taqadiData.amount,
+        amountInWords: taqadiData.amountInWords
+      },
+      amounts: calculations,
+      vehicle: {
+        model: vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : '',
+        plate: vehicle?.plate_number || '',
+        contractNumber: contract.contract_number
+      },
+      savedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem('alarafLawsuitDataFull', JSON.stringify(lawsuitData));
+    toast.info('📋 تم حفظ البيانات! بعد تسجيل الدخول في تقاضي، اضغط على الـ Bookmarklet', { duration: 6000 });
+    window.open('https://taqadi.sjc.gov.qa/itc/', '_blank');
+    setIsAutomating(false);
+  }, [taqadiData, contract, calculations]);
+
+  // حساب قائمة المستندات
+  const documentsList: DocumentItem[] = useMemo(() => {
+    const commercialReg = getDocByType('commercial_register');
+    const ibanCert = getDocByType('iban_certificate');
+    const repId = getDocByType('representative_id');
+
+    return [
+      // المستندات المولدة (إلزامية)
+      {
+        id: 'memo',
+        name: 'المذكرة الشارحة',
+        description: memoUrl ? '✅ جاهزة للتحميل' : 'توليد تلقائي',
+        status: memoUrl ? 'ready' : 'pending',
+        type: 'mandatory',
+        category: 'generated',
+        url: memoUrl,
+        onGenerate: generateExplanatoryMemo,
+        isGenerating: isGeneratingMemo,
+      },
+      {
+        id: 'claims',
+        name: 'كشف المطالبات المالية',
+        description: claimsStatementUrl ? '✅ جاهز للتحميل' : `${overdueInvoices.length} فاتورة متأخرة`,
+        status: claimsStatementUrl ? 'ready' : 'pending',
+        type: 'mandatory',
+        category: 'generated',
+        url: claimsStatementUrl,
+        onGenerate: generateClaimsStatement,
+        isGenerating: isGeneratingClaims,
+      },
+      {
+        id: 'docs-list',
+        name: 'كشف المستندات المرفوعة',
+        description: docsListUrl ? '✅ جاهز للتحميل' : 'قائمة بجميع المستندات',
+        status: docsListUrl ? 'ready' : 'pending',
+        type: 'mandatory',
+        category: 'generated',
+        url: docsListUrl,
+        onGenerate: generateDocumentsList,
+        isGenerating: isGeneratingDocsList,
+      },
+      // مستندات الشركة (إلزامية)
+      {
+        id: 'commercial_register',
+        name: 'السجل التجاري',
+        description: commercialReg ? '✅ مرفوع' : '✗ غير مرفوع',
+        status: commercialReg ? 'ready' : 'missing',
+        type: 'mandatory',
+        category: 'company',
+        url: commercialReg?.file_url,
+      },
+      {
+        id: 'iban_certificate',
+        name: 'شهادة IBAN',
+        description: ibanCert ? '✅ مرفوع' : '✗ غير مرفوع',
+        status: ibanCert ? 'ready' : 'missing',
+        type: 'mandatory',
+        category: 'company',
+        url: ibanCert?.file_url,
+      },
+      {
+        id: 'representative_id',
+        name: 'البطاقة الشخصية للممثل',
+        description: repId ? '✅ مرفوع' : '✗ غير مرفوع',
+        status: repId ? 'ready' : 'missing',
+        type: 'mandatory',
+        category: 'company',
+        url: repId?.file_url,
+      },
+      // عقد الإيجار (إلزامي)
+      {
+        id: 'contract',
+        name: 'عقد الإيجار',
+        description: contractFileUrl ? '✅ مرفوع' : `رقم ${contract?.contract_number || '-'}`,
+        status: contractFileUrl ? 'ready' : 'pending',
+        type: 'mandatory',
+        category: 'contract',
+        url: contractFileUrl,
+        onUpload: uploadContractFile,
+        isGenerating: isUploadingContract,
+      },
+      // المخالفات المرورية (اختياري)
+      ...(calculations.violationsCount > 0 ? [{
+        id: 'violations',
+        name: 'كشف المخالفات المرورية',
+        description: violationsListUrl ? '✅ جاهز' : `${calculations.violationsCount} مخالفة`,
+        status: violationsListUrl ? 'ready' : 'pending',
+        type: 'optional' as const,
+        category: 'violations' as const,
+        url: violationsListUrl,
+      }] : []),
+    ];
+  }, [
+    memoUrl, claimsStatementUrl, docsListUrl, violationsListUrl, contractFileUrl,
+    legalDocs, calculations, contract, overdueInvoices,
+    isGeneratingMemo, isGeneratingClaims, isGeneratingDocsList, isUploadingContract,
+  ]);
+
+  // حساب التقدم
+  const progressData = useMemo(() => {
+    const mandatoryDocs = documentsList.filter(d => d.type === 'mandatory');
+    const readyDocs = mandatoryDocs.filter(d => d.status === 'ready');
+    const percentage = mandatoryDocs.length > 0 ? Math.round((readyDocs.length / mandatoryDocs.length) * 100) : 0;
+    return { total: mandatoryDocs.length, ready: readyDocs.length, percentage };
+  }, [documentsList]);
+
+  // حالة التحميل
   if (companyLoading || contractLoading || invoicesLoading || violationsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -888,588 +599,437 @@ ${taqadiData.claims}
 
   const customer = contract.customers as any;
   const vehicle = contract.vehicles as any;
-  
-  // تجميع اسم العميل الكامل
   const customerFullName = customer 
     ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
     : 'غير معروف';
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl" dir="rtl">
-      {/* Header */}
+    <div className="container mx-auto p-4 max-w-4xl" dir="rtl">
+      {/* زر الرجوع */}
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+        <ArrowLeft className="h-4 w-4 ml-2" />
+        رجوع
+      </Button>
+
+      {/* Header - شريط ملخص الدعوى */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <Gavel className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">تجهيز دعوى قضائية</h1>
-            <p className="text-muted-foreground">
-              تجهيز البيانات والمستندات لرفع دعوى في نظام تقاضي
-            </p>
-          </div>
-        </div>
+        <Card className="bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Gavel className="h-6 w-6" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">تجهيز الدعوى</h1>
+                  <p className="text-sm text-white/70">
+                    {customerFullName} | العقد: {contract.contract_number}
+                  </p>
+                </div>
+              </div>
+              <div className="text-left">
+                <div className="text-2xl font-bold text-emerald-400">
+                  {calculations.total.toLocaleString('ar-QA')} ر.ق
+                </div>
+                <p className="text-xs text-white/60">إجمالي المطالبة</p>
+              </div>
+            </div>
+
+            {/* شريط التقدم */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>التقدم في تجهيز المستندات</span>
+                <span className="font-bold">{progressData.ready}/{progressData.total} مستند</span>
+              </div>
+              <Progress value={progressData.percentage} className="h-3 bg-white/20" />
+              <p className="text-xs text-white/60 text-center">
+                {progressData.percentage === 100 
+                  ? '✅ جميع المستندات جاهزة!' 
+                  : `${progressData.percentage}% مكتمل`}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
-      {/* معلومات المدعى عليه */}
+      {/* معلومات سريعة */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid gap-4 md:grid-cols-2 mb-6"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
       >
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <User className="h-5 w-5" />
-              بيانات المدعى عليه
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">الاسم:</span>
-              <span className="font-medium">{customerFullName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">رقم الهوية:</span>
-              <span className="font-medium">{customer?.national_id || '-'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">الهاتف:</span>
-              <span className="font-medium">{customer?.phone || '-'}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Car className="h-5 w-5" />
-              بيانات السيارة والعقد
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">السيارة:</span>
-              <span className="font-medium">
-                {vehicle?.make} {vehicle?.model} {vehicle?.year}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">اللوحة:</span>
-              <span className="font-medium">{vehicle?.plate_number}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">رقم العقد:</span>
-              <Badge variant="outline">{contract.contract_number}</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <User className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">المدعى عليه</p>
+          <p className="font-medium text-sm truncate">{customerFullName}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <Car className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">السيارة</p>
+          <p className="font-medium text-sm truncate">{vehicle?.make} {vehicle?.model}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <FileText className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">الفواتير المتأخرة</p>
+          <p className="font-medium text-sm">{overdueInvoices.length} فاتورة</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <FileWarning className="h-5 w-5 mx-auto mb-1 text-red-500" />
+          <p className="text-xs text-muted-foreground">المخالفات</p>
+          <p className="font-medium text-sm">{calculations.violationsCount} مخالفة</p>
+        </div>
       </motion.div>
 
-      {/* ملخص المطالبة */}
+      {/* قائمة المستندات الإلزامية */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className="mb-6"
       >
-        <Card className="border-primary/20 bg-primary/5">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              ملخص المطالبة
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                المستندات الإلزامية
+                <Badge variant="secondary" className="mr-2">
+                  {progressData.ready}/{progressData.total}
+                </Badge>
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // TODO: Implement download all as ZIP
+                  toast.info('قريباً: تحميل جميع المستندات كملف ZIP');
+                }}
+                disabled={progressData.percentage < 100}
+              >
+                <FolderDown className="h-4 w-4 ml-2" />
+                تحميل الكل
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-5 gap-4">
-              <div className="text-center p-4 bg-background rounded-lg">
-                <p className="text-sm text-muted-foreground">الإيجار المتأخر</p>
-                <p className="text-xl font-bold">{calculations.overdueRent.toLocaleString('ar-QA')} ر.ق</p>
-              </div>
-              <div className="text-center p-4 bg-background rounded-lg">
-                <p className="text-sm text-muted-foreground">غرامة التأخير</p>
-                <p className="text-xl font-bold">{calculations.lateFees.toLocaleString('ar-QA')} ر.ق</p>
-              </div>
-              {calculations.violationsFines > 0 && (
-                <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">مخالفات مرورية ({calculations.violationsCount})</p>
-                  <p className="text-xl font-bold text-red-600">{calculations.violationsFines.toLocaleString('ar-QA')} ر.ق</p>
-                </div>
-              )}
-              <div className="text-center p-4 bg-background rounded-lg">
-                <p className="text-sm text-muted-foreground">رسوم إدارية</p>
-                <p className="text-xl font-bold">{calculations.otherFees.toLocaleString('ar-QA')} ر.ق</p>
-              </div>
-              <div className="text-center p-4 bg-primary text-primary-foreground rounded-lg">
-                <p className="text-sm opacity-90">الإجمالي</p>
-                <p className="text-2xl font-bold">{calculations.total.toLocaleString('ar-QA')} ر.ق</p>
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-background rounded-lg text-center">
-              <p className="text-sm text-muted-foreground">المبلغ كتابةً</p>
-              <p className="font-medium text-lg">{calculations.amountInWords}</p>
-            </div>
+          <CardContent className="space-y-2">
+            {documentsList
+              .filter(doc => doc.type === 'mandatory')
+              .map((doc, index) => (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                    doc.status === 'ready' 
+                      ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' 
+                      : doc.status === 'missing'
+                      ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                      : 'bg-muted/30 border-muted'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {doc.status === 'ready' ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    ) : doc.status === 'missing' ? (
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <div>
+                      <p className="font-medium">{doc.name}</p>
+                      <p className="text-xs text-muted-foreground">{doc.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {doc.status === 'ready' && doc.url && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(doc.url!, '_blank')}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (doc.url?.startsWith('blob:')) {
+                              const a = document.createElement('a');
+                              a.href = doc.url;
+                              a.download = `${doc.name}.html`;
+                              a.click();
+                            } else {
+                              window.open(doc.url!, '_blank');
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    
+                    {doc.onGenerate && (
+                      <Button
+                        size="sm"
+                        variant={doc.status === 'ready' ? 'ghost' : 'default'}
+                        onClick={doc.onGenerate}
+                        disabled={doc.isGenerating}
+                      >
+                        {doc.isGenerating ? (
+                          <LoadingSpinner className="h-4 w-4" />
+                        ) : doc.status === 'ready' ? (
+                          <RefreshCw className="h-4 w-4" />
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 ml-1" />
+                            توليد
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
+                    {doc.onUpload && (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) doc.onUpload!(file);
+                          }}
+                          disabled={doc.isGenerating}
+                        />
+                        <Button size="sm" variant={doc.status === 'ready' ? 'ghost' : 'default'} disabled={doc.isGenerating}>
+                          {doc.isGenerating ? (
+                            <LoadingSpinner className="h-4 w-4" />
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 ml-1" />
+                              {doc.status === 'ready' ? 'تغيير' : 'رفع'}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {doc.status === 'missing' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate('/legal/documents')}
+                      >
+                        رفع
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* بيانات تقاضي */}
-      {taqadiData && (
+      {/* المستندات الاختيارية */}
+      {documentsList.some(d => d.type === 'optional') && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="mb-6"
         >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5" />
-                  بيانات تقاضي (جاهزة للنسخ)
-                </CardTitle>
-                <Button variant="outline" onClick={copyAllData}>
-                  <Copy className="h-4 w-4 ml-2" />
-                  نسخ الكل
-                </Button>
-              </div>
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                مستندات داعمة (اختياري)
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* عنوان الدعوى */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>عنوان الدعوى (50 حرف كحد أقصى)</Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => copyToClipboard(taqadiData.caseTitle, 'title')}
+            <CardContent className="space-y-2">
+              {documentsList
+                .filter(doc => doc.type === 'optional')
+                .map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/20"
                   >
-                    {copiedField === 'title' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Input value={taqadiData.caseTitle} readOnly className="bg-muted" />
-              </div>
-
-              {/* الوقائع */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>الوقائع</Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => copyToClipboard(taqadiData.facts, 'facts')}
-                  >
-                    {copiedField === 'facts' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Textarea value={taqadiData.facts} readOnly className="bg-muted min-h-[150px]" />
-              </div>
-
-              {/* الطلبات */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>الطلبات</Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => copyToClipboard(taqadiData.claims, 'claims')}
-                  >
-                    {copiedField === 'claims' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Textarea value={taqadiData.claims} readOnly className="bg-muted min-h-[120px]" />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* المبلغ */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>المبلغ</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => copyToClipboard(taqadiData.amount.toString(), 'amount')}
-                    >
-                      {copiedField === 'amount' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <div className="flex items-center gap-3">
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">{doc.name}</p>
+                        <p className="text-xs text-muted-foreground">{doc.description}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      <Sparkles className="h-4 w-4 ml-1" />
+                      توليد
                     </Button>
                   </div>
-                  <Input value={taqadiData.amount.toString()} readOnly className="bg-muted" />
-                </div>
-
-                {/* المبلغ كتابة */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>المبلغ كتابةً</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => copyToClipboard(taqadiData.amountInWords, 'amountWords')}
-                    >
-                      {copiedField === 'amountWords' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <Input value={taqadiData.amountInWords} readOnly className="bg-muted" />
-                </div>
-              </div>
+                ))}
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-      {/* المستندات */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mb-6"
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileCheck className="h-5 w-5" />
-              المستندات (جاهزة للتحميل)
-            </CardTitle>
-            <CardDescription>
-              حمّل هذه المستندات وارفعها في تقاضي
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!allDocsReady && (
-              <Alert className="mb-4 bg-amber-50 border-amber-200">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
-                  بعض المستندات غير مرفوعة: {missingDocs.map(t => DOCUMENT_TYPE_NAMES[t]).join(', ')}
-                  <Button 
-                    variant="link" 
-                    className="p-0 mr-2 h-auto"
-                    onClick={() => navigate('/legal/documents')}
-                  >
-                    رفع المستندات
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="grid gap-3">
-              {/* مذكرة شارحة - توليد بالذكاء الاصطناعي */}
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">مذكرة شارحة</p>
-                    <p className="text-sm text-muted-foreground">
-                      {memoUrl ? '✅ تم التوليد' : 'توليد بالذكاء الاصطناعي'}
-                    </p>
+      {/* بيانات تقاضي (قابلة للطي) */}
+      {taqadiData && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-6"
+        >
+          <Collapsible open={showTaqadiData} onOpenChange={setShowTaqadiData}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <ClipboardList className="h-5 w-5" />
+                      بيانات تقاضي (للنسخ)
+                    </CardTitle>
+                    {showTaqadiData ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  {memoUrl && (
-                    <Button variant="outline" size="sm" onClick={() => window.open(memoUrl, '_blank')}>
-                      <Download className="h-4 w-4 ml-2" />
-                      تحميل
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={generateExplanatoryMemo}
-                    disabled={isGeneratingMemo || !taqadiData}
-                    className="bg-primary text-primary-foreground"
-                  >
-                    {isGeneratingMemo ? (
-                      <>
-                        <LoadingSpinner className="h-4 w-4 ml-2" />
-                        جاري التوليد...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 ml-2" />
-                        {memoUrl ? 'إعادة التوليد' : 'توليد المذكرة'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* كشف المستندات المرفوعة */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <ClipboardList className="h-5 w-5" />
-                  <div>
-                    <p className="font-medium">كشف بالمستندات المرفوعة</p>
-                    <p className="text-sm text-muted-foreground">
-                      {docsListUrl ? '✅ تم التوليد' : 'قائمة بجميع المستندات'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {docsListUrl && (
-                    <Button variant="outline" size="sm" onClick={() => window.open(docsListUrl, '_blank')}>
-                      <Download className="h-4 w-4 ml-2" />
-                      تحميل
-                    </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={generateDocumentsList}
-                  >
-                    <FileCheck className="h-4 w-4 ml-2" />
-                    {docsListUrl ? 'إعادة التوليد' : 'توليد الكشف'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* كشف المطالبات (الفواتير المتأخرة) */}
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-red-600" />
-                  <div>
-                    <p className="font-medium">كشف المطالبات</p>
-                    <p className="text-sm text-muted-foreground">
-                      {claimsStatementUrl ? '✅ تم التوليد - ' : ''}{overdueInvoices.length} فاتورة متأخرة
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {claimsStatementUrl && (
-                    <Button variant="outline" size="sm" onClick={() => window.open(claimsStatementUrl, '_blank')}>
-                      <Download className="h-4 w-4 ml-2" />
-                      تحميل
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={generateClaimsStatement}
-                    disabled={isGeneratingClaims || overdueInvoices.length === 0}
-                    variant={claimsStatementUrl ? "outline" : "default"}
-                    className={!claimsStatementUrl ? "bg-red-600 hover:bg-red-700 text-white" : ""}
-                  >
-                    {isGeneratingClaims ? (
-                      <>
-                        <LoadingSpinner className="h-4 w-4 ml-2" />
-                        جاري التوليد...
-                      </>
-                    ) : (
-                      <>
-                        <FileCheck className="h-4 w-4 ml-2" />
-                        {claimsStatementUrl ? 'إعادة التوليد' : 'توليد الكشف'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* مستندات الشركة */}
-              {requiredDocs.map(type => {
-                const doc = getDocByType(type);
-                return (
-                  <div key={type} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5" />
-                      <div>
-                        <p className="font-medium">{DOCUMENT_TYPE_NAMES[type]}</p>
-                        {doc ? (
-                          <p className="text-sm text-green-600">✓ مرفوع</p>
-                        ) : (
-                          <p className="text-sm text-destructive">✗ غير مرفوع</p>
-                        )}
-                      </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4 pt-0">
+                  {/* عنوان الدعوى */}
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">عنوان الدعوى</p>
+                      <p className="font-medium text-sm">{taqadiData.caseTitle}</p>
                     </div>
-                    {doc ? (
-                      <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
-                        <Download className="h-4 w-4 ml-2" />
-                        تحميل
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" onClick={() => navigate('/legal/documents')}>
-                        رفع
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* عقد الإيجار - رفع ملف */}
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium">عقد الإيجار</p>
-                    <p className="text-sm text-muted-foreground">
-                      {contractFileUrl ? '✅ تم الرفع' : `رقم ${contract.contract_number} - يرجى رفع صورة العقد`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {contractFileUrl && (
-                    <Button variant="outline" size="sm" onClick={() => window.open(contractFileUrl, '_blank')}>
-                      <Download className="h-4 w-4 ml-2" />
-                      تحميل
-                    </Button>
-                  )}
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadContractFile(file);
-                      }}
-                      disabled={isUploadingContract}
-                    />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="ghost"
                       size="sm"
-                      disabled={isUploadingContract}
+                      onClick={() => copyToClipboard(taqadiData.caseTitle, 'title')}
                     >
-                      {isUploadingContract ? (
-                        <>
-                          <LoadingSpinner className="h-4 w-4 ml-2" />
-                          جاري الرفع...
-                        </>
-                      ) : (
-                        <>
-                          <FileCheck className="h-4 w-4 ml-2" />
-                          {contractFileUrl ? 'تغيير العقد' : 'رفع العقد'}
-                        </>
-                      )}
+                      {copiedField === 'title' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
 
-      {/* أزرار الأتمتة - New Component */}
+                  {/* الوقائع */}
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">الوقائع</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(taqadiData.facts, 'facts')}
+                      >
+                        {copiedField === 'facts' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{taqadiData.facts}</p>
+                  </div>
+
+                  {/* الطلبات */}
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">الطلبات</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(taqadiData.claims, 'claims')}
+                      >
+                        {copiedField === 'claims' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{taqadiData.claims}</p>
+                  </div>
+
+                  {/* المبلغ */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="text-xs text-muted-foreground">المبلغ</p>
+                        <p className="font-bold">{taqadiData.amount.toLocaleString('ar-QA')}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(taqadiData.amount.toString(), 'amount')}
+                      >
+                        {copiedField === 'amount' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">كتابةً</p>
+                        <p className="text-sm">{taqadiData.amountInWords}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(taqadiData.amountInWords, 'words')}
+                      >
+                        {copiedField === 'words' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </motion.div>
+      )}
+
+      {/* أزرار الإجراءات */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
+        className="sticky bottom-4"
       >
-        {/* Main Automation Control Panel */}
-        {contractId && companyId && (
-          <TaqadiControlPanel
-            contractId={contractId}
-            companyId={companyId}
-            className="mb-4"
-          />
-        )}
-
-        {/* Legacy automation options (kept for compatibility) */}
-        <div className="flex flex-col items-center gap-4">
-          {/* زر Manus AI - الرئيسي */}
-          <Button
-            size="lg"
-            onClick={sendToManus}
-            disabled={isAutomating || !taqadiData}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-6 text-lg shadow-xl"
-          >
-            {isAutomating ? (
-              <>
-                <LoadingSpinner className="h-5 w-5 ml-2" />
-                جاري الإرسال إلى Manus...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-6 w-6 ml-2" />
-                🤖 رفع تلقائي عبر Manus AI
-              </>
-            )}
-          </Button>
-          <div className="text-sm text-muted-foreground text-center space-y-2">
-            <p>Manus AI سيستخدم متصفحك المحلي لملء تقاضي تلقائياً</p>
-            <p className="text-xs">
-              ⚠️ يجب تثبيت <a
-                href="https://chromewebstore.google.com/detail/manus-ai-browser-operator/cecngibhkljoiafhjfmcgbmikfogdiko"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                size="lg"
+                onClick={startAutomation}
+                disabled={isAutomating || progressData.percentage < 100}
+                className="w-full sm:w-auto"
               >
-                Manus Browser Operator Extension
-              </a> أولاً
-            </p>
-          </div>
-
-          {/* خط فاصل */}
-          <div className="flex items-center gap-4 w-full max-w-md">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">أو</span>
-            <Separator className="flex-1" />
-          </div>
-
-          {/* زر الإضافة المحلية - بديل */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={startLocalAutomation}
-            disabled={isAutomating || !taqadiData}
-            className="text-muted-foreground"
-          >
-            <ExternalLink className="h-4 w-4 ml-2" />
-            استخدام إضافة Chrome المحلية
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* تعليمات Bookmarklet */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="mt-6"
-      >
-        <Card className="border-dashed border-2 border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
-                <Bookmark className="h-5 w-5" />
-                أداة الملء التلقائي (Bookmarklet)
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-                بعد الضغط على "رفع تلقائي إلى تقاضي" وتسجيل الدخول في موقع تقاضي،
-                اضغط على هذا الزر في شريط المفضلة لملء النموذج تلقائياً.
-              </p>
+                {isAutomating ? (
+                  <>
+                    <LoadingSpinner className="h-5 w-5 ml-2" />
+                    جاري الإعداد...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-5 w-5 ml-2" />
+                    فتح تقاضي وملء البيانات
+                  </>
+                )}
+              </Button>
               
-              <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border space-y-3">
-                <p className="text-sm font-medium">طريقة الإضافة:</p>
-                <ol className="text-sm text-right space-y-2 text-muted-foreground">
-                  <li>1. اسحب الزر الأزرق أدناه إلى شريط المفضلة</li>
-                  <li>2. أو انقر بالزر الأيمن واختر "إضافة إلى المفضلة"</li>
-                  <li>3. بعد تسجيل الدخول في تقاضي، اضغط على الزر في المفضلة</li>
-                </ol>
-                
-                <div className="pt-3 border-t">
-                  <a
-                    href={`javascript:(function(){var d=localStorage.getItem('alarafLawsuitDataFull');if(!d){alert('❌ لم يتم العثور على بيانات!\\n\\nاذهب لصفحة تجهيز الدعوى واضغط رفع تلقائي أولاً');return}var data=JSON.parse(d);var copyText='عنوان الدعوى:\\n'+data.title+'\\n\\nالوقائع:\\n'+data.facts+'\\n\\nالطلبات:\\n'+data.claims+'\\n\\nالمبلغ:\\n'+data.amount+'\\n\\nالمبلغ كتابة:\\n'+data.amountInWords;if(confirm('📋 بيانات الدعوى جاهزة!\\n\\nالعنوان: '+data.title+'\\nالمبلغ: '+data.amount+' ر.ق\\n\\nهل تريد نسخ البيانات؟')){navigator.clipboard.writeText(copyText).then(function(){alert('✅ تم نسخ البيانات!\\n\\nالصق في الحقول المناسبة.')}).catch(function(){var t=document.createElement('textarea');t.value=copyText;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ تم نسخ البيانات!')})}})();`}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg cursor-move"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toast.info('اسحب هذا الزر إلى شريط المفضلة في المتصفح', { duration: 5000 });
-                    }}
-                    draggable="true"
-                  >
-                    <Bookmark className="h-4 w-4" />
-                    📋 ملء تقاضي
-                  </a>
-                </div>
-                
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 نصيحة: بعد الإضافة، يمكنك الضغط على الزر في أي صفحة في موقع تقاضي
-                </p>
-              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => window.open('https://taqadi.sjc.gov.qa/itc/', '_blank')}
+                className="w-full sm:w-auto"
+              >
+                <ExternalLink className="h-4 w-4 ml-2" />
+                فتح تقاضي فقط
+              </Button>
             </div>
+            
+            {progressData.percentage < 100 && (
+              <p className="text-center text-sm text-muted-foreground mt-3">
+                ⚠️ يجب تجهيز جميع المستندات الإلزامية قبل رفع الدعوى
+              </p>
+            )}
           </CardContent>
         </Card>
       </motion.div>
     </div>
   );
 }
-
