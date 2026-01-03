@@ -581,8 +581,13 @@ ${taqadiData.claims}
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🚀 تم إرسال المهمة إلى Manus! سيفتح متصفحك قريباً.', { duration: 5000 });
-        toast.info('💡 راقب متصفحك - Manus سيملأ البيانات تلقائياً', { duration: 8000 });
+        toast.success('🚀 تم إرسال المهمة إلى Manus!', { duration: 5000 });
+
+        // Open the Manus task page in a new tab
+        if (data.taskUrl) {
+          window.open(data.taskUrl, '_blank');
+          toast.info('💡 تم فتح صفحة Manus في نافذة جديدة - راقب الأتمتة هناك', { duration: 8000 });
+        }
       } else {
         throw new Error(data?.error || 'فشل إرسال المهمة');
       }

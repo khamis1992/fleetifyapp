@@ -198,9 +198,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        taskId: result.taskId,
-        taskUrl: result.taskUrl,
-        message: 'تم إرسال المهمة إلى Manus! سيفتح متصفحك قريباً.',
+        taskId: result.task_id,
+        taskUrl: result.task_url,
+        message: 'تم إرسال المهمة إلى Manus! سيفتح متصفحك قريباً.\n\n🔗 شاهد المهمة: ' + result.task_url,
         manusResponse: result
       }),
       {
