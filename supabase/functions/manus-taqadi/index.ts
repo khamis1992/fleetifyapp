@@ -63,7 +63,8 @@ function generateTaqadiPrompt(data: LawsuitData): string {
     })
     .join('\n');
 
-  return `
+  return `use my browser
+
 أنت مساعد قانوني متخصص في رفع الدعاوى في نظام تقاضي القطري.
 
 ## المهمة
@@ -175,6 +176,8 @@ Deno.serve(async (req) => {
         taskMode: 'agent',
         // Specify agent profile for quality
         agentProfile: 'quality',
+        // Use local browser connector instead of cloud browser
+        connectors: ['be268223-40b2-4f3c-a907-c12eb1699283'], // My Browser connector
         // Additional metadata
         metadata: {
           source: 'fleetify-app',

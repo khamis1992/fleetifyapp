@@ -581,12 +581,30 @@ ${taqadiData.claims}
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🚀 تم إرسال المهمة إلى Manus!', { duration: 5000 });
+        console.log('Manus response:', data);
 
-        // Open the Manus task page in a new tab
+        // Try to open the Manus task page in a new tab
+        let opened = false;
         if (data.taskUrl) {
-          window.open(data.taskUrl, '_blank');
-          toast.info('💡 تم فتح صفحة Manus في نافذة جديدة - راقب الأتمتة هناك', { duration: 8000 });
+          try {
+            const newWindow = window.open(data.taskUrl, '_blank');
+            if (newWindow) {
+              opened = true;
+              toast.success('🚀 تم إرسال المهمة إلى Manus! تم فتح صفحة Manus في نافذة جديدة', { duration: 8000 });
+            } else {
+              // Popup blocked - show link instead
+              toast.success('🚀 تم إرسال المهمة! <a href="' + data.taskUrl + '" target="_blank" style="color:white;text-decoration:underline;">اضغط هنا لفتح Manus</a>', {
+                duration: 10000,
+                dangerouslySetInnerHTML: { __html: '🚀 تم إرسال المهمة! <a href="' + data.taskUrl + '" target="_blank" style="color:white;text-decoration:underline;">اضغط هنا لفتح Manus</a>' }
+              } as any);
+            }
+          } catch (e) {
+            console.error('Failed to open window:', e);
+          }
+        }
+
+        if (!opened) {
+          toast.success('🚀 تم إرسال المهمة إلى Manus! تحقق من بريدك الإلكتروني أو افتح Manus AI', { duration: 8000 });
         }
       } else {
         throw new Error(data?.error || 'فشل إرسال المهمة');
@@ -1317,9 +1335,19 @@ ${taqadiData.claims}
               </>
             )}
           </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            Manus AI سيفتح متصفحك ويملأ تقاضي تلقائياً
-          </p>
+          <div className="text-sm text-muted-foreground text-center space-y-2">
+            <p>Manus AI سيستخدم متصفحك المحلي لملء تقاضي تلقائياً</p>
+            <p className="text-xs">
+              ⚠️ يجب تثبيت <a
+                href="https://chromewebstore.google.com/detail/manus-ai-browser-operator/cecngibhkljoiafhjfmcgbmikfogdiko"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Manus Browser Operator Extension
+              </a> أولاً
+            </p>
+          </div>
 
           {/* خط فاصل */}
           <div className="flex items-center gap-4 w-full max-w-md">
