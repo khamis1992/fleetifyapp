@@ -637,9 +637,9 @@ export function generateOfficialLetter(data: OfficialLetterData): string {
 }
 
 /**
- * توليد مذكرة شارحة للدعوى
+ * واجهة بيانات المذكرة الشارحة الموسعة
  */
-export function generateExplanatoryMemoHtml(data: {
+export interface ExplanatoryMemoData {
   caseTitle: string;
   facts: string;
   claims: string;
@@ -648,23 +648,126 @@ export function generateExplanatoryMemoHtml(data: {
   defendantName: string;
   contractNumber: string;
   hasViolations?: boolean;
-}): string {
+  // بيانات إضافية للمذكرة المفصلة
+  defendantIdNumber?: string;
+  defendantPhone?: string;
+  contractStartDate?: string;
+  vehiclePlate?: string;
+  vehicleInfo?: string;
+  monthlyRent?: number;
+  daysOverdue?: number;
+  monthsUnpaid?: number;
+  overdueRent?: number;
+  latePenalty?: number;
+  damages?: number;
+  violationsCount?: number;
+  violationsAmount?: number;
+}
+
+/**
+ * توليد مذكرة شارحة للدعوى
+ * النص مطابق للمذكرة المستخدمة في صفحة العملاء المتأخرين
+ */
+export function generateExplanatoryMemoHtml(data: ExplanatoryMemoData): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
 
-  const body = `
-أولاً: موضوع الدعوى
-${data.caseTitle}
+  // حساب المبالغ
+  const overdueRent = data.overdueRent || 0;
+  const latePenalty = data.latePenalty || 0;
+  const damagesAmount = data.damages || Math.round(data.amount * 0.3);
+  const totalClaim = overdueRent + latePenalty + damagesAmount;
+  const monthlyRent = data.monthlyRent || 0;
+  const daysOverdue = data.daysOverdue || 0;
+  const monthsUnpaid = data.monthsUnpaid || 0;
+  const violationsCount = data.violationsCount || 0;
+  const violationsAmount = data.violationsAmount || 0;
+  const hasViolations = data.hasViolations || violationsCount > 0;
 
-ثانياً: الوقائع
-${data.facts}
+  // توليد نص الوقائع المفصل
+  let factsText = `أبرمت الشركة عقد إيجار مركبة رقم (${data.contractNumber})${data.contractStartDate ? ` بتاريخ ${data.contractStartDate}` : ''} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري${monthlyRent > 0 ? ` البالغ (${monthlyRent.toLocaleString('ar-QA')}) ريال قطري` : ''} والمحافظة على المركبة${data.vehiclePlate ? ` رقم (${data.vehiclePlate})` : ''}${data.vehicleInfo ? ` ${data.vehicleInfo}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.
 
-ثالثاً: الأسانيد القانونية
-استناداً إلى أحكام القانون المدني القطري، وعلى وجه الخصوص المواد المتعلقة بعقود الإيجار والالتزامات التعاقدية، فإن المدعى عليه ملزم بسداد المبالغ المستحقة.
-كما أن الامتناع عن الوفاء بالالتزامات التعاقدية يعد إخلالاً جسيماً بالعقد يستوجب التعويض.
+إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالاً واضحًا، إذ تأخر في سداد الإيجارات المستحقة${monthsUnpaid > 0 ? ` لمدة (${monthsUnpaid}) شهر` : ''}${daysOverdue > 0 ? `، بإجمالي (${daysOverdue}) يوم تأخير` : ''}${hasViolations ? `، وسُجلت على المركبة (${violationsCount}) مخالفة مرورية بقيمة إجمالية (${violationsAmount.toLocaleString('ar-QA')}) ريال قطري ناتجة عن استخدامه الشخصي` : ''}، ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.`;
 
-رابعاً: الطلبات
-${data.claims}
+  if (hasViolations) {
+    factsText += `
+
+ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها، وذلك استنادًا إلى سجلات المخالفات الصادرة من الإدارة العامة للمرور.`;
+  }
+
+  // توليد جدول المطالبات المالية
+  const claimsTable = `
+┌─────────────────────────────────────────────────────────────────┐
+│ البند │ البيان                                      │ المبلغ (ر.ق) │
+├───────┼─────────────────────────────────────────────┼──────────────┤
+│   1   │ غرامات تأخير في سداد الإيجار الشهري         │ ${latePenalty.toLocaleString('ar-QA').padStart(12, ' ')} │
+│   2   │ إيجار متأخر غير مسدد                        │ ${overdueRent.toLocaleString('ar-QA').padStart(12, ' ')} │
+│   3   │ تعويض عن الأضرار المادية والمعنوية          │ ${damagesAmount.toLocaleString('ar-QA').padStart(12, ' ')} │
+├───────┼─────────────────────────────────────────────┼──────────────┤
+│       │ الإجمالي                                    │ ${(totalClaim > 0 ? totalClaim : data.amount).toLocaleString('ar-QA').padStart(12, ' ')} │
+└─────────────────────────────────────────────────────────────────┘`;
+
+  // توليد نص الطلبات المفصل
+  let requestsText = `1. إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره (${(totalClaim > 0 ? totalClaim : data.amount).toLocaleString('ar-QA')} ريال قطري).`;
+  
+  if (hasViolations) {
+    requestsText += `
+2. إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه${data.defendantIdNumber ? ` (${data.defendantIdNumber})` : ''}.
+3. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`;
+  } else {
+    requestsText += `
+2. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`;
+  }
+
+  // توليد المحتوى الكامل للمذكرة
+  let body = `
+أولاً: الوقائع
+
+${factsText}
+
+ثانياً: المطالبات المالية المباشرة
+
+${claimsTable}
+
+الإجمالي: ${(totalClaim > 0 ? totalClaim : data.amount).toLocaleString('ar-QA')} ريال قطري
+(${data.amountInWords})
+`;
+
+  if (hasViolations) {
+    body += `
+ثالثاً: الطلب المتعلق بالمخالفات المرورية
+
+تلتمس الشركة من عدالتكم الموقرة عدم إدخال قيمة المخالفات المرورية ضمن المطالبة المالية، والاكتفاء بإصدار أمر بتحويلها إلى الرقم الشخصي للمدعى عليه${data.defendantIdNumber ? ` (${data.defendantIdNumber})` : ''} لدى الإدارة العامة للمرور، وذلك لتجنب تحميل الشركة ما لا يلزمها به القانون، إذ أن المخالفات ناتجة عن تصرفات المستأجر لا عن مالك المركبة.
+
+عدد المخالفات: ${violationsCount} مخالفة
+قيمة المخالفات: ${violationsAmount.toLocaleString('ar-QA')} ريال قطري
+
+رابعاً: الأساس القانوني
+`;
+  } else {
+    body += `
+ثالثاً: الأساس القانوني
+`;
+  }
+
+  body += `
+تستند هذه الدعوى إلى أحكام القانون المدني القطري، ولا سيما المواد:
+
+• المادة (171): العقد شريعة المتعاقدين، ولا يجوز نقضه أو تعديله إلا باتفاق الطرفين أو للأسباب التي يقرها القانون.
+
+• المادة (263): يلتزم المدين بتعويض الضرر الناتج عن إخلاله بالتزامه.
+
+• المادة (589): يلتزم المستأجر بالمحافظة على العين المؤجرة وردها بالحالة التي تسلمها بها.
+
+• المادة (267): يقدر التعويض بقدر الضرر المباشر المتوقع عادة وقت التعاقد.
+
+وبناءً عليه، فإن المطالبات المالية الواردة أعلاه هي عن التزامات تعاقدية مباشرة، في حين أن الغرامات المرورية ينبغي أن تُحوّل إداريًا إلى المستأجر.
+
+${hasViolations ? 'خامساً' : 'رابعاً'}: الطلبات
+
+تلتمس الشركة من عدالتكم الموقرة ما يلي:
+
+${requestsText}
   `.trim();
 
   // تجهيز قائمة المرفقات
@@ -676,14 +779,14 @@ ${data.claims}
   ];
   
   // إضافة كشف المخالفات المرورية إن وجدت
-  if (data.hasViolations) {
+  if (hasViolations) {
     attachments.push('كشف بالمخالفات المرورية');
   }
 
   return generateOfficialLetter({
     recipient: 'المحكمة المدنية الابتدائية',
     recipientGreeting: 'حفظها الله',
-    subject: `مذكرة شارحة - ${data.caseTitle}`,
+    subject: `مذكرة شارحة - مطالبة مالية${hasViolations ? ' وتحويل الغرامات المرورية إلى الرقم الشخصي للمستأجر' : ''}`,
     body,
     refNumber,
     attachments,

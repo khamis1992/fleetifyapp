@@ -664,11 +664,22 @@ ${taqadiData.claims}
     setIsGeneratingMemo(true);
     try {
       const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
       const customerName = customer 
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
         : 'غير معروف';
 
-      // استخدام التنسيق الموحد للكتب الرسمية
+      // حساب أيام التأخير
+      const contractStartDate = contract.start_date ? new Date(contract.start_date) : null;
+      const daysOverdue = overdueInvoices.length > 0 
+        ? Math.max(...overdueInvoices.map(inv => {
+            const dueDate = new Date(inv.due_date);
+            const today = new Date();
+            return Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+          }))
+        : 0;
+
+      // استخدام التنسيق الموحد للكتب الرسمية مع البيانات التفصيلية
       const memoHtml = generateExplanatoryMemoHtml({
         caseTitle: taqadiData.caseTitle,
         facts: taqadiData.facts,
@@ -678,6 +689,20 @@ ${taqadiData.claims}
         defendantName: customerName,
         contractNumber: contract.contract_number,
         hasViolations: calculations.violationsCount > 0,
+        // بيانات إضافية للمذكرة المفصلة
+        defendantIdNumber: customer?.national_id || '',
+        defendantPhone: customer?.phone || '',
+        contractStartDate: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
+        vehiclePlate: vehicle?.plate_number || contract.license_plate || '',
+        vehicleInfo: vehicle ? `من نوع ${vehicle.make || ''} ${vehicle.model || ''} موديل ${vehicle.year || ''}` : '',
+        monthlyRent: contract.monthly_rent || 0,
+        daysOverdue: daysOverdue,
+        monthsUnpaid: overdueInvoices.length,
+        overdueRent: calculations.overdueRent,
+        latePenalty: calculations.lateFees,
+        damages: Math.round(calculations.total * 0.3),
+        violationsCount: calculations.violationsCount,
+        violationsAmount: calculations.violationsFines,
       });
 
       // فتح المستند في نافذة جديدة
@@ -695,7 +720,7 @@ ${taqadiData.claims}
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [taqadiData, contract, calculations]);
+  }, [taqadiData, contract, calculations, overdueInvoices]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
