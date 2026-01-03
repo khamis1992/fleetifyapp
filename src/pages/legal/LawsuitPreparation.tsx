@@ -49,11 +49,11 @@ import {
   LegalDocumentType,
 } from '@/services/LawsuitService';
 import {
-  generateExplanatoryMemoHtml,
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
+import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
 import { TaqadiControlPanel } from '@/components/taqadi';
 
 // واجهة بيانات تقاضي
@@ -650,14 +650,10 @@ ${taqadiData.claims}
     }
   }, [companyId, contractId]);
 
-  // توليد المذكرة الشارحة بالتنسيق الموحد
+  // توليد المذكرة الشارحة (نفس الطريقة المستخدمة في صفحة العملاء المتأخرين)
   const generateExplanatoryMemo = useCallback(() => {
     if (!contract) {
       toast.error('جاري تحميل بيانات العقد... يرجى الانتظار');
-      return;
-    }
-    if (!taqadiData) {
-      toast.error('جاري تجهيز بيانات الدعوى... يرجى الانتظار لحظة');
       return;
     }
 
@@ -665,48 +661,76 @@ ${taqadiData.claims}
     try {
       const customer = (contract as any).customers;
       const vehicle = (contract as any).vehicles;
-      const customerName = customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-        : 'غير معروف';
 
       // حساب أيام التأخير
-      const contractStartDate = contract.start_date ? new Date(contract.start_date) : null;
       const daysOverdue = overdueInvoices.length > 0 
         ? Math.max(...overdueInvoices.map(inv => {
-            const dueDate = new Date(inv.due_date);
+            const dueDate = new Date(inv.due_date || new Date());
             const today = new Date();
             return Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           }))
         : 0;
 
-      // استخدام التنسيق الموحد للكتب الرسمية مع البيانات التفصيلية
-      const memoHtml = generateExplanatoryMemoHtml({
-        caseTitle: taqadiData.caseTitle,
-        facts: taqadiData.facts,
-        claims: taqadiData.claims,
-        amount: taqadiData.amount,
-        amountInWords: taqadiData.amountInWords,
-        defendantName: customerName,
-        contractNumber: contract.contract_number,
-        hasViolations: calculations.violationsCount > 0,
-        // بيانات إضافية للمذكرة المفصلة
-        defendantIdNumber: customer?.national_id || '',
-        defendantPhone: customer?.phone || '',
-        contractStartDate: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
-        vehiclePlate: vehicle?.plate_number || contract.license_plate || '',
-        vehicleInfo: vehicle ? `من نوع ${vehicle.make || ''} ${vehicle.model || ''} موديل ${vehicle.year || ''}` : '',
-        monthlyRent: contract.monthly_rent || 0,
-        daysOverdue: daysOverdue,
-        monthsUnpaid: overdueInvoices.length,
-        overdueRent: calculations.overdueRent,
-        latePenalty: calculations.lateFees,
-        damages: Math.round(calculations.total * 0.3),
-        violationsCount: calculations.violationsCount,
-        violationsAmount: calculations.violationsFines,
-      });
+      // حساب التعويضات (30% من الإجمالي)
+      const damagesAmount = Math.round(calculations.total * 0.3);
+
+      // تجهيز بيانات المستند (نفس الهيكل المستخدم في CreateLegalCaseDialog)
+      const documentData: LegalDocumentData = {
+        customer: {
+          customer_name: customer 
+            ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+            : 'غير معروف',
+          customer_code: customer?.id || '',
+          id_number: customer?.national_id || '',
+          phone: customer?.phone || '',
+          email: customer?.email || '',
+          contract_number: contract.contract_number,
+          contract_start_date: contract.start_date || '',
+          vehicle_plate: vehicle?.plate_number || (contract as any).license_plate || '',
+          monthly_rent: (contract as any).rent_amount || 0,
+          months_unpaid: overdueInvoices.length,
+          days_overdue: daysOverdue,
+          overdue_amount: calculations.overdueRent,
+          late_penalty: calculations.lateFees,
+          total_debt: calculations.total,
+          violations_count: calculations.violationsCount,
+          violations_amount: calculations.violationsFines,
+          risk_score: 0,
+        } as any, // تجاوز الفحص لأننا نستخدم الحقول المطلوبة فقط
+        companyInfo: {
+          name_ar: 'شركة العراف لتأجير السيارات',
+          name_en: 'Al-Araf Car Rental',
+          address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+          cr_number: '146832',
+        },
+        vehicleInfo: {
+          plate: vehicle?.plate_number || (contract as any).license_plate || 'غير محدد',
+          make: vehicle?.make || (contract as any).make || '',
+          model: vehicle?.model || (contract as any).model || '',
+          year: vehicle?.year || (contract as any).year || undefined,
+        },
+        contractInfo: {
+          contract_number: contract.contract_number,
+          start_date: contract.start_date 
+            ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
+            : '',
+          monthly_rent: (contract as any).rent_amount || 0,
+        },
+        damages: damagesAmount,
+        additionalNotes: '',
+      };
+
+      // توليد المذكرة (نفس الدالة المستخدمة في صفحة العملاء المتأخرين)
+      const memoHtml = generateLegalComplaintHTML(documentData);
 
       // فتح المستند في نافذة جديدة
-      openLetterForPrint(memoHtml);
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(memoHtml);
+        printWindow.document.close();
+      } else {
+        toast.error('تعذر فتح نافذة الطباعة');
+      }
       
       // حفظ URL للتحميل لاحقاً
       const blob = new Blob([memoHtml], { type: 'text/html;charset=utf-8' });
@@ -720,7 +744,7 @@ ${taqadiData.claims}
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [taqadiData, contract, calculations, overdueInvoices]);
+  }, [contract, calculations, overdueInvoices]);
 
   // توليد كشف المستندات المرفوعة
   const generateDocumentsList = useCallback(() => {
