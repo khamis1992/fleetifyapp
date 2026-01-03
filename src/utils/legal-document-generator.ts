@@ -358,8 +358,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     
     .info-box {
       background: #f5f5f5;
-      padding: 15px;
-      margin-bottom: 20px;
+      padding: 10px 15px;
+      margin-bottom: 15px;
       border-radius: 5px;
       border-right: 4px solid #1e3a5f;
     }
@@ -367,12 +367,14 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     .info-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
+      line-height: 1.4;
     }
     
     .info-label {
       font-weight: bold;
       color: #555;
+      min-width: 100px;
     }
     
     .content {
