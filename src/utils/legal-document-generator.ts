@@ -178,18 +178,43 @@ _______________________________
 
 /**
  * Generate HTML version of the legal complaint for printing
- * Professional formal legal document style
+ * Professional formal legal document style - matching claims statement design
  */
 export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, additionalNotes } = data;
   
   const today = format(new Date(), 'dd/MM/yyyy', { locale: ar });
+  const currentDateAr = new Date().toLocaleDateString('ar-QA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  
+  // Generate reference number
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const random = Math.floor(Math.random() * 9000) + 1000;
+  const refNumber = `ALR/${year}/${month}/${random}`;
   
   // Calculate totals
   const latePenalty = customer.late_penalty || 0;
   const overdueRent = customer.overdue_amount || 0;
   const damagesAmount = damages || Math.round(customer.total_debt * 0.3);
   const totalClaim = latePenalty + overdueRent + damagesAmount;
+
+  // Company info constants
+  const COMPANY_INFO = {
+    name_ar: companyInfo.name_ar || 'شركة العراف لتأجير السيارات',
+    name_en: companyInfo.name_en || 'AL-ARAF CAR RENTAL L.L.C',
+    logo: '/receipts/logo.png',
+    address: companyInfo.address || 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+    phone: '+974 3141 1919',
+    email: 'info@alaraf.qa',
+    cr: companyInfo.cr_number || '146832',
+    authorized_signatory: 'أسامة أحمد البشرى',
+    authorized_title: 'المخول بالتوقيع',
+  };
 
   return `
 <!DOCTYPE html>
@@ -200,184 +225,252 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <style>
-    @page { 
-      size: A4; 
-      margin: 25mm 20mm; 
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
     }
-    * {
-      box-sizing: border-box;
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .letter-container {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
     }
+    
     body {
-      font-family: 'Times New Roman', 'Traditional Arabic', 'Arial', serif;
+      font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
       font-size: 14px;
-      line-height: 2;
+      line-height: 1.8;
       color: #000;
       background: #fff;
       margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 170mm;
-      margin: 0 auto;
-      padding: 0;
+      padding: 20px;
+      direction: rtl;
     }
     
-    /* Header with Logo */
-    .letterhead {
+    .letter-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px 30px;
+      background: #fff;
+    }
+    
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 2px solid #000;
+      border-bottom: 3px double #1e3a5f;
       padding-bottom: 15px;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
     }
-    .company-info {
-      text-align: right;
+    
+    .company-ar {
       flex: 1;
+      text-align: right;
     }
-    .company-name {
+    
+    .company-ar h1 {
+      color: #1e3a5f;
+      margin: 0;
       font-size: 20px;
       font-weight: bold;
-      margin-bottom: 5px;
     }
-    .company-name-en {
-      font-size: 12px;
-      color: #333;
-      font-style: italic;
-    }
-    .company-details {
+    
+    .company-ar p {
+      color: #000;
+      margin: 2px 0;
       font-size: 11px;
-      color: #333;
-      margin-top: 5px;
     }
+    
     .logo-container {
-      width: 150px;
+      flex: 0 0 130px;
+      text-align: center;
+      padding: 0 15px;
+    }
+    
+    .logo-container img {
+      max-height: 70px;
+      max-width: 120px;
+    }
+    
+    .company-en {
+      flex: 1;
       text-align: left;
     }
-    .logo {
-      max-width: 140px;
-      max-height: 140px;
-    }
     
-    /* Document Title */
-    .document-title {
-      text-align: center;
-      margin: 30px 0;
-      padding: 15px 0;
-      border-top: 1px solid #000;
-      border-bottom: 1px solid #000;
-    }
-    .document-title h1 {
-      font-size: 22px;
-      font-weight: bold;
-      margin: 0 0 5px 0;
-      letter-spacing: 2px;
-    }
-    .document-date {
-      font-size: 12px;
-      color: #333;
-    }
-    
-    /* Parties Section */
-    .parties {
-      margin-bottom: 25px;
-    }
-    .party {
-      margin-bottom: 20px;
-      padding: 12px 15px;
-      border: 1px solid #000;
-    }
-    .party-label {
-      font-weight: bold;
+    .company-en h1 {
+      color: #1e3a5f;
+      margin: 0;
       font-size: 14px;
-      text-decoration: underline;
+      font-weight: bold;
+    }
+    
+    .company-en p {
+      color: #000;
+      margin: 2px 0;
+      font-size: 10px;
+    }
+    
+    .address-bar {
+      text-align: center;
+      color: #000;
+      font-size: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .ref-date {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #000;
+    }
+    
+    .subject-box {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    .info-box {
+      background: #f5f5f5;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border-right: 4px solid #1e3a5f;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: space-between;
       margin-bottom: 8px;
     }
-    .party-content {
-      padding-right: 20px;
+    
+    .info-label {
+      font-weight: bold;
+      color: #555;
     }
     
-    /* Subject */
-    .subject {
-      text-align: center;
-      margin: 25px 0;
-      padding: 12px;
-      border: 2px solid #000;
-      font-weight: bold;
-      font-size: 15px;
-    }
-    
-    /* Sections */
-    .section {
-      margin-bottom: 25px;
-      page-break-inside: avoid;
-    }
-    .section-title {
-      font-size: 16px;
-      font-weight: bold;
-      text-decoration: underline;
-      margin-bottom: 12px;
-    }
-    .section-content {
+    .content {
       text-align: justify;
-      text-justify: inter-word;
+      margin-bottom: 25px;
+      font-size: 14px;
+      color: #000;
+      padding: 15px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
     }
     
-    /* Claims Table */
-    .claims-table {
+    .content p {
+      margin: 10px 0;
+      line-height: 2;
+    }
+    
+    .section {
+      margin: 20px 0;
+    }
+    
+    .section-title {
+      font-weight: bold;
+      color: #1e3a5f;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-decoration: underline;
+    }
+    
+    .section-content {
+      padding: 15px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .section-content p {
+      margin: 10px 0;
+      line-height: 2;
+      text-align: justify;
+    }
+
+    /* Table styles */
+    table {
       width: 100%;
       border-collapse: collapse;
       margin: 20px 0;
-    }
-    .claims-table th {
-      background: #000;
-      color: #fff;
-      padding: 10px;
-      text-align: center;
-      border: 1px solid #000;
-      font-weight: bold;
-    }
-    .claims-table td {
-      padding: 10px;
-      border: 1px solid #000;
-      text-align: right;
-    }
-    .claims-table td.center {
-      text-align: center;
-    }
-    .claims-table td.amount {
-      text-align: left;
-      font-weight: bold;
-      direction: ltr;
-    }
-    .claims-table .total-row {
-      background: #f0f0f0;
-      font-weight: bold;
-    }
-    .claims-table .total-row td {
-      border-top: 2px solid #000;
+      font-size: 12px;
     }
     
-    /* Total Box */
-    .total-box {
-      text-align: center;
-      margin: 20px 0;
-      padding: 10px;
-      border: 1px solid #000;
+    th, td {
+      border: 1px solid #333;
+      padding: 10px 8px;
+      text-align: right;
+    }
+    
+    th {
+      background: #1e3a5f;
+      color: white;
       font-weight: bold;
-      font-size: 14px;
+    }
+    
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    
+    .amount {
+      font-weight: bold;
+      color: #d32f2f;
+      text-align: left;
+      direction: ltr;
+    }
+    
+    .total-row {
+      background: #1e3a5f !important;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .total-row td {
+      border-color: #1e3a5f;
+    }
+    
+    .center {
+      text-align: center;
     }
     
     /* Legal Articles */
     .legal-article {
       margin-bottom: 12px;
       padding-right: 20px;
-      text-indent: -15px;
+      position: relative;
     }
     .legal-article::before {
       content: "•";
-      margin-left: 10px;
+      position: absolute;
+      right: 0;
       font-weight: bold;
+      color: #1e3a5f;
     }
     
     /* Requests List */
@@ -395,100 +488,165 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       position: absolute;
       right: 0;
       font-weight: bold;
+      color: #1e3a5f;
     }
     
-    /* Signature Area */
-    .signature-section {
-      margin-top: 50px;
-      page-break-inside: avoid;
-    }
     .closing {
       text-align: center;
-      margin-bottom: 30px;
+      margin: 25px 0;
+      font-size: 14px;
+      color: #000;
     }
-    .signature-area {
+    
+    .signature-section {
+      margin-top: 40px;
       display: flex;
       justify-content: space-between;
-      margin-top: 40px;
+      align-items: flex-end;
     }
-    .signature-box {
-      text-align: center;
-      width: 45%;
-    }
-    .signature-line {
-      border-top: 1px solid #000;
-      margin-top: 50px;
-      padding-top: 5px;
-    }
+    
     .stamp-area {
-      width: 80px;
-      height: 80px;
-      border: 1px dashed #666;
+      text-align: center;
+      width: 120px;
+    }
+    
+    .stamp-circle {
+      width: 100px;
+      height: 100px;
+      border: 2px dashed #999;
       border-radius: 50%;
-      margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
-      color: #666;
+      margin: 0 auto;
     }
     
-    /* Print styles */
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .section { page-break-inside: avoid; }
-      .signature-section { page-break-inside: avoid; }
+    .stamp-circle span {
+      color: #666;
+      font-size: 10px;
+    }
+    
+    .signatory {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .signatory .company-name {
+      color: #1e3a5f;
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 35px;
+    }
+    
+    .signatory .line {
+      border-top: 2px solid #1e3a5f;
+      width: 200px;
+      margin: 0 auto;
+      padding-top: 8px;
+    }
+    
+    .signatory .name {
+      font-size: 15px;
+      font-weight: bold;
+      color: #000;
+      margin: 0;
+    }
+    
+    .signatory .title {
+      font-size: 12px;
+      color: #000;
+      margin-top: 3px;
+    }
+    
+    .sign-area {
+      text-align: center;
+      width: 120px;
+    }
+    
+    .sign-line {
+      width: 100px;
+      height: 50px;
+      border-bottom: 2px solid #999;
+      margin: 0 auto 8px auto;
+    }
+    
+    .sign-area span {
+      color: #666;
+      font-size: 10px;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+      text-align: center;
+      font-size: 9px;
+      color: #000;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="letter-container">
     
-    <!-- Letterhead -->
-    <div class="letterhead">
-      <div class="company-info">
-        <div class="company-name">${companyInfo.name_ar}</div>
-        <div class="company-name-en">${companyInfo.name_en || 'AL-ARAF CAR RENTAL'}</div>
-        <div class="company-details">
-          ${companyInfo.address}<br>
-          السجل التجاري: ${companyInfo.cr_number}
-        </div>
+    <!-- الترويسة -->
+    <div class="header">
+      <div class="company-ar">
+        <h1>${COMPANY_INFO.name_ar}</h1>
+        <p>ذ.م.م</p>
+        <p>س.ت: ${COMPANY_INFO.cr}</p>
       </div>
+      
       <div class="logo-container">
-        <img src="/receipts/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'" />
+        <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" onerror="this.style.display='none'" />
+      </div>
+      
+      <div class="company-en" dir="ltr">
+        <h1>${COMPANY_INFO.name_en}</h1>
+        <p>C.R: ${COMPANY_INFO.cr}</p>
       </div>
     </div>
-
-    <!-- Document Title -->
-    <div class="document-title">
-      <h1>مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية</h1>
-      <div class="document-date">التاريخ: ${today}</div>
+    
+    <!-- العنوان -->
+    <div class="address-bar">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
+    </div>
+    
+    <!-- التاريخ والرقم المرجعي -->
+    <div class="ref-date">
+      <div><strong>الرقم المرجعي:</strong> ${refNumber}</div>
+      <div><strong>التاريخ:</strong> ${currentDateAr}</div>
     </div>
 
-    <!-- Parties -->
-    <div class="parties">
-      <div class="party">
-        <div class="party-label">مقدمة من:</div>
-        <div class="party-content">
-          <strong>${companyInfo.name_ar} – ذ.م.م</strong><br>
-          المقر: ${companyInfo.address}<br>
-          رقم السجل التجاري: ${companyInfo.cr_number}
-        </div>
-      </div>
-
-      <div class="party">
-        <div class="party-label">ضــد:</div>
-        <div class="party-content">
-          <strong>السيد / ${customer.customer_name}</strong>
-          ${customer.id_number ? `<br>حامل البطاقة الشخصية رقم: ${customer.id_number}` : ''}
-          ${customer.phone ? `<br>رقم الهاتف: ${customer.phone}` : ''}
-        </div>
-      </div>
+    <!-- الموضوع -->
+    <div class="subject-box">
+      <strong>مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية</strong>
     </div>
-
-    <!-- Subject -->
-    <div class="subject">
-      الموضوع: مطالبة مالية ${customer.violations_count > 0 ? 'وتحويل الغرامات المرورية إلى الرقم الشخصي للمستأجر' : ''}
+    
+    <!-- معلومات الأطراف -->
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">المدعية:</span>
+        <span>${COMPANY_INFO.name_ar} – ذ.م.م</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">المدعى عليه:</span>
+        <span>${customer.customer_name}</span>
+      </div>
+      ${customer.id_number ? `
+      <div class="info-row">
+        <span class="info-label">رقم الهوية:</span>
+        <span>${customer.id_number}</span>
+      </div>
+      ` : ''}
+      <div class="info-row">
+        <span class="info-label">رقم العقد:</span>
+        <span>${contractInfo.contract_number}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الموضوع:</span>
+        <span>مطالبة مالية ${customer.violations_count > 0 ? 'وتحويل الغرامات المرورية' : ''}</span>
+      </div>
     </div>
 
     <!-- Section 1: Facts -->
@@ -522,12 +680,12 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     <!-- Section 2: Financial Claims -->
     <div class="section">
       <div class="section-title">ثانياً: المطالبات المالية المباشرة</div>
-      <table class="claims-table">
+      <table>
         <thead>
           <tr>
             <th style="width: 50px;">البند</th>
             <th>البيان</th>
-            <th style="width: 130px;">المبلغ (ريال قطري)</th>
+            <th style="width: 130px;">المبلغ (ر.ق)</th>
           </tr>
         </thead>
         <tbody>
@@ -548,7 +706,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           </tr>
           <tr class="total-row">
             <td colspan="2" style="text-align: left; font-weight: bold;">الإجمالي</td>
-            <td class="amount" style="font-size: 15px;">${totalClaim.toLocaleString('en-US')}</td>
+            <td class="amount" style="font-size: 15px; color: white;">${totalClaim.toLocaleString('en-US')}</td>
           </tr>
         </tbody>
       </table>
@@ -557,7 +715,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     ${customer.violations_count > 0 ? `
     <!-- Section 3: Traffic Violations -->
     <div class="section">
-      <div class="section-title">ثالثاً: الطلب المتعلق بالمخالفات المرورية</div>
+      <div class="section-title" style="color: #d32f2f;">ثالثاً: الطلب المتعلق بالمخالفات المرورية</div>
       <div class="section-content">
         <p>
           تلتمس الشركة من عدالتكم الموقرة عدم إدخال قيمة المخالفات المرورية ضمن المطالبة المالية، 
@@ -627,21 +785,37 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     </div>
     ` : ''}
 
-    <!-- Signature Section -->
+    <!-- الختام -->
+    <div class="closing">
+      <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
+    </div>
+    
+    <!-- التوقيع -->
     <div class="signature-section">
-      <div class="closing">
-        <p>وتفضلوا بقبول فائق الاحترام والتقدير،</p>
-        <p><strong>عن ${companyInfo.name_ar} – ذ.م.م</strong></p>
+      <div class="stamp-area">
+        <div class="stamp-circle">
+          <span>مكان الختم</span>
+        </div>
       </div>
       
-      <div class="signature-area">
-        <div class="signature-box">
-          <div class="stamp-area">الختم</div>
-        </div>
-        <div class="signature-box">
-          <div class="signature-line"></div>
+      <div class="signatory">
+        <p class="company-name">${COMPANY_INFO.name_ar}</p>
+        <div class="line">
+          <p class="name">${COMPANY_INFO.authorized_signatory}</p>
+          <p class="title">${COMPANY_INFO.authorized_title}</p>
         </div>
       </div>
+      
+      <div class="sign-area">
+        <div class="sign-line"></div>
+        <span>التوقيع</span>
+      </div>
+    </div>
+    
+    <!-- الذيل -->
+    <div class="footer">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
     </div>
 
   </div>
