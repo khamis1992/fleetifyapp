@@ -8,7 +8,7 @@ import type { RouteConfig } from './types';
 
 // Lazy loaded components
 const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
-const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
+const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPageRedesigned'));
 const Quotations = lazy(() => import('@/pages/Quotations'));
 const QuotationApproval = lazy(() => import('@/pages/QuotationApproval'));
 const DuplicateContractsManager = lazy(() => import('@/components/contracts/DuplicateContractsManager'));

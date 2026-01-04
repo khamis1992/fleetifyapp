@@ -29,7 +29,7 @@ const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDe
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
 const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
-const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
+const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPageRedesigned'));
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageRedesigned'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
@@ -84,7 +84,6 @@ const TrafficViolations = lazy(() => import('@/pages/fleet/TrafficViolationsRede
 const TrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 const FleetReports = lazy(() => import('@/pages/fleet/FleetReports'));
 const DispatchPermits = lazy(() => import('@/pages/fleet/DispatchPermits'));
-const FleetFinancialAnalysis = lazy(() => import('@/pages/fleet/FleetFinancialAnalysisNew'));
 const ReservationSystem = lazy(() => import('@/pages/fleet/ReservationSystem'));
 const VehicleInstallments = lazy(() => import('@/pages/VehicleInstallments'));
 
@@ -135,7 +134,7 @@ const Legal = lazy(() => import('@/pages/Legal'));
 const LegalCasesTracking = lazy(() => import('@/pages/legal/LegalCasesTracking'));
 const LegalCasesTrackingV2 = lazy(() => import('@/pages/legal/LegalCasesTrackingV2'));
 const DefaultersList = lazy(() => import('@/pages/legal/DefaultersList'));
-const LegalReports = lazy(() => import('@/pages/legal/LegalReports'));
+const LegalReports = lazy(() => import('@/pages/legal/LegalReportsRedesigned'));
 const LateFees = lazy(() => import('@/pages/legal/LateFees'));
 const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
 const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
@@ -930,18 +929,6 @@ const routeConfigs: RouteConfig[] = [
     description: 'Vehicle dispatch permits',
     group: 'fleet',
     priority: 74,
-    protected: true,
-    layout: 'bento',
-  },
-  {
-    path: '/fleet/financial-analysis',
-    component: FleetFinancialAnalysis,
-    lazy: true,
-    exact: true,
-    title: 'Fleet Financial Analysis',
-    description: 'Fleet financial analysis',
-    group: 'fleet',
-    priority: 75,
     protected: true,
     layout: 'bento',
   },

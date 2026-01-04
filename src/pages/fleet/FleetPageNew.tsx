@@ -44,7 +44,6 @@ import {
   Download,
   FileText,
   Layers3,
-  Calculator,
   X,
   RotateCcw,
   LayoutGrid,
@@ -504,14 +503,6 @@ const FleetPageNew: React.FC = () => {
               </Button>
             </div>
             
-            <Button
-              variant="outline"
-              className="bg-white gap-2"
-              onClick={() => navigate('/fleet/financial-analysis')}
-            >
-              <Calculator className="w-4 h-4" />
-              التحليل المالي
-            </Button>
             <Button
               variant="outline"
               className="bg-white gap-2"

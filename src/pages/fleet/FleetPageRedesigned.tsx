@@ -37,7 +37,6 @@ import {
   Upload,
   Download,
   Layers3,
-  Calculator,
   RotateCcw,
   LayoutGrid,
   Columns,
@@ -553,16 +552,6 @@ const FleetPageRedesigned: React.FC = () => {
               >
                 <Download className="w-4 h-4" />
                 تصدير
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/fleet/financial-analysis')}
-                className="gap-2"
-              >
-                <Calculator className="w-4 h-4" />
-                التحليل المالي
               </Button>
 
               <Button

@@ -203,7 +203,8 @@
       "mcp__plugin_playwright_playwright__browser_type",
       "mcp__plugin_playwright_playwright__browser_tabs",
       "Skill(brainstorming)",
-      "Skill(frontend-design)"
+      "Skill(frontend-design)",
+      "Bash(ren:*)"
     ],
     "deny": [],
     "ask": []

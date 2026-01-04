@@ -41,7 +41,16 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
+
+// Import Financial Analysis components
+import {
+  useFleetFinancialOverview,
+  useFleetFinancialSummary,
+  useMonthlyRevenueData,
+  useTopProfitableVehicles,
+} from '@/hooks/useFleetFinancialAnalytics';
 import { 
   useWhatsAppSettings, 
   useWhatsAppReports, 
@@ -211,12 +220,19 @@ const MaintenanceAlertItem: React.FC<{
 // ===== Main Component =====
 const FleetReportsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState<IReportFilters>({
     period: 'month',
     compareWithPrevious: false,
   });
   
   const { formatCurrency } = useCurrencyFormatter();
+  
+  // Financial Analysis hooks
+  const { data: financialOverview, isLoading: financialLoading } = useFleetFinancialOverview();
+  const { data: financialSummary } = useFleetFinancialSummary();
+  const { data: monthlyRevenueFinancial } = useMonthlyRevenueData('2024');
+  const { data: topProfitableVehicles } = useTopProfitableVehicles(10);
   
   // Fetch data using custom hooks
   const { data: analytics, isLoading: analyticsLoading } = useFleetAnalytics();
@@ -363,6 +379,41 @@ const FleetReportsPage: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="w-full justify-start bg-white rounded-2xl p-1 shadow-sm gap-1 overflow-x-auto">
+            <TabsTrigger 
+              value="overview" 
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              نظرة عامة
+            </TabsTrigger>
+            <TabsTrigger 
+              value="financial" 
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              التحليل المالي
+            </TabsTrigger>
+            <TabsTrigger 
+              value="maintenance" 
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+            >
+              <Wrench className="w-4 h-4" />
+              الصيانة
+            </TabsTrigger>
+            <TabsTrigger 
+              value="insurance" 
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+            >
+              <Shield className="w-4 h-4" />
+              التأمين والتسجيل
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab Content */}
+          <TabsContent value="overview" className="mt-6">
         {/* Main Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Revenue Chart - Takes 2 columns */}
@@ -457,7 +508,189 @@ const FleetReportsPage: React.FC = () => {
             </div>
           </SectionCard>
         </div>
+          </TabsContent>
 
+          {/* Financial Analysis Tab Content */}
+          <TabsContent value="financial" className="mt-6">
+            {/* Financial KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <StatCard
+                title="إجمالي قيمة الأسطول"
+                value={formatCurrency(financialOverview?.totalFleetValue || 0)}
+                icon={Car}
+                iconBg="bg-blue-100 text-blue-600"
+                description={`${financialOverview?.activeVehicles || 0} مركبة نشطة`}
+              />
+              <StatCard
+                title="إجمالي الإيرادات"
+                value={formatCurrency(financialOverview?.totalRevenue || 0)}
+                change="+15.2%"
+                icon={TrendingUp}
+                iconBg="bg-green-100 text-green-600"
+              />
+              <StatCard
+                title="تكاليف التشغيل"
+                value={formatCurrency(financialOverview?.totalOperatingCosts || 0)}
+                change="-8.3%"
+                icon={Activity}
+                iconBg="bg-amber-100 text-amber-600"
+              />
+              <StatCard
+                title="تكاليف الصيانة"
+                value={formatCurrency(financialOverview?.totalMaintenanceCosts || 0)}
+                icon={Wrench}
+                iconBg="bg-coral-100 text-coral-600"
+              />
+              <StatCard
+                title="الاستهلاك المتراكم"
+                value={formatCurrency(financialOverview?.totalDepreciation || 0)}
+                icon={TrendingDown}
+                iconBg="bg-purple-100 text-purple-600"
+              />
+              <StatCard
+                title="صافي الربح"
+                value={formatCurrency(financialOverview?.netProfit || 0)}
+                change={`+${((financialOverview?.netProfit || 0) / (financialOverview?.totalRevenue || 1) * 100).toFixed(1)}% ROI`}
+                icon={DollarSign}
+                iconBg="bg-emerald-100 text-emerald-600"
+              />
+            </div>
+
+            {/* Financial Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <SectionCard title="تطور الإيرادات الشهرية" icon={TrendingUp}>
+                <RevenueChart
+                  data={monthlyRevenueFinancial?.map(item => ({
+                    month: item.monthName || '',
+                    revenue: item.revenue || 0,
+                    contracts: 0,
+                  })) || []}
+                  isDark={false}
+                  formatCurrency={formatCurrency}
+                />
+              </SectionCard>
+              
+              <SectionCard title="أعلى 10 مركبات ربحية" icon={BarChart3}>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  {topProfitableVehicles?.map((vehicle, idx) => (
+                    <div 
+                      key={vehicle.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold",
+                          idx === 0 ? "bg-amber-100 text-amber-700" :
+                          idx === 1 ? "bg-neutral-200 text-neutral-700" :
+                          idx === 2 ? "bg-orange-100 text-orange-700" :
+                          "bg-neutral-100 text-neutral-500"
+                        )}>
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">{vehicle.plate_number}</p>
+                          <p className="text-xs text-neutral-500">{vehicle.make} {vehicle.model}</p>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-green-600">{formatCurrency(vehicle.totalRevenue || 0)}</p>
+                        <p className="text-xs text-neutral-400">إجمالي الإيرادات</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(!topProfitableVehicles || topProfitableVehicles.length === 0) && (
+                    <div className="text-center py-8">
+                      <Car className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                      <p className="text-sm text-neutral-500">لا توجد بيانات متاحة</p>
+                    </div>
+                  )}
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Financial Summary */}
+            {financialSummary && (
+              <SectionCard title="ملخص الأداء المالي" icon={DollarSign}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                    <p className="text-xs text-green-600 font-medium mb-1">متوسط الربح لكل مركبة</p>
+                    <p className="text-xl font-bold text-green-700">{formatCurrency(financialSummary.avgProfitPerVehicle || 0)}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-blue-600 font-medium mb-1">معدل العائد على الاستثمار</p>
+                    <p className="text-xl font-bold text-blue-700">{(financialSummary.roi || 0).toFixed(1)}%</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-coral-50 border border-coral-100">
+                    <p className="text-xs text-coral-600 font-medium mb-1">هامش الربح</p>
+                    <p className="text-xl font-bold text-coral-700">{(financialSummary.profitMargin || 0).toFixed(1)}%</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
+                    <p className="text-xs text-purple-600 font-medium mb-1">معدل استخدام الأسطول</p>
+                    <p className="text-xl font-bold text-purple-700">{(financialSummary.utilizationRate || 0).toFixed(1)}%</p>
+                  </div>
+                </div>
+              </SectionCard>
+            )}
+          </TabsContent>
+
+          {/* Maintenance Tab Content */}
+          <TabsContent value="maintenance" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Maintenance Summary */}
+              <SectionCard title="ملخص الصيانة" icon={Wrench}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5 text-amber-600" />
+                      <span className="text-xs text-amber-600 font-medium">قيد الانتظار</span>
+                    </div>
+                    <p className="text-2xl font-bold text-amber-700">{maintenanceAlerts.filter(a => a.status === 'pending').length}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Wrench className="w-5 h-5 text-blue-600" />
+                      <span className="text-xs text-blue-600 font-medium">قيد التنفيذ</span>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-700">{maintenanceAlerts.filter(a => a.status === 'in_progress').length}</p>
+                  </div>
+                </div>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  {maintenanceAlerts.map((alert) => (
+                    <MaintenanceAlertItem
+                      key={alert.id}
+                      plateNumber={alert.plate_number}
+                      type={alert.maintenance_type}
+                      date={new Date(alert.scheduled_date).toLocaleDateString('en-GB')}
+                      status={alert.status}
+                      cost={formatCurrency(alert.estimated_cost)}
+                    />
+                  ))}
+                  {maintenanceAlerts.length === 0 && (
+                    <div className="text-center py-8">
+                      <Wrench className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                      <p className="text-sm text-neutral-500">لا توجد تنبيهات صيانة حالياً</p>
+                    </div>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* Maintenance Costs */}
+              <SectionCard title="تكاليف الصيانة الشهرية" icon={DollarSign}>
+                <RevenueChart
+                  data={maintenance.slice(-12).map(m => ({
+                    month: m.month || '',
+                    revenue: m.cost || 0,
+                    contracts: m.count || 0,
+                  }))}
+                  isDark={false}
+                  formatCurrency={formatCurrency}
+                />
+              </SectionCard>
+            </div>
+          </TabsContent>
+
+          {/* Insurance Tab Content */}
+          <TabsContent value="insurance" className="mt-6">
         {/* Insurance & Registration Report Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -625,6 +858,8 @@ const FleetReportsPage: React.FC = () => {
             </div>
           </SectionCard>
         </motion.div>
+          </TabsContent>
+        </Tabs>
 
         {/* Report Generator */}
         <motion.div

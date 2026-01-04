@@ -1,10 +1,10 @@
 /**
  * Fleet Reports Page - Wrapper
- * يوجه للصفحة الجديدة المحسنة
+ * Professional SaaS Design
  */
 
-import FleetReportsPage from './reports/FleetReportsPage';
+import FleetReportsPageRedesigned from './reports/FleetReportsPageRedesigned';
 
 export default function FleetReports() {
-  return <FleetReportsPage />;
+  return <FleetReportsPageRedesigned />;
 }

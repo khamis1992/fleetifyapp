@@ -16,7 +16,6 @@ const TrafficViolations = lazy(() => import('@/pages/fleet/TrafficViolationsRede
 const TrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 const FleetReports = lazy(() => import('@/pages/fleet/FleetReports'));
 const DispatchPermits = lazy(() => import('@/pages/fleet/DispatchPermits'));
-const FleetFinancialAnalysis = lazy(() => import('@/pages/fleet/FleetFinancialAnalysisNew'));
 const ReservationSystem = lazy(() => import('@/pages/fleet/ReservationSystem'));
 const VehicleInstallments = lazy(() => import('@/pages/VehicleInstallments'));
 
@@ -126,18 +125,6 @@ export const fleetRoutes: RouteConfig[] = [
     description: 'Dispatch permits',
     group: 'fleet',
     priority: 38,
-    protected: true,
-    layout: 'bento',
-  },
-  {
-    path: '/fleet/financial-analysis',
-    component: FleetFinancialAnalysis,
-    lazy: true,
-    exact: true,
-    title: 'التحليل المالي للأسطول',
-    description: 'Fleet financial analysis',
-    group: 'fleet',
-    priority: 39,
     protected: true,
     layout: 'bento',
   },
