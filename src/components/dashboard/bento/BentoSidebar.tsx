@@ -130,7 +130,7 @@ const navigation: NavItem[] = [
       { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases', icon: Gavel },
       { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator', icon: BookOpen },
       { id: 'legal-documents', label: 'مستندات الشركة', href: '/legal/documents', icon: FolderOpen },
-      { id: 'legal-overdue', label: 'العقود المتعثرة', href: '/legal/overdue-contracts', icon: FileWarning },
+      { id: 'legal-delinquency', label: 'إدارة المتعثرات', href: '/legal/delinquency', icon: FileWarning },
     ],
   },
   {

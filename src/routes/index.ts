@@ -24,14 +24,14 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
-const Customers = lazy(() => import('@/pages/Customers'));
+// const Customers = lazy(() => import('@/pages/Customers')); // Deprecated - use CustomersPageNew
 const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
-const Fleet = lazy(() => import('@/pages/Fleet'));
+// const Fleet = lazy(() => import('@/pages/Fleet')); // Deprecated - use FleetPageNew
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageNew'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
@@ -145,6 +145,7 @@ const SmartDocumentGenerator = lazy(() => import('@/pages/legal/SmartDocumentGen
 const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocuments'));
 const OverdueContracts = lazy(() => import('@/pages/legal/OverdueContracts'));
 const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
+const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
 
 // Contract management
 const DuplicateContractsManager = lazy(() => import('@/components/contracts/DuplicateContractsManager'));
@@ -288,18 +289,7 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
-  {
-    path: '/customers/classic',
-    component: Customers,
-    lazy: true,
-    exact: true,
-    title: 'Customers Classic',
-    description: 'Classic customer management table view',
-    group: 'customers',
-    priority: 12,
-    protected: true,
-    layout: 'bento',
-  },
+  // Removed: /customers/classic - Old page deprecated, use /customers instead
   {
     path: '/customers/:customerId',
     component: CustomerDetailsPageNew,
@@ -372,18 +362,7 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
-  {
-    path: '/fleet/classic',
-    component: Fleet,
-    lazy: true,
-    exact: true,
-    title: 'Fleet Classic',
-    description: 'Classic fleet management page',
-    group: 'fleet',
-    priority: 17,
-    protected: true,
-    layout: 'bento',
-  },
+  // Removed: /fleet/classic - Old page deprecated, use /fleet instead
   {
     path: '/fleet/vehicles/:vehicleId',
     component: VehicleDetailsPageNew,
@@ -1470,14 +1449,26 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/legal/delinquency',
+    component: FinancialDelinquency,
+    lazy: true,
+    exact: true,
+    title: 'إدارة المتعثرات المالية',
+    description: 'Financial Delinquency Management',
+    group: 'legal',
+    priority: 130,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/legal/overdue-contracts',
-    component: OverdueContracts,
+    component: FinancialDelinquency, // Redirect old path to new unified page
     lazy: true,
     exact: true,
     title: 'العقود المتعثرة',
-    description: 'Overdue Contracts',
+    description: 'Overdue Contracts - Redirects to Financial Delinquency',
     group: 'legal',
-    priority: 130,
+    priority: 131,
     protected: true,
     layout: 'bento',
   },
