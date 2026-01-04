@@ -42,7 +42,7 @@ export const LazyDashboard = lazyWithRetry(() => import('@/pages/Dashboard'));
 export const LazyBentoDashboard = lazyWithRetry(() => import('@/components/dashboard/bento/BentoDashboard'));
 
 // === Fleet Pages ===
-export const LazyFleet = lazyWithRetry(() => import('@/pages/Fleet'));
+export const LazyFleet = lazyWithRetry(() => import('@/pages/fleet/FleetPageNew'));
 export const LazyFleetPageNew = lazyWithRetry(() => import('@/pages/fleet/FleetPageNew'));
 export const LazyVehicleDetails = lazyWithRetry(() => import('@/components/fleet/VehicleDetailsPageNew'));
 export const LazyMaintenance = lazyWithRetry(() => import('@/pages/fleet/Maintenance'));

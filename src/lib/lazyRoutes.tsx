@@ -29,7 +29,7 @@ export const LazyLegal = lazy(() =>
 );
 
 // ==================== Fleet Pages ====================
-export const LazyFleet = lazy(() => import('@/pages/Fleet'));
+export const LazyFleet = lazy(() => import('@/pages/fleet/FleetPageNew'));
 export const LazyMaintenance = lazy(() => import('@/pages/fleet/Maintenance'));
 export const LazyTrafficViolations = lazy(() => import('@/pages/fleet/TrafficViolationsRedesigned'));
 export const LazyTrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
@@ -40,7 +40,7 @@ export const LazyVehicleInstallments = lazy(() => import('@/pages/VehicleInstall
 
 // ==================== Contract Pages ====================
 export const LazyContracts = lazy(() => import('@/pages/Contracts'));
-export const LazyCustomers = lazy(() => import('@/pages/Customers'));
+export const LazyCustomers = lazy(() => import('@/pages/customers/CustomersPageNew'));
 export const LazyQuotations = lazy(() => import('@/pages/Quotations'));
 
 // ==================== HR Pages ====================

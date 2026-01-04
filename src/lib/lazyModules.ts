@@ -39,7 +39,7 @@ export const LazyPages = {
   Collections: lazyLoad(() => import('../pages/Collections')),
 
   // Fleet Module
-  Fleet: lazyLoad(() => import('../pages/Fleet')),
+  Fleet: lazyLoad(() => import('../pages/fleet/FleetPageNew')),
   Maintenance: lazyLoad(() => import('../pages/fleet/Maintenance')),
   FleetReports: lazyLoad(() => import('../pages/fleet/FleetReports')),
 
@@ -60,7 +60,7 @@ export const LazyPages = {
   Reports: lazyLoad(() => import('../pages/Reports')),
 
   // Other Pages
-  Customers: lazyLoad(() => import('../pages/Customers')),
+  Customers: lazyLoad(() => import('../pages/customers/CustomersPageNew')),
   Contracts: lazyLoad(() => import('../pages/Contracts')),
   Vehicles: lazyLoad(() => import('../pages/fleet/Vehicles')),
   Properties: lazyLoad(() => import('../pages/Properties')),
@@ -165,7 +165,7 @@ export const preloadCriticalModules = () => {
   // Preload frequently used modules
   setTimeout(() => {
     import('../pages/Dashboard');
-    import('../pages/Customers');
+    import('../pages/customers/CustomersPageNew');
     import('../pages/Contracts');
   }, 2000);
 };
