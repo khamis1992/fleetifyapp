@@ -358,7 +358,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                       name="payment_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تاريخ الدفعة *</FormLabel>
+                          <FormLabel>تاريخ السداد *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}

@@ -674,7 +674,7 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
             <thead className="bg-neutral-50 border-b border-neutral-200">
               <tr>
                 <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">رقم الدفعة</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">التاريخ</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">تاريخ السداد</th>
                 <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">المبلغ</th>
                 <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الطريقة</th>
                 <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الحالة</th>
