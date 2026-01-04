@@ -332,11 +332,14 @@ export const DelinquentCustomersTab: React.FC = () => {
     navigate(`/finance/payments/quick?${params.toString()}`);
   }, [navigate]);
 
-  // Handle create case - opens dialog
+  // Handle create case - navigate to lawsuit preparation page
   const handleCreateCase = useCallback((customer: DelinquentCustomer) => {
-    setCurrentCustomer(customer);
-    setCreateCaseDialogOpen(true);
-  }, []);
+    if (customer.contract_id) {
+      navigate(`/legal/lawsuit/prepare/${customer.contract_id}`);
+    } else {
+      toast.error('لا يوجد عقد مرتبط بهذا العميل');
+    }
+  }, [navigate]);
 
   // Handle send warning
   const handleSendWarning = useCallback(async (customer: DelinquentCustomer) => {
