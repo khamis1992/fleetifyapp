@@ -24,14 +24,12 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
-// const Customers = lazy(() => import('@/pages/Customers')); // Deprecated - use CustomersPageNew
 const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
-// const Fleet = lazy(() => import('@/pages/Fleet')); // Deprecated - use FleetPageNew
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageNew'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
@@ -143,7 +141,7 @@ const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
 const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
 const SmartDocumentGenerator = lazy(() => import('@/pages/legal/SmartDocumentGenerator'));
 const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocuments'));
-const OverdueContracts = lazy(() => import('@/pages/legal/OverdueContracts'));
+// OverdueContracts merged into FinancialDelinquency
 const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
 const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
 
@@ -289,7 +287,6 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
-  // Removed: /customers/classic - Old page deprecated, use /customers instead
   {
     path: '/customers/:customerId',
     component: CustomerDetailsPageNew,
@@ -362,7 +359,6 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
     layout: 'bento',
   },
-  // Removed: /fleet/classic - Old page deprecated, use /fleet instead
   {
     path: '/fleet/vehicles/:vehicleId',
     component: VehicleDetailsPageNew,
