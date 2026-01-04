@@ -4,12 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyFilter } from "@/hooks/useCompanyScope";
 import {
   calculateRiskScore,
-  calculatePenalty,
   calculateMonthsUnpaid,
   getRecommendedAction,
   getRiskLevel,
   type RecommendedAction,
 } from "@/utils/delinquency-calculations";
+import { DAILY_LATE_FEE } from "@/utils/calculateDelinquencyAmounts";
 import { toast } from "sonner";
 
 export interface DelinquentCustomer {
@@ -527,24 +527,26 @@ async function calculateDelinquentCustomersDynamically(
       const actualPayments = customerPayments.length;
 
       // ✅ حساب الغرامة لكل فاتورة متأخرة على حدة ثم جمعها
-      // كل فاتورة لها أيام تأخير خاصة بها وغرامة خاصة بها
+      // غرامة التأخير: 120 ريال × أيام التأخير لكل فاتورة
       let latePenalty = 0;
       const todayForPenalty = new Date();
+      todayForPenalty.setHours(0, 0, 0, 0);
       
       for (const invoice of unpaidOverdueInvoices) {
         const invoiceDueDate = new Date(invoice.due_date);
+        invoiceDueDate.setHours(0, 0, 0, 0);
         const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (invoiceDaysOverdue > 0) {
-          // حساب الغرامة لهذه الفاتورة
-          const invoicePenalty = calculatePenalty(0, invoiceDaysOverdue);
+          // حساب الغرامة لهذه الفاتورة: 120 ر.ق × أيام التأخير
+          const invoicePenalty = invoiceDaysOverdue * DAILY_LATE_FEE;
           latePenalty += invoicePenalty;
         }
       }
       
       // إذا لم تكن هناك فواتير متأخرة ولكن يوجد daysOverdue من العقد
       if (latePenalty === 0 && daysOverdue > 0) {
-        latePenalty = calculatePenalty(overdueAmount, daysOverdue);
+        latePenalty = daysOverdue * DAILY_LATE_FEE;
       }
 
       // Get violations for this customer

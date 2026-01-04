@@ -45,6 +45,11 @@ import {
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  calculateDelinquencyAmounts,
+  DAILY_LATE_FEE,
+  DAMAGES_FEE,
+} from '@/utils/calculateDelinquencyAmounts';
+import {
   lawsuitService,
   CompanyLegalDocument,
   DOCUMENT_TYPE_NAMES,
@@ -185,28 +190,39 @@ export default function LawsuitPreparationPage() {
     enabled: !!companyId,
   });
 
-  // حساب المبالغ
+  // حساب المبالغ - باستخدام الدالة الموحدة
+  // غرامة التأخير: 120 ر.ق × أيام التأخير لكل فاتورة
+  // رسوم الأضرار: 10,000 ر.ق (عند رفع دعوى)
   const calculations = useMemo(() => {
-    const overdueRent = overdueInvoices.reduce(
-      (sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 
-      0
+    const result = calculateDelinquencyAmounts(
+      overdueInvoices.map(inv => ({
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        due_date: inv.due_date,
+        total_amount: inv.total_amount || 0,
+        paid_amount: inv.paid_amount || 0,
+      })),
+      trafficViolations.map(v => ({
+        id: v.id,
+        violation_number: v.violation_number,
+        fine_amount: v.fine_amount,
+        total_amount: v.total_amount,
+        status: v.status,
+      })),
+      { includeDamagesFee: true } // رسوم الأضرار عند رفع دعوى
     );
-    const lateFees = Math.round(overdueRent * 0.05);
-    const otherFees = 500;
-    const violationsFines = trafficViolations.reduce(
-      (sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0),
-      0
-    );
-    const total = overdueRent + lateFees + otherFees + violationsFines;
     
     return {
-      overdueRent,
-      lateFees,
-      otherFees,
-      violationsFines,
-      violationsCount: trafficViolations.length,
-      total,
-      amountInWords: lawsuitService.convertAmountToWords(total),
+      overdueRent: result.overdueRent,
+      lateFees: result.lateFees,
+      damagesFee: result.damagesFee,
+      violationsFines: result.violationsFines,
+      violationsCount: result.violationsCount,
+      total: result.total,
+      invoiceLateFees: result.invoiceLateFees,
+      overdueInvoicesCount: result.overdueInvoicesCount,
+      avgDaysOverdue: result.avgDaysOverdue,
+      amountInWords: lawsuitService.convertAmountToWords(result.total),
     };
   }, [overdueInvoices, trafficViolations]);
 
