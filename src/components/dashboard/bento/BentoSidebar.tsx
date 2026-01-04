@@ -10,34 +10,49 @@ import {
   Banknote,
   Settings,
   ChevronDown,
-  ChevronRight,
   LogOut,
   Wrench,
-  Receipt,
-  CreditCard,
-  Building2,
   UserCog,
   BarChart3,
   CalendarDays,
   Truck,
-  FileCheck,
   PanelLeftClose,
   PanelLeft,
-  PhoneCall,
   UserCheck,
-  Clock,
-  DollarSign,
   Shield,
   ListTodo,
+  List,
+  HeartHandshake,
+  AlertTriangle,
+  ClipboardList,
+  FileCheck,
+  Scale,
+  BookOpen,
+  Building2,
+  Receipt,
+  Clock,
+  PackageCheck,
+  Gavel,
+  FolderOpen,
+  FileWarning,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// === Types ===
+interface SubItem {
+  id: string;
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
 
 interface NavItem {
   id: string;
   label: string;
   icon: React.ElementType;
   href?: string;
-  children?: { id: string; label: string; href: string }[];
+  children?: SubItem[];
+  category?: string;
 }
 
 interface BentoSidebarProps {
@@ -45,41 +60,46 @@ interface BentoSidebarProps {
   onCloseMobile?: () => void;
 }
 
+// === Navigation Configuration with Icons for Sub-items ===
 const navigation: NavItem[] = [
   {
     id: 'dashboard',
     label: 'الرئيسية',
     icon: LayoutDashboard,
     href: '/dashboard',
+    category: 'main',
   },
   {
     id: 'customers',
     label: 'إدارة العملاء',
     icon: Users,
+    category: 'operations',
     children: [
-      { id: 'customers-list', label: 'قائمة العملاء', href: '/customers' },
-      { id: 'customers-crm', label: 'إدارة العلاقات (CRM)', href: '/customers/crm' },
+      { id: 'customers-list', label: 'قائمة العملاء', href: '/customers', icon: List },
+      { id: 'customers-crm', label: 'إدارة العلاقات (CRM)', href: '/customers/crm', icon: HeartHandshake },
     ],
   },
   {
     id: 'fleet',
     label: 'إدارة الأسطول',
     icon: Car,
+    category: 'operations',
     children: [
-      { id: 'vehicles', label: 'المركبات', href: '/fleet' },
-      { id: 'maintenance', label: 'الصيانة', href: '/fleet/maintenance' },
-      { id: 'reservations', label: 'الحجوزات', href: '/fleet/reservations' },
-      { id: 'violations', label: 'المخالفات المرورية', href: '/fleet/traffic-violations' },
-      { id: 'fleet-reports', label: 'تقارير الأسطول', href: '/fleet/reports' },
+      { id: 'vehicles', label: 'المركبات', href: '/fleet', icon: Car },
+      { id: 'maintenance', label: 'الصيانة', href: '/fleet/maintenance', icon: Wrench },
+      { id: 'reservations', label: 'الحجوزات', href: '/fleet/reservations', icon: CalendarDays },
+      { id: 'violations', label: 'المخالفات المرورية', href: '/fleet/traffic-violations', icon: AlertTriangle },
+      { id: 'fleet-reports', label: 'تقارير الأسطول', href: '/fleet/reports', icon: BarChart3 },
     ],
   },
   {
     id: 'quotations-contracts',
     label: 'العروض والعقود',
     icon: FileText,
+    category: 'operations',
     children: [
-      { id: 'quotations', label: 'عروض الأسعار', href: '/quotations' },
-      { id: 'contracts', label: 'العقود', href: '/contracts' },
+      { id: 'quotations', label: 'عروض الأسعار', href: '/quotations', icon: ClipboardList },
+      { id: 'contracts', label: 'العقود', href: '/contracts', icon: FileCheck },
     ],
   },
   {
@@ -87,35 +107,39 @@ const navigation: NavItem[] = [
     label: 'المالية',
     icon: Banknote,
     href: '/finance/hub',
+    category: 'management',
   },
   {
     id: 'hr',
     label: 'الموارد البشرية',
     icon: UserCheck,
+    category: 'management',
     children: [
-      { id: 'hr-employees', label: 'إدارة الموظفين', href: '/hr/employees' },
-      { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance' },
-      { id: 'hr-payroll', label: 'الرواتب', href: '/hr/payroll' },
-      { id: 'hr-reports', label: 'التقارير', href: '/hr/reports' },
+      { id: 'hr-employees', label: 'إدارة الموظفين', href: '/hr/employees', icon: UserCog },
+      { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance', icon: Clock },
+      { id: 'hr-payroll', label: 'الرواتب', href: '/hr/payroll', icon: Receipt },
+      { id: 'hr-reports', label: 'التقارير', href: '/hr/reports', icon: BarChart3 },
     ],
   },
   {
     id: 'legal',
     label: 'الشؤون القانونية',
     icon: Shield,
+    category: 'management',
     children: [
-      { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases' },
-      { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator' },
-      { id: 'legal-documents', label: 'مستندات الشركة', href: '/legal/documents' },
-      { id: 'legal-overdue', label: 'العقود المتعثرة', href: '/legal/overdue-contracts' },
+      { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases', icon: Gavel },
+      { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator', icon: BookOpen },
+      { id: 'legal-documents', label: 'مستندات الشركة', href: '/legal/documents', icon: FolderOpen },
+      { id: 'legal-overdue', label: 'العقود المتعثرة', href: '/legal/overdue-contracts', icon: FileWarning },
     ],
   },
   {
     id: 'operations',
     label: 'العمليات',
     icon: Truck,
+    category: 'management',
     children: [
-      { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits' },
+      { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits', icon: PackageCheck },
     ],
   },
   {
@@ -123,29 +147,48 @@ const navigation: NavItem[] = [
     label: 'إدارة المهام',
     icon: ListTodo,
     href: '/tasks',
+    category: 'system',
   },
   {
     id: 'reports',
     label: 'التقارير',
     icon: BarChart3,
     href: '/reports',
+    category: 'system',
   },
   {
     id: 'settings',
     label: 'الإعدادات',
     icon: Settings,
     href: '/settings',
+    category: 'system',
   },
 ];
 
+// === Category Labels ===
+const categoryLabels: Record<string, string> = {
+  main: '',
+  operations: 'التشغيل',
+  management: 'الإدارة',
+  system: 'النظام',
+};
+
+// === Group navigation by category ===
+const groupedNavigation = navigation.reduce((acc, item) => {
+  const category = item.category || 'main';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(item);
+  return acc;
+}, {} as Record<string, NavItem[]>);
+
+// === Main Component ===
 const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMobile }) => {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet', 'finance']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet']);
 
-  // Handle link click on mobile
   const handleLinkClick = () => {
     if (isMobile && onCloseMobile) {
       onCloseMobile();
@@ -158,7 +201,11 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
     );
   };
 
-  const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
+  const isActiveLink = (href: string) => 
+    location.pathname === href || location.pathname.startsWith(href + '/');
+
+  const isParentActive = (children?: SubItem[]) =>
+    children?.some(child => isActiveLink(child.href));
 
   const handleSignOut = async () => {
     await signOut();
@@ -168,24 +215,125 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
   const userName = user?.profile?.full_name || user?.email?.split('@')[0] || 'مستخدم';
   const userInitials = userName.slice(0, 2).toUpperCase();
 
+  // === Render Navigation Item ===
+  const renderNavItem = (item: NavItem) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedItems.includes(item.id);
+    const isParentItemActive = hasChildren && isParentActive(item.children);
+    const isDirectActive = item.href && isActiveLink(item.href);
+
+    if (hasChildren) {
+      return (
+        <div key={item.id}>
+          <button
+            onClick={() => toggleExpanded(item.id)}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+              isParentItemActive
+                ? 'bg-gradient-to-l from-coral-500/10 to-orange-500/10 text-coral-600 border-r-2 border-coral-500'
+                : isExpanded
+                ? 'bg-neutral-100 text-neutral-900'
+                : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
+            )}
+          >
+            <item.icon className={cn(
+              'w-5 h-5 flex-shrink-0 transition-colors',
+              isParentItemActive ? 'text-coral-500' : ''
+            )} />
+            {(!collapsed || isMobile) && (
+              <>
+                <span className="flex-1 text-right">{item.label}</span>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 transition-transform duration-200',
+                    isExpanded && 'rotate-180'
+                  )}
+                />
+              </>
+            )}
+          </button>
+          <AnimatePresence>
+            {isExpanded && (!collapsed || isMobile) && (
+              <motion.ul
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden mr-2 mt-1 space-y-0.5 border-r-2 border-neutral-100"
+              >
+                {item.children!.map((child) => {
+                  const ChildIcon = child.icon;
+                  const isChildActive = isActiveLink(child.href);
+                  return (
+                    <li key={child.id}>
+                      <NavLink
+                        to={child.href}
+                        onClick={handleLinkClick}
+                        className={cn(
+                          'flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-200',
+                          isChildActive
+                            ? 'bg-coral-500 text-white shadow-md shadow-coral-500/20 font-medium'
+                            : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700'
+                        )}
+                      >
+                        <ChildIcon className={cn(
+                          'w-4 h-4 flex-shrink-0',
+                          isChildActive ? 'text-white' : 'text-neutral-400'
+                        )} />
+                        <span>{child.label}</span>
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    // Simple link
+    return (
+      <NavLink
+        key={item.id}
+        to={item.href!}
+        onClick={handleLinkClick}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+          isDirectActive
+            ? 'bg-gradient-to-l from-coral-500 to-orange-500 text-white shadow-lg shadow-coral-500/25'
+            : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
+        )}
+      >
+        <item.icon className={cn(
+          'w-5 h-5 flex-shrink-0',
+          isDirectActive ? 'text-white' : ''
+        )} />
+        {(!collapsed || isMobile) && <span>{item.label}</span>}
+      </NavLink>
+    );
+  };
+
   return (
     <motion.aside
       initial={false}
       animate={{ width: isMobile ? 288 : (collapsed ? 72 : 260) }}
       className={cn(
-        "h-screen bg-white flex flex-col shadow-sm",
+        // ✅ Fixed positioning - يبقى ثابتاً عند التمرير
+        "fixed top-0 right-0 h-screen z-40",
+        "bg-white flex flex-col shadow-sm",
         isMobile ? "border-none" : "border-l border-neutral-200"
       )}
     >
-      {/* Logo & Collapse */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-100">
+      {/* === Header: Logo & Collapse Button === */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-neutral-100 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 bg-coral-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-bl from-coral-500 to-orange-500 rounded-lg flex items-center justify-center shadow-md shadow-coral-500/20">
               <Car className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-neutral-900">Fleetify</span>
@@ -194,128 +342,86 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500"
+            className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 transition-colors"
+            title={collapsed ? 'توسيع' : 'تصغير'}
           >
             {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <ul className="space-y-1">
-          {navigation.map((item) => (
-            <li key={item.id}>
-              {item.children ? (
-                // Expandable item
-                <div>
-                  <button
-                    onClick={() => toggleExpanded(item.id)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-                      expandedItems.includes(item.id)
-                        ? 'bg-neutral-100 text-neutral-900'
-                        : 'text-neutral-600 hover:bg-neutral-50'
-                    )}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {(!collapsed || isMobile) && (
-                      <>
-                        <span className="flex-1 text-right">{item.label}</span>
-                        <ChevronDown
-                          className={cn(
-                            'w-4 h-4 transition-transform',
-                            expandedItems.includes(item.id) && 'rotate-180'
-                          )}
-                        />
-                      </>
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {expandedItems.includes(item.id) && (!collapsed || isMobile) && (
-                      <motion.ul
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden mr-4 mt-1 space-y-1"
-                      >
-                        {item.children.map((child) => (
-                          <li key={child.id}>
-                            <NavLink
-                              to={child.href}
-                              onClick={handleLinkClick}
-                              className={({ isActive }) =>
-                                cn(
-                                  'block px-3 py-2 rounded-lg text-sm transition-colors',
-                                  isActive
-                                    ? 'bg-coral-50 text-coral-600 font-medium'
-                                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700'
-                                )
-                              }
-                            >
-                              {child.label}
-                            </NavLink>
-                          </li>
-                        ))}
-                      </motion.ul>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                // Simple link
-                <NavLink
-                  to={item.href!}
-                  onClick={handleLinkClick}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-coral-500 text-white shadow-sm'
-                        : 'text-neutral-600 hover:bg-neutral-50'
-                    )
-                  }
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {(!collapsed || isMobile) && <span>{item.label}</span>}
-                </NavLink>
-              )}
-            </li>
-          ))}
-        </ul>
+      {/* === Navigation with Categories === */}
+      <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
+        {Object.entries(groupedNavigation).map(([category, items], categoryIndex) => (
+          <div key={category} className={cn(categoryIndex > 0 && 'mt-4')}>
+            {/* Category Label */}
+            {categoryLabels[category] && (!collapsed || isMobile) && (
+              <div className="px-3 py-2 mb-1">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  {categoryLabels[category]}
+                </span>
+              </div>
+            )}
+            
+            {/* Category Items */}
+            <ul className="space-y-1">
+              {items.map((item) => (
+                <li key={item.id}>{renderNavItem(item)}</li>
+              ))}
+            </ul>
+
+            {/* Separator between categories */}
+            {categoryIndex < Object.keys(groupedNavigation).length - 1 && (
+              <div className="mt-4 mx-3 border-b border-neutral-100" />
+            )}
+          </div>
+        ))}
       </nav>
 
-      {/* User Profile */}
-      <div className="p-3 border-t border-neutral-100">
+      {/* === Compact User Profile === */}
+      <div className="p-2 border-t border-neutral-100 flex-shrink-0 bg-neutral-50/50">
         <div
           className={cn(
-            'flex items-center gap-3 p-3 rounded-xl bg-neutral-50',
+            'flex items-center gap-2 p-2 rounded-lg',
             collapsed && !isMobile && 'justify-center'
           )}
         >
-          <div className="w-10 h-10 rounded-full bg-coral-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+          {/* Avatar */}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-bl from-coral-500 to-orange-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
             {userInitials}
           </div>
+          
+          {/* User Info + Logout in one row */}
           {(!collapsed || isMobile) && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-900 truncate">{userName}</p>
-              <p className="text-xs text-neutral-400 truncate">{user?.email}</p>
+            <div className="flex-1 flex items-center justify-between min-w-0">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-neutral-800 truncate">{userName}</p>
+                <p className="text-[10px] text-neutral-400 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="p-1.5 rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                title="تسجيل الخروج"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           )}
-        </div>
-        <button
-          onClick={handleSignOut}
-          className={cn(
-            'w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors',
-            collapsed && !isMobile && 'justify-center'
+          
+          {/* Collapsed logout */}
+          {collapsed && !isMobile && (
+            <button
+              onClick={handleSignOut}
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="تسجيل الخروج"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           )}
-        >
-          <LogOut className="w-4 h-4" />
-          {(!collapsed || isMobile) && <span>تسجيل الخروج</span>}
-        </button>
+        </div>
       </div>
     </motion.aside>
   );
 };
 
 export default BentoSidebar;
-

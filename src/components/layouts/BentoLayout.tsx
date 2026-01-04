@@ -93,17 +93,17 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           )}
         </AnimatePresence>
 
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - Fixed Position */}
         <div className="hidden lg:block">
           <BentoSidebar />
         </div>
         
-        {/* Main Content Area */}
+        {/* Main Content Area - With margin for fixed sidebar */}
         <motion.main
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0"
+          className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[260px]"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="p-4 md:p-6 min-h-screen">
