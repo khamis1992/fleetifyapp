@@ -124,28 +124,40 @@ const CHART_COLORS = {
 
 // --- Status Badge Component ---
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  const getStatusConfig = (s: string) => {
-    const statusLower = s?.toLowerCase() || '';
-
-    if (statusLower.includes('حكم') || statusLower.includes('تنفيذ') || statusLower === 'closed' || statusLower === 'won' || statusLower === 'settled') {
-      return { style: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'مغلقة' };
-    } else if (statusLower.includes('جاري') || statusLower.includes('جلسة') || statusLower.includes('شرطة') || statusLower === 'active' || statusLower === 'in_progress') {
-      return { style: 'bg-sky-50 text-sky-700 border-sky-200', label: 'نشطة' };
-    } else if (statusLower.includes('خبير') || statusLower.includes('تحقيق') || statusLower === 'on_hold' || statusLower === 'suspended' || statusLower === 'pending') {
-      return { style: 'bg-amber-50 text-amber-700 border-amber-200', label: 'معلقة' };
-    } else if (statusLower === 'urgent' || statusLower === 'high') {
-      return { style: 'bg-rose-50 text-rose-700 border-rose-200', label: 'عاجلة' };
-    } else if (statusLower === 'new') {
-      return { style: 'bg-violet-50 text-violet-700 border-violet-200', label: 'جديدة' };
-    }
-    return { style: 'bg-slate-50 text-slate-700 border-slate-200', label: s || 'غير محدد' };
+  let style = "bg-gray-100 text-gray-600";
+  const s = status || '';
+  if (s.includes("حكم") || s.includes("تنفيذ") || s === "closed" || s === "won" || s === "settled") {
+    style = "bg-green-100 text-green-700";
+  } else if (s.includes("جاري") || s.includes("جلسة") || s.includes("شرطة") || s === "active" || s === "in_progress") {
+    style = "bg-blue-100 text-blue-700";
+  } else if (s.includes("خبير") || s.includes("تحقيق") || s === "on_hold" || s === "suspended" || s === "pending") {
+    style = "bg-yellow-100 text-yellow-700";
+  } else if (s === "urgent" || s === "high") {
+    style = "bg-red-100 text-red-700";
+  } else if (s === "new") {
+    style = "bg-cyan-100 text-cyan-700";
+  }
+  
+  const getStatusLabel = (s: string) => {
+    const labels: Record<string, string> = {
+      active: 'نشطة',
+      closed: 'مغلقة',
+      suspended: 'معلقة',
+      on_hold: 'قيد الانتظار',
+      pending: 'قيد الانتظار',
+      won: 'تم الكسب',
+      lost: 'تم الخسارة',
+      settled: 'تم التسوية',
+      in_progress: 'قيد التنفيذ',
+      new: 'جديدة',
+      urgent: 'عاجلة',
+    };
+    return labels[s] || s;
   };
-
-  const config = getStatusConfig(status);
-
+  
   return (
-    <span className={cn('px-2.5 py-1 rounded-md text-xs font-semibold border', config.style)}>
-      {config.label}
+    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${style}`}>
+      {getStatusLabel(s)}
     </span>
   );
 };
@@ -165,8 +177,8 @@ const TabButton: React.FC<TabButtonProps> = ({ id, label, icon: Icon, activeTab,
     className={cn(
       "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all duration-200 border-b-2",
       activeTab === id
-        ? 'border-rose-500 text-rose-600 bg-rose-50/50'
-        : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+        ? 'border-[#E55B5B] text-[#E55B5B] bg-red-50/50'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
     )}
   >
     <Icon size={18} />
@@ -203,31 +215,31 @@ const KPICard: React.FC<KPICardProps> = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all"
+    className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
   >
     <div className="flex justify-between items-start mb-4">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-md", color)}>
+      <div className={`p-2.5 rounded-lg ${color} bg-opacity-10`}>
         <Icon size={22} className={textColor} />
       </div>
       {change && (
         <span className={cn(
-          "text-xs font-bold px-2.5 py-1 rounded-full",
-          isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+          "text-xs font-bold px-2 py-1 rounded-full",
+          isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
         )}>
           {change}
         </span>
       )}
     </div>
     <div>
-      <h3 className="text-slate-500 text-xs font-medium mb-1">{title}</h3>
+      <h3 className="text-gray-500 text-xs font-medium mb-1">{title}</h3>
       <div className="flex items-baseline gap-2">
-        <h2 className="text-2xl font-bold text-slate-900">{value}</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{value}</h2>
       </div>
-      <p className="text-xs text-slate-400 mt-1">{subValue}</p>
+      <p className="text-[10px] text-gray-400 mt-1">{subValue}</p>
     </div>
-    <div className="w-full bg-slate-50 rounded-full h-1.5 mt-4 overflow-hidden">
+    <div className="w-full bg-gray-50 rounded-full h-1 mt-4 overflow-hidden">
       <div
-        className={cn("h-full rounded-full transition-all", progressColor)}
+        className={`h-full rounded-full ${progressColor}`}
         style={{ width: `${barValue}%` }}
       />
     </div>
@@ -878,7 +890,7 @@ export const LegalCasesTracking: React.FC = () => {
   const DashboardView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {kpiData.map((stat, index) => (
           <KPICard key={index} {...stat} />
         ))}
@@ -887,13 +899,10 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Financial Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">التحليل المالي للقضايا</h3>
-              <p className="text-sm text-slate-500 mt-1">التعويضات vs المطالبات</p>
-            </div>
-            <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+            <h3 className="text-base font-bold text-gray-800">التحليل المالي للقضايا (التعويضات vs المطالبات)</h3>
+            <Badge variant="outline" className="text-xs">
               آخر 6 أشهر
             </Badge>
           </div>
@@ -901,21 +910,21 @@ export const LegalCasesTracking: React.FC = () => {
             {financialData.length > 0 && financialData.some(d => d.claimed > 0 || d.recovered > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={financialData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                   <Tooltip
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 40px -12px rgba(0, 0, 0, 0.15)' }}
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [formatCurrency(value), '']}
                   />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#fb7185" radius={[6, 6, 0, 0]} barSize={24} />
-                  <Bar dataKey="recovered" name="تم تحصيله" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#FCA5A5" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="recovered" name="تم تحصيله" fill="#4ADE80" radius={[4, 4, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+              <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <DollarSign size={48} className="mb-3 opacity-50" />
                 <p className="text-sm font-medium">لا توجد بيانات مالية بعد</p>
                 <p className="text-xs mt-1">قم بإضافة قيم المطالبات في القضايا</p>
@@ -925,8 +934,8 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Case Types Pie Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">أنواع القضايا</h3>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-base font-bold text-gray-800 mb-6">أنواع القضايا</h3>
           {caseTypesData.length > 0 ? (
             <>
               <div className="h-56 relative">
@@ -949,24 +958,24 @@ export const LegalCasesTracking: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                  <span className="text-3xl font-bold text-slate-900">{stats?.total || 0}</span>
-                  <span className="text-xs text-slate-400">قضية</span>
+                  <span className="text-3xl font-bold text-gray-800">{stats?.total || 0}</span>
+                  <span className="text-xs text-gray-400">قضية</span>
                 </div>
               </div>
-              <div className="space-y-3 mt-4">
+              <div className="space-y-3 mt-2">
                 {caseTypesData.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
+                  <div key={idx} className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-slate-700">{item.name}</span>
+                      <span className="text-gray-600">{item.name}</span>
                     </div>
-                    <span className="font-bold text-slate-900">{item.value}</span>
+                    <span className="font-bold text-gray-800">{item.value}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="h-56 flex items-center justify-center text-slate-400">
+            <div className="h-56 flex items-center justify-center text-gray-400">
               لا توجد بيانات متاحة
             </div>
           )}
@@ -975,54 +984,48 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
+        <Card className="bg-white">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-rose-600 rounded-lg flex items-center justify-center">
-                <Scale className="w-4 h-4 text-white" />
-              </div>
+              <Scale className="w-4 h-4 text-blue-500" />
               إجمالي القضايا
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{stats?.total || 0}</div>
-            <p className="text-xs text-slate-500 mt-1">
+            <div className="text-2xl font-bold text-gray-800">{stats?.total || 0}</div>
+            <p className="text-xs text-gray-400">
               {stats?.active || 0} نشطة • {stats?.closed || 0} مغلقة
             </p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
+        
+        <Card className="bg-white">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Users className="w-4 h-4 text-white" />
-              </div>
+              <Users className="w-4 h-4 text-green-500" />
               عملاء متأثرين
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl font-bold text-gray-800">
               {new Set(cases.map(c => c.client_id).filter(Boolean)).size}
             </div>
-            <p className="text-xs text-slate-500 mt-1">عميل لديه قضايا</p>
+            <p className="text-xs text-gray-400">عميل لديه قضايا</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
+        
+        <Card className="bg-white">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-white" />
-              </div>
+              <Clock className="w-4 h-4 text-orange-500" />
               الجلسات القادمة
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl font-bold text-gray-800">
               {upcomingHearings.filter(h => h.daysUntil >= 0).length}
             </div>
-            <p className="text-xs text-slate-500 mt-1">جلسة محكمة قادمة</p>
+            <p className="text-xs text-gray-400">جلسة محكمة قادمة</p>
           </CardContent>
         </Card>
       </div>
@@ -1031,23 +1034,23 @@ export const LegalCasesTracking: React.FC = () => {
 
   // --- Cases List View ---
   const CasesListView = () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">
-      <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-72">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-500">
+      <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <Input
               type="text"
               placeholder="بحث برقم اللوحة، اسم العميل..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+              className="w-full pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E55B5B]/20 focus:border-[#E55B5B]"
             />
           </div>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-100"
           >
             <Filter size={16} />
             <span>تصفية</span>
@@ -1056,14 +1059,14 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-50 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50"
           >
             <Download size={16} />
             <span>تصدير</span>
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl text-sm hover:from-rose-600 hover:to-rose-700 shadow-md transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-[#E55B5B] text-white rounded-lg text-sm hover:bg-[#d64545] shadow-sm"
           >
             <Plus size={16} />
             <span>تسجيل قضية جديدة</span>
@@ -1078,11 +1081,11 @@ export const LegalCasesTracking: React.FC = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-b border-slate-100 overflow-hidden"
+            className="border-b border-gray-100 overflow-hidden"
           >
-            <div className="p-5 bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="border-slate-200 rounded-xl">
+                <SelectTrigger>
                   <SelectValue placeholder="تصفية حسب الحالة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1094,7 +1097,7 @@ export const LegalCasesTracking: React.FC = () => {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="border-slate-200 rounded-xl">
+                <SelectTrigger>
                   <SelectValue placeholder="تصفية حسب النوع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1115,9 +1118,9 @@ export const LegalCasesTracking: React.FC = () => {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 text-slate-500 border-b border-slate-100 hover:bg-slate-50/50">
+            <TableRow className="bg-gray-50/50 text-gray-500 border-b border-gray-100">
               <TableHead className="px-6 py-4 font-medium w-10">
-                <input type="checkbox" className="rounded border-slate-300 text-rose-500 focus:ring-rose-500" />
+                <input type="checkbox" className="rounded border-gray-300 text-[#E55B5B] focus:ring-[#E55B5B]" />
               </TableHead>
               <TableHead className="px-6 py-4 font-medium">رقم الملف</TableHead>
               <TableHead className="px-6 py-4 font-medium">العميل</TableHead>
@@ -1128,7 +1131,7 @@ export const LegalCasesTracking: React.FC = () => {
               <TableHead className="px-6 py-4 font-medium"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-slate-50">
+          <TableBody className="divide-y divide-gray-50">
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-12">
@@ -1137,14 +1140,14 @@ export const LegalCasesTracking: React.FC = () => {
               </TableRow>
             ) : cases.length > 0 ? (
               cases.map((item) => (
-                <TableRow key={item.id} className="hover:bg-rose-50/30 transition-colors group">
+                <TableRow key={item.id} className="hover:bg-[#FFF5F5] transition-colors group">
                   <TableCell className="px-6 py-4">
-                    <input type="checkbox" className="rounded border-slate-300 text-rose-500 focus:ring-rose-500" />
+                    <input type="checkbox" className="rounded border-gray-300 text-[#E55B5B] focus:ring-[#E55B5B]" />
                   </TableCell>
-                  <TableCell className="px-6 py-4 font-semibold text-slate-800">{item.case_number}</TableCell>
+                  <TableCell className="px-6 py-4 font-semibold text-gray-800">{item.case_number}</TableCell>
                   <TableCell className="px-6 py-4">
-                    <div className="font-medium text-slate-800">{item.client_name || 'غير محدد'}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="font-medium text-gray-800">{item.client_name || 'غير محدد'}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">
                       {item.case_title_ar || item.case_title}
                     </div>
                   </TableCell>
@@ -1153,20 +1156,20 @@ export const LegalCasesTracking: React.FC = () => {
                       {getTypeLabel(item.case_type)}
                     </span>
                   </TableCell>
-                  <TableCell className="px-6 py-4 font-medium text-slate-800">
+                  <TableCell className="px-6 py-4 font-medium text-gray-800">
                     {formatCurrency(item.case_value || item.total_costs || 0)}
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <StatusBadge status={item.case_status} />
                   </TableCell>
-                  <TableCell className="px-6 py-4 text-slate-500">
+                  <TableCell className="px-6 py-4 text-gray-500">
                     {item.hearing_date ? (
-                      <span className="flex items-center gap-1.5">
-                        <CalendarDays size={14} className="text-rose-500" />
+                      <span className="flex items-center gap-1">
+                        <CalendarDays size={14} className="text-[#E55B5B]" />
                         {format(new Date(item.hearing_date), 'dd MMM yyyy', { locale: ar })}
                       </span>
                     ) : (
-                      <span className="text-slate-400">غير محدد</span>
+                      <span className="text-gray-400">غير محدد</span>
                     )}
                   </TableCell>
                   <TableCell className="px-6 py-4">
@@ -1175,35 +1178,35 @@ export const LegalCasesTracking: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-slate-400 hover:text-rose-500 p-1 rounded-md hover:bg-rose-50 transition-colors"
+                          className="text-gray-400 hover:text-[#E55B5B] p-1 rounded-md hover:bg-red-50 transition-colors"
                         >
                           <MoreHorizontal size={18} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl border-slate-200">
-                        <DropdownMenuItem
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
                           className="gap-2 cursor-pointer"
                           onClick={() => handleViewDetails(item as LegalCase)}
                         >
                           <Eye size={14} />
                           عرض التفاصيل
                         </DropdownMenuItem>
-                        <DropdownMenuItem
+                        <DropdownMenuItem 
                           className="gap-2 cursor-pointer"
                           onClick={() => handleEditCase(item as LegalCase)}
                         >
                           <Edit size={14} />
                           تعديل
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 cursor-pointer text-emerald-600"
+                        <DropdownMenuItem 
+                          className="gap-2 cursor-pointer text-green-600"
                           onClick={() => handleOpenCloseDialog(item as LegalCase)}
                         >
                           <CheckCircle2 size={14} />
                           إغلاق القضية
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                        <DropdownMenuItem 
                           className="gap-2 text-red-600 cursor-pointer"
                           onClick={() => handleDeleteCase(item as LegalCase)}
                         >
@@ -1217,13 +1220,11 @@ export const LegalCasesTracking: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-16 text-slate-400">
+                <TableCell colSpan={8} className="text-center py-12 text-gray-400">
                   <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                      <Folder className="w-8 h-8 text-slate-300" />
-                    </div>
-                    <p className="font-medium text-slate-500">لا توجد قضايا حالياً</p>
-                    <Button onClick={() => setShowCaseWizard(true)} variant="outline" className="gap-2 border-slate-200 rounded-xl">
+                    <Folder className="w-12 h-12 text-gray-300" />
+                    <p>لا توجد قضايا حالياً</p>
+                    <Button onClick={() => setShowCaseWizard(true)} variant="outline" className="gap-2">
                       <Plus size={16} />
                       إنشاء قضية جديدة
                     </Button>
@@ -1237,7 +1238,7 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+        <div className="p-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
           <span>عرض {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCases)} من أصل {totalCases} قضية</span>
           <div className="flex gap-1">
             <Button
@@ -1245,7 +1246,6 @@ export const LegalCasesTracking: React.FC = () => {
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
             >
               السابق
             </Button>
@@ -1255,12 +1255,7 @@ export const LegalCasesTracking: React.FC = () => {
                 variant={currentPage === page ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCurrentPage(page)}
-                className={cn(
-                  "rounded-lg",
-                  currentPage === page
-                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white border-rose-500 shadow-md'
-                    : 'border-slate-200 hover:bg-slate-50'
-                )}
+                className={currentPage === page ? 'bg-[#E55B5B] text-white border-[#E55B5B]' : ''}
               >
                 {page}
               </Button>
@@ -1270,7 +1265,6 @@ export const LegalCasesTracking: React.FC = () => {
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
             >
               التالي
             </Button>
@@ -1300,11 +1294,11 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-900 text-lg">جدول الجلسات</h3>
+            <h3 className="font-bold text-gray-800">جدول الجلسات</h3>
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+              <Badge variant="outline" className="text-xs">
                 {futureHearings.length} جلسة قادمة
               </Badge>
             </div>
@@ -1315,17 +1309,15 @@ export const LegalCasesTracking: React.FC = () => {
                 <div
                   key={idx}
                   className={cn(
-                    "flex gap-4 p-4 rounded-2xl border transition-all bg-white",
-                    event.daysUntil <= 3
-                      ? "border-red-200 bg-red-50/50 shadow-sm"
-                      : "border-slate-100 hover:border-rose-200 hover:shadow-md"
+                    "flex gap-4 p-4 rounded-xl border transition-all bg-white",
+                    event.daysUntil <= 3 
+                      ? "border-red-200 bg-red-50/50" 
+                      : "border-gray-100 hover:border-[#E55B5B]/30 hover:shadow-sm"
                   )}
                 >
                   <div className={cn(
-                    "flex flex-col items-center justify-center rounded-xl w-16 h-16 shrink-0 shadow-sm",
-                    event.daysUntil <= 3
-                      ? "bg-gradient-to-br from-red-500 to-rose-600 text-white"
-                      : "bg-gradient-to-br from-rose-500 to-rose-600 text-white"
+                    "flex flex-col items-center justify-center rounded-lg w-16 h-16 shrink-0",
+                    event.daysUntil <= 3 ? "bg-red-100 text-red-600" : "bg-red-50 text-[#E55B5B]"
                   )}>
                     <span className="text-xl font-bold">{event.date.split('-')[2]}</span>
                     <span className="text-xs font-medium">
@@ -1334,34 +1326,34 @@ export const LegalCasesTracking: React.FC = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
-                      <h4 className="font-bold text-slate-900">{event.title}</h4>
+                      <h4 className="font-bold text-gray-800">{event.title}</h4>
                       <span className={cn(
-                        "text-xs px-2.5 py-1 rounded-lg font-medium",
-                        event.daysUntil === 0
-                          ? "bg-red-100 text-red-600 font-bold"
-                          : event.daysUntil <= 3
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-slate-100 text-slate-600"
+                        "text-xs px-2 py-1 rounded",
+                        event.daysUntil === 0 
+                          ? "bg-red-100 text-red-600 font-bold" 
+                          : event.daysUntil <= 3 
+                            ? "bg-yellow-100 text-yellow-700" 
+                            : "bg-gray-100 text-gray-500"
                       )}>
                         {event.daysUntil === 0 ? 'اليوم' : event.daysUntil === 1 ? 'غداً' : `بعد ${event.daysUntil} يوم`}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-sm text-rose-600 font-semibold">{event.caseId}</span>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-sm text-[#E55B5B] font-medium">{event.caseId}</span>
                       {event.caseRef && (
                         <>
-                          <span className="text-slate-300">|</span>
-                          <span className="text-xs text-slate-500">{event.caseRef}</span>
+                          <span className="text-gray-300">|</span>
+                          <span className="text-xs text-gray-500">{event.caseRef}</span>
                         </>
                       )}
-                      <span className="text-slate-300">|</span>
-                      <span className="text-sm text-slate-600">{event.location}</span>
+                      <span className="text-gray-300">|</span>
+                      <span className="text-sm text-gray-500">{event.location}</span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="self-center rounded-xl border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 transition-all"
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="self-center"
                     onClick={() => {
                       const caseItem = cases.find(c => c.case_number === event.caseId);
                       if (caseItem) handleViewDetails(caseItem as LegalCase);
@@ -1372,11 +1364,9 @@ export const LegalCasesTracking: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-16 text-slate-400">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <CalendarDays className="w-8 h-8 text-slate-300" />
-                </div>
-                <p className="font-medium text-slate-500">لا توجد جلسات قادمة</p>
+              <div className="text-center py-12 text-gray-400">
+                <CalendarDays className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p className="font-medium">لا توجد جلسات قادمة</p>
                 <p className="text-sm mt-2">قم بإضافة مواعيد الجلسات في القضايا</p>
               </div>
             )}
@@ -1386,24 +1376,21 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="space-y-6">
           {/* Next Hearing Card */}
           {nextHearing ? (
-            <div className="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl p-6 shadow-lg shadow-rose-200">
-              <div className="flex items-center gap-2 mb-1">
-                <CalendarDays className="w-5 h-5" />
-                <h3 className="font-bold text-lg">الجلسة القادمة</h3>
-              </div>
-              <p className="text-rose-100 text-sm mb-5">
+            <div className="bg-[#E55B5B] text-white rounded-xl p-6 shadow-lg shadow-red-200">
+              <h3 className="font-bold text-lg mb-1">الجلسة القادمة</h3>
+              <p className="text-red-100 text-sm mb-4">
                 {nextHearing.daysUntil === 0 ? 'اليوم!' : nextHearing.daysUntil === 1 ? 'غداً' : `باقي ${nextHearing.daysUntil} يوم`}
               </p>
-              <div className="bg-white/15 backdrop-blur-sm p-5 rounded-2xl mb-5 border border-white/20 shadow-inner">
-                <div className="text-3xl font-bold mb-2">
+              <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm mb-4 border border-white/20">
+                <div className="text-2xl font-bold mb-1">
                   {nextHearing.displayDate}
                 </div>
-                <div className="mt-2 text-base font-medium">{nextHearing.title}</div>
-                <div className="mt-1 text-sm opacity-90">{nextHearing.caseId} • {nextHearing.location}</div>
+                <div className="mt-2 text-sm font-medium">{nextHearing.title}</div>
+                <div className="mt-1 text-xs opacity-80">{nextHearing.caseId} - {nextHearing.location}</div>
               </div>
               <Button
                 variant="secondary"
-                className="w-full py-2.5 bg-white text-rose-600 rounded-xl font-semibold text-sm hover:bg-rose-50 transition-all shadow-md"
+                className="w-full py-2.5 bg-white text-[#E55B5B] rounded-lg font-medium text-sm hover:bg-red-50 transition-colors"
                 onClick={() => {
                   const caseItem = cases.find(c => c.case_number === nextHearing.caseId);
                   if (caseItem) handleViewDetails(caseItem as LegalCase);
@@ -1413,7 +1400,7 @@ export const LegalCasesTracking: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="bg-slate-100 text-slate-500 rounded-2xl p-6 border border-slate-200">
+            <div className="bg-gray-100 text-gray-500 rounded-xl p-6 border border-gray-200">
               <div className="text-center">
                 <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-50" />
                 <h3 className="font-medium">لا توجد جلسات قادمة</h3>
@@ -1423,38 +1410,38 @@ export const LegalCasesTracking: React.FC = () => {
           )}
 
           {/* Tasks Card - Linked to real case hearings */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
-              <Clock size={16} className="text-rose-500" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="font-bold text-gray-800 mb-4 text-sm flex items-center gap-2">
+              <Clock size={16} className="text-[#E55B5B]" />
               تذكيرات المهام
             </h3>
             <div className="space-y-3">
               {caseTaskReminders.length > 0 ? (
                 caseTaskReminders.map((task, i) => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div key={task.id} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "w-5 h-5 rounded-lg border flex items-center justify-center shrink-0",
-                        task.daysUntil <= 3 ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-slate-50'
+                        "w-5 h-5 rounded border flex items-center justify-center",
+                        task.daysUntil <= 3 ? 'border-red-400 bg-red-50' : 'border-gray-300'
                       )}
                     >
                       {task.daysUntil <= 1 && <AlertTriangle size={12} className="text-red-500" />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm text-slate-700 block truncate">{task.title}</span>
-                      <span className="text-xs text-slate-400">{task.dueDate}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-700 block">{task.title}</span>
+                      <span className="text-xs text-gray-400">{task.dueDate}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-slate-400 text-sm">
+                <div className="text-center py-4 text-gray-400 text-sm">
                   لا توجد تذكيرات حالياً
                 </div>
               )}
             </div>
             <Button
               variant="outline"
-              className="w-full mt-4 py-2.5 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 hover:bg-slate-50 transition-all"
+              className="w-full mt-4 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50"
               onClick={() => navigate('/tasks')}
             >
               إدارة المهام
@@ -1495,71 +1482,71 @@ export const LegalCasesTracking: React.FC = () => {
       <div className="space-y-6 animate-in fade-in duration-500">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-rose-50 to-rose-100/50 border-rose-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-red-200">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-rose-700">إجمالي الذمم القانونية</p>
-                  <p className="text-2xl font-bold text-rose-800 mt-2">
+                  <p className="text-sm font-medium text-red-600">إجمالي الذمم القانونية</p>
+                  <p className="text-2xl font-bold text-red-700 mt-1">
                     {formatCurrency(summary?.total_original_debt || 0)}
                   </p>
-                  <p className="text-xs text-rose-600 mt-1">{summary?.total_cases || 0} قضية</p>
+                  <p className="text-xs text-red-500 mt-1">{summary?.total_cases || 0} قضية</p>
                 </div>
-                <div className="p-3 bg-rose-100 rounded-xl shadow-sm">
-                  <Scale className="w-6 h-6 text-rose-600" />
+                <div className="p-3 bg-red-100 rounded-xl">
+                  <Scale className="w-6 h-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-amber-700">المخصصات</p>
-                  <p className="text-2xl font-bold text-amber-800 mt-2">
+                  <p className="text-sm font-medium text-orange-600">المخصصات</p>
+                  <p className="text-2xl font-bold text-orange-700 mt-1">
                     {formatCurrency(summary?.total_provision || 0)}
                   </p>
-                  <p className="text-xs text-amber-600 mt-1">ديون مشكوك فيها</p>
+                  <p className="text-xs text-orange-500 mt-1">ديون مشكوك فيها</p>
                 </div>
-                <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
-                  <AlertTriangle className="w-6 h-6 text-amber-600" />
+                <div className="p-3 bg-orange-100 rounded-xl">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-emerald-700">المبالغ المحصلة</p>
-                  <p className="text-2xl font-bold text-emerald-800 mt-2">
+                  <p className="text-sm font-medium text-green-600">المبالغ المحصلة</p>
+                  <p className="text-2xl font-bold text-green-700 mt-1">
                     {formatCurrency(summary?.total_collected || 0)}
                   </p>
-                  <p className="text-xs text-emerald-600 mt-1">
+                  <p className="text-xs text-green-500 mt-1">
                     نسبة التحصيل: {(summary?.collection_rate || 0).toFixed(1)}%
                   </p>
                 </div>
-                <div className="p-3 bg-emerald-100 rounded-xl shadow-sm">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-sky-50 to-sky-100/50 border-sky-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-sky-700">صافي المستحق</p>
-                  <p className="text-2xl font-bold text-sky-800 mt-2">
+                  <p className="text-sm font-medium text-blue-600">صافي المستحق</p>
+                  <p className="text-2xl font-bold text-blue-700 mt-1">
                     {formatCurrency(summary?.total_remaining || 0)}
                   </p>
-                  <p className="text-xs text-sky-600 mt-1">بعد خصم المخصص</p>
+                  <p className="text-xs text-blue-500 mt-1">بعد خصم المخصص</p>
                 </div>
-                <div className="p-3 bg-sky-100 rounded-xl shadow-sm">
-                  <DollarSign className="w-6 h-6 text-sky-600" />
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -1567,30 +1554,30 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Legal Costs Summary */}
-        <Card className="rounded-2xl border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Gavel className="w-5 h-5 text-rose-500" />
+              <Gavel className="w-5 h-5 text-[#E55B5B]" />
               التكاليف القانونية
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-sm text-slate-600 font-medium">أتعاب المحاماة</p>
-                <p className="text-xl font-bold text-slate-900 mt-2">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">أتعاب المحاماة</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">
                   {formatCurrency(items.reduce((sum, i) => sum + i.legal_fees, 0))}
                 </p>
               </div>
-              <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-sm text-slate-600 font-medium">رسوم المحاكم</p>
-                <p className="text-xl font-bold text-slate-900 mt-2">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">رسوم المحاكم</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">
                   {formatCurrency(items.reduce((sum, i) => sum + i.court_fees, 0))}
                 </p>
               </div>
-              <div className="p-5 bg-rose-50 rounded-xl border border-rose-100">
-                <p className="text-sm text-rose-700 font-medium">إجمالي التكاليف</p>
-                <p className="text-xl font-bold text-rose-600 mt-2">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500">إجمالي التكاليف</p>
+                <p className="text-xl font-bold text-[#E55B5B] mt-1">
                   {formatCurrency(summary?.total_legal_costs || 0)}
                 </p>
               </div>
@@ -1599,51 +1586,49 @@ export const LegalCasesTracking: React.FC = () => {
         </Card>
 
         {/* Cases Table */}
-        <Card className="rounded-2xl border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
+        <Card>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="w-5 h-5 text-rose-500" />
+                <FileText className="w-5 h-5 text-[#E55B5B]" />
                 تفاصيل الذمم تحت التحصيل القانوني
               </CardTitle>
-              <Badge variant="secondary" className="text-sm bg-slate-100 text-slate-600 border-slate-200">
+              <Badge variant="secondary" className="text-sm">
                 {items.length} عقد
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                </div>
-                <p className="text-lg font-semibold text-slate-700">لا توجد ذمم تحت التحصيل القانوني</p>
-                <p className="text-sm text-slate-500 mt-1">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CheckCircle2 className="w-12 h-12 text-green-400 mb-4" />
+                <p className="text-lg font-medium text-gray-700">لا توجد ذمم تحت التحصيل القانوني</p>
+                <p className="text-sm text-gray-500 mt-1">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="text-right font-semibold text-slate-600">العميل</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">رقم القضية</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">المبلغ الأصلي</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">المخصص</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">المحصل</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">المتبقي</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">أيام</TableHead>
-                      <TableHead className="text-right font-semibold text-slate-600">الحالة</TableHead>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">رقم القضية</TableHead>
+                      <TableHead className="text-right">المبلغ الأصلي</TableHead>
+                      <TableHead className="text-right">المخصص</TableHead>
+                      <TableHead className="text-right">المحصل</TableHead>
+                      <TableHead className="text-right">المتبقي</TableHead>
+                      <TableHead className="text-right">أيام</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => (
-                      <TableRow key={item.contract_id} className="hover:bg-slate-50 transition-colors">
+                      <TableRow key={item.contract_id} className="hover:bg-gray-50">
                         <TableCell>
                           <div>
-                            <p className="font-semibold text-slate-900">{item.customer_name}</p>
+                            <p className="font-medium text-gray-900">{item.customer_name}</p>
                             <button
                               onClick={() => item.contract_number && navigate(`/contracts/${item.contract_number}`)}
-                              className="text-xs text-rose-600 hover:text-rose-700 hover:underline cursor-pointer transition-colors"
+                              className="text-xs text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors"
                               title="عرض تفاصيل العقد"
                             >
                               {item.contract_number}
@@ -1651,27 +1636,27 @@ export const LegalCasesTracking: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-mono text-sm text-sky-600 font-medium">{item.case_number}</span>
+                          <span className="font-mono text-sm text-blue-600">{item.case_number}</span>
                         </TableCell>
                         <TableCell className="font-bold text-red-600">
                           {formatCurrency(item.original_debt)}
                         </TableCell>
                         <TableCell>
                           <div>
-                            <span className="text-amber-600 font-medium">{formatCurrency(item.provision_amount)}</span>
-                            <span className="text-xs text-slate-400 mr-1">
+                            <span className="text-orange-600">{formatCurrency(item.provision_amount)}</span>
+                            <span className="text-xs text-gray-400 mr-1">
                               ({Math.round(item.provision_rate * 100)}%)
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-emerald-600 font-medium">
+                        <TableCell className="text-green-600">
                           {formatCurrency(item.collected_amount)}
                         </TableCell>
-                        <TableCell className="font-bold text-slate-800">
+                        <TableCell className="font-bold">
                           {formatCurrency(item.remaining_amount)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={item.days_in_legal > 180 ? 'destructive' : item.days_in_legal > 90 ? 'default' : 'secondary'} className="rounded-lg">
+                          <Badge variant={item.days_in_legal > 180 ? 'destructive' : item.days_in_legal > 90 ? 'default' : 'secondary'}>
                             {item.days_in_legal} يوم
                           </Badge>
                         </TableCell>
@@ -1688,37 +1673,37 @@ export const LegalCasesTracking: React.FC = () => {
         </Card>
 
         {/* Provision Rate Legend */}
-        <Card className="rounded-2xl border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg">نسب المخصصات حسب فترة التأخير</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
                 <div>
-                  <p className="text-sm font-semibold text-emerald-800">0-180 يوم</p>
-                  <p className="text-xs text-emerald-600">25% مخصص</p>
+                  <p className="text-sm font-medium text-green-700">0-180 يوم</p>
+                  <p className="text-xs text-green-600">25% مخصص</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></div>
+              <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div>
-                  <p className="text-sm font-semibold text-amber-800">181-270 يوم</p>
-                  <p className="text-xs text-amber-600">50% مخصص</p>
+                  <p className="text-sm font-medium text-yellow-700">181-270 يوم</p>
+                  <p className="text-xs text-yellow-600">50% مخصص</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-xl border border-orange-200">
-                <div className="w-3 h-3 rounded-full bg-orange-500 shadow-sm"></div>
+              <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
                 <div>
-                  <p className="text-sm font-semibold text-orange-800">271-365 يوم</p>
+                  <p className="text-sm font-medium text-orange-700">271-365 يوم</p>
                   <p className="text-xs text-orange-600">75% مخصص</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-                <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
+              <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <div>
-                  <p className="text-sm font-semibold text-red-800">أكثر من سنة</p>
+                  <p className="text-sm font-medium text-red-700">أكثر من سنة</p>
                   <p className="text-xs text-red-600">100% مخصص</p>
                 </div>
               </div>
@@ -1732,10 +1717,10 @@ export const LegalCasesTracking: React.FC = () => {
   // --- Settings View ---
   const SettingsView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <Card className="rounded-2xl border-slate-200 shadow-sm">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الإنشاء التلقائي للقضايا</CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardTitle>الإنشاء التلقائي للقضايا</CardTitle>
+          <CardDescription>
             إعداد المحفزات التلقائية لإنشاء قضايا قانونية عند حدوث شروط معينة
           </CardDescription>
         </CardHeader>
@@ -1749,10 +1734,10 @@ export const LegalCasesTracking: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-slate-200 shadow-sm">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">مولد الإنذارات القانونية</CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardTitle>مولد الإنذارات القانونية</CardTitle>
+          <CardDescription>
             إنشاء إنذارات قانونية احترافية تلقائياً
           </CardDescription>
         </CardHeader>
@@ -1789,20 +1774,17 @@ export const LegalCasesTracking: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 font-sans text-right pb-10" dir="rtl">
-      {/* Sub-System Header - Enhanced Design */}
-      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 sticky top-0 z-30">
+    <div className="w-full min-h-screen bg-[#F8F9FA] font-sans text-right pb-10" dir="rtl">
+      {/* Sub-System Header */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 sticky top-0 z-30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl blur-xl opacity-20" />
-              <div className="relative bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-xl shadow-lg">
-                <Gavel className="text-white" size={24} />
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-[#E55B5B] p-2.5 rounded-lg shadow-sm shadow-red-200">
+              <Gavel className="text-white" size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">الشؤون القانونية</h1>
-              <p className="text-sm text-slate-500">إدارة نزاعات وحوادث تأجير السيارات</p>
+              <h1 className="text-xl font-bold text-gray-800">الشؤون القانونية</h1>
+              <p className="text-xs text-gray-500">إدارة نزاعات وحوادث تأجير السيارات</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -1810,7 +1792,7 @@ export const LegalCasesTracking: React.FC = () => {
               onClick={() => setShowTriggersConfig(true)}
               variant="outline"
               size="sm"
-              className="gap-2 border-slate-200 hover:bg-slate-50"
+              className="gap-2"
             >
               <Zap className="w-4 h-4" />
               <span className="hidden sm:inline">الإنشاء التلقائي</span>
@@ -1818,19 +1800,19 @@ export const LegalCasesTracking: React.FC = () => {
             <Button
               onClick={() => setShowCaseWizard(true)}
               size="sm"
-              className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md"
+              className="gap-2 bg-[#E55B5B] hover:bg-[#d64545]"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">قضية جديدة</span>
             </Button>
             <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-sm font-semibold text-slate-700">
+              <span className="text-sm font-bold text-gray-700">
                 {user?.full_name || user?.email?.split('@')[0] || 'المستخدم'}
               </span>
-              <span className="text-xs text-slate-400">مدير النظام</span>
+              <span className="text-xs text-gray-400">مدير النظام</span>
             </div>
-            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
-              <Users className="w-5 h-5 text-slate-400" />
+            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
+              <Users className="w-5 h-5 text-gray-400" />
             </div>
           </div>
         </div>
