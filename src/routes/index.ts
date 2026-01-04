@@ -24,7 +24,7 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const Finance = lazy(() => import('@/pages/Finance'));
-const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
+const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
@@ -277,11 +277,11 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers',
-    component: CustomersPageNew,
+    component: CustomersPageRedesigned,
     lazy: true,
     exact: true,
     title: 'Customers',
-    description: 'Customer management - New Card Grid Design',
+    description: 'Customer management - Redesigned with modern UI',
     group: 'customers',
     priority: 12,
     protected: true,

@@ -47,6 +47,9 @@ export interface FleetFinancialSummary {
   vehicleCount: number;
   totalBookValue: number;
   averageOperatingCost: number;
+  totalRevenue: number;
+  netProfit: number;
+  profitMargin: number;
 }
 
 // Fleet Financial Overview
@@ -311,7 +314,8 @@ export const useFleetFinancialSummary = () => {
   return useQuery({
     queryKey: ["fleet-financial-summary", companyId],
     queryFn: async (): Promise<FleetFinancialSummary> => {
-      const { data, error } = await supabase
+      // Get vehicle data
+      const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
         .select(`
           total_maintenance_cost,
@@ -323,9 +327,18 @@ export const useFleetFinancialSummary = () => {
         .eq("company_id", companyId)
         .eq("is_active", true);
 
-      if (error) throw error;
+      if (vehicleError) throw vehicleError;
 
-      const summary = data.reduce((acc, vehicle) => {
+      // Get revenue from active contracts
+      const { data: contractData, error: contractError } = await supabase
+        .from("contracts")
+        .select("total_paid, monthly_amount")
+        .eq("company_id", companyId)
+        .eq("status", "active");
+
+      if (contractError) throw contractError;
+
+      const summary = vehicleData.reduce((acc, vehicle) => {
         acc.totalMaintenanceCost += vehicle.total_maintenance_cost || 0;
         acc.totalFuelCost += 0; // Will be calculated separately
         acc.totalInsuranceCost += vehicle.total_insurance_cost || 0;
@@ -343,11 +356,22 @@ export const useFleetFinancialSummary = () => {
         totalPurchasePrice: 0,
         vehicleCount: 0,
         totalBookValue: 0,
-        averageOperatingCost: 0
+        averageOperatingCost: 0,
+        totalRevenue: 0,
+        netProfit: 0,
+        profitMargin: 0
       });
 
+      // Calculate revenue from contracts
+      summary.totalRevenue = contractData.reduce((sum, contract) => sum + (contract.total_paid || 0), 0);
+      
       summary.totalBookValue = summary.totalPurchasePrice - summary.totalAccumulatedDepreciation;
       summary.averageOperatingCost = summary.vehicleCount > 0 ? summary.totalOperatingCost / summary.vehicleCount : 0;
+      
+      // Calculate net profit and margin
+      const totalCosts = summary.totalOperatingCost + summary.totalMaintenanceCost;
+      summary.netProfit = summary.totalRevenue - totalCosts;
+      summary.profitMargin = summary.totalRevenue > 0 ? (summary.netProfit / summary.totalRevenue) * 100 : 0;
 
       return summary;
     },

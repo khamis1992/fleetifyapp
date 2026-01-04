@@ -443,7 +443,7 @@ const FleetFinancialAnalysisNew = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-foreground mb-2">
-              985,000 <span className="text-xl">ر.س</span>
+              {formatCurrency(summary?.totalRevenue || 0)}
             </div>
             <div className="h-1 bg-muted rounded-full mb-3">
               <div className="h-1 bg-success rounded-full" style={{ width: "78%" }} />
@@ -562,16 +562,16 @@ const FleetFinancialAnalysisNew = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-success mb-2">
-              381,500 <span className="text-xl">ر.س</span>
+              {formatCurrency(summary?.netProfit || 0)}
             </div>
             <div className="h-1 bg-muted rounded-full mb-3">
-              <div className="h-1 bg-success rounded-full" style={{ width: "92%" }} />
+              <div className="h-1 bg-success rounded-full" style={{ width: `${Math.min((summary?.profitMargin || 0), 100)}%` }} />
             </div>
             <div className="flex items-center gap-2 text-sm text-success font-medium">
               <TrendingUp className="w-4 h-4" />
-              <span>+38.7% ROI</span>
+              <span>+{(summary?.profitMargin || 0).toFixed(1)}% ROI</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">هامش الربح: 38.7%</p>
+            <p className="text-xs text-muted-foreground mt-1">هامش الربح: {(summary?.profitMargin || 0).toFixed(1)}%</p>
           </CardContent>
         </Card>
       </div>
@@ -1058,7 +1058,7 @@ const FleetFinancialAnalysisNew = () => {
                         محمد أحمد
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-success">
-                        +8,500 ر.س
+                        +{formatCurrency(8500)}
                       </td>
                       <td className="px-4 py-3">
                         <Badge>✅ مكتمل</Badge>
@@ -1079,17 +1079,17 @@ const FleetFinancialAnalysisNew = () => {
                     <p className="text-sm text-muted-foreground mb-1">
                       💰 إجمالي الإيرادات
                     </p>
-                    <p className="text-lg font-bold text-success">985,000 ر.س</p>
+                    <p className="text-lg font-bold text-success">{formatCurrency(summary?.totalRevenue || 0)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
                       💸 إجمالي المصروفات
                     </p>
-                    <p className="text-lg font-bold text-destructive">603,500 ر.س</p>
+                    <p className="text-lg font-bold text-destructive">{formatCurrency((summary?.totalOperatingCost || 0) + (summary?.totalMaintenanceCost || 0))}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">💵 صافي الربح</p>
-                    <p className="text-lg font-bold text-success">381,500 ر.س</p>
+                    <p className="text-lg font-bold text-success">{formatCurrency(summary?.netProfit || 0)}</p>
                   </div>
                 </div>
               </div>

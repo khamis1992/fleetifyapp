@@ -11,7 +11,7 @@ const Fleet = lazy(() => import('@/pages/fleet/FleetPageNew'));
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageNew'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
-const Maintenance = lazy(() => import('@/pages/fleet/Maintenance'));
+const Maintenance = lazy(() => import('@/pages/fleet/MaintenanceRedesigned'));
 const TrafficViolations = lazy(() => import('@/pages/fleet/TrafficViolationsRedesigned'));
 const TrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 const FleetReports = lazy(() => import('@/pages/fleet/FleetReports'));

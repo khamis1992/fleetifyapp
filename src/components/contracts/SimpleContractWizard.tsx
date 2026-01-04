@@ -921,6 +921,22 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
     late_fines_enabled: false,
   });
 
+  // Update formData when preselected values change
+  useEffect(() => {
+    if (preselectedCustomerId) {
+      setFormData(prev => ({
+        ...prev,
+        customer_id: preselectedCustomerId,
+      }));
+    }
+    if (preselectedVehicleId) {
+      setFormData(prev => ({
+        ...prev,
+        vehicle_id: preselectedVehicleId,
+      }));
+    }
+  }, [preselectedCustomerId, preselectedVehicleId]);
+
   const totalSteps = 3;
   const stepTitles = ['العميل والمركبة', 'التفاصيل والتسعير', 'المراجعة والإرسال'];
 
