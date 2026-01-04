@@ -44,7 +44,7 @@ const InvoiceScannerPage = lazy(() => import('@/pages/InvoiceScannerPage'));
 const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 const SyncPaymentsToLedger = lazy(() => import('@/pages/SyncPaymentsToLedger'));
 const PaymentRegistration = lazy(() => import('@/pages/PaymentRegistration'));
-const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const QuickPayment = lazy(() => import('@/pages/payments/QuickPaymentRedesigned'));
 
 // Super Admin pages
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin'));

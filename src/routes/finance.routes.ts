@@ -23,7 +23,7 @@ const PaymentTracking = lazy(() => import('@/pages/finance/PaymentTracking'));
 const Vendors = lazy(() => import('@/pages/finance/Vendors'));
 const VendorCategories = lazy(() => import('@/pages/finance/VendorCategories'));
 const PurchaseOrders = lazy(() => import('@/pages/finance/PurchaseOrders'));
-const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const QuickPayment = lazy(() => import('@/pages/payments/QuickPaymentRedesigned'));
 const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 
 export const financeRoutes: RouteConfig[] = [

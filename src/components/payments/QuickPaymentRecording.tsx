@@ -53,7 +53,11 @@ interface PaymentSuccess {
   vehicleNumber: string;
 }
 
-export function QuickPaymentRecording() {
+interface QuickPaymentRecordingProps {
+  onStepChange?: (step: number) => void;
+}
+
+export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingProps) {
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -83,7 +87,7 @@ export function QuickPaymentRecording() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      
+
       setSelectedCustomer(customerFromUrl);
       // Trigger invoice fetching
       selectCustomer(customerFromUrl);
@@ -99,6 +103,23 @@ export function QuickPaymentRecording() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
+
+  // Report step changes to parent
+  useEffect(() => {
+    if (!onStepChange) return;
+
+    if (paymentSuccess) {
+      onStepChange(4); // Completed
+    } else if (readyToPay) {
+      onStepChange(3); // Payment ready
+    } else if (selectedInvoices.length > 0) {
+      onStepChange(2); // Invoices selected
+    } else if (selectedCustomer) {
+      onStepChange(1); // Customer selected
+    } else {
+      onStepChange(0); // Initial state
+    }
+  }, [paymentSuccess, readyToPay, selectedInvoices.length, selectedCustomer, onStepChange]);
 
   // Filter invoices to show current and next month only (unless showAllInvoices)
   const filteredInvoices = useMemo(() => {
