@@ -1,9 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { FileText, Receipt } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Receipt, Download, FileDown, Printer } from "lucide-react";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { extractVehicleNumber, extractCustomerName } from "@/utils/invoiceHelpers";
+import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML } from "@/utils/receiptGenerator";
+import { useRef, useState } from "react";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
@@ -98,6 +101,9 @@ function numberToArabicWords(amount: number): string {
 }
 
 export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   // Don't render if invoice is null
   if (!invoice) {
     return null;
@@ -105,6 +111,44 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
 
   // تحديد حالة الدفع
   const isPaid = invoice.payment_status === 'paid';
+
+  // تحديد اسم الملف
+  const documentType = isPaid ? 'سند_قبض' : 'فاتورة';
+  const invoiceNumber = invoice?.invoice_number || 'invoice';
+  const fileName = `${documentType}_${invoiceNumber}`;
+
+  // معالج التحميل PDF
+  const handleDownloadPDF = async () => {
+    if (!receiptRef.current) return;
+    setIsDownloading(true);
+    try {
+      const blob = await generateReceiptPDF(receiptRef.current, fileName);
+      downloadPDF(blob, `${fileName}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // معالج التحميل HTML
+  const handleDownloadHTML = async () => {
+    if (!receiptRef.current) return;
+    setIsDownloading(true);
+    try {
+      const html = await generateReceiptHTML(receiptRef.current);
+      downloadHTML(html, fileName);
+    } catch (error) {
+      console.error('Error generating HTML:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // معالج الطباعة
+  const handlePrint = () => {
+    window.print();
+  };
   
   // تحديد العنوان بناءً على حالة الدفع
   const documentTitle = isPaid 
@@ -145,7 +189,37 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '70vh' }}>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isDownloading ? 'جاري التحميل...' : 'تحميل PDF'}
+          </Button>
+          <Button
+            onClick={handleDownloadHTML}
+            disabled={isDownloading}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            تحميل HTML
+          </Button>
+          <Button
+            onClick={handlePrint}
+            variant="outline"
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            طباعة
+          </Button>
+        </div>
+
+        {/* Receipt Preview with Ref */}
+        <div ref={receiptRef} className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '65vh' }}>
           <PaymentReceipt
             receiptNumber={invoice.invoice_number || 'غير محدد'}
             date={formattedDate}

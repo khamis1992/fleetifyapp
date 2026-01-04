@@ -345,3 +345,5 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
 
 export default QuickNotes;
 
+
+

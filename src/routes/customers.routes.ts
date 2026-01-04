@@ -40,7 +40,7 @@ export const customersRoutes: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId',
-    component: CustomerDetailsPageNew,
+    component: CustomerDetailsPage,
     lazy: true,
     exact: true,
     title: 'تفاصيل العميل',
@@ -52,7 +52,7 @@ export const customersRoutes: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId/legacy',
-    component: CustomerDetailsPage,
+    component: CustomerDetailsPageNew,
     lazy: true,
     exact: true,
     title: 'تفاصيل العميل (القديم)',

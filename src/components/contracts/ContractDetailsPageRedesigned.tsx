@@ -77,7 +77,7 @@ import { LateFinesTab } from './LateFinesTab';
 import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
 import { ConvertToLegalDialog } from './ConvertToLegalDialog';
-import { VehicleCheckInOut } from '@/components/vehicles/VehicleCheckInOut';
+import { VehicleHandoverUnified } from '@/components/contracts/VehicleHandoverUnified';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
@@ -94,6 +94,7 @@ import { ContractAlerts } from './ContractAlerts';
 import { TimelineView } from './TimelineView';
 import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import { useContractPaymentSchedules } from '@/hooks/usePaymentSchedules';
 
 // === Sub-components for tabs ===
 const ContractDetailsTab = ({ contract, formatCurrency }: { contract: Contract; formatCurrency: (amount: number) => string }) => (
@@ -213,22 +214,80 @@ const PaymentScheduleTab = ({
   contract,
   contractId,
   companyId,
-  formatCurrency
+  formatCurrency,
+  paymentSchedules,
+  isLoading
 }: {
   contract: Contract;
   contractId: string;
   companyId: string;
   formatCurrency: (amount: number) => string;
+  paymentSchedules: any[];
+  isLoading: boolean;
 }) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-lg">جدول الدفعات</CardTitle>
     </CardHeader>
     <CardContent>
-      <div className="text-center py-12 text-slate-500">
-        <Wallet className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <p>جدول الدفعات سيظهر هنا</p>
-      </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-slate-500">
+          <Loader2 className="w-12 h-12 text-slate-300 mx-auto mb-4 animate-spin" />
+          <p>جاري تحميل جدول الدفعات...</p>
+        </div>
+      ) : paymentSchedules.length === 0 ? (
+        <div className="text-center py-12 text-slate-500">
+          <Wallet className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <p>لا يوجد جدول دفعات لهذا العقد</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>رقم القسط</TableHead>
+              <TableHead>تاريخ الاستحقاق</TableHead>
+              <TableHead>المبلغ</TableHead>
+              <TableHead>الحالة</TableHead>
+              <TableHead>تاريخ الدفع</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paymentSchedules.map((schedule) => (
+              <TableRow key={schedule.id}>
+                <TableCell className="font-medium">{schedule.installment_number || '-'}</TableCell>
+                <TableCell>
+                  {schedule.due_date ? format(new Date(schedule.due_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                </TableCell>
+                <TableCell>{formatCurrency(schedule.amount || 0)}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      schedule.status === 'paid'
+                        ? 'default'
+                        : schedule.status === 'overdue'
+                          ? 'destructive'
+                          : 'secondary'
+                    }
+                  >
+                    {schedule.status === 'paid'
+                      ? 'مدفوع'
+                      : schedule.status === 'overdue'
+                        ? 'متأخر'
+                        : schedule.status === 'pending'
+                          ? 'معلق'
+                          : schedule.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {schedule.payment_date
+                    ? format(new Date(schedule.payment_date), 'dd/MM/yyyy', { locale: ar })
+                    : '-'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </CardContent>
   </Card>
 );
@@ -359,6 +418,9 @@ const ContractDetailsPageRedesigned = () => {
   // Vehicle inspections
   const { data: checkInInspection } = useVehicleInspections(contract?.id, 'check_in');
   const { data: checkOutInspection } = useVehicleInspections(contract?.id, 'check_out');
+
+  // Fetch payment schedules
+  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(contract?.id || '');
 
   // Calculations
   const contractStats = useMemo(() => {
@@ -929,25 +991,12 @@ const ContractDetailsPageRedesigned = () => {
                   جدول الدفعات
                 </TabsTrigger>
                 <TabsTrigger
-                  value="checkin"
+                  value="handover"
                   className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 rounded-t-lg px-4 py-3 gap-2 transition-all relative"
                 >
-                  <LogIn className="w-4 h-4" />
-                  استلام المركبة
-                  {checkInInspection && (
-                    <span className="absolute top-2 left-2 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="checkout"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 rounded-t-lg px-4 py-3 gap-2 transition-all relative"
-                >
-                  <LogOut className="w-4 h-4" />
-                  تسليم المركبة
-                  {checkOutInspection && (
+                  <Car className="w-4 h-4" />
+                  استلام وتسليم المركبة
+                  {(checkInInspection || checkOutInspection) && (
                     <span className="absolute top-2 left-2 flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -1013,22 +1062,31 @@ const ContractDetailsPageRedesigned = () => {
                   contractId={contract.id}
                   companyId={companyId}
                   formatCurrency={formatCurrency}
+                  paymentSchedules={paymentSchedules}
+                  isLoading={isLoadingPaymentSchedules}
                 />
               </TabsContent>
 
-              <TabsContent value="checkin" className="mt-0">
-                <VehicleCheckInOut
-                  contractId={contract.id}
-                  inspectionType="check_in"
-                  vehicleId={contract.vehicle_id}
-                />
-              </TabsContent>
-
-              <TabsContent value="checkout" className="mt-0">
-                <VehicleCheckInOut
-                  contractId={contract.id}
-                  inspectionType="check_out"
-                  vehicleId={contract.vehicle_id}
+              <TabsContent value="handover" className="mt-0">
+                <VehicleHandoverUnified
+                  contract={{
+                    id: contract.id,
+                    contract_number: contract.contract_number,
+                    customer_name: customerName,
+                    customer_phone: contract.customer?.phone || '',
+                    vehicle_plate: plateNumber || '',
+                    vehicle_make: contract.vehicle?.make || '',
+                    vehicle_model: contract.vehicle?.model || '',
+                    vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
+                    start_date: contract.start_date,
+                    end_date: contract.end_date,
+                  }}
+                  initialType="pickup"
+                  onComplete={(type, data) => {
+                    console.log('Handover completed:', type, data);
+                    // Invalidate queries or update state
+                    queryClient.invalidateQueries({ queryKey: ['contract-inspections'] });
+                  }}
                 />
               </TabsContent>
 
@@ -1080,7 +1138,11 @@ const ContractDetailsPageRedesigned = () => {
               </TabsContent>
 
               <TabsContent value="timeline" className="mt-0">
-                <TimelineView contract={contract} />
+                <TimelineView
+                  contract={contract}
+                  trafficViolationsCount={trafficViolations.length}
+                  formatCurrency={formatCurrency}
+                />
               </TabsContent>
 
               <TabsContent value="activity" className="mt-0">

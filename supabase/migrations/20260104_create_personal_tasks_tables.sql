@@ -165,3 +165,5 @@ CREATE TRIGGER update_quick_notes_updated_at
   BEFORE UPDATE ON quick_notes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+
+

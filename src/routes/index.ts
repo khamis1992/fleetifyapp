@@ -288,11 +288,11 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId',
-    component: CustomerDetailsPageNew,
+    component: CustomerDetailsPage,
     lazy: true,
     exact: true,
     title: 'Customer Details',
-    description: 'Customer details page - New Bento Style Design',
+    description: 'Customer details page - Professional SaaS Redesign',
     group: 'customers',
     priority: 13,
     protected: true,
@@ -300,7 +300,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers/:customerId/classic',
-    component: CustomerDetailsPage,
+    component: CustomerDetailsPageNew,
     lazy: true,
     exact: true,
     title: 'Customer Details Classic',

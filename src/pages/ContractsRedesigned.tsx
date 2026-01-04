@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
+import { unstable_batchedUpdates } from "react-dom";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageCustomizer } from "@/components/PageCustomizer";
@@ -98,6 +99,10 @@ function ContractsRedesigned() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
 
+  // Refs to track processed parameters
+  const processedCustomerRef = useRef(false);
+  const processedVehicleRef = useRef(false);
+
   // Hooks
   const location = useLocation();
   const navigate = useNavigate();
@@ -149,17 +154,19 @@ function ContractsRedesigned() {
 
   // Handle pre-selected parameters
   useEffect(() => {
-    if (location.state?.selectedCustomerId) {
+    if (location.state?.selectedCustomerId && !processedCustomerRef.current) {
       setPreselectedCustomerId(location.state.selectedCustomerId || undefined);
       setShowContractWizard(true);
+      processedCustomerRef.current = true;
     }
   }, [location.state]);
 
   useEffect(() => {
     const vehicleParam = searchParams.get("vehicle");
-    if (vehicleParam) {
+    if (vehicleParam && !processedVehicleRef.current) {
       setPreselectedVehicleId(vehicleParam);
       setShowContractWizard(true);
+      processedVehicleRef.current = true;
       setSearchParams((prev) => {
         const newParams = new URLSearchParams(prev);
         newParams.delete("vehicle");
@@ -168,16 +175,25 @@ function ContractsRedesigned() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Use useEffect to handle customer parameter from URL
   useEffect(() => {
     const customerParam = searchParams.get("customer");
-    if (customerParam) {
-      setPreselectedCustomerId(customerParam);
-      setShowContractWizard(true);
-      setSearchParams((prev) => {
-        const newParams = new URLSearchParams(prev);
-        newParams.delete("customer");
-        return newParams;
-      }, { replace: true });
+    if (customerParam && !processedCustomerRef.current) {
+      console.log('[CONTRACTS] Processing customer parameter:', customerParam);
+      processedCustomerRef.current = true;
+
+      // Batch state updates together to prevent multiple re-renders
+      unstable_batchedUpdates(() => {
+        setPreselectedCustomerId(customerParam);
+        setShowContractWizard(true);
+
+        // Clear the parameter to prevent re-triggering
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.delete("customer");
+          return newParams;
+        }, { replace: true });
+      });
     }
   }, [searchParams, setSearchParams]);
 
@@ -834,6 +850,7 @@ function ContractsRedesigned() {
         onSubmit={handleContractSubmit}
         preselectedCustomerId={preselectedCustomerId}
         preselectedVehicleId={preselectedVehicleId}
+        key={showContractWizard ? 'wizard-open' : 'wizard-closed'}
       />
       <ExpressContractForm open={showExpressMode} onOpenChange={setShowExpressMode} onSubmit={handleContractSubmit} />
       {selectedContract && (

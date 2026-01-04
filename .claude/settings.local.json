@@ -204,7 +204,12 @@
       "mcp__plugin_playwright_playwright__browser_tabs",
       "Skill(brainstorming)",
       "Skill(frontend-design)",
-      "Bash(ren:*)"
+      "Bash(ren:*)",
+      "Bash(npx:*)",
+      "Bash(cmd //c taskkill //PID 9024 //F)",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "Bash(cmd /c \"taskkill /PID 28468 /F\")",
+      "Bash(cmd /c \"taskkill /PID 32428 /F\")"
     ],
     "deny": [],
     "ask": []

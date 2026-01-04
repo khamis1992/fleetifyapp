@@ -18,6 +18,7 @@ import {
   useDownloadCustomerDocument 
 } from '@/hooks/useCustomerDocuments';
 import { useCustomerCRMActivity, CustomerActivity, AddActivityInput } from '@/hooks/useCustomerCRMActivity';
+import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -562,7 +563,13 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any 
 };
 
 // تبويب الفواتير
-const InvoicesTab = ({ invoices, navigate }: { invoices: any[], navigate: any }) => {
+const InvoicesTab = ({
+  invoices,
+  onInvoiceClick
+}: {
+  invoices: any[],
+  onInvoiceClick: (invoice: any) => void
+}) => {
   const totalOutstanding = useMemo(() => {
     return invoices
       .filter(inv => inv.payment_status !== 'paid')
@@ -602,11 +609,11 @@ const InvoicesTab = ({ invoices, navigate }: { invoices: any[], navigate: any })
                 transition={{ delay: index * 0.05 }}
                 className={cn(
                   "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
-                  isPaid ? "bg-green-50 border-green-200" : 
-                  isOverdue ? "bg-red-50 border-red-200" : 
+                  isPaid ? "bg-green-50 border-green-200" :
+                  isOverdue ? "bg-red-50 border-red-200" :
                   "bg-white border-neutral-200"
                 )}
-                onClick={() => navigate(`/finance/invoices/${invoice.id}`)}
+                onClick={() => onInvoiceClick(invoice)}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
@@ -1515,6 +1522,8 @@ const CustomerDetailsPageNew = () => {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Queries
@@ -2233,7 +2242,13 @@ const CustomerDetailsPageNew = () => {
                     <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
                   </div>
                 ) : (
-                  <InvoicesTab invoices={customerInvoices} navigate={navigate} />
+                  <InvoicesTab
+                    invoices={customerInvoices}
+                    onInvoiceClick={(invoice) => {
+                      setSelectedInvoice(invoice);
+                      setIsInvoiceDialogOpen(true);
+                    }}
+                  />
                 )}
               </TabsContent>
               <TabsContent value="payments" className="mt-0">
@@ -2407,6 +2422,13 @@ const CustomerDetailsPageNew = () => {
           setIsPaymentDialogOpen(false);
           toast({ title: 'تم تسجيل الدفعة بنجاح' });
         }}
+      />
+
+      {/* Invoice Preview Dialog */}
+      <InvoicePreviewDialog
+        open={isInvoiceDialogOpen}
+        onOpenChange={setIsInvoiceDialogOpen}
+        invoice={selectedInvoice}
       />
     </div>
   );

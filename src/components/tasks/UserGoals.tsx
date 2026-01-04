@@ -382,3 +382,5 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
 
 export default UserGoals;
 
+
+
