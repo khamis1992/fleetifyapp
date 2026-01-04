@@ -8,7 +8,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +16,7 @@ import {
   DollarSign,
   AlertTriangle,
   Clock,
+  Eye,
   FileText,
   Car,
   Gavel,
@@ -35,85 +35,6 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
-
-// ===== Stat Card Component =====
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  color: 'rose' | 'red' | 'amber' | 'emerald' | 'sky';
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title, value, subtitle, icon: Icon, color, delay = 0
-}) => {
-  const colorClasses = {
-    rose: {
-      bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',
-      icon: 'bg-gradient-to-br from-rose-500 to-rose-600',
-      border: 'border-rose-200',
-      value: 'text-rose-700',
-      title: 'text-rose-700'
-    },
-    red: {
-      bg: 'bg-gradient-to-br from-red-50 to-red-100/50',
-      icon: 'bg-gradient-to-br from-red-500 to-red-600',
-      border: 'border-red-200',
-      value: 'text-red-700',
-      title: 'text-red-700'
-    },
-    amber: {
-      bg: 'bg-gradient-to-br from-amber-50 to-amber-100/50',
-      icon: 'bg-gradient-to-br from-amber-500 to-amber-600',
-      border: 'border-amber-200',
-      value: 'text-amber-700',
-      title: 'text-amber-700'
-    },
-    emerald: {
-      bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
-      icon: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-      border: 'border-emerald-200',
-      value: 'text-emerald-700',
-      title: 'text-emerald-700'
-    },
-    sky: {
-      bg: 'bg-gradient-to-br from-sky-50 to-sky-100/50',
-      icon: 'bg-gradient-to-br from-sky-500 to-sky-600',
-      border: 'border-sky-200',
-      value: 'text-sky-700',
-      title: 'text-sky-700'
-    },
-  };
-
-  const classes = colorClasses[color];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: delay * 0.1 }}
-      whileHover={{ scale: 1.02, y: -4 }}
-      className={cn(
-        "relative rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden",
-        classes.bg, classes.border
-      )}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent pointer-events-none" />
-      <div className="relative flex items-start justify-between p-6">
-        <div className="space-y-3">
-          <p className={cn("text-sm font-semibold", classes.title)}>{title}</p>
-          <p className={cn("text-3xl font-bold tracking-tight", classes.value)}>{value}</p>
-          {subtitle && <p className="text-xs text-slate-500 font-medium">{subtitle}</p>}
-        </div>
-        <div className={cn("p-3 rounded-xl shadow-md", classes.icon)}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 // ===== Main Component =====
 const FinancialDelinquencyPage: React.FC = () => {
@@ -227,44 +148,6 @@ const FinancialDelinquencyPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-5"
-        >
-          <StatCard
-            title="إجمالي المتأخرات"
-            value={formatCurrency(activeTab === 'customers' ? (stats?.totalAmountAtRisk || 0) : contractStats.amount)}
-            icon={DollarSign}
-            color="rose"
-            delay={0}
-          />
-          <StatCard
-            title={activeTab === 'customers' ? "عدد العملاء المتأخرين" : "عدد العقود المتعثرة"}
-            value={activeTab === 'customers' ? (stats?.totalDelinquent || 0) : contractStats.total}
-            icon={Users}
-            color="red"
-            delay={1}
-          />
-          <StatCard
-            title="متوسط أيام التأخير"
-            value={`${activeTab === 'customers' ? Math.round(stats?.averageDaysOverdue || 0) : contractStats.avgDays} يوم`}
-            icon={Clock}
-            color="amber"
-            delay={2}
-          />
-          <StatCard
-            title="حالات حرجة"
-            value={activeTab === 'customers' ? (stats?.criticalRisk || 0) : 0}
-            subtitle={activeTab === 'contracts' ? `${contractStats.lawsuits} دعوى مرفوعة` : undefined}
-            icon={AlertTriangle}
-            color="red"
-            delay={3}
-          />
-        </motion.div>
-
         {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -296,133 +179,198 @@ const FinancialDelinquencyPage: React.FC = () => {
 
             {/* Contracts Tab */}
             <TabsContent value="contracts" className="mt-0">
-              <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-                <CardContent className="p-0">
-                  <AnimatePresence mode="wait">
-                    {contractsLoading ? (
+              <div className="space-y-4">
+                {/* Table Header Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                  <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <div className="col-span-3">المستأجر</div>
+                    <div className="col-span-2">رقم العقد</div>
+                    <div className="col-span-2">السيارة</div>
+                    <div className="col-span-2 text-left">المبلغ المتأخر</div>
+                    <div className="col-span-1">الأيام</div>
+                    <div className="col-span-1">الحالة</div>
+                    <div className="col-span-1 text-center">إجراء</div>
+                  </div>
+                </div>
+
+                {/* Contract Rows */}
+                <AnimatePresence mode="popLayout">
+                  {contractsLoading ? (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center justify-center h-80"
+                    >
+                      <LoadingSpinner size="lg" />
+                    </motion.div>
+                  ) : !overdueContracts.length ? (
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex flex-col items-center justify-center h-80 text-center"
+                    >
+                      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-6 shadow-lg">
+                        <FileText className="w-12 h-12 text-emerald-500" />
+                      </div>
+                      <p className="text-slate-800 text-2xl font-bold mb-3">ممتاز! لا توجد عقود متعثرة</p>
+                      <p className="text-slate-500">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
+                    </motion.div>
+                  ) : (
+                    overdueContracts.map((contract, idx) => (
                       <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center justify-center h-80"
+                        key={contract.contract_id || idx}
+                        layout
+                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.3, delay: idx * 0.05 }}
+                        className={cn(
+                          "group bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
+                          contract.days_overdue > 90
+                            ? "border-red-200 hover:border-red-300 hover:bg-red-50/30"
+                            : contract.days_overdue > 60
+                              ? "border-amber-200 hover:border-amber-300 hover:bg-amber-50/30"
+                              : "border-slate-200 hover:border-rose-200 hover:bg-rose-50/20"
+                        )}
                       >
-                        <LoadingSpinner size="lg" />
-                      </motion.div>
-                    ) : !overdueContracts.length ? (
-                      <motion.div
-                        key="empty"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col items-center justify-center h-80 text-center"
-                      >
-                        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-5">
-                          <FileText className="w-10 h-10 text-emerald-500" />
-                        </div>
-                        <p className="text-slate-700 text-xl font-semibold mb-2">لا توجد عقود متعثرة!</p>
-                        <p className="text-slate-500 text-sm">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="table"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="overflow-x-auto"
-                      >
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                              <th className="p-5 text-right font-semibold text-slate-700">المستأجر</th>
-                              <th className="p-5 text-right font-semibold text-slate-700">رقم العقد</th>
-                              <th className="p-5 text-right font-semibold text-slate-700">السيارة</th>
-                              <th className="p-5 text-right font-semibold text-slate-700">المبلغ المتأخر</th>
-                              <th className="p-5 text-right font-semibold text-slate-700">أيام التأخير</th>
-                              <th className="p-5 text-right font-semibold text-slate-700">الحالة</th>
-                              <th className="p-5 text-center font-semibold text-slate-700">الإجراء</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {overdueContracts.map((contract, idx) => (
-                              <motion.tr
-                                key={contract.contract_id || idx}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                className="border-t border-slate-100 hover:bg-rose-50/30 transition-colors"
+                        <div className="p-6">
+                          <div className="grid grid-cols-12 gap-4 items-center">
+                            {/* Customer */}
+                            <div className="col-span-3">
+                              <div className="flex items-center gap-4">
+                                <div className={cn(
+                                  "w-14 h-14 rounded-2xl flex items-center justify-center shadow-md transition-all duration-300",
+                                  contract.days_overdue > 90
+                                    ? "bg-gradient-to-br from-red-100 to-red-200"
+                                    : contract.days_overdue > 60
+                                      ? "bg-gradient-to-br from-amber-100 to-amber-200"
+                                      : "bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-rose-100 group-hover:to-rose-200"
+                                )}>
+                                  <Users className={cn(
+                                    "w-7 h-7 transition-colors",
+                                    contract.days_overdue > 90
+                                      ? "text-red-600"
+                                      : contract.days_overdue > 60
+                                        ? "text-amber-600"
+                                        : "text-slate-600 group-hover:text-rose-600"
+                                  )} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-slate-900 text-base truncate">{contract.customer_name}</p>
+                                  <p className="text-sm text-slate-400 mt-0.5 truncate">{contract.customer_id_number}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Contract Number */}
+                            <div className="col-span-2">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 group-hover:bg-slate-200 transition-colors">
+                                <Car className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm font-semibold text-slate-700">{contract.contract_number}</span>
+                              </div>
+                            </div>
+
+                            {/* Vehicle */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2 text-slate-600">
+                                <span className="text-2xl">🚗</span>
+                                <span className="text-sm font-medium">{contract.vehicle_info}</span>
+                              </div>
+                            </div>
+
+                            {/* Amount */}
+                            <div className="col-span-2 text-left">
+                              <div className={cn(
+                                "inline-block px-4 py-2 rounded-xl font-bold text-lg",
+                                contract.days_overdue > 90
+                                  ? "bg-red-100 text-red-700"
+                                  : contract.days_overdue > 60
+                                    ? "bg-amber-100 text-amber-700"
+                                    : "bg-rose-50 text-rose-700"
+                              )}>
+                                {formatCurrency(contract.total_overdue)}
+                              </div>
+                            </div>
+
+                            {/* Days */}
+                            <div className="col-span-1">
+                              <div className={cn(
+                                "flex items-center justify-center w-12 h-12 rounded-xl text-sm font-bold",
+                                contract.days_overdue > 90
+                                  ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
+                                  : contract.days_overdue > 60
+                                    ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30"
+                                    : "bg-slate-800 text-white"
+                              )}>
+                                {contract.days_overdue}
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <div className="col-span-1">
+                              {contract.has_lawsuit ? (
+                                <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold border border-violet-200">
+                                  <Gavel className="w-3 h-3" />
+                                  <span>قضية</span>
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold border border-amber-200">
+                                  <Clock className="w-3 h-3" />
+                                  <span>متأخر</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action */}
+                            <div className="col-span-1 text-center">
+                              <Button
+                                size="sm"
+                                onClick={() => navigate(`/legal/lawsuit/prepare/${contract.contract_id}`)}
+                                className={cn(
+                                  "gap-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105",
+                                  contract.has_lawsuit
+                                    ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                    : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white"
+                                )}
                               >
-                                <td className="p-5">
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-rose-100 to-rose-200 rounded-xl flex items-center justify-center shadow-sm">
-                                      <Users className="w-6 h-6 text-rose-600" />
-                                    </div>
-                                    <div>
-                                      <p className="font-semibold text-slate-900">{contract.customer_name}</p>
-                                      <p className="text-sm text-slate-500 mt-0.5">{contract.customer_id_number}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="p-5">
-                                  <Badge variant="outline" className="gap-1.5 border-slate-200 text-slate-700 rounded-lg px-3 py-1.5">
-                                    <Car className="w-3.5 h-3.5" />
-                                    {contract.contract_number}
-                                  </Badge>
-                                </td>
-                                <td className="p-5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg">🚗</span>
-                                    <span className="text-sm text-slate-700">{contract.vehicle_info}</span>
-                                  </div>
-                                </td>
-                                <td className="p-5">
-                                  <p className="font-bold text-red-600 text-base">{formatCurrency(contract.total_overdue)}</p>
-                                </td>
-                                <td className="p-5">
-                                  <Badge
-                                    variant={contract.days_overdue > 90 ? 'destructive' : contract.days_overdue > 30 ? 'default' : 'secondary'}
-                                    className={cn(
-                                      "rounded-lg px-3 py-1.5 font-medium",
-                                      contract.days_overdue > 90
-                                        ? "bg-red-100 text-red-700 border-red-200"
-                                        : contract.days_overdue > 30
-                                          ? "bg-amber-100 text-amber-700 border-amber-200"
-                                          : "bg-slate-100 text-slate-700 border-slate-200"
-                                    )}
-                                  >
-                                    {contract.days_overdue} يوم
-                                  </Badge>
-                                </td>
-                                <td className="p-5">
-                                  {contract.has_lawsuit ? (
-                                    <Badge className="bg-violet-100 text-violet-700 border-violet-200 rounded-lg px-3 py-1.5 font-medium">
-                                      قضية مرفوعة
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 rounded-lg px-3 py-1.5 font-medium">
-                                      متأخر
-                                    </Badge>
-                                  )}
-                                </td>
-                                <td className="p-5 text-center">
-                                  <Button
-                                    size="sm"
-                                    className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl shadow-md hover:shadow-lg transition-all"
-                                    onClick={() => navigate(`/legal/lawsuit/prepare/${contract.contract_id}`)}
-                                  >
-                                    <Gavel className="w-4 h-4" />
-                                    رفع دعوى
-                                  </Button>
-                                </td>
-                              </motion.tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                <Gavel className="w-4 h-4" />
+                                {contract.has_lawsuit ? 'عرض' : 'رفع'}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Progress bar for days overdue */}
+                          <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                              <span>مستوى التأخير</span>
+                              <span>{contract.days_overdue} يوم</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min(contract.days_overdue / 1.5, 100)}%` }}
+                                transition={{ duration: 0.8, delay: idx * 0.05 + 0.2 }}
+                                className={cn(
+                                  "h-full rounded-full",
+                                  contract.days_overdue > 90
+                                    ? "bg-gradient-to-r from-red-500 to-red-400"
+                                    : contract.days_overdue > 60
+                                      ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                                      : "bg-gradient-to-r from-rose-500 to-rose-400"
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                    ))
+                  )}
+                </AnimatePresence>
+              </div>
             </TabsContent>
           </Tabs>
         </motion.div>

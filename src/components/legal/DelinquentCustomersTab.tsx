@@ -78,6 +78,8 @@ import { useContractOperations } from '@/hooks/business/useContractOperations';
 import LegalWarningDialog from './LegalWarningDialog';
 import { CreateLegalCaseDialog } from './CreateLegalCaseDialog';
 import { DelinquentDetailsDialog } from './DelinquentDetailsDialog';
+import { BulkRemindersDialog } from './BulkRemindersDialog';
+import { ScheduleCallsDialog } from './ScheduleCallsDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -91,50 +93,55 @@ interface StatCardProps {
   value: string | number;
   subtitle?: string;
   icon: React.ElementType;
-  color: 'coral' | 'red' | 'orange' | 'green' | 'blue';
+  color: 'rose' | 'red' | 'amber' | 'emerald' | 'sky';
   onClick?: () => void;
   isActive?: boolean;
   badge?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, value, subtitle, icon: Icon, color, onClick, isActive, badge 
+const StatCard: React.FC<StatCardProps> = ({
+  title, value, subtitle, icon: Icon, color, onClick, isActive, badge
 }) => {
   const colorClasses = {
-    coral: {
-      bg: 'bg-gradient-to-br from-coral-50 to-coral-100/50',
-      icon: 'bg-coral-100 text-coral-600',
-      border: 'border-coral-200',
-      active: 'ring-2 ring-coral-500 ring-offset-2',
-      value: 'text-coral-600',
+    rose: {
+      bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',
+      icon: 'bg-gradient-to-br from-rose-500 to-rose-600',
+      border: 'border-rose-200',
+      active: 'ring-2 ring-rose-500 ring-offset-2',
+      value: 'text-rose-700',
+      title: 'text-rose-700'
     },
     red: {
       bg: 'bg-gradient-to-br from-red-50 to-red-100/50',
-      icon: 'bg-red-100 text-red-600',
+      icon: 'bg-gradient-to-br from-red-500 to-red-600',
       border: 'border-red-200',
       active: 'ring-2 ring-red-500 ring-offset-2',
-      value: 'text-red-600',
+      value: 'text-red-700',
+      title: 'text-red-700'
     },
-    orange: {
-      bg: 'bg-gradient-to-br from-orange-50 to-orange-100/50',
-      icon: 'bg-orange-100 text-orange-600',
-      border: 'border-orange-200',
-      active: 'ring-2 ring-orange-500 ring-offset-2',
-      value: 'text-orange-600',
+    amber: {
+      bg: 'bg-gradient-to-br from-amber-50 to-amber-100/50',
+      icon: 'bg-gradient-to-br from-amber-500 to-amber-600',
+      border: 'border-amber-200',
+      active: 'ring-2 ring-amber-500 ring-offset-2',
+      value: 'text-amber-700',
+      title: 'text-amber-700'
     },
-    green: {
-      bg: 'bg-gradient-to-br from-green-50 to-green-100/50',
-      icon: 'bg-green-100 text-green-600',
-      border: 'border-green-200',
-      active: 'ring-2 ring-green-500 ring-offset-2',
-      value: 'text-green-600',
+    emerald: {
+      bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
+      icon: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+      border: 'border-emerald-200',
+      active: 'ring-2 ring-emerald-500 ring-offset-2',
+      value: 'text-emerald-700',
+      title: 'text-emerald-700'
     },
-    blue: {
-      bg: 'bg-gradient-to-br from-blue-50 to-blue-100/50',
-      icon: 'bg-blue-100 text-blue-600',
-      border: 'border-blue-200',
-      active: 'ring-2 ring-blue-500 ring-offset-2',
-      value: 'text-blue-600',
+    sky: {
+      bg: 'bg-gradient-to-br from-sky-50 to-sky-100/50',
+      icon: 'bg-gradient-to-br from-sky-500 to-sky-600',
+      border: 'border-sky-200',
+      active: 'ring-2 ring-sky-500 ring-offset-2',
+      value: 'text-sky-700',
+      title: 'text-sky-700'
     },
   };
 
@@ -142,31 +149,32 @@ const StatCard: React.FC<StatCardProps> = ({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
+      whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        "relative cursor-pointer rounded-2xl border p-5 transition-all duration-200",
+        "relative cursor-pointer rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden",
         classes.bg,
         classes.border,
         isActive && classes.active
       )}
     >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent pointer-events-none" />
       {badge && (
-        <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs">
+        <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs shadow-md">
           {badge}
         </Badge>
       )}
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-neutral-600">{title}</p>
-          <p className={cn("text-3xl font-bold", classes.value)}>{value}</p>
+      <div className="relative flex items-start justify-between p-6">
+        <div className="space-y-3">
+          <p className={cn("text-sm font-semibold", classes.title)}>{title}</p>
+          <p className={cn("text-3xl font-bold tracking-tight", classes.value)}>{value}</p>
           {subtitle && (
-            <p className="text-xs text-neutral-500">{subtitle}</p>
+            <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
           )}
         </div>
-        <div className={cn("p-3 rounded-xl", classes.icon)}>
-          <Icon className="w-6 h-6" />
+        <div className={cn("p-3 rounded-xl shadow-md", classes.icon)}>
+          <Icon className="w-6 h-6 text-white" />
         </div>
       </div>
     </motion.div>
@@ -232,6 +240,8 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkRemindersDialogOpen, setBulkRemindersDialogOpen] = useState(false);
+  const [scheduleCallsDialogOpen, setScheduleCallsDialogOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Hooks
@@ -361,29 +371,23 @@ export const DelinquentCustomersTab: React.FC = () => {
     }
   }, [generateWarning]);
 
-  // Handle bulk actions
+  // Handle bulk actions - navigate to lawsuit preparation page
   const handleBulkCreateCases = useCallback(async () => {
     if (selectedCustomers.length === 0) {
       toast.error('لم يتم تحديد أي عملاء');
       return;
     }
 
-    toast.info(`جاري إنشاء ${selectedCustomers.length} قضية قانونية...`);
-    
-    let successCount = 0;
-    for (const customer of selectedCustomers) {
-      try {
-        await convertToCase.mutateAsync({ delinquentCustomer: customer });
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to create case for ${customer.customer_name}:`, error);
-      }
+    // Navigate to the first customer's lawsuit preparation page
+    // User can prepare documents there before submitting the case
+    const firstCustomer = selectedCustomers[0];
+    if (firstCustomer?.contract_id) {
+      navigate(`/legal/lawsuit/prepare/${firstCustomer.contract_id}`);
+      toast.info(`جاري تجهيز دعوى للعقد: ${firstCustomer.contract_number}`);
+    } else {
+      toast.error('رقم العقد غير متاح');
     }
-    
-    toast.success(`تم إنشاء ${successCount} قضية بنجاح`);
-    setSelectedCustomers([]);
-    setSelectedIds(new Set());
-  }, [selectedCustomers, convertToCase]);
+  }, [selectedCustomers, navigate]);
 
   // Handle bulk delete contracts permanently
   const handleBulkDeleteContracts = useCallback(async () => {
@@ -631,8 +635,8 @@ export const DelinquentCustomersTab: React.FC = () => {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-500">جاري تحميل البيانات...</p>
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500">جاري تحميل البيانات...</p>
         </div>
       </div>
     );
@@ -640,37 +644,142 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Urgent Cases Alert */}
+      {/* Urgent Cases Alert - Enhanced */}
       {stats?.needImmediateAction > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl p-4 shadow-lg"
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="relative overflow-hidden rounded-2xl shadow-2xl border-2 border-red-400"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6" />
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 animate-gradient"></div>
+
+          {/* Pulse effect overlay */}
+          <div className="absolute inset-0 bg-red-500/10 animate-pulse"></div>
+
+          <div className="relative p-6">
+            <div className="flex items-start justify-between gap-6">
+              {/* Left side - Main alert */}
+              <div className="flex items-start gap-4 flex-1">
+                {/* Animated icon */}
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative"
+                >
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
+                    <AlertTriangle className="w-8 h-8 text-white" />
+                  </div>
+                  {/* Pulse rings */}
+                  <div className="absolute inset-0 rounded-2xl border-2 border-white/30 animate-ping opacity-30"></div>
+                  <div className="absolute inset-0 rounded-2xl border-2 border-white/20 animate-ping opacity-20" style={{ animationDelay: '0.5s' }}></div>
+                </motion.div>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="px-3 py-1 bg-white/20 rounded-full border border-white/30"
+                    >
+                      <span className="text-sm font-bold">⚠️ حالة طوارئ</span>
+                    </motion.div>
+                    <Badge className="bg-white/20 text-white border-white/30 text-sm">
+                      {stats.needImmediateAction} عميل
+                    </Badge>
+                  </div>
+
+                  <h3 className="text-2xl font-bold mb-2">
+                    حالات عاجلة تحتاج اهتمام فوري
+                  </h3>
+
+                  <p className="text-white/90 text-sm mb-3">
+                    عملاء متأخرون أكثر من 90 يوم - إجراء فوري مطلوب لتجنب الخسائر المالية
+                  </p>
+
+                  {/* Key metrics */}
+                  <div className="grid grid-cols-3 gap-3 mt-4">
+                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/20">
+                      <div className="text-xs text-white/80 mb-1">المبلغ المستحق</div>
+                      <div className="text-lg font-bold">
+                        {customers?.filter(c => c.risk_level === 'CRITICAL')
+                          .reduce((sum, c) => sum + (c.total_debt || 0), 0)
+                          .toLocaleString()} ر.ق
+                      </div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/20">
+                      <div className="text-xs text-white/80 mb-1">متوسط التأخير</div>
+                      <div className="text-lg font-bold">
+                        {Math.round(
+                          customers?.filter(c => c.risk_level === 'CRITICAL')
+                            .reduce((sum, c) => sum + (c.days_overdue || 0), 0) /
+                          (customers?.filter(c => c.risk_level === 'CRITICAL').length || 1) || 0
+                        )} يوم
+                      </div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/20">
+                      <div className="text-xs text-white/80 mb-1">مخاطر عالية</div>
+                      <div className="text-lg font-bold">
+                        {stats?.criticalRisk || 0} + {stats?.highRisk || 0}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-lg">
-                  {stats.needImmediateAction} حالة عاجلة تحتاج اهتمام فوري
-                </h3>
-                <p className="text-sm opacity-90">
-                  عملاء متأخرون أكثر من 90 يوم - إجراء فوري مطلوب
-                </p>
+
+              {/* Right side - Actions */}
+              <div className="flex flex-col gap-3 min-w-[200px]">
+                <Button
+                  size="lg"
+                  className="w-full bg-white hover:bg-white/90 text-red-600 font-bold gap-2 shadow-lg"
+                  onClick={() => {
+                    setRiskLevelFilter('CRITICAL');
+                    toast.success(`تم تصفية العرض للحالات الحرجة (${customers?.filter(c => c.risk_level === 'CRITICAL').length || 0} عميل)`);
+                  }}
+                >
+                  <Eye className="w-5 h-5" />
+                  عرض الحالات الحرجة
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm gap-2"
+                  onClick={() => setBulkRemindersDialogOpen(true)}
+                >
+                  <Mail className="w-5 h-5" />
+                  إرسال تنبيهات عاجلة
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm gap-2"
+                  onClick={() => setScheduleCallsDialogOpen(true)}
+                >
+                  <Phone className="w-5 h-5" />
+                  جدولة مكالمات عاجلة
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                variant="secondary" 
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                onClick={() => setRiskLevelFilter('CRITICAL')}
-              >
-                <Eye className="w-4 h-4 ml-2" />
-                عرض الحالات
-              </Button>
+
+            {/* Progress indicator */}
+            <div className="mt-4 pt-4 border-t border-white/20">
+              <div className="flex items-center justify-between text-xs text-white/80 mb-2">
+                <span>نسبة الحالات الحرجة من إجمالي العملاء المتأخرين</span>
+                <span className="font-bold">
+                  {Math.round((stats.needImmediateAction / (stats?.totalDelinquent || 1)) * 100)}%
+                </span>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(stats.needImmediateAction / (stats?.totalDelinquent || 1)) * 100}%` }}
+                  transition={{ duration: 1, delay: 0.3 }}
+                  className="h-full bg-white rounded-full"
+                />
+              </div>
             </div>
           </div>
         </motion.div>
@@ -686,29 +795,32 @@ export const DelinquentCustomersTab: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
-              onClick={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
+              onClick={() => setBulkRemindersDialogOpen(true)}
             >
               <Mail className="w-4 h-4" />
               إرسال تذكيرات جماعية
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
-              onClick={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
+              onClick={() => setScheduleCallsDialogOpen(true)}
             >
               <Phone className="w-4 h-4" />
               جدولة مكالمات
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
-              onClick={() => setRiskLevelFilter('CRITICAL')}
+              onClick={() => {
+                setRiskLevelFilter('CRITICAL');
+                toast.success(`تم تصفية العرض للحالات الحرجة (${customers?.filter(c => c.risk_level === 'CRITICAL').length || 0} عميل)`);
+              }}
             >
               <AlertTriangle className="w-4 h-4" />
               عرض الحالات العاجلة
@@ -761,13 +873,13 @@ export const DelinquentCustomersTab: React.FC = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="إجمالي العملاء المتأخرين"
           value={stats?.totalDelinquent || 0}
           subtitle={`${(stats?.criticalRisk || 0) + (stats?.highRisk || 0)} عميل عالي المخاطر`}
           icon={Users}
-          color="coral"
+          color="rose"
           onClick={() => clearFilters()}
           isActive={riskLevelFilter === 'all' && !searchTerm}
         />
@@ -783,7 +895,7 @@ export const DelinquentCustomersTab: React.FC = () => {
           value={formatCurrency(stats?.totalPenalties || 0)}
           subtitle={`متوسط ${Math.round(stats?.averageDaysOverdue || 0)} يوم تأخير`}
           icon={AlertTriangle}
-          color="orange"
+          color="amber"
         />
         <StatCard
           title="يحتاجون إجراء فوري"
@@ -997,7 +1109,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                 size="sm"
                 onClick={handleBulkCreateCases}
               disabled={convertToCase.isPending}
-              className="gap-2 bg-coral-500 hover:bg-coral-600"
+              className="gap-2 bg-rose-500 hover:bg-rose-600"
               >
                 <FileText className="h-4 w-4" />
               إنشاء قضايا
@@ -1023,240 +1135,319 @@ export const DelinquentCustomersTab: React.FC = () => {
         )}
       </div>
 
-      {/* Table View - يظهر دائماً */}
-      <Card className="border-neutral-200">
-        <CardContent className="p-0">
-          {customersLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <LoadingSpinner size="lg" />
+      {/* Table View - Card-based Design */}
+      <div className="space-y-4">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider items-center">
+            <div className="col-span-1">
+              <Checkbox
+                checked={selectedIds.size === customers.length}
+                onCheckedChange={handleSelectAll}
+              />
             </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
-              <p className="text-neutral-600">حدث خطأ أثناء تحميل البيانات</p>
-              <Button variant="outline" onClick={() => refreshDelinquentCustomers.mutate()} className="mt-4">
-                إعادة المحاولة
-              </Button>
-            </div>
-          ) : !customers || customers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <CheckCircle className="w-12 h-12 text-green-400 mb-4" />
-              <p className="text-neutral-600 text-lg font-medium">لا يوجد عملاء متأخرين! 🎉</p>
-              <p className="text-neutral-400 text-sm">جميع العملاء يدفعون في الوقت المحدد</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-neutral-50">
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={selectedIds.size === customers.length}
-                          onCheckedChange={handleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>العميل</TableHead>
-                      <TableHead>العقد / المركبة</TableHead>
-                      <TableHead>المستحقات</TableHead>
-                      <TableHead>التواصل</TableHead>
-                      <TableHead>التأخير</TableHead>
-                      <TableHead>المخاطر</TableHead>
-                      <TableHead className="text-center">الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <AnimatePresence>
-                      {paginatedCustomers.map((customer, index) => (
-                        <motion.tr
-                          key={`${customer.customer_id}-${index}`}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.03 }}
-                          className={cn(
-                            "hover:bg-neutral-50 border-b border-neutral-100 relative",
-                            customer.contract_status === 'cancelled' && "bg-gradient-to-l from-red-50 via-red-50/80 to-transparent border-r-4 border-r-red-500",
-                            customer.contract_status === 'closed' && "bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent border-r-4 border-r-gray-400",
-                            customer.contract_status === 'under_legal_procedure' && "bg-gradient-to-l from-purple-100 via-purple-50/80 to-transparent border-r-4 border-r-purple-600"
-                          )}
-                        >
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedIds.has(customer.customer_id)}
-                              onCheckedChange={(checked) => handleSelectCustomer(customer, checked as boolean)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-neutral-900">{customer.customer_name}</span>
-                                <div className="flex gap-0.5">
-                                  {[1,2,3,4,5].map(i => (
-                                    <Star 
-                                      key={i} 
-                                      className={cn(
-                                        "w-3 h-3", 
-                                        i <= (customer.payment_history_score || 3) 
-                                          ? "text-yellow-400 fill-current" 
-                                          : "text-gray-300"
-                                      )} 
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                              <span className="text-xs text-neutral-500">{customer.customer_code}</span>
-                              {customer.phone && (
-                                <span className="text-xs text-neutral-400 mt-1" dir="ltr">{customer.phone}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (customer.contract_number) {
-                                      navigate(`/contracts/${customer.contract_number}`);
-                                    }
-                                  }}
-                                  className="font-medium text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors"
-                                  title="عرض تفاصيل العقد"
-                                >
-                                  {customer.contract_number || '-'}
-                                </button>
-                                {customer.contract_status === 'cancelled' && (
-                                  <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white animate-pulse gap-1">
-                                    <X className="w-3 h-3" />
-                                    ملغي
-                                  </Badge>
-                                )}
-                                {customer.contract_status === 'closed' && (
-                                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-gray-500 text-white gap-1">
-                                    <CheckCircle className="w-3 h-3" />
-                                    مغلق
-                                  </Badge>
-                                )}
-                                {customer.contract_status === 'active' && (
-                                  <Badge className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700">نشط</Badge>
-                                )}
-                                {customer.contract_status === 'under_legal_procedure' && (
-                                  <Badge className="text-[10px] px-2 py-0.5 bg-purple-600 text-white animate-pulse gap-1">
-                                    ⚖️ تحت الإجراء القانوني
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-xs text-neutral-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
-                              {customer.contract_status === 'cancelled' && (
-                                <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ العقد ملغي</span>
-                              )}
-                              {customer.contract_status === 'cancelled' && (
-                                <span className="text-[10px] text-red-600 font-medium mt-0.5">⚠️ يجب استرداد المركبة</span>
-                              )}
-                              {customer.contract_status === 'under_legal_procedure' && (
-                                <span className="text-[10px] text-purple-700 font-medium mt-0.5">⚖️ قضية مرفوعة</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-bold text-red-600">
-                                {formatCurrency(customer.total_debt || 0)}
-                              </span>
-                              <div className="text-[10px] text-neutral-500 space-y-0.5">
-                                <div>الإيجار: {formatCurrency(customer.overdue_amount || 0)}</div>
-                                {(customer.late_penalty || 0) > 0 && (
-                                  <div className="text-orange-600">+ غرامة: {formatCurrency(customer.late_penalty)}</div>
-                                )}
-                                {(customer.violations_amount || 0) > 0 && (
-                                  <div className="text-rose-600">+ مخالفات ({customer.violations_count}): {formatCurrency(customer.violations_amount)}</div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-neutral-400" />
-                                <span className="text-xs text-neutral-600">
-                                  آخر تواصل: {customer.last_contact_days || 0} يوم
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-neutral-400" />
-                                <span className="text-xs text-neutral-500">
-                                  هذا الشهر: {customer.contact_count_this_month || 0} مرة
-                                </span>
-                              </div>
-                              {customer.contact_count_this_month > 5 && (
-                                <span className="text-xs text-amber-600">⚠️ متكرر</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={customer.days_overdue > 90 ? 'destructive' : customer.days_overdue > 30 ? 'default' : 'secondary'}>
-                              {customer.days_overdue} يوم
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <RiskBadge level={customer.risk_level || 'LOW'} score={customer.risk_score || 0} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-1">
-                              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }} title="عرض التفاصيل">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleSendWarning(customer)} title="إرسال إنذار">
-                                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleRecordPayment(customer)} title="تسجيل دفعة">
-                                <CreditCard className="w-4 h-4 text-green-600" />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }}>
-                                    <Eye className="w-4 h-4 ml-2" />
-                                    عرض تفاصيل الغرامات
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleRecordPayment(customer)}>
-                                    <CreditCard className="w-4 h-4 ml-2" />
-                                    تسجيل دفعة
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleCreateCase(customer)}>
-                                    <FileText className="w-4 h-4 ml-2" />
-                                    إنشاء قضية قانونية
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => handleSendWarning(customer)}>
-                                    <AlertTriangle className="w-4 h-4 ml-2" />
-                                    إرسال إنذار
-                                  </DropdownMenuItem>
-                                  {customer.phone && (
-                                    <DropdownMenuItem onClick={() => navigate(`/customers/crm?call=${customer.customer_id}`)}>
-                                      <Phone className="w-4 h-4 ml-2" />
-                                      اتصال: {customer.phone}
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  </TableBody>
-                </Table>
-              </div>
+            <div className="col-span-3">العميل</div>
+            <div className="col-span-2">العقد / المركبة</div>
+            <div className="col-span-2">المستحقات</div>
+            <div className="col-span-1">التواصل</div>
+            <div className="col-span-1">التأخير</div>
+            <div className="col-span-1">المخاطر</div>
+            <div className="col-span-1 text-center">الإجراءات</div>
+          </div>
+        </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t border-neutral-100">
-                  <span className="text-sm text-neutral-500">
+        {/* Loading State */}
+        {customersLoading ? (
+          <div className="flex items-center justify-center h-80">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-80 text-center bg-white rounded-2xl border border-slate-200">
+            <AlertTriangle className="w-16 h-16 text-red-400 mb-4" />
+            <p className="text-slate-600 text-lg">حدث خطأ أثناء تحميل البيانات</p>
+            <Button variant="outline" onClick={() => refreshDelinquentCustomers.mutate()} className="mt-4">
+              إعادة المحاولة
+            </Button>
+          </div>
+        ) : !customers || customers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-80 text-center bg-white rounded-2xl border border-slate-200">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-6 shadow-lg">
+              <CheckCircle className="w-12 h-12 text-emerald-500" />
+            </div>
+            <p className="text-slate-800 text-2xl font-bold mb-3">لا يوجد عملاء متأخرين! 🎉</p>
+            <p className="text-slate-500">جميع العملاء يدفعون في الوقت المحدد</p>
+          </div>
+        ) : (
+          <>
+            {/* Customer Cards */}
+            <AnimatePresence mode="popLayout">
+              {paginatedCustomers.map((customer, index) => (
+                <motion.div
+                  key={`${customer.customer_id}-${index}`}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className={cn(
+                    "group bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
+                    customer.risk_level === 'CRITICAL'
+                      ? "border-red-200 hover:border-red-300 hover:bg-red-50/30"
+                      : customer.risk_level === 'HIGH'
+                        ? "border-orange-200 hover:border-orange-300 hover:bg-orange-50/30"
+                        : customer.risk_level === 'MEDIUM'
+                          ? "border-amber-200 hover:border-amber-300 hover:bg-amber-50/30"
+                          : "border-slate-200 hover:border-rose-200 hover:bg-rose-50/20"
+                  )}
+                >
+                  <div className="p-6">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      {/* Checkbox */}
+                      <div className="col-span-1">
+                        <Checkbox
+                          checked={selectedIds.has(customer.customer_id)}
+                          onCheckedChange={(checked) => handleSelectCustomer(customer, checked as boolean)}
+                        />
+                      </div>
+
+                      {/* Customer */}
+                      <div className="col-span-3">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-all duration-300",
+                            customer.risk_level === 'CRITICAL'
+                              ? "bg-gradient-to-br from-red-100 to-red-200"
+                              : customer.risk_level === 'HIGH'
+                                ? "bg-gradient-to-br from-orange-100 to-orange-200"
+                                : customer.risk_level === 'MEDIUM'
+                                  ? "bg-gradient-to-br from-amber-100 to-amber-200"
+                                  : "bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-rose-100 group-hover:to-rose-200"
+                          )}>
+                            <Users className={cn(
+                              "w-6 h-6 transition-colors",
+                              customer.risk_level === 'CRITICAL'
+                                ? "text-red-600"
+                                : customer.risk_level === 'HIGH'
+                                  ? "text-orange-600"
+                                  : customer.risk_level === 'MEDIUM'
+                                    ? "text-amber-600"
+                                    : "text-slate-600 group-hover:text-rose-600"
+                            )} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-slate-900 truncate">{customer.customer_name}</p>
+                              <div className="flex gap-0.5">
+                                {[1,2,3,4,5].map(i => (
+                                  <Star
+                                    key={i}
+                                    className={cn(
+                                      "w-3 h-3",
+                                      i <= (customer.payment_history_score || 3)
+                                        ? "text-yellow-400 fill-current"
+                                        : "text-gray-300"
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-0.5">{customer.customer_code}</p>
+                            {customer.phone && (
+                              <p className="text-xs text-slate-400 mt-0.5" dir="ltr">{customer.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contract/Vehicle */}
+                      <div className="col-span-2">
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (customer.contract_number) {
+                                navigate(`/contracts/${customer.contract_number}`);
+                              }
+                            }}
+                            className="font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer transition-colors text-sm"
+                            title="عرض تفاصيل العقد"
+                          >
+                            {customer.contract_number || '-'}
+                          </button>
+                          <span className="text-xs text-slate-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
+                          {customer.contract_status === 'cancelled' && (
+                            <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white animate-pulse gap-1 w-fit">
+                              <X className="w-3 h-3" />
+                              ملغي
+                            </Badge>
+                          )}
+                          {customer.contract_status === 'under_legal_procedure' && (
+                            <Badge className="text-[10px] px-2 py-0.5 bg-violet-600 text-white animate-pulse gap-1 w-fit">
+                              <Gavel className="w-3 h-3" />
+                              قضية
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Due Amounts */}
+                      <div className="col-span-2">
+                        <div className="flex flex-col gap-1">
+                          <span className={cn(
+                            "font-bold text-base",
+                            customer.risk_level === 'CRITICAL'
+                              ? "text-red-700"
+                              : customer.risk_level === 'HIGH'
+                                ? "text-orange-700"
+                                : "text-rose-700"
+                          )}>
+                            {formatCurrency(customer.total_debt || 0)}
+                          </span>
+                          <div className="text-[10px] text-slate-400 space-y-0.5">
+                            <div>إيجار: {formatCurrency(customer.overdue_amount || 0)}</div>
+                            {(customer.late_penalty || 0) > 0 && (
+                              <div className="text-orange-600">+ غرامة: {formatCurrency(customer.late_penalty)}</div>
+                            )}
+                            {(customer.violations_amount || 0) > 0 && (
+                              <div className="text-rose-600">+ مخالفات: {formatCurrency(customer.violations_amount)}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Communication */}
+                      <div className="col-span-1">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span className="text-slate-600">{customer.last_contact_days || 0} يوم</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <span className="text-slate-600">{customer.contact_count_this_month || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Days Overdue */}
+                      <div className="col-span-1">
+                        <div className={cn(
+                          "flex items-center justify-center w-14 h-14 rounded-xl text-sm font-bold",
+                          customer.days_overdue > 90
+                            ? "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
+                            : customer.days_overdue > 60
+                              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                              : customer.days_overdue > 30
+                                ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
+                                : "bg-slate-800 text-white"
+                        )}>
+                          {customer.days_overdue}
+                        </div>
+                      </div>
+
+                      {/* Risk */}
+                      <div className="col-span-1">
+                        <div className="flex flex-col gap-1.5">
+                          <Badge className={cn(
+                            "text-xs font-medium",
+                            customer.risk_level === 'CRITICAL' && "bg-red-100 text-red-700 border-red-200",
+                            customer.risk_level === 'HIGH' && "bg-orange-100 text-orange-700 border-orange-200",
+                            customer.risk_level === 'MEDIUM' && "bg-amber-100 text-amber-700 border-amber-200",
+                            customer.risk_level === 'LOW' && "bg-emerald-100 text-emerald-700 border-emerald-200",
+                            !customer.risk_level && "bg-slate-100 text-slate-700 border-slate-200"
+                          )}>
+                            {customer.risk_level === 'CRITICAL' ? 'حرج' :
+                             customer.risk_level === 'HIGH' ? 'عالي' :
+                             customer.risk_level === 'MEDIUM' ? 'متوسط' :
+                             customer.risk_level === 'LOW' ? 'منخفض' : 'مراقبة'}
+                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <div className="w-10 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min(customer.risk_score || 0, 100)}%` }}
+                                transition={{ duration: 0.8, delay: index * 0.05 + 0.2 }}
+                                className={cn(
+                                  "h-full rounded-full",
+                                  customer.risk_level === 'CRITICAL' && "bg-gradient-to-r from-red-500 to-red-400",
+                                  customer.risk_level === 'HIGH' && "bg-gradient-to-r from-orange-500 to-orange-400",
+                                  customer.risk_level === 'MEDIUM' && "bg-gradient-to-r from-amber-500 to-amber-400",
+                                  customer.risk_level === 'LOW' && "bg-gradient-to-r from-emerald-500 to-emerald-400",
+                                  !customer.risk_level && "bg-gradient-to-r from-slate-500 to-slate-400"
+                                )}
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400">{customer.risk_score || 0}%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="col-span-1 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }}
+                            title="عرض التفاصيل"
+                            className="h-9 w-9 hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSendWarning(customer)}
+                            title="إرسال إنذار"
+                            className="h-9 w-9 hover:bg-amber-50 hover:text-amber-600"
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRecordPayment(customer)}
+                            title="تسجيل دفعة"
+                            className="h-9 w-9 hover:bg-emerald-50 hover:text-emerald-600"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risk Progress Bar at Bottom */}
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                        <span>مستوى المخاطرة</span>
+                        <span>{customer.risk_score || 0}%</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(customer.risk_score || 0, 100)}%` }}
+                          transition={{ duration: 0.8, delay: index * 0.05 + 0.3 }}
+                          className={cn(
+                            "h-full rounded-full",
+                            customer.risk_level === 'CRITICAL' && "bg-gradient-to-r from-red-500 to-red-400",
+                            customer.risk_level === 'HIGH' && "bg-gradient-to-r from-orange-500 to-orange-400",
+                            customer.risk_level === 'MEDIUM' && "bg-gradient-to-r from-amber-500 to-amber-400",
+                            customer.risk_level === 'LOW' && "bg-gradient-to-r from-emerald-500 to-emerald-400",
+                            !customer.risk_level && "bg-gradient-to-r from-slate-500 to-slate-400"
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">
                     عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, customers.length)} من {customers.length}
                   </span>
                   <div className="flex items-center gap-2">
@@ -1265,27 +1456,29 @@ export const DelinquentCustomersTab: React.FC = () => {
                       size="sm"
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
+                      className="rounded-xl"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
-                    <span className="text-sm px-3">
+                    <span className="text-sm px-3 font-medium text-slate-700">
                       {currentPage} / {totalPages}
                     </span>
-              <Button
-                variant="outline"
-                size="sm"
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-              >
+                      className="rounded-xl"
+                    >
                       <ChevronLeft className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Legal Warning Dialog */}
       <LegalWarningDialog
@@ -1352,6 +1545,22 @@ export const DelinquentCustomersTab: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Reminders Dialog */}
+      <BulkRemindersDialog
+        open={bulkRemindersDialogOpen}
+        onOpenChange={setBulkRemindersDialogOpen}
+        customers={customers || []}
+        selectedCustomers={selectedCustomers}
+      />
+
+      {/* Schedule Calls Dialog */}
+      <ScheduleCallsDialog
+        open={scheduleCallsDialogOpen}
+        onOpenChange={setScheduleCallsDialogOpen}
+        customers={customers || []}
+        selectedCustomers={selectedCustomers}
+      />
     </div>
   );
 };

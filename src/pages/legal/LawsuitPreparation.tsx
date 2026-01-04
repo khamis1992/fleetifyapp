@@ -41,8 +41,11 @@ import {
   FolderDown,
   ArrowLeft,
   FileWarning,
+  FileStack,
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   calculateDelinquencyAmounts,
@@ -90,13 +93,19 @@ export default function LawsuitPreparationPage() {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
   const { companyId, isLoading: companyLoading } = useUnifiedCompanyAccess();
-  
+  const { user } = useAuth();
+
+  // Hooks
+  const convertToCase = useConvertToLegalCase();
+
   // الحالات
   const [taqadiData, setTaqadiData] = useState<TaqadiData | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isAutomating, setIsAutomating] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [showTaqadiData, setShowTaqadiData] = useState(false);
-  
+
   // حالات المستندات
   const [memoUrl, setMemoUrl] = useState<string | null>(null);
   const [isGeneratingMemo, setIsGeneratingMemo] = useState(false);
@@ -528,6 +537,89 @@ export default function LawsuitPreparationPage() {
     setIsAutomating(false);
   }, [taqadiData, contract, calculations]);
 
+  // توليد جميع المستندات
+  const generateAllDocuments = useCallback(async () => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد...');
+      return;
+    }
+
+    setIsGeneratingAll(true);
+
+    try {
+      const documentsToGenerate: Array<{
+        name: string;
+        isReady: boolean;
+        generate: () => void;
+      }> = [
+        {
+          name: 'المذكرة الشارحة',
+          isReady: !!memoUrl,
+          generate: () => {
+            if (!memoUrl) generateExplanatoryMemo();
+          },
+        },
+        {
+          name: 'كشف المطالبات المالية',
+          isReady: !!claimsStatementUrl,
+          generate: () => {
+            if (!claimsStatementUrl) generateClaimsStatement();
+          },
+        },
+        {
+          name: 'كشف المستندات المرفوعة',
+          isReady: !!docsListUrl,
+          generate: () => {
+            if (!docsListUrl) generateDocumentsList();
+          },
+        },
+      ];
+
+      // Add violations list if there are violations
+      if (trafficViolations.length > 0) {
+        documentsToGenerate.push({
+          name: 'كشف المخالفات المرورية',
+          isReady: !!violationsListUrl,
+          generate: () => {
+            if (!violationsListUrl) generateViolationsList();
+          },
+        });
+      }
+
+      let generatedCount = 0;
+      for (const doc of documentsToGenerate) {
+        if (!doc.isReady) {
+          toast.info(`جاري توليد ${doc.name}...`);
+          doc.generate();
+          // Wait for the document to be generated
+          await new Promise(resolve => setTimeout(resolve, 800));
+          generatedCount++;
+        }
+      }
+
+      if (generatedCount > 0) {
+        toast.success(`✅ تم توليد ${generatedCount} مستند بنجاح!`);
+      } else {
+        toast.info('جميع المستندات جاهزة بالفعل');
+      }
+    } catch (error: any) {
+      toast.error('حدث خطأ أثناء توليد المستندات');
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  }, [
+    contract,
+    memoUrl,
+    claimsStatementUrl,
+    docsListUrl,
+    violationsListUrl,
+    trafficViolations,
+    generateExplanatoryMemo,
+    generateClaimsStatement,
+    generateDocumentsList,
+    generateViolationsList,
+  ]);
+
   // حساب قائمة المستندات
   const documentsList: DocumentItem[] = useMemo(() => {
     const commercialReg = getDocByType('commercial_register');
@@ -631,11 +723,253 @@ export default function LawsuitPreparationPage() {
 
   // حساب التقدم
   const progressData = useMemo(() => {
-    const mandatoryDocs = documentsList.filter(d => d.type === 'mandatory');
-    const readyDocs = mandatoryDocs.filter(d => d.status === 'ready');
-    const percentage = mandatoryDocs.length > 0 ? Math.round((readyDocs.length / mandatoryDocs.length) * 100) : 0;
-    return { total: mandatoryDocs.length, ready: readyDocs.length, percentage };
+    // Only count generated documents (documents that need to be generated for each case)
+    const generatedDocs = documentsList.filter(d => d.category === 'generated');
+    const readyDocs = generatedDocs.filter(d => d.status === 'ready');
+    const percentage = generatedDocs.length > 0 ? Math.round((readyDocs.length / generatedDocs.length) * 100) : 0;
+    return { total: generatedDocs.length, ready: readyDocs.length, percentage };
   }, [documentsList]);
+
+  // Helper function to upload HTML content as a document
+  const uploadHtmlDocument = useCallback(async (htmlContent: string, fileName: string): Promise<string | null> => {
+    if (!companyId || !contractId) return null;
+
+    try {
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const filePath = `lawsuits/${companyId}/${contractId}/${Date.now()}-${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('legal-documents')
+        .upload(filePath, blob);
+
+      if (uploadError) throw uploadError;
+
+      return filePath;
+    } catch (error) {
+      console.error(`Failed to upload ${fileName}:`, error);
+      return null;
+    }
+  }, [companyId, contractId]);
+
+  // تسجيل القضية في النظام
+  const registerCaseInSystem = useCallback(async () => {
+    if (!contract || !companyId || !user?.id) {
+      toast.error('بيانات غير مكتملة');
+      return;
+    }
+
+    // Check if generated documents are ready (only generated documents are required)
+    const generatedDocs = documentsList.filter(d => d.category === 'generated');
+    const readyDocs = generatedDocs.filter(d => d.status === 'ready');
+
+    if (readyDocs.length < generatedDocs.length) {
+      toast.error(`يجب تجهيز جميع المستندات المولدة (${readyDocs.length}/${generatedDocs.length})`);
+      return;
+    }
+
+    setIsRegistering(true);
+    toast.info('جاري تسجيل القضية في النظام...');
+
+    try {
+      const customer = (contract as any).customers;
+      const vehicle = (contract as any).vehicles;
+
+      // Create delinquent customer object for the hook
+      const delinquentCustomer = {
+        customer_id: customer?.id || '',
+        customer_name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : '',
+        customer_code: customer?.id || '',
+        contract_id: contractId,
+        contract_number: contract.contract_number,
+        vehicle_id: contract.vehicle_id,
+        vehicle_plate: vehicle?.plate_number || (contract as any).license_plate,
+        phone: customer?.phone || '',
+        email: customer?.email || '',
+        total_debt: calculations.total,
+        overdue_amount: calculations.overdueRent,
+        late_penalty: calculations.lateFees,
+        violations_amount: calculations.violationsFines,
+        violations_count: calculations.violationsCount,
+        days_overdue: Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)),
+        months_unpaid: overdueInvoices.length,
+        risk_score: calculations.total > 10000 ? 85 : calculations.total > 5000 ? 70 : 60,
+        risk_level: calculations.total > 10000 ? 'CRITICAL' : calculations.total > 5000 ? 'HIGH' : 'MEDIUM',
+        has_previous_legal_cases: false,
+        previous_legal_cases_count: 0,
+        is_blacklisted: false,
+        last_payment_date: null,
+        last_payment_amount: 0,
+        recommended_action: { label: 'رفع دعوى' },
+      };
+
+      // Create the legal case
+      const result = await convertToCase.mutateAsync({
+        delinquentCustomer,
+        additionalNotes: `عنوان الدعوى: ${taqadiData?.caseTitle}\nالمطالبة: ${taqadiData?.claims}`,
+      });
+
+      // Get the created case ID
+      const { data: createdCase } = await supabase
+        .from('legal_cases')
+        .select('id, case_number')
+        .eq('company_id', companyId)
+        .eq('client_id', customer?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!createdCase) {
+        throw new Error('فشل في الحصول على بيانات القضية');
+      }
+
+      // Upload generated documents to the case
+      const documentUploads = [];
+
+      // Upload memo
+      if (memoUrl) {
+        try {
+          const memoHtml = await fetch(memoUrl).then(r => r.text());
+          const filePath = await uploadHtmlDocument(memoHtml, 'المذكرة_الشارحة.html');
+          if (filePath) {
+            documentUploads.push({
+              case_id: createdCase.id,
+              company_id: companyId,
+              document_type: 'explanatory_memo',
+              document_title: 'المذكرة الشارحة',
+              document_title_ar: 'المذكرة الشارحة',
+              file_path: filePath,
+              file_name: 'المذكرة_الشارحة.html',
+              file_type: 'html',
+              file_size: new Blob([memoHtml]).size,
+              description: 'مذكرة شارحة للدعوى',
+              is_confidential: false,
+              created_by: user.id,
+            });
+          }
+        } catch (e) {
+          console.error('Failed to upload memo:', e);
+        }
+      }
+
+      // Upload claims statement
+      if (claimsStatementUrl) {
+        try {
+          const claimsHtml = await fetch(claimsStatementUrl).then(r => r.text());
+          const filePath = await uploadHtmlDocument(claimsHtml, 'كشف_المطالبات.html');
+          if (filePath) {
+            documentUploads.push({
+              case_id: createdCase.id,
+              company_id: companyId,
+              document_type: 'claims_statement',
+              document_title: 'كشف المطالبات المالية',
+              document_title_ar: 'كشف المطالبات المالية',
+              file_path: filePath,
+              file_name: 'كشف_المطالبات.html',
+              file_type: 'html',
+              file_size: new Blob([claimsHtml]).size,
+              description: 'كشف بالمطالبات المالية والفواتير المتأخرة',
+              is_confidential: false,
+              created_by: user.id,
+            });
+          }
+        } catch (e) {
+          console.error('Failed to upload claims statement:', e);
+        }
+      }
+
+      // Upload documents list
+      if (docsListUrl) {
+        try {
+          const docsHtml = await fetch(docsListUrl).then(r => r.text());
+          const filePath = await uploadHtmlDocument(docsHtml, 'كشف_المستندات.html');
+          if (filePath) {
+            documentUploads.push({
+              case_id: createdCase.id,
+              company_id: companyId,
+              document_type: 'documents_list',
+              document_title: 'كشف المستندات المرفوعة',
+              document_title_ar: 'كشف المستندات المرفوعة',
+              file_path: filePath,
+              file_name: 'كشف_المستندات.html',
+              file_type: 'html',
+              file_size: new Blob([docsHtml]).size,
+              description: 'قائمة بجميع المستندات المرفوعة للقضية',
+              is_confidential: false,
+              created_by: user.id,
+            });
+          }
+        } catch (e) {
+          console.error('Failed to upload documents list:', e);
+        }
+      }
+
+      // Upload violations list if exists
+      if (violationsListUrl) {
+        try {
+          const violationsHtml = await fetch(violationsListUrl).then(r => r.text());
+          const filePath = await uploadHtmlDocument(violationsHtml, 'كشف_المخالفات.html');
+          if (filePath) {
+            documentUploads.push({
+              case_id: createdCase.id,
+              company_id: companyId,
+              document_type: 'traffic_violations',
+              document_title: 'كشف المخالفات المرورية',
+              document_title_ar: 'كشف المخالفات المرورية',
+              file_path: filePath,
+              file_name: 'كشف_المخالفات.html',
+              file_type: 'html',
+              file_size: new Blob([violationsHtml]).size,
+              description: 'كشف بالمخالفات المرورية غير المسددة',
+              is_confidential: false,
+              created_by: user.id,
+            });
+          }
+        } catch (e) {
+          console.error('Failed to upload violations list:', e);
+        }
+      }
+
+      // Insert all documents
+      if (documentUploads.length > 0) {
+        const { error: docsError } = await supabase
+          .from('legal_case_documents')
+          .insert(documentUploads);
+
+        if (docsError) {
+          console.error('Failed to insert documents:', docsError);
+        }
+      }
+
+      toast.success(`✅ تم تسجيل القضية ${createdCase.case_number} في النظام بنجاح!`, { duration: 4000 });
+
+      // Navigate to cases page
+      setTimeout(() => {
+        navigate('/legal/cases?view=cases');
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Error registering case:', error);
+      toast.error(`فشل تسجيل القضية: ${error.message || 'خطأ غير معروف'}`);
+    } finally {
+      setIsRegistering(false);
+    }
+  }, [
+    contract,
+    companyId,
+    user,
+    calculations,
+    taqadiData,
+    overdueInvoices,
+    convertToCase,
+    documentsList,
+    memoUrl,
+    claimsStatementUrl,
+    docsListUrl,
+    violationsListUrl,
+    uploadHtmlDocument,
+    contractId,
+    navigate,
+  ]);
 
   // حالة التحميل
   if (companyLoading || contractLoading || invoicesLoading || violationsLoading) {
@@ -823,10 +1157,17 @@ export default function LawsuitPreparationPage() {
                           size="sm"
                           onClick={() => {
                             if (doc.url?.startsWith('blob:')) {
+                              // Properly download blob URL
                               const a = document.createElement('a');
                               a.href = doc.url;
                               a.download = `${doc.name}.html`;
+                              a.style.display = 'none';
+                              document.body.appendChild(a);
                               a.click();
+                              // Clean up after a short delay
+                              setTimeout(() => {
+                                document.body.removeChild(a);
+                              }, 100);
                             } else {
                               window.open(doc.url!, '_blank');
                             }
@@ -938,13 +1279,38 @@ export default function LawsuitPreparationPage() {
                     </div>
                     <div className="flex gap-2">
                       {doc.status === 'ready' && doc.url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(doc.url!, '_blank')}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(doc.url!, '_blank')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (doc.url?.startsWith('blob:')) {
+                                // Properly download blob URL
+                                const a = document.createElement('a');
+                                a.href = doc.url;
+                                a.download = `${doc.name}.html`;
+                                a.style.display = 'none';
+                                document.body.appendChild(a);
+                                a.click();
+                                // Clean up after a short delay
+                                setTimeout(() => {
+                                  document.body.removeChild(a);
+                                }, 100);
+                              } else {
+                                window.open(doc.url!, '_blank');
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                       {doc.onGenerate && (
                         <Button 
@@ -1087,25 +1453,46 @@ export default function LawsuitPreparationPage() {
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* توليد جميع المستندات */}
               <Button
                 size="lg"
-                onClick={startAutomation}
-                disabled={isAutomating || progressData.percentage < 100}
-                className="w-full sm:w-auto"
+                onClick={generateAllDocuments}
+                disabled={isGeneratingAll || isGeneratingMemo || isGeneratingClaims || isGeneratingDocsList || isGeneratingViolations}
+                variant="outline"
+                className="w-full sm:w-auto border-amber-500 text-amber-700 hover:bg-amber-50 hover:border-amber-600"
               >
-                {isAutomating ? (
+                {isGeneratingAll ? (
                   <>
                     <LoadingSpinner className="h-5 w-5 ml-2" />
-                    جاري الإعداد...
+                    جاري التوليد...
                   </>
                 ) : (
                   <>
-                    <ExternalLink className="h-5 w-5 ml-2" />
-                    فتح تقاضي وملء البيانات
+                    <FileStack className="h-5 w-5 ml-2" />
+                    توليد جميع المستندات
                   </>
                 )}
               </Button>
-              
+
+              <Button
+                size="lg"
+                onClick={registerCaseInSystem}
+                disabled={isRegistering || progressData.percentage < 100}
+                className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+              >
+                {isRegistering ? (
+                  <>
+                    <LoadingSpinner className="h-5 w-5 ml-2" />
+                    جاري التسجيل...
+                  </>
+                ) : (
+                  <>
+                    <Gavel className="h-5 w-5 ml-2" />
+                    تسجيل القضية في النظام
+                  </>
+                )}
+              </Button>
+
               <Button
                 variant="outline"
                 size="lg"
@@ -1113,13 +1500,13 @@ export default function LawsuitPreparationPage() {
                 className="w-full sm:w-auto"
               >
                 <ExternalLink className="h-4 w-4 ml-2" />
-                فتح تقاضي فقط
+                فتح تقاضي
               </Button>
             </div>
-            
+
             {progressData.percentage < 100 && (
               <p className="text-center text-sm text-muted-foreground mt-3">
-                ⚠️ يجب تجهيز جميع المستندات الإلزامية قبل رفع الدعوى
+                ⚠️ يجب تجهيز جميع المستندات المولدة ({progressData.ready}/{progressData.total}) قبل رفع الدعوى
               </p>
             )}
           </CardContent>
