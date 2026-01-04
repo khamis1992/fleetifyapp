@@ -9,6 +9,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import BentoSidebar from '@/components/dashboard/bento/BentoSidebar';
+import { PageBreadcrumb } from '@/components/ui/page-breadcrumb';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
@@ -107,6 +108,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="p-4 md:p-6 min-h-screen">
+            {/* Breadcrumb Navigation */}
+            <PageBreadcrumb className="mb-4" />
             {children}
           </div>
         </motion.main>

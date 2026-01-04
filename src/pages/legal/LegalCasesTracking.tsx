@@ -77,7 +77,6 @@ import {
   Plus, 
   FileText, 
   AlertCircle,
-  TrendingUp,
   DollarSign,
   Clock,
   Users,
@@ -111,7 +110,7 @@ import { ar } from 'date-fns/locale';
 import LegalCaseCreationWizard from '@/components/legal/LegalCaseCreationWizard';
 import AutoCreateCaseTriggersConfig from '@/components/legal/AutoCreateCaseTriggersConfig';
 import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNoticeGenerator';
-import DelinquentCustomersTab from '@/components/legal/DelinquentCustomersTab';
+// DelinquentCustomersTab removed - use /legal/delinquency instead
 
 // --- Constants ---
 const CHART_COLORS = {
@@ -1754,10 +1753,7 @@ export const LegalCasesTracking: React.FC = () => {
     </div>
   );
 
-  // --- Finance View ---
-  const FinanceView = () => (
-    <DelinquentCustomersTab />
-  );
+  // --- Finance View removed - use /legal/delinquency instead ---
 
   // --- Main Render ---
   const renderContent = () => {
@@ -1768,8 +1764,6 @@ export const LegalCasesTracking: React.FC = () => {
         return <CasesListView />;
       case 'calendar':
         return <CalendarView />;
-      case 'finance':
-        return <FinanceView />;
       case 'collection':
         return <LegalCollectionView />;
       case 'settings':
@@ -1828,7 +1822,6 @@ export const LegalCasesTracking: React.FC = () => {
           <TabButton id="dashboard" label="نظرة عامة" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="cases" label="سجل القضايا" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="calendar" label="الجلسات والمواعيد" icon={CalendarDays} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="finance" label="العملاء المتأخرون" icon={TrendingUp} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="collection" label="التحصيل القانوني" icon={DollarSign} activeTab={activeTab} onClick={setActiveTab} />
           <TabButton id="settings" label="الإعدادات" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
         </div>
