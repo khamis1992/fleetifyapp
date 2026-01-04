@@ -1725,6 +1725,7 @@ const CustomerDetailsPageNew = () => {
               onCancel={() => setIsEditDialogOpen(false)}
               context="standalone"
               integrationMode="dialog"
+              showDuplicateCheck={false}
             />
           )}
         </DialogContent>
