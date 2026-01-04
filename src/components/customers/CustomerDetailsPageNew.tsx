@@ -17,6 +17,7 @@ import {
   useDeleteCustomerDocument, 
   useDownloadCustomerDocument 
 } from '@/hooks/useCustomerDocuments';
+import { useCustomerCRMActivity, CustomerActivity, AddActivityInput } from '@/hooks/useCustomerCRMActivity';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,9 +65,15 @@ import {
   MoreVertical,
   Printer,
   Share2,
+  Send,
+  PhoneOff,
+  PhoneIncoming,
+  Bell,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
@@ -718,26 +725,221 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
   );
 };
 
-// تبويب الملاحظات
-const NotesTab = ({ customer }: { customer: any }) => {
+// تبويب الملاحظات - متكامل مع CRM
+const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerPhone?: string }) => {
+  const [newNote, setNewNote] = useState('');
+  const [noteType, setNoteType] = useState<'note' | 'phone' | 'whatsapp'>('note');
+  const [isAdding, setIsAdding] = useState(false);
+  
+  const { activities, isLoading, addActivity, isAddingActivity } = useCustomerCRMActivity(customerId);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    
+    try {
+      await addActivity({
+        note_type: noteType,
+        content: newNote,
+        title: noteType === 'phone' ? 'مكالمة هاتفية' : noteType === 'whatsapp' ? 'رسالة واتساب' : 'ملاحظة',
+      });
+      setNewNote('');
+      setIsAdding(false);
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  };
+
+  const getActivityIcon = (type: string, status?: string) => {
+    switch (type) {
+      case 'phone':
+      case 'call':
+        if (status === 'no_answer') return <PhoneOff className="w-4 h-4 text-red-500" />;
+        if (status === 'busy') return <PhoneIncoming className="w-4 h-4 text-amber-500" />;
+        return <Phone className="w-4 h-4 text-green-500" />;
+      case 'whatsapp':
+        return <MessageSquare className="w-4 h-4 text-emerald-500" />;
+      case 'email':
+        return <Mail className="w-4 h-4 text-blue-500" />;
+      case 'followup':
+        return <Bell className="w-4 h-4 text-amber-500" />;
+      default:
+        return <FileText className="w-4 h-4 text-neutral-500" />;
+    }
+  };
+
+  const getActivityLabel = (type: string) => {
+    switch (type) {
+      case 'phone':
+      case 'call': return 'مكالمة';
+      case 'whatsapp': return 'واتساب';
+      case 'email': return 'بريد';
+      case 'note': return 'ملاحظة';
+      case 'followup': return 'متابعة';
+      default: return 'تفاعل';
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-6 border border-neutral-200"
+      className="space-y-4"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-bold text-neutral-900">الملاحظات</h4>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Plus className="w-4 h-4" />
-          إضافة ملاحظة
-        </Button>
+      {/* Header with actions */}
+      <div className="bg-white rounded-2xl p-4 border border-neutral-200">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-bold text-neutral-900">سجل التواصل والملاحظات</h4>
+            <p className="text-xs text-neutral-500">{activities.length} تفاعل مسجل</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {customerPhone && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => window.open(`tel:${customerPhone}`)}
+                >
+                  <Phone className="w-4 h-4" />
+                  اتصال
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  onClick={() => window.open(`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}`)}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  واتساب
+                </Button>
+              </>
+            )}
+            <Button 
+              size="sm" 
+              className="gap-2 bg-coral-500 hover:bg-coral-600"
+              onClick={() => setIsAdding(!isAdding)}
+            >
+              <Plus className="w-4 h-4" />
+              إضافة
+            </Button>
+          </div>
+        </div>
+
+        {/* Add Note Form */}
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-neutral-100 pt-4"
+            >
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={noteType === 'note' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('note')}
+                  className={noteType === 'note' ? 'bg-coral-500' : ''}
+                >
+                  <FileText className="w-4 h-4 ml-1" />
+                  ملاحظة
+                </Button>
+                <Button
+                  variant={noteType === 'phone' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('phone')}
+                  className={noteType === 'phone' ? 'bg-green-500' : ''}
+                >
+                  <Phone className="w-4 h-4 ml-1" />
+                  مكالمة
+                </Button>
+                <Button
+                  variant={noteType === 'whatsapp' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('whatsapp')}
+                  className={noteType === 'whatsapp' ? 'bg-emerald-500' : ''}
+                >
+                  <MessageSquare className="w-4 h-4 ml-1" />
+                  واتساب
+                </Button>
+              </div>
+              <Textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="اكتب ملاحظتك هنا..."
+                className="min-h-[100px] mb-3"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
+                  إلغاء
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="gap-2 bg-coral-500 hover:bg-coral-600"
+                  onClick={handleAddNote}
+                  disabled={!newNote.trim() || isAddingActivity}
+                >
+                  {isAddingActivity ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  حفظ
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <div className="min-h-[200px] p-4 bg-neutral-50 rounded-xl border border-neutral-100">
-        <p className="text-neutral-500 text-sm">
-          {customer.notes || 'لا توجد ملاحظات مسجلة لهذا العميل...'}
-        </p>
-      </div>
+
+      {/* Activities List */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+        </div>
+      ) : activities.length > 0 ? (
+        <div className="relative">
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-neutral-200" />
+          <div className="space-y-3">
+            {activities.map((activity, index) => (
+              <motion.div
+                key={activity.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="relative pr-14"
+              >
+                <div className="absolute right-4 w-5 h-5 rounded-full bg-white border-2 border-coral-300 flex items-center justify-center shadow-sm">
+                  {getActivityIcon(activity.note_type, activity.call_status)}
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {getActivityLabel(activity.note_type)}
+                      </Badge>
+                      {activity.is_important && (
+                        <Badge className="text-xs bg-amber-100 text-amber-700">مهم</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-neutral-400">
+                      {format(new Date(activity.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-neutral-700 whitespace-pre-wrap">{activity.content}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <MessageSquare className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">لا توجد ملاحظات مسجلة</p>
+          <p className="text-neutral-400 text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -880,13 +1082,367 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
   );
 };
 
-// تبويب سجل النشاط
-const ActivityTab = ({ customerId, companyId }: { customerId: string, companyId: string }) => {
-  // جلب سجل النشاط من العمليات المختلفة
-  const activities = useMemo(() => {
-    // سيتم ملء هذا من البيانات الفعلية لاحقاً
-    return [];
-  }, []);
+// تبويب المتابعات المجدولة
+const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId: string }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    title: '',
+    notes: '',
+    scheduled_date: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent'
+  });
+
+  // جلب المتابعات
+  const { data: followups, isLoading, refetch } = useQuery({
+    queryKey: ['customer-followups', customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scheduled_followups')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('scheduled_date', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId
+  });
+
+  const handleAddFollowup = async () => {
+    if (!newFollowup.title.trim() || !newFollowup.scheduled_date) return;
+
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .insert({
+          customer_id: customerId,
+          company_id: companyId,
+          title: newFollowup.title,
+          notes: newFollowup.notes,
+          scheduled_date: newFollowup.scheduled_date,
+          priority: newFollowup.priority,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+      
+      setNewFollowup({ title: '', notes: '', scheduled_date: '', priority: 'medium' });
+      setIsAdding(false);
+      refetch();
+    } catch (error) {
+      console.error('Error adding followup:', error);
+    }
+  };
+
+  const handleCompleteFollowup = async (followupId: string) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', followupId);
+
+      if (error) throw error;
+      refetch();
+    } catch (error) {
+      console.error('Error completing followup:', error);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      default: return 'bg-green-100 text-green-700 border-green-200';
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'عاجل';
+      case 'high': return 'عالي';
+      case 'medium': return 'متوسط';
+      default: return 'منخفض';
+    }
+  };
+
+  const pendingFollowups = followups?.filter(f => f.status !== 'completed') || [];
+  const completedFollowups = followups?.filter(f => f.status === 'completed') || [];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      {/* Header */}
+      <div className="bg-white rounded-2xl p-4 border border-neutral-200">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-bold text-neutral-900">المتابعات المجدولة</h4>
+            <p className="text-xs text-neutral-500">{pendingFollowups.length} متابعة قادمة</p>
+          </div>
+          <Button 
+            size="sm" 
+            className="gap-2 bg-coral-500 hover:bg-coral-600"
+            onClick={() => setIsAdding(!isAdding)}
+          >
+            <Plus className="w-4 h-4" />
+            إضافة متابعة
+          </Button>
+        </div>
+
+        {/* Add Followup Form */}
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-neutral-100 pt-4 space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newFollowup.title}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="عنوان المتابعة..."
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+                <input
+                  type="datetime-local"
+                  value={newFollowup.scheduled_date}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                {(['low', 'medium', 'high', 'urgent'] as const).map(priority => (
+                  <Button
+                    key={priority}
+                    variant={newFollowup.priority === priority ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewFollowup(prev => ({ ...prev, priority }))}
+                    className={newFollowup.priority === priority ? getPriorityColor(priority) : ''}
+                  >
+                    {getPriorityLabel(priority)}
+                  </Button>
+                ))}
+              </div>
+              <Textarea
+                value={newFollowup.notes}
+                onChange={(e) => setNewFollowup(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="ملاحظات إضافية..."
+                className="min-h-[80px]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
+                  إلغاء
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="gap-2 bg-coral-500 hover:bg-coral-600"
+                  onClick={handleAddFollowup}
+                  disabled={!newFollowup.title.trim() || !newFollowup.scheduled_date}
+                >
+                  <Plus className="w-4 h-4" />
+                  حفظ المتابعة
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Pending Followups */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+        </div>
+      ) : pendingFollowups.length > 0 ? (
+        <div className="space-y-3">
+          {pendingFollowups.map((followup, index) => (
+            <motion.div
+              key={followup.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bell className="w-4 h-4 text-coral-500" />
+                    <h5 className="font-medium text-neutral-900">{followup.title}</h5>
+                    <Badge className={cn("text-xs", getPriorityColor(followup.priority))}>
+                      {getPriorityLabel(followup.priority)}
+                    </Badge>
+                  </div>
+                  {followup.notes && (
+                    <p className="text-sm text-neutral-600 mb-2">{followup.notes}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs text-neutral-500">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(followup.scheduled_date), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                    </span>
+                    {differenceInDays(new Date(followup.scheduled_date), new Date()) <= 0 && (
+                      <Badge variant="destructive" className="text-xs">متأخرة</Badge>
+                    )}
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleCompleteFollowup(followup.id)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
+          <Bell className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">لا توجد متابعات مجدولة</p>
+          <p className="text-neutral-400 text-sm mt-1">أضف متابعة جديدة للتذكير</p>
+        </div>
+      )}
+
+      {/* Completed Followups */}
+      {completedFollowups.length > 0 && (
+        <div className="mt-6">
+          <h5 className="text-sm font-medium text-neutral-500 mb-3">المتابعات المكتملة ({completedFollowups.length})</h5>
+          <div className="space-y-2">
+            {completedFollowups.slice(0, 5).map(followup => (
+              <div 
+                key={followup.id}
+                className="bg-neutral-50 rounded-lg p-3 border border-neutral-100 opacity-60"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm text-neutral-600 line-through">{followup.title}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// تبويب سجل النشاط - Timeline موحد
+const ActivityTab = ({ customerId, companyId, contracts, payments, violations }: { 
+  customerId: string; 
+  companyId: string;
+  contracts: any[];
+  payments: any[];
+  violations: any[];
+}) => {
+  const { activities: crmActivities } = useCustomerCRMActivity(customerId);
+  
+  // دمج جميع الأنشطة في timeline واحد
+  const allActivities = useMemo(() => {
+    const activities: Array<{
+      id: string;
+      type: 'contract' | 'payment' | 'violation' | 'crm';
+      description: string;
+      date: Date;
+      icon: string;
+      color: string;
+      details?: any;
+    }> = [];
+
+    // إضافة العقود
+    contracts?.forEach(contract => {
+      activities.push({
+        id: `contract-${contract.id}`,
+        type: 'contract',
+        description: `عقد جديد: ${contract.contract_number || 'بدون رقم'} - ${contract.vehicle?.plate_number || ''}`,
+        date: new Date(contract.created_at),
+        icon: 'car',
+        color: 'blue',
+        details: contract
+      });
+    });
+
+    // إضافة المدفوعات
+    payments?.forEach(payment => {
+      activities.push({
+        id: `payment-${payment.id}`,
+        type: 'payment',
+        description: `دفعة: ${payment.amount?.toLocaleString()} ر.ق`,
+        date: new Date(payment.payment_date || payment.created_at),
+        icon: 'wallet',
+        color: 'green',
+        details: payment
+      });
+    });
+
+    // إضافة المخالفات
+    violations?.forEach(violation => {
+      activities.push({
+        id: `violation-${violation.id}`,
+        type: 'violation',
+        description: `مخالفة: ${violation.violation_type || 'مرورية'} - ${violation.fine_amount?.toLocaleString()} ر.ق`,
+        date: new Date(violation.violation_date || violation.created_at),
+        icon: 'alert',
+        color: 'red',
+        details: violation
+      });
+    });
+
+    // إضافة أنشطة CRM
+    crmActivities?.forEach(activity => {
+      activities.push({
+        id: `crm-${activity.id}`,
+        type: 'crm',
+        description: activity.content,
+        date: new Date(activity.created_at),
+        icon: activity.note_type === 'phone' ? 'phone' : activity.note_type === 'whatsapp' ? 'message' : 'note',
+        color: activity.note_type === 'phone' ? 'green' : activity.note_type === 'whatsapp' ? 'emerald' : 'gray',
+        details: activity
+      });
+    });
+
+    // ترتيب حسب التاريخ (الأحدث أولاً)
+    return activities.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [contracts, payments, violations, crmActivities]);
+
+  const getIcon = (type: string, iconType: string) => {
+    switch (iconType) {
+      case 'car': return <Car className="w-4 h-4" />;
+      case 'wallet': return <Wallet className="w-4 h-4" />;
+      case 'alert': return <AlertTriangle className="w-4 h-4" />;
+      case 'phone': return <Phone className="w-4 h-4" />;
+      case 'message': return <MessageSquare className="w-4 h-4" />;
+      default: return <FileText className="w-4 h-4" />;
+    }
+  };
+
+  const getColorClasses = (color: string) => {
+    switch (color) {
+      case 'blue': return 'bg-blue-100 text-blue-600 border-blue-300';
+      case 'green': return 'bg-green-100 text-green-600 border-green-300';
+      case 'red': return 'bg-red-100 text-red-600 border-red-300';
+      case 'emerald': return 'bg-emerald-100 text-emerald-600 border-emerald-300';
+      default: return 'bg-neutral-100 text-neutral-600 border-neutral-300';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'contract': return 'عقد';
+      case 'payment': return 'دفعة';
+      case 'violation': return 'مخالفة';
+      case 'crm': return 'تواصل';
+      default: return 'نشاط';
+    }
+  };
 
   return (
     <motion.div 
@@ -896,34 +1452,39 @@ const ActivityTab = ({ customerId, companyId }: { customerId: string, companyId:
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="text-sm font-bold text-neutral-900">سجل النشاط</h4>
-          <p className="text-xs text-neutral-500">آخر الأنشطة والتحديثات</p>
+          <h4 className="text-sm font-bold text-neutral-900">سجل النشاط الكامل</h4>
+          <p className="text-xs text-neutral-500">{allActivities.length} نشاط مسجل</p>
         </div>
       </div>
 
-      {activities.length > 0 ? (
+      {allActivities.length > 0 ? (
         <div className="relative">
-          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-neutral-200" />
-          <div className="space-y-4">
-            {activities.map((activity: any, index: number) => (
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-coral-300 via-neutral-200 to-neutral-100" />
+          <div className="space-y-3">
+            {allActivities.slice(0, 50).map((activity, index) => (
               <motion.div
-                key={activity.id || index}
+                key={activity.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.03 }}
                 className="relative pr-14"
               >
-                <div className="absolute right-4 w-4 h-4 rounded-full bg-coral-500 border-2 border-white shadow" />
-                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900">{activity.description}</p>
-                      <p className="text-xs text-neutral-500 mt-1">{activity.date}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {activity.type}
+                <div className={cn(
+                  "absolute right-3 w-6 h-6 rounded-full flex items-center justify-center border-2",
+                  getColorClasses(activity.color)
+                )}>
+                  {getIcon(activity.type, activity.icon)}
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 hover:shadow-sm transition-all">
+                  <div className="flex items-start justify-between mb-1">
+                    <Badge variant="outline" className={cn("text-xs", getColorClasses(activity.color))}>
+                      {getTypeLabel(activity.type)}
                     </Badge>
+                    <span className="text-xs text-neutral-400">
+                      {format(activity.date, 'dd MMM yyyy - HH:mm', { locale: ar })}
+                    </span>
                   </div>
+                  <p className="text-sm text-neutral-700 line-clamp-2">{activity.description}</p>
                 </div>
               </motion.div>
             ))}
@@ -1053,6 +1614,26 @@ const CustomerDetailsPageNew = () => {
       }
       // تصفية المخالفات المرتبطة بالعميل
       return data?.filter(v => v.contract?.customer_id === customerId) || [];
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
+  // جلب بيانات CRM
+  const { activities: crmActivitiesMain } = useCustomerCRMActivity(customerId || '');
+  
+  // جلب المتابعات المجدولة
+  const { data: scheduledFollowups = [] } = useQuery({
+    queryKey: ['customer-followups-count', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('scheduled_followups')
+        .select('id, status, scheduled_date, priority')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .neq('status', 'completed');
+      if (error) return [];
+      return data || [];
     },
     enabled: !!customerId && !!companyId,
   });
@@ -1500,6 +2081,74 @@ const CustomerDetailsPageNew = () => {
           </motion.div>
         </div>
 
+        {/* CRM Summary Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-6 bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-coral-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900">مركز إدارة علاقات العملاء</h3>
+                <p className="text-xs text-neutral-500">
+                  {crmActivitiesMain.length} ملاحظة • {scheduledFollowups.length} متابعة قادمة
+                  {scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length > 0 && (
+                    <span className="text-red-500 font-medium mr-2">
+                      • {scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length} متأخرة
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {customer?.phone && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => window.open(`tel:${customer.phone}`)}
+                  >
+                    <Phone className="w-4 h-4" />
+                    اتصال
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    واتساب
+                  </Button>
+                </>
+              )}
+              <Button 
+                size="sm" 
+                className="gap-2 bg-coral-500 hover:bg-coral-600"
+                onClick={() => setActiveTab('notes')}
+              >
+                <Plus className="w-4 h-4" />
+                إضافة ملاحظة
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm" 
+                className="gap-2"
+                onClick={() => setActiveTab('followups')}
+              >
+                <Bell className="w-4 h-4" />
+                المتابعات
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Tabs Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1517,8 +2166,9 @@ const CustomerDetailsPageNew = () => {
                 { value: 'invoices', label: 'الفواتير', icon: Wallet },
                 { value: 'payments', label: 'المدفوعات', icon: CreditCard },
                 { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                { value: 'activity', label: 'سجل التفاعلات', icon: Activity },
-                { value: 'notes', label: 'الملاحظات', icon: MessageSquare },
+                { value: 'notes', label: 'CRM والملاحظات', icon: MessageSquare },
+                { value: 'followups', label: 'المتابعات', icon: Bell },
+                { value: 'activity', label: 'سجل النشاط', icon: Activity },
               ].map((tab) => (
                 <TabsTrigger 
                   key={tab.value}
@@ -1605,7 +2255,13 @@ const CustomerDetailsPageNew = () => {
                 )}
               </TabsContent>
               <TabsContent value="activity" className="mt-0">
-                <ActivityTab customerId={customerId || ''} companyId={companyId || ''} />
+                <ActivityTab 
+                  customerId={customerId || ''} 
+                  companyId={companyId || ''} 
+                  contracts={contracts}
+                  payments={payments}
+                  violations={trafficViolations}
+                />
               </TabsContent>
               <TabsContent value="notes" className="mt-0">
                 {loadingCustomer ? (
@@ -1613,8 +2269,17 @@ const CustomerDetailsPageNew = () => {
                     <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
                   </div>
                 ) : (
-                  <NotesTab customer={customer} />
+                  <NotesTab 
+                    customerId={customerId || ''} 
+                    customerPhone={customer?.phone || customer?.mobile_number} 
+                  />
                 )}
+              </TabsContent>
+              <TabsContent value="followups" className="mt-0">
+                <FollowupsTab 
+                  customerId={customerId || ''} 
+                  companyId={companyId || ''} 
+                />
               </TabsContent>
             </div>
           </Tabs>

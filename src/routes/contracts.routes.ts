@@ -7,7 +7,7 @@ import { lazy } from 'react';
 import type { RouteConfig } from './types';
 
 // Lazy loaded components
-const Contracts = lazy(() => import('@/pages/Contracts'));
+const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
 const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDetailsPage'));
 const Quotations = lazy(() => import('@/pages/Quotations'));
 const QuotationApproval = lazy(() => import('@/pages/QuotationApproval'));

@@ -11,7 +11,7 @@ const Customers = lazy(() => import('@/pages/customers/CustomersPageNew'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
-const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMNew'));
+const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
 
 export const customersRoutes: RouteConfig[] = [
   {
