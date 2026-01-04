@@ -48,6 +48,8 @@ import {
   useProcessVehicleDepreciation,
   useUpdateVehicleCosts,
   useValidateDepreciationData,
+  useMonthlyRevenueData,
+  useTopProfitableVehicles,
 } from "@/hooks/useFleetFinancialAnalytics";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -88,6 +90,8 @@ const FleetFinancialAnalysisNew = () => {
     useFleetFinancialSummary();
   const { data: validationData, isLoading: isValidationLoading } =
     useValidateDepreciationData();
+  const { data: monthlyRevenueData } = useMonthlyRevenueData(dateFrom.substring(0, 4));
+  const { data: topVehicles } = useTopProfitableVehicles(10);
 
   const processDepreciation = useProcessVehicleDepreciation();
   const updateVehicleCosts = useUpdateVehicleCosts();
@@ -145,56 +149,51 @@ const FleetFinancialAnalysisNew = () => {
     }
   };
 
-  // Mock data for charts
-  const lineChartData = [
-    { month: "يناير", revenue: 65000, expenses: 42000, profit: 23000 },
-    { month: "فبراير", revenue: 72000, expenses: 45000, profit: 27000 },
-    { month: "مارس", revenue: 78000, expenses: 48000, profit: 30000 },
-    { month: "أبريل", revenue: 82000, expenses: 51000, profit: 31000 },
-    { month: "مايو", revenue: 88000, expenses: 49000, profit: 39000 },
-    { month: "يونيو", revenue: 95000, expenses: 52000, profit: 43000 },
-    { month: "يوليو", revenue: 102000, expenses: 55000, profit: 47000 },
-    { month: "أغسطس", revenue: 98000, expenses: 53000, profit: 45000 },
-    { month: "سبتمبر", revenue: 105000, expenses: 56000, profit: 49000 },
-    { month: "أكتوبر", revenue: 112000, expenses: 58000, profit: 54000 },
-    { month: "نوفمبر", revenue: 118000, expenses: 60000, profit: 58000 },
-    { month: "ديسمبر", revenue: 125000, expenses: 62000, profit: 63000 },
-  ];
+  // Real chart data from hooks
+  const lineChartData = monthlyRevenueData?.map(d => ({
+    month: d.monthName,
+    revenue: d.revenue,
+    expenses: d.expenses,
+    profit: d.profit
+  })) || [];
 
-  const pieChartData = [
-    { name: "صيانة", value: 42, color: "hsl(var(--primary))" },
-    { name: "وقود", value: 28, color: "hsl(var(--warning))" },
-    { name: "تأمين", value: 18, color: "hsl(142 56% 42%)" },
-    { name: "تشغيل أخرى", value: 12, color: "hsl(var(--muted-foreground))" },
-  ];
+  // Pie chart data from actual summary (using real proportions)
+  const pieChartData = (() => {
+    const maintenanceCost = summary?.totalMaintenanceCost || 0;
+    const insuranceCost = summary?.totalInsuranceCost || 0;
+    const operatingCost = summary?.totalOperatingCost || 0;
+    const total = maintenanceCost + insuranceCost + operatingCost;
+    
+    if (total === 0) {
+      return [
+        { name: "لا توجد بيانات", value: 100, color: "hsl(var(--muted-foreground))" }
+      ];
+    }
+    
+    return [
+      { name: "صيانة", value: Math.round((maintenanceCost / total) * 100), color: "hsl(var(--primary))" },
+      { name: "تأمين", value: Math.round((insuranceCost / total) * 100), color: "hsl(142 56% 42%)" },
+      { name: "تشغيل أخرى", value: Math.round((operatingCost / total) * 100), color: "hsl(var(--muted-foreground))" },
+    ].filter(item => item.value > 0);
+  })();
 
-  const barChartData = [
-    { vehicle: "ABC123", profit: 85000 },
-    { vehicle: "XYZ789", profit: 72000 },
-    { vehicle: "DEF456", profit: 58000 },
-    { vehicle: "GHI101", profit: 45000 },
-    { vehicle: "JKL202", profit: 38000 },
-    { vehicle: "MNO303", profit: 32000 },
-    { vehicle: "PQR404", profit: 28000 },
-    { vehicle: "STU505", profit: 24000 },
-    { vehicle: "VWX606", profit: 19000 },
-    { vehicle: "YZA707", profit: 15000 },
-  ];
+  // Bar chart data from top profitable vehicles
+  const barChartData = topVehicles?.map(v => ({
+    vehicle: v.vehicle,
+    profit: v.profit
+  })) || [];
 
-  const areaChartData = [
-    { period: "Q1-يناير", roi: 28.5 },
-    { period: "Q1-فبراير", roi: 30.2 },
-    { period: "Q1-مارس", roi: 32.8 },
-    { period: "Q2-أبريل", roi: 35.1 },
-    { period: "Q2-مايو", roi: 36.9 },
-    { period: "Q2-يونيو", roi: 38.2 },
-    { period: "Q3-يوليو", roi: 39.5 },
-    { period: "Q3-أغسطس", roi: 38.7 },
-    { period: "Q3-سبتمبر", roi: 40.1 },
-    { period: "Q4-أكتوبر", roi: 41.3 },
-    { period: "Q4-نوفمبر", roi: 42.0 },
-    { period: "Q4-ديسمبر", roi: 38.7 },
-  ];
+  // Area chart data - ROI over time (calculated from monthly data)
+  const areaChartData = monthlyRevenueData?.map((d, index) => {
+    const quarter = Math.floor(index / 3) + 1;
+    const totalRevenue = monthlyRevenueData.slice(0, index + 1).reduce((sum, m) => sum + m.revenue, 0);
+    const totalPurchase = summary?.totalPurchasePrice || 1;
+    const roi = totalPurchase > 0 ? (totalRevenue / totalPurchase) * 100 : 0;
+    return {
+      period: `Q${quarter}-${d.monthName}`,
+      roi: Math.round(roi * 10) / 10
+    };
+  }) || [];
 
   if (overviewLoading || summaryLoading) {
     return (

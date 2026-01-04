@@ -8,7 +8,7 @@ import type { RouteConfig } from './types';
 
 // Lazy loaded components
 const Fleet = lazy(() => import('@/pages/fleet/FleetPageNew'));
-const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageNew'));
+const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageRedesigned'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
 const Maintenance = lazy(() => import('@/pages/fleet/MaintenanceRedesigned'));

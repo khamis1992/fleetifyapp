@@ -417,7 +417,7 @@ export default function MaintenanceRedesigned() {
               />
               <ProStatCard
                 title="التكلفة"
-                value={`${((stats?.costThisMonth || 0) / 1000}K`}
+                value={`${((stats?.costThisMonth || 0) / 1000).toFixed(0)}K`}
                 icon={RefreshCw}
                 color="border-purple-200"
                 description="ر.ق هذا الشهر"

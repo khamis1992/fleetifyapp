@@ -59,7 +59,8 @@ export const useFleetFinancialOverview = () => {
   return useQuery({
     queryKey: ["fleet-financial-overview", companyId],
     queryFn: async (): Promise<FleetFinancialData[]> => {
-      const { data, error } = await supabase
+      // Get vehicles with their contract revenue
+      const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
         .select(`
           id,
@@ -74,16 +75,32 @@ export const useFleetFinancialOverview = () => {
         .eq("company_id", companyId)
         .eq("is_active", true);
 
-      if (error) throw error;
+      if (vehiclesError) throw vehiclesError;
+
+      // Get revenue per vehicle from contracts
+      const { data: revenueData, error: revenueError } = await supabase
+        .from("contracts")
+        .select("vehicle_id, total_paid")
+        .eq("company_id", companyId);
+
+      if (revenueError) throw revenueError;
+
+      // Create revenue map by vehicle_id
+      const revenueMap = new Map<string, number>();
+      revenueData?.forEach(contract => {
+        if (contract.vehicle_id) {
+          const current = revenueMap.get(contract.vehicle_id) || 0;
+          revenueMap.set(contract.vehicle_id, current + (Number(contract.total_paid) || 0));
+        }
+      });
 
       // Calculate book value and other financial metrics
-      return data.map(vehicle => {
+      return vehiclesData.map(vehicle => {
         const bookValue = (vehicle.purchase_cost || 0) - (vehicle.accumulated_depreciation || 0);
-        const totalOperatingCost = vehicle.total_operating_cost || 0;
+        const totalOperatingCost = (vehicle.total_operating_cost || 0) + (vehicle.total_maintenance_cost || 0);
         
-        // Get revenue from contracts for this vehicle
-        // This would need to be enhanced to include actual revenue calculation
-        const revenueGenerated = 0; // Placeholder
+        // Get actual revenue from contracts for this vehicle
+        const revenueGenerated = revenueMap.get(vehicle.id) || 0;
         const netProfit = revenueGenerated - totalOperatingCost;
         const roiPercentage = vehicle.purchase_cost > 0 ? (netProfit / vehicle.purchase_cost) * 100 : 0;
 
@@ -92,7 +109,7 @@ export const useFleetFinancialOverview = () => {
           vehicle_number: vehicle.plate_number,
           vehicle_status: vehicle.status,
           total_maintenance_cost: vehicle.total_maintenance_cost || 0,
-          total_fuel_cost: 0, // Will be calculated separately
+          total_fuel_cost: 0,
           total_insurance_cost: vehicle.total_insurance_cost || 0,
           total_operating_cost: totalOperatingCost,
           accumulated_depreciation: vehicle.accumulated_depreciation || 0,
@@ -374,6 +391,141 @@ export const useFleetFinancialSummary = () => {
       summary.profitMargin = summary.totalRevenue > 0 ? (summary.netProfit / summary.totalRevenue) * 100 : 0;
 
       return summary;
+    },
+    enabled: !!companyId,
+  });
+};
+
+// Monthly Revenue Data for Charts
+export interface MonthlyRevenueData {
+  month: string;
+  monthName: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
+
+const ARABIC_MONTHS = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+];
+
+export const useMonthlyRevenueData = (year: string = "2024") => {
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: ["monthly-revenue-data", companyId, year],
+    queryFn: async (): Promise<MonthlyRevenueData[]> => {
+      // Get monthly payments (revenue)
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("payment_date, amount")
+        .eq("company_id", companyId)
+        .gte("payment_date", `${year}-01-01`)
+        .lte("payment_date", `${year}-12-31`);
+
+      if (paymentsError) throw paymentsError;
+
+      // Create monthly aggregation
+      const monthlyData: Record<string, { revenue: number; expenses: number }> = {};
+      
+      // Initialize all months
+      for (let i = 1; i <= 12; i++) {
+        const monthKey = `${year}-${String(i).padStart(2, '0')}`;
+        monthlyData[monthKey] = { revenue: 0, expenses: 0 };
+      }
+
+      // Aggregate payments by month
+      paymentsData?.forEach(payment => {
+        if (payment.payment_date) {
+          const monthKey = payment.payment_date.substring(0, 7);
+          if (monthlyData[monthKey]) {
+            monthlyData[monthKey].revenue += Number(payment.amount) || 0;
+          }
+        }
+      });
+
+      // Convert to array with Arabic month names
+      return Object.entries(monthlyData).map(([month, data]) => {
+        const monthIndex = parseInt(month.split('-')[1]) - 1;
+        return {
+          month,
+          monthName: ARABIC_MONTHS[monthIndex],
+          revenue: data.revenue,
+          expenses: data.expenses,
+          profit: data.revenue - data.expenses
+        };
+      }).sort((a, b) => a.month.localeCompare(b.month));
+    },
+    enabled: !!companyId,
+  });
+};
+
+// Top Profitable Vehicles for Charts
+export interface VehicleProfitData {
+  vehicle: string;
+  vehicleId: string;
+  profit: number;
+  revenue: number;
+}
+
+export const useTopProfitableVehicles = (limit: number = 10) => {
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useQuery({
+    queryKey: ["top-profitable-vehicles", companyId, limit],
+    queryFn: async (): Promise<VehicleProfitData[]> => {
+      // Get vehicles with their revenue
+      const { data, error } = await supabase
+        .rpc("get_vehicle_revenue_summary", { company_id_param: companyId })
+        .limit(limit);
+
+      if (error) {
+        // Fallback: manually join vehicles and contracts
+        const { data: vehiclesData, error: vehiclesError } = await supabase
+          .from("vehicles")
+          .select("id, plate_number")
+          .eq("company_id", companyId)
+          .eq("is_active", true);
+
+        if (vehiclesError) throw vehiclesError;
+
+        const { data: contractsData, error: contractsError } = await supabase
+          .from("contracts")
+          .select("vehicle_id, total_paid")
+          .eq("company_id", companyId);
+
+        if (contractsError) throw contractsError;
+
+        // Aggregate revenue by vehicle
+        const revenueMap = new Map<string, number>();
+        contractsData?.forEach(c => {
+          if (c.vehicle_id) {
+            const current = revenueMap.get(c.vehicle_id) || 0;
+            revenueMap.set(c.vehicle_id, current + (Number(c.total_paid) || 0));
+          }
+        });
+
+        // Create result
+        const result = vehiclesData?.map(v => ({
+          vehicleId: v.id,
+          vehicle: v.plate_number,
+          revenue: revenueMap.get(v.id) || 0,
+          profit: revenueMap.get(v.id) || 0 // Simplified: profit = revenue when no cost data
+        }))
+        .filter(v => v.revenue > 0)
+        .sort((a, b) => b.profit - a.profit)
+        .slice(0, limit) || [];
+
+        return result;
+      }
+
+      return data?.map((v: any) => ({
+        vehicleId: v.vehicle_id,
+        vehicle: v.plate_number,
+        revenue: v.total_revenue || 0,
+        profit: v.net_profit || v.total_revenue || 0
+      })) || [];
     },
     enabled: !!companyId,
   });
